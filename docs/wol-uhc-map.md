@@ -77,7 +77,7 @@ Every Site/End pair in [uhc-address-map.md](uhc-address-map.md) appears in WoL's
 | Site | Upstream | WoL | Notes |
 |---|---|---|---|
 | 0x7A0709 (TeamLimit SP) | detour (End 0x7A0709) | replace, End **0x7A070E** | WoL replaces the stolen `push 8D31h` instead of relocating it. |
-| **0x699D31** | — | detour; CALL32 0x444EFB, JMP32 0x699DE6 | WoL-only. Same shape as AttackTypeIcons #3 (0x69B909, which calls 0x444EFB and jumps to 0x4D7F44); probably a second type-icon tooltip site. Not verified against the stock exe yet. |
+| **0x699D31** | `attackTypeIcons` | detour; CALL32 0x444EFB, JMP32 0x699DE6 | WoL-only. The minimized block's twin of AttackTypeIcons #3 (0x69B909, which calls 0x444EFB and jumps to 0x4D7F44): the same type chain (`lea edx,[eax+11h]` / `cmp esi,edx` / `jne 699D65h`, ESI = the bonus's unittype) in the minimized panel's attack rows, so the listed types get their multiplier there too. Checked against the stock exe with capstone (2026-11-19, `docs/how-it-works.md`, "attackTypeIcons"); our `attackTypeIcons` hooks the same two sites. |
 
 The upstream keys are still parsed in one function, 0x10010540. It holds all 20 upstream key strings, reads the cfg path at VA 0xC65083, and references 0xBEAF98, whose role is unknown.
 
@@ -178,7 +178,7 @@ Because the exe on disk already contains WoL's static patches, every difference 
 - 261 are in `.text`: 60 jmp/call hooks (5+ bytes) and the rest are rel32 call-target rewrites and imm/byte patches. They include every upstream cave and the candidates listed above.
 - 26 are in `.rdata`. Most of them are the IAT, which the loader resolves, so they are not patches. The real ones are:
   - function-pointer/vtable slots at 0xB92CB0, 0xB92CE0 and 0xB9E5AC;
-  - `%.1fx` → `%.2fx` at 0xBA2068 (playback-speed display).
+  - `%.1fx` → `%.2fx` at 0xBA2068: the bonus multiplier format `, %.1fx %s` (0xBA2060) of the attack rows in the stat panel (0x4D7F7D) and the minimized panel (0x699E1F), so 1.25 shows as `1.25x`, not `1.3x`. (First read as the playback-speed display; corrected 2026-11-19 by a byte search of its two pushes.) Our `multiplierDecimals` writes the same digit, and logs `already 2` beside this DLL.
 - **Card unlock not identified yet.** None of the patched functions touches the home city card array (`+204h`). Inspected with `batch_decompile` of the 148 sites not already explained (`batch_decompile_patch_sites.json`, `ev_908b7e94…`).
 - **Next probe:** diff again while the deck builder is open, in case the patch is applied lazily.
 - **Files:** `rea/evidence/wol-uhc-c070d138/memdiff.py`, `wol-memdiff.txt`.

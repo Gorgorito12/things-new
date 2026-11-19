@@ -57,6 +57,7 @@ set(UHC_SOURCES
   src/features/researchgrants.cpp
   src/features/cantslow.cpp
   src/features/stealthtarget.cpp
+  src/features/autoscout.cpp
   src/features/customwalls.cpp
   src/features/directional.cpp
   src/features/snarevalues.cpp
@@ -65,6 +66,8 @@ set(UHC_SOURCES
   src/features/displayrange.cpp
   src/features/linkedresource.cpp
   src/features/minuistats.cpp
+  src/features/multiplierdecimals.cpp
+  src/features/attacktypeicons.cpp
   src/features/xslog.cpp
   src/features/civs.cpp
   src/features/ageupbuildings.cpp
@@ -214,6 +217,7 @@ set(UHC_SOURCES
   src/hooks/bounty_hooks.asm
   src/hooks/cantslow_hooks.asm
   src/hooks/stealthtarget_hooks.asm
+  src/hooks/autoscout_hooks.asm
   src/hooks/customwalls_hooks.asm
   src/hooks/directional_hooks.asm
   src/hooks/datalint_hooks.asm
@@ -237,6 +241,7 @@ set(UHC_SOURCES
   src/hooks/unitpanelrow_hooks.asm
   src/hooks/datarefs_hooks.asm
   src/hooks/minuistats_hooks.asm
+  src/hooks/attacktypeicons_hooks.asm
   src/version.rc
 )
 # UHC.dll is the DLL the loader runs. dinput8.dll is the same code for a game whose loader runs another

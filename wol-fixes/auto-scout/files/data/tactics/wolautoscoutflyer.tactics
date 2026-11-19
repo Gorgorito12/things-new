@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<tactics>
+   <action>
+      <dbaction>Move</dbaction>
+      <name stringid="69156">Move</name>
+      <type>Move</type>
+      <persistent>1</persistent>
+   </action>
+	<tactic>AutoScout<action>Move</action>
+		<speedmodifier>1.0</speedmodifier>
+		<attacktype>LogicalTypeHandUnitsAttack</attacktype>
+		<autoattacktype>LogicalTypeHandUnitsAutoAttack</autoattacktype>
+		<attackresponsetype>LogicalTypeHandUnitsAttack</attackresponsetype>
+		<runaway>1</runaway>
+		<autoretarget>1</autoretarget>
+		<idleanim>Idle</idleanim>
+		<walkanim>Walk</walkanim>
+	</tactic>
+	<tactic>Normal<action>Move</action>
+		<speedmodifier>1.0</speedmodifier>
+		<attacktype>LogicalTypeHandUnitsAttack</attacktype>
+		<autoattacktype>LogicalTypeHandUnitsAutoAttack</autoattacktype>
+		<attackresponsetype>LogicalTypeHandUnitsAttack</attackresponsetype>
+		<runaway>1</runaway>
+		<autoretarget>1</autoretarget>
+		<idleanim>Idle</idleanim>
+		<walkanim>Walk</walkanim>
+	</tactic>
+</tactics>

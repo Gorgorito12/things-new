@@ -942,6 +942,7 @@ transformInventory [all] [scale] [<UnitType>] [log]
 |---|---|---|---|---|
 | [`noCorpseDopples`](#nocorpsedopples) | A dead unit of a marked type (a hunt's carcass) leaves no frozen copy in the fog of war. Live units are still remembered. | **new** | Nothing: WoL's hunts are `Doppled`; `noCorpseDopples Huntable` covers them. | confirmed (single player) |
 | [`steadyHitpointBars`](#steadyhitpointbars) | The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | **new** | Nothing. | confirmed (single player, UI) |
+| [`multiplierDecimals`](#multiplierdecimals) | The attack rows' bonus multipliers show two decimals, as the data has them: `1.25x` instead of a rounded `1.3x`, in both panels and their tooltips. | **new** (WoL's DLL writes the same digit) | Nothing. | confirmed (single player, UI) |
 | [`politicianPlacesFix`](#politicianplacesfix) | The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | **new** | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. | confirmed (single player, UI) |
 
 #### noCorpseDopples
@@ -1122,6 +1123,44 @@ back each time the horse picks another idle, about every 2 s. [Full video (MP4)]
   data, 10 jumps of 12 to 14 px in the first 10 s, while the Hussars stand (their idles changing); with the fixed files,
   none while they stand, and in the fight only bars of units on the move. The files were removed after the test.
   Not tested: the whole scan's 214 files at once, TAD's own cavalry, a unit whose animations have no tag file.
+
+#### multiplierDecimals
+
+*The attack multipliers show the data's value, such as "1.25x" against line units, instead of the rounded "1.3x".*
+
+**Added:** Thursday 2026-11-19 13:57
+
+![multiplierDecimals: the Escopetero's rows](media/multiplierDecimals-escopetero.jpg)
+
+*In WoL, with our `UHC.dll` (Ethiopians, an Escopetero selected, the minimized panel without `minUIStats`):* top,
+key off: `1.3x` against Line units and `0.8x` against Scout units (the tooltip says the same); middle,
+`multiplierDecimals`: `1.50x`, `1.25x` and `0.75x`; bottom, its tooltip `1.25X Bonus Damage against (Line Unit)`.
+
+```
+multiplierDecimals [N]      N decimals, 0 to 3; default 2
+```
+
+- **The bug (JTMaston, 2026-11-19):** both panels write a multiplier that is not whole with the format `, %.1fx %s`
+  (0xBA2060), one decimal, so the Escopetero's `<DamageBonus type="AbstractHeavyInfantry">1.25` shows as `1.3x` and
+  `0.75` as `0.8x`; whole ones use `, %dx %s` (`2x`). The tooltip line of each multiplier is string 42229
+  (`%1.1fX Bonus Damage against %2s (%3s)`), one decimal too.
+- **WoL today:** WoL's own `uhc.dll` writes `2` over that format's digit (0xBA2068), so with it the rows read `1.25x`
+  (and `1.50x`); with our `UHC.dll` in its place the digit was not written, hence `1.3x`. Its tooltips keep one decimal
+  (`1.3X`). (`docs/wol-uhc-map.md` called that patch a playback-speed display: it is this format.)
+- **What the key does:** writes N over the digit, after checking the whole string; and the two calls that load
+  string 42229 for the tooltip lines (0x4D7FBB, 0x699E9A) load it through the DLL, which changes its `%1.1f` to
+  `%1.Nf` in the copy (the string table is not changed; a table without `%1.1f` is left alone). Every place that
+  uses the format: the stat panel's attack rows (push at 0x4D7F7D) and the minimized panel's (0x699E1F); nothing
+  else pushes it. The other `%.1fx` of the exe (0xBF1AD0: `Bonus Damage: 2.0x` in the special attacks' and abilities'
+  rollovers, 0x69BC28, 0x6EEC97) is not changed.
+- **Beside WoL's DLL** (our `dinput8.dll`): the format already holds `2`, so the key logs `the multiplier format at
+  0x00BA2060 already has 2 decimals; not written` and counts as applied; it still makes the tooltips agree.
+- **With `minUIStats`:** its rows drop the zeros that end the decimals (`1.50x` is `1.5x`, `2.00x` would be `2x`;
+  `multiplierZeros="keep"` on `<bigPanelRows>` keeps them), so the long rows do not grow.
+- **Multiplayer:** display only.
+- **Tested in WoL (2026-11-19):** our `UHC.dll` alone, key on and off (pictures above), with `minUIStats`, with every
+  key of the template (119 applied, 0 failed), in Spanish (`1.25X de daño adicional contra`, the ES-LA table has the
+  same `%1.1f`), and beside WoL's DLL (`already has 2 decimals`).
 
 #### politicianPlacesFix
 

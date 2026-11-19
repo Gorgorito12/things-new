@@ -13,8 +13,11 @@ Contents:
 - [noCorpseDopples](#nocorpsedopples)
 - [steadyHitpointBars](#steadyhitpointbars)
 - [inventoryBars](#inventorybars)
+- [multiplierDecimals](#multiplierdecimals)
+- [attackTypeIcons](#attacktypeicons)
 - [minUIStats](#minuistats)
 - [playerIcon](#playericon)
+- [autoScout](#autoscout)
 
 ## abilitySlots
 
@@ -2016,6 +2019,348 @@ UhcInventoryCorpseHook ENDP
 END
 ```
 
+## multiplierDecimals
+
+Contract: [multiplierDecimals](../porting-to-another-dll.md#multiplierdecimals).
+
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `BStringLoadId` `0x447719` (19 B), `MultiplierTipStat` `0x4D7FB6` (10 B), `MultiplierTipMin` `0x699E95` (10 B), `MultiplierFormat` `0xBA2060` (22 B).
+
+### src/features/multiplierdecimals.cpp
+
+```cpp
+// multiplierDecimals: the decimals of the bonus multipliers in the attack rows of both selection panels.
+//
+//   multiplierDecimals [N]   (N 0..3, default 2)
+//
+// A multiplier that is not whole is written with the wide format ", %.1fx %s" at 0xBA2060 (.rdata) by the stat panel
+// fill (0x4D7F7D) and by the minimized block's attack rows (0x699E1F), so a DamageBonus of 1.25 shows as "1.3x" and
+// 0.75 as "0.8x". The key writes N over the format's digit (0xBA2068): "1.25x" with N = 2. Whole multipliers keep
+// their own format ", %dx %s" (0xC364A8): "2x".
+// Each multiplier's rollover line is string 42229, "%1.1fX Bonus Damage against %2s (%3s)" in the English table,
+// loaded at 0x4D7FBB (fill) and 0x699E9A (minimized block) through 0x447719; those two calls go to a loader that
+// gives the string's "%1.1f" the same N, so the help text says "1.25X" as the row does. A table whose string has
+// no "%1.1f" is left as it is.
+// The other "%.1fx" of the exe (0xBF1AD0: "Bonus Damage: %s" in the special attacks' and abilities' rollovers,
+// 0x69BC28 and 0x6EEC97) is not changed.
+// Beside another DLL that already wrote the same digit, the key logs it and writes nothing there.
+#include <cstdint>
+#include <cstring>
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+namespace {
+
+struct BString {
+  wchar_t* text;
+};
+
+using BStringLoadIdFn = BString*(__thiscall*)(BString* self, std::int32_t id);
+using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
+using BStringSetFn = void(__thiscall*)(BString* self, const BString* source);
+using BStringFreeFn = void(__thiscall*)(BString* self);
+const auto kBStringLoadId = reinterpret_cast<BStringLoadIdFn>(0x00447719);
+const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
+const auto kBStringSet = reinterpret_cast<BStringSetFn>(0x0040196F);
+const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+
+constexpr std::uint32_t kDigitOffset = 8;  // the '1' of ", %.1fx %s" (UTF-16)
+wchar_t g_digit = L'2';
+bool g_tipLogged = false;
+
+// The redirected calls are thiscall (ECX = the BString, the string ID on the stack, popped by the callee); __fastcall
+// with an unused EDX has the same frame.
+BString* __fastcall LoadMultiplierTip(BString* self, void* /*edx*/, std::int32_t id) {
+  BString* result = kBStringLoadId(self, id);
+  if (self == nullptr || self->text == nullptr) {
+    return result;
+  }
+  std::wstring text = self->text;
+  const size_t at = text.find(L"%1.1f");
+  if (at == std::wstring::npos || text[at + 3] == g_digit) {
+    return result;
+  }
+  text[at + 3] = g_digit;
+  BString copy{nullptr};
+  kBStringFromWide(&copy, text.c_str());
+  kBStringSet(self, &copy);
+  kBStringFree(&copy);
+  if (!g_tipLogged) {
+    g_tipLogged = true;
+    uhc::Log(L"multiplierDecimals: rollover string %d written with %%1.%lcf", id, g_digit);
+  }
+  return result;
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyMultiplierDecimals(const Config& config) {
+  const Config::Args* args = config.First("multiplierDecimals");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  int decimals = 2;
+  if (args->size() > 1 || (args->size() == 1 && ((*args)[0].size() != 1 || (*args)[0][0] < '0' ||
+                                                  (*args)[0][0] > '3'))) {
+    Log(L"multiplierDecimals: expected at most one argument, the decimals 0..3; feature not applied");
+    return Outcome::kFailed;
+  }
+  if (args->size() == 1) {
+    decimals = (*args)[0][0] - '0';
+  }
+  g_digit = static_cast<wchar_t>(L'0' + decimals);
+  // The format: stock, or already this digit (another DLL wrote it); anything else is someone else's format.
+  const Site& format = sites::kMultiplierFormat;
+  const auto* live = reinterpret_cast<const std::uint8_t*>(static_cast<std::uintptr_t>(format.va));
+  bool othersMatch = true;
+  for (std::uint32_t i = 0; i < format.size; ++i) {
+    if (i != kDigitOffset && live[i] != format.bytes[i]) {
+      othersMatch = false;
+    }
+  }
+  const wchar_t liveDigit = static_cast<wchar_t>(live[kDigitOffset] | (live[kDigitOffset + 1] << 8));
+  bool wrote = false;
+  if (othersMatch && liveDigit == g_digit) {
+    Log(L"multiplierDecimals: the multiplier format at 0x%08X already has %d decimals; not written", format.va,
+        decimals);
+  } else if (Matches(format)) {
+    const std::uint8_t digit[2] = {static_cast<std::uint8_t>(g_digit), 0};
+    if (!WriteBytes(format.va + kDigitOffset, digit, sizeof(digit))) {
+      return Outcome::kFailed;
+    }
+    wrote = true;
+  } else {
+    Log(L"multiplierDecimals: site %hs at 0x%08X does not hold the stock bytes (nor %d decimals); feature not "
+        L"applied",
+        format.name, format.va, decimals);
+    return Outcome::kFailed;
+  }
+  // The rollover lines: only while both calls and the loader are stock; otherwise they keep their own text.
+  const bool tips = Matches(sites::kMultiplierTipStat) && Matches(sites::kMultiplierTipMin) &&
+                    Matches(sites::kBStringLoadId) && Matches(sites::kBStringFromWide) &&
+                    Matches(sites::kBStringSet) && Matches(sites::kBStringFree);
+  if (tips && (!WriteCall(sites::kMultiplierTipStat.va + 5, reinterpret_cast<const void*>(&LoadMultiplierTip)) ||
+               !WriteCall(sites::kMultiplierTipMin.va + 5, reinterpret_cast<const void*>(&LoadMultiplierTip)))) {
+    return Outcome::kFailed;
+  }
+  Log(L"multiplierDecimals: bonus multipliers with %d decimals (%ls)%ls", decimals,
+      wrote ? L"format written" : L"format as another DLL left it",
+      tips ? L", their rollover lines too" : L"; the rollover calls are not stock, their lines left as they are");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+## attackTypeIcons
+
+Contract: [attackTypeIcons](../porting-to-another-dll.md#attacktypeicons).
+
+Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `BStringFormat` `0x444EFB` (20 B), `TypeIconStatFound` `0x4D7F44` (9 B), `TypeIconMinChain` `0x699D31` (7 B), `TypeIconMinFound` `0x699DE6` (9 B), `TypeIconStatChain` `0x69B909` (7 B).
+
+### src/features/attacktypeicons.cpp
+
+```cpp
+// attackTypeIcons: a bonus multiplier against an abstract type the panels have no icon for shows in the attack rows.
+//
+//   attackTypeIcons <UnitType> <StringID> <IconPath> [<UnitType> <StringID> <IconPath> ...]
+//
+// The attack rows list a DamageBonus only when its type is one of the stock chain's types with an icon (the stat
+// panel fill 0x4D7E86.. and its cold part, the minimized block 0x699A95..); any other type is skipped, so an
+// Escopetero's "1.5x against AbstractRangedCavalry" is not shown at all. With the key, a listed type gets its row
+// part as the stock types do: ", 1.50x <icon>" with the icon at IconPath (a texture path, as ui\ingame\stat_icon_cavalry),
+// and the rollover line "1.50X Bonus Damage against <StringID's text> (<icon>)".
+// Hooks (hooks/attacktypeicons_hooks.asm) at the chain's test of type +11h, after every stock type but +11h and +54h:
+// 0x69B909 (fill, icons "(16)") and 0x699D31 (minimized block, "(10)"). A listed type there writes the icon into the
+// row's icon BString through the BString format 0x444EFB and joins the stock path with its string ID (0x4D7F44,
+// 0x699DE6); any other type re-executes the test and goes on.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+
+extern "C" {
+void UhcTypeIconStatHook();  // hooks/attacktypeicons_hooks.asm
+void UhcTypeIconMinHook();
+}
+
+namespace {
+
+struct BString {
+  wchar_t* text;
+};
+
+using BStringFormatFn = void(__cdecl*)(BString* out, const wchar_t* format, ...);
+const auto kBStringFormat = reinterpret_cast<BStringFormatFn>(0x00444EFB);
+
+struct TypeIcon {
+  std::string name;
+  std::int32_t stringId = -1;
+  std::wstring path;
+  std::int32_t id = -1;  // the unittype ID, set on each database load (unittypes.h)
+};
+
+std::vector<TypeIcon>* g_icons = nullptr;  // never freed: read by the hooks until the process ends
+bool g_logged = false;
+
+}  // namespace
+
+extern "C" {
+
+// From the hooks: the icon of `type` into `out` at `size` and its string ID, or -1 for a type the key does not list.
+std::int32_t __stdcall UhcAttackTypeIcon(std::int32_t type, BString* out, std::int32_t size) {
+  if (g_icons == nullptr || out == nullptr) {
+    return -1;
+  }
+  for (const TypeIcon& icon : *g_icons) {
+    if (icon.id >= 0 && icon.id == type) {
+      kBStringFormat(out, L"<icon=\"(%d)(%s)\">", size, icon.path.c_str());
+      if (!g_logged) {
+        g_logged = true;
+        uhc::Log(L"attackTypeIcons: first multiplier against %hs shown", icon.name.c_str());
+      }
+      return icon.stringId;
+    }
+  }
+  return -1;
+}
+
+}  // extern "C"
+
+namespace uhc {
+
+Outcome ApplyAttackTypeIcons(const Config& config) {
+  const Config::Args* args = config.First("attackTypeIcons");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (args->empty() || args->size() % 3 != 0) {
+    Log(L"attackTypeIcons: expected triples <UnitType> <StringID> <IconPath>, got %zu values; feature not applied",
+        args->size());
+    return Outcome::kFailed;
+  }
+  auto* icons = new std::vector<TypeIcon>();
+  for (size_t i = 0; i + 2 < args->size(); i += 3) {
+    char* end = nullptr;
+    const long id = std::strtol((*args)[i + 1].c_str(), &end, 10);
+    if (end == (*args)[i + 1].c_str() || *end != '\0' || id < 0) {
+      Log(L"attackTypeIcons: %hs: string ID %hs is not a number; feature not applied", (*args)[i].c_str(),
+          (*args)[i + 1].c_str());
+      delete icons;
+      return Outcome::kFailed;
+    }
+    const std::string& path = (*args)[i + 2];
+    icons->push_back({(*args)[i], static_cast<std::int32_t>(id), std::wstring(path.begin(), path.end())});
+  }
+  if (!VerifyAll("attackTypeIcons", {&sites::kTypeIconStatChain, &sites::kTypeIconStatFound, &sites::kTypeIconMinChain,
+                                     &sites::kTypeIconMinFound, &sites::kBStringFormat})) {
+    delete icons;
+    return Outcome::kFailed;
+  }
+  for (TypeIcon& icon : *icons) {
+    if (!RequestAbstractUnitType(icon.name.c_str(), &icon.id)) {
+      delete icons;
+      return Outcome::kFailed;
+    }
+  }
+  g_icons = icons;  // the vector does not move again: the IDs above are written into it on each database load
+  if (!WriteJmp(sites::kTypeIconStatChain.va, reinterpret_cast<const void*>(&UhcTypeIconStatHook), 5) ||
+      !WriteJmp(sites::kTypeIconMinChain.va, reinterpret_cast<const void*>(&UhcTypeIconMinHook), 5)) {
+    return Outcome::kFailed;
+  }
+  Log(L"attackTypeIcons: %zu unit types get an icon in the attack rows' bonus multipliers", icons->size());
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/attacktypeicons_hooks.asm
+
+```asm
+; attackTypeIcons (features/attacktypeicons.cpp): the bonus multipliers' type chain of the two selection panels.
+; Entered through a jmp written over lea edx,[eax+11h] / cmp esi,edx; leaves through an explicit jmp to the stock
+; jne that follows (an unlisted type, the two instructions re-executed) or to the stock path of a type with an icon.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcAttackTypeIcon PROTO STDCALL unitType:DWORD, iconText:DWORD, iconSize:DWORD
+
+.data
+typeIconId      dd -1           ; the listed type's string ID, or -1
+statFound       dd 004D7F44h    ; lea ecx,[esp+40h] / call 447719h: the fill's path of a type with an icon
+statNext        dd 0069B90Eh    ; jne 69B939h: the fill's next type test
+minFound        dd 00699DE6h    ; lea ecx,[esp+44h] / call 447719h: the minimized block's path
+minNext         dd 00699D36h    ; jne 699D65h: the minimized block's next type test
+
+.code
+
+; Replaces 0x69B909..0x69B90D in the stat panel fill's cold part. ESI = the bonus's unittype, EAX = the proto count
+; [db+19B0h], ECX = the game; the row's icon BString is [esp+28h] (a stock branch pushes the texture, then formats
+; into [esp+2Ch]). A listed type: the icon goes there, its string ID is pushed and the stock path joined, as the
+; stock branches do (they leave EAX, ECX and EDX dead there). Otherwise every register is as it was and the test is
+; re-executed.
+UhcTypeIconStatHook PROC
+    TRACE_ONCE "attackTypeIcons stat panel (0x69B909)"
+    pushad
+    push 16
+    lea edx, [esp+4+20h+28h]            ; the icon BString, past pushad and the push above
+    push edx
+    push esi
+    call UhcAttackTypeIcon
+    mov typeIconId, eax
+    popad
+    cmp typeIconId, -1
+    je statStock
+    push typeIconId
+    jmp statFound
+statStock:
+    lea edx, [eax+11h]
+    cmp esi, edx
+    jmp statNext
+UhcTypeIconStatHook ENDP
+
+; Replaces 0x699D31..0x699D35 in the minimized block's attack rows: the same registers; the icon BString is
+; [esp+24h] (a stock branch pushes the texture, then formats into [esp+28h]).
+UhcTypeIconMinHook PROC
+    TRACE_ONCE "attackTypeIcons minimized panel (0x699D31)"
+    pushad
+    push 10
+    lea edx, [esp+4+20h+24h]
+    push edx
+    push esi
+    call UhcAttackTypeIcon
+    mov typeIconId, eax
+    popad
+    cmp typeIconId, -1
+    je minStock
+    push typeIconId
+    jmp minFound
+minStock:
+    lea edx, [eax+11h]
+    cmp esi, edx
+    jmp minNext
+UhcTypeIconMinHook ENDP
+
+END
+```
+
 ## minUIStats
 
 Contract: [minUIStats](../porting-to-another-dll.md#minuistats).
@@ -2039,9 +2384,11 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 //   With stockRows="take" the original attack rows (StackLabel0..2) are written from the same list, so that every
 //   attack row gets rofIcon="..." (the action's ROF and that icon after its damage) and the ability attacks the unit
 //   cannot use are left out (ActionEnabled; abilities="all" keeps them). With projectilesIcon="...", an attack that
-//   fires more than one projectile before its reload gets shots x projectiles and that icon after its ROF, as combat
-//   fires them (numberOfShots, its "projectiles" option: unitinfo.h, Shots); projectiles="data" shows the tags as
-//   written instead, a modder's view.
+//   fires more than one projectile before its reload gets shots x projectiles and that icon after its ROF: the
+//   tags as the data writes them (<NumberOfShots>, <NumberProjectiles>: unitinfo.h, Shots), or with
+//   projectiles="combat" as combat fires them (numberOfShots and its "projectiles" option). The multipliers lose the
+//   zeros that end their decimals ("1.50x" is "1.5x"; multiplierZeros="keep" keeps them), and each attack row's help
+//   text gets a line for its ROF and one for its projectiles (rofTip, projectilesTip) after the game's own lines.
 // - "[string:ID]" in a text, label or tip: that string of the game's string table, as the player's language has it
 //   (resolved when shown: "[string:68852]" is "Hitpoints" in the English table).
 // - <replace row="..." stock="a,b"/>: while that row shows, those original gadgets are hidden (the hit points and
@@ -2554,9 +2901,11 @@ bool ItemArea(const char* unit, std::wstring* out) {
   });
 }
 
-// The projectiles an attack fires before its reload, as combat fires them: <NumberOfShots> x <NumberProjectiles> while
-// numberOfShots (and its "projectiles" option) uses them; 1 otherwise. With projectiles="data", the tags as written.
-bool g_projectilesData = false;
+// The projectiles an attack fires before its reload: <NumberOfShots> x <NumberProjectiles> (or <NumberOfProjectiles>)
+// as the data writes them, with or without numberOfShots (the default, projectiles="data"). With
+// projectiles="combat", as combat fires them: the shots while numberOfShots is on, the projectiles only with its
+// "projectiles" option; 1 otherwise (no game code but that key reads the tags).
+bool g_projectilesData = true;
 
 int ProjectilesPerReload(const char* unit, const char* action) {
   int shots = 1;
@@ -3168,6 +3517,11 @@ struct BigPanel {
   bool takeStock = false;  // stockRows="take": the original attack rows (StackLabel0..2) are written by the key too
   std::wstring rofIcon;    // rofIcon="...": each attack row gets its ROF and this icon after its damage
   std::wstring projectilesIcon;  // projectilesIcon="...": shots x projectiles before the reload, when above 1
+  bool trimZeros = true;   // multiplierZeros="keep" turns it off: "1.50x" written as "1.5x", "2.00x" as "2x"
+  // The attack rows' help text gets a line for the ROF and one for the projectiles ("%s": the number), each with
+  // its icon, after the stock lines (damage, range and area, one per multiplier).
+  std::wstring rofTip = L"Attacks every %s s";
+  std::wstring projectilesTip = L"%s projectiles before the reload";
 };
 
 std::vector<Row> g_rows;
@@ -3542,10 +3896,30 @@ bool LoadRows(const std::string& arg) {
         g_big.projectilesIcon = Wide(Trim(*projectiles));
       }
       if (const std::string* from = Attr(element, "projectiles")) {
-        g_projectilesData = _stricmp(Trim(*from).c_str(), "data") == 0;
-        if (!g_projectilesData && _stricmp(Trim(*from).c_str(), "combat") != 0) {
-          uhc::Log(L"minUIStats: %ls: projectiles=\"%hs\" is not combat or data; combat used", g_file.c_str(),
+        g_projectilesData = _stricmp(Trim(*from).c_str(), "combat") != 0;
+        if (g_projectilesData && _stricmp(Trim(*from).c_str(), "data") != 0) {
+          uhc::Log(L"minUIStats: %ls: projectiles=\"%hs\" is not data or combat; data used", g_file.c_str(),
                    from->c_str());
+        }
+      }
+      if (const std::string* zeros = Attr(element, "multiplierzeros")) {
+        g_big.trimZeros = _stricmp(Trim(*zeros).c_str(), "keep") != 0;
+        if (g_big.trimZeros && _stricmp(Trim(*zeros).c_str(), "drop") != 0) {
+          uhc::Log(L"minUIStats: %ls: multiplierZeros=\"%hs\" is not drop or keep; drop used", g_file.c_str(),
+                   zeros->c_str());
+        }
+      }
+      for (const auto& [name, field] : {std::pair<const char*, std::wstring*>{"roftip", &g_big.rofTip},
+                                        {"projectilestip", &g_big.projectilesTip}}) {
+        if (const std::string* tip = Attr(element, name)) {
+          const std::wstring wide = Wide(*tip);
+          const size_t at = wide.find(L"%s");
+          if (!wide.empty() && (at == std::wstring::npos || wide.find(L'%', at + 2) != std::wstring::npos)) {
+            uhc::Log(L"minUIStats: %ls: %hs=\"%hs\" needs one %%s (the number) and no other %%; the default used",
+                     g_file.c_str(), name, tip->c_str());
+          } else {
+            *field = wide;  // empty: no such line
+          }
         }
       }
       if (const std::string* abilities = Attr(element, "abilities")) {
@@ -3827,8 +4201,10 @@ bool GadgetBox(std::int32_t handle, Box* out) {
 
 // About how wide one character of the panel's text font is, in pixels: the font follows the screen's height, not the
 // gadget's (measured at 1920 x 1080: 38 characters and two icons, an icon counting as two, in 210 px, 4.9 px each).
+// Below 1080 lines it does not shrink with it: at 1024 x 768 an attack row is as wide in pixels as at 1920 x 1080
+// (an Escopetero's ranged row, 61 characters in 314 px, 5.1 px each).
 float CharPixels(const Box& box) {
-  return box.screenHeight > 0.0f ? 0.00452f * box.screenHeight : 0.217f * 23.0f;
+  return box.screenHeight > 0.0f ? 0.00452f * (std::max)(box.screenHeight, 1080.0f) : 0.217f * 23.0f;
 }
 
 // Shown, as the base show (0x447BBC) tests it before doing nothing: flag bits 0 and 1 of [gadget+0A4h] set, bit 7
@@ -4186,12 +4562,57 @@ std::wstring NormaliseIcons(const std::wstring& text) {
   return out;
 }
 
+// The multipliers of a text without the zeros that end their decimals: "1.50x" is "1.5x", "2.00x" is "2x", "1.25x"
+// stays (a number with a decimal point right before an x or X that ends a word, as the rows' ", %.2fx <icon>" and the
+// help text's "%1.2fX Bonus Damage" write them).
+std::wstring TrimMultipliers(const std::wstring& text) {
+  std::wstring out;
+  out.reserve(text.size());
+  for (size_t i = 0; i < text.size(); ++i) {
+    const wchar_t c = text[i];
+    const bool endsWord = i + 1 == text.size() || text[i + 1] == L' ' || text[i + 1] == L'<';
+    if ((c == L'x' || c == L'X') && endsWord && !out.empty() && iswdigit(out.back())) {
+      size_t digits = out.size();
+      while (digits > 0 && iswdigit(out[digits - 1])) {
+        --digits;
+      }
+      if (digits >= 2 && out[digits - 1] == L'.' && iswdigit(out[digits - 2])) {
+        size_t end = out.size();
+        while (end > digits && out[end - 1] == L'0') {
+          --end;
+        }
+        out.erase(end == digits ? digits - 1 : end);
+      }
+    }
+    out += c;
+  }
+  return out;
+}
+
+// One help text line of the key: `format` with the number for its %s, then " (<icon>)" as the game's own lines end.
+std::wstring TipLine(const std::wstring& format, const std::wstring& number, const std::wstring& icon) {
+  const size_t at = format.find(L"%s");
+  if (format.empty() || at == std::wstring::npos) {
+    return L"";
+  }
+  std::wstring line = ExpandStrings(format.substr(0, at) + number + format.substr(at + 2));
+  if (!icon.empty()) {
+    line += L" (<icon=\"(16)(" + icon + L")\">)";
+  }
+  return line;
+}
+
+// What starts each bulleted line of a help text the fill builds: 0x4C5076(text, line, 1, 0) puts "<ttf><ttb>" before
+// the line (0x4C50B0); with its fourth argument 1, "<ttf><ttr>" (0x4C8F35), a red line; with both 0, "<ttf><tti>".
+const std::wstring kTipLine = L"<ttf><ttb>";
+
 // The attack rows of the fill (and the ones AddOverflowAttacks added), matched in order with the attack list they
 // come from (0x487EEE, every listed action, as the fill writes one row per action): a row of an ability action the
 // unit cannot use is dropped (ActionEnabled), the others get the minimized panel's icon size and, with rofIcon,
 // the action's ROF after the damage: "Ranged ATK:  23 <ranged> 3 <rof> 12 <range>, 3x <cavalry>", and with
-// projectilesIcon the projectiles it fires before its reload after that, when above 1 ("4 <cylinder>"). The row's
-// label must be the action's name; at the first that is not, the matching stops (rows left as written).
+// projectilesIcon the projectiles it fires before its reload after that, when above 1 ("4 <cylinder>"); their help
+// text gets the same two numbers as lines of their own. The row's label must be the action's name; at the first
+// that is not, the matching stops (rows left as written, less the multipliers' zeros).
 void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
   const std::vector<const char*> actions = Attacks(unit, true, false);
   size_t next = 0;
@@ -4201,6 +4622,10 @@ void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
     }
     StatRow& row = g_stat[i];
     row.value = NormaliseIcons(row.value);
+    if (g_big.trimZeros) {
+      row.value = TrimMultipliers(row.value);
+      row.tip = TrimMultipliers(row.tip);
+    }
     const std::wstring shown = StripMarkup(row.label);
     if (shown.find_first_not_of(L" :") == std::wstring::npos) {
       (*kinds)[i] = kDropped;  // nothing to read: a blank line in the panel
@@ -4225,10 +4650,13 @@ void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
     wchar_t size[16];
     swprintf_s(size, L"(%d)", kIconSize);
     size_t at = icon + 2;  // after the damage and its icon
+    std::wstring tipLines;
     if (!g_big.rofIcon.empty() && rof > 0.0f) {
       const std::wstring text = L" " + Number(rof) + L" <icon=\"" + size + L"(" + g_big.rofIcon + L")\">";
       row.value.insert(at, text);
       at += text.size();
+      const std::wstring line = TipLine(g_big.rofTip, Number(rof), g_big.rofIcon);
+      tipLines += line.empty() ? L"" : kTipLine + line;
     }
     const int projectiles = g_big.projectilesIcon.empty() ? 1 : ProjectilesPerReload(unit, action);
     if (projectiles > 1) {
@@ -4236,8 +4664,21 @@ void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
           L" " + std::to_wstring(projectiles) + L" <icon=\"" + size + L"(" + g_big.projectilesIcon + L")\">";
       row.value.insert(at, text);
       at += text.size();
+      const std::wstring line = TipLine(g_big.projectilesTip, std::to_wstring(projectiles), g_big.projectilesIcon);
+      tipLines += line.empty() ? L"" : kTipLine + line;
     }
     row.compactEnd = at;
+    if (!tipLines.empty()) {
+      // After the game's first bulleted line (the damage), as the numbers follow the damage in the row; at the end
+      // when the help text has no such line.
+      const size_t first = row.tip.find(kTipLine);
+      const size_t next = first == std::wstring::npos ? first : row.tip.find(L"<ttf>", first + kTipLine.size());
+      if (next == std::wstring::npos) {
+        row.tip += tipLines;
+      } else {
+        row.tip.insert(next, tipLines);
+      }
+    }
   }
 }
 
@@ -4322,6 +4763,52 @@ void ApplyStockLabels(const char* unit) {
       WriteLabel(g_panel.labels[i], ExpandStrings(g_labels[i].text), ExpandStrings(tip));
     }
   }
+}
+
+// An original attack row (its gadget spans the panel to its right edge) too long for its line: the multipliers at its
+// end go, last first, until it fits, and " (+N)" says how many; the help text lists them all. At 1920 x 1080 every
+// row tested fits; at 1024 x 768 the font is relatively wider and an Escopetero's three multipliers reach the edge.
+std::wstring FitMultipliers(const std::wstring& text, const Gadget& gadget) {
+  Box box;
+  if (!GadgetBox(gadget.handle, &box) || box.right <= box.left) {
+    return text;
+  }
+  const size_t budget = static_cast<size_t>(static_cast<float>(box.right - box.left) / CharPixels(box));
+  if (VisibleLength(text) <= budget) {
+    return text;
+  }
+  // Where each multiplier begins: ", " then a digit, up to an x right after a digit (", 1.25x <icon>").
+  std::vector<size_t> starts;
+  for (size_t at = text.find(L", "); at != std::wstring::npos; at = text.find(L", ", at + 1)) {
+    size_t i = at + 2;
+    if (i >= text.size() || !iswdigit(text[i])) {
+      continue;
+    }
+    while (i < text.size() && (iswdigit(text[i]) || text[i] == L'.')) {
+      ++i;
+    }
+    if (i < text.size() && (text[i] == L'x' || text[i] == L'X')) {
+      starts.push_back(at);
+    }
+  }
+  for (size_t dropped = 1; dropped <= starts.size(); ++dropped) {
+    const std::wstring shorter = text.substr(0, starts[starts.size() - dropped]) + L" (+" +
+                                 std::to_wstring(dropped) + L")";
+    if (VisibleLength(shorter) <= budget || dropped == starts.size()) {
+      return shorter;
+    }
+  }
+  return text;
+}
+
+// The help text of a row shown in short form: the game's own help text of the row (an attack's damage, range, area
+// and multipliers, worded, with the key's ROF and projectiles lines), or the whole row as text when it has none.
+// `first`: the help text starts with it (otherwise a plain row goes on a line of its own).
+std::wstring FullTip(const StatRow& row, bool first) {
+  if (!row.tip.empty()) {
+    return row.tip;
+  }
+  return (first ? L"" : L"\n") + StripMarkup(row.label + L" " + row.value);
 }
 
 void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, const Blockers& blockers,
@@ -4468,7 +4955,7 @@ void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, c
         }
       }
       for (size_t r = n; r < rows.size(); ++r) {
-        tip += (tip.empty() ? L"" : L"\n") + StripMarkup(rows[r]->label + L" " + rows[r]->value);
+        tip += FullTip(*rows[r], tip.empty());
       }
       write(free[n], text, style, tip);
       continue;
@@ -4482,8 +4969,11 @@ void FillBigRows(const char* selection, const char* unit, bool minimizedBlock, c
       // in the help text, rather than a row cut at the panel's edge.
       const std::wstring longer = Compact(row, true);
       write(free[n], VisibleLength(longer) <= LineBudget(*free[n].gadget) ? longer : Compact(row), style,
-            StripMarkup(row.label + L" " + row.value));
+            FullTip(row, true));
       continue;
+    }
+    if (free[n].stock >= 0 && row.labelStyle == kAttackStyle) {
+      text = FitMultipliers(text, *free[n].gadget);
     }
     write(free[n], text, style, row.tip);
   }
@@ -4720,9 +5210,10 @@ Outcome ApplyMinUiStats(const Config& config) {
     Log(L"minUIStats: another DLL changed the resists armor test (0x698BFC); building armor not shown, unit armor as "
         L"that DLL writes it (the armor items answer nothing)");
   }
-  // The projectiles per reload (projectilesIcon, the projectiles item) are what numberOfShots fires, so its own reader
-  // is enough; the data view registers the reader itself, with no effect on combat. Another DLL on the shared action
-  // tag site only leaves the number out.
+  // The projectiles per reload (projectilesIcon, the projectiles item): as the data writes them (the default), the key
+  // registers the tag reader itself, with no effect on combat; as combat fires them (projectiles="combat"), they are
+  // what numberOfShots fires, so its own reader is enough. Another DLL on the shared action tag site only leaves the
+  // number out.
   const bool shotTags = !g_projectilesData || uhc::unitinfo::RequestShotTags();
   if (!shotTags) {
     Log(L"minUIStats: the action tags cannot be read; projectiles per reload not shown");
@@ -4757,9 +5248,12 @@ Outcome ApplyMinUiStats(const Config& config) {
       g_big.rofIcon.empty() ? L"no ROF" : L"ROF after the damage",
       g_big.projectilesIcon.empty() ? L"no projectiles"
       : !shotTags                   ? L"no projectiles (tags not read)"
-      : g_projectilesData           ? L"projectiles per reload after it (the tags as written: data view)"
+      : g_projectilesData           ? L"projectiles per reload after it (the tags as the data writes them)"
                                     : L"projectiles per reload after it (as numberOfShots fires them)",
       g_filterAbilities && g_abilityReads ? L"only when enabled" : L"all");
+  Log(L"minUIStats: multipliers %ls; help text lines for ROF %ls and projectiles %ls",
+      g_big.trimZeros ? L"without their trailing zeros" : L"as written", g_big.rofTip.empty() ? L"off" : L"on",
+      g_big.projectilesTip.empty() ? L"off" : L"on");
   (void)&OnDatabase;
   return Outcome::kApplied;
 }
@@ -5009,6 +5503,826 @@ UhcPlayerIconHook PROC
     popfd
     ret
 UhcPlayerIconHook ENDP
+
+END
+```
+
+## autoScout
+
+Contract: [autoScout](../porting-to-another-dll.md#autoscout).
+
+Besides the core helpers, it needs: [`worldtick.h`](helpers.md#world-tick).
+
+Sites: `UnitById` `0x44CC6D` (58 B), `AutoScoutIdle` `0x44F1A7` (8 B), `AutoScoutSetTactic` `0x4F7ECD` (10 B), `AutoScoutDoMove` `0x50E36A` (10 B), `AutoScoutCmdExecute` `0x7C8E49` (10 B), `AutoScoutTacticIndex` `0x948161` (8 B).
+
+### src/features/autoscout.cpp
+
+```cpp
+// autoScout [ScoutTactic [ReturnTactic]] [log]: a unit whose current tactic is ScoutTactic (default "AutoScout")
+// explores the map on its own.
+//
+// The data decides who scouts: a unit gets the behaviour from a tactic of that name in its tactics file, and
+// buttons that set it (unitSetTactic, a command every machine runs and saved games keep). A unit whose first
+// tactic is the scouting one scouts from birth.
+//
+// After each world update (the shared wrapper of worldtick.cpp), every 500 ms of game time:
+// - every unit of every player (the player's unit list [player+F8h], walked in ID order) whose current tactic
+//   [[[proto+44h]+10h][[mgr+A8h]]+8] is the scouting tactic's name ID is a scout;
+// - the player's visibility grid ([world+250h]: width +14h, height +18h, dword cells +20h, the player's mask
+//   [[world+2D8h]+4*id]; low half explored, high half visible, 0x44E9FE) is summed in blocks of 8x8 cells;
+// - a scout that is idle (0x44F1A7), or still on the move order it got from here, gets a new order when it has
+//   none, or when its target became explored: the move order of the action manager 0x50E36A (the one the unit
+//   order code gives, 0x9444D3), to the unexplored cell nearest to it that its movement type ([proto+1D2h]: 1
+//   land, 2 water, 4 air) can stand on (water from the terrain's per-tile water lookup, vtable +194h), skipping
+//   blocks another scout of the player has taken and blocks it could not reach, and weighing cells behind its
+//   heading against them; the move sets action flag 17h, which the action manager's leash 0x489B15 skips;
+// - a scout that stops with its target still unexplored, or is on one target for more than 90 s, gives that
+//   block up (it could not get there); with nothing unexplored left in reach, it goes to the block not visible
+//   now that was seen longest ago (by game time), the nearest first among equals;
+// - a scout's leash anchor [mgr+7Ch] follows it, so that a unit that stops scouting stays where it is.
+// Any other action (a fight, a flee) is left alone; the scout goes on once it is idle again.
+//
+// The switch-off: the head of the command execute 0x7C8E49 (hooks/autoscout_hooks.asm), which the world update
+// runs for each command in turn, on every machine. A unit order (command type 0: move, attack, gather,
+// garrison; type 9: stop) from the unit's owner to a scout that is not inside another unit first puts it in its
+// return tactic (ReturnTactic, or the first tactic of its file that is not the scouting one) through the stock
+// setTactic 0x4F7ECD, as the SetTactic command does (0x7D107C); then the order applies. Without that hook (another
+// DLL owns the site) the key works without the switch-off, and the Stop-scouting button is the way out.
+//
+// Everything read is simulation state (no local player, no rendering), the time is the game time [world+108h],
+// and the per-unit and per-player tables are only a cache: a loaded game rebuilds them from the units' tactics
+// and the grid.
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstdarg>
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <map>
+#include <set>
+#include <string>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../worldtick.h"
+
+extern "C" void UhcAutoScoutCmdHook();
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr int kBlock = 8;                  // cells per block side
+constexpr std::uint32_t kScanMs = 500;     // game time between scans
+constexpr std::uint32_t kTargetMs = 90000; // a target taking longer than this is given up
+constexpr int kMaxLogLines = 400;
+constexpr int kMaxTries = 3;
+
+struct Vec3 {
+  float x, y, z;
+};
+
+using DoMoveFn = bool(__thiscall*)(char* mgr, const Vec3* point, float tolerance, char a3, char a4, std::int32_t a5,
+                                   char a6, char a7, std::int32_t a8, std::int32_t a9, float a10);
+using SetTacticFn = char(__thiscall*)(char* mgr, std::int32_t player, std::int32_t index, std::int32_t a3,
+                                      std::int32_t a4, float a5, std::int32_t a6, std::int32_t a7);
+using IdleFn = bool(__thiscall*)(const char* mgr);
+using AliveFn = bool(__thiscall*)(const char* unit);
+using WaterFn = std::uint8_t(__thiscall*)(const char* terrain, std::int32_t x, std::int32_t z);
+
+const auto kDoMove = reinterpret_cast<DoMoveFn>(0x0050E36A);
+const auto kSetTactic = reinterpret_cast<SetTacticFn>(0x004F7ECD);
+const auto kIdle = reinterpret_cast<IdleFn>(0x0044F1A7);
+
+std::wstring g_scoutName = L"AutoScout";
+std::wstring g_returnName;
+bool g_log = false;
+bool g_switchOff = false;
+int g_logLines = 0;
+
+template <typename T>
+T Field(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+void Note(const wchar_t* format, ...);
+
+const char* World() {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+}
+
+const char* Database() {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+}
+
+char* UnitById(const char* world, std::int32_t id) {
+  if (id < 0 || (id & 0x3FFFF) >= Field<std::int32_t>(world, 0x10)) {
+    return nullptr;
+  }
+  char* unit = Field<char* const*>(world, 0x0C)[id & 0x3FFFF];
+  return unit != nullptr && Field<std::int32_t>(unit, 0x10) == id ? unit : nullptr;
+}
+
+std::int32_t OwnerId(const char* unit) {
+  const char* player = Field<const char*>(unit, 0x44);
+  return player == nullptr ? -1 : Field<std::int32_t>(player, 0);
+}
+
+std::int32_t ProtoId(const char* unit) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  return proto == nullptr ? -1 : Field<std::int32_t>(proto, 8);
+}
+
+bool Alive(const char* unit) {
+  const auto alive = reinterpret_cast<AliveFn>(Field<const void* const*>(unit, 0)[0xA4 / 4]);
+  return alive(unit);
+}
+
+// ---- tactic names ----------------------------------------------------------------------------------------------
+
+// The database's tactic names, [db+1FF0h] (count +1FF4h): the IDs a tactic's +8 holds (0x5E0CA6 looks one up).
+std::int32_t g_scoutId = -1;
+std::int32_t g_returnId = -1;
+const char* g_namesDb = nullptr;
+std::int32_t g_namesCount = -1;
+
+std::int32_t FindName(const char* db, const std::wstring& name) {
+  const char* names = Field<const char*>(db, 0x1FF0);
+  const std::int32_t count = Field<std::int32_t>(db, 0x1FF4);
+  for (std::int32_t i = 0; names != nullptr && i < count; ++i) {
+    const wchar_t* text = Field<const wchar_t*>(names, 4 * i);
+    if (text != nullptr && _wcsicmp(text, name.c_str()) == 0) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+void ResolveNames() {
+  const char* db = Database();
+  if (db == nullptr) {
+    return;
+  }
+  const std::int32_t count = Field<std::int32_t>(db, 0x1FF4);
+  if (db == g_namesDb && count == g_namesCount) {
+    return;
+  }
+  g_namesDb = db;
+  g_namesCount = count;
+  g_scoutId = FindName(db, g_scoutName);
+  g_returnId = g_returnName.empty() ? -1 : FindName(db, g_returnName);
+  Note(L"autoScout: %d tactic names; '%ls' is name %d%ls", count, g_scoutName.c_str(), g_scoutId,
+       g_returnName.empty() ? L"" : (std::wstring(L", '") + g_returnName + L"' is name " +
+                                     std::to_wstring(g_returnId)).c_str());
+}
+
+// The unit's tactics: the action set [proto+44h], its tactics +10h (count +14h); the current index [mgr+A8h].
+std::int32_t TacticNameAt(const char* set, std::int32_t index) {
+  if (set == nullptr || index < 0 || index >= Field<std::int32_t>(set, 0x14)) {
+    return -1;
+  }
+  const char* tactic = Field<const char* const*>(set, 0x10)[index];
+  return tactic == nullptr ? -1 : Field<std::int32_t>(tactic, 8);
+}
+
+bool Scouting(const char* unit) {
+  if (g_scoutId < 0) {
+    return false;
+  }
+  const char* mgr = Field<const char*>(unit, 0x58);
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (mgr == nullptr || proto == nullptr) {
+    return false;
+  }
+  return TacticNameAt(Field<const char*>(proto, 0x44), Field<std::int32_t>(mgr, 0xA8)) == g_scoutId;
+}
+
+// The tactic a scout goes back to: ReturnTactic when the unit has it, else the first one that is not the scouting one.
+std::int32_t ReturnIndex(const char* unit) {
+  const char* set = Field<const char*>(Field<const char*>(unit, 0x5C), 0x44);
+  if (set == nullptr) {
+    return -1;
+  }
+  const std::int32_t count = Field<std::int32_t>(set, 0x14);
+  if (g_returnId >= 0) {
+    for (std::int32_t i = 0; i < count; ++i) {
+      if (TacticNameAt(set, i) == g_returnId) {
+        return i;
+      }
+    }
+  }
+  for (std::int32_t i = 0; i < count; ++i) {
+    const std::int32_t name = TacticNameAt(set, i);
+    if (name >= 0 && name != g_scoutId) {
+      return i;
+    }
+  }
+  return -1;
+}
+
+// ---- the grid --------------------------------------------------------------------------------------------------
+
+enum Move { kLand = 0, kWater = 1, kAir = 2 };
+
+struct Map {
+  const char* world = nullptr;
+  std::int32_t w = 0, h = 0;  // cells: x < w, z < h, index x * h + z
+  float inv = 0.0f;           // cells per world unit, [terrain+1Ch]
+  std::int32_t bw = 0, bh = 0;
+  std::vector<std::uint8_t> water;              // per cell
+  std::vector<std::int32_t> standCell[3];       // per block and movement: the cell nearest its centre one can stand on
+};
+
+Map g_map;
+
+struct PlayerGrid {
+  std::vector<std::int32_t> unexploredCell[3];  // per block and movement: an unexplored cell one can stand on, or -1
+  std::vector<std::uint8_t> visible;            // per block: a cell of it is visible now
+  std::vector<std::uint32_t> lastSeen;          // per block: the game time it was last visible
+  std::int32_t unexplored = 0;                  // cells
+};
+
+std::map<std::int32_t, PlayerGrid> g_grids;
+
+struct Scout {
+  std::int32_t cell = -1;    // target cell
+  std::int32_t block = -1;
+  bool revisit = false;      // the target is a seen block, not an unexplored one
+  std::uint32_t orderTime = 0;
+  std::int32_t actionId = 0;
+  bool interrupted = false;      // another action took over since the order
+  bool moved = false;            // a heading is known
+  float lastX = 0.0f, lastZ = 0.0f, headX = 0.0f, headZ = 0.0f;
+  std::set<std::int32_t> given;  // blocks this unit could not reach
+};
+
+std::map<std::int32_t, Scout> g_scouts;
+std::uint32_t g_lastScan = 0;
+std::uint32_t g_lastTime = 0;
+const char* g_lastWorld = nullptr;
+
+std::int32_t BlockOf(std::int32_t cell) {
+  const std::int32_t x = cell / g_map.h;
+  const std::int32_t z = cell % g_map.h;
+  return (x / kBlock) * g_map.bh + z / kBlock;
+}
+
+bool CanStand(std::int32_t cell, int move) {
+  if (move == kAir) {
+    return true;
+  }
+  return (g_map.water[cell] != 0) == (move == kWater);
+}
+
+bool BuildMap(const char* world) {
+  const char* vm = Field<const char*>(world, 0x250);
+  const char* terrain = Field<const char*>(world, 0x88);
+  if (vm == nullptr || terrain == nullptr || Field<const void*>(vm, 0x20) == nullptr) {
+    return false;
+  }
+  const std::int32_t w = Field<std::int32_t>(vm, 0x14);
+  const std::int32_t h = Field<std::int32_t>(vm, 0x18);
+  const float inv = Field<float>(terrain, 0x1C);
+  if (w <= 0 || h <= 0 || w > 4096 || h > 4096 || !(inv > 0.0f)) {
+    return false;
+  }
+  if (g_map.world == world && g_map.w == w && g_map.h == h) {
+    return true;
+  }
+  g_map = Map{};
+  g_map.world = world;
+  g_map.w = w;
+  g_map.h = h;
+  g_map.inv = inv;
+  g_map.bw = (w + kBlock - 1) / kBlock;
+  g_map.bh = (h + kBlock - 1) / kBlock;
+  g_map.water.assign(static_cast<std::size_t>(w) * h, 0);
+  const auto water = reinterpret_cast<WaterFn>(Field<const void* const*>(terrain, 0)[0x194 / 4]);
+  std::int32_t wet = 0;
+  for (std::int32_t x = 0; x < w; ++x) {
+    for (std::int32_t z = 0; z < h; ++z) {
+      if (water(terrain, x, z) != 0xFF) {
+        g_map.water[x * h + z] = 1;
+        ++wet;
+      }
+    }
+  }
+  const std::size_t blocks = static_cast<std::size_t>(g_map.bw) * g_map.bh;
+  for (int move = 0; move < 3; ++move) {
+    g_map.standCell[move].assign(blocks, -1);
+    for (std::int32_t bx = 0; bx < g_map.bw; ++bx) {
+      for (std::int32_t bz = 0; bz < g_map.bh; ++bz) {
+        const float cx = bx * kBlock + kBlock / 2.0f;
+        const float cz = bz * kBlock + kBlock / 2.0f;
+        float best = 1e30f;
+        for (std::int32_t x = bx * kBlock; x < std::min(w, (bx + 1) * kBlock); ++x) {
+          for (std::int32_t z = bz * kBlock; z < std::min(h, (bz + 1) * kBlock); ++z) {
+            const std::int32_t cell = x * h + z;
+            const float d = (x + 0.5f - cx) * (x + 0.5f - cx) + (z + 0.5f - cz) * (z + 0.5f - cz);
+            if (CanStand(cell, move) && d < best) {
+              best = d;
+              g_map.standCell[move][bx * g_map.bh + bz] = cell;
+            }
+          }
+        }
+      }
+    }
+  }
+  g_grids.clear();
+  Note(L"autoScout: map of %d x %d cells (%.2f per metre), %d water cells, %d x %d blocks", w, h,
+       static_cast<double>(inv), wet, g_map.bw, g_map.bh);
+  return true;
+}
+
+// The player's grid in blocks, from the visibility cells.
+void Summarize(const char* world, std::int32_t player, std::uint32_t now) {
+  PlayerGrid& grid = g_grids[player];
+  const std::size_t blocks = static_cast<std::size_t>(g_map.bw) * g_map.bh;
+  if (grid.lastSeen.size() != blocks) {
+    grid.lastSeen.assign(blocks, 0);
+  }
+  grid.visible.assign(blocks, 0);
+  for (auto& cells : grid.unexploredCell) {
+    cells.assign(blocks, -1);
+  }
+  grid.unexplored = 0;
+  const std::int32_t masks = Field<std::int32_t>(world, 0x2DC);
+  if (player >= masks) {
+    return;
+  }
+  const std::uint32_t mask = Field<const std::uint32_t*>(world, 0x2D8)[player];
+  const std::uint32_t* cells = Field<const std::uint32_t*>(Field<const char*>(world, 0x250), 0x20);
+  const std::int32_t w = g_map.w;
+  const std::int32_t h = g_map.h;
+  for (std::int32_t x = 0; x < w; ++x) {
+    const std::int32_t bx = x / kBlock;
+    for (std::int32_t z = 0; z < h; ++z) {
+      const std::int32_t cell = x * h + z;
+      const std::uint32_t bits = cells[cell] & mask;
+      const std::int32_t block = bx * g_map.bh + z / kBlock;
+      if ((bits & 0xFFFF0000u) != 0) {
+        grid.visible[block] = 1;
+      }
+      if ((bits & 0xFFFFu) != 0) {
+        continue;
+      }
+      ++grid.unexplored;
+      for (int move = 0; move < 3; ++move) {
+        if (grid.unexploredCell[move][block] < 0 && CanStand(cell, move)) {
+          grid.unexploredCell[move][block] = cell;
+        }
+      }
+    }
+  }
+  for (std::size_t b = 0; b < blocks; ++b) {
+    if (grid.visible[b] != 0) {
+      grid.lastSeen[b] = now;
+    }
+  }
+}
+
+bool Explored(const char* world, std::int32_t player, std::int32_t cell) {
+  if (player >= Field<std::int32_t>(world, 0x2DC)) {
+    return true;
+  }
+  const std::uint32_t mask = Field<const std::uint32_t*>(world, 0x2D8)[player];
+  const std::uint32_t* cells = Field<const std::uint32_t*>(Field<const char*>(world, 0x250), 0x20);
+  return (cells[cell] & mask & 0xFFFFu) != 0;
+}
+
+Vec3 CellPoint(std::int32_t cell, float y) {
+  return Vec3{(cell / g_map.h + 0.5f) / g_map.inv, y, (cell % g_map.h + 0.5f) / g_map.inv};
+}
+
+int MoveOf(const char* unit) {
+  switch (Field<std::uint8_t>(Field<const char*>(unit, 0x5C), 0x1D2)) {
+    case 2:
+      return kWater;
+    case 4:
+      return kAir;
+    default:
+      return kLand;
+  }
+}
+
+const wchar_t* MoveName(int move) { return move == kAir ? L"air" : move == kWater ? L"water" : L"land"; }
+
+// The target for a scout: the nearest unexplored cell it can stand on, in a block no other scout of the player
+// holds and it has not given up; else the reachable block not visible now that was seen longest ago.
+bool PickTarget(const char* world, std::int32_t player, const char* unit, Scout& scout,
+                const std::set<std::int32_t>& taken, const PlayerGrid& grid) {
+  const int move = MoveOf(unit);
+  const float ux = Field<float>(unit, 0x14) * g_map.inv;
+  const float uz = Field<float>(unit, 0x1C) * g_map.inv;
+  const std::size_t blocks = grid.visible.size();
+  // The squared distance in cells, up to 4.8 times more for a cell behind the unit's heading: a scout keeps going
+  // the way it goes rather than zigzag between two frontiers.
+  auto distance = [&](std::int32_t cell) {
+    const float dx = cell / g_map.h + 0.5f - ux;
+    const float dz = cell % g_map.h + 0.5f - uz;
+    const float d2 = dx * dx + dz * dz;
+    if (!scout.moved || d2 < 1e-6f) {
+      return d2;
+    }
+    const float bias = 1.6f - 0.6f * (dx * scout.headX + dz * scout.headZ) / std::sqrt(d2);
+    return d2 * bias * bias;
+  };
+  std::int32_t best = -1;
+  float bestDistance = 0.0f;
+  for (std::size_t b = 0; b < blocks; ++b) {
+    const std::int32_t cell = grid.unexploredCell[move][b];
+    if (cell < 0 || taken.count(static_cast<std::int32_t>(b)) != 0 || scout.given.count(static_cast<std::int32_t>(b)) != 0) {
+      continue;
+    }
+    const float d = distance(cell);
+    if (best < 0 || d < bestDistance) {
+      best = cell;
+      bestDistance = d;
+    }
+  }
+  if (best >= 0) {
+    // The nearest unexplored cell of that block it can stand on.
+    const std::int32_t block = BlockOf(best);
+    const std::int32_t bx = block / g_map.bh;
+    const std::int32_t bz = block % g_map.bh;
+    float nearest = distance(best);
+    for (std::int32_t x = bx * kBlock; x < std::min(g_map.w, (bx + 1) * kBlock); ++x) {
+      for (std::int32_t z = bz * kBlock; z < std::min(g_map.h, (bz + 1) * kBlock); ++z) {
+        const std::int32_t cell = x * g_map.h + z;
+        if (CanStand(cell, move) && !Explored(world, player, cell) && distance(cell) < nearest) {
+          nearest = distance(cell);
+          best = cell;
+        }
+      }
+    }
+    scout.cell = best;
+    scout.block = block;
+    scout.revisit = false;
+    return true;
+  }
+  std::uint32_t oldest = 0;
+  for (std::size_t b = 0; b < blocks; ++b) {
+    const std::int32_t cell = g_map.standCell[move][b];
+    if (cell < 0 || grid.visible[b] != 0 || taken.count(static_cast<std::int32_t>(b)) != 0 ||
+        scout.given.count(static_cast<std::int32_t>(b)) != 0) {
+      continue;
+    }
+    const float d = distance(cell);
+    if (best < 0 || grid.lastSeen[b] < oldest || (grid.lastSeen[b] == oldest && d < bestDistance)) {
+      best = cell;
+      oldest = grid.lastSeen[b];
+      bestDistance = d;
+    }
+  }
+  if (best < 0) {
+    if (!scout.given.empty()) {
+      scout.given.clear();  // everything was given up: try them again on the next scan
+    }
+    return false;
+  }
+  scout.cell = best;
+  scout.block = BlockOf(best);
+  scout.revisit = true;
+  return true;
+}
+
+// The action manager's anchor [mgr+7Ch] (x, y, z), where its leash 0x489B15 walks a unit back to when its current
+// action has no order and it strays too far (0x489C34 -> 0x50E50E: a move with tolerance 1.0). A scout's anchor
+// follows it, so a unit that stops scouting stays where it is instead of walking back to where it was last ordered.
+void SetAnchor(char* unit) {
+  char* mgr = Field<char*>(unit, 0x58);
+  for (std::uint32_t i = 0; i < 3; ++i) {
+    *reinterpret_cast<float*>(mgr + 0x7C + 4 * i) = Field<float>(unit, 0x14 + 4 * i);
+  }
+}
+
+std::int32_t CurrentActionId(const char* mgr) {
+  const char* action = Field<const char*>(mgr, 0x24);
+  return action == nullptr ? 0 : Field<std::int32_t>(action, 8);
+}
+
+void Order(const char* world, char* unit, std::int32_t id, std::int32_t player, Scout& scout,
+           std::set<std::int32_t>& taken, const PlayerGrid& grid, std::uint32_t now) {
+  char* mgr = Field<char*>(unit, 0x58);
+  for (int tries = 0; tries < kMaxTries; ++tries) {
+    if (!PickTarget(world, player, unit, scout, taken, grid)) {
+      scout.cell = -1;
+      return;
+    }
+    const Vec3 point = CellPoint(scout.cell, Field<float>(unit, 0x18));
+    // a4 = 1 sets the move action's flag 17h, which the action manager's leash 0x489B15 honours (0x4B95E4): without
+    // it the unit is walked back to its anchor [mgr+7Ch] every few seconds.
+    const bool ok = kDoMove(mgr, &point, 0.1f, 0, 1, -1, 0, 0, -1, -1, -1.0f);
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"autoScout: unit %d (proto %d, player %d, %ls) at (%.1f, %.1f) -> %ls cell (%.1f, %.1f), block %d: %ls",
+               id, ProtoId(unit), player, MoveName(MoveOf(unit)), static_cast<double>(Field<float>(unit, 0x14)),
+               static_cast<double>(Field<float>(unit, 0x1C)), scout.revisit ? L"seen" : L"unexplored",
+               static_cast<double>(point.x), static_cast<double>(point.z), scout.block, ok ? L"ordered" : L"refused");
+    }
+    if (ok) {
+      scout.orderTime = now;
+      scout.actionId = CurrentActionId(mgr);
+      scout.interrupted = false;
+      taken.insert(scout.block);
+      return;
+    }
+    scout.given.insert(scout.block);
+    scout.cell = -1;
+  }
+}
+
+void Forget() {
+  g_scouts.clear();
+  g_grids.clear();
+  g_map = Map{};
+  g_lastScan = 0;
+}
+
+void Scan(char* world, std::uint32_t now);
+
+void Tick(char* world, std::int32_t) {
+  if (world != World()) {
+    return;
+  }
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  if (world != g_lastWorld || now < g_lastTime) {
+    Forget();
+    g_lastWorld = world;
+  }
+  g_lastTime = now;
+  if (now - g_lastScan < kScanMs && g_lastScan != 0) {
+    return;
+  }
+  g_lastScan = now == 0 ? 1 : now;
+  if (!g_log) {
+    Scan(world, now);
+    return;
+  }
+  // With log: the cost of the scans, every 120 of them (a real clock, for the log only: it feeds nothing back).
+  static int scans = 0;
+  static double total = 0.0, longest = 0.0;
+  const auto start = std::chrono::steady_clock::now();
+  Scan(world, now);
+  const double us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - start).count();
+  total += us;
+  longest = std::max(longest, us);
+  if (++scans == 120) {
+    uhc::Log(L"autoScout: 120 scans, %.0f us on average, %.0f us the longest, %zu scout(s), %d x %d cells",
+             total / scans, longest, g_scouts.size(), g_map.w, g_map.h);
+    scans = 0;
+    total = longest = 0.0;
+  }
+}
+
+void Scan(char* world, std::uint32_t now) {
+  ResolveNames();
+  if (g_scoutId < 0 || !BuildMap(world)) {
+    return;
+  }
+
+  // The scouts, by player then by ID.
+  std::map<std::int32_t, std::vector<std::int32_t>> scouts;
+  const std::int32_t players = Field<std::int32_t>(world, 0x5C);
+  for (std::int32_t p = 1; p < players; ++p) {
+    const char* player = Field<const char* const*>(world, 0x58)[p];
+    if (player == nullptr) {
+      continue;
+    }
+    const std::int32_t* ids = Field<const std::int32_t*>(player, 0xF8);
+    const std::int32_t count = Field<std::int32_t>(player, 0xFC);
+    for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+      const char* unit = UnitById(world, ids[i]);
+      if (unit != nullptr && OwnerId(unit) == p && Scouting(unit) && Alive(unit)) {
+        scouts[p].push_back(ids[i]);
+      }
+    }
+  }
+  for (auto it = g_scouts.begin(); it != g_scouts.end();) {
+    const char* unit = UnitById(world, it->first);
+    const auto list = unit == nullptr ? scouts.end() : scouts.find(OwnerId(unit));
+    if (list == scouts.end() || !std::binary_search(list->second.begin(), list->second.end(), it->first)) {
+      it = g_scouts.erase(it);
+    } else {
+      ++it;
+    }
+  }
+  for (auto& [player, ids] : scouts) {
+    std::sort(ids.begin(), ids.end());
+    Summarize(world, player, now);
+    const PlayerGrid& grid = g_grids[player];
+    std::set<std::int32_t> taken;
+    for (const std::int32_t id : ids) {
+      const auto found = g_scouts.find(id);
+      if (found != g_scouts.end() && found->second.cell >= 0) {
+        taken.insert(found->second.block);
+      }
+    }
+    for (const std::int32_t id : ids) {
+      char* unit = UnitById(world, id);
+      if (Field<std::int32_t>(unit, 0x6C) != -1) {
+        continue;  // inside another unit
+      }
+      Scout& scout = g_scouts[id];
+      SetAnchor(unit);
+      const float x = Field<float>(unit, 0x14);
+      const float z = Field<float>(unit, 0x1C);
+      const float step = std::hypot(x - scout.lastX, z - scout.lastZ);
+      if (step > 1.0f) {
+        if (scout.lastX != 0.0f || scout.lastZ != 0.0f) {
+          scout.headX = (x - scout.lastX) / step;
+          scout.headZ = (z - scout.lastZ) / step;
+          scout.moved = true;
+        }
+        scout.lastX = x;
+        scout.lastZ = z;
+      }
+      const char* mgr = Field<const char*>(unit, 0x58);
+      const bool idle = kIdle(mgr);
+      const bool ours = !idle && scout.actionId != 0 && CurrentActionId(mgr) == scout.actionId;
+      if (!idle && !ours) {
+        scout.interrupted = true;  // another action (a flee, a fight): leave it, scout again once it is idle
+        continue;
+      }
+      bool order = scout.cell < 0;
+      if (scout.cell >= 0) {
+        const bool explored = !scout.revisit && Explored(world, player, scout.cell);
+        const bool late = now - scout.orderTime > kTargetMs;
+        if (explored || (scout.revisit && grid.visible[scout.block] != 0)) {
+          order = true;
+        } else if (idle && scout.interrupted) {
+          order = true;  // it stopped for another reason: the same target is still good
+        } else if (idle || late) {
+          scout.given.insert(scout.block);  // it stopped short of its target: out of its reach
+          if (g_log && g_logLines < kMaxLogLines) {
+            ++g_logLines;
+            const Vec3 point = CellPoint(scout.cell, 0.0f);
+            uhc::Log(L"autoScout: unit %d stopped at (%.1f, %.1f), %.1f m from its target (%.1f, %.1f)%ls: block %d given up",
+                     id, static_cast<double>(Field<float>(unit, 0x14)), static_cast<double>(Field<float>(unit, 0x1C)),
+                     static_cast<double>(std::hypot(Field<float>(unit, 0x14) - point.x, Field<float>(unit, 0x1C) - point.z)),
+                     static_cast<double>(point.x), static_cast<double>(point.z), late ? L" (too long)" : L"",
+                     scout.block);
+          }
+          order = true;
+        }
+        if (order) {
+          taken.erase(scout.block);
+          scout.cell = -1;
+        }
+      }
+      if (order) {
+        Order(world, unit, id, player, scout, taken, grid, now);
+      }
+    }
+  }
+}
+
+void Note(const wchar_t* format, ...) {
+  if (!g_log || g_logLines >= kMaxLogLines) {
+    return;
+  }
+  ++g_logLines;
+  wchar_t text[512];
+  va_list args;
+  va_start(args, format);
+  _vsnwprintf_s(text, _TRUNCATE, format, args);
+  va_end(args);
+  uhc::Log(L"%ls", text);
+}
+
+}  // namespace
+
+// From the hook at the head of the command execute, on every machine, in the world update: a unit order from the
+// owner puts a scout back in its return tactic before the order applies.
+extern "C" void __stdcall UhcAutoScoutCommand(const char* command) {
+  if (command == nullptr || g_scoutId < 0) {
+    return;
+  }
+  const std::uint8_t type = Field<std::uint8_t>(command, 0x81);
+  if (type != 0 && type != 9) {
+    return;
+  }
+  const char* world = World();
+  if (world == nullptr) {
+    return;
+  }
+  const std::int32_t player = Field<std::int32_t>(command, 0x20);
+  const std::int32_t* ids = Field<const std::int32_t*>(command, 0x40);
+  const std::int32_t count = Field<std::int32_t>(command, 0x44);
+  for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+    char* unit = UnitById(world, ids[i]);
+    if (unit == nullptr || OwnerId(unit) != player || Field<std::int32_t>(unit, 0x6C) != -1 || !Scouting(unit)) {
+      continue;
+    }
+    const std::int32_t index = ReturnIndex(unit);
+    if (index < 0) {
+      continue;
+    }
+    SetAnchor(unit);
+    kSetTactic(Field<char*>(unit, 0x58), player, index, -1, 1, -1.0f, 1, 0);
+    g_scouts.erase(ids[i]);
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"autoScout: unit %d (proto %d, player %d) got an order (command type %u): back to tactic %d", ids[i],
+               ProtoId(unit), player, static_cast<unsigned>(type), index);
+    }
+  }
+}
+
+namespace uhc {
+
+Outcome ApplyAutoScout(const Config& config) {
+  const Config::Args* args = config.First("autoScout");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  int names = 0;
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+      continue;
+    }
+    const bool valid = !arg.empty() && std::all_of(arg.begin(), arg.end(), [](char c) {
+      return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_';
+    });
+    if (!valid || names == 2) {
+      Log(L"autoScout: bad argument %hs (expected [ScoutTactic [ReturnTactic]] [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    (names == 0 ? g_scoutName : g_returnName) = std::wstring(arg.begin(), arg.end());
+    ++names;
+  }
+  if (!VerifyAll("autoScout", {&sites::kAutoScoutDoMove, &sites::kAutoScoutSetTactic, &sites::kAutoScoutTacticIndex,
+                               &sites::kAutoScoutIdle, &sites::kUnitById})) {
+    return Outcome::kFailed;
+  }
+  if (Matches(sites::kAutoScoutCmdExecute)) {
+    if (!WriteJmp(sites::kAutoScoutCmdExecute.va, reinterpret_cast<const void*>(&UhcAutoScoutCmdHook), 8)) {
+      return Outcome::kFailed;
+    }
+    g_switchOff = true;
+  }
+  if (!AddWorldTick(&Tick)) {
+    return Outcome::kFailed;
+  }
+  Log(L"autoScout: units in tactic '%ls' explore the map on their own%ls (multiplayer unverified)", g_scoutName.c_str(),
+      g_returnName.empty() ? L"" : (std::wstring(L"; they go back to '") + g_returnName + L"'").c_str());
+  if (!g_switchOff) {
+    Log(L"autoScout: limited mode: the command execute head 0x7C8E49 is not stock (another DLL patched it), so an order "
+        L"does not switch scouting off; use the Stop-scouting button");
+  }
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/autoscout_hooks.asm
+
+```asm
+; autoScout (src/features/autoscout.cpp). Entered through a jmp written over the stock code; it leaves
+; through an explicit jmp to the verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcAutoScoutCommand PROTO STDCALL command:DWORD
+
+.data
+cmdExecuteNext dd 007C8E51h   ; jbe 7C8E85h, after the four instructions this hook re-executes
+
+.code
+
+; Replaces 0x7C8E49..0x7C8E50 (push ecx / push esi / mov esi,ecx / cmp dword [esi+5Ch],5), the head of the
+; command execute FUN_007C8E49, thiscall(cmd), called once per command by the world update's command
+; processing (0x64D31A, inside 0x490015, called at 0x481BC2): the simulation, on every machine, in the
+; same order. On entry ECX = the command. UhcAutoScoutCommand (stdcall, keeps EBX, ESI, EDI, EBP) looks at
+; the command first: a unit order (move, attack, garrison, stop) to a unit in the scouting tactic puts that
+; unit back in its other tactic before the order applies. Then the stock head runs, and the jbe at
+; 0x7C8E51 takes the flags of its cmp.
+UhcAutoScoutCmdHook PROC
+    TRACE_ONCE "autoScout command (0x7C8E49)"
+    push eax
+    push ecx
+    push edx
+    push ecx                        ; the command
+    call UhcAutoScoutCommand
+    pop edx
+    pop ecx
+    pop eax
+    push ecx
+    push esi
+    mov esi, ecx
+    cmp dword ptr [esi+5Ch], 5
+    jmp cmdExecuteNext
+UhcAutoScoutCmdHook ENDP
 
 END
 ```

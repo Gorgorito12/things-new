@@ -26,7 +26,7 @@
        hitpoints, speed (live: techs, snares, auras), baseSpeed, los, armor (with the damage type icon),
        armorValue, garrison, trainPoints, buildPoints,
        rof, range, minRange, area, projectiles (per attack, each with its damage type icon; projectiles: the
-       projectiles fired before the reload, as combat fires them, shown above 1: see projectilesIcon below),
+       projectiles fired before the reload, as the tactics write them, shown above 1: see projectilesIcon below),
        cost, population,
        bounty (the XP a kill gives), buildLimit, inventory (what a mine, bush or animal holds),
        lifespan (seconds left), and what other keys know, shown only when that key is on:
@@ -49,12 +49,16 @@
        rofIcon  each attack row gets its rate of fire and this icon right after its damage
                 ("Ranged ATK:  23 (ranged) 3 (rof) 12 (range), 3x (cavalry)")
        projectilesIcon  an attack that fires more than one projectile before its reload gets that number and this
-                icon after its rate of fire ("Volley:  14 (ranged) 3 (rof) 4 (cylinder) 12 (range)"), as combat
-                fires them: the action's NumberOfShots while the DLL's numberOfShots key is on, times its
-                NumberProjectiles (or NumberOfProjectiles) while that key has its "projectiles" option. Neither the
-                game nor any other DLL reads those tags, so without the key no number shows
-       projectiles="data"  shows the tags as written instead, with or without the key (a modder's check of the
-                data, not what the game does); the default is "combat"
+                icon after its rate of fire ("Volley:  14 (ranged) 3 (rof) 4 (cylinder) 12 (range)"): the action's
+                NumberOfShots times its NumberProjectiles (or NumberOfProjectiles), as the tactics write them
+                (projectiles="data", the default), with or without the DLL's numberOfShots key
+       projectiles="combat"  shows what combat fires instead: NumberOfShots only while numberOfShots is on, and
+                NumberProjectiles only with its "projectiles" option (neither the game nor another DLL fires them)
+       rofTip, projectilesTip  the attack rows' tooltip lines for the rate of fire and the projectiles, after the
+                game's own damage line; %s is the number, [string:ID] works, an empty text means no line.
+                Defaults: "Attacks every %s s" and "%s projectiles before the reload"
+       multiplierZeros="keep"  keeps the zeros that end the multipliers; by default "1.50x" is written "1.5x" and
+                "2.00x" "2x" (with the DLL's multiplierDecimals key the game writes two decimals)
        abilities="all": also the attacks of abilities the unit cannot use; by default an attack that only a
                 power uses (powers.xml <unitAction>: Crack Shot, Sharpshooter...) shows only while one of the
                 unit's abilities (abilities.xml) gives it: its tech is active and its age is the player's
@@ -100,7 +104,7 @@
   <!-- Every attack row: the three original ones, then uhcRow3, uhcRow4, uhcRow5, each with its ROF (a
        stopwatch) after the damage, then the projectiles before the reload when above 1 (a revolver's cylinder);
        attacks of abilities the unit cannot use are left out. -->
-  <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed" stockRows="take" rofIcon="ui\ingame\stat_icon_rof" projectilesIcon="ui\ingame\stat_icon_projectiles"/>
+  <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed" stockRows="take" rofIcon="ui\ingame\stat_icon_rof" projectilesIcon="ui\ingame\stat_icon_projectiles" rofTip="Attacks every %s s" projectilesTip="%s projectiles before the reload"/>
   <!-- uhcRow5 is on the line of the resource held and the AutoGather rate (a villager carrying food,
        a factory, a bank, a trickle): while either shows, uhcRow5 stays empty. -->
   <avoid gadget="unitselectionpanel-unitResourceValue"/>

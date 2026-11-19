@@ -146,8 +146,11 @@ PAGES = {
         "noCorpseDopples": ["src/features/dopples.cpp", "src/hooks/dopple_hooks.asm"],
         "steadyHitpointBars": ["src/features/steadybars.cpp", "src/hooks/steadybar_hooks.asm"],
         "inventoryBars": ["src/features/inventorybars.cpp", "src/hooks/inventorybars_hooks.asm"],
+        "multiplierDecimals": ["src/features/multiplierdecimals.cpp"],
+        "attackTypeIcons": ["src/features/attacktypeicons.cpp", "src/hooks/attacktypeicons_hooks.asm"],
         "minUIStats": ["src/features/minuistats.cpp", "src/hooks/minuistats_hooks.asm"],
         "playerIcon": ["src/features/playericon.cpp", "src/hooks/playericon_hooks.asm"],
+        "autoScout": ["src/features/autoscout.cpp", "src/hooks/autoscout_hooks.asm"],
     }),
 }
 

@@ -8,15 +8,20 @@ that installs them, screenshots, and the problems we found in the maps' data on 
 
 Status (2026-11-18): format v2 (JTMaston's second request, below) is done. All 208 maps have a v2
 description in English and Spanish, written from kept-from-original.csv. The final review
-screenshots are in final\ (start with final\README.txt). They show 36 maps in game:
-- in English at 1920x1080;
-- 10 of them also at 1024x768;
-- 3 of them also in Spanish;
-- an 8-player loading screen.
+screenshots are in final\ (start with final\README.txt), taken again on 2026-11-19 with one fact per
+line on the loading screen. They show 38 maps in game:
+- 37 in English at 1920x1080;
+- 17 of them also at 1024x768;
+- 4 in Spanish (Great Barrier Reef only in Spanish);
+- an 8-player loading screen at both sizes.
 Every capture passed the checks (continuous lines, bold coloured keys, nothing cut off, the creator
-last, no "random" outlaws). The "King of the Hill" line follows
+last, no "random" outlaws, one fact per line). The "King of the Hill" line follows
 the King of the Hill pack (wol-fixes\maps-koth): Yes on 200 maps, No on the 8 maps the pack skips
 (WOLsahara, lead 8, is now in the pack). Install that pack's .xs files together with these texts.
+
+2026-11-19: the loading screen puts one fact per line, like the lobby (JTMaston: "Can the loading
+screen ones also have line breaks after each key value pair like the lobby ones do?"). See "Loading
+screen: one fact per line" below.
 
 
 Format v2 (2026-11-18)
@@ -52,31 +57,67 @@ What changed:
   Every row is resolved (844 yes, 350 no).
 - The layout and markup below, tested in game first (the "format test bench").
 
-The layout (── is a thin horizontal line):
+The layout (── is a thin horizontal line; one fact per line in both places since 2026-11-19):
     Lobby                                         Loading screen
     <Name>: <description>                         <description>   (the name is above the box)
     ──                                            ──
-    Region: ...                                   Region: ... | Trade route: ... | King of the Hill: ...
-    Trade route: Yes/No                           Natives: ...
-    King of the Hill: Yes/No                      Outlaws: ...
-    Natives: ...                                  ──
-    Outlaws: ...                                  Hunts: ... | Herds: ...
-    ──                                            Mines: ... | Berries: ...
-    Hunts: ...                                    Fish: ...
-    Herds: ...                                    ──
-    Mines: ...                                    Map size: 311 / 440 / 622 m (2 / 4 / 8 players)
-    Berries: ...                                  ──
-    Fish: ...                                     Creator: ...
-    ──
-    Map size: 311 / 440 / 622 m
-    (2 / 4 / 8 players)
-    ──
+    Region: ...                                   Region: ...
+    Trade route: Yes/No                           Trade route: Yes/No
+    King of the Hill: Yes/No                      King of the Hill: Yes/No
+    Natives: ...                                  Natives: ...
+    Outlaws: ...                                  Outlaws: ...
+    ──                                            ──
+    Hunts: ...                                    Hunts: ...
+    Herds: ...                                    Herds: ...
+    Mines: ...                                    Mines: ...
+    Berries: ...                                  Berries: ...
+    Fish: ...                                     Fish: ...
+    ──                                            ──
+    Map size: 311 / 440 / 622 m                   Map size: 311 / 440 / 622 m (2 / 4 / 8 players)
+    (2 / 4 / 8 players)                           ──
+    ──                                            Creator: ...
     Creator: ...
 In the lobby every line is at most 44 characters, so the rollover stays narrow (see v1 below).
 One description per map (texts.csv, desc_en / desc_es) serves both places. If a description does
 not fit the loading box at 1024x768 or 1920x1080, make_descriptions.py drops its last sentences on
 the loading screen only (the lobby keeps all of it); the facts and the creator always stay.
-make_descriptions.py --report lists what it dropped: today nothing, on all 208 maps.
+make_descriptions.py --report lists what it dropped: today one sentence of one map, in Spanish only
+(see "Loading screen: one fact per line").
+
+
+Loading screen: one fact per line (2026-11-19)
+----------------------------------------------
+JTMaston asked for the loading screen to break the line after each fact, as the lobby does. The
+loading text now has the lobby's order, one fact per row: Region, Trade route, King of the Hill,
+Natives, Outlaws; a line; Hunts, Herds, Mines, Berries, Fish; a line; Map size; a line; Creator. No
+"|" is left. The lines, colours and bold keys are as before; the player list stays where it was
+(below the box, with its 208 rows for 8 players).
+
+Room at 1024x768. One fact per row costs 3 to 5 more rows. Measured in game (a copy of the layout
+with a taller box, so nothing was cut): a description row is 17 pixels, a fact row 15, a line 5, and
+with the old facts fonts the longest texts ran 6 to 25 pixels past the 326-pixel box (Manicouagan
+Basin by 25, Zavkhan 23, Van Diemen's Land and Western Territory 6). So the facts got their own
+smaller fonts, MapDescFact and MapDescFactKey (apply_fix.py adds them to FONTS\fonts3.xml): copies of
+PostgameTableEntrySmall 12 (values) and AgeUpgradeSmall 12 (bold keys), whose TypeFace they take, 2
+pixels smaller at 1024x768 and at 800x600 (1 at 640x480), and the same as before at 1280 and above.
+A fact row is then 12 pixels at 1024x768 and stays readable (final\*-loading-768.jpg). Found on the
+way: the game ignores a ResolutionOverride with ResX="1024" (1024x768 takes the entry's own size), and
+at 1920x1080 it takes the ResX="1280" sizes (16 for the description, 14 for the facts), not 1600's.
+With them every English text fits whole at 1024x768 (the tightest, Manicouagan Basin, with 9 pixels
+to spare) and at 1920x1080 (at least 121 pixels to spare). In Spanish one text was still 3 pixels too
+tall at 1024x768, so it loses its last sentence on the loading screen only (the lobby keeps it):
+    dansil_greatbarrierreef (Great Barrier Reef), ES, drops: "Los naufragios son la principal fuente de
+    monedas y una economía marítima es vital para tener recursos estables, mientras que la ruta
+    comercial puede volverse pronto tu única fuente de madera."
+Nothing else is trimmed, in English or Spanish.
+
+How make_descriptions.py knows what fits: it no longer counts characters. It wraps each text as the
+game does, word by word, with the advance width of every letter of the loading screen's typeface
+(Formal436 BT, read from the game's own font; at 1024x768 its sums matched the measured lines to the
+pixel), the row heights above and the box's wrap width (324 pixels for the description at 1024x768,
+318 for the facts, which keeps 4 pixels for rounding; a bold key counts one pixel more per letter).
+Every text keeps 4 pixels free at the bottom of the box. The estimate matched the measured heights
+of the four tallest texts within a few pixels (the old character count was off by up to one row).
 
 The format test bench (in game, WoL copy with the English string table, 1920x1080 and 1024x768;
 screenshots in media\v2-bench):
@@ -140,12 +181,15 @@ the bold keys and the colours, the player list below the taller box. At 1024x768
 (Alaska, Appalachians) also fit whole. With 8 players (Acre) the game keeps the same box
 (RMSetup-MapDetail, not the "Alt" one) and the 8 names fit below it.
 
-The fonts: apply_fix.py adds MapDescTipKey and MapDescRule 4 to FONTS\fonts3.xml (UTF-16) before
-</Fonts>, only when no entry of that name exists: it never changes other entries and a second run adds
-nothing. Their TypeFace is the one of the entry they copy (Franklin Gothic Medium, Formal436 BT): a
-pack that renames font families should rename these two as well. The texts need both entries:
-without them (not tested) the lines and the lobby's keys would most likely fall back to the gadget's
-own font, a full row of underlined spaces that may wrap, and keys that are not bold.
+The fonts: apply_fix.py adds MapDescTipKey, MapDescRule 4 and (2026-11-19) MapDescFact and
+MapDescFactKey to FONTS\fonts3.xml (UTF-16) before </Fonts>, only when no entry of that name exists: it
+never changes other entries and a second run adds nothing. Each one takes its TypeFace from the entry
+it copies (Tooltips_UI, SPLoadingScreenText 14, PostgameTableEntrySmall 12, AgeUpgradeSmall 12), so it
+follows the fonts pack (wol-fixes\fonts) whichever runs first; a pack that renames font families
+afterwards should rename these too, as the fonts pack does. The texts need all four entries: without
+them (not tested) the lines, the keys and the facts would most likely fall back to the gadget's own
+font, a full row of underlined spaces that may wrap, keys that are not bold and facts too large for
+the box at 1024x768.
 Two copies of the game at once share one profile: a capture that sets 1024x768 or a skirmish home
 city for its launch puts them back, but a copy started meanwhile writes back what it loaded.
 
@@ -316,7 +360,7 @@ Files
   uirmsetup.xml           the loading screen's layout with the taller description box (v2), a loose
                           copy of WoL's data\uirmsetup.xml from DataP.bar; apply_fix.py puts it in
                           data\
-  apply_fix.py            installs everything into a WoL folder (see below), also the two font
+  apply_fix.py            installs everything into a WoL folder (see below), also the four font
                           entries (v2)
   texts.csv               the written texts per map: desc_en / desc_es (v2: one description for the
                           lobby and the loading screen; all 208 maps), summary_* and story_* (v1,
@@ -331,7 +375,7 @@ Files
                           same for make_descriptions.py
   string-ids.csv          the two string IDs of every map
   leads.csv               the problems found in the data, with file and line
-  final\                  the final v2 review screenshots: 36 maps, with overview sheets, the
+  final\                  the final v2 review screenshots: 38 maps, with overview sheets, the
                           pass/fail table and the list of maps (final\README.txt)
   media\                  older screenshots: the v2 format bench and pilot, and v1 (see "Media")
 
@@ -402,8 +446,9 @@ old literal texts and all the new IDs did. We did not look into why.
 
 Media
 -----
-The final v2 screenshots (all 208 texts written; 36 maps shown, at 1920x1080 and 1024x768 and in
-Spanish) are in final\, with final\README.txt. They replace the v1 screenshots that were there. The
+The final v2 screenshots (all 208 texts written; 38 maps shown, at 1920x1080 and 1024x768 and in
+Spanish; retaken on 2026-11-19 with one fact per line on the loading screen) are in final\, with
+final\README.txt. They replace the v1 screenshots that were there. The
 v1 shots below stay in media\ for the history.
 
 Format v2 (2026-11-18, English, WoL copy with the pack applied):
@@ -594,9 +639,9 @@ It adds or replaces the strings in translations\_originals\stringtabley.xml (Eng
 translations\ES-LA\stringtabley.xml (Spanish) and data\stringtabley.xml (in whichever language that
 file holds), and sets details="<ID>" and loadDetails="<ID>" in every map's .xml, removing its literal
 detailsText / loadDetailsText (also the misspelt ones). The RM4\ folder here holds the same .xml files
-already changed, if you prefer to copy them. Format v2 also needs: the font entries MapDescTipKey and
-MapDescRule 4 in FONTS\fonts3.xml (added only if missing) and data\uirmsetup.xml (the taller loading
-box; a new file: --restore deletes it again).
+already changed, if you prefer to copy them. Format v2 also needs: the font entries MapDescTipKey,
+MapDescRule 4, MapDescFact and MapDescFactKey in FONTS\fonts3.xml (added only if missing) and
+data\uirmsetup.xml (the taller loading box; a new file: --restore deletes it again).
 
 To change a text: edit texts.csv (desc_en / desc_es, or a correction column such as natives_en) or
 credits.csv, then run

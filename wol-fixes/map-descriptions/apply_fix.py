@@ -13,7 +13,7 @@ loading_es):
 2. RM4\\<map>.xml gets details="<lobby_id>" and loadDetails="<loading_id>", and loses its literal
    texts (detailsText, loadDetailsText, also misspelt ones such as detailstext or loadDetailsTexT),
    so every language shows the string table's text;
-3. FONTS\\fonts3.xml gets the two font entries the texts use (FONT_ENTRIES), added before </Fonts>
+3. FONTS\\fonts3.xml gets the four font entries the texts use (FONT_ENTRIES), added before </Fonts>
    only when the file has no entry of that name: other entries are never changed, and running it
    again adds nothing;
 4. data\\uirmsetup.xml (the loading screen's layout, a loose copy of WoL's DataP.bar version) with a
@@ -110,8 +110,14 @@ FONT_ENTRIES = {
     "MapDescTipKey": ("Franklin Gothic Medium", 11, True, {640: 11, 800: 13, 1280: 17, 1600: 21}),
     # a 4-pixel font: an underline over no-break spaces in it is a thin line that costs a third of a row
     "MapDescRule 4": ("Formal436 BT", 4, False, {640: 3, 800: 4, 1280: 6, 1600: 8}),
+    # the facts on the loading screen, one per row (2026-11-19): PostgameTableEntrySmall 12 (values) and
+    # AgeUpgradeSmall 12 (bold keys) made 2 pixels smaller at 1024 (the base size: the game ignores a
+    # ResX="1024" override), 800 and 640 (1 there), the same at 1280 and above (1920x1080 takes 1280's)
+    "MapDescFact": ("Formal436 BT", 10, False, {640: 7, 800: 8, 1280: 14, 1600: 18}),
+    "MapDescFactKey": ("Formal436 BT", 10, True, {640: (7, False), 800: (8, False), 1280: 14, 1600: 18}),
 }
-FONT_SOURCES = {"MapDescTipKey": "Tooltips_UI", "MapDescRule 4": "SPLoadingScreenText 14"}
+FONT_SOURCES = {"MapDescTipKey": "Tooltips_UI", "MapDescRule 4": "SPLoadingScreenText 14",
+                "MapDescFact": "PostgameTableEntrySmall 12", "MapDescFactKey": "AgeUpgradeSmall 12"}
 
 
 def source_face(text, name, fallback):
@@ -128,8 +134,11 @@ def font_entry(name, face, height, bold, overrides, nl):
              '\t\t<param BackgroundShadow="false"/>', '\t\t<param BackgroundOffset="2"/>',
              '\t\t<param BackgroundAlpha="1"/>']
     for res, h in sorted(overrides.items()):
-        lines += [f'\t\t<ResolutionOverride ResX="{res}">', f'\t\t\t<param AscentHeight="{h}"/>',
-                  '\t\t</ResolutionOverride>']
+        h, b = h if isinstance(h, tuple) else (h, None)  # (height, bold): a bold entry drawn plain there
+        lines += [f'\t\t<ResolutionOverride ResX="{res}">', f'\t\t\t<param AscentHeight="{h}"/>']
+        if b is not None:
+            lines.append(f'\t\t\t<param Bold="{"true" if b else "false"}"/>')
+        lines.append('\t\t</ResolutionOverride>')
     lines.append("\t</Font>")
     return nl.join(lines)
 

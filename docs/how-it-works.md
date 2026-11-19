@@ -3888,15 +3888,30 @@ attack row of the fill is matched, in order, with the action list it comes from 
 name checked against the action's (`[db+1FE4h]`); then:
 - the icons get the minimized panel's size (`(10)`, 0xC36508) instead of the stat panel's (`(16)`, 0xBA2100);
 - with `rofIcon`, the action's ROF (`[action+34h]` ms) and that icon go right after the damage icon;
-- with `projectilesIcon`, the projectiles the action fires before its reload go after the ROF, when above 1, as
-  combat fires them: its `<NumberOfShots>` while `numberOfShots` is on, times its `<NumberProjectiles>` (or
-  `<NumberOfProjectiles>`) while that key has `projectiles`; neither tag is parsed by the exe, so without the key
-  nothing shows. `shots.cpp` reads them through the shared action tag hook (`AddActionTagHandler`, the unknown-child
+- with `projectilesIcon`, the projectiles the action fires before its reload go after the ROF, when above 1: its
+  `<NumberOfShots>` times its `<NumberProjectiles>` (or `<NumberOfProjectiles>`) as the data writes them
+  (`projectiles="data"`, the default since version 5), or, with `projectiles="combat"`, as combat fires them: the shots
+  while `numberOfShots` is on, the projectiles only with its `projectiles` option. Neither tag is parsed by the exe,
+  which launches one projectile a shot (traced 2026-11-19: the launch 0x499422 runs once per shot, always from the
+  shot's call 0x48F88D, also beside another DLL). `shots.cpp` reads them through the shared action tag hook (`AddActionTagHandler`, the unknown-child
   path 0x5FA11E of the tactics and `<ProtoAction>` parsers) into a map keyed by the proto ID `[proto+4]` and the
   action name index `[action+4]`, which every player's copy keeps; `unitinfo::Shots` reads that map and applies the
   key's state. `projectiles="data"` asks it for the tags as written (`asData`), and `unitinfo::RequestShotTags` then
   registers the reader even with the key off: that changes nothing in combat, since the ROF filter gate and the
-  launch hook stay with `numberOfShots` (and its `projectiles` option).
+  launch hook stay with `numberOfShots` (and its `projectiles` option). The reader is on the shared action tag hook,
+  so beside another DLL it works as long as 0x5FA11E is stock (tested: applied and reached);
+- the help text: the fill builds one per attack row, each line after `<ttf><ttb>` (0x4C5076 with its third argument
+  1, 0x4C50B0; the fourth argument picks `<ttf><ttr>`, a red line, 0x4C8F35), the row's name, then the damage, the
+  range (and area), one line per multiplier (string 42229 or 42230). The key inserts after the damage line a line for
+  the ROF and one for the projectiles (`rofTip`, `projectilesTip`, `%s` the number), each with its icon, and a row
+  shown in short form (too long for its column, or the `+N more` gadget) carries that whole help text instead of its
+  text without icons;
+- the multipliers lose the zeros that end their decimals (`, 1.50x` is `, 1.5x`, `1.50X Bonus` is `1.5X Bonus`: a
+  number with a decimal point right before an `x` or `X` that ends a word), unless `multiplierZeros="keep"`;
+- an original attack row (its gadget spans the panel to the right edge) longer than that width over the font's
+  character width drops its last multipliers (`, <n>x <icon>` parts, last first) and ends with ` (+N)`. The font does
+  not shrink below 1080 lines (at 1024 x 768 a row is as wide in pixels as at 1920 x 1080), so the character width is
+  taken at 1080 lines at least;
   A row too long for its column keeps the damage, ROF and projectiles in its short form when they fit (the explorers'
   `Sharpshooter ATK 750 <ranged> 4.50 <rof> 3 <cylinder>`);
 - an **ability attack the unit cannot use** is dropped. Such an action is listed active by its tactic on every unit of
@@ -3926,6 +3941,11 @@ while it shows) stays for layouts that want it. `[icon:path]` in the data file i
 `[string:ID]` in a text, label or tip is that string of the string table (0x58EA52), resolved when the row is shown,
 since the tables load after the DLL starts, and kept once read: the version 4 hit points row is
 `<color=1, 1, 0>[string:68852]:</color>  {hitpoints}`, the word in the panel labels' yellow.
+
+**The tooltips under the hit points.** A gadget higher than its text catches the pointer over its whole
+rectangle. The layout's `uhcHitpoints` had the original label's rectangle (680..734 in 1024 x 768 units), which covers
+the left part of the first attack row (714..734) and is drawn above it, so that row's help text never showed there;
+it is now one line high (700..714), its text centred on the same 707.
 
 **Spill to the next line.** `spill="<gadget>"` on a row: the rows' texts are made first, then a row whose text is too
 wide for its gadget (VisibleLength, an icon counting as two characters, against LineBudget: 90 % of the gadget's width
@@ -3980,6 +4000,51 @@ forced by patching the screen's copy of the option (0x761BF0) and the file choic
 a x1.5 `BuildingWorkRate` aura shows 1.50 pts/s and builds 1.500; without them, 1.00 and 1.000, and a second builder
 0.30 (the civ's figure), 1.60 for three, measured 1.60. A gold miner under a x1.25 `GoldGatherRate` aura shows
 `+25% gold` with the stock rate row at 0.75/s, against 0.60/s with the keys off.
+
+### multiplierDecimals
+
+**The format.** The stat panel fill (cold part, 0x4D7F4D..0x4D7F98) and the minimized block's attack rows
+(0x699DEF..0x699E2D) loop over the damage record's bonus list (`[rec+28h]`, count `[rec+2Ch]`, 8 bytes each: the
+unittype, then the factor), skip a factor within 1e-6 of 1.0 and any type without an icon (below), and append
+`, %.1fx %s` (wide, 0xBA2060, `.rdata`) with the factor and its icon, or `, %dx %s` (0xC364A8) when the factor is
+whole (`factor - floor(factor)` at most 1e-6, 0xBA20B4 / 0xC35C18). So 1.25 is written `1.3x`. Byte search of the
+exe (2026-11-19): the format's address is pushed twice, `68 60 20 BA 00` at 0x4D7F7D and 0x699E1F, and is not read
+otherwise; the plain `%.1fx` at 0xBF1AD0 is pushed at 0x69BC28 (the special attacks' rollover, with string 18631
+`Bonus Damage: %s`) and 0x6EEC97 (an ability's rollover), not changed by the key. The key checks the whole string
+(site `MultiplierFormat`, 22 bytes) and writes N over the digit at 0xBA2068 through `WriteBytes` (which lifts the
+page's protection). When every byte but the digit is stock and the digit is already N (another DLL wrote it), it
+logs that and writes nothing, and the key counts as applied.
+
+**The help text.** Each multiplier adds a line to the row's help text: string 42229 (`%1.1fX Bonus Damage against %2s
+(%3s)`), or 42230 (`%1dX ...`) for a whole one, loaded by `push 0A4F5h / call 447719h` (BString from a string ID,
+`thiscall`, `ret 4`) at 0x4D7FB6 and 0x699E95 and formatted with the factor. The key redirects those two calls to a
+loader that calls 0x447719 and, when the copy holds `%1.1f`, writes it back with `%1.Nf` (0x401A12, 0x40196F,
+0x4010CA); the string table itself is not touched. The two sites and the callee are checked apart: another DLL there
+leaves the help text as it is, logged.
+
+### attackTypeIcons
+
+**The type chain.** For each bonus, both panels compare its unittype (ESI) with fixed abstract types,
+`[db+19B0h]` (the proto count) plus an index, each with its own texture `[[game+920h]+off]` and name string: in the
+fill +47h, +14h, +4Eh, +56h, +2, +13h, +16h, +1, +55h, +49h, +7, +4Fh, +50h, +51h, +4Dh, +75h, +11h, +54h, the
+minimized block the same list (0x699A95..). A type that is none of them jumps past the multiplier (0x4D800B,
+0x699F43): no text, no help line. A type with an icon formats it into the icon BString (`[esp+28h]` in the fill,
+`[esp+24h]` in the block, `<icon="(16)(TextureID(%d))">`), pushes its string ID and joins the shared path (0x4D7F44,
+0x699DE6), which loads the name and writes the row part and the help line.
+
+**The hooks** (`hooks/attacktypeicons_hooks.asm`) replace the test of +11h, `lea edx,[eax+11h] / cmp esi,edx` (5
+bytes), at 0x69B909 (fill, cold part) and 0x699D31 (block). Under `pushad` they ask the DLL for the type: a listed one
+gets `<icon="(16)(path)">` (fill) or `(10)` (block) written into the icon BString with the BString format 0x444EFB,
+and the hook pushes its string ID and jumps to the shared path, as a stock branch does (it leaves EAX, ECX and EDX
+dead there). Any other type gets every register back, the two instructions re-executed and a jump to the `jne` that
+follows (0x69B90E, 0x699D36), so the last two stock types and the skip are unchanged. The icon is a texture path in
+the markup, so nothing is loaded at startup; the types' IDs are found at each database load
+(`RequestAbstractUnitType`, which also registers a name the data does not define, harmlessly). The cfg line is
+triples of type, string ID and path.
+
+**Coexistence.** No other key writes in 0x69B909..0x69B90F or 0x699D31..0x699D37; `minUIStats` mirrors the rows
+these sites write. Another DLL that hooks the same chain holds those bytes, so the key fails `VerifyAll` there and
+leaves the rows to it.
 
 ### buildingWorkRateAuras
 
@@ -4455,6 +4520,62 @@ as the two re-executed instructions leave them, and the code after 0x493048 does
 before the function's own pushes: ESP, EBX, ESI, EDI and EBP are untouched on both paths, and -1 leaves through the same
 `ret 1Ch` as the stock failure path 0x4974C1. The mask and the state bit are simulation state, computed for every player
 on every machine; the key reads no local player and no clock.
+
+### autoScout
+
+**Who scouts.** The data decides: a unit scouts while its current tactic is the key's (`AutoScout` by default). The
+current tactic is `[[unit+58h]+0A8h]`, an index into the proto's tactics `[[proto+44h]+10h]`; a tactic's `+8` is its
+name ID, an index into the database's tactic names `[db+1FF0h]`, which the key searches once per data load for its
+name. A unit is born in its first tactic, so a file with `AutoScout` first scouts from birth; the buttons run
+`unitSetTactic`, the game's own set-tactic command (type 19h), which every machine runs and saved games keep.
+
+**The scan.** `AddWorldTick`, every 500 ms of game time `[world+108h]`. Each player's unit list `[player+F8h]` (count
+`+FCh`), validated through the unit table and its owner, gives the scouts, sorted by ID. For each player with scouts,
+the visibility grid of the world (`[world+250h]`: width `+14h`, height `+18h`, one dword per 2 m cell at `+20h`; the
+player's mask `[[world+2D8h]+4·id]`, its low half explored, its high half visible) is summed in blocks of 8 × 8 cells:
+which blocks are visible now, and per movement type an unexplored cell to stand on. The water of each cell comes once
+per map from the terrain's tile lookup (vtable `+194h` of `[world+88h]`, 0FFh for land); the movement type is
+`[proto+1D2h]` (1 land, 2 water, 4 air).
+
+**The orders.** A scout that is idle (0x44F1A7), or still on the move this key gave it (the current action's ID
+`[[mgr+24h]+8]` is the one it got), is given a target when it has none or its target was explored: the block whose
+unexplored cell is nearest, weighted against cells behind its heading, not held by another scout of the player and not
+given up by this one; then the nearest unexplored cell of that block. The order is the action manager's own move,
+0x50E36A, with the arguments of the unit order code (0x9444D3), but `a4` = 1, which sets action flag 17h: the leash
+0x489B15 skips a Move with that flag (0x4B95E4). A scout that stops (idle, not interrupted by another action) with its
+target unexplored, or that takes 90 s, gives the block up. When no unexplored cell is in reach, the target is the block
+not visible now with the oldest last-seen time (this key's own stamps, game time), the nearest first. Any other action
+(a fight, a flee) is left alone, and the scout goes on when it is idle again.
+
+**The leash.** The action manager walks a unit back to its anchor `[mgr+7Ch]` (x, y, z) when its current action has no
+order ID and it strays past a range (0x489B15 → 0x50E50E, a move with tolerance 1.0). That is what makes a flying pet
+circle its start when it has no orders; the animal wander `BUGA::doWander` runs only for a unit in a herd (`[mgr+ACh]`
+≥ 0). Each scan writes a scout's position into its anchor, so that a unit that stops scouting stays where it is.
+
+**The switch-off.** The command execute FUN_007C8E49 runs once per command, inside the world update (0x481BC2 →
+0x490015 → 0x64D31A), on every machine. Its head (`push ecx / push esi / mov esi,ecx / cmp dword [esi+5Ch],5`, 8
+bytes) is replaced by a `jmp` to `UhcAutoScoutCmdHook`, which calls `UhcAutoScoutCommand(cmd)` with EAX, ECX and EDX
+saved, re-executes the four instructions and jumps to the `jbe` at 0x7C8E51 with their flags. For a work command (type
+`[cmd+81h]` 0: move, attack, gather, garrison) or a stop (9), each listed unit `[cmd+40h]` owned by the command's
+player `[cmd+20h]`, not inside another unit (`[unit+6Ch]` = -1) and in the scouting tactic, gets its anchor set to its
+position and its return tactic through setTactic 0x4F7ECD(mgr, player, index, -1, 1, -1.0f, 1, 0), as the set-tactic
+command does per unit (0x7D107C). The order then applies to a unit in its normal tactic.
+
+**Why it is safe.** Everything read is simulation state: the unit and player tables, the tactic, the grid (the display
+switch of `blackmap` is not read), the terrain, game time. The containers are keyed by unit ID and player, and walked
+in that order. The orders and the tactic change are the game's own simulation functions, the same ones its unit orders
+and commands call, in the world update, so every machine makes the same calls in the same order; nothing goes to the
+network, and nothing reads the local player. The tables are only a cache: a loaded game (or another game) starts them
+again from the units' tactics and the grid, and the tactic itself is saved with the unit. The hook keeps every register
+the stock head needs (ECX, the flags of its `cmp`), and the stdcall callee keeps EBX, ESI, EDI and EBP. The real clock
+of the `log` timing line only goes to the log.
+
+<!-- private:begin -->
+**What was measured.** Two ravens of the Romanians on Great Lakes, the rest of the player idle: 9.4 % / 9.7 % of the
+map explored at 3 / 6 minutes without the key, 63.7 % / 100 % with it. The Dutch envoy alone on the same map: 50.1 % /
+71.1 %. A scan: about 50 µs with two scouts on 155 × 155 cells (with `log`, the order lines make the first scans cost
+milliseconds).
+<!-- private:end -->
 
 ### customWalls
 
