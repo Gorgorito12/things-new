@@ -1,0 +1,52 @@
+Reply to JTMaston, 2026-11-19
+=============================
+
+Maps
+----
+"Can the loading screen ones also have line breaks after each key value pair like the lobby ones do?"
+Done. On the loading screen every fact now has its own line, in the same order as the lobby, with the same
+horizontal lines, colours and bold keys. To keep everything inside the box at 1024x768, the facts use a font
+2 pixels smaller at that resolution only (two new entries in fonts3.xml, MapDescFact and MapDescFactKey, added by
+apply_fix.py); at 1280 and above nothing changes. All 208 maps fit in English. In Spanish one loading text
+(Great Barrier Reef) drops its last sentence; the lobby keeps it whole.
+Pictures: map-descriptions\final\ (every capture retaken), for example acre-loading.jpg and
+"dansil Manicouagan Basin-loading-768.jpg" (the longest text, at 1024x768).
+Side finding: the game ignores a fonts3.xml <ResolutionOverride ResX="1024">; at 1024x768 it uses the entry's base
+size, and at 1920x1080 the ResX="1280" one.
+
+Minimized UI (version 5; details in min-ui\note-for-team-v5.txt)
+-----------------------------------------------------------------
+1. Projectile number only above 1: it already was. The "1" you saw, before the red target icon, is the attack's
+   area (DamageArea 1 on the Escopetero's ranged attack), which the game itself writes in both panels.
+2. Escopetero 4: done. The number now comes from your tactics (NumberOfShots x numberprojectiles), so it shows 4
+   with any DLL (Bacamarteer 6, Schwarzlose 12, the explorers' Sharpshooter 3).
+   Please note: in game today the Escopetero fires ONE projectile per volley. We traced it with your own uhc.dll:
+   nothing reads numberprojectiles, neither the exe nor your DLLs. Our key "numberOfShots projectiles" makes combat
+   fire the 4. If you want the panel to show what combat really fires instead, set projectiles="combat" in
+   minuirows.xml.
+3. x1.3 / x0.8 instead of x1.25 / x0.75: the game prints multipliers with one decimal. Your uhc.dll changes that
+   to two; ours did not when it replaced yours. New key multiplierDecimals does the same, and also fixes the
+   tooltip, which still said "1.3X" even with your DLL (string 42229 is "%1.1fX ..."; editing it to "%1.2fX ..."
+   in your string tables fixes the tooltip without any DLL). The minimized rows drop trailing zeros (1.5x, 1.25x).
+   The third multiplier (1.5x vs Maneuver units) was missing with our DLL because it lacked your wol.cfg key
+   attackTypeIcons; it has it now, reading the same line.
+4. Tooltips: pictures of your panels today and of version 5 are in min-ui\final\ (*-tip-*.jpg). Version 5 keeps
+   the game's worded tooltip and adds "Attacks every 3.50 s" and "4 projectiles before the reload".
+
+Wanders and scouts (request #68)
+--------------------------------
+New DLL key autoScout and the pack auto-scout\ (README.txt there):
+- Any unit can get DE's envoy-style auto scout from data alone: a tactic named AutoScout in its tactics file and two
+  buttons (Start scouting / Stop scouting). It goes to the nearest unexplored ground it can reach (land, water or
+  air), then the next; once everything is explored, it revisits the ground seen longest ago. Any move, attack,
+  gather, garrison or Stop order from its owner switches it off, as in DE.
+- The raven: it did not circle because of the animal wander (it belongs to no herd). The game walks every idle unit
+  back to its last ordered spot when it strays (a "leash"); the raven drifted and was walked back, over and over.
+  With the key its moves are exempt and its leash point follows it.
+- The pack makes the raven, both pet parrots and the French balloon scout from birth (with the two buttons), removes
+  the raven's WanderDistance, and gives the Dutch envoy the buttons (off at birth). Which units get it is your call;
+  the README shows how to add it to any unit.
+- Great Lakes, two ravens, share of the map explored: today 9.4 % at 3 min and 9.7 % at 6 min; with auto scout
+  63.7 % and 100 %. Video: docs\media\autoScout-wol.mp4 (with the key) and autoScout-wol-control.mp4 (without).
+- Tested in single player, also beside your uhc.dll; not in multiplayer. The button tooltips are in English only
+  (string IDs 690901 and 690902).
