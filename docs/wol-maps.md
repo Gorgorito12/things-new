@@ -325,6 +325,16 @@ evidence (bench scripts, shots, hashes) in `rea/evidence/map-descriptions-v2/` o
   8 players (globals first, unknown conditions skipped, random calls at their low and high ends): all
   208 maps evaluated, sizes rounded up to the 2-m cells; checked in game (editor, world size read from memory)
   on acre, DansilAlaska and ESOC_Adirondacks at 2/4/8 players: all nine match.
+- **Final review (2026-11-18):** all 208 texts written. 36 maps were shown in game in English at
+  1920 × 1080: at least 2 per region, the tightest fits, the maps whose facts changed, several creators,
+  rectangular maps, a map without King of the Hill. 10 of them were also shown at 1024 × 768, 3 in
+  Spanish (one of those also at 1024 × 768), and an 8-player loading screen at both resolutions. Every
+  capture passed: the lines are continuous, the keys bold and coloured, nothing is cut off, the creator
+  is last, there is no "random" outlaw. Nothing in the pack changed. Seen, not a fault: at 1024 × 768
+  the "Region | Trade route | King of the Hill" row can break inside the key ("King of the" / "Hill").
+  Shots: `wol-fixes/map-descriptions/final/` (v1 shots removed from there). Three captures ran in
+  parallel on WoLReal2/3/4, with a lock so that only one DWM thumbnail overlay is up at a time. The
+  overlay grab needs the display on: a display that went off by idle gave black frames and no rollover.
 - **Shared profile:** with `LastSelectedSPHC` empty the skirmish button opens "Create Your Home City";
   the capture script sets a saved home city (Dutch) under testbed's start lock for the launch only and
   puts the old value back, and again after the game exits.
