@@ -31,9 +31,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-19 15:22 | [`attackTypeIcons`](#attacktypeicons) | Filmed in WoL, with a control. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
+| Thursday 2026-11-19 15:22 | [`multiplierDecimals`](bug-fixes.md#multiplierdecimals) | Filmed in WoL, with a control. The attack rows' bonus multipliers show two decimals, as the data has them: `1.25x` instead of a rounded `1.3x`, in both panels and their tooltips. | Nothing. |
 | Thursday 2026-11-19 14:11 | [`autoScout`](#autoscout) | Added. A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon and the envoy. |
-| Thursday 2026-11-19 13:57 | [`attackTypeIcons`](#attacktypeicons) | Added. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
-| Thursday 2026-11-19 13:57 | [`multiplierDecimals`](bug-fixes.md#multiplierdecimals) | Added. The attack rows' bonus multipliers show two decimals, as the data has them: `1.25x` instead of a rounded `1.3x`, in both panels and their tooltips. | Nothing. |
 | Tuesday 2026-11-17 14:11 | [`preloadDll`](#preloaddll) | Added. Our `dinput8.dll` also loads another DLL of the game folder, such as WoL's `WoL.dll`, at the moment WoL's own `dinput8.dll` loader would. | Nothing. |
 | Tuesday 2026-11-17 10:30 | [`minUIStats`](#minuistats) | Filmed in WoL, with a control. The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. |
 | Friday 2026-11-13 17:27 | [`killSpawn`](#killspawn) | Filmed in WoL, with a control. A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | The tags on the civ in `civs.xml`. |
@@ -7226,7 +7226,19 @@ inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]
 
 *The attack rows also list the bonus multipliers against WoL's own unit classes, such as "1.5x against Maneuver units", which the game leaves out.*
 
-**Added:** Thursday 2026-11-19 13:57
+**Added:** Thursday 2026-11-19 13:57 · **Filmed in WoL:** Thursday 2026-11-19 15:22
+
+![multiplierDecimals and attackTypeIcons in WoL](media/multiplierDecimals-wol.gif)
+
+*In WoL, with our `UHC.dll`, `multiplierDecimals` and WoL's own `attackTypeIcons` line (Ethiopians, an Escopetero
+selected, the camera still, the minimized panel without `minUIStats`, the pointer resting on the ranged row):* the
+rows read `1.50x`, `1.25x`, `0.75x`, and the tooltip lists the three multipliers with two decimals, `1.50X` against
+Maneuver units first. [Full video (MP4)](media/multiplierDecimals-wol.mp4).
+
+![multiplierDecimals and attackTypeIcons in WoL, keys off](media/multiplierDecimals-wol-control.gif)
+
+*In WoL, both keys off (the same scene):* `1.3x` and `0.8x` in the rows, `1.3X` and `0.8X` in the tooltip, and no
+multiplier against Maneuver units. [Full video (MP4)](media/multiplierDecimals-wol-control.mp4).
 
 ![attackTypeIcons: the Escopetero's ranged row](media/attackTypeIcons-escopetero.jpg)
 

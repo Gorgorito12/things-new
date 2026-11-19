@@ -32,6 +32,13 @@ portrait band, the health bar shown.
     Projectiles from the data, no numberOfShots key:          escopetero, bacamarteer, explorer    pass
       Escopetero 4, Bacamarteer 6, Sharpshooter 3             (presidial, cartographer)
     No number when 1 projectile (Musketeer)                   1type                                pass
+    Schwarzlose in its Bombard tactic (its attacks show only  schwarzlose, tip-schwarzlose-        pass
+      there; unitSetTactic("Bombard") by console): 12           bombard
+    Floating battery, long-range attack: 5 (its ranged        floatingbattery, tip-floating-       pass
+      attack fires 1: no number)                                battery-longrange
+    <bigPanelRows projectiles="combat">, numberOfShots off:   combat-escopetero, combat-tip-       pass
+      no projectile number for the Escopetero, in the row or     escopetero
+      the tooltip (combat fires 1 without the key)
     The "1" next to the red target is the area (DamageArea    wolmin-escopetero (WoL today),       kept (the
       1), written by the game in both panels                    tip-escopetero-ranged ("with 1     game's own,
                                                                 Area")                             the data's)
@@ -70,6 +77,15 @@ portrait band, the health bar shown.
       tooltips 1.25X
     AI skirmish with every v5 key and xsErrorLog: no XS       (no picture)                         pass
       error, the AI plays
+    The merged DLL (minimized UI v5 + autoScout + map         merged-allkeys-skirmish              pass
+      descriptions), every key of the cfg template on, the
+      auto-scout pack: Romanians (two ravens, an Escopetero
+      placed by the map) against a German AI, Great Lakes,
+      4 minutes: 120 applied, 0 failed; 84 % explored; the
+      Escopetero 4 projectiles, 1.5x / 1.25x / 0.75x
+    The same beside WoL's uhc.dll (our dinput8.dll, every     merged-woluhcdll-skirmish            pass (the 35
+      key of the template in engine-ext.cfg): 85 applied,                                          failed are
+      35 failed; 82 % explored; the same panel                                                     WoL's sites)
     Performance (perfprobe.py, 45 s, an Escopetero            (no picture)                         noise
       selected, other games beside it): keys on 913 fps,
       update 0.1 ms, render 1.0 ms; off 906 fps, 0.2 ms
@@ -81,12 +97,13 @@ Icons (icons-x4.png), hit points as a word, the game's house, three and four cos
 three armors (wachtmeester), Grognard, Settler, poison, auras, ships, construction, r1024-caravan, spanish-hitpoints,
 the projectile scenes with "numberOfShots projectiles" (projectiles-escopetero-volley, -schwarzlose,
 -floatingbattery: combat fires those numbers with that key), and the side-by-side sheets (vs-wol-*, popicon-*).
-Not retaken: the Schwarzlose (its attacks show only in its Bombard tactic; projectiles-schwarzlose shows 12).
+The Schwarzlose and the floating battery were taken again in version 5 (minUIStats-v5-schwarzlose, -floatingbattery).
 
 Files
 -----
     00-overview.jpg                       the main version 5 scenes with captions
     minUIStats-v5-*.jpg                   version 5 (table above)
     minUIStats-v5-wol-volley-count.jpg    WoL's uhc.dll today: one projectile per Escopetero volley, traced
+    minUIStats-v5-merged-*.jpg            the merged DLL's smoke test (whole screen: minimap and panel), 2026-11-19
     minUIStats-v4-*.jpg                   version 4 scenes that did not change
     minui-icons.png, minui-preview-*.png  the icons and the layouts' rectangles (unchanged since version 3/4)
