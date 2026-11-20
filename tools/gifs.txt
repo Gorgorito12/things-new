@@ -314,3 +314,5 @@ paraguayanWorks-collapse-wol 62 4 0.5
 paraguayanWorks-collapse-wol-control 67 4 0.5
 shipTechLimit-wol 3 30 3 800:70:0:280+800:240:480:320
 shipTechLimit-wol-control 3 30 3 800:240:480:320
+autoScout-back-wol 8 24 2
+autoScout-back-wol-control 8 24 2

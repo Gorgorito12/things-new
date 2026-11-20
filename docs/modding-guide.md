@@ -7884,6 +7884,19 @@ the minimap stays as it was at the start: 9.4 % explored at 3 minutes, 9.7 % at 
 
 [Full video (MP4)](media/autoScout-wol-control.mp4).
 
+![autoScout backs off when hit](media/autoScout-back-wol.gif)
+
+*In WoL, with `autoScout log` (2026-11-20; a test map with four enemy outposts and two groups of enemy Musketeers, the
+camera on the selected Explorer, which scouts with the Envoy):* the Explorer sees an outpost, is shot, marks the
+danger and moves out of the outpost's reach, then scouts elsewhere; the log lines at the bottom say each step. 346 of
+its 400 hit points left at 91 s. [Full video (MP4)](media/autoScout-back-wol.mp4).
+
+![autoScout without the danger parts](media/autoScout-back-wol-control.gif)
+
+*The same map with `autoScout noAvoid noBack` (the behaviour of 2026-11-19):* the Explorer keeps to its targets when
+shot and is at 290 hit points at 87 s. On this map the difference shows over minutes more than in one clip: see the
+status below. [Full video (MP4)](media/autoScout-back-wol-control.mp4).
+
 ![The minimap at 3 and 6 minutes](media/autoScout-minimaps.jpg)
 
 *The minimap of the two games at 3 and 6 minutes of game time: the share is the player's explored grid, read from
@@ -7924,11 +7937,12 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
 - **Danger** (both on unless `noAvoid` / `noBack`):
   - *Enemy buildings that shoot:* once the player has seen an enemy building with a ranged or siege attack (a Town
     Center, an outpost, a tower, a fort), its range plus 12 m is no target any more, and a target whose straight line
-    crosses it is taken only when no other is left. Only what the player has seen counts.
+    crosses it is taken only when nothing else is left, not even ground to look at again. Only what the player has
+    seen counts.
   - *Hit:* a scout that lost hit points since the last scan marks 2 minutes of danger around its attacker (the nearest
-    enemy, or Gaia, unit with an attack within 40 m; its reach + 16 m), gives up its target and moves 24 m away from
-    it, then scouts elsewhere. It stays in its scouting tactic. When the game's own flee or fight has taken over
-    (`<runaway>1</runaway>` flees), that is left alone.
+    enemy, or Gaia, unit with an attack within 40 m; its reach + 16 m), gives up its target and moves out of the
+    attacker's reach (24 to 60 m away, instead of the game's own short flee), then scouts elsewhere. It stays in its
+    scouting tactic.
   - A scout can still be shot before it sees what shoots it: an outpost can outrange a scout's line of sight.
 - **Switch-off:** a move, attack, gather, garrison or Stop order given by the unit's owner puts it back in its other
   tactic (`ReturnTactic`, else the first tactic of its file that is not the scouting one) before the order applies,
@@ -7943,7 +7957,8 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
   the game's own move order, and no network command is sent. Not tested in multiplayer.
 - **Saved games:** the tactic is saved with the unit, so a loaded game goes on scouting (tested); the key's own
   tables (targets, blocks given up) are rebuilt from the units and the grid.
-- **Cost:** a scan takes about 50 µs with two scouts on a 155 × 155-cell map. With `log`, the first orders write a
+- **Cost:** a scan takes about 50 µs with two scouts on a 155 × 155-cell map, about 90 µs with the danger tables (two
+  scouts, four enemy outposts, 130 × 130 cells). With `log`, the first orders write a
   line each, which costs milliseconds: keep `log` for testing.
 - **Log:** `autoScout: units in tactic 'AutoScout' explore the map on their own`, `keeps away from enemy buildings
   that shoot; backs off when hit`; with `log`: `player 1 sees player 2's unit 3 (proto 439) at (159.0, 147.0), range
@@ -7959,6 +7974,18 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
   save and load kept it scouting, a raven killed while scouting and one killed after: no error. A/B with
   `perfprobe.py` (90 s, the same skirmish, two other games running on the machine): 628 fps against 589, main thread
   87 % against 89 %, one 420 ms frame in the key-on run whose scans all took under 0.3 ms.
+  **Danger (2026-11-20, single player, WoL):** a 260 m test map, player 1 (Ethiopians) with an Explorer and an Envoy in
+  `AutoScout`, player 2 with four outposts and seven Musketeers. Key with `noAvoid noBack`: 61.5 % explored at 3 minutes,
+  70.5 % at 6; the Envoy was killed at about 4:50, the Explorer fell to 24 of 400 hit points at 2:00 and stood healing
+  for the last 4 minutes. Default key: 68.7 % / 79.4 %, both alive, the Explorer never below 211, the Envoy never hit.
+  Earlier builds of the same day showed the faults that were fixed: a scout let the game's short flee keep it in an
+  outpost's range, and a target past the danger was taken before ground to look at again. A skirmish on Acre against a
+  Moderate German AI (`wolOtto`), the Dutch Explorer put in `AutoScout` at 1:28: 17.5 % at 3:09, 40.5 % at 6:20, the
+  Explorer at full hit points; the AI went from 15 to 26 units, no XS error. The pack's explorer tactics were checked as
+  XML and in game (`unitSetTactic("AutoScout")` from the console; the two buttons were not clicked). Beside WoL's DLL
+  (`dinput8.dll`, its `uhc.dll`): applied, back-offs in the log. A/B with `perfprobe.py` (100 s, no `log`, the same
+  map, other games running on the machine): 1263 fps against 1278, update 0.134 ms against 0.140, main thread 79 %
+  against 75 %, one 67 ms frame with the key's danger parts on and none off.
 
 ## 6. Editing the game data
 

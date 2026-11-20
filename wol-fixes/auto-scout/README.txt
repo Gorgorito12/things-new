@@ -13,9 +13,8 @@ It keeps away from danger (since 2026-11-20):
   - Enemy buildings that shoot (Town Centers, outposts, towers, forts...): once the player has seen one, the scout
     no longer picks ground within its range plus 12 m, and prefers ground it can reach without crossing that circle.
   - When a scout is hit, it marks the area around its attacker (the nearest enemy that can attack, within 40 m) as
-    dangerous for 2 minutes, gives up its current target and moves 24 m away from the attacker, then goes on
-    scouting elsewhere. It stays in AutoScout. If the game's own flee or fight has already taken over (a tactic with
-    <runaway>1</runaway> flees), that is left alone, and the scout goes on once it is idle.
+    dangerous for 2 minutes, gives up its current target and moves out of the attacker's reach (24 to 60 m, instead
+    of the game's own short flee), then goes on scouting elsewhere. It stays in AutoScout.
 
 This pack sets it up in WoL's data:
   - the Romanian raven (WOLraven), the two pet parrots (PetMacaw, PetGreyParrot) and the French balloon

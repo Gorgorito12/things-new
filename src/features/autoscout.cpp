@@ -27,7 +27,8 @@
 //   owner's stance toward the scout's player is enemy, 0x484D2D; the longest range of the proto's actions that deal
 //   ranged or siege damage) that stand on a cell the player sees now are remembered, by unit ID, until they die (after
 //   a load, a cell it has explored counts as seen, once). Blocks within range + 12 m of one are not targets, and a
-//   target whose straight line crosses one is taken only when no other is left;
+//   target whose straight line crosses one (or, for one the scout is in, goes deeper) comes after every clear target,
+//   unexplored or seen;
 // - back: a scout whose hit points [unit+64h] dropped since the last scan marks a danger circle for 120 s around the
 //   nearest hostile unit with an attack within 40 m (0x4A1C55; Gaia's count), or around itself, gives up its target and
 //   moves away from it (the same move order, taking over a stock flee or fight), out of its reach + 10 m (24 to 60 m),
@@ -605,11 +606,17 @@ bool Unsafe(const PlayerGrid& grid, std::int32_t block) {
   return block >= 0 && static_cast<std::size_t>(block) < grid.unsafe.size() && grid.unsafe[block] != 0;
 }
 
-// Whether the straight line from the unit to the cell crosses a circle the unit is not inside already.
+// Whether the straight line from the unit to the cell crosses a circle; for a circle the unit is inside already,
+// whether it passes nearer its centre than the unit is now (it goes deeper instead of out).
 bool LineCrosses(const PlayerGrid& grid, float ux, float uz, std::int32_t cell) {
   const Vec3 p = CellPoint(cell, 0.0f);
   for (const Circle& c : grid.circles) {
-    if (!Inside(c, ux, uz) && Crosses(c, ux, uz, p.x, p.z)) {
+    const float now = std::hypot(ux - c.x, uz - c.z);
+    if (now >= c.r) {
+      if (Crosses(c, ux, uz, p.x, p.z)) {
+        return true;
+      }
+    } else if (Crosses(Circle{c.x, c.z, now - 1.0f}, ux, uz, p.x, p.z)) {
       return true;
     }
   }
@@ -662,31 +669,35 @@ bool PickTarget(const char* world, std::int32_t player, const char* unit, Scout&
       bestDistance = d;
     }
   }
-  if (best < 0 && crossing >= 0) {
-    best = crossing;
-    bestDistance = crossingDistance;
-  }
-  if (best >= 0) {
-    // The nearest unexplored cell of that block it can stand on.
-    const std::int32_t block = BlockOf(best);
+  // The nearest unexplored cell of a block it can stand on.
+  auto unexplored = [&](std::int32_t first) {
+    const std::int32_t block = BlockOf(first);
     const std::int32_t bx = block / g_map.bh;
     const std::int32_t bz = block % g_map.bh;
-    float nearest = distance(best);
+    std::int32_t cellBest = first;
+    float nearest = distance(first);
     for (std::int32_t x = bx * kBlock; x < std::min(g_map.w, (bx + 1) * kBlock); ++x) {
       for (std::int32_t z = bz * kBlock; z < std::min(g_map.h, (bz + 1) * kBlock); ++z) {
         const std::int32_t cell = x * g_map.h + z;
         if (CanStand(cell, move) && !Explored(world, player, cell) && distance(cell) < nearest) {
           nearest = distance(cell);
-          best = cell;
+          cellBest = cell;
         }
       }
     }
-    scout.cell = best;
+    scout.cell = cellBest;
     scout.block = block;
     scout.revisit = false;
     return true;
+  };
+  if (best >= 0) {
+    return unexplored(best);
   }
-  std::uint32_t oldest = 0;
+  // Then the block not visible now that was seen longest ago (the nearest first among equals), by a clear line; then
+  // an unexplored target whose line crosses danger; then a seen one whose line does.
+  std::int32_t revisit = -1, revisitCrossing = -1;
+  std::uint32_t oldest = 0, oldestCrossing = 0;
+  float revisitDistance = 0.0f, revisitCrossingDistance = 0.0f;
   for (std::size_t b = 0; b < blocks; ++b) {
     const std::int32_t cell = g_map.standCell[move][b];
     if (cell < 0 || grid.visible[b] != 0 || taken.count(static_cast<std::int32_t>(b)) != 0 ||
@@ -694,20 +705,30 @@ bool PickTarget(const char* world, std::int32_t player, const char* unit, Scout&
       continue;
     }
     const float d = distance(cell);
-    if (best < 0 || grid.lastSeen[b] < oldest || (grid.lastSeen[b] == oldest && d < bestDistance)) {
-      best = cell;
-      oldest = grid.lastSeen[b];
-      bestDistance = d;
+    const bool crosses = !grid.circles.empty() && LineCrosses(grid, mx, mz, cell);
+    std::int32_t& pick = crosses ? revisitCrossing : revisit;
+    std::uint32_t& seen = crosses ? oldestCrossing : oldest;
+    float& pickDistance = crosses ? revisitCrossingDistance : revisitDistance;
+    if (pick < 0 || grid.lastSeen[b] < seen || (grid.lastSeen[b] == seen && d < pickDistance)) {
+      pick = cell;
+      seen = grid.lastSeen[b];
+      pickDistance = d;
     }
   }
-  if (best < 0) {
+  if (revisit < 0 && crossing >= 0) {
+    return unexplored(crossing);
+  }
+  if (revisit < 0) {
+    revisit = revisitCrossing;
+  }
+  if (revisit < 0) {
     if (!scout.given.empty()) {
       scout.given.clear();  // everything was given up: try them again on the next scan
     }
     return false;
   }
-  scout.cell = best;
-  scout.block = BlockOf(best);
+  scout.cell = revisit;
+  scout.block = BlockOf(revisit);
   scout.revisit = true;
   return true;
 }

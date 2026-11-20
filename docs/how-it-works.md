@@ -4654,13 +4654,15 @@ scout's hit points `[unit+64h]`; a drop is a hit. The units within 40 m (0x4A1C5
 and belong to Gaia or to a player whose stance toward the scout's is enemy give the attacker, the nearest (the lower ID
 on a tie); a circle of its reach (at least 6 m) + 16 m around it, or of 24 m around the scout when there is none, is
 kept 120 s of game time (32 at most per player, the oldest dropped first; a hit within 6 m of a circle refreshes it).
-The scout gives its target up, and when it is idle or on this key's move, it gets the same move order to a point 24 m
-away from the attacker (the first of seven headings, from straight away to 105° off, that is on the map, standable for
-its movement type and outside every circle), and keeps it for 8 s or until it stops; a stock flee or fight (another
-action) is left alone. *Both:* a block whose centre is within a circle's radius plus half a block is never a target
-(unexplored or revisited); a target whose straight line from the scout crosses a circle the scout is not inside is
-taken only when no clear one is left; a scout whose target block becomes unsafe gets another target (the block is not
-given up). The circles and the per-proto reach cache are the key's own tables, keyed by unit ID and proto, walked in
+The scout gives its target up and gets the same move order (taking over a stock flee or fight, which would leave it
+in range) to a point out of the attacker's reach + 10 m, 24 to 60 m away (the first of seven headings, from straight
+away to 105° off, that is on the map, standable for its movement type and outside every circle), and keeps it for 8 s
+or until it stops; a hit during a back-off less than 3 s old orders no new one. *Both:* a block whose centre is within a
+circle's radius plus half a block is never a target (unexplored or revisited). The target is, in this order: the
+nearest unexplored one whose straight line from the scout crosses no circle (for a circle the scout is in: comes no
+nearer its centre than the scout is); the seen block
+visited longest ago by such a line; the nearest unexplored one whose line crosses; the oldest seen one whose line
+crosses. A scout whose target block becomes unsafe gets another target (the block is not given up). The circles and the per-proto reach cache are the key's own tables, keyed by unit ID and proto, walked in
 ID and insertion order, rebuilt after a load.
 
 **The leash.** The action manager walks a unit back to its anchor `[mgr+7Ch]` (x, y, z) when its current action has no
@@ -4692,7 +4694,9 @@ bits, stances, units, hit points); the attacker search does not depend on the or
 **What was measured.** Two ravens of the Romanians on Great Lakes, the rest of the player idle: 9.4 % / 9.7 % of the
 map explored at 3 / 6 minutes without the key, 63.7 % / 100 % with it. The Dutch envoy alone on the same map: 50.1 % /
 71.1 %. A scan: about 50 µs with two scouts on 155 × 155 cells (with `log`, the order lines make the first scans cost
-milliseconds).
+milliseconds). Danger (2026-11-20, a 260 m map with four enemy outposts and seven Musketeers, an Explorer and an Envoy):
+61.5 % / 70.5 % at 3 / 6 minutes and the Envoy killed with `noAvoid noBack`; 68.7 % / 79.4 % and both alive with the
+default; about 90 µs a scan.
 <!-- private:end -->
 
 ### customWalls
