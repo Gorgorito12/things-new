@@ -4,6 +4,20 @@ Veterancy rank marks as soutache knots (WoL request #74)
 JTMaston: "use soutaches from Hussar uniforms: Rank1 - one single loop in bronze colour. Rank2 - Triloop in silver
 colour. Rank3 - Pointed/spiked triloop in gold colour."
 
+Version 7 (2026-11-20; not yet seen in the game): traced from the approved high-resolution sheet
+(reference-approved-hires.webp, 1536 x 1024, transparent background). trace_marks.py cuts each mark by its alpha,
+upscales it twice, makes it symmetric about the stem (the mark averaged with its mirror), traces the outline, the metal's
+edge and every loop hole as smooth closed curves (traced/rank_N.json), and renders them with the sheet's own colours
+(lightly blurred, made symmetric too) under a dark brown border (traced/rank_N.png). aoe3-blender-tools' make_rings.py
+--rank-shapes places them in the sprites by the same rules as before (centred on the HP bar, the same bottom for every
+rank) in 512-texel textures. Overlap with the sheet (IoU, 1 = identical):
+    rank                         1      2      3      4      5
+    silhouette               0.985  0.995  0.992  0.995  0.991
+    loop holes               0.990  0.983  0.953  0.958  0.968
+    (against the sheet made symmetric: silhouette 0.995 to 0.997, holes 0.982 to 0.997)
+Left on purpose: rank 1's crossing, where the sheet lays one strand over the other, is drawn symmetric.
+compare-reference.png: the sheet (top), ours (middle), ours at 50 % over the sheet (bottom), at the sheet's own scale.
+
 Version 6 (2026-11-20, after the user's review of version 5; not yet seen in the game): ranks 2 and 4 rounder: their top
 loop a full round ring, their side loops round-ended ovals, every join and end drawn twice as finely (a point every 0.02
 glyph unit); the side loops' upper half fuller and their axis at the sheet's angle, measured on its loop holes (rank 3:
