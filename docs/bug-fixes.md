@@ -1070,7 +1070,7 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
 
 *The health bars over units stay still instead of jumping up and down while the units fight or move.*
 
-**Added:** Monday 2026-11-09 08:13 · **Filmed in WoL:** Friday 2026-11-20 15:38
+**Added:** Monday 2026-11-09 08:13 · **Filmed in WoL:** Friday 2026-11-20 15:39
 
 ![steadyHitpointBars in WoL](media/steadyHitpointBars-wol.gif)
 
