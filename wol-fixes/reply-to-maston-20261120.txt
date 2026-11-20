@@ -21,7 +21,10 @@ faults:
   animation laid the chimneys on their side and left crates floating. The bones now have the arsenal's orientation.
   The standing building looks the same, and it now collapses upright.
 WoL-paraguayan-works-fix.zip and WoL-paraguayan-works-originals.zip unzip over the WoL folder. Before/after videos are in
-media\. The Heavy Works use other models and were not checked. Low model detail is not tested yet.
+media\. The Heavy Works use other models and were not checked.
+Low model detail ("High Poly Models" off): the works look the same as at high detail, with the same smoke and damage.
+At low detail no building plays the falling-pieces collapse, the arsenal included: they fade out over their rubble. No
+<lowpoly> branch is needed; it would only make the works cheaper to draw, and it would need simpler models of them.
 Note for modders: an anim XML saved with Unix (LF) line endings made the building invisible in our tests. Keep CRLF.
 
 Latin American politicians (#70): key politicianEnablesTech, wol-fixes\politician-ui\
