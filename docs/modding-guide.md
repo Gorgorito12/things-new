@@ -31,9 +31,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-20 11:59 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 11:50 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | The tag on the civ in `civs.xml`. |
 | Friday 2026-11-20 11:50 | [`homeCityTechsInUnits`](#homecitytechsinunits) | Added. A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | The card's tech in the `<Tech>` rows, made obtainable for the civ. |
-| Friday 2026-11-20 11:28 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Thursday 2026-11-19 15:22 | [`attackTypeIcons`](#attacktypeicons) | Filmed in WoL, with a control. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
 | Thursday 2026-11-19 15:22 | [`multiplierDecimals`](bug-fixes.md#multiplierdecimals) | Filmed in WoL, with a control. The attack rows' bonus multipliers show two decimals, as the data has them: `1.25x` instead of a rounded `1.3x`, in both panels and their tooltips. | Nothing. |
 | Thursday 2026-11-19 14:11 | [`autoScout`](#autoscout) | Added. A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon and the envoy. |
@@ -3742,7 +3742,7 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 11:28
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 11:59
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
@@ -3758,12 +3758,14 @@ with 504 and 346 hit points, and the log shows the ranks.
 
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
 
-*In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (filmed again on 2026-11-20 with the soutache knots;
-2 `Hussar` against 10 `Crossbowman`, both taking the defaults of their type):* each rank shows its mark over the unit's HP
-bar, clear of it: a soutache knot of a hussar's uniform, one bronze loop at rank 1, a silver trefoil at rank 2, a gold
-trefoil with pointed loops at rank 3, then one white star over the gold knot at rank 4 and two at rank 5; a Crossbowman
-that kills shows the bronze loop. The floating text gives the rank's name in its colour. The surviving Hussar ends at
-rank 5 with 8 kills. The five marks, enlarged 4 times: [veterancyBonus-marks-x4.png](media/veterancyBonus-marks-x4.png).
+*In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (filmed again on 2026-11-20 with the soutache knots
+after JTMaston's review; 2 `Hussar` against 10 `Crossbowman`, both taking the defaults of their type):* each rank shows its
+mark over the unit's HP bar, clear of it: a soutache knot of a hussar's uniform, shaded as polished metal: a bronze loop at
+rank 1, three round silver loops at rank 2, three eye-shaped gold loops at rank 3, five round gold loops at rank 4 and five
+eye-shaped gold loops at rank 5; a Crossbowman that kills shows the bronze loop. The floating text gives the rank's name in
+its colour. A Hussar reaches rank 5. The five marks, enlarged 4 times:
+[veterancyBonus-marks-x4.png](media/veterancyBonus-marks-x4.png); at the game's own size (default camera, 1920 x 1080):
+[veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png).
 [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
 
 ![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
@@ -3799,7 +3801,7 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
     <VeterancyDefault unittype="AbstractInfantry">
         <VeterancyBonus kills="1" modifytype="Damage">1.3</VeterancyBonus>
     </VeterancyDefault>
-    <VeterancyRank rank="1" name="Veteran" color="CD7F32"/>
+    <VeterancyRank rank="1" name="Veteran" color="B08D57"/>
     <VeterancyRank rank="2" name="Elite" color="C8CDD7"/>
     <VeterancyRank rank="3" name="Champion" color="FFCD28"/>
     <VeterancyRank rank="4" name="32485" color="E04040"/>
@@ -3842,11 +3844,13 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   unit already dead. Stock's flag is not needed.
 - **Hit points:** `MaxHP` raises the current ones in proportion: 212.6 became 318.9 at ×1.5.
 - **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows a soutache knot (2026-11-20, JTMaston's
-  #74, in place of the chevrons): rank 1 a single loop in bronze, rank 2 a trefoil in silver, rank 3 a trefoil with
-  pointed loops in gold; at ranks 4 and 5 the gold knot with one or two white stars over it (2026-11-11); a rank above the
-  fifth keeps rank 5's mark. Each knot is symmetric, a metallic cord with a thin black border, and its two tails cross
-  under the knot and run out left and right, at the same lowest height for every rank. The stars sit over the knot, away
-  from the HP bar, and the knot stays where rank 3 has it. With no such folder
+  #74, in place of the chevrons, redrawn after his review the same day): rank 1 a single loop in bronze (B08D57), rank 2
+  three round loops in silver, rank 3 three eye-shaped loops (each closing in a point) in gold, rank 4 five round loops in
+  three tiers in gold, rank 5 the same five loops eye-shaped in gold; no stars. A rank above the fifth keeps rank 5's mark.
+  Each knot is symmetric, a cord shaded as polished metal (lighter toward the top left of each strand, darker toward the
+  bottom right, a thin bright streak) with a thin black border; its two tails cross under the knot and run out left and
+  right, at the same lowest height for every rank. Ranks 4 and 5 are larger sprites around the same centre, so their tails
+  keep the same gap to the HP bar. With no such folder
   the log says so once and the bonuses work as before. Display only: it
   changes nothing in the simulation. In the minimized interface the unit panel's row shows `Rank 3` and `3 kills`. The art is
   our own: DE's are images in its selection panel.

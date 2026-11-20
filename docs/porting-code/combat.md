@@ -6428,7 +6428,7 @@ Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareApply` `0x4
 // The data file veterancy.xml (the build's data folder, hostfiles.h) holds what is not per proto:
 //   <Veterancy>
 //     <VeterancyDefault unittype="AbstractInfantry"> <VeterancyBonus .../> ... </VeterancyDefault>
-//     <VeterancyRank rank="1" name="Veteran" color="CD7F32"/>
+//     <VeterancyRank rank="1" name="Veteran" color="B08D57"/>
 //   </Veterancy>
 // A default's rows go to every proto of that unit type with no rows of its own (the first default in the file
 // whose type the player's proto has); a proto's own rows replace the defaults entirely. A rank's name (a text,
