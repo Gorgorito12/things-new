@@ -123,7 +123,7 @@ unitResourceAuras-wol 2 36 3
 unitResourceAuras-wol-control 2 36 3
 veterancyBonus-wol 0 12 1
 veterancyBonus-wol-control 0 12 1
-veterancyBonus-icons-wol 10 24 2
+veterancyBonus-icons-wol 6 24 2
 veterancyBonus-icons-wol-control 15 24 2
 killSpawn-wol 2 20 2
 killSpawn-wol-control 2 20 2

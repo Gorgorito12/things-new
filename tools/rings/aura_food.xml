@@ -56,6 +56,11 @@
 						<file>effects\uhc_rings\icon_food_unit.particle</file>
 					</assetreference>
 				</none>
+				<abstractelephant>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\icon_food_elephant.particle</file>
+					</assetreference>
+				</abstractelephant>
 				<abstractcavalry>
 					<assetreference type="ParticleSystem">
 						<file>effects\uhc_rings\icon_food_cavalry.particle</file>

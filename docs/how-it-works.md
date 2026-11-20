@@ -3466,8 +3466,10 @@ A kill that reaches a rank and a transform queue the unit's ID. A world tick eve
 bar scales with the camera like the world, so the gap stays at every zoom. The marks are soutache knots (a loop; three round loops;
 three eye-shaped loops; five round loops in three tiers; five eye-shaped loops), each one cord drawn as circles along Bezier
 curves, symmetric, its tails at the same lowest height for every rank, and shaded as metal from each texel's place across its
-strand (the line through the two nearest centres). Ranks 4 and 5 reach past the sprite: their sprite is larger around the same
-centre, with the glyph scaled down by as much, so their tails land where the other ranks' do. **Why it is safe:** a model is a
+strand (the line through the two nearest centres). Every mark is centred on the HP bar: the particle hangs at the unit's position (a model
+attachment's particle ignores the `HITPOINTBAR` bone) at a height over the ground, and the bar is drawn at the tag; a point
+higher than the bar drifts sideways in perspective, so the sprite's centre is at the bar's height by kind of unit and the knot
+is drawn high inside the sprite (a camera-facing sprite moves it straight up), its tails at the same height for every rank. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking
