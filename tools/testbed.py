@@ -1477,13 +1477,18 @@ def test_monitor():
 
 
 def place_window(hwnd):
-    """Moves the game window to a corner of the test monitor, by the last character of the copy's folder:
-    2 top right, 3 bottom left, 4 bottom right, anything else top left, so that four copies form a grid."""
+    """Moves the game window to a place on the test monitor, by the last character of the copy's folder:
+    2 top right, 3 bottom left, 4 bottom right, 5 centre, 6 top centre, 7 bottom centre, 8 middle left,
+    9 middle right, anything else top left. Windows past the four corners overlap others; that is fine,
+    since `shot` and `record` use PrintWindow and clicks are posted to the window."""
     device, _primary, (left, top, right, bottom) = test_monitor()
     rc = RECT()
     user32.GetWindowRect(hwnd, ctypes.byref(rc))
-    x = right - (rc.right - rc.left) if BED.name[-1] in "24" else left
-    y = bottom - (rc.bottom - rc.top) if BED.name[-1] in "34" else top
+    # (share of the free width, share of the free height) for each last character
+    fx, fy = {"2": (1, 0), "3": (0, 1), "4": (1, 1), "5": (0.5, 0.5), "6": (0.5, 0), "7": (0.5, 1),
+              "8": (0, 0.5), "9": (1, 0.5)}.get(BED.name[-1], (0, 0))
+    x = left + int(max(0, (right - left) - (rc.right - rc.left)) * fx)
+    y = top + int(max(0, (bottom - top) - (rc.bottom - rc.top)) * fy)
     if (rc.left, rc.top) == (x, y):
         return
     # SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
