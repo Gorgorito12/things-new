@@ -1677,8 +1677,12 @@ politicianEnablesTech [log] [flag <u> <v>]
   tags, a politician without tags, a tag naming no tech, accepting a tagged politician (the age-up started), the
   dialog closed and opened again, English and Spanish, the four-place file and the five-place one, with
   `politicianPlacesFix` (a fifth politician left out of four places), beside WoL's own DLL (our `dinput8.dll`;
-  WoL's DLL writes its own description text, which goes into the shorter box), and key off. Not tested: 1024 ×
-  768, multiplayer, a saved game, a revolution.
+  WoL's DLL writes its own description text, which goes into the shorter box), and key off. Also in real
+  skirmishes (2026-11-20, against a German AI): Argentines in Ages II to V at 1920 × 1080 and at 1024 × 768 windowed
+  (with `--strings`), and Mexicans at 1920 × 1080. Every tooltip, click and accept worked, and the Age V politicians
+  (no tags) looked as with the key off. The longest name, "Resurrectionist Congregation", fits on one line. At 1024 ×
+  768 the icons are drawn 22 × 30 px, a little taller than wide, as the layout's size stretches them, like the flags at
+  4:3. Not tested: multiplayer, a saved game, a revolution.
 
 #### startingTC
 

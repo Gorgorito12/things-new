@@ -37,6 +37,10 @@ No new art is needed: the key shows the flag part of your current pictures.
 apply_fix.py adds the tags to the 74 LA politicians (from their TechStatus obtainable effects) and adds the gadgets to your
 uipoliticianEuropeandlg.xml. It also fixes PoliticianButton3, which ended at 381 instead of 481. With --strings, it
 removes the hand-written "+ Technologies: ..." list from the politician descriptions in every string table.
+Tested in real Argentine (Ages II to V, 1920x1080 and 1024x768) and Mexican skirmishes: final\real-*.jpg.
+Found in your data: the Age IV Italian wave's second tech, WOTTAimmigrantIT05 (icon "padroni"), is named "Vineyards"
+in string 480112, while the politician's description calls it "Padroni". Smaller differences of the same kind:
+Midsommar / Midsummer, Organizations / Organisations.
 Questions: is the band under the flag the right place for the techs? Are four enough? Should --strings go into the
 release?
 
