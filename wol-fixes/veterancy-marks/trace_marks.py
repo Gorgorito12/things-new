@@ -1,5 +1,5 @@
 """Trace the five rank marks of the WoL team's approved sheet (reference-approved-hires.webp, 1536 x 1024 with real
-alpha: ranks 1 to 3 in its first row, 4 and 5 in the second; the older reference-approved.webp is no longer used) into
+alpha: ranks 1 to 3 in its first row, 4 and 5 in the second) into
 smooth closed curves, and
 render each as an RGBA image for aoe3-blender-tools' make_rings.py --rank-shapes. Private: the design is the team's.
 
