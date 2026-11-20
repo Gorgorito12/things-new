@@ -117,7 +117,8 @@ minuirows.xml
     every item and option. No new DLL is needed to change any of it.
 
 art\ui\ingame\*.ddt
-    The six drawn icons (stopwatch, hourglass, shield, eye, winged boot, cylinder). They go in
+    The six drawn icons (stopwatch, hourglass, shield, eye, winged boot, cylinder). The unit type icons of the
+    multipliers stay WoL's own. They go in
     art\ui\ingame\ of the mod (version 4: stat_icon_hitpoints.ddt and stat_icon_pop.ddt are no longer used;
     delete them if version 3 put them there).
 
@@ -183,6 +184,8 @@ Notes
 
 Tested on 2026-11-17 (single player, WoL, 1920 x 1080, the panel at native pixels with the health bar)
 -------------------------------------------------------------------------------------------------------
+Version 6 (2026-11-20): the tooltip says "N projectiles", no parentheses around icons (ours and the game's lines), WoL's
+own unit type icons: final\README.txt and ..\note-for-team-v6.txt.
 Version 5 (2026-11-19): projectiles from the data, two-decimal multipliers, WoL's attackTypeIcons types, tooltips,
 1024x768 rows ending in "(+N)", the hit points gadget one line high (it covered the first attack row's tooltip):
 final\README.txt and ..\note-for-team-v5.txt.
