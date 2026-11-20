@@ -90,18 +90,13 @@ count the final unit (Pyrpolikon, limit 5)?
 
 Veterancy marks (#74): wol-fixes\veterancy-marks\
 -------------------------------------------------
-Redrawn twice after your reviews:
-- rank 1: one round bronze loop, now a truer bronze;
-- rank 2: three round silver loops;
-- rank 3: three eye-shaped gold loops;
-- rank 4: five round gold loops;
-- rank 5: five eye-shaped gold loops.
-Every loop sits on a short stem, so there is space between the loops. There are no stars, and each mark has a diagonal
-metallic shine. See marks-x4.png, and marks-ingame.png for the real size.
-Each mark is now centred on the unit's HP bar, within 1 px on infantry and cavalry. Elephants still miss by up to about
-13 px: their bar is toward the head and turns with it.
-Ranks 4 and 5 are gold because you gave no colour: tell us if you want others. At the real size the shine makes the gold
-look pale; we can make it weaker.
+These are the marks from your approved sheet, traced and redrawn by us: the copper single loop (rank 1), the silver
+round loop with eye-shaped side loops (rank 2), the gold pointed top (rank 3), and the gold round (rank 4) and pointed
+(rank 5) tops with two tiers of side loops. No stars. Same shapes, colours and shine as your sheet. Each mark is made
+symmetric, so the crossing of rank 1 shows no strand on top.
+See compare-reference.png (your sheet, ours, both overlaid), marks-x4.png, and marks-ingame.png at the real size.
+Each mark is centred on the unit's HP bar: 0 px on Hussars, within 1 px on Crossbowmen. Elephants still miss by up
+to about 13 px: their bar is toward the head and turns with it. The video is docs\media\veterancyBonus-icons-wol.
 
 Minimized UI, version 6: wol-fixes\min-ui\note-for-team-v6.txt
 ---------------------------------------------------------------

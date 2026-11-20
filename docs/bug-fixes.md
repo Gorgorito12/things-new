@@ -1070,18 +1070,18 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
 
 *The health bars over units stay still instead of jumping up and down while the units fight or move.*
 
-**Added:** Monday 2026-11-09 08:13 · **Filmed in WoL:** Friday 2026-11-13 11:50
+**Added:** Monday 2026-11-09 08:13 · **Filmed in WoL:** Friday 2026-11-20 15:39
 
 ![steadyHitpointBars in WoL](media/steadyHitpointBars-wol.gif)
 
 *In WoL, with `steadyHitpointBars log` (Ethiopians, 3 `Hussar` and 3 `Pikeman` against 16 `Settler` and 3 `Crossbowman`,
 the ranks of `veterancyBonus` on, the selected units' bars shown):* the Hussars charge, fight and stand; each bar keeps
-one height over its rider, and the rank chevrons stay just above it. [Full video (MP4)](media/steadyHitpointBars-wol.mp4).
+one height over its rider, and the rank marks stay just above it. [Full video (MP4)](media/steadyHitpointBars-wol.mp4).
 
 ![steadyHitpointBars in WoL, key off](media/steadyHitpointBars-wol-control.gif)
 
 *In WoL, key off (the same scene):* a Hussar's bar drops by about 9 px when it swings or gallops and comes back when it
-stands, also under a steady chevron. [Full video (MP4)](media/steadyHitpointBars-wol-control.mp4).
+stands, also under a steady rank mark. [Full video (MP4)](media/steadyHitpointBars-wol-control.mp4).
 
 ```
 steadyHitpointBars [UnitType ...] [log]
@@ -1092,7 +1092,7 @@ steadyHitpointBars [UnitType ...] [log]
   attacks have the tag, 4.08 to 4.15 m up, and so do two of its eight idles; the other six (`horse_idle_a` to `_g`, 90
   of the 140 weight of its `Idle`), its `Bored`, `Cheer` and `Raze_idle` have none, and then the game puts the bar at a
   height from the data instead, lower. So the bar jumps between the two each time the unit changes animation, every
-  couple of seconds even when it stands. The `veterancyBonus` chevrons, which hang at a fixed height, make it plain to
+  couple of seconds even when it stands. The `veterancyBonus` rank marks, which hang at a fixed height, make it plain to
   see. These horse idles are the base game's own, so TAD's cavalry has the same jump (from the data; not filmed in TAD).
 - **Effect:** each unit's bar keeps the height of its tag: the highest the tag reached over the last 3 to 6 seconds of
   animations that have it, and the middle of its sideways and forward sway. While the animation has no tag, the bar
@@ -1103,8 +1103,8 @@ steadyHitpointBars [UnitType ...] [log]
   at 9.86 m); a building without the tag, such as WoL's Barracks, keeps the stock place. A unit whose tag was never seen
   keeps the stock bar.
 - **With `overhealHitpointBars segment`:** the orange segment is drawn at the bar's place, so it follows it.
-- **With `veterancyBonus`:** the chevrons do not follow the tag at all (they hang on the unit, at a height per kind of
-  unit); with the key, the bar stays at its idle height, where the chevrons were set to sit above it.
+- **With `veterancyBonus`:** the rank marks do not follow the tag at all (they hang on the unit, at a height per kind of
+  unit); with the key, the bar stays at its idle height, where the marks were set to sit above it.
 - **Multiplayer:** display only. Every player can have it or not, with other types.
 - **Log:** `steadyHitpointBars: floating HP bars hold their position (every unit) (display only)`, and with `log`, once
   per proto: `steadyHitpointBars: unit 0 (Hussar): the bar holds at height 4.15 in model space; over 3 s the tag went
