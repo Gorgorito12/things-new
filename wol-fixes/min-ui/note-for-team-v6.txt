@@ -69,6 +69,5 @@ Minimized UI, version 6: answers to JTMaston's points on version 5
 
 Everything else is as in version 5. The pictures and the test table are in final\README.txt.
 
-Veterancy (#74), for the same review: the rank marks are now soutache knots (rank 1 a bronze loop, rank 2 a silver
-trefoil, rank 3 a gold pointed trefoil; ranks 4 and 5 the gold knot with one and two white stars, as before). Is the
-star for ranks 4 and 5 still what you want, or should they get knots of their own?
+Veterancy (#74): the rank marks were redrawn after your review (a true bronze, spread loops, eye-shaped loops at
+rank 3, five loops at ranks 4 and 5 with no stars, a metallic shine): ..\veterancy-marks\README.txt.

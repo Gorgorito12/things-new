@@ -4,16 +4,25 @@ Veterancy rank marks as soutache knots (WoL request #74)
 JTMaston: "use soutaches from Hussar uniforms: Rank1 - one single loop in bronze colour. Rank2 - Triloop in silver
 colour. Rank3 - Pointed/spiked triloop in gold colour."
 
-    rank 1   a single tall loop (like a cursive "l"), its ends crossing under it and running out left and right, bronze
-    rank 2   a trefoil: three round loops (up, left, right) meeting at a knot, the ends crossing below, silver
-    rank 3   the same trefoil with pointed loops, each ending in a short spike, gold
-    rank 4   the gold rank 3 knot with one white star over it (as before)
-    rank 5   the gold rank 3 knot with two white stars over it (as before)
+Version 2 (2026-11-20, after JTMaston's review): a true bronze, the loops spread apart, rank 3's loops eye-shaped,
+ranks 4 and 5 as his sketches, no stars, and a metallic shine.
 
-Every mark is symmetric left to right, drawn as before: a metallic cord with a thin black border, floating over the
-unit's HP bar. Every knot ends at the same lowest height (its tails), so all ranks keep the same gap to the bar.
+    rank 1   a single tall loop (like a cursive "l"), its ends crossing under it and running out left and right, bronze
+             (B08D57: more yellow-brown, less copper)
+    rank 2   three round loops (up, left, right), each with a narrow neck, spread apart, the ends crossing below, silver
+    rank 3   the same three loops eye-shaped: each loop is two arcs meeting in a point, gold
+    rank 4   five round loops in three tiers (the top loop, a pair, a lower pair), the cord crossing between the tiers,
+             gold
+    rank 5   the same five loops eye-shaped, gold
+             (you did not give colours for 4 and 5: gold for both, since each size goes round, then eye-shaped)
+
+Every mark is symmetric left to right, with a thin black border, floating over the unit's HP bar. The cord is shaded like
+polished metal: lighter on the top-left side of each strand, darker on the bottom-right side, with a thin bright streak,
+and the whole mark slightly lighter toward its top left. Every knot ends at the same lowest height (its tails), so all
+ranks keep the same gap to the bar; ranks 4 and 5 are drawn larger, so their loops stay readable.
 
     marks-x4.png                  the five marks enlarged 4 times, on grass and on a dark ground
+    marks-ingame.png              the marks in the game at their real size (default camera, 1920 x 1080, pixels 1:1)
     In game (docs, private repo): docs\media\veterancyBonus-icons-wol.mp4 / .gif (2 Hussars against 10 Crossbowmen:
     a Hussar goes from the loop to rank 5, a Crossbowman that kills shows the bronze loop) and the control without the
     key, -control.mp4 / .gif.
@@ -21,4 +30,4 @@ unit's HP bar. Every knot ends at the same lowest height (its tails), so all ran
 Install: the files of art\effects\uhc_rings (in the DLL's release zip) replace the old ones; nothing else changes.
 Made with aoe3-blender-tools (tools/make_rings.py).
 
-Question for the team: should ranks 4 and 5 keep the stars, or get knots of their own?
+Question for the team: are gold ranks 4 and 5 right, or should one of them get another colour?

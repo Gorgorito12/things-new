@@ -3463,10 +3463,11 @@ A kill that reaches a rank and a transform queue the unit's ID. A world tick eve
 `unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
 `[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. The mark hangs on the bone
 `HITPOINTBAR`, as a sprite that faces the camera, 1.15 m over the aura icons' height (`RANK_LIFT` in aoe3-blender-tools' `tools/make_rings.py`): the HP
-bar scales with the camera like the world, so the gap stays at every zoom. The marks are soutache knots (a loop, a trefoil, a
-pointed trefoil), each one cord drawn as circles along Bezier curves, symmetric, its tails at the same lowest height for every
-rank. Ranks 4 and 5 add stars over rank 3's knot: their sprite is larger around the same centre, with the glyph scaled down by
-as much, so the knot lands where rank 3's does. **Why it is safe:** a model is a
+bar scales with the camera like the world, so the gap stays at every zoom. The marks are soutache knots (a loop; three round loops;
+three eye-shaped loops; five round loops in three tiers; five eye-shaped loops), each one cord drawn as circles along Bezier
+curves, symmetric, its tails at the same lowest height for every rank, and shaded as metal from each texel's place across its
+strand (the line through the two nearest centres). Ranks 4 and 5 reach past the sprite: their sprite is larger around the same
+centre, with the glyph scaled down by as much, so their tails land where the other ranks' do. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking
