@@ -1,0 +1,102 @@
+Minimized UI, version 6: answers to JTMaston's points on version 5
+==================================================================
+
+1. "Change the desc of the projectiles to just 'X projectiles'"
+   Done: the tooltip line now reads "4 projectiles" (minuirows.xml: projectilesTip="%s projectiles").
+   final\minUIStats-v6-tip-escopetero-ranged.jpg
+
+2. "Remove the parenthesis from around icons"
+   Two kinds of parentheses were in the tooltip:
+   - ours: "Attacks every 3.50 s (stopwatch)" and "4 projectiles before the reload (cylinder)". Removed: the lines now
+     end with the icon.
+   - the game's, from your string table:
+         42226  "%1s (%2s) Damage"                         -> "11 (sword icon) (Ranged) Damage"
+         42229  "%1.1fX Bonus Damage against %2s (%3s)"    -> "1.5X Bonus Damage against (icon) (Maneuver Unit)"
+         42230  "%1dX Bonus Damage against %2s (%3s)"      -> the same with a whole number
+         42223  "Resists %1d%% of %2s (%3s) Damage"         -> "Resists 20% of Ranged (shield icon) Damage"
+     The DLL already rewrites these tooltips for the minimized panel, so it now also drops the parentheses around an
+     icon and around the name right after an icon: "11 (sword icon) Ranged Damage", "1.5X Bonus Damage against (icon)
+     Maneuver Unit". Your string tables are not changed, and tipParentheses="keep" in minuirows.xml keeps them.
+     Spanish reads "Dano de 11 (icon) A distancia" (final\minUIStats-v6-spanish-tip-escopetero.jpg).
+     If you want the same everywhere (the big panel too, and without our DLL), these are the edited strings for
+     stringtabley.xml (and the same change in each translation):
+         42226  %1s %2s Damage
+         42229  %1.2fX Bonus Damage against %2s %3s
+         42230  %1dX Bonus Damage against %2s %3s
+         42223  Resists %1d%% of %2s %3s Damage
+     Spanish (ES-LA): 42226 "Dano de %1s %2s", 42229 "%1.2fX de dano adicional contra %2s %3s",
+     42230 "%1dX de dano adicional contra %2s %3s".
+
+3. Machine guns and the Chu Ko Nu
+   What the data says, what the panel shows and what combat fires (traced in the game, 2026-11-20: every projectile
+   launch and every shot counted, with no projectile key on):
+
+   Unit (tactics)                      Attack (tactic)     ROF   numberprojectiles  Panel shows   Combat fires per ROF cycle
+   Gatling Gun, Organ Gun,             CannonAttack        4     1                  no number     6 shots of 1 bullet each
+     Mitrailleuse, Nordenfelt, Maxim,  (Bombard)                                                    (traced on the Gatling: 6
+     Rabauld (organGun.tactics)                                                                     launches in 1.5 s, then the
+                                                                                                    pause): one per Attack tag of
+                                                                                                    its anim (6 tags)
+   Schwarzlose (schwarzlose.tactics)   CannonAttack        6     12                 12            the data says 12; its anim has
+                                       (Bombard)                                                    12 Attack tags
+   Gatling Camel                       CannonAttack        4     1                  no number     anim: 6 Attack tags
+   gwMaxim "Machinegun"                CannonAttack        2     (none)             no number     anim: 12 Attack tags
+   gwMachinephant                      Stagger/Defend      8     (none)             no number     anim: 16 Attack tags
+   Chu Ko Nu (chukonu.tactics)         VolleyRangedAttack  3     (none)             no number     3 arrows: 3 shots of 1 arrow
+                                                                                                    in about 1 s (traced: 3
+                                                                                                    launches per unit per cycle),
+                                                                                                    one per Attack tag of its
+                                                                                                    volley anim (tags at 0.15,
+                                                                                                    0.30, 0.45)
+   No machine gun or Chu Ko Nu has NumberOfShots. Pictures: final\minUIStats-v6-chukonu.jpg, -tip-chukonu-ranged.jpg,
+   -tip-gatling-bombard.jpg, -tip-schwarzlose-bombard.jpg.
+
+   So the burst of these units comes from their animation: each Attack tag of the attack anim is a full shot, with the
+   attack's full damage, and the panel cannot know it from the tactics. Our suggestion: write the burst in the tactics
+   as numberprojectiles (Gatling and organGun units 6, Gatling Camel 6, gwMaxim 12, Machinephant 16, Chu Ko Nu 3). Today
+   nothing in combat reads numberprojectiles (neither the game nor your DLLs), so it only changes what the panel shows:
+   "6 projectiles" for the Gatling, "3 projectiles" for the Chu Ko Nu, which is what they fire. Only if you later turn
+   on our numberOfShots key with its "projectiles" option would combat multiply by it (a Gatling would then fire 6 x 6),
+   so with that key the anim should keep one Attack tag. The Schwarzlose already does this: numberprojectiles 12, and 12
+   tags in its anim. Tell us if you would rather have the panel count the anim's Attack tags by itself.
+
+4. Icons
+   Every unit type icon the attack rows and their tooltips show after a multiplier ("1.5x (icon)") that was not 32x32 is
+   redrawn like the version 4 icons (32x32, solid shapes, hard edges, a black line around each part, a 2-pixel black
+   outline, round parts a little wider than tall), same motif, same colours, same file name, so no data change:
+       ui\ingame\stat_icon_siege          siege damage: a field gun on its carriage
+       ui\ingame\stat_icon_artillery      Artillery: two crossed cannons
+       ui\ingame\stat_icon_cavalry        Shock Unit: the golden lightning bolt between white wings
+       ui\ingame\stat_mercenary           Mercenary: a curved sabre
+       ui\ingame\stat_hero                Hero: a gold star
+       ui\ingame\stat_light_infantry      Scout Unit: a white dove
+       ui\ingame\stat_icon_pet            Pet: a dog's head
+       ui\ingame\stat_light_cav           light cavalry: a bow with an arrow
+       WoL\ui\ingame\staticons\stat_icon_hand_cavalry   Hand Cavalry: a closed helmet. Your file is 24 bytes, a
+                                          header with no picture, so this row showed no icon at all.
+   New, as you asked:
+       WoL\ui\ingame\staticons\stat_icon_ranged         Maneuver Unit: a winged bullet
+       ui\ingame\stat_icon_infantry and
+       WoL\ui\ingame\staticons\stat_icon_standing_unit  Standing Unit: the infantryman of the old icon in a shako, red coat
+       ui\ingame\stat_icon_heavy_infantry               Line Unit: the same soldier, blue coat
+   Before and after, enlarged 4 times: final\minUIStats-v6-icons-x4.png. In the game: final\minUIStats-v6-escopetero.jpg
+   and the -tip- pictures.
+   Two notes:
+   - your attackTypeIcons line gives AbstractNativeWarrior the minimap's village icon (ui\minimap\native_settlement_16x16);
+     redrawing that file would change the minimap too, so the arrowhead went to a new file,
+     WoL\ui\ingame\staticons\stat_icon_native_warrior.ddt. To use it, change that part of the line to
+     "AbstractNativeWarrior 42022 WoL\ui\ingame\staticons\stat_icon_native_warrior".
+   - the same line gives the Coyote Runner (AbstractCoyoteMan) ui\ingame\stat_icon_heavy_infantry, so it now shows the
+     blue Line Unit soldier too. Say if it should get its own icon.
+   Not redrawn, since the minimized panel never shows them: WoL's stat_icon_ceasefire, _hand_bonus, _hp_bonus,
+   _inspiration, _range_bonus, the empty staticons\stat_icon_ranged_cavalry and staticons\stat_icon_skirmisher, and
+   ui\ingame\stat_icon_hand_cav, _heavy_cav, _heavy_cavalry, _hand_cavalry. The 32x32 ones are kept as they are (attack,
+   ranged, range, area, building, guardian, huntable, ship, villager, siege_troop, informers, skirmisher, export, wagon,
+   WoL's heavy_cavalry).
+
+Install: the new icons are in art\ (ui\ingame\ and WoL\ui\ingame\staticons\, at their paths), with the version 4 ones.
+Everything else is as in version 5. The pictures and the test table are in final\README.txt.
+
+Veterancy (#74), for the same review: the rank marks are now soutache knots (rank 1 a bronze loop, rank 2 a silver
+trefoil, rank 3 a gold pointed trefoil; ranks 4 and 5 the gold knot with one and two white stars, as before). Is the
+star for ranks 4 and 5 still what you want, or should they get knots of their own?

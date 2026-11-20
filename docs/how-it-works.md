@@ -3463,8 +3463,10 @@ A kill that reaches a rank and a transform queue the unit's ID. A world tick eve
 `unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
 `[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. The mark hangs on the bone
 `HITPOINTBAR`, as a sprite that faces the camera, 1.15 m over the aura icons' height (`RANK_LIFT` in aoe3-blender-tools' `tools/make_rings.py`): the HP
-bar scales with the camera like the world, so the gap stays at every zoom. Ranks 4 and 5 add stars over rank 3's chevrons: their
-sprite is larger around the same centre, with the glyph scaled down by as much, so the chevrons land where rank 3's do. **Why it is safe:** a model is a
+bar scales with the camera like the world, so the gap stays at every zoom. The marks are soutache knots (a loop, a trefoil, a
+pointed trefoil), each one cord drawn as circles along Bezier curves, symmetric, its tails at the same lowest height for every
+rank. Ranks 4 and 5 add stars over rank 3's knot: their sprite is larger around the same centre, with the glyph scaled down by
+as much, so the knot lands where rank 3's does. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking
@@ -3905,7 +3907,9 @@ name checked against the action's (`[db+1FE4h]`); then:
   range (and area), one line per multiplier (string 42229 or 42230). The key inserts after the damage line a line for
   the ROF and one for the projectiles (`rofTip`, `projectilesTip`, `%s` the number), each with its icon, and a row
   shown in short form (too long for its column, or the `+N more` gadget) carries that whole help text instead of its
-  text without icons;
+  text without icons; in that help text the parentheses around an icon, or around the name right after one (the game's
+  `%1s (%2s) Damage`, `... against %2s (%3s)`), are removed unless `tipParentheses="keep"`, and the key's own lines end
+  with their icon, without parentheses;
 - the multipliers lose the zeros that end their decimals (`, 1.50x` is `, 1.5x`, `1.50X Bonus` is `1.5X Bonus`: a
   number with a decimal point right before an `x` or `X` that ends a word), unless `multiplierZeros="keep"`;
 - an original attack row (its gadget spans the panel to the right edge) longer than that width over the font's
