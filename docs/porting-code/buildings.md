@@ -17,6 +17,8 @@ Contents:
 - [doNotQueue](#donotqueue)
 - [nextResearchFree](#nextresearchfree)
 - [researchGrants](#researchgrants)
+- [shipTechLimit](#shiptechlimit)
+- [homeCityTechsInUnits](#homecitytechsinunits)
 - [maintainWaitForPop](#maintainwaitforpop)
 - [noTrainNearEnemyTC](#notrainnearenemytc)
 - [lifespanAfterConstruction](#lifespanafterconstruction)
@@ -2977,9 +2979,9 @@ Outcome ApplyNextResearchFree(const Config& config) {
 
 Contract: [researchGrants](../porting-to-another-dll.md#researchgrants).
 
-Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`prototags.h`](helpers.md#proto-tags), [`researchpay.h`](helpers.md#research-payment), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`prototags.h`](helpers.md#proto-tags), [`researchpay.h`](helpers.md#research-payment), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`techrollover.h`](helpers.md#tech-rollover), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `BStringAppend` `0x443960` (16 B), `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `ButtonOverlayReset` `0x461DBC` (8 B), `TechButtonRollover` `0x4622B5` (21 B), `ButtonOverlayRead` `0x4625E2` (7 B), `ResListCopy` `0x480A73` (73 B), `ResListScale` `0x480B94` (126 B), `TechRolloverHead` `0x4C737C` (16 B), `TechTipCostCopy` `0x4C73F9` (9 B), `ResListFill` `0x4E2617` (11 B), `PayAffordCheck` `0x8D6BAE` (30 B), `PaySharedAffordCheck` `0x8D6C1B` (26 B), `CommandResearchProgressAdd` `0x9D58FF` (11 B), `ResearchProgressAdd` `0x9E6622` (11 B), `UnitAliveSlot` `0xB9355C` (4 B).
+Sites: `IsBuilt` `0x44DDB4` (31 B), `ResListGet` `0x44EFFF` (61 B), `ResListCopy` `0x480A73` (73 B), `ResListScale` `0x480B94` (126 B), `TechRolloverHead` `0x4C737C` (16 B), `TechTipCostCopy` `0x4C73F9` (9 B), `ResListFill` `0x4E2617` (11 B), `PayAffordCheck` `0x8D6BAE` (30 B), `PaySharedAffordCheck` `0x8D6C1B` (26 B), `CommandResearchProgressAdd` `0x9D58FF` (11 B), `ResearchProgressAdd` `0x9E6622` (11 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/researchgrants.cpp
 
@@ -3021,7 +3023,7 @@ Sites: `BStringAppend` `0x443960` (16 B), `IsBuilt` `0x44DDB4` (31 B), `ResListG
 // through PreviewResearchPay (researchpay.h, every key in the payment's order), for the command panel. A tech button
 // whose research would get a share below 1 shows the free word or the price after it (its overlay text, the buffer the
 // Buy buttons use), and its rollover the cost after the share and a green label; the hook of the panel's call of the
-// rollover builder at 0x4622C5 and of the builder's copy of the cost at 0x4C73FD. A spent point shows the label as a
+// rollover builder at 0x4622C5 (shared, techrollover.h) and of the builder's copy of the cost at 0x4C73FD. A spent point shows the label as a
 // floating text over the paying building, to its owner (floatingtext.h). Options: notext, text=, noprice, free=, log.
 #include <windows.h>
 
@@ -3046,6 +3048,7 @@ Sites: `BStringAppend` `0x443960` (16 B), `IsBuilt` `0x44DDB4` (31 B), `ResListG
 #include "../patch.h"
 #include "../prototags.h"
 #include "../researchpay.h"
+#include "../techrollover.h"
 #include "../savedmarkers.h"
 #include "../techsubtypes.h"
 #include "../unitpanel.h"
@@ -3056,7 +3059,6 @@ extern "C" {
 std::int32_t g_uhcGrantTimed = 0;  // researches with a Time factor in progress: the step hooks look only then
 void UhcGrantResearchStepHook();
 void UhcGrantCommandStepHook();
-void UhcGrantTechButtonHook();
 void UhcGrantTipCostHook();
 }
 
@@ -3085,11 +3087,9 @@ constexpr std::uint32_t kResListCount = 0x00C6DF38;  // the entries of every Res
 using CostCopyFn = void*(__thiscall*)(void* cost, const void* from);
 using CostFillFn = void(__thiscall*)(void* cost, float value);
 using CostScaleFn = void(__thiscall*)(void* cost, float factor);
-using AppendFn = void(__thiscall*)(void* text, const wchar_t* more, std::int32_t length, std::int32_t start);
 const auto kCostCopy = reinterpret_cast<CostCopyFn>(0x00480A73);
 const auto kCostFill = reinterpret_cast<CostFillFn>(0x004E2617);
 const auto kCostScale = reinterpret_cast<CostScaleFn>(0x00480B94);
-const auto kAppend = reinterpret_cast<AppendFn>(0x00443960);  // BString append; -1, -1: all of it, at the end
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -3907,10 +3907,11 @@ extern "C" void* __stdcall UhcGrantTipCost(void* list, const void* from, const c
   return result;
 }
 
-// From the hook of the panel's call of that builder for a tech button (0x4622C5), once the rollover is built:
-// the button's overlay text (the panel's buffer, 256 chars, empty for a tech) and a line in the rollover.
-extern "C" void __stdcall UhcGrantTechButton(const char* entry, const char* player, const char* unit, void* rollover,
-                                             char* overlay) {
+namespace {
+
+// The shared tech rollover (techrollover.h, the panel's call of that builder at 0x4622C5), once the rollover is
+// built: the button's overlay text (the panel's buffer, 256 chars, empty for a tech) and a line in the rollover.
+void GrantTechButton(const char* entry, const char* player, const char* unit, void* rollover, char* overlay) {
   const Preview preview = PreviewOf(entry, player, unit);
   if (preview.key == nullptr || (preview.share >= 1.0f && preview.grant.tags == nullptr)) {
     if (g_log && entry != nullptr && g_shownPrice.count(TechIdOf(entry)) != 0) {
@@ -3925,11 +3926,11 @@ extern "C" void __stdcall UhcGrantTechButton(const char* entry, const char* play
   const std::wstring line = L"\n<color=0.4, 1, 0.4>" +
                             (tags != nullptr ? Label(tags->cost, tags->time) : Label(preview.share, 1.0f)) +
                             L"</color>";
-  if (rollover != nullptr && *static_cast<void**>(rollover) != nullptr) {
-    kAppend(rollover, line.c_str(), -1, -1);
-  }
+  uhc::AppendTechRollover(rollover, line.c_str());
   LogShown(TechIdOf(entry), preview.share, overlay != nullptr ? overlay : "");
 }
+
+}  // namespace
 
 // From the step hooks, while a research with a Time factor is in progress: the step of `action`, which adds to
 // [action+offset]; `entry` is its tech's status entry ([entry+18h] the research points).
@@ -3997,9 +3998,8 @@ Outcome ApplyResearchGrants(const Config& config) {
                   &sites::kPaySharedAffordCheck, &sites::kResListGet, &sites::kIsBuilt, &sites::kUnitAliveSlot}) ||
       (g_text && !VerifyFloatingText("researchGrants")) ||
       (g_price && !VerifyAll("researchGrants price",
-                             {&sites::kTechButtonRollover, &sites::kButtonOverlayReset, &sites::kButtonOverlayRead,
-                              &sites::kTechRolloverHead, &sites::kTechTipCostCopy, &sites::kBStringAppend,
-                              &sites::kResListCopy, &sites::kResListScale, &sites::kResListFill})) ||
+                             {&sites::kTechRolloverHead, &sites::kTechTipCostCopy, &sites::kResListCopy,
+                              &sites::kResListScale, &sites::kResListFill})) ||
       !AddResearchPayer("researchGrants", &ClaimGrant, &GrantStarted) ||
       !AddProtoTagHandler("ResearchGrantInterval", &ReadInterval) || !AddProtoTagHandler("ResearchGrantMax", &ReadMax) ||
       !AddProtoTagHandler("ResearchGrantCost", &ReadCost) || !AddProtoTagHandler("ResearchGrantTime", &ReadTime) ||
@@ -4010,9 +4010,8 @@ Outcome ApplyResearchGrants(const Config& config) {
       !AddWorldTick(&Tick) ||
       !WriteJmp(sites::kResearchProgressAdd.va, reinterpret_cast<const void*>(&UhcGrantResearchStepHook), 6) ||
       !WriteJmp(sites::kCommandResearchProgressAdd.va, reinterpret_cast<const void*>(&UhcGrantCommandStepHook), 6) ||
-      (g_price &&
-       (!WriteCall(sites::kTechButtonRollover.va + 0x10, reinterpret_cast<const void*>(&UhcGrantTechButtonHook)) ||
-        !WriteCall(sites::kTechTipCostCopy.va + 4, reinterpret_cast<const void*>(&UhcGrantTipCostHook))))) {
+      (g_price && (!AddTechRolloverLine("researchGrants price", &GrantTechButton) ||
+                   !WriteCall(sites::kTechTipCostCopy.va + 4, reinterpret_cast<const void*>(&UhcGrantTipCostHook))))) {
     return Outcome::kFailed;
   }
   if (!AddUnitPanelRow(&GrantRow)) {
@@ -4031,7 +4030,8 @@ Outcome ApplyResearchGrants(const Config& config) {
 ### src/hooks/researchgrant_hooks.asm
 
 ```asm
-; researchGrants (src/features/researchgrants.cpp): the step of a research with a Time factor. Each hook replaces
+; researchGrants (src/features/researchgrants.cpp). Its line in the tech rollover goes through the shared hook of
+; techrollover_hooks.asm. The step of a research with a Time factor. Each hook replaces
 ; `fadd dword ptr [esi+X] / fstp dword ptr [esi+X]` (6 bytes), the add of this update's step to the progress,
 ; and continues at the call of the fraction that follows it, whose argument is already pushed. On entry ST0 is the
 ; step (the only value on the x87 stack), ESI the action, ECX = ESI. With no such research in progress the step
@@ -4043,14 +4043,12 @@ option casemap :none
 include common.inc
 
 UhcGrantResearchStep PROTO STDCALL action:DWORD, offs:DWORD, entry:DWORD, stp:DWORD
-UhcGrantTechButton PROTO STDCALL entry:DWORD, player:DWORD, unit:DWORD, rollover:DWORD, overlay:DWORD
 UhcGrantTipCost PROTO STDCALL list:DWORD, from:DWORD, entry:DWORD, player:DWORD, unit:DWORD
 EXTERN g_uhcGrantTimed:DWORD
 
 .data
 kResearchStepBack dd 009E6628h  ; call 9E5F19h, the Research fraction
 kCommandStepBack  dd 009D5905h  ; call 9D539Bh, the CommandResearch fraction
-kTechRollover     dd 004C737Ch  ; the tech rollover builder, cdecl with 8 arguments
 
 .code
 
@@ -4096,34 +4094,6 @@ add_step:
     jmp dword ptr [kCommandStepBack]
 UhcGrantCommandStepHook ENDP
 
-; The price shown (display only). Replaces the call of the tech rollover builder 0x4C737C at 0x4622C5 in the
-; command panel refresh FUN_0046188E. Entry: the 8 cdecl arguments at [esp+4]..[esp+20h] (the rollover, the tech
-; entry, the player, the unit, 1, 0, 1, 1); the panel's ESP before it pushed them is ESP+24h here, so the button's
-; overlay text [esp+2C0h] there is [esp+2E4h]. Calls the builder with the same arguments, then
-; UhcGrantTechButton. The panel cleans the arguments (add esp,20h) and reloads EAX, ECX and EDX before use;
-; EBX, ESI, EDI and EBP are kept by both calls.
-UhcGrantTechButtonHook PROC
-    TRACE_ONCE "researchGrants tech button (0x4622C5)"
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    call dword ptr [kTechRollover]
-    add esp, 20h
-    lea eax, [esp+2E4h]
-    push eax                    ; the overlay text
-    push dword ptr [esp+8]      ; the rollover
-    push dword ptr [esp+18h]    ; the unit
-    push dword ptr [esp+18h]    ; the player
-    push dword ptr [esp+18h]    ; the tech entry
-    call UhcGrantTechButton
-    ret
-UhcGrantTechButtonHook ENDP
-
 ; Replaces the call of the ResList copy 0x480A73 at 0x4C73FD in the rollover builder 0x4C737C, the copy of the
 ; tech's cost into the list whose cost the rollover shows. ECX = that list, [esp+4] = the cost to copy; the
 ; builder's ESP before it pushed it is ESP+8 here, so its arguments are the tech entry [esp+58h], the player
@@ -4139,6 +4109,669 @@ UhcGrantTipCostHook PROC
     call UhcGrantTipCost
     ret 4
 UhcGrantTipCostHook ENDP
+
+END
+```
+
+## shipTechLimit
+
+Contract: [shipTechLimit](../porting-to-another-dll.md#shiptechlimit).
+
+Besides the core helpers, it needs: [`canresearch.h`](helpers.md#can-research-test), [`civtags.h`](helpers.md#civ-tags), [`researchpay.h`](helpers.md#research-payment), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`techrollover.h`](helpers.md#tech-rollover), [`worldtick.h`](helpers.md#world-tick).
+
+Sites: `ResListGet` `0x44EFFF` (61 B), `TechEntryLookup` `0x94ADAA` (35 B), `UnitAliveSlot` `0xB9355C` (4 B).
+
+### src/features/shiptechlimit.cpp
+
+```cpp
+// shipTechLimit [notext] [log]: a civ tag <ShipTechLimit>N</ShipTechLimit> in civs.xml caps how many "shipment techs"
+// a player of that civ researches in a game. A shipment tech is one whose cost has the Ships resource (index 6) above
+// 0, as a mod's council techs that cost one Ship: researched on a unit or a building, never a home city card (a card is
+// sent by the home city, not researched, and never reaches the research payment).
+//
+// The count of a player: the shipment techs whose research he paid, minus those cancelled with a refund. It counts
+// on payment, so a queued research counts, and a repeatable tech (YPInfiniteTech) counts each time. A research that
+// ends without a refund (its unit dies) keeps its count, as the ship it cost is not given back.
+// - Payment: the shared research payment (researchpay.h) reports every research once its action is set up (a payer
+//   that claims nothing): [action+64h] the player ID, [action+68h] the tech ID.
+// - Refund: the shared refund observer (0x8D7004 at 0x9E6167 and 0x9D56B5, the cancel of a Research and of a
+//   CommandResearch).
+// - Refusal: the shared can-research test (canresearch.h, the head of 0x4C6968): at the limit, a shipment tech is
+//   refused for a unit of that player. The research start asks it at 0x9E670B, inside the research command's
+//   execution, so the research does not start on any machine; the command panel asks it for each button, so the
+//   button shows greyed. Callers that pass no unit (the home city) are not refused.
+// - The reason: a line in the tech's rollover (techrollover.h), "Shipment techs: n/N", red at the limit.
+//
+// Saved games: the counts are saved markers (savedmarkers.h, stat 69h) on one living unit of each player, written by
+// a world tick when they change and moved when that unit dies. A game that starts or loads reads them back (one walk
+// over the units); a player with none gets the activations of his shipment techs (the count byte [status+21h]) as
+// a fallback, for a game saved before the key was on.
+#include <windows.h>
+
+#include <cstdarg>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cwchar>
+#include <map>
+#include <string>
+
+#include "../canresearch.h"
+#include "../civtags.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../researchpay.h"
+#include "../savedmarkers.h"
+#include "../techrollover.h"
+#include "../worldtick.h"
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
+constexpr int kPlayers = 16;
+constexpr std::int32_t kShips = 6;               // the resource index of Ships
+constexpr std::int32_t kStat = 0x69;             // savedmarkers.h
+constexpr std::uint32_t kTag = 0x53540000;       // 'ST' << 16 | player << 8 | 1
+constexpr std::uint32_t kTagMask = 0xFFFF0000;
+constexpr int kMaxLines = 200;
+
+using ResGetFn = float(__thiscall*)(const void* list, std::int32_t r);
+const auto kResGet = reinterpret_cast<ResGetFn>(0x0044EFFF);
+using EntryFn = const char*(__thiscall*)(const void* root, std::int32_t player, std::int32_t tech);
+const auto kEntry = reinterpret_cast<EntryFn>(0x0094ADAA);
+using UnitTestFn = bool(__thiscall*)(const char* unit);
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+std::map<std::int32_t, std::int32_t> g_limit;  // civ ID -> N, from civs.xml
+bool g_text = true;
+bool g_log = false;
+int g_lines = 0;
+
+std::int32_t g_count[kPlayers] = {};
+bool g_dirty[kPlayers] = {};
+std::int32_t g_carrier[kPlayers];  // the unit that holds the player's marker, -1 none
+const char* g_world = nullptr;
+std::uint32_t g_lastTime = 0;
+std::uint32_t g_lastStep = 0;
+
+void Line(const wchar_t* format, ...) {
+  if (!g_log || g_lines >= kMaxLines) {
+    return;
+  }
+  wchar_t text[512];
+  va_list args;
+  va_start(args, format);
+  _vsnwprintf_s(text, _TRUNCATE, format, args);
+  va_end(args);
+  ++g_lines;
+  uhc::Log(L"shipTechLimit: %ls%ls", text, g_lines == kMaxLines ? L" (no more lines are logged)" : L"");
+}
+
+const char* World() {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+}
+
+const char* PlayerById(const char* world, std::int32_t id) {
+  if (world == nullptr || id < 0 || id >= Field<std::int32_t>(world, 0x5C)) {
+    return nullptr;
+  }
+  return Field<const char* const*>(world, 0x58)[id];
+}
+
+// A player's civ ID (0x4539D3): [[player+20h]] when [player+24h] > 0, else -1.
+std::int32_t CivIdOf(const char* player) {
+  return Field<std::int32_t>(player, 0x24) > 0 ? *Field<const std::int32_t*>(player, 0x20) : -1;
+}
+
+// The limit of a player's civ, or -1.
+std::int32_t LimitOf(const char* player) {
+  if (player == nullptr || g_limit.empty()) {
+    return -1;
+  }
+  const auto found = g_limit.find(CivIdOf(player));
+  return found == g_limit.end() ? -1 : found->second;
+}
+
+bool HasBit(const char* status, std::uint32_t bit) {
+  if (bit >= Field<std::uint32_t>(status, 8)) {
+    return false;
+  }
+  return (Field<const std::uint8_t*>(status, 4)[bit / 8] >> (bit % 8) & 1) != 0;
+}
+
+// The tech's cost for this player (the status's own list at +10h) has Ships.
+bool IsShipTech(const char* status) { return status != nullptr && kResGet(status + 0x10, kShips) > 0.0f; }
+
+std::int32_t TechIdOf(const char* status) {
+  const char* def = Field<const char*>(status, 0);
+  return def == nullptr ? -1 : Field<std::int32_t>(def, 0);
+}
+
+const char* StatusOf(const char* world, std::int32_t player, std::int32_t tech) {
+  const char* root = world == nullptr ? nullptr : Field<const char*>(world, 0x7C);
+  return root == nullptr ? nullptr : kEntry(root, player, tech);
+}
+
+// --- Saved markers ------------------------------------------------------------------------------------------
+
+char* UnitById(const char* world, std::int32_t id) {
+  if (id < 0 || (id & 0x3FFFF) >= Field<std::int32_t>(world, 0x10)) {
+    return nullptr;
+  }
+  char* unit = Field<char* const*>(world, 0x0C)[id & 0x3FFFF];
+  return unit != nullptr && Field<std::int32_t>(unit, 0x10) == id ? unit : nullptr;
+}
+
+bool IsAlive(const char* unit) { return (*reinterpret_cast<UnitTestFn const* const*>(unit))[0xA4 / 4](unit); }
+
+bool IsDead(const char* unit) {  // state bit 11: the kill handler returns at once
+  const auto* bits = Field<const std::uint8_t*>(unit, 4);
+  return bits != nullptr && Field<std::uint32_t>(unit, 8) > 11 && (bits[1] & 0x08) != 0;
+}
+
+std::int32_t OwnerOf(const char* unit) {
+  const char* owner = Field<const char*>(unit, 0x44);
+  return owner == nullptr ? -1 : Field<std::int32_t>(owner, 0);
+}
+
+std::uint32_t MarkerWord(std::int32_t player) { return kTag | (static_cast<std::uint32_t>(player) << 8) | 1; }
+
+bool Living(const char* unit) { return unit != nullptr && IsAlive(unit) && !IsDead(unit); }
+
+void FreeMarker(const char* world, std::int32_t player) {
+  char* unit = UnitById(world, g_carrier[player]);
+  if (unit != nullptr) {
+    if (char* marker = uhc::markers::Find(unit, kStat, MarkerWord(player))) {
+      uhc::markers::Free(marker);
+    }
+  }
+  g_carrier[player] = -1;
+}
+
+// Writes the player's count on his carrier, a new one if it is gone. False: no unit took it (try again later).
+bool WriteMarker(const char* world, std::int32_t player) {
+  char* unit = UnitById(world, g_carrier[player]);
+  if (!Living(unit)) {
+    FreeMarker(world, player);
+    unit = nullptr;
+    const std::int32_t count = Field<std::int32_t>(world, 0x10);
+    char* const* table = Field<char* const*>(world, 0x0C);
+    for (std::int32_t i = 0; table != nullptr && i < count && unit == nullptr; ++i) {
+      char* candidate = table[i];
+      if (candidate != nullptr && OwnerOf(candidate) == player && Living(candidate) &&
+          uhc::markers::Take(candidate, kStat) != nullptr) {
+        unit = candidate;
+      }
+    }
+    if (unit == nullptr) {
+      return false;
+    }
+  }
+  char* marker = uhc::markers::Find(unit, kStat, MarkerWord(player));
+  if (marker == nullptr) {
+    marker = uhc::markers::Take(unit, kStat);
+  }
+  if (marker == nullptr) {
+    return false;
+  }
+  uhc::markers::Word(marker, 0) = MarkerWord(player);
+  uhc::markers::Word(marker, 1) = static_cast<std::uint32_t>(g_count[player]);
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+  if (id != g_carrier[player]) {
+    Line(L"player %d's count is kept on unit %d", player, id);
+  }
+  g_carrier[player] = id;
+  return true;
+}
+
+// The activations of the player's shipment techs: the fallback count of a game whose markers hold none.
+std::int32_t CountFromStatuses(const char* world, std::int32_t player) {
+  const char* root = Field<const char*>(world, 0x7C);
+  // The per-player tables are an array at the root (0x94ADAA: [root + 4 * player]).
+  const char* table = root == nullptr ? nullptr : Field<const char*>(root, 4 * static_cast<std::uint32_t>(player));
+  if (table == nullptr) {
+    return 0;
+  }
+  const char* const* entries = Field<const char* const*>(table, 4);
+  const std::int32_t count = Field<std::int32_t>(table, 8);
+  std::int32_t total = 0;
+  for (std::int32_t i = 0; entries != nullptr && i < count; ++i) {
+    const char* status = entries[i];
+    if (status != nullptr && IsShipTech(status)) {
+      total += Field<std::uint8_t>(status, 0x21);
+    }
+  }
+  return total;
+}
+
+// A game that just started or loaded: the counts its markers keep. One walk over the units.
+void Rebuild(const char* world) {
+  bool found[kPlayers] = {};
+  for (int p = 0; p < kPlayers; ++p) {
+    g_count[p] = 0;
+    g_dirty[p] = false;
+    g_carrier[p] = -1;
+  }
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  char* const* table = Field<char* const*>(world, 0x0C);
+  for (std::int32_t i = 0; table != nullptr && i < count; ++i) {
+    char* unit = table[i];
+    if (unit == nullptr) {
+      continue;
+    }
+    uhc::markers::ForEach(unit, kStat, [&](char* marker) {
+      const std::uint32_t word0 = uhc::markers::Word(marker, 0);
+      if ((word0 & kTagMask) != kTag) {
+        return true;
+      }
+      const int player = static_cast<int>((word0 >> 8) & 0xFF);
+      if (player >= kPlayers || found[player]) {
+        uhc::markers::Free(marker);  // a second copy: keep the first
+        return true;
+      }
+      found[player] = true;
+      g_count[player] = static_cast<std::int32_t>(uhc::markers::Word(marker, 1));
+      g_carrier[player] = Field<std::int32_t>(unit, 0x10);
+      return true;
+    });
+  }
+  for (int p = 0; p < kPlayers; ++p) {
+    const char* player = PlayerById(world, p);
+    if (LimitOf(player) < 0) {
+      continue;
+    }
+    if (!found[p]) {
+      g_count[p] = CountFromStatuses(world, p);
+      g_dirty[p] = g_count[p] != 0;
+    }
+    Line(L"game start or load: player %d has %d of %d shipment techs%ls", p, g_count[p], LimitOf(player),
+         found[p] ? L"" : L" (no saved count: from the techs he has)");
+  }
+}
+
+void Sync() {
+  const char* world = World();
+  if (world == nullptr) {
+    return;
+  }
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  const std::uint32_t step = Field<std::uint32_t>(world, 0xF8);
+  const bool sameGame = world == g_world && now >= g_lastTime && step - g_lastStep <= 1;
+  if (!sameGame) {
+    g_world = world;
+    Rebuild(world);
+  }
+  g_lastTime = now;
+  g_lastStep = step;
+}
+
+void Tick(char* world, std::int32_t) {
+  if (world != World()) {
+    return;
+  }
+  Sync();
+  for (int p = 0; p < kPlayers; ++p) {
+    if (g_dirty[p] || (g_carrier[p] >= 0 && !Living(UnitById(world, g_carrier[p])))) {
+      g_dirty[p] = !WriteMarker(world, p);
+    }
+  }
+}
+
+// --- The rule -----------------------------------------------------------------------------------------------
+
+// The count of a player in this game, or -1 for a player without a limit.
+std::int32_t CountOf(const char* player, std::int32_t* limit) {
+  *limit = LimitOf(player);
+  if (*limit < 0) {
+    return -1;
+  }
+  const std::int32_t id = Field<std::int32_t>(player, 0);
+  if (id < 0 || id >= kPlayers) {
+    return -1;
+  }
+  Sync();
+  return g_count[id];
+}
+
+void Change(const char* action, int delta, const wchar_t* what) {
+  const char* world = World();
+  const std::int32_t id = Field<std::int32_t>(action, 0x64);
+  const std::int32_t tech = Field<std::int32_t>(action, 0x68);
+  const char* player = PlayerById(world, id);
+  if (id < 0 || id >= kPlayers || LimitOf(player) < 0 || !IsShipTech(StatusOf(world, id, tech))) {
+    return;
+  }
+  Sync();
+  g_count[id] += delta;
+  if (g_count[id] < 0) {
+    g_count[id] = 0;
+  }
+  g_dirty[id] = true;
+  Line(L"player %d %ls tech %d: %d of %d (game time %u ms)", id, what, tech, g_count[id], LimitOf(player),
+       Field<std::uint32_t>(world, 0x108));
+}
+
+bool Claim(const char*, const char*, const char*, float*, bool) { return false; }
+
+void Started(char* action, float, bool) { Change(action, 1, L"paid shipment"); }
+
+void Refunded(const char* action) { Change(action, -1, L"cancelled shipment"); }
+
+bool Refuse(const char* status, const char* unit) {
+  if (unit == nullptr || g_limit.empty()) {
+    return false;
+  }
+  const char* player = Field<const char*>(unit, 0x44);
+  std::int32_t limit = -1;
+  if (player == nullptr || LimitOf(player) < 0 || !IsShipTech(status)) {
+    return false;
+  }
+  return CountOf(player, &limit) >= limit;
+}
+
+void RolloverLine(const char* entry, const char* player, const char*, void* rollover, char* overlay) {
+  std::int32_t limit = -1;
+  if (player == nullptr || !IsShipTech(entry)) {
+    return;
+  }
+  const std::int32_t count = CountOf(player, &limit);
+  if (count < 0) {
+    return;
+  }
+  wchar_t line[160];
+  if (count >= limit) {
+    swprintf_s(line, L"\n<color=1, 0.35, 0.35>Shipment techs: %d/%d, the limit is reached</color>", count, limit);
+    if (overlay != nullptr && overlay[0] == '\0') {
+      sprintf_s(overlay, 256, "%d/%d", count, limit);  // over the button, as researchGrants' price
+    }
+  } else {
+    swprintf_s(line, L"\n<color=0.4, 1, 0.4>Shipment techs: %d/%d</color>", count, limit);
+  }
+  uhc::AppendTechRollover(rollover, line);
+}
+
+std::string Narrow(const wchar_t* text) {
+  std::string out;
+  for (; text != nullptr && *text != L'\0'; ++text) {
+    out += *text < 0x80 ? static_cast<char>(*text) : '?';
+  }
+  return out;
+}
+
+void ReadLimit(const char* civ, std::int32_t civId, const wchar_t* text) {
+  const std::string number = Narrow(text);
+  char* end = nullptr;
+  const long value = std::strtol(number.c_str(), &end, 10);
+  while (end != nullptr && (*end == ' ' || *end == '\t' || *end == '\r' || *end == '\n')) {
+    ++end;
+  }
+  const char* name = civ == nullptr ? nullptr : Field<const char*>(civ, 0x04);
+  if (number.empty() || end == nullptr || *end != '\0' || value < 0 || value > 100000) {
+    uhc::Log(L"shipTechLimit: civ %d (%hs): <ShipTechLimit> \"%hs\" is not a number from 0 to 100000; ignored", civId,
+             name == nullptr ? "?" : name, number.c_str());
+    return;
+  }
+  g_limit[civId] = static_cast<std::int32_t>(value);
+  uhc::Log(L"shipTechLimit: civ %d (%hs): at most %ld shipment techs per game", civId, name == nullptr ? "?" : name,
+           value);
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyShipTechLimit(const Config& config) {
+  const Config::Args* args = config.First("shipTechLimit");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(arg.c_str(), "notext") == 0) {
+      g_text = false;
+    } else {
+      Log(L"shipTechLimit: unknown option %hs (expected: [notext] [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  for (int p = 0; p < kPlayers; ++p) {
+    g_carrier[p] = -1;
+  }
+  if (!VerifyAll("shipTechLimit", {&sites::kResListGet, &sites::kTechEntryLookup, &sites::kUnitAliveSlot}) ||
+      !AddCivTagHandler("ShipTechLimit", &ReadLimit) || !AddResearchPayer("shipTechLimit", &Claim, &Started) ||
+      !AddResearchRefundObserver("shipTechLimit", &Refunded) || !AddCanResearchFilter("shipTechLimit", &Refuse) ||
+      !AddWorldTick(&Tick) || (g_text && !AddTechRolloverLine("shipTechLimit", &RolloverLine))) {
+    return Outcome::kFailed;
+  }
+  Log(L"shipTechLimit: the civ tag <ShipTechLimit> is on%ls%ls (multiplayer unverified)",
+      g_text ? L"; the tech rollover shows the count" : L"", g_log ? L"; logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+## homeCityTechsInUnits
+
+Contract: [homeCityTechsInUnits](../porting-to-another-dll.md#homecitytechsinunits).
+
+Besides the core helpers, it needs: [`canresearch.h`](helpers.md#can-research-test).
+
+Sites: `ResearchGatherFlagTest` `0x9E6553` (13 B), `HcTechResearchRefusal` `0x9E67CE` (16 B).
+
+### src/features/hctechsinunits.cpp
+
+```cpp
+// homeCityTechsInUnits [nogathercheck] [log]: a tech with the HomeCity flag (a home city card) listed in a proto's
+// <Tech> rows is researched there as a normal tech: it pays its own cost, takes its ResearchPoints, and its effects
+// apply when it is done. One status with the card: the research activates the same tech the card would.
+//
+// Stock, the research start 0x9E667A refuses a HomeCity tech silently at 0x9E67CE, after the can-research test and
+// before the payment, so its button shows (when the tech is obtainable) but a click does nothing. The hook lets it
+// through when the researching unit's proto lists the tech in its command entries ([proto+0E8h], 6-byte records,
+// kind 1 a tech, count [proto+0ECh]); any other HomeCity research is still refused.
+//
+// A researched HomeCity tech: the can-research test (canresearch.h) refuses it for a unit whose proto lists it once
+// it is active (bit 1), since that test skips its "already active" check for HomeCity techs.
+//
+// The gather point: a HomeCity tech researched this way is cancelled with a refund while its player has a home city
+// and no land gather point, as a tech with CheckLandHCGatherPoint (0x9E6553 in the Research update), so the units of
+// a FreeHomeCityUnit card are not lost. `nogathercheck` leaves that to the tech's own flags; a tech with
+// CheckWaterHCGatherPoint keeps the stock water check.
+#include <cstdint>
+#include <string>
+
+#include "../canresearch.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+extern "C" {
+std::int32_t g_uhcHcGatherCheck = 1;
+void UhcHcTechStartHook();
+void UhcHcTechGatherHook();
+}
+
+namespace {
+
+constexpr int kMaxLines = 200;
+bool g_log = false;
+int g_lines = 0;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+bool HasBit(const char* status, std::uint32_t bit) {
+  if (bit >= Field<std::uint32_t>(status, 8)) {
+    return false;
+  }
+  return (Field<const std::uint8_t*>(status, 4)[bit / 8] >> (bit % 8) & 1) != 0;
+}
+
+std::int32_t TechIdOf(const char* status) {
+  const char* def = Field<const char*>(status, 0);
+  return def == nullptr ? -1 : Field<std::int32_t>(def, 0);
+}
+
+// The unit's proto lists the tech among its command entries.
+bool ProtoLists(const char* unit, std::int32_t tech) {
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  if (proto == nullptr || tech < 0) {
+    return false;
+  }
+  const auto* entries = Field<const std::uint8_t*>(proto, 0xE8);
+  const std::int32_t count = Field<std::int32_t>(proto, 0xEC);
+  for (std::int32_t i = 0; entries != nullptr && i < count; ++i) {
+    const std::uint8_t* entry = entries + 6 * i;
+    if (entry[2] == 1 && *reinterpret_cast<const std::uint16_t*>(entry) == static_cast<std::uint16_t>(tech)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool RefuseActive(const char* status, const char* unit) {
+  return unit != nullptr && HasBit(status, 18) && HasBit(status, 1) && ProtoLists(unit, TechIdOf(status));
+}
+
+}  // namespace
+
+// From the start hook, for a HomeCity tech: true lets the research go on.
+extern "C" bool __stdcall UhcHcTechAllowed(const char* action, const char* status) {
+  const char* unit = Field<const char*>(action, 0x10);
+  const std::int32_t tech = TechIdOf(status);
+  const bool allowed = ProtoLists(unit, tech);
+  if (g_log && g_lines < kMaxLines) {
+    ++g_lines;
+    uhc::Log(L"homeCityTechsInUnits: HomeCity tech %d in unit %d: %ls", tech,
+             unit == nullptr ? -1 : Field<std::int32_t>(unit, 0x10),
+             allowed ? L"researched (its proto lists it)" : L"refused as in stock (its proto does not list it)");
+  }
+  return allowed;
+}
+
+namespace uhc {
+
+Outcome ApplyHomeCityTechsInUnits(const Config& config) {
+  const Config::Args* args = config.First("homeCityTechsInUnits");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(arg.c_str(), "nogathercheck") == 0) {
+      g_uhcHcGatherCheck = 0;
+    } else {
+      Log(L"homeCityTechsInUnits: unknown option %hs (expected: [nogathercheck] [log]); feature not applied",
+          arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("homeCityTechsInUnits", {&sites::kHcTechResearchRefusal, &sites::kResearchGatherFlagTest}) ||
+      !AddCanResearchFilter("homeCityTechsInUnits", &RefuseActive) ||
+      !WriteJmp(sites::kHcTechResearchRefusal.va, reinterpret_cast<const void*>(&UhcHcTechStartHook), 13) ||
+      !WriteJmp(sites::kResearchGatherFlagTest.va, reinterpret_cast<const void*>(&UhcHcTechGatherHook), 9)) {
+    return Outcome::kFailed;
+  }
+  Log(L"homeCityTechsInUnits: HomeCity techs listed in a proto are researched there%ls%ls (multiplayer unverified)",
+      g_uhcHcGatherCheck != 0 ? L"; they wait for a land gather point" : L"", g_log ? L"; logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/hctechsinunits_hooks.asm
+
+```asm
+; homeCityTechsInUnits (src/features/hctechsinunits.cpp): a HomeCity tech researched in a unit or a building whose
+; proto lists it. Both hooks are in the Research action (vtable 0xB98078): its start 0x9E667A and its update 0x9E648B.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcHcTechAllowed PROTO STDCALL action:DWORD, status:DWORD
+EXTERN g_uhcHcGatherCheck:DWORD
+
+.data
+startAccepted dd 009E67DBh      ; lea ebx,[esi+10h]: the payment (0x9E67E1) and the rest of the start
+startRefused  dd 009E67C5h      ; xor al,al: the start fails, nothing paid
+gatherNext    dd 009E655Ch      ; test al,al: AL = 1 runs the land gather point check
+
+.code
+
+; 0x9E67CE: push 12h / mov ecx,esi / call 44D863h / cmp al,1 / je 9E67C5h (13 B), the start's refusal of a HomeCity
+; tech, after the can-research test 0x9E670B passed. ESI = the player's status of the tech, EDI = the player,
+; EBP = the action ([action+10h] the unit). A tech without the HomeCity flag goes on as in stock; a HomeCity tech
+; goes on when UhcHcTechAllowed says the unit's proto lists it. ECX and EDX are dead at both continuations (the
+; payment reloads ECX from EDI; the failure path returns).
+UhcHcTechStartHook PROC
+    TRACE_ONCE "homeCityTechsInUnits research start (0x9E67CE)"
+    push 12h
+    mov ecx, esi
+    mov eax, 0044D863h
+    call eax                        ; al = 1: the HomeCity flag
+    cmp al, 1
+    jne accepted
+    push esi
+    push ebp
+    call UhcHcTechAllowed
+    test al, al
+    je refused
+accepted:
+    jmp startAccepted
+refused:
+    jmp startRefused
+UhcHcTechStartHook ENDP
+
+; 0x9E6553: push 1Eh / mov ecx,ebx / call 44D863h (9 B) in the Research update: AL = the CheckLandHCGatherPoint
+; flag, tested at 0x9E655C (set: with a home city and no land gather point the research is cancelled and refunded,
+; state 13h). EBX = the status, EDI = the player. A HomeCity tech without CheckWaterHCGatherPoint gets AL = 1 here,
+; so it waits for a land gather point as the council techs do (g_uhcHcGatherCheck, on unless `nogathercheck`).
+; Only a HomeCity tech this key let through is ever researched by a Research action. ECX and EDX are reloaded by
+; both paths after 0x9E655C.
+UhcHcTechGatherHook PROC
+    TRACE_ONCE "homeCityTechsInUnits gather point check (0x9E6553)"
+    push 1Eh
+    mov ecx, ebx
+    mov eax, 0044D863h
+    call eax
+    test al, al
+    jne done
+    cmp g_uhcHcGatherCheck, 0
+    je done
+    push 12h
+    mov ecx, ebx
+    mov eax, 0044D863h
+    call eax                        ; the HomeCity flag
+    test al, al
+    je done
+    push 1Fh
+    mov ecx, ebx
+    mov eax, 0044D863h
+    call eax                        ; CheckWaterHCGatherPoint: the stock water check follows
+    test al, al
+    mov al, 1
+    je done
+    xor al, al
+done:
+    jmp gatherNext
+UhcHcTechGatherHook ENDP
 
 END
 ```
