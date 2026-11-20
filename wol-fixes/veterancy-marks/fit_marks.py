@@ -166,12 +166,12 @@ def plausible(kind, s):
     if not 0.05 <= s["bar"][1] <= 0.22:
         return False
     if len(s["tiers"]) > 1:  # the reference's two tiers are alike
-        (_, l1, w1, _), (_, l2, w2, _) = s["tiers"][:2]
+        (l1, w1), (l2, w2) = (tuple(s["tiers"][0][1:3]), tuple(s["tiers"][1][1:3]))
         if abs(w1 - w2) > 0.2 * max(w1, w2) or abs(l1 - l2) > 0.15 * max(l1, l2):
             return False
     previous = root
-    for y, tl, tw, rise in s["tiers"]:
-        if tw < 0.15 or tl < 0.45 or abs(rise) > 15 or y < previous - 0.05:
+    for y, tl, tw, rise, *_ in s["tiers"]:
+        if tw < 0.15 or tl < 0.45 or abs(rise) > 20 or y < previous - 0.05:
             return False
         previous = y
     return True

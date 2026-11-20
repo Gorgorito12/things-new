@@ -4,6 +4,14 @@ Veterancy rank marks as soutache knots (WoL request #74)
 JTMaston: "use soutaches from Hussar uniforms: Rank1 - one single loop in bronze colour. Rank2 - Triloop in silver
 colour. Rank3 - Pointed/spiked triloop in gold colour."
 
+Version 6 (2026-11-20, after the user's review of version 5; not yet seen in the game): ranks 2 and 4 rounder: their top
+loop a full round ring, their side loops round-ended ovals, every join and end drawn twice as finely (a point every 0.02
+glyph unit); the side loops' upper half fuller and their axis at the sheet's angle, measured on its loop holes (rank 3:
+13 to 16 degrees down toward the tip, so the upper edge rises from the stem as on the sheet; ranks 2, 4, 5: 5 to 11); a
+stronger light band. Fitted again to the sheet (IoU, rank 1 / 2 / 3 / 4 / 5):
+    silhouette   0.938  0.937  0.923  0.936  0.923
+    loop holes   0.866  0.719  0.599  0.597  0.455
+
 Version 5 (2026-11-20): still our own drawing (nothing is cut from your sheet), now fitted to it. fit_marks.py cuts each
 mark's silhouette out of the sheet as a measuring target only and adjusts our shapes (loop sizes and places, the side loops'
 tilt, the stem, the tail bar, the cord's thickness) until they overlap. Overlap (IoU, 1 = identical) per rank, before and
