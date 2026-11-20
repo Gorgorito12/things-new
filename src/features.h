@@ -118,6 +118,13 @@ Outcome ApplyNativeCivs(const Config& config);
 Outcome ApplyBigButton(const Config& config);
 Outcome ApplyAgeUpBuildings(const Config& config);
 Outcome ApplyPoliticianPlacesFix(const Config& config);
+Outcome ApplyPoliticianEnablesTech(const Config& config);
+// politicianplaces.cpp: the European age-up dialog's hook at 0x81A45A, shared by politicianPlacesFix and
+// politicianEnablesTech. The observer sees each politician the list builder accepts (the dialog, its tech status) and
+// the place it is about to fill, before the builder fills it.
+using PoliticianPlaceObserver = void (*)(char* dlg, const char* techStatus, int place);
+bool InstallPoliticianPlaceHook(const char* feature);
+bool AddPoliticianPlaceObserver(PoliticianPlaceObserver observer, const char* feature);
 Outcome ApplyFarmAnim(const Config& config);
 Outcome ApplyFarmingRadius(const Config& config);
 Outcome ApplyWonderCivUnitType(const Config& config);
@@ -228,6 +235,8 @@ inline constexpr Feature kFeatures[] = {
     {"bigButtonCivs/noBigButtonBlds", ApplyBigButton},
     {"ageUpBuildings", ApplyAgeUpBuildings},
     {"politicianPlacesFix", ApplyPoliticianPlacesFix},
+    // After politicianPlacesFix: its observer runs in that key's hook (0x81A45A), after the place check.
+    {"politicianEnablesTech", ApplyPoliticianEnablesTech},
     {"enableFarmAnim/enableRectFarmAnim", ApplyFarmAnim},
     // After enableFarmAnim: its indices count that key's entries.
     {"farmingRadius", ApplyFarmingRadius},
@@ -315,7 +324,7 @@ inline constexpr const char* kHandledKeys[] = {
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "playericon", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
+    "perffilelog", "multipleinstances", "playericon", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
 };
 
 }  // namespace uhc

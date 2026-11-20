@@ -33,6 +33,7 @@ set(UHC_SOURCES
   src/modifytypes.cpp
   src/transformcalls.cpp
   src/prototags.cpp
+  src/techtags.cpp
   src/civtags.cpp
   src/techsubtypes.cpp
   src/d3d9hooks.cpp
@@ -72,6 +73,7 @@ set(UHC_SOURCES
   src/features/civs.cpp
   src/features/ageupbuildings.cpp
   src/features/politicianplaces.cpp
+  src/features/politicianenablestech.cpp
   src/features/damageovertime.cpp
   src/features/dance.cpp
   src/features/decimalpop.cpp
@@ -167,6 +169,7 @@ set(UHC_SOURCES
   src/hooks/civ_hooks.asm
   src/hooks/ageup_hooks.asm
   src/hooks/politicianplaces_hooks.asm
+  src/hooks/techtags_hooks.asm
   src/hooks/dance_hooks.asm
   src/hooks/farm_hooks.asm
   src/hooks/decimalpop_hooks.asm
