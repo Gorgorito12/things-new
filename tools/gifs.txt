@@ -304,3 +304,5 @@ autoScout-wol 2 48 4 800:320:560:330+800:270:0:810
 autoScout-wol-control 2 48 4 800:320:560:330+800:270:0:810
 multiplierDecimals-wol 2 12 1 800:60:0:0+800:230:6:390
 multiplierDecimals-wol-control 2 12 1 800:60:0:0+800:230:6:390
+researchOnTheMove-wol 0 20 2 800:80:0:0+800:480:700:200+800:80:1120:850
+researchOnTheMove-wol-control 0 20 2 800:80:0:0+800:480:700:200+800:80:1120:850

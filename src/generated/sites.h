@@ -2333,4 +2333,10 @@ inline constexpr Site kAutoScoutTacticIndex{"AutoScoutTacticIndex", 0x00948161, 
 inline constexpr std::uint8_t kAutoScoutIdleBytes[] = {0x8B, 0x41, 0x24, 0x85, 0xC0, 0x74, 0x0C, 0x8A};
 inline constexpr Site kAutoScoutIdle{"AutoScoutIdle", 0x0044F1A7, kAutoScoutIdleBytes, sizeof(kAutoScoutIdleBytes)};
 
+inline constexpr std::uint8_t kQueueHoldsMoveCallBytes[] = {0xE8, 0x6B, 0xFF, 0xFF, 0xFF, 0x3C, 0x01, 0x0F, 0x95, 0xC0};
+inline constexpr Site kQueueHoldsMoveCall{"QueueHoldsMoveCall", 0x00487E1B, kQueueHoldsMoveCallBytes, sizeof(kQueueHoldsMoveCallBytes)};
+
+inline constexpr std::uint8_t kQueueHoldsHeadBytes[] = {0x8B, 0x41, 0x24, 0x85, 0xC0, 0x74, 0x13, 0x8A, 0x40, 0x60, 0x3C, 0x0D};
+inline constexpr Site kQueueHoldsHead{"QueueHoldsHead", 0x00487D8B, kQueueHoldsHeadBytes, sizeof(kQueueHoldsHeadBytes)};
+
 }  // namespace uhc::sites

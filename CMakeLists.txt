@@ -58,6 +58,7 @@ set(UHC_SOURCES
   src/features/cantslow.cpp
   src/features/stealthtarget.cpp
   src/features/autoscout.cpp
+  src/features/researchmove.cpp
   src/features/customwalls.cpp
   src/features/directional.cpp
   src/features/snarevalues.cpp

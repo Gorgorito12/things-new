@@ -2396,6 +2396,12 @@ inline constexpr Site kAutoScoutTacticIndex{"AutoScoutTacticIndex", 0x00948161, 
 inline constexpr std::uint8_t kAutoScoutIdleBytes[] = {0x8B, 0x41, 0x24, 0x85, 0xC0, 0x74, 0x0C, 0x8A};
 inline constexpr Site kAutoScoutIdle{"AutoScoutIdle", 0x0044F1A7, kAutoScoutIdleBytes, sizeof(kAutoScoutIdleBytes)};
 
+inline constexpr std::uint8_t kQueueHoldsMoveCallBytes[] = {0xE8, 0x6B, 0xFF, 0xFF, 0xFF, 0x3C, 0x01, 0x0F, 0x95, 0xC0};
+inline constexpr Site kQueueHoldsMoveCall{"QueueHoldsMoveCall", 0x00487E1B, kQueueHoldsMoveCallBytes, sizeof(kQueueHoldsMoveCallBytes)};
+
+inline constexpr std::uint8_t kQueueHoldsHeadBytes[] = {0x8B, 0x41, 0x24, 0x85, 0xC0, 0x74, 0x13, 0x8A, 0x40, 0x60, 0x3C, 0x0D};
+inline constexpr Site kQueueHoldsHead{"QueueHoldsHead", 0x00487D8B, kQueueHoldsHeadBytes, sizeof(kQueueHoldsHeadBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -2847,6 +2853,7 @@ Outcome ApplyResourceBounty(const Config& config);
 Outcome ApplyCantBeSlowed(const Config& config);
 Outcome ApplyStealthTargeting(const Config& config);
 Outcome ApplyAutoScout(const Config& config);
+Outcome ApplyResearchOnTheMove(const Config& config);
 Outcome ApplyCustomWalls(const Config& config);
 Outcome ApplyDirectionalAttack(const Config& config);
 Outcome ApplySnareValues(const Config& config);
@@ -2998,6 +3005,7 @@ inline constexpr Feature kFeatures[] = {
     {"snareValues", ApplySnareValues},
     {"stealthTargeting", ApplyStealthTargeting},
     {"autoScout", ApplyAutoScout},
+    {"researchOnTheMove", ApplyResearchOnTheMove},
     {"customWalls", ApplyCustomWalls},
     {"directionalAttack", ApplyDirectionalAttack},
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
@@ -3093,7 +3101,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",

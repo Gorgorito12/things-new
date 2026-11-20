@@ -5073,6 +5073,7 @@ How buildings train, spawn, live and get replaced.
 |---|---|---|---|---|
 | [`sharedBuildLimit`](#sharedbuildlimit) | Protos share a build limit: by unit type, with weights, or across a team. | **new** | The tags on the protos that share. | confirmed |
 | [`doNotQueue`](#donotqueue) | `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | **new** | The tag on the protos that want it. | confirmed |
+| [`researchOnTheMove`](#researchonthemove) | A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | **new** | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. | confirmed (single player) |
 | [`nextResearchFree`](#nextresearchfree) | A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`researchGrants`](#researchgrants) | A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | **new** | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. | confirmed (single player, also a skirmish vs AI) |
 | [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
@@ -5963,6 +5964,73 @@ doNotQueue [log]
 - **Tested in WoL (2026-11-06, shipments):** with the flag, cards arrived at 67 s and 95 s; key off, at 58 s and 101 s. A saved game
   kept the order and the progress; a cancel refunded the ship; a German AI sent a card with no XS error. Not tested: two flagged
   cards in a row, an AI's flagged card, the home city's models, beside WoL's DLL, multiplayer.
+
+#### researchOnTheMove
+
+*A unit that researches, such as the Mapuche council, can walk, fight and take any order while its research goes on.*
+
+![researchOnTheMove in WoL](media/researchOnTheMove-wol.gif)
+
+*In WoL, with `researchOnTheMove log` and the type on `MapucheWarchief` only (scenario, the Warchief selected, the Wise
+Woman beside him without the type, both researching):* a trigger's move order at 18 s sends the Warchief 10 m east and
+one at 34 s brings him back, while the first of his two researches fills up in the queue; the Wise Woman stays where
+she is. [Full video (MP4)](media/researchOnTheMove-wol.mp4).
+
+![researchOnTheMove in WoL, key off](media/researchOnTheMove-wol-control.gif)
+
+*In WoL, key off (the same data and orders):* neither moves while they research. [Full video (MP4)](media/researchOnTheMove-wol-control.mp4).
+
+```
+researchOnTheMove [log]
+```
+
+```xml
+<Unit name="MapucheWarchief">
+    <UnitType>ResearchOnTheMove</UnitType>
+</Unit>
+```
+
+- **In WoL today:** a unit with research queued ignores move, attack, gather and garrison orders until the queue is
+  empty or cancelled; the research goes on, and the order is lost (the unit stays, or is left in a move that never
+  starts). JTMaston's #71.
+- **Effect:** a unit whose proto has the type takes every order as a unit with an empty queue does, and its research
+  keeps progressing at the same rate while it walks, fights or stands. Only the first research of its queue advances,
+  as before. A unit that also trains (a Train action in its queue) still stands still, as stock: the request is for
+  research only.
+- **Kept as stock:** the cancel and its refund (a click on the queue icon gave the ship back), the refund of everything
+  queued when the unit dies or is knocked out, the order of the queue, a research going on after a saved game is
+  loaded. Garrisoned, the research pauses, and goes on where it was once the unit is out: that is what the game does
+  for anything inside a building.
+- **The pack `wol-fixes/research-on-the-move`:** `apply_fix.py <WoL folder>` gives the type to the six council units
+  (`MapucheWarchief`, `MapucheWiseWoman`, `MapucheShaman`, `MapucheWarrior`, `MapucheMessenger`, `MapucheToki`) and adds
+  the key to `Startup\wol.cfg` (or `engine-ext\engine-ext.cfg` beside WoL's DLL); `--units A,B` names other protos
+  (the Ethiopian caravans, `Bedouin` and `Rangatira` work too: a caravan walked 13 m while it researched);
+  `--restore` undoes it.
+- **Beside WoL's DLL** (`dinput8.dll`): works (2026-11-20).
+- **Simulation:** yes. Everyone needs the key and the data. The answer depends only on the unit's proto and its
+  actions. Not tested in multiplayer.
+- **Log:** `researchOnTheMove: a unit of the abstract type ResearchOnTheMove takes orders while it researches`,
+  `hook reached: can take a move, queue test (0x487E1B)`; with `log`, once per unit:
+  `researchOnTheMove: unit 0 (proto 1733) is free to move with research queued`. An unknown option is logged and the
+  key is not applied.
+- **Tested in WoL (2026-11-20, scenarios, a player of the Ethiopians with Mapuche council units):**
+  - Key off: the Warchief (with `ForceBuildingData`), the Shaman (without), an Ethiopian caravan and a `Bedouin`, each
+    researching, ignored a trigger's move order; their research went on at the same rate and finished.
+  - With the type on the Warchief, Shaman, caravan and Bedouin and not on the Wise Woman: the four moved (the Warchief
+    16 m in about 5 s) while their research went from 0.56 to 0.76 and on; the Wise Woman stayed. An attack-move took the
+    Warchief and the Shaman into a fight with two Hussars, and their research kept advancing (0.24 to 0.87) until they
+    were knocked out.
+  - Two techs queued: the first went on while walking, the second started when it finished.
+  - Cancel: the second of three queued techs, clicked off its icon, gave back its ship (17 to 18).
+  - Knocked out: the Warchief (two techs) and the unmarked Wise Woman (one) gave back the three ships (15 to 18).
+  - Garrisoned in a Bunker: the Shaman's research stayed at 0.070 for 47 s and went on from there once ejected.
+  - A saved game, loaded: the research went on, and a move given after the load walked the Warchief 16 m while it
+    researched.
+  - Beside WoL's own `uhc.dll`, with our `dinput8.dll`: the same move worked; the unmarked Wise Woman stayed.
+  - A/B with `perfprobe.py` (90 s, the same scenario with 60 Musketeers fighting, other games running on the machine):
+    simulation update 0.22 ms against 0.23 ms key off, 2 frames over 50 ms in each run.
+  - Not tested: an AI game with the type (the skirmish route was not available that day), a unit that trains and
+    researches, multiplayer.
 
 #### nextResearchFree
 
