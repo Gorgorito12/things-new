@@ -28,6 +28,7 @@ PAGES = {
         "Action tags": ["src/actiontags.h", "src/actiontags.cpp", "src/hooks/actiontag_hooks.asm"],
         "Transform calls": ["src/transformcalls.h", "src/transformcalls.cpp"],
         "Proto tags": ["src/prototags.h", "src/prototags.cpp", "src/hooks/prototag_hooks.asm"],
+        "Tech tags": ["src/techtags.h", "src/techtags.cpp", "src/hooks/techtags_hooks.asm"],
         "Civ tags": ["src/civtags.h", "src/civtags.cpp", "src/hooks/civfirsttc_hooks.asm"],
         "Tech subtypes": ["src/techsubtypes.h", "src/techsubtypes.cpp", "src/hooks/techsubtype_hooks.asm"],
         "Modify types": ["src/modifytypes.h", "src/modifytypes.cpp", "src/hooks/modifytype_hooks.asm"],
@@ -43,6 +44,8 @@ PAGES = {
         "State kept for a saved game": ["src/savedmarkers.h"],
         "Direct3D hooks": ["src/d3d9hooks.h", "src/d3d9hooks.cpp"],
         "Research payment": ["src/researchpay.h", "src/researchpay.cpp", "src/hooks/researchpay_hooks.asm"],
+        "Can-research test": ["src/canresearch.h", "src/canresearch.cpp", "src/hooks/canresearch_hooks.asm"],
+        "Tech rollover": ["src/techrollover.h", "src/techrollover.cpp", "src/hooks/techrollover_hooks.asm"],
         "ROF reads": ["src/rofreads.h", "src/rofreads.cpp", "src/hooks/rofreads_hooks.asm"],
         "Floating bars": ["src/floatingbars.h", "src/floatingbars.cpp", "src/hooks/floatingbars_hooks.asm"],
     }),
@@ -69,6 +72,7 @@ PAGES = {
         "civFirstTC": ["src/features/civfirsttc.cpp", "src/hooks/civfirsttc_hooks.asm"],
         "ageUpBuildings": ["src/features/ageupbuildings.cpp", "src/hooks/ageup_hooks.asm"],
         "politicianPlacesFix": ["src/features/politicianplaces.cpp", "src/hooks/politicianplaces_hooks.asm"],
+        "politicianEnablesTech": ["src/features/politicianenablestech.cpp"],
     }),
     "healing": ("Healing and hit points", {
         "healNonIdle": ["src/features/heal.cpp", "src/hooks/heal_hooks.asm"],
@@ -109,6 +113,7 @@ PAGES = {
         "linkedResource": ["src/features/linkedresource.cpp", "src/hooks/linkedresource_hooks.asm"],
         "resourceGatherAuras": ["src/features/gatherauras.cpp", "src/hooks/gatherauras_hooks.asm"],
         "resourceDebt": ["src/features/resourcedebt.cpp", "src/hooks/resourcedebt_hooks.asm"],
+        "truckAttackResourceFix": ["src/features/truckattack.cpp", "src/hooks/truckattack_hooks.asm"],
     }),
     "buildings": ("Buildings and training", {
         "liveBuildingWorkRate": ["src/features/workrate.cpp", "src/hooks/workrate_hooks.asm"],
@@ -119,8 +124,11 @@ PAGES = {
         "trainBatchSize": ["src/features/trainbatch.cpp", "src/hooks/trainbatch_hooks.asm"],
         "sharedBuildLimit": ["src/features/sharedlimit.cpp", "src/hooks/sharedlimit_hooks.asm"],
         "doNotQueue": ["src/features/donotqueue.cpp"],
+        "researchOnTheMove": ["src/features/researchmove.cpp"],
         "nextResearchFree": ["src/features/freeresearch.cpp"],
         "researchGrants": ["src/features/researchgrants.cpp", "src/hooks/researchgrant_hooks.asm"],
+        "shipTechLimit": ["src/features/shiptechlimit.cpp"],
+        "homeCityTechsInUnits": ["src/features/hctechsinunits.cpp", "src/hooks/hctechsinunits_hooks.asm"],
         "maintainWaitForPop": ["src/features/maintain.cpp", "src/hooks/maintain_hooks.asm"],
         "noTrainNearEnemyTC": ["src/features/notrainneartc.cpp", "src/hooks/notrainneartc_hooks.asm"],
         "lifespanAfterConstruction": ["src/features/lifespan.cpp", "src/hooks/lifespan_hooks.asm"],
@@ -151,6 +159,8 @@ PAGES = {
         "minUIStats": ["src/features/minuistats.cpp", "src/hooks/minuistats_hooks.asm"],
         "playerIcon": ["src/features/playericon.cpp", "src/hooks/playericon_hooks.asm"],
         "autoScout": ["src/features/autoscout.cpp", "src/hooks/autoscout_hooks.asm"],
+        "transformChecks": ["src/features/transformchecks.cpp", "src/hooks/transformchecks_hooks.asm",
+                            "src/panelbuttons.cpp", "src/panelbuttons.h", "src/hooks/panelbuttons_hooks.asm"],
     }),
 }
 
@@ -158,11 +168,12 @@ PAGES = {
 HELPER_OF = {
     "generated/sites.h": "site-table", "site.h": "site-table", "patch.h": "patching", "log.h": "log",
     "config.h": "cfg-reader", "features.h": "results", "unittypes.h": "extra-abstract-unit-types",
-    "worldtick.h": "world-tick", "actiontags.h": "action-tags", "modifytypes.h": "modify-types", "techsubtypes.h": "tech-subtypes", "prototags.h": "proto-tags", "civtags.h": "civ-tags", "transformcalls.h": "transform-calls", "floatingtext.h": "floating-text",
+    "worldtick.h": "world-tick", "actiontags.h": "action-tags", "modifytypes.h": "modify-types", "techsubtypes.h": "tech-subtypes", "prototags.h": "proto-tags", "techtags.h": "tech-tags", "civtags.h": "civ-tags", "transformcalls.h": "transform-calls", "floatingtext.h": "floating-text",
     "deathobservers.h": "death-observers", "killobservers.h": "kill-observers",
     "modifiers.h": "modifier-walk", "unitpanel.h": "unit-panel-row-the-minimized-interface", "datarefs.h": "data-refs", "unitinfo.h": "unit-info-for-the-panels",
     "namelists.h": "name-lists", "unitmodels.h": "models-on-a-unit",
     "savedmarkers.h": "state-kept-for-a-saved-game", "researchpay.h": "research-payment",
+    "canresearch.h": "can-research-test", "techrollover.h": "tech-rollover",
     "rofreads.h": "rof-reads", "floatingbars.h": "floating-bars",
 }
 LANG = {".cpp": "cpp", ".h": "cpp", ".asm": "asm", ".inc": "asm"}

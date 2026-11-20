@@ -336,6 +336,7 @@ impactBoneFix [all] [log]
 | [`gatherFix`](#gatherfix) | Gatherers collect on a fixed interval, so the gather rate is the data's and not the animation's. WoL's balance assumes it. | always on | Nothing. | confirmed |
 | [`workRateByAbstractType`](#workratebyabstracttype) | A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | **new** | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. | confirmed |
 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Dynamic free units grow smoothly with game time, not in 2-minute steps. | **in `wol.cfg`** | Nothing. | confirmed |
+| [`truckAttackResourceFix`](#truckattackresourcefix) | A `TruckAttack` (the mustard gas, the tornado, the fire power, the monster truck) no longer empties the Mills, plantations and other gather buildings it hits, so villagers can still gather there afterwards. | **new** | Nothing. | confirmed (single player) |
 
 #### gatherFix
 
@@ -468,6 +469,51 @@ betterfreedynamicunit
 - **Simulation:** changes how many units arrive: every player needs the same line.
 - **Status:** confirmed (single player, on WoL): `Corderos` (−2 Sheep), set by a map trigger, at 205 s gave
   3 Sheep with the key and 4 without; at 420 s, 7 and 8.
+
+#### truckAttackResourceFix
+
+*A poison cloud, a tornado or a monster truck no longer leaves the Mills and plantations it touched empty for good.*
+
+**Added:** Friday 2026-11-20 11:39 · **Filmed in WoL:** Friday 2026-11-20 11:39
+
+![truckAttackResourceFix in WoL](media/truckAttackResourceFix-wol.gif)
+
+*In WoL, with `truckAttackResourceFix log` (Ethiopians, a scenario):* an enemy's mustard gas (`gwMustardGas`) has covered
+the plantation for 45 s and killed the four settlers working there. Once it is gone, four new settlers (selected) are
+sent to it: they gather, the tooltip reads "Current Gatherers: 4" and the gold rises. [Full video (MP4)](media/truckAttackResourceFix-wol.mp4).
+
+![truckAttackResourceFix in WoL, key off](media/truckAttackResourceFix-wol-control.gif)
+
+*In WoL, key off (the same scene):* the gas emptied the plantation. The settlers walk to it and stand idle beside it,
+"Current Gatherers: 0", and the gold stays at 14. [Full video (MP4)](media/truckAttackResourceFix-wol-control.mp4).
+
+```
+truckAttackResourceFix [log]
+```
+
+- **The bug (WoL request #75):** "GW mustard gas thrown by the zeppelin disables mills and other resource buildings
+  from being gathered from". The gas clouds attack with a tactics action of type `TruckAttack`, the stock monster
+  truck's. Every 0.2 s that action hits each unit of another player within its `maxrange`, and before the damage it
+  sets the whole resource inventory of the unit it hits to 0. On a hunt that is what a trample is for; on a Mill
+  (999 food), a plantation (999 gold) or a rice paddy it leaves the building empty, and `UnlimitedSupply` never
+  refills it: villagers sent there walk to it and stand idle, for the rest of the game. The damage itself is
+  not the cause (the gas does 0 to buildings), nor the gas's `Resource` / `AnimalPrey` types, its owner or its
+  movement: a gas with any of those removed still emptied the Mill, and only a gas whose `TruckAttack` did nothing at
+  all (no `persistent`, `maxrange` 0, another action type) spared it. `POWERtornado`, `POWERIncendio` and the stock
+  `MonsterTruckA` emptied Mills the same way in game; WoL's plague, `gwExplosion`, `gwBulldozer` and `T34` use
+  the same action with a range (not tried). The data cannot avoid it and keep the damage.
+- **Effect:** a `TruckAttack` hit no longer resets the inventory of a building. The damage is the same, and units
+  (a hunt, a villager) are still emptied, as before. A building that was emptied before the key was on stays empty.
+- **Log:** `truckAttackResourceFix: a TruckAttack no longer empties the buildings it hits`; with `log`, the first hit
+  on each building: `unit 0 (Mill, player 1) hit by unit 19 (gwMustardGas, player 2): its resources kept`.
+- **Simulation:** yes: every player needs the same line.
+- **Performance:** one proto test per hit of a `TruckAttack`; nothing runs without such units. Not measured with
+  `perfprobe.py`; the videos ran at 389 fps (key on) and 478 fps (key off), no frame over 50 ms in either.
+- **Status:** confirmed (2026-11-20, single player, WoL, Ethiopians against an empty player 2, scenarios): with the
+  key, a Mill, a plantation and a rice paddy under the gas, and a Mill beside a monster truck, kept their 999 and each
+  took two new settlers; key off, all four were left with 0 and took none, and an emptied Mill was still refused 6
+  minutes later. The damage did not change: a `Target` under five gas clouds lost 352 HP per second with the key and
+  357 without (29 s each). An own gas did not empty its own Mill in either case (the action skips its own player).
 
 ### Buildings and training
 

@@ -11,7 +11,6 @@ UhcLintProtoTag PROTO STDCALL :DWORD, :DWORD
 UhcLintProtoAction PROTO STDCALL :DWORD, :DWORD
 UhcLintDone PROTO STDCALL
 UhcLintEffect PROTO STDCALL :DWORD
-EXTERN g_uhcLintTech:DWORD
 
 .data
 unitTypeNext    dd 005FCB66h    ; mov ecx,0D5E620h: the handler's error, then its failure return
@@ -20,7 +19,6 @@ protoTagSkip    dd 005F62BCh    ; add ebp,1: the next child
 protoActionNext dd 005FA208h    ; mov ecx,[edi+44h]: the action exists
 protoActionMiss dd 005FC891h    ; the handler's failure
 techLoad        dd 0061FD02h    ; the tech parser
-techNodeNext    dd 0061FDBFh    ; cmp edx,-1: the tech's name
 effectNext      dd 006205EFh    ; mov eax,esi: the effect is good
 effectDelete    dd 00621ECAh    ; setData was false: the effect is deleted
 effectTypeNext  dd 0065BC5Bh    ; mov ecx,0D5E620h: the type's error
@@ -74,15 +72,6 @@ UhcLintDoneHook PROC
     pop eax
     jmp loadReturn
 UhcLintDoneHook ENDP
-
-; Replaces mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] at 0x61FDB8, the loop over the tree's nodes: EAX = node.
-UhcLintTechHook PROC
-    mov g_uhcLintTech, eax
-    mov esi, eax
-    mov ecx, esi
-    mov edx, dword ptr [ecx+18h]
-    jmp techNodeNext
-UhcLintTechHook ENDP
 
 ; Replaces je 621ECAh at 0x6205E9 in the effect parse 0x620572. The flags are those of test al,al. EDI = the node.
 UhcLintEffectHook PROC

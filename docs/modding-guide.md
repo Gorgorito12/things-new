@@ -31,9 +31,16 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-20 14:53 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
+| Friday 2026-11-20 12:52 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
+| Friday 2026-11-20 12:00 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
+| Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
+| Friday 2026-11-20 11:59 | [`researchOnTheMove`](#researchonthemove) | Added. A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. |
+| Friday 2026-11-20 11:50 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | The tag on the civ in `civs.xml`. |
+| Friday 2026-11-20 11:50 | [`homeCityTechsInUnits`](#homecitytechsinunits) | Added. A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | The card's tech in the `<Tech>` rows, made obtainable for the civ. |
+| Friday 2026-11-20 11:39 | [`truckAttackResourceFix`](bug-fixes.md#truckattackresourcefix) | Added. A `TruckAttack` (the mustard gas, the tornado, the fire power, the monster truck) no longer empties the Mills, plantations and other gather buildings it hits, so villagers can still gather there afterwards. | Nothing. |
 | Thursday 2026-11-19 15:22 | [`attackTypeIcons`](#attacktypeicons) | Filmed in WoL, with a control. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
 | Thursday 2026-11-19 15:22 | [`multiplierDecimals`](bug-fixes.md#multiplierdecimals) | Filmed in WoL, with a control. The attack rows' bonus multipliers show two decimals, as the data has them: `1.25x` instead of a rounded `1.3x`, in both panels and their tooltips. | Nothing. |
-| Thursday 2026-11-19 14:11 | [`autoScout`](#autoscout) | Added. A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon and the envoy. |
 | Tuesday 2026-11-17 14:11 | [`preloadDll`](#preloaddll) | Added. Our `dinput8.dll` also loads another DLL of the game folder, such as WoL's `WoL.dll`, at the moment WoL's own `dinput8.dll` loader would. | Nothing. |
 | Tuesday 2026-11-17 10:30 | [`minUIStats`](#minuistats) | Filmed in WoL, with a control. The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. |
 | Friday 2026-11-13 17:27 | [`killSpawn`](#killspawn) | Filmed in WoL, with a control. A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | The tags on the civ in `civs.xml`. |
@@ -61,7 +68,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-11-12 08:17 | [`fastLastInLine`](bug-fixes.md#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
 | Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
 | Wednesday 2026-11-11 15:49 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
-| Wednesday 2026-11-11 15:36 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Tuesday 2026-11-10 17:34 | [`fastVertexFill`](bug-fixes.md#fastvertexfill) | Filmed in WoL, with a control. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
 | Tuesday 2026-11-10 17:34 | [`rendererOption`](bug-fixes.md#rendereroption) | Filmed in WoL, with a control. Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | The field in `data\options.xml` and the `dxvk` folder. |
 | Sunday 2026-11-08 10:31 | [`nativePreview`](#nativepreview) | Added. Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. |
@@ -1294,6 +1300,7 @@ What the exe decides by civ.
 | [`danceBonusCivs`](#dancebonuscivs) | Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which the exe applies only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`. | **new** | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. | confirmed (single player) |
 | [`wonderCivUnitType`](#wondercivunittype) | `Rangatira` may start the Maori age-up. Without it, the Maori cannot age up. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`ageUpBuildings`](#ageupbuildings) | The age-up button opens the politician dialog on the buildings you list too, not only on the Town Center, and each building offers only the politicians its own proto lists. | **new** | The politicians (techs with `AgeUpgrade`) in those buildings' `<Tech>` lists. | confirmed (single player) |
+| [`politicianEnablesTech`](#politicianenablestech) | A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | **new** | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). | confirmed (single player) |
 | [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | **new** | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. | confirmed (single player) |
 | [`civFirstTC`](#civfirsttc) | A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | **new** | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. | confirmed (single player; Nomad start not tested) |
 | [`firstTC`](#firsttc) | One line for `civFirstTC` and `startingTC`, with the town units and shipments worked out from the civ's tag. | **new** | `<firstTC>` in `civs.xml`, and the proto in `placementrules\colonies.xml` `<starttypes>`. | confirmed (single player) |
@@ -1598,6 +1605,84 @@ ageUpBuildings [log] Proto [Proto ...]
 - **Status:** confirmed (2026-11-13, single player, Dutch): the Market opened the dialog with its three
   politicians and aged up; key off, nothing opened. Not tested: multiplayer, a native civ's council, a
   revolution.
+
+#### politicianEnablesTech
+
+*An immigrant politician shows its flag apart from the techs it unlocks, each tech with its icon, name and rollover.*
+
+**Added:** Friday 2026-11-20 11:15 · **Filmed in WoL:** Friday 2026-11-20 11:59
+
+![politicianEnablesTech in WoL](media/politicianEnablesTech-wol.gif)
+
+*In WoL (scenario, test data: the Aristocrat, and the Argentine waves with two, four and three tags):* the
+Italian, Polish and Scandinavian places show the flag alone and, under it, the techs the wave unlocks, one per
+row for two techs and two per row for three or four. The cursor rests on Trattoria, Laboro Famoso, Polish Legion,
+Transnational Organizations, Resurrectionist Congregation, Biathlon and Midsommar, and each shows the rollover of its
+own research button (with "not available until Age 2" in red, as there); the Aristocrat, with no tag, is as before.
+[Full video (MP4)](media/politicianEnablesTech-wol.mp4).
+
+![politicianEnablesTech in WoL, key off](media/politicianEnablesTech-wol-control.gif)
+
+*In WoL, key off (the same scene and data):* the dialog shows WoL's pictures with the two tech icons drawn in,
+and the cursor on them shows nothing. [Full video (MP4)](media/politicianEnablesTech-wol-control.mp4).
+
+```
+politicianEnablesTech [log] [flag <u> <v>]
+```
+
+- **In WoL without it:** a Latin American politician's picture is the immigrant flag with the icons of its two
+  techs painted in, and its rollover text lists the techs by hand. The icons have no name and no rollover.
+- **Data:** in `techtreey.xml`, inside the politician's `<Tech>`, one line per tech, in the order they show
+  (at most four):
+
+  ```xml
+  <Tech name ='LAItalianII' type ='Normal'>
+      ...
+      <Icon>War of the Triple Alliance\Icons\age_2</Icon>
+      <PoliticianEnablesTech>WOTTAimmigrantIT01</PoliticianEnablesTech>
+      <PoliticianEnablesTech>WOTTAimmigrantIT02</PoliticianEnablesTech>
+  ```
+
+  The tag only drives the dialog: it enables nothing. The politician's `TechStatus obtainable` effects still
+  make the techs available, as now. The game ignores a `<Tech>` child it does not know, so the lines do no harm
+  without the key.
+- **Layout:** `uipoliticianEuropeandlg.xml` gets, in each place `n`, hidden gadgets the key fills:
+  `PoliticianDlg-Poli{n}EnablesTechPortrait` (the flag), `PoliticianDlg-Poli{n}EnablesTechDescription` (the
+  description, ending above the techs), `PoliticianDlg-Poli{n}EnablesTech{k}Icon` and `...Name` (k = 0, 1: one
+  or two techs, one per row) and `PoliticianDlg-Poli{n}EnablesTechGrid{k}Icon` and `...Name` (k = 0 to 3: three
+  or four techs, two per row). `wol-fixes/politician-ui/apply_fix.py` writes them into WoL's file from each
+  place's own portrait and description, for four or five places, and adds the tags to every politician from its
+  `TechStatus obtainable` effects on immigrant techs (74 politicians, 148 tags in WoL 1.2.0e).
+- **Effect:** for a politician with tags, the dialog hides the place's stock portrait and description and shows
+  the flag part of the same picture (`flag`: the share of the picture's width and height, default `0.75 0.5833`,
+  the 145 × 231 pixel flag of WoL's 192 × 396 pictures), the description in a shorter box, and each tech's icon
+  (its `<Icon>`) and name (its `DisplayNameID`). Resting the cursor on an icon or a name shows the rollover of
+  the tech's own research button (name, cost, `RolloverTextID`). A click on them selects the politician, as a
+  click anywhere in its place. A politician without tags looks as without the key. No new picture is needed:
+  `politiciandata.xml` keeps pointing to WoL's pictures.
+- **Strings:** with the techs on screen, the hand-written list at the end of the politicians' rollover texts
+  (`\n+ Technologies:\n- Trattoria: ...`) repeats them. `apply_fix.py --strings` takes it out of every string
+  table (English and the translations); only with the key on, since without it nothing else names the techs.
+- **Not for:** the Asian and native dialogs (their own builders and files); revolutions use the European dialog
+  but have no tags.
+- **Log:** `politicianEnablesTech: ... (flag 0.7500 x 0.5833)` and `applied`; at the first dialog,
+  `politicianEnablesTech: the age-up dialog has this key's gadgets` (or `does not have`: an old layout, nothing
+  changes) and `N politician(s) with M <PoliticianEnablesTech> tag(s)`; a tag naming no tech:
+  `<PoliticianEnablesTech>X</PoliticianEnablesTech> in tech Y: no such tech; left out`; more than four: the rest
+  left out, with a line. With `log`, each place and tech filled. Bad `flag` values: `FAILED`.
+- **Simulation:** interface only: the dialog is the local player's, and the politician chosen is researched as
+  before.
+- **Status:** confirmed (2026-11-20, single player, scenario with test data in `C:\AoE3-UHC-WoLReal5`): the
+  Argentine (Italian, Polish, Scandinavian) and Mexican (French, Chinese, Confederate) waves, two, three and four
+  tags, a politician without tags, a tag naming no tech, accepting a tagged politician (the age-up started), the
+  dialog closed and opened again, English and Spanish, the four-place file and the five-place one, with
+  `politicianPlacesFix` (a fifth politician left out of four places), beside WoL's own DLL (our `dinput8.dll`;
+  WoL's DLL writes its own description text, which goes into the shorter box), and key off. Also in real
+  skirmishes (2026-11-20, against a German AI): Argentines in Ages II to V at 1920 × 1080 and at 1024 × 768 windowed
+  (with `--strings`), and Mexicans at 1920 × 1080. Every tooltip, click and accept worked, and the Age V politicians
+  (no tags) looked as with the key off. The longest name, "Resurrectionist Congregation", fits on one line. At 1024 ×
+  768 the icons are drawn 22 × 30 px, a little taller than wide, as the layout's size stretches them, like the flags at
+  4:3. Not tested: multiplayer, a saved game, a revolution.
 
 #### startingTC
 
@@ -3740,7 +3825,7 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Wednesday 2026-11-11 15:36
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 14:53
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
@@ -3756,11 +3841,15 @@ with 504 and 346 hit points, and the log shows the ranks.
 
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
 
-*In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (Ethiopians, 2 `Hussar` against 10 `Crossbowman`; the
-Hussar has no rows of its own, so it takes the `AbstractCavalry` defaults; the Crossbowman's own row replaces the
-`AbstractInfantry` one):* each rank shows its mark over the unit's HP bar, clear of it: one bronze chevron, two silver,
-three gold, then one white star over the gold chevrons at rank 4 and two at rank 5, and the floating text gives the
-rank's name in its colour (`Veteran` in bronze, `Champion` in gold). The surviving Hussar ends at rank 5 with 8 kills.
+*In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (filmed again on 2026-11-20 with the soutache knots
+after JTMaston's reviews; 2 `Hussar` against 10 `Crossbowman`, both taking the defaults of their type):* each rank shows its
+mark over the unit's HP bar, clear of it and centred on it: a soutache knot of a hussar's uniform, drawn after the
+reference sheet JTMaston approved and shaded as polished metal: a copper-bronze loop at rank 1, then a stem with a top loop,
+eye-shaped side loops and a tail bar (silver with a round top at rank 2, gold with a pointed top at rank 3, gold with two
+tiers of side loops at ranks 4 and 5, round and pointed top); a Crossbowman that kills shows the bronze loop. The floating text gives the rank's name in
+its colour. A Hussar reaches rank 5. The five marks, enlarged 4 times:
+[veterancyBonus-marks-x4.png](media/veterancyBonus-marks-x4.png); at the game's own size (default camera, 1920 x 1080):
+[veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png).
 [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
 
 ![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
@@ -3796,7 +3885,7 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
     <VeterancyDefault unittype="AbstractInfantry">
         <VeterancyBonus kills="1" modifytype="Damage">1.3</VeterancyBonus>
     </VeterancyDefault>
-    <VeterancyRank rank="1" name="Veteran" color="CD7F32"/>
+    <VeterancyRank rank="1" name="Veteran" color="DA8228"/>
     <VeterancyRank rank="2" name="Elite" color="C8CDD7"/>
     <VeterancyRank rank="3" name="Champion" color="FFCD28"/>
     <VeterancyRank rank="4" name="32485" color="E04040"/>
@@ -3838,9 +3927,30 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   hunting gives no rank, and treasure guardians give none either; not a unit of its own; not a trigger's kill, nor a blow from a
   unit already dead. Stock's flag is not needed.
 - **Hit points:** `MaxHP` raises the current ones in proportion: 212.6 became 318.9 at ×1.5.
-- **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows one to three chevrons, then at ranks 4 and 5
-  the three gold chevrons with one or two white stars over them (2026-11-11); a rank above the fifth keeps rank 5's mark.
-  The stars sit over the chevrons, away from the HP bar, and the chevrons stay where rank 3 has them. With no such folder
+- **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows a soutache knot (2026-11-20, JTMaston's
+  #74, in place of the chevrons; since the end of 2026-11-20 drawn after the reference sheet he approved): rank 1 one tall
+  loop like a cursive "l" in copper-bronze (DA8228), its cord crossing near the bottom and both tails sweeping out; rank 2 a
+  round top loop on a straight stem, two eye-shaped side loops and a tail bar whose ends curve up, in silver; rank 3 the
+  same with a pointed top loop, in gold; rank 4 the round top loop and two tiers of eye-shaped side loops, in gold; rank 5
+  the same with the pointed top loop; no stars. A rank above the fifth keeps rank 5's mark. Each knot is symmetric, a thick
+  cord shaded as polished metal (its light tone along the top left of each strand, its dark tone underneath, the tones
+  sampled from the sheet) with a dark border, and every rank ends at the same lowest height. Our own drawing, fitted to
+  the sheet by the overlap of the silhouettes and of the loops' holes (`wol-fixes/veterancy-marks/fit_marks.py`,
+  private; silhouette IoU 0.79 to 0.91 after the last changes by eye), with three texture levels only, so that the mark
+  stays solid at the game's size. Side by side with the sheet:
+  `wol-fixes/veterancy-marks/compare-reference.png` (private).
+- **Centred on the HP bar (2026-11-20, a standing rule for every mark over a unit):** the mark is horizontally centred on the
+  unit's HP bar, never nearer one end. Before, the mark's sprite hung about 1.5 m higher than the bar, and in perspective a
+  higher point drifts away from the middle of the screen: measured at the default camera, 0 px for a unit at the screen's
+  centre but -5 px at 423 px left of it and +6.5 px at 418 px right of it. Now the sprite's centre is at the bar's own height
+  (2.9 m for infantry, 4.1 m for cavalry, 5.1 m for WoL's `AbstractElephant`) and the knot is drawn high inside the sprite,
+  which faces the camera, so it rises straight up on screen: measured within 1 px of the bar's centre for Crossbowmen and
+  Hussars, at the default camera and zoomed in, from the screen's centre to 250 px off it (the knots after the reference
+  sheet, measured again: Crossbowmen 0 px to 342 px off the centre; a Hussar 0 to 3 px, by where it faces: its bar's tag
+  sits over the rider, a little off the unit's position). Not fixable this way: an
+  elephant's bar is not over the unit's position (the `HITPOINTBAR` tag sits toward its head and turns with it), and a
+  particle hangs at the unit's position, so an elephant's mark is off its bar by up to about 13 px at a close camera,
+  depending on where the elephant faces. In the game: [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png). With no such folder
   the log says so once and the bonuses work as before. Display only: it
   changes nothing in the simulation. In the minimized interface the unit panel's row shows `Rank 3` and `3 kills`. The art is
   our own: DE's are images in its selection panel.
@@ -5073,8 +5183,11 @@ How buildings train, spawn, live and get replaced.
 |---|---|---|---|---|
 | [`sharedBuildLimit`](#sharedbuildlimit) | Protos share a build limit: by unit type, with weights, or across a team. | **new** | The tags on the protos that share. | confirmed |
 | [`doNotQueue`](#donotqueue) | `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | **new** | The tag on the protos that want it. | confirmed |
+| [`researchOnTheMove`](#researchonthemove) | A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | **new** | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. | confirmed (single player) |
 | [`nextResearchFree`](#nextresearchfree) | A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`researchGrants`](#researchgrants) | A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | **new** | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. | confirmed (single player, also a skirmish vs AI) |
+| [`shipTechLimit`](#shiptechlimit) | `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | **new** | The tag on the civ in `civs.xml`. | confirmed (single player, scenario route) |
+| [`homeCityTechsInUnits`](#homecitytechsinunits) | A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | **new** | The card's tech in the `<Tech>` rows, made obtainable for the civ. | confirmed (single player, scenario route; the deck card not tested) |
 | [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
 | [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`randomCost`](#randomcost) | `<RandomCost resourcetype="Gold" min="80" max="120"/>` in a proto gives each unit trained a price rolled in that range, a new one after each purchase, and the button shows the exact price. | **new** | The tag on the protos that want it. | confirmed (single player, also a skirmish vs AI) |
@@ -5964,6 +6077,75 @@ doNotQueue [log]
   kept the order and the progress; a cancel refunded the ship; a German AI sent a card with no XS error. Not tested: two flagged
   cards in a row, an AI's flagged card, the home city's models, beside WoL's DLL, multiplayer.
 
+#### researchOnTheMove
+
+*A unit that researches, such as the Mapuche council, can walk, fight and take any order while its research goes on.*
+
+**Added:** Friday 2026-11-20 11:59 · **Filmed in WoL:** Friday 2026-11-20 11:59
+
+![researchOnTheMove in WoL](media/researchOnTheMove-wol.gif)
+
+*In WoL, with `researchOnTheMove log` and the type on `MapucheWarchief` only (scenario, the Warchief selected, the Wise
+Woman beside him without the type, both researching):* a trigger's move order at 18 s sends the Warchief 10 m east and
+one at 34 s brings him back, while the first of his two researches fills up in the queue; the Wise Woman stays where
+she is. [Full video (MP4)](media/researchOnTheMove-wol.mp4).
+
+![researchOnTheMove in WoL, key off](media/researchOnTheMove-wol-control.gif)
+
+*In WoL, key off (the same data and orders):* neither moves while they research. [Full video (MP4)](media/researchOnTheMove-wol-control.mp4).
+
+```
+researchOnTheMove [log]
+```
+
+```xml
+<Unit name="MapucheWarchief">
+    <UnitType>ResearchOnTheMove</UnitType>
+</Unit>
+```
+
+- **In WoL today:** a unit with research queued ignores move, attack, gather and garrison orders until the queue is
+  empty or cancelled; the research goes on, and the order is lost (the unit stays, or is left in a move that never
+  starts). JTMaston's #71.
+- **Effect:** a unit whose proto has the type takes every order as a unit with an empty queue does, and its research
+  keeps progressing at the same rate while it walks, fights or stands. Only the first research of its queue advances,
+  as before. A unit that also trains (a Train action in its queue) still stands still, as stock: the request is for
+  research only.
+- **Kept as stock:** the cancel and its refund (a click on the queue icon gave the ship back), the refund of everything
+  queued when the unit dies or is knocked out, the order of the queue, a research going on after a saved game is
+  loaded. Garrisoned, the research pauses, and goes on where it was once the unit is out: that is what the game does
+  for anything inside a building.
+- **The pack `wol-fixes/research-on-the-move`:** `apply_fix.py <WoL folder>` gives the type to the six council units
+  (`MapucheWarchief`, `MapucheWiseWoman`, `MapucheShaman`, `MapucheWarrior`, `MapucheMessenger`, `MapucheToki`) and adds
+  the key to `Startup\wol.cfg` (or `engine-ext\engine-ext.cfg` beside WoL's DLL); `--units A,B` names other protos
+  (the Ethiopian caravans, `Bedouin` and `Rangatira` work too: a caravan walked 13 m while it researched);
+  `--restore` undoes it.
+- **Beside WoL's DLL** (`dinput8.dll`): works (2026-11-20).
+- **Simulation:** yes. Everyone needs the key and the data. The answer depends only on the unit's proto and its
+  actions. Not tested in multiplayer.
+- **Log:** `researchOnTheMove: a unit of the abstract type ResearchOnTheMove takes orders while it researches`,
+  `hook reached: can take a move, queue test (0x487E1B)`; with `log`, once per unit:
+  `researchOnTheMove: unit 0 (proto 1733) is free to move with research queued`. An unknown option is logged and the
+  key is not applied.
+- **Tested in WoL (2026-11-20, scenarios, a player of the Ethiopians with Mapuche council units):**
+  - Key off: the Warchief (with `ForceBuildingData`), the Shaman (without), an Ethiopian caravan and a `Bedouin`, each
+    researching, ignored a trigger's move order; their research went on at the same rate and finished.
+  - With the type on the Warchief, Shaman, caravan and Bedouin and not on the Wise Woman: the four moved (the Warchief
+    16 m in about 5 s) while their research went from 0.56 to 0.76 and on; the Wise Woman stayed. An attack-move took the
+    Warchief and the Shaman into a fight with two Hussars, and their research kept advancing (0.24 to 0.87) until they
+    were knocked out.
+  - Two techs queued: the first went on while walking, the second started when it finished.
+  - Cancel: the second of three queued techs, clicked off its icon, gave back its ship (17 to 18).
+  - Knocked out: the Warchief (two techs) and the unmarked Wise Woman (one) gave back the three ships (15 to 18).
+  - Garrisoned in a Bunker: the Shaman's research stayed at 0.070 for 47 s and went on from there once ejected.
+  - A saved game, loaded: the research went on, and a move given after the load walked the Warchief 16 m while it
+    researched.
+  - Beside WoL's own `uhc.dll`, with our `dinput8.dll`: the same move worked; the unmarked Wise Woman stayed.
+  - A/B with `perfprobe.py` (90 s, the same scenario with 60 Musketeers fighting, other games running on the machine):
+    simulation update 0.22 ms against 0.23 ms key off, 2 frames over 50 ms in each run.
+  - Not tested: an AI game with the type (the skirmish route was not available that day), a unit that trains and
+    researches, multiplayer.
+
 #### nextResearchFree
 
 *A tech can make a building's next research free.*
@@ -6144,7 +6326,7 @@ researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
 - **Log:** `researchGrants: the proto tags ResearchGrant* and the Data subtypes ResearchGrantInterval, ResearchGrantMax
   and ResearchGrantPoints are on; the tech buttons show the price with a point; a floating text over the building that
   pays a point`, `hook reached: research payment (0x9E67E1)`, `hook reached: researchGrants research step (0x9E6622)`,
-  `hook reached: researchGrants tech button (0x4622C5)`, `hook reached: researchGrants tech rollover cost (0x4C73FD)`;
+  `hook reached: tech rollover (0x4622C5)` (the shared hook, since 2026-11-20), `hook reached: researchGrants tech rollover cost (0x4C73FD)`;
   with `log` also `the button of tech 10542 shows Free (cost x0.00)` and `"Free research" shown over unit 0`; a bad
   value: `researchGrants: proto 311 (Church): <ResearchGrantCost> needs a number from 0 to 1, not
   "2"; ignored`. With `log`: `unit 0 (Market) has 2/3 point(s) (game time 40000 ms)`, `unit 2 spends a point on tech
@@ -6189,6 +6371,110 @@ researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
     ran in a background copy beside two other games.
   - Not tested: `CommandResearch` (a research from a `protounitcommands.xml` command, 0x9D54CF / 0x9D58FF), a cancel,
     a transform in place, multiplayer.
+
+#### shipTechLimit
+
+*A civ can research only so many "shipment techs" (techs that cost Ships) per game, as WoL's Mapuche council techs.*
+
+**Added:** Friday 2026-11-20 11:50 · **Filmed in WoL:** Friday 2026-11-20 11:50
+
+![shipTechLimit in WoL](media/shipTechLimit-wol.gif)
+
+*In WoL, with `shipTechLimit log` (scenario route: player 1 is Ethiopian with `<ShipTechLimit>3</ShipTechLimit>` in the
+copy's `civs.xml`, a `MapucheWarchief` and `Age0Mapuche`, 20 Ships granted; the Warchief stays selected and the pointer
+rests on the Coin Crates button):* three shipment techs are queued (Villagers, Food Crates, Wood Crates: 1, 2 and 3 of
+3 in the log), then the Coin Crates research is refused: it does not start and the Ships stay. Every shipment tech
+button shows `3/3`, and the rollover ends with the red line `Shipment techs: 3/3, the limit is reached`. A click on the
+second queued research cancels it: the Ship comes back, the log says 2 of 3, and the Coin Crates research then goes
+through (3 of 3). [Full video (MP4)](media/shipTechLimit-wol.mp4).
+
+![shipTechLimit in WoL, key off](media/shipTechLimit-wol-control.gif)
+
+*In WoL, key off (the same scenario, tag and commands):* the fourth research is paid and queued like the others; no
+count on the buttons, no line in the rollover. [Full video (MP4)](media/shipTechLimit-wol-control.mp4).
+
+![The rollover at the limit](media/shipTechLimit-rollover.png)
+
+```
+shipTechLimit [notext] [log]
+```
+
+| Option | What it does |
+|---|---|
+| `notext` | No count in the rollover and on the buttons; the limit still holds. |
+| `log` | Logs each limit read from `civs.xml`, each research that counts or is given back, and the counts a game starts or loads with. |
+
+- **What a modder writes:** in `civs.xml`, inside the civ: `<ShipTechLimit>N</ShipTechLimit>` (0 to 100000). A civ
+  without the tag has no limit.
+
+  ```xml
+  <civ>
+      <name>WallMapu</name>
+      <ShipTechLimit>12</ShipTechLimit>
+      ...
+  ```
+
+- **What counts:** a research, on a unit or a building, of a tech whose cost has `Ships` (any amount above 0). Home
+  city cards sent from the deck never count: they are not researched. A HomeCity tech that a unit researches with
+  [`homeCityTechsInUnits`](#homecitytechsinunits) does count.
+- **When:** a research counts when it is paid, which is when it is queued; a cancel that refunds it gives the slot back.
+  A repeatable tech (`YPInfiniteTech`, the crates) counts each time. A research that ends without a refund (its unit
+  dies) keeps its count, as the Ship is not given back either.
+- **At the limit:** every other shipment tech of that player is refused for his units: the research does not start on
+  any machine and nothing is paid. The button stays, marked `n/N`, and its rollover ends with the red line `Shipment
+  techs: n/N, the limit is reached` (below the limit, a green `Shipment techs: n/N`). In WoL's interface a refused tech
+  button is drawn as bright as the others, like a tech of a later age: the mark and the line say why.
+- **Saved games:** the counts are saved (on one unit of each player) and come back on load. A game saved without the
+  key starts from the shipment techs the player has researched (repeatable ones by their count).
+- **Log:** `shipTechLimit: civ 48 (WallMapu): at most 12 shipment techs per game`, `shipTechLimit: player 1 paid shipment
+  tech 3934: 1 of 3 (game time 15246 ms)`, `... cancelled shipment tech 3937: 2 of 3`, `game start or load: player 1
+  has 3 of 3 shipment techs`; `hook reached: can-research test (0x4C6968)`, `hook reached: tech rollover (0x4622C5)`.
+- **The AI:** it is refused the same way; an AI plan that keeps asking for a refused tech gets nothing.
+- **Tested in WoL (2026-11-20, single player, scenario route, `C:\AoE3-UHC-WoLReal7`):** limit 3 with four requests
+  (the fourth refused, Ships 20 to 17); a refused click on the button; a cancel (Ships back, count 2, the button usable
+  again); a repeatable tech twice (Food Crates: 2 then 3 of 5); a HomeCity tech researched by a council member counted;
+  a save at 3 of 3 and its load (`game start or load: player 1 has 3 of 3`, a fourth still refused); a player of a civ
+  without the tag (Egyptians) researched five; the key off (control video); a skirmish against a German AI with the key
+  on (the AI played, no `XS: Error`); beside WoL's own DLL (our `dinput8.dll`, `C:\WoL-Test`'s `uhc.dll`: both keys
+  applied, the fourth research refused); `researchGrants` on the shared rollover with both keys on: its `Free` word and green line as before ([picture](media/shipTechLimit-researchGrants-regression.png)). Not tested: a WallMapu skirmish with its home city, multiplayer.
+
+#### homeCityTechsInUnits
+
+*A home city card's tech listed in a unit's or a building's `<Tech>` rows can be researched there like a normal tech.*
+
+**Added:** Friday 2026-11-20 11:50
+
+![The stock button of a HomeCity tech on a council member](media/homeCityTechsInUnits-stock.png)
+
+*Key off (stock):* `HCFencingSchool` in `MapucheWiseWoman`'s `<Tech>` rows, made obtainable by `Age0Mapuche`: the
+button shows, enabled, with the card's rollover, but a click (or `researchByID`) does nothing: no queue, no Ship paid,
+no message.
+
+```
+homeCityTechsInUnits [nogathercheck] [log]
+```
+
+| Option | What it does |
+|---|---|
+| `nogathercheck` | A HomeCity tech researched this way only checks the gather point flags it has. |
+| `log` | Logs each HomeCity research a unit starts or is refused. |
+
+- **What a modder writes:** the card's tech in the proto's `<Tech>` rows, e.g. `HCNativeLore` instead of
+  `MapucheNativeLore` on `MapucheWiseWoman`, and makes it obtainable for that civ (a `TechStatus` `obtainable` effect,
+  as `Age0Mapuche` does for the council techs): a card that is not in the player's deck is unobtainable.
+- **What it does:** the research pays the tech's own cost, takes its `ResearchPoints`, and its effects apply when it is
+  done, as any tech's. It is the same tech as the card, so it becomes active either way. Once active, the unit's button
+  goes away (stock skips its "already active" test for HomeCity techs; the key adds it for a proto that lists the tech).
+  A HomeCity research that a proto does not list is still refused, as in stock.
+- **The gather point:** while the player has a home city and no land gather point (no Town Center and none of the stock
+  fallbacks: Outpost, war hut, ... and any `AbstractDaimyo` unit, which WoL's `MapucheWarchief` is), such a research is
+  cancelled and refunded, as a tech with `CheckLandHCGatherPoint`, so a card with `FreeHomeCityUnit` does not lose its
+  units. A card with `CheckWaterHCGatherPoint` keeps the stock water check.
+- **With [`shipTechLimit`](#shiptechlimit):** a HomeCity tech that costs Ships counts when a unit researches it.
+- **Tested in WoL (2026-11-20, single player, scenario route):** `HCNativeLore` on `MapucheWiseWoman`: researched (1
+  Ship), active after its 40 points (status bit 1, research count 1), its button gone, a second request refused. Not
+  tested: the card in a deck (a WallMapu skirmish with its home city: whether the deck greys the card after the
+  research), the gather point check (scenario players have no home city), multiplayer.
 
 #### trainBatchSize
 
@@ -6493,6 +6779,7 @@ What happens when a tech activates or a unit changes proto.
 | [`orPrereqsQty`](#orprereqsqty) | `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | **new** | The attribute on the techs that want it. | confirmed (single player) |
 | [`shipmentCounts`](#shipmentcounts) | Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | **new** | The effect in the cards or techs that want it. | confirmed (single player) |
 | [`kothTimer`](#kothtimer) | The King of the Hill time comes from a table by the number of players, or of teams. | **new** | Nothing. | confirmed (single player) |
+| [`transformChecks`](#transformchecks) | A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | **new** | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. | confirmed (single player) |
 
 #### hcTargetTechs
 
@@ -6895,6 +7182,70 @@ unitTypeTechs [log]
   it to 165 of 150 before ([`overhealSources`](#overhealsources), `cap=110`); Player 2's healer, without the techs, never healed his
   Tomahawk during the fight (6.3 HP/s, dead at 36 s) and left it at 150.
 
+#### transformChecks
+
+*A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit.*
+
+**Added:** Friday 2026-11-20 11:52 · **Filmed in WoL:** Friday 2026-11-20 12:00
+
+![transformChecks in WoL](media/transformChecks-wol.gif)
+
+*In WoL, with `transformChecks log` and `wol-fixes/special-transforms` (a scenario, Zulu youths in the Fortress age, a
+Gunpowder Kraal in the middle):* three youths are selected, two near the kraal and one 28 m away. The Askari button's
+tooltip says `2 / 3` and why the third cannot; a click turns the two near ones into Askari maturing units (the cost is
+paid twice) and their Askaris come out; the far youth stays, and with it alone the button is grey with the kraal rule
+in red. [Full video (MP4)](media/transformChecks-wol.mp4).
+
+![transformChecks in WoL, key off](media/transformChecks-wol-control.gif)
+
+*In WoL, key off, the pack applied (the same scene):* the button is the pack's, so the click transforms the same two
+youths: the kraal rule is the game's. The far youth stays too, but nothing says why, and the button stays enabled.
+[Full video (MP4)](media/transformChecks-wol-control.mp4).
+
+```
+transformChecks [log]
+```
+
+- **What it is for:** buttons whose `<command>` is `uiTransformSelectedUnit("<proto>")`, such as the Zulu youth's
+  maturings and, with the pack `wol-fixes/special-transforms`, the four kraal maturings and the Greek fireship (WoL
+  #73). The transform itself needs no key: the game sends the command to every machine and, for each selected unit
+  on its own, checks the target proto's `PlacementFile` rules and `AllowedAge` at the unit's position (so the
+  kraal rule `distanceatmostfromtype ... AFRICANgunpowderkraal` of `maturinggunpowder.xml` applies to a button
+  too), charges the target's cost, and puts the target, built, where the unit stood.
+- **What the key adds:**
+  - **the button:** for each of your selected units the panel asks the same checks (the cost, the build limit, the
+    placement). With none that passes, the button is grey, a click does nothing, and the tooltip ends with the
+    reason in red: the placement rule's own `errorstringid` text ("This unit must be matured near a Gunpowder
+    Kraal."), "Not enough resources" or "You are at the build limit for the …". With some that pass, the tooltip
+    says how many ("2 / 3: …") and the click transforms those. Without the key the button is always enabled and a
+    refused unit does nothing, silently;
+  - **the build limit:** a target whose `<BuildLimit>` the player's living units of that proto reach is refused, unit
+    by unit, before the payment. Without the key six fishing boats pressed together made six `PyrpolikoMaturing`
+    with a limit of 5.
+- **The data:** the target must not collide with the unit that becomes it: give it `<Flag>NonCollideable</Flag>`
+  (WoL's `WOL*Maturing` protos have it; the pack adds it to the five others). Otherwise the transform is refused as
+  "Other objects prevent you from placing this here". A button on a proto every civ has (the fishing boat) needs
+  `<associatedtech>` in its `protounitcommands.xml` entry, or every civ sees it: the game does not check, when the
+  command runs, that the target is enabled for the player.
+- **Shared:** the command panel's button hook (0x462317) with [`nativePreview`](#nativepreview).
+- **Simulation:** the build limit, yes: everyone needs the key. The button is interface only.
+- **Log:** `transformChecks: … applied`; with `log`, a line when a button's answer changes (`button
+  AFRICANaskariMATURING: 0 of 1 selected unit(s) can transform; This unit must be matured near a Gunpowder Kraal.`)
+  and one per refused unit (`unit 1 of player 1 refused: at the build limit of PyrpolikoMaturing (5)`).
+- **Saved games:** the key keeps no state; the maturing units and the limit count are the game's.
+- **Status:** confirmed (2026-11-20, single player, WoL, scenarios; screenshots in `wol-fixes/special-transforms/final`):
+  youths 6 m and 18 m from a Gunpowder Kraal transformed, 28 m and 32 m refused with 72617's text; the Horse Kraal
+  the same (10 m yes, 28 m no, 72616); a group of three gave `2 / 3` and two transforms; 30 gold left: "Not enough
+  resources" on every button that costs gold; seven Greek fishing boats pressed together made five `PyrpolikoMaturing`
+  (limit 5) and the two others were refused, their button then grey with "You are at the build limit for the
+  Pyrpoliko."; key off, six boats made six (the sixth Pyrpolikon never came: its own limit is 5); a player without
+  `Age0Greeks` had no fireship button (the pack's `<associatedtech>`), and with the console command still transformed
+  (the game does not check that the target is enabled); beside WoL's DLL (`dinput8.dll`) both
+  hooks were reached and the same group gave `2 / 3` and two transforms; `nativePreview` still applied with the shared
+  hook. Not tested: multiplayer, an AI game with the pack (WoL's AI builds these maturing protos with build plans, which
+  do not need the `<Train>` rows the pack removes: an inference), the reload of a game saved during a maturing (the
+  console `loadGame` did not visibly reload).
+
 ### Interface
 
 What the panels and the fog of war show.
@@ -6910,7 +7261,7 @@ What the panels and the fog of war show.
 | [`attackTypeIcons`](#attacktypeicons) | A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | **in `wol.cfg`** | Nothing: the line of `wol.cfg`. | confirmed (single player, UI) |
 | [`minUIStats`](#minuistats) | The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | **new** | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. | confirmed (single player, UI) |
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
-| [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon and the envoy. | confirmed (single player) |
+| [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. | confirmed (single player) |
 
 #### nativePreview
 
@@ -7405,6 +7756,16 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       multipliers and ends with ` (+N)`; the tooltip lists them all. At 1920 x 1080 every row tested fits.
     - The layout: the key's hit points gadget is one line high (700..714). At the original label's 680..734 it covered
       the left of the first attack row, whose tooltip then never showed there.
+  - **Version 6 (2026-11-20), after JTMaston's review of version 5:**
+    - The projectiles line of the tooltip reads `4 projectiles` (`projectilesTip` defaults to `%s projectiles`): a unit
+      such as the Chu Ko Nu does not fire them all at once.
+    - No parentheses around icons: the key's own lines end with the icon (`Attacks every 3.50 s <stopwatch>`), and in the
+      game's lines the parentheses around an icon or around the name right after one go (`11 <icon> Ranged Damage`,
+      `1.5X Bonus Damage against <icon> Maneuver Unit`; strings 42226, 42229, 42230, 42223). `tipParentheses="keep"` on
+      `<bigPanelRows>` keeps them. The string tables are not changed.
+    - The unit type icons of the multipliers stay WoL's own: a redrawn set (`make_stat_icon.py --types` in
+      aoe3-blender-tools) was tried and not kept. WoL's `staticons\stat_icon_hand_cavalry.ddt` is an empty 24-byte file,
+      so a multiplier against Hand Cavalry shows no icon.
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.
@@ -7743,9 +8104,9 @@ playerIcon <avatarId>
 
 #### autoScout
 
-*A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off.*
+*A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off.*
 
-**Added:** Thursday 2026-11-19 14:11 · **Filmed in WoL:** Thursday 2026-11-19 14:11
+**Added:** Thursday 2026-11-19 14:11 · **Filmed in WoL:** Friday 2026-11-20 12:52
 
 ![autoScout in WoL](media/autoScout-wol.gif)
 
@@ -7761,20 +8122,35 @@ the minimap stays as it was at the start: 9.4 % explored at 3 minutes, 9.7 % at 
 
 [Full video (MP4)](media/autoScout-wol-control.mp4).
 
+![autoScout backs off when hit](media/autoScout-back-wol.gif)
+
+*In WoL, with `autoScout log` (2026-11-20; a test map with four enemy outposts and two groups of enemy Musketeers, the
+camera on the selected Explorer, which scouts with the Envoy):* the Explorer sees an outpost, is shot, marks the
+danger and moves out of the outpost's reach, then scouts elsewhere; the log lines at the bottom say each step. 346 of
+its 400 hit points left at 91 s. [Full video (MP4)](media/autoScout-back-wol.mp4).
+
+![autoScout without the danger parts](media/autoScout-back-wol-control.gif)
+
+*The same map with `autoScout noAvoid noBack` (the behaviour of 2026-11-19):* the Explorer keeps to its targets when
+shot and is at 290 hit points at 87 s. On this map the difference shows over minutes more than in one clip: see the
+status below. [Full video (MP4)](media/autoScout-back-wol-control.mp4).
+
 ![The minimap at 3 and 6 minutes](media/autoScout-minimaps.jpg)
 
 *The minimap of the two games at 3 and 6 minutes of game time: the share is the player's explored grid, read from
 the game (`testbed.py explored`).*
 
 ```
-autoScout [ScoutTactic [ReturnTactic]] [log]
+autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
 ```
 
 - **What a modder writes:** a tactic named `AutoScout` (or `ScoutTactic`) in the unit's tactics file, and two buttons
   whose `<command>` is `unitSetTactic("AutoScout")` and `unitSetTactic("Normal")`. A unit whose **first** tactic is
   the scouting one scouts from birth; with it second, it scouts when the button is pressed. The pack
   `wol-fixes/auto-scout` (`apply_fix.py <WoL folder>`, `--restore` to undo) does it for the raven, the two pet parrots,
-  the French balloon and the Dutch envoy, and its README says how to do it for any unit:
+  the French balloon, the Dutch envoy and the European explorers (`Explorer` and `WOLcartographer`, off at birth, with a
+  scouting copy of their `Volley` tactic that neither attacks on its own nor answers an attack, and runs away when hit),
+  and its README says how to do it for any unit:
 
   ```xml
   <tactic>AutoScout<action>Move</action>
@@ -7796,6 +8172,16 @@ autoScout [ScoutTactic [ReturnTactic]] [log]
   take the same 16 m block. A scout that stops short of its target, or takes more than 90 s, gives that block up (an
   island, a cliff). With the whole map explored, it flies to the block not in sight that was seen longest ago.
   A fight, a flee or any other action is left alone: the scout goes on once it is idle.
+- **Danger** (both on unless `noAvoid` / `noBack`):
+  - *Enemy buildings that shoot:* once the player has seen an enemy building with a ranged or siege attack (a Town
+    Center, an outpost, a tower, a fort), its range plus 12 m is no target any more, and a target whose straight line
+    crosses it is taken only when nothing else is left, not even ground to look at again. Only what the player has
+    seen counts.
+  - *Hit:* a scout that lost hit points since the last scan marks 2 minutes of danger around its attacker (the nearest
+    enemy, or Gaia, unit with an attack within 40 m; its reach + 16 m), gives up its target and moves out of the
+    attacker's reach (24 to 60 m away, instead of the game's own short flee), then scouts elsewhere. It stays in its
+    scouting tactic.
+  - A scout can still be shot before it sees what shoots it: an outpost can outrange a scout's line of sight.
 - **Switch-off:** a move, attack, gather, garrison or Stop order given by the unit's owner puts it back in its other
   tactic (`ReturnTactic`, else the first tactic of its file that is not the scouting one) before the order applies,
   as DE's Stop, Garrison and AttackMove do. The Stop-scouting button does the same. A scout stays where it is when it
@@ -7809,9 +8195,13 @@ autoScout [ScoutTactic [ReturnTactic]] [log]
   the game's own move order, and no network command is sent. Not tested in multiplayer.
 - **Saved games:** the tactic is saved with the unit, so a loaded game goes on scouting (tested); the key's own
   tables (targets, blocks given up) are rebuilt from the units and the grid.
-- **Cost:** a scan takes about 50 µs with two scouts on a 155 × 155-cell map. With `log`, the first orders write a
+- **Cost:** a scan takes about 50 µs with two scouts on a 155 × 155-cell map, about 90 µs with the danger tables (two
+  scouts, four enemy outposts, 130 × 130 cells). With `log`, the first orders write a
   line each, which costs milliseconds: keep `log` for testing.
-- **Log:** `autoScout: units in tactic 'AutoScout' explore the map on their own`; with `log`: `'AutoScout' is name 17`,
+- **Log:** `autoScout: units in tactic 'AutoScout' explore the map on their own`, `keeps away from enemy buildings
+  that shoot; backs off when hit`; with `log`: `player 1 sees player 2's unit 3 (proto 439) at (159.0, 147.0), range
+  40.0: avoided within 52.0 m`, `unit 1 hit at (…): unit 3 (proto 439, player 2) 21.4 m away; danger 56.0 m around it for
+  120 s`, `unit 0 backs off from (…) to (…): ordered`, `'AutoScout' is name 17`,
   `map of 155 x 155 cells`, a line per order (`unit 1280 (proto 2070, player 1, air) at (48.3, 131.6) -> unexplored
   cell (…), block 34: ordered`), `stopped … block 210 given up`, `got an order (command type 9): back to tactic 0`,
   and every 120 scans their cost.
@@ -7822,6 +8212,18 @@ autoScout [ScoutTactic [ReturnTactic]] [log]
   save and load kept it scouting, a raven killed while scouting and one killed after: no error. A/B with
   `perfprobe.py` (90 s, the same skirmish, two other games running on the machine): 628 fps against 589, main thread
   87 % against 89 %, one 420 ms frame in the key-on run whose scans all took under 0.3 ms.
+  **Danger (2026-11-20, single player, WoL):** a 260 m test map, player 1 (Ethiopians) with an Explorer and an Envoy in
+  `AutoScout`, player 2 with four outposts and seven Musketeers. Key with `noAvoid noBack`: 61.5 % explored at 3 minutes,
+  70.5 % at 6; the Envoy was killed at about 4:50, the Explorer fell to 24 of 400 hit points at 2:00 and stood healing
+  for the last 4 minutes. Default key: 68.7 % / 79.4 %, both alive, the Explorer never below 211, the Envoy never hit.
+  Earlier builds of the same day showed the faults that were fixed: a scout let the game's short flee keep it in an
+  outpost's range, and a target past the danger was taken before ground to look at again. A skirmish on Acre against a
+  Moderate German AI (`wolOtto`), the Dutch Explorer put in `AutoScout` at 1:28: 17.5 % at 3:09, 40.5 % at 6:20, the
+  Explorer at full hit points; the AI went from 15 to 26 units, no XS error. The pack's explorer tactics were checked as
+  XML and in game (`unitSetTactic("AutoScout")` from the console; the two buttons were not clicked). Beside WoL's DLL
+  (`dinput8.dll`, its `uhc.dll`): applied, back-offs in the log. A/B with `perfprobe.py` (100 s, no `log`, the same
+  map, other games running on the machine): 1263 fps against 1278, update 0.134 ms against 0.140, main thread 79 %
+  against 75 %, one 67 ms frame with the key's danger parts on and none off.
 
 ## 6. Editing the game data
 

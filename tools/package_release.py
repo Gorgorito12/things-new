@@ -227,6 +227,7 @@ betterfreedynamicunit         dynamic free units grow smoothly with game time
 gatherFix                     gather on a fixed interval (the data's rate)
 rofFix, stunMovingTargetFix   orders keep the attack timer; stuns survive a moving target
 noDamageOnUnbuiltFoundations  unbuilt foundations take no damage
+truckAttackResourceFix [log] a TruckAttack no longer empties the buildings it hits
 fallenHeroTacticsFix          knocked-out or stunned units keep their tactic
 impactBoneFix [all]           impact effects hung on scaled bones keep their size
 customImpactTypes <names>     impact types after the 15 stock ones (.dmg, ImpactType)
@@ -247,6 +248,7 @@ trainSingleAbstractType [T]   units of type T leave training one at a time
 wonderCivUnitType Proto ...   these units may start a wonder civ's age-up
 ageUpBuildings [log] Proto ...   these buildings open the age-up dialog, with the politicians they list
 politicianPlacesFix [log]     the age-up dialog shows as many politicians as it has places, no crash
+politicianEnablesTech [log] [flag U V]   a politician shows the techs of its <PoliticianEnablesTech> lines, with rollovers
 kbUnitSyscalls                five KB syscalls for AI scripts (unit inventory, workers)
 marketUnits Proto ...         these buildings count as a Market for trading
 explorerUnits P T S ...       hero names (Type) and knockout messages (StringID)
@@ -364,8 +366,11 @@ sharedBuildLimit [log]        protos share a build limit, by type, with weights,
 annexFacing [log]             <AnnexOf> annexes face their parent building and fall with it
 customWalls [log]             <WallPiece> tags: a wallBuild proto lays its own posts and pieces
 doNotQueue [log]              <DoNotQueue/> trains a proto, and a card with that tech flag ships, ahead of the queue
+researchOnTheMove [log]       units of type ResearchOnTheMove take orders and walk while they research
 nextResearchFree [log]        a Data tech effect makes a building's next research free
 researchGrants [log]          <ResearchGrantInterval> buildings gather points that make researches cheaper or free
+shipTechLimit [log]           <ShipTechLimit>N</ShipTechLimit> in a civ caps its techs that cost Ships per game
+homeCityTechsInUnits [log]    a home city card listed in a proto's <Tech> rows is researched there like a tech
 killBountyTechs [log]         a Data tech effect may change a proto's Bounty
 resourceBounty [log]          <Bounty resourcetype> pays a resource at the kill
 teamKillBounty [log]          the XP of a marked victim goes to the killer's team
@@ -373,6 +378,7 @@ cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
 snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by tech; the strongest snare counts
 stealthTargeting [log]        large units in stealth hidden from enemies; no attack on an unseen stealthed unit
 autoScout [Tactic [Return]] [log]  units in that tactic explore the map on their own; an order switches it off
+transformChecks [log]         transform buttons grey out with the reason; a transform respects BuildLimit
 directionalAttack [log]       <DirectionalAttack>: a shot flies past its target and hits what it flies over
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed

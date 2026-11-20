@@ -244,6 +244,27 @@ coordinates at 1920 x 1080: Single Player (257, 803), Skirmish (689, 803), the h
 test map (1440, 403), the setup's Play (477, 979). In a skirmish, game time runs about twice as fast as a
 scenario's. Cheats do not run in a scenario.
 
+**The route checks each screen (2026-11-20).** Agent E saw `skirmish` exit the game twice. That day the clicks were
+checked again in WoL 1.2.0e: the main menu starts with "Learn to Play" now, but the buttons have not moved, and the
+four points above still land on Single Player, Skirmish, the home city's Play and the setup's Play (the campaign
+pack, which hides Learn to Play, leaves the others in place too). The fixed clicks were blind, though: a click sent
+while the menu still slides in, or in a client that is not 1920 x 1080, lands on another button, Exit included. So
+`skirmish` now:
+- scales every point to the client size (the menus scale with it on both axes: the 2560 x 1600 and 2560 x 1440
+  points of the developer guide are the same fractions);
+- recognises each screen by the gold face of its buttons, read with PrintWindow from the client area (about RGB
+  157, 103, 1; points beside the text): the main menu by Single Player, Multiplayer, Help and Exit; its submenu by
+  Skirmish; the home city screen by Play, Back and Manage Home Cities; the setup by Play and Back
+  (`SKIRMISH_SCREENS` in `tools/testbed.py`);
+- waits until the screen holds still over two captures 1 s apart before it clicks, then until the next screen
+  shows, and clicks again (three times at most) if it does not;
+- never clicks on a screen it does not know: it stops with exit code 1 and saves `<bed>\skirmish-fail-<step>.png`.
+  A grey home city Play (no `LastSelectedSPHC`) stops it with the hint to run `profile hc`.
+
+`mapsweep.py` goes through the same checked route (`skirmish_to_setup`). Tested on 2026-11-20 in
+`C:\AoE3-UHC-WoLReal` and `C:\WoL-Test`, beside other copies that were starting at the same time: 4 of 4 runs at
+1920 x 1080 reached the game (`wol-fixes/final-check-20261120`). Other client sizes are scaled but not tested yet.
+
 **Two games at once.** Both cfgs need `multipleInstances background`. `C:\AoE3-UHC-WoLReal2` opens at the right of
 the monitor, the first copy at the left. `launch` and `skirmish` wait for each other: copies that start together
 collide on the log in `My Games` ("Cannot create log file") and exit. The profile and the `Scenario` folder are

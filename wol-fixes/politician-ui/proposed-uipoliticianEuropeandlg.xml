@@ -1,0 +1,134 @@
+<!-- converted from XMB to XML -->
+
+<layout>
+	<gadget name="PoliticianDlg" type="dialog" size1024="32 72 1008 652" background="ui\core_ui\wood_thick_board_tile" tilebackgroundhoriz="" backgroundalpha="0.3" tilebackgroundvert="" windowzstyle="" closeonesc="" dontautoclose="" z="1">
+		<gadget name="PoliticianDlg-TitleParent" type="gadget" size1024="360 56 680 120" z="2">
+			<gadget name="PoliticianDlg-TitleLeft" type="gadget" size1024="360 56 392 120" background="ui\ingame\ingame_ui_postgame_topbar_left" z="3"/>
+			<gadget name="PoliticianDlg-TitleCenter" type="gadget" size1024="392 56 648 120" tilebackgroundhoriz="" background="ui\ingame\ingame_ui_postgame_topbar" z="3"/>
+			<gadget name="PoliticianDlg-TitleRight" type="gadget" size1024="648 56 680 120" background="ui\ingame\ingame_ui_postgame_topbar_right" z="3"/>
+			<gadget name="PoliticianDlg-Title" type="formatText" textcenterhoriz="" textcentervert="" textfont="AgeUpgradeMedium" textfontsize="17" textcolor="255 208 0" size1024="360 56 680 120" z="4"/>
+		</gadget>
+		<gadget name="PoliticianDlg-OrigPositionPolitician0" type="gadget" size1024="52 125 280 381" hidden="" transparent="" foreground="" donthilight=""/>
+		<gadget name="PoliticianDlg-Size1Politicians" type="gadget" size1024="32 72 480 532" hidden="" transparent="" foreground="" donthilight=""/>
+		<gadget name="PoliticianDlg-Size2Politicians" type="gadget" size1024="32 72 536 532" hidden="" transparent="" foreground="" donthilight=""/>
+		<gadget name="PoliticianDlg-Size3Politicians" type="gadget" size1024="32 72 772 532" hidden="" transparent="" foreground="" donthilight=""/>
+		<gadget name="PoliticianDlg-Size4Politicians" type="gadget" size1024="32 72 1008 532" hidden="" transparent="" foreground="" donthilight=""/>
+		<gadget name="PoliticianDlg-Border0" type="gadget" size1024="32 72 64 104" background="ui\file_system\border_top_left"/>
+		<gadget name="PoliticianDlg-Border1" type="gadget" size1024="64 72 328 80" background="ui\file_system\border_top_middle" tilebackgroundhoriz=""/>
+		<gadget name="PoliticianDlg-Border2" type="gadget" size1024="328 72 360 104" background="ui\file_system\border_top_right"/>
+		<gadget name="PoliticianDlg-Border3" type="gadget" size1024="680 72 712 104" background="ui\file_system\border_top_left"/>
+		<gadget name="PoliticianDlg-Border4" type="gadget" size1024="712 72 976 80" background="ui\file_system\border_top_middle" tilebackgroundhoriz=""/>
+		<gadget name="PoliticianDlg-Border5" type="gadget" size1024="976 72 1008 104" background="ui\file_system\border_top_right"/>
+		<gadget name="PoliticianDlg-Border6" type="gadget" size1024="32 104 40 400" background="ui\file_system\border_side_left" tilebackgroundvert=""/>
+		<gadget name="PoliticianDlg-Border7" type="gadget" size1024="1000 104 1008 400" background="ui\file_system\border_side_right" tilebackgroundvert=""/>
+		<gadget name="PoliticianDlg-Border8" type="gadget" size1024="32 400 64 432" background="ui\file_system\border_bottom_left"/>
+		<gadget name="PoliticianDlg-Border9" type="gadget" size1024="64 424 976 432" background="ui\file_system\border_bottom_middle" tilebackgroundhoriz=""/>
+		<gadget name="PoliticianDlg-Border10" type="gadget" size1024="976 400 1008 432" background="ui\file_system\border_bottom_right"/>
+		<gadget name="PoliticianDlg-AcceptButton" type="stateButton" statebuttonuseinternalstates="" size1024="348 488 510 520" foreground="ui\core_ui\texturesheet_politicians" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255" texturecoords="0 0 0.6328125 1">
+			$$29199$$Accept
+			<stateentry background="ui\core_ui\button_large_normal"/>
+			<stateentry background="ui\core_ui\button_large_clicked"/>
+			<stateentry background="ui\core_ui\button_large_high"/>
+			<stateentry background="ui\core_ui\button_large_disable"/>
+		</gadget>
+		<gadget name="PoliticianDlg-CancelButton" type="stateButton" statebuttonuseinternalstates="" size1024="530 488 692 520" foreground="ui\core_ui\texturesheet_politicians" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255" texturecoords="0 0 0.6328125 1">
+			$$18466$$Cancel
+			<stateentry background="ui\core_ui\button_large_normal"/>
+			<stateentry background="ui\core_ui\button_large_clicked"/>
+			<stateentry background="ui\core_ui\button_large_high"/>
+			<stateentry background="ui\core_ui\button_large_disable"/>
+		</gadget>
+		<gadget name="PoliticianDlg-Politician0" type="gadget" size1024="52 125 280 481" backgroundalpha="0.5" background="ui\ingame\politician_panel" texturecoords="0 0 0.890625 1" z="2">
+			<gadget name="PoliticianDlg-PoliticianButton0" type="button" foreground="" donthighlight="" size1024="52 142 280 481" z="3">
+				<gadget name="PoliticianDlg-PoliticianHilightPositive0" type="gadget" size1024="52 195 280 481" background="ui\ingame\politicians\positive" z="4"/>
+				<gadget name="PoliticianDlg-Poli0Name" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="53 146 280 173" textcenterhoriz="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutline" textfontsize="12" z="5"/>
+				<gadget name="PoliticianDlg-Poli0Cost" type="formatText" textmarkup="" formattextconvertuserlf="" formattextusedatareplace="" size1024="167 194 267 266" textfont="ChatOutline" textfontsize="12" textcolor="255 255 255" z="5"/>
+				<gadget name="PoliticianDlg-Poli0Description" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="167 270 267 480" textfont="ChatOutlineW" textfontsize="12" textcolor="255 255 255" z="5"/>
+				<gadget name="PoliticianDlg-Poli0Portrait" type="gadget" size1024="63 194 159 472" background="ui\ingame\politicians\politician_admiral" texturecoords="0 0 0.75 0.7734375" z="5"/>
+				<gadget name="PoliticianDlg-Poli0EnablesTechPortrait" type="gadget" size1024="63 194 159 404" background="ui\ingame\politicians\politician_admiral" texturecoords="0 0 0.75 0.5833" z="5" hidden=""/>
+				<gadget name="PoliticianDlg-Poli0EnablesTechDescription" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="167 270 267 402" textfont="ChatOutlineW" textfontsize="12" textcolor="255 255 255" z="5" hidden=""/>
+				<gadget name="PoliticianDlg-Poli0EnablesTech0Icon" type="gadget" size1024="63 412 85 442" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli0EnablesTech0Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="91 412 267 442" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli0EnablesTech1Icon" type="gadget" size1024="63 445 85 475" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli0EnablesTech1Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="91 445 267 475" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli0EnablesTechGrid0Icon" type="gadget" size1024="63 412 85 442" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli0EnablesTechGrid0Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="89 412 162 442" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli0EnablesTechGrid1Icon" type="gadget" size1024="168 412 190 442" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli0EnablesTechGrid1Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="194 412 267 442" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli0EnablesTechGrid2Icon" type="gadget" size1024="63 445 85 475" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli0EnablesTechGrid2Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="89 445 162 475" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli0EnablesTechGrid3Icon" type="gadget" size1024="168 445 190 475" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli0EnablesTechGrid3Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="194 445 267 475" hidden="" z="6"/>
+			</gadget>
+		</gadget>
+		<gadget name="PoliticianDlg-Politician1" type="gadget" size1024="288 125 516 481" backgroundalpha="0.5" background="ui\ingame\politician_panel" texturecoords="0 0 0.890625 1" z="2">
+			<gadget name="PoliticianDlg-PoliticianButton1" type="button" foreground="" donthighlight="" size1024="288 142 516 481" z="3">
+				<gadget name="PoliticianDlg-PoliticianHilightPositive1" type="gadget" size1024="288 195 516 481" background="ui\ingame\politicians\positive" z="4"/>
+				<gadget name="PoliticianDlg-Poli1Name" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="289 146 516 173" textcenterhoriz="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutline" textfontsize="12" z="5"/>
+				<gadget name="PoliticianDlg-Poli1Cost" type="formatText" textmarkup="" formattextconvertuserlf="" formattextusedatareplace="" size1024="403 194 503 266" textfont="ChatOutline" textfontsize="12" textcolor="255 255 255" z="5"/>
+				<gadget name="PoliticianDlg-Poli1Description" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="403 270 503 480" textfont="ChatOutlineW" textfontsize="12" textcolor="255 255 255" z="5"/>
+				<gadget name="PoliticianDlg-Poli1Portrait" type="gadget" size1024="299 194 395 472" background="ui\ingame\politicians\politician_admiral" texturecoords="0 0 0.75 0.7734375" z="5"/>
+				<gadget name="PoliticianDlg-Poli1EnablesTechPortrait" type="gadget" size1024="299 194 395 404" background="ui\ingame\politicians\politician_admiral" texturecoords="0 0 0.75 0.5833" z="5" hidden=""/>
+				<gadget name="PoliticianDlg-Poli1EnablesTechDescription" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="403 270 503 402" textfont="ChatOutlineW" textfontsize="12" textcolor="255 255 255" z="5" hidden=""/>
+				<gadget name="PoliticianDlg-Poli1EnablesTech0Icon" type="gadget" size1024="299 412 321 442" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli1EnablesTech0Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="327 412 503 442" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli1EnablesTech1Icon" type="gadget" size1024="299 445 321 475" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli1EnablesTech1Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="327 445 503 475" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli1EnablesTechGrid0Icon" type="gadget" size1024="299 412 321 442" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli1EnablesTechGrid0Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="325 412 398 442" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli1EnablesTechGrid1Icon" type="gadget" size1024="404 412 426 442" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli1EnablesTechGrid1Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="430 412 503 442" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli1EnablesTechGrid2Icon" type="gadget" size1024="299 445 321 475" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli1EnablesTechGrid2Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="325 445 398 475" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli1EnablesTechGrid3Icon" type="gadget" size1024="404 445 426 475" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli1EnablesTechGrid3Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="430 445 503 475" hidden="" z="6"/>
+			</gadget>
+		</gadget>
+		<gadget name="PoliticianDlg-Politician2" type="gadget" size1024="524 125 752 481" backgroundalpha="0.5" background="ui\ingame\politician_panel" texturecoords="0 0 0.890625 1" z="2">
+			<gadget name="PoliticianDlg-PoliticianButton2" type="button" foreground="" donthighlight="" size1024="524 142 752 481" z="3">
+				<gadget name="PoliticianDlg-PoliticianHilightPositive2" type="gadget" size1024="524 195 752 481" background="ui\ingame\politicians\positive" z="4"/>
+				<gadget name="PoliticianDlg-Poli2Name" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="525 146 752 173" textcenterhoriz="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutline" textfontsize="12" z="5"/>
+				<gadget name="PoliticianDlg-Poli2Cost" type="formatText" textmarkup="" formattextconvertuserlf="" formattextusedatareplace="" size1024="639 194 739 266" textfont="ChatOutline" textfontsize="12" textcolor="255 255 255" z="5"/>
+				<gadget name="PoliticianDlg-Poli2Description" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="639 270 739 480" textfont="ChatOutlineW" textfontsize="12" textcolor="255 255 255" z="5"/>
+				<gadget name="PoliticianDlg-Poli2Portrait" type="gadget" size1024="535 194 631 472" background="ui\ingame\politicians\politician_admiral" texturecoords="0 0 0.75 0.7734375" z="5"/>
+				<gadget name="PoliticianDlg-Poli2EnablesTechPortrait" type="gadget" size1024="535 194 631 404" background="ui\ingame\politicians\politician_admiral" texturecoords="0 0 0.75 0.5833" z="5" hidden=""/>
+				<gadget name="PoliticianDlg-Poli2EnablesTechDescription" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="639 270 739 402" textfont="ChatOutlineW" textfontsize="12" textcolor="255 255 255" z="5" hidden=""/>
+				<gadget name="PoliticianDlg-Poli2EnablesTech0Icon" type="gadget" size1024="535 412 557 442" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli2EnablesTech0Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="563 412 739 442" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli2EnablesTech1Icon" type="gadget" size1024="535 445 557 475" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli2EnablesTech1Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="563 445 739 475" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli2EnablesTechGrid0Icon" type="gadget" size1024="535 412 557 442" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli2EnablesTechGrid0Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="561 412 634 442" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli2EnablesTechGrid1Icon" type="gadget" size1024="640 412 662 442" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli2EnablesTechGrid1Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="666 412 739 442" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli2EnablesTechGrid2Icon" type="gadget" size1024="535 445 557 475" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli2EnablesTechGrid2Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="561 445 634 475" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli2EnablesTechGrid3Icon" type="gadget" size1024="640 445 662 475" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli2EnablesTechGrid3Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="666 445 739 475" hidden="" z="6"/>
+			</gadget>
+		</gadget>
+		<gadget name="PoliticianDlg-Politician3" type="gadget" size1024="760 125 988 481" backgroundalpha="0.5" background="ui\ingame\politician_panel" texturecoords="0 0 0.890625 1" z="2">
+			<gadget name="PoliticianDlg-PoliticianButton3" type="button" foreground="" donthighlight="" size1024="760 142 988 481" z="3">
+				<gadget name="PoliticianDlg-PoliticianHilightPositive3" type="gadget" size1024="760 195 988 481" background="ui\ingame\politicians\positive" z="4"/>
+				<gadget name="PoliticianDlg-Poli3Name" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="761 146 988 173" textcenterhoriz="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutline" textfontsize="12" z="5"/>
+				<gadget name="PoliticianDlg-Poli3Cost" type="formatText" textmarkup="" formattextconvertuserlf="" formattextusedatareplace="" size1024="875 194 975 266" textfont="ChatOutline" textfontsize="12" textcolor="255 255 255" z="5"/>
+				<gadget name="PoliticianDlg-Poli3Description" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="875 270 975 480" textfont="ChatOutlineW" textfontsize="12" textcolor="255 255 255" z="5"/>
+				<gadget name="PoliticianDlg-Poli3Portrait" type="gadget" size1024="771 194 867 472" background="ui\ingame\politicians\politician_admiral" texturecoords="0 0 0.75 0.7734375" z="5"/>
+				<gadget name="PoliticianDlg-Poli3EnablesTechPortrait" type="gadget" size1024="771 194 867 404" background="ui\ingame\politicians\politician_admiral" texturecoords="0 0 0.75 0.5833" z="5" hidden=""/>
+				<gadget name="PoliticianDlg-Poli3EnablesTechDescription" type="formatText" textmarkup="" formattextconvertuserlf="" size1024="875 270 975 402" textfont="ChatOutlineW" textfontsize="12" textcolor="255 255 255" z="5" hidden=""/>
+				<gadget name="PoliticianDlg-Poli3EnablesTech0Icon" type="gadget" size1024="771 412 793 442" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli3EnablesTech0Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="799 412 975 442" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli3EnablesTech1Icon" type="gadget" size1024="771 445 793 475" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli3EnablesTech1Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="799 445 975 475" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli3EnablesTechGrid0Icon" type="gadget" size1024="771 412 793 442" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli3EnablesTechGrid0Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="797 412 870 442" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli3EnablesTechGrid1Icon" type="gadget" size1024="876 412 898 442" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli3EnablesTechGrid1Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="902 412 975 442" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli3EnablesTechGrid2Icon" type="gadget" size1024="771 445 793 475" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli3EnablesTechGrid2Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="797 445 870 475" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli3EnablesTechGrid3Icon" type="gadget" size1024="876 445 898 475" background="ui\ingame\politicians\politician_admiral" hidden="" z="6"/>
+				<gadget name="PoliticianDlg-Poli3EnablesTechGrid3Name" type="formatText" textmarkup="" formattextconvertuserlf="" texttruecentervert="" textcolor="255 255 255" textfont="ChatOutlineW" textfontsize="12" size1024="902 445 975 475" hidden="" z="6"/>
+			</gadget>
+		</gadget>
+	</gadget>
+</layout>

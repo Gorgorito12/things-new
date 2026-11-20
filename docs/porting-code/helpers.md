@@ -17,6 +17,7 @@ Contents:
 - [Action tags](#action-tags)
 - [Transform calls](#transform-calls)
 - [Proto tags](#proto-tags)
+- [Tech tags](#tech-tags)
 - [Civ tags](#civ-tags)
 - [Tech subtypes](#tech-subtypes)
 - [Modify types](#modify-types)
@@ -32,6 +33,8 @@ Contents:
 - [State kept for a saved game](#state-kept-for-a-saved-game)
 - [Direct3D hooks](#direct3d-hooks)
 - [Research payment](#research-payment)
+- [Can-research test](#can-research-test)
+- [Tech rollover](#tech-rollover)
 - [ROF reads](#rof-reads)
 - [Floating bars](#floating-bars)
 
@@ -1307,8 +1310,8 @@ inline constexpr Site kLintProtoActionMiss{"LintProtoActionMiss", 0x005FA202, kL
 inline constexpr std::uint8_t kLintTechLoadCallBytes[] = {0xE8, 0xB3, 0xFE, 0xFF, 0xFF};
 inline constexpr Site kLintTechLoadCall{"LintTechLoadCall", 0x0061FE4A, kLintTechLoadCallBytes, sizeof(kLintTechLoadCallBytes)};
 
-inline constexpr std::uint8_t kLintTechNodeBytes[] = {0x8B, 0xF0, 0x8B, 0xCE, 0x8B, 0x51, 0x18};
-inline constexpr Site kLintTechNode{"LintTechNode", 0x0061FDB8, kLintTechNodeBytes, sizeof(kLintTechNodeBytes)};
+inline constexpr std::uint8_t kTechTagsNodeBytes[] = {0x8B, 0xF0, 0x8B, 0xCE, 0x8B, 0x51, 0x18};
+inline constexpr Site kTechTagsNode{"TechTagsNode", 0x0061FDB8, kTechTagsNodeBytes, sizeof(kTechTagsNodeBytes)};
 
 inline constexpr std::uint8_t kLintEffectDropBytes[] = {0x0F, 0x84, 0xDB, 0x18, 0x00, 0x00};
 inline constexpr Site kLintEffectDrop{"LintEffectDrop", 0x006205E9, kLintEffectDropBytes, sizeof(kLintEffectDropBytes)};
@@ -1919,6 +1922,9 @@ inline constexpr Site kStunTargetCheck{"StunTargetCheck", 0x009E909E, kStunTarge
 inline constexpr std::uint8_t kDamageInvulnerableTestBytes[] = {0x81, 0x79, 0x54, 0x9C, 0x00, 0x00, 0x00, 0x76, 0x13, 0x8B, 0x41, 0x50, 0x8A, 0x50, 0x13, 0x83, 0xE2, 0x10, 0x89, 0x54, 0x24, 0x08};
 inline constexpr Site kDamageInvulnerableTest{"DamageInvulnerableTest", 0x0049B3F3, kDamageInvulnerableTestBytes, sizeof(kDamageInvulnerableTestBytes)};
 
+inline constexpr std::uint8_t kTruckAttackInventoryResetBytes[] = {0x8B, 0x97, 0xB4, 0x00, 0x00, 0x00, 0x8B, 0x82, 0x94, 0x00, 0x00, 0x00, 0x3B, 0xC3, 0x74, 0x08, 0x8D, 0x48, 0x04, 0xE8, 0x23, 0x2A, 0xBA, 0xFF};
+inline constexpr Site kTruckAttackInventoryReset{"TruckAttackInventoryReset", 0x009EC635, kTruckAttackInventoryResetBytes, sizeof(kTruckAttackInventoryResetBytes)};
+
 inline constexpr std::uint8_t kTacticReset1Bytes[] = {0x53, 0xE8, 0x16, 0xC5, 0xE4, 0xFF};
 inline constexpr Site kTacticReset1{"TacticReset1", 0x006AAE6D, kTacticReset1Bytes, sizeof(kTacticReset1Bytes)};
 
@@ -2174,6 +2180,21 @@ inline constexpr Site kTechStatusTechId{"TechStatusTechId", 0x0058EA03, kTechSta
 inline constexpr std::uint8_t kGadgetLookupBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x3B, 0x15, 0xC0, 0x72, 0xC6, 0x00, 0x74, 0x49, 0x8B, 0xC2, 0x25, 0xFF};
 inline constexpr Site kGadgetLookup{"GadgetLookup", 0x0040423C, kGadgetLookupBytes, sizeof(kGadgetLookupBytes)};
 
+inline constexpr std::uint8_t kPoliticianPortraitFillBytes[] = {0x8B, 0x93, 0x8C, 0x01, 0x00, 0x00, 0x8B, 0x83, 0x6C, 0x02, 0x00, 0x00, 0x8B, 0x0C, 0x2A, 0x3B, 0x8C, 0x83, 0x70, 0x02, 0x00, 0x00, 0x0F, 0x85, 0x78, 0x01, 0x00, 0x00, 0x8B, 0x94, 0x83, 0xC0, 0x01, 0x00, 0x00, 0x52, 0x8D, 0x4C, 0x24, 0x74, 0xE8, 0x7E, 0x9F, 0xBE, 0xFF, 0x83, 0x7C, 0x24, 0x74, 0x00, 0x8B, 0x70, 0x04, 0x74, 0x0D, 0x8B, 0x44, 0x24, 0x70, 0x50, 0xE8, 0x53, 0x9E, 0xBE, 0xFF, 0x83, 0xC4, 0x04, 0x85, 0xF6, 0x74, 0x2A, 0x8B, 0x8B, 0x8C, 0x01, 0x00, 0x00, 0x8D, 0x54, 0x29, 0x04, 0x52, 0x8B, 0xCE, 0xE8, 0x42, 0xE3, 0xE1, 0xFF, 0x8B, 0x06, 0x68, 0x00, 0x00, 0x46, 0x3F, 0x68, 0x00, 0x00, 0x40, 0x3F, 0x6A, 0x00, 0x6A, 0x00, 0x8B, 0xCE, 0xFF, 0x90, 0xD8, 0x00, 0x00, 0x00};
+inline constexpr Site kPoliticianPortraitFill{"PoliticianPortraitFill", 0x0081A487, kPoliticianPortraitFillBytes, sizeof(kPoliticianPortraitFillBytes)};
+
+inline constexpr std::uint8_t kPoliticianDescriptionReadBytes[] = {0x8B, 0x93, 0x6C, 0x02, 0x00, 0x00, 0x8B, 0x84, 0x93, 0x10, 0x02, 0x00, 0x00, 0x50, 0x8D, 0x8C, 0x24, 0x84, 0x00, 0x00, 0x00, 0xE8, 0xF2, 0xAB, 0xCA, 0xFF, 0x83, 0xBC, 0x24, 0x84, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x70, 0x04, 0x74, 0x10, 0x8B, 0x8C, 0x24, 0x80, 0x00, 0x00, 0x00, 0x51, 0xE8, 0x57, 0x9D, 0xBE, 0xFF, 0x83, 0xC4, 0x04, 0x85, 0xF6};
+inline constexpr Site kPoliticianDescriptionRead{"PoliticianDescriptionRead", 0x0081A590, kPoliticianDescriptionReadBytes, sizeof(kPoliticianDescriptionReadBytes)};
+
+inline constexpr std::uint8_t kGadgetSetTextureBytes[] = {0xA1, 0x44, 0x62, 0xC6, 0x00, 0x56, 0x57, 0x8B, 0xF9, 0x8B, 0x48, 0x44, 0xF6, 0x41, 0x04, 0x01};
+inline constexpr Site kGadgetSetTexture{"GadgetSetTexture", 0x00638823, kGadgetSetTextureBytes, sizeof(kGadgetSetTextureBytes)};
+
+inline constexpr std::uint8_t kTechStatusListBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x7C, 0x0B, 0x83, 0xF8, 0x10, 0x7D, 0x06, 0x8B, 0x04, 0x81, 0xC2, 0x04, 0x00, 0x33, 0xC0, 0xC2, 0x04, 0x00};
+inline constexpr Site kTechStatusList{"TechStatusList", 0x004C5394, kTechStatusListBytes, sizeof(kTechStatusListBytes)};
+
+inline constexpr std::uint8_t kTechStatusAtBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x85, 0xD2, 0x7C, 0xF4, 0x3B, 0x51, 0x08, 0x7D, 0xEF, 0x8B, 0x41, 0x04, 0x8B, 0x04, 0x90, 0x85, 0xC0};
+inline constexpr Site kTechStatusAt{"TechStatusAt", 0x004804B3, kTechStatusAtBytes, sizeof(kTechStatusAtBytes)};
+
 inline constexpr std::uint8_t kPlayerIconCallCivBytes[] = {0xE8, 0x55, 0xDD, 0xFF, 0xFF};
 inline constexpr Site kPlayerIconCallCiv{"PlayerIconCallCiv", 0x00776FFC, kPlayerIconCallCivBytes, sizeof(kPlayerIconCallCivBytes)};
 
@@ -2395,6 +2416,45 @@ inline constexpr Site kAutoScoutTacticIndex{"AutoScoutTacticIndex", 0x00948161, 
 
 inline constexpr std::uint8_t kAutoScoutIdleBytes[] = {0x8B, 0x41, 0x24, 0x85, 0xC0, 0x74, 0x0C, 0x8A};
 inline constexpr Site kAutoScoutIdle{"AutoScoutIdle", 0x0044F1A7, kAutoScoutIdleBytes, sizeof(kAutoScoutIdleBytes)};
+
+inline constexpr std::uint8_t kQueueHoldsMoveCallBytes[] = {0xE8, 0x6B, 0xFF, 0xFF, 0xFF, 0x3C, 0x01, 0x0F, 0x95, 0xC0};
+inline constexpr Site kQueueHoldsMoveCall{"QueueHoldsMoveCall", 0x00487E1B, kQueueHoldsMoveCallBytes, sizeof(kQueueHoldsMoveCallBytes)};
+
+inline constexpr std::uint8_t kQueueHoldsHeadBytes[] = {0x8B, 0x41, 0x24, 0x85, 0xC0, 0x74, 0x13, 0x8A, 0x40, 0x60, 0x3C, 0x0D};
+inline constexpr Site kQueueHoldsHead{"QueueHoldsHead", 0x00487D8B, kQueueHoldsHeadBytes, sizeof(kQueueHoldsHeadBytes)};
+
+inline constexpr std::uint8_t kResearchRefundCallBytes[] = {0x8D, 0x45, 0x74, 0x50, 0x8B, 0xCF, 0xE8, 0x98, 0x0E, 0xEF, 0xFF};
+inline constexpr Site kResearchRefundCall{"ResearchRefundCall", 0x009E6161, kResearchRefundCallBytes, sizeof(kResearchRefundCallBytes)};
+
+inline constexpr std::uint8_t kCommandResearchRefundCallBytes[] = {0x8D, 0x46, 0x7C, 0x50, 0x8B, 0xCF, 0xE8, 0x4A, 0x19, 0xF0, 0xFF};
+inline constexpr Site kCommandResearchRefundCall{"CommandResearchRefundCall", 0x009D56AF, kCommandResearchRefundCallBytes, sizeof(kCommandResearchRefundCallBytes)};
+
+inline constexpr std::uint8_t kCanResearchHeadBytes[] = {0x55, 0x8B, 0x6C, 0x24, 0x08, 0x56, 0x55, 0x8B, 0xF1, 0xE8, 0x10};
+inline constexpr Site kCanResearchHead{"CanResearchHead", 0x004C6968, kCanResearchHeadBytes, sizeof(kCanResearchHeadBytes)};
+
+inline constexpr std::uint8_t kTechEntryLookupBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x7C, 0x19, 0x83, 0xF8, 0x10, 0x7D, 0x14, 0x8B, 0x0C, 0x81, 0x85, 0xC9, 0x74, 0x0D, 0x8B, 0x44, 0x24, 0x08, 0x50, 0xE8, 0xC2, 0x2A, 0x00, 0x00, 0xC2, 0x08, 0x00, 0x33, 0xC0};
+inline constexpr Site kTechEntryLookup{"TechEntryLookup", 0x0094ADAA, kTechEntryLookupBytes, sizeof(kTechEntryLookupBytes)};
+
+inline constexpr std::uint8_t kHcTechResearchRefusalBytes[] = {0x6A, 0x12, 0x8B, 0xCE, 0xE8, 0x8C, 0x70, 0xA6, 0xFF, 0x3C, 0x01, 0x74, 0xEA, 0x8D, 0x5E, 0x10};
+inline constexpr Site kHcTechResearchRefusal{"HcTechResearchRefusal", 0x009E67CE, kHcTechResearchRefusalBytes, sizeof(kHcTechResearchRefusalBytes)};
+
+inline constexpr std::uint8_t kResearchGatherFlagTestBytes[] = {0x6A, 0x1E, 0x8B, 0xCB, 0xE8, 0x07, 0x73, 0xA6, 0xFF, 0x84, 0xC0, 0x74, 0x23};
+inline constexpr Site kResearchGatherFlagTest{"ResearchGatherFlagTest", 0x009E6553, kResearchGatherFlagTestBytes, sizeof(kResearchGatherFlagTestBytes)};
+
+inline constexpr std::uint8_t kXformExecBodyBytes[] = {0x8B, 0xF8, 0x85, 0xFF, 0x89, 0x7C, 0x24, 0x30, 0x0F, 0x84, 0x30, 0x02, 0x00, 0x00, 0x8B, 0x86, 0x8C, 0x00, 0x00, 0x00, 0x50, 0x8B, 0xCF, 0xE8, 0xD2, 0xCB, 0xC7, 0xFF, 0x8B, 0xD8, 0x85, 0xDB, 0x89, 0x5C, 0x24, 0x14, 0x0F, 0x84, 0x14, 0x02, 0x00, 0x00, 0x8D, 0x4C, 0x24, 0x18, 0xE8, 0x1F, 0x0C, 0xC7, 0xFF, 0x8B, 0x5B, 0x08, 0x6A, 0x01, 0x8D, 0x4C, 0x24, 0x1C, 0x51, 0x53, 0x8B, 0xCF, 0xE8, 0xAC, 0xA5, 0xCA, 0xFF, 0x84, 0xC0, 0x0F, 0x84, 0xE8, 0x01, 0x00, 0x00, 0x8B, 0x55, 0x00, 0x8B, 0xCD, 0xFF, 0x92, 0xA4, 0x00, 0x00, 0x00, 0x84, 0xC0, 0x0F, 0x84, 0xD5, 0x01, 0x00, 0x00, 0x8B, 0x46, 0x20, 0x8B, 0x4D, 0x44, 0x3B, 0x01, 0x89, 0x44, 0x24, 0x10, 0x0F, 0x85, 0xC3, 0x01, 0x00, 0x00, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0xB6, 0x01, 0x00, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x0F, 0x84, 0xA8, 0x01, 0x00, 0x00, 0x8B, 0x11, 0x6A, 0x00, 0x6A, 0x00, 0x6A, 0x00, 0x6A, 0x00, 0x6A, 0x02, 0x6A, 0x00, 0x8D, 0x45, 0x38, 0x50, 0x8B, 0x44, 0x24, 0x2C, 0x8D, 0x7D, 0x20, 0x57, 0x8D, 0x5D, 0x14, 0x53, 0x50, 0x8B, 0x86, 0x8C, 0x00, 0x00, 0x00, 0x50, 0xFF, 0x52, 0x14, 0x84, 0xC0, 0x0F, 0x84, 0x77, 0x01, 0x00, 0x00};
+inline constexpr Site kXformExecBody{"XformExecBody", 0x007D652D, kXformExecBodyBytes, sizeof(kXformExecBodyBytes)};
+
+inline constexpr std::uint8_t kXformPlaceTestBytes[] = {0x84, 0xC0, 0x0F, 0x84, 0x77, 0x01, 0x00, 0x00, 0x80, 0xBE, 0x90, 0x00, 0x00, 0x00, 0x00};
+inline constexpr Site kXformPlaceTest{"XformPlaceTest", 0x007D65E3, kXformPlaceTestBytes, sizeof(kXformPlaceTestBytes)};
+
+inline constexpr std::uint8_t kXformRefuseBytes[] = {0x8D, 0x4C, 0x24, 0x18, 0xE8, 0xAC, 0x60, 0xC7, 0xFF};
+inline constexpr Site kXformRefuse{"XformRefuse", 0x007D6762, kXformRefuseBytes, sizeof(kXformRefuseBytes)};
+
+inline constexpr std::uint8_t kCostListCtorBytes[] = {0x56, 0x8B, 0xF1, 0xC7, 0x06, 0x00, 0x00, 0x00, 0x00};
+inline constexpr Site kCostListCtor{"CostListCtor", 0x0044717F, kCostListCtorBytes, sizeof(kCostListCtorBytes)};
+
+inline constexpr std::uint8_t kCostListDtorBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x85, 0xC0, 0x74, 0x0B, 0x50, 0xB9};
+inline constexpr Site kCostListDtor{"CostListDtor", 0x0044C817, kCostListDtorBytes, sizeof(kCostListDtorBytes)};
 
 }  // namespace uhc::sites
 ```
@@ -2841,12 +2901,16 @@ Outcome ApplyDataLint(const Config& config);
 Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
 Outcome ApplyResearchGrants(const Config& config);
+Outcome ApplyShipTechLimit(const Config& config);
+Outcome ApplyHomeCityTechsInUnits(const Config& config);
 Outcome ApplyKillBountyTechs(const Config& config);
 Outcome ApplyTeamKillBounty(const Config& config);
 Outcome ApplyResourceBounty(const Config& config);
 Outcome ApplyCantBeSlowed(const Config& config);
 Outcome ApplyStealthTargeting(const Config& config);
 Outcome ApplyAutoScout(const Config& config);
+Outcome ApplyResearchOnTheMove(const Config& config);
+Outcome ApplyTransformChecks(const Config& config);
 Outcome ApplyCustomWalls(const Config& config);
 Outcome ApplyDirectionalAttack(const Config& config);
 Outcome ApplySnareValues(const Config& config);
@@ -2902,6 +2966,13 @@ Outcome ApplyNativeCivs(const Config& config);
 Outcome ApplyBigButton(const Config& config);
 Outcome ApplyAgeUpBuildings(const Config& config);
 Outcome ApplyPoliticianPlacesFix(const Config& config);
+Outcome ApplyPoliticianEnablesTech(const Config& config);
+// politicianplaces.cpp: the European age-up dialog's hook at 0x81A45A, shared by politicianPlacesFix and
+// politicianEnablesTech. The observer sees each politician the list builder accepts (the dialog, its tech status) and
+// the place it is about to fill, before the builder fills it.
+using PoliticianPlaceObserver = void (*)(char* dlg, const char* techStatus, int place);
+bool InstallPoliticianPlaceHook(const char* feature);
+bool AddPoliticianPlaceObserver(PoliticianPlaceObserver observer, const char* feature);
 Outcome ApplyFarmAnim(const Config& config);
 Outcome ApplyFarmingRadius(const Config& config);
 Outcome ApplyWonderCivUnitType(const Config& config);
@@ -2917,6 +2988,7 @@ Outcome ApplyGatherFix(const Config& config);
 Outcome ApplyRofFix(const Config& config);
 Outcome ApplyStunMovingTargetFix(const Config& config);
 Outcome ApplyNoDamageOnUnbuiltFoundations(const Config& config);
+Outcome ApplyTruckAttackResourceFix(const Config& config);
 Outcome ApplyFallenHeroTacticsFix(const Config& config);
 Outcome ApplyImpactBoneFix(const Config& config);
 Outcome ApplyCustomImpactTypes(const Config& config);
@@ -2976,6 +3048,10 @@ inline constexpr Feature kFeatures[] = {
     {"nextResearchFree", ApplyNextResearchFree},
     // After nextResearchFree: a research it makes free is not asked of this key (the shared payment, researchpay.h).
     {"researchGrants", ApplyResearchGrants},
+    // After researchGrants: a payer of the shared research payment that claims nothing (it counts), and a line of
+    // the shared tech rollover after the price.
+    {"shipTechLimit", ApplyShipTechLimit},
+    {"homeCityTechsInUnits", ApplyHomeCityTechsInUnits},
     {"killBountyTechs", ApplyKillBountyTechs},
     {"teamKillBounty", ApplyTeamKillBounty},
     {"resourceBounty", ApplyResourceBounty},
@@ -2998,6 +3074,9 @@ inline constexpr Feature kFeatures[] = {
     {"snareValues", ApplySnareValues},
     {"stealthTargeting", ApplyStealthTargeting},
     {"autoScout", ApplyAutoScout},
+    // No order constraint: the only key that writes 0x487E1B or verifies 0x487D8B.
+    {"researchOnTheMove", ApplyResearchOnTheMove},
+    {"transformChecks", ApplyTransformChecks},
     {"customWalls", ApplyCustomWalls},
     {"directionalAttack", ApplyDirectionalAttack},
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
@@ -3012,6 +3091,8 @@ inline constexpr Feature kFeatures[] = {
     {"bigButtonCivs/noBigButtonBlds", ApplyBigButton},
     {"ageUpBuildings", ApplyAgeUpBuildings},
     {"politicianPlacesFix", ApplyPoliticianPlacesFix},
+    // After politicianPlacesFix: its observer runs in that key's hook (0x81A45A), after the place check.
+    {"politicianEnablesTech", ApplyPoliticianEnablesTech},
     {"enableFarmAnim/enableRectFarmAnim", ApplyFarmAnim},
     // After enableFarmAnim: its indices count that key's entries.
     {"farmingRadius", ApplyFarmingRadius},
@@ -3028,6 +3109,7 @@ inline constexpr Feature kFeatures[] = {
     {"rofFix", ApplyRofFix},
     {"stunMovingTargetFix", ApplyStunMovingTargetFix},
     {"noDamageOnUnbuiltFoundations", ApplyNoDamageOnUnbuiltFoundations},
+    {"truckAttackResourceFix", ApplyTruckAttackResourceFix},
     {"fallenHeroTacticsFix", ApplyFallenHeroTacticsFix},
     {"impactBoneFix", ApplyImpactBoneFix},
     {"customImpactTypes", ApplyCustomImpactTypes},
@@ -3093,13 +3175,14 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "playericon", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
+    "perffilelog", "multipleinstances", "playericon", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
 };
 
 }  // namespace uhc
@@ -3871,6 +3954,224 @@ UhcProtoTagsHook ENDP
 END
 ```
 
+## Tech tags
+
+### src/techtags.h
+
+```cpp
+// New child tags of a <Tech> in the techtree: one hook on the tech parser's loop over the tree's nodes (0x61FDB8),
+// shared by every key that reads one and by dataLint, which names the tech an effect belongs to.
+#pragma once
+
+namespace uhc {
+
+// `node` is each node of the techtree's root (a <Tech>, or a comment), as the parser takes it.
+using TechNodeObserver = void (*)(const char* node);
+
+// `techName` is the <Tech>'s name attribute (empty if it has none), `text` the child's text (may be null).
+using TechTagHandler = void (*)(const char* techNode, const wchar_t* techName, const wchar_t* text);
+
+// Calls `observer` for every node the parser takes, before it reads it. Writes the hook the first time, after
+// checking the stock bytes.
+bool OnTechNode(TechNodeObserver observer);
+
+// Makes each child element of a <Tech> named `name` (static text, case ignored) reach `handler`, in file order,
+// before the parser reads that tech. The stock parser does not know the tag and reads past it.
+bool AddTechTagHandler(const char* name, TechTagHandler handler);
+
+}  // namespace uhc
+```
+
+### src/techtags.cpp
+
+```cpp
+#include "techtags.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcTechNodeHook();  // hooks/techtags_hooks.asm
+
+namespace {
+
+constexpr std::size_t kMaxObservers = 8;
+constexpr std::size_t kMaxTags = 16;
+constexpr std::uint32_t kTechNode = 0x0061FDB8;  // mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] (7 B)
+
+using XmlAttributeFn = bool(__thiscall*)(const char* node, const char* name, void** value);
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+
+struct Tag {
+  const char* name;
+  uhc::TechTagHandler handler;
+};
+
+uhc::TechNodeObserver g_observers[kMaxObservers] = {};
+std::size_t g_observerCount = 0;
+Tag g_tags[kMaxTags] = {};
+std::size_t g_tagCount = 0;
+bool g_installed = false;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+// The element's name, as the parser's compare chain reads it: [[node+4]+18h][[node+18h]]; null for a node without one.
+const wchar_t* NodeName(const char* node) {
+  const std::int32_t index = Field<std::int32_t>(node, 0x18);
+  const char* names = Field<const char*>(node, 0x04);
+  if (index < 0 || names == nullptr || index >= Field<std::int32_t>(names, 0x1C)) {
+    return nullptr;
+  }
+  return Field<const wchar_t* const*>(names, 0x18)[index];
+}
+
+// name (narrow) == tag (wide), case ignored.
+bool SameName(const char* name, const wchar_t* tag) {
+  for (;; ++name, ++tag) {
+    const wchar_t a = static_cast<wchar_t>(*name >= 'A' && *name <= 'Z' ? *name + 32 : *name);
+    const wchar_t b = *tag >= L'A' && *tag <= L'Z' ? *tag + 32 : *tag;
+    if (a != b) {
+      return false;
+    }
+    if (a == 0) {
+      return true;
+    }
+  }
+}
+
+// The <Tech>'s name attribute: 0x598F37 hands back the attribute's string object, whose first field is its UTF-16
+// text.
+const wchar_t* TechName(const char* node) {
+  void* value = nullptr;
+  if (!kXmlAttribute(node, "name", &value) || value == nullptr) {
+    return L"";
+  }
+  const wchar_t* text = *static_cast<const wchar_t* const*>(value);
+  return text == nullptr ? L"" : text;
+}
+
+bool Install() {
+  if (g_installed) {
+    return true;
+  }
+  if (!uhc::VerifyAll("tech tags", {&uhc::sites::kTechTagsNode}) ||
+      !uhc::WriteJmp(kTechNode, reinterpret_cast<const void*>(&UhcTechNodeHook), 7)) {
+    return false;
+  }
+  g_installed = true;
+  return true;
+}
+
+}  // namespace
+
+// From the hook, for each node of the techtree's root, before the parser reads it.
+extern "C" void __stdcall UhcTechNodeDispatch(const char* node) {
+  if (node == nullptr) {
+    return;
+  }
+  for (std::size_t i = 0; i < g_observerCount; ++i) {
+    g_observers[i](node);
+  }
+  if (g_tagCount == 0) {
+    return;
+  }
+  const wchar_t* name = NodeName(node);
+  if (name == nullptr || !SameName("tech", name)) {
+    return;
+  }
+  // The children: [node+8] an array of nodes, [node+0Ch] their count (as the effect parse reads a <Target>).
+  const std::int32_t count = Field<std::int32_t>(node, 0x0C);
+  const char* const* children = Field<const char* const*>(node, 0x08);
+  const wchar_t* techName = nullptr;
+  for (std::int32_t c = 0; children != nullptr && c < count; ++c) {
+    const char* child = children[c];
+    const wchar_t* childName = child == nullptr ? nullptr : NodeName(child);
+    if (childName == nullptr) {
+      continue;
+    }
+    for (std::size_t t = 0; t < g_tagCount; ++t) {
+      if (SameName(g_tags[t].name, childName)) {
+        if (techName == nullptr) {
+          techName = TechName(node);
+        }
+        g_tags[t].handler(node, techName, Field<const wchar_t*>(child, 0x14));
+        break;
+      }
+    }
+  }
+}
+
+namespace uhc {
+
+bool OnTechNode(TechNodeObserver observer) {
+  if (g_observerCount == kMaxObservers) {
+    Log(L"tech tags: no room for another observer");
+    return false;
+  }
+  if (!Install()) {
+    return false;
+  }
+  g_observers[g_observerCount++] = observer;
+  return true;
+}
+
+bool AddTechTagHandler(const char* name, TechTagHandler handler) {
+  if (g_tagCount == kMaxTags) {
+    Log(L"tech tags: no room for %hs", name);
+    return false;
+  }
+  if (!Install()) {
+    return false;
+  }
+  g_tags[g_tagCount++] = {name, handler};
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/techtags_hooks.asm
+
+```asm
+; The shared <Tech> node hook (src/techtags.cpp). Entered through a jmp written over the stock code; it re-executes
+; the replaced instructions and leaves through an explicit jmp to the verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcTechNodeDispatch PROTO STDCALL node:DWORD
+
+.data
+techNodeNext dd 0061FDBFh   ; cmp edx,-1: the node's name index
+
+.code
+
+; Replaces mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] at 0x61FDB8, the tech parser's loop over the tree's nodes:
+; EAX = the node. pushad / popad keep every register for the re-executed instructions; the flags are written by the
+; cmp that follows.
+UhcTechNodeHook PROC
+    TRACE_ONCE "tech tags (0x61FDB8)"
+    pushad
+    push eax
+    call UhcTechNodeDispatch
+    popad
+    mov esi, eax
+    mov ecx, esi
+    mov edx, dword ptr [ecx+18h]
+    jmp techNodeNext
+UhcTechNodeHook ENDP
+
+END
+```
+
 ## Civ tags
 
 ### src/civtags.h
@@ -3910,7 +4211,7 @@ extern "C" void UhcCivTagsHook();  // hooks/civfirsttc_hooks.asm
 
 namespace {
 
-constexpr std::size_t kMaxTags = 8;
+constexpr std::size_t kMaxTags = 12;
 constexpr std::uint32_t kUnknownTag = 0x0052BB07;  // xor edi,edi / cmp dword ptr [ebx+80h],edi (8 B)
 
 struct Tag {
@@ -5993,7 +6294,8 @@ void RemoveUnitModel(char* unit, std::int32_t model) { kRemoveModel(unit, model)
 //
 // Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay, 66h
 // researchGrants (two kinds, told apart by word 0), 67h shipmentCounts (per-player state on one carrier unit), 68h
-// randomCost (the game seed and the purchase counts, on one carrier unit).
+// randomCost (the game seed and the purchase counts, on one carrier unit), 69h shipTechLimit (a player's count, on
+// one of his units).
 #pragma once
 
 #include <cstdint>
@@ -6303,6 +6605,13 @@ using ResearchPayStarted = void (*)(char* action, float share, bool claimed);
 // Writes the hooks the first time, after checking the stock bytes of the four sites.
 bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPayStarted started);
 
+// Called when a research is cancelled and refunded, after the refund: the Research action's state change to 13h
+// (the call 0x8D7004 at 0x9E6167, the refund of [action+74h]) and the CommandResearch one (0x9D56B5, [action+7Ch]).
+// [action+64h] is the player ID and [action+68h] the tech ID in both. A research whose action ends another way
+// (completed, or its unit gone) is not reported. The hooks are written the first time, after checking their bytes.
+using ResearchRefunded = void (*)(const char* action);
+bool AddResearchRefundObserver(const char* feature, ResearchRefunded refunded);
+
 // What the payment would do now with a research of `cost` by `researcher` for `player`: the keys are asked in the
 // same order, with `preview` set. Returns the name of the key that would claim it, with *share, or nullptr with
 // *share 1. For a display of the price: nothing is spent or remembered.
@@ -6323,6 +6632,8 @@ const char* PreviewResearchPay(const char* researcher, const char* player, const
 // claim it pays as stock. A claim with share 0 skips the payment; a share between 0 and 1 pays a scaled copy of
 // the cost, built in a local list, so the tech's own cost is never written. The copy that follows gets the same
 // share (0x4E2617 fills it with 0, 0x480B94 scales it), so a cancel refunds what was paid, never more.
+// A cancelled research is refunded by 0x8D7004(player, cost) at 0x9E6167 (Research, state 13h) and 0x9D56B5
+// (CommandResearch): AddResearchRefundObserver redirects both calls and reports the action after the refund.
 // PreviewResearchPay asks the same claims in the same order for a display of the price, and changes nothing.
 #include "researchpay.h"
 
@@ -6345,8 +6656,12 @@ constexpr std::size_t kMaxPayers = 4;
 constexpr std::uint32_t kResearchCopyCall = 0x009E68A0;         // to [action+74h]
 constexpr std::uint32_t kCommandResearchCopyCall = 0x009D5548;  // to [action+7Ch]
 constexpr std::uint32_t kResListCount = 0x00C6DF38;             // the entries of every ResList
+constexpr std::uint32_t kResearchRefundCall = 0x009E6167;       // refunds [action+74h]
+constexpr std::uint32_t kCommandResearchRefundCall = 0x009D56B5;  // refunds [action+7Ch]
 
 using PayFn = bool(__thiscall*)(void* player, const void* cost);
+using RefundFn = bool(__thiscall*)(void* player, const void* cost);
+const auto kRefund = reinterpret_cast<RefundFn>(0x008D7004);
 using CostCopyFn = void*(__thiscall*)(void* cost, const void* from);
 using CostFillFn = void(__thiscall*)(void* cost, float value);
 using CostScaleFn = void(__thiscall*)(void* cost, float factor);
@@ -6362,6 +6677,9 @@ struct Payer {
 };
 
 Payer g_payers[kMaxPayers] = {};
+uhc::ResearchRefunded g_refunded[kMaxPayers] = {};
+std::size_t g_refundedCount = 0;
+bool g_refundInstalled = false;
 std::size_t g_payerCount = 0;
 bool g_installed = false;
 
@@ -6411,6 +6729,18 @@ void* CopyCost(void* cost, const void* from, std::uint32_t offset) {
   }
   return result;
 }
+
+bool Refund(void* player, const void* cost, std::uint32_t offset) {
+  const bool result = kRefund(player, cost);
+  const char* action = static_cast<const char*>(cost) - offset;
+  for (std::size_t i = 0; i < g_refundedCount; ++i) {
+    g_refunded[i](action);
+  }
+  return result;
+}
+
+bool __fastcall RefundResearch(void* player, void*, const void* cost) { return Refund(player, cost, 0x74); }
+bool __fastcall RefundCommandResearch(void* player, void*, const void* cost) { return Refund(player, cost, 0x7C); }
 
 void* __fastcall CopyResearchCost(void* cost, void*, const void* from) { return CopyCost(cost, from, 0x74); }
 void* __fastcall CopyCommandResearchCost(void* cost, void*, const void* from) { return CopyCost(cost, from, 0x7C); }
@@ -6462,6 +6792,23 @@ bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPaySt
   return true;
 }
 
+bool AddResearchRefundObserver(const char* feature, ResearchRefunded refunded) {
+  if (g_refundedCount == kMaxPayers) {
+    Log(L"research refunds: more than %u keys", static_cast<unsigned>(kMaxPayers));
+    return false;
+  }
+  if (!g_refundInstalled) {
+    if (!VerifyAll(feature, {&sites::kResearchRefundCall, &sites::kCommandResearchRefundCall}) ||
+        !WriteCall(kResearchRefundCall, reinterpret_cast<const void*>(&RefundResearch)) ||
+        !WriteCall(kCommandResearchRefundCall, reinterpret_cast<const void*>(&RefundCommandResearch))) {
+      return false;
+    }
+    g_refundInstalled = true;
+  }
+  g_refunded[g_refundedCount++] = refunded;
+  return true;
+}
+
 const char* PreviewResearchPay(const char* researcher, const char* player, const char* cost, float* share) {
   for (std::size_t i = 0; i < g_payerCount; ++i) {
     float claimed = 1.0f;
@@ -6508,6 +6855,284 @@ UhcCommandResearchPayHook PROC
     invoke UhcResearchPay, esi, ecx, eax
     ret 4
 UhcCommandResearchPayHook ENDP
+
+END
+```
+
+## Can-research test
+
+### src/canresearch.h
+
+```cpp
+// The can-research test 0x4C6968, shared by every key that refuses a tech there (shipTechLimit, homeCityTechsInUnits):
+// one jmp at its head, whichever of those keys are on.
+//
+// 0x4C6968 is `bool thiscall(status, unit)`, ret 4: the player's status entry of a tech and the unit that would
+// research it (null for some callers, such as the home city's). Every research asks it: the command panel (0x4620C0,
+// whose false shows the button greyed or hides it), the research start 0x9E670B (the command's execution, on every
+// machine: false refuses the research before its payment), the AI, researchByID and the politician lists.
+#pragma once
+
+namespace uhc {
+
+// Asked before the stock test, in the order the keys added them (their kFeatures order). Return true to refuse
+// the tech for that unit: the test answers false and the stock checks do not run. Runs often (the panel asks each
+// tech button every refresh): keep it cheap for a tech the key does not care about.
+using CanResearchFilter = bool (*)(const char* status, const char* unit);
+
+// Writes the hook the first time, after checking the stock bytes of the head.
+bool AddCanResearchFilter(const char* feature, CanResearchFilter refuse);
+
+}  // namespace uhc
+```
+
+### src/canresearch.cpp
+
+```cpp
+// The head of the can-research test 0x4C6968 (push ebp / mov ebp,[esp+8], 5 B) goes to UhcCanResearchHook
+// (hooks/canresearch_hooks.asm), which asks UhcCanResearchRefused and either answers false or runs the stock test.
+#include "canresearch.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" {
+std::int32_t g_uhcCanResearchFilters = 0;  // the hook calls UhcCanResearchRefused only when there is a filter
+void UhcCanResearchHook();
+}
+
+namespace {
+
+constexpr std::size_t kMaxFilters = 4;
+
+uhc::CanResearchFilter g_filters[kMaxFilters] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+extern "C" bool __stdcall UhcCanResearchRefused(const char* status, const char* unit) {
+  if (status == nullptr) {
+    return false;
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    if (g_filters[i](status, unit)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+namespace uhc {
+
+bool AddCanResearchFilter(const char* feature, CanResearchFilter refuse) {
+  if (g_count == kMaxFilters) {
+    Log(L"can-research test: more than %u keys", static_cast<unsigned>(kMaxFilters));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll(feature, {&sites::kCanResearchHead}) ||
+        !WriteJmp(sites::kCanResearchHead.va, reinterpret_cast<const void*>(&UhcCanResearchHook), 5)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_filters[g_count++] = refuse;
+  g_uhcCanResearchFilters = static_cast<std::int32_t>(g_count);
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/canresearch_hooks.asm
+
+```asm
+; The can-research test's head (src/canresearch.cpp), shared by shipTechLimit and homeCityTechsInUnits.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcCanResearchRefused PROTO STDCALL status:DWORD, unit:DWORD
+EXTERN g_uhcCanResearchFilters:DWORD
+
+.data
+canResearchNext dd 004C696Dh    ; push esi: the stock test after its first two instructions
+
+.code
+
+; 0x4C6968: push ebp / mov ebp,[esp+8] (5 B), the head of bool thiscall(status, unit), ret 4. No branch lands
+; inside it. On entry ECX = the status, [esp+4] = the unit. EAX and EDX are free (the caller expects them
+; clobbered); ECX is kept for the stock test. A refused tech returns 0 with ret 4, as the stock test's false.
+UhcCanResearchHook PROC
+    TRACE_ONCE "can-research test (0x4C6968)"
+    cmp g_uhcCanResearchFilters, 0
+    je stock
+    push ecx
+    push dword ptr [esp+8]          ; the unit
+    push ecx                        ; the status
+    call UhcCanResearchRefused
+    pop ecx
+    test al, al
+    jne refused
+stock:
+    push ebp
+    mov ebp, dword ptr [esp+8]
+    jmp canResearchNext
+refused:
+    xor eax, eax
+    ret 4
+UhcCanResearchHook ENDP
+
+END
+```
+
+## Tech rollover
+
+### src/techrollover.h
+
+```cpp
+// The rollover of a tech button in the command panel, shared by every key that adds to it (researchGrants' price,
+// shipTechLimit's count): one replaced call, 0x4622C5, the panel's call of the rollover builder 0x4C737C in the
+// command panel refresh FUN_0046188E. Display only: nothing here reaches the simulation.
+#pragma once
+
+namespace uhc {
+
+// Called once the stock rollover is built, in the order the keys added them. `entry` is the player's status entry
+// of the tech, `player` the local player, `unit` the selected unit, `rollover` the rollover text (a BString:
+// AppendTechRollover adds to it) and `overlay` the button's overlay text (the panel's buffer, 256 chars, empty for a
+// tech; researchGrants writes its price there).
+using TechRolloverLine = void (*)(const char* entry, const char* player, const char* unit, void* rollover,
+                                  char* overlay);
+
+// Writes the hook the first time, after checking the stock bytes of the call and of the buffers it relies on.
+bool AddTechRolloverLine(const char* feature, TechRolloverLine line);
+
+// Appends text (game markup such as <color=1, 0.4, 0.4> allowed) to a rollover handed to a TechRolloverLine.
+void AppendTechRollover(void* rollover, const wchar_t* text);
+
+}  // namespace uhc
+```
+
+### src/techrollover.cpp
+
+```cpp
+// The panel's call of the tech rollover builder at 0x4622C5 goes to UhcTechRolloverHook
+// (hooks/techrollover_hooks.asm): it calls the builder with the same arguments, then UhcTechRolloverLines, which
+// calls each key's line in order.
+#include "techrollover.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcTechRolloverHook();
+
+namespace {
+
+constexpr std::size_t kMaxLines = 4;
+constexpr std::uint32_t kRolloverCall = 0x004622C5;  // kTechButtonRollover + 10h
+
+using AppendFn = void(__thiscall*)(void* text, const wchar_t* more, std::int32_t length, std::int32_t start);
+const auto kAppend = reinterpret_cast<AppendFn>(0x00443960);  // BString append; -1, -1: all of it, at the end
+
+uhc::TechRolloverLine g_lines[kMaxLines] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+extern "C" void __stdcall UhcTechRolloverLines(const char* entry, const char* player, const char* unit, void* rollover,
+                                               char* overlay) {
+  if (entry == nullptr) {
+    return;
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    g_lines[i](entry, player, unit, rollover, overlay);
+  }
+}
+
+namespace uhc {
+
+bool AddTechRolloverLine(const char* feature, TechRolloverLine line) {
+  if (g_count == kMaxLines) {
+    Log(L"tech rollover: more than %u keys", static_cast<unsigned>(kMaxLines));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll(feature, {&sites::kTechButtonRollover, &sites::kButtonOverlayReset, &sites::kButtonOverlayRead,
+                             &sites::kTechRolloverHead, &sites::kBStringAppend}) ||
+        !WriteCall(kRolloverCall, reinterpret_cast<const void*>(&UhcTechRolloverHook))) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_lines[g_count++] = line;
+  return true;
+}
+
+void AppendTechRollover(void* rollover, const wchar_t* text) {
+  if (rollover != nullptr && *static_cast<void**>(rollover) != nullptr && text != nullptr) {
+    kAppend(rollover, text, -1, -1);
+  }
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/techrollover_hooks.asm
+
+```asm
+; The tech button's rollover (src/techrollover.cpp), shared by researchGrants and shipTechLimit. Display only.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcTechRolloverLines PROTO STDCALL entry:DWORD, player:DWORD, unit:DWORD, rollover:DWORD, overlay:DWORD
+
+.data
+kTechRollover dd 004C737Ch      ; the tech rollover builder, cdecl with 8 arguments
+
+.code
+
+; Replaces the call of the tech rollover builder 0x4C737C at 0x4622C5 in the command panel refresh FUN_0046188E.
+; Entry: the 8 cdecl arguments at [esp+4]..[esp+20h] (the rollover, the tech entry, the player, the unit, 1, 0, 1,
+; 1); the panel's ESP before it pushed them is ESP+24h here, so the button's overlay text [esp+2C0h] there is
+; [esp+2E4h]. Calls the builder with the same arguments, then the keys' lines. The panel cleans the arguments
+; (add esp,20h) and reloads EAX, ECX and EDX before use; EBX, ESI, EDI and EBP are kept by both calls.
+UhcTechRolloverHook PROC
+    TRACE_ONCE "tech rollover (0x4622C5)"
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    call dword ptr [kTechRollover]
+    add esp, 20h
+    lea eax, [esp+2E4h]
+    push eax                    ; the overlay text
+    push dword ptr [esp+8]      ; the rollover
+    push dword ptr [esp+18h]    ; the unit
+    push dword ptr [esp+18h]    ; the player
+    push dword ptr [esp+18h]    ; the tech entry
+    call UhcTechRolloverLines
+    ret
+UhcTechRolloverHook ENDP
 
 END
 ```

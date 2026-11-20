@@ -23,7 +23,10 @@ set(UHC_SOURCES
   src/unittypes.cpp
   src/xmllist.cpp
   src/worldtick.cpp
+  src/panelbuttons.cpp
   src/researchpay.cpp
+  src/canresearch.cpp
+  src/techrollover.cpp
   src/deathobservers.cpp
   src/killobservers.cpp
   src/unitpanel.cpp
@@ -33,6 +36,7 @@ set(UHC_SOURCES
   src/modifytypes.cpp
   src/transformcalls.cpp
   src/prototags.cpp
+  src/techtags.cpp
   src/civtags.cpp
   src/techsubtypes.cpp
   src/d3d9hooks.cpp
@@ -58,6 +62,8 @@ set(UHC_SOURCES
   src/features/cantslow.cpp
   src/features/stealthtarget.cpp
   src/features/autoscout.cpp
+  src/features/researchmove.cpp
+  src/features/transformchecks.cpp
   src/features/customwalls.cpp
   src/features/directional.cpp
   src/features/snarevalues.cpp
@@ -72,6 +78,7 @@ set(UHC_SOURCES
   src/features/civs.cpp
   src/features/ageupbuildings.cpp
   src/features/politicianplaces.cpp
+  src/features/politicianenablestech.cpp
   src/features/damageovertime.cpp
   src/features/dance.cpp
   src/features/decimalpop.cpp
@@ -111,6 +118,8 @@ set(UHC_SOURCES
   src/features/techprereq.cpp
   src/features/orprereqs.cpp
   src/features/shipmentcounts.cpp
+  src/features/shiptechlimit.cpp
+  src/features/hctechsinunits.cpp
   src/features/kothtimer.cpp
   src/features/teams.cpp
   src/features/techrename.cpp
@@ -130,6 +139,7 @@ set(UHC_SOURCES
   src/features/compat.cpp
   src/features/gatherfix.cpp
   src/features/smallfixes.cpp
+  src/features/truckattack.cpp
   src/features/impactbones.cpp
   src/features/impacttypes.cpp
   src/features/unitlists.cpp
@@ -152,6 +162,7 @@ set(UHC_SOURCES
   src/hooks/freeunit_hooks.asm
   src/hooks/gather_hooks.asm
   src/hooks/foundation_hooks.asm
+  src/hooks/truckattack_hooks.asm
   src/hooks/impactbone_hooks.asm
   src/hooks/impacttype_hooks.asm
   src/hooks/syscall_hooks.asm
@@ -167,6 +178,7 @@ set(UHC_SOURCES
   src/hooks/civ_hooks.asm
   src/hooks/ageup_hooks.asm
   src/hooks/politicianplaces_hooks.asm
+  src/hooks/techtags_hooks.asm
   src/hooks/dance_hooks.asm
   src/hooks/farm_hooks.asm
   src/hooks/decimalpop_hooks.asm
@@ -218,6 +230,8 @@ set(UHC_SOURCES
   src/hooks/cantslow_hooks.asm
   src/hooks/stealthtarget_hooks.asm
   src/hooks/autoscout_hooks.asm
+  src/hooks/panelbuttons_hooks.asm
+  src/hooks/transformchecks_hooks.asm
   src/hooks/customwalls_hooks.asm
   src/hooks/directional_hooks.asm
   src/hooks/datalint_hooks.asm
@@ -236,6 +250,9 @@ set(UHC_SOURCES
   src/hooks/killobservers_hooks.asm
   src/hooks/researchpay_hooks.asm
   src/hooks/researchgrant_hooks.asm
+  src/hooks/canresearch_hooks.asm
+  src/hooks/techrollover_hooks.asm
+  src/hooks/hctechsinunits_hooks.asm
   src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm

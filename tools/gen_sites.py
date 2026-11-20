@@ -1023,14 +1023,15 @@ SITES = [
     ("AutoGatherPayPoint", 0x4C378A, 7),
     ("ResListSet", 0x58EF83, 10),
     # dataLint: push 0EB4h at the <UnitType> handler's failure; test al,al / je / mov edx,[esp+14h] after the proto tag
-    # table's find; je at the <ProtoAction> handler's failure; the call of the tech parser 0x61FD02; in that
-    # parser, mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] with the next <Tech>; je on setData's false in the effect parse;
-    # push 512h, the effect type's failure
+    # table's find; je at the <ProtoAction> handler's failure; the call of the tech parser 0x61FD02; je on setData's
+    # false in the effect parse; push 512h, the effect type's failure
     ("LintUnitTypeMiss", 0x5FCB61, 5),
     ("LintProtoTagMiss", 0x5F62A2, 8),
     ("LintProtoActionMiss", 0x5FA202, 6),
     ("LintTechLoadCall", 0x61FE4A, 5),
-    ("LintTechNode", 0x61FDB8, 7),
+    # tech tags (src/techtags.*, shared by dataLint and politicianEnablesTech): in the tech parser 0x61FD02,
+    # mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] with the next node of the techtree's root
+    ("TechTagsNode", 0x61FDB8, 7),
     ("LintEffectDrop", 0x6205E9, 6),
     ("LintEffectType", 0x65BC56, 5),
     # the kill queue's ask, thiscall(unit, a, b, c), ret 0Ch: it pushes [unit+10h] for 0x4B4D80; verify only
@@ -1462,6 +1463,11 @@ SITES = [
     # proto flag 9Ch (Invulnerable) test: cmp [ecx+54h],9Ch / jbe 49B40Fh / ... / ja 4CA52Bh
     # (no damage) (22 B)
     ("DamageInvulnerableTest", 0x49B3F3, 0x16),
+    # truckAttackResourceFix: the TruckAttack hit (BUnitTruckAttackAction, vtable 0xB98468, update slot 3Ch
+    # 0x9EC6D4 -> 0x9EC4E1; EBP = the action, EDI = the target in its loop over the units in range, EBX = 0):
+    # mov edx,[edi+0B4h] / mov eax,[edx+94h] / cmp eax,ebx / je 9EC64Dh / lea ecx,[eax+4] / call 58F070h, which sets
+    # every resource of the target's inventory to 0 (the obfuscated array of 0x58F070), then the damage at 0x9EC64D
+    ("TruckAttackInventoryReset", 0x9EC635, 0x18),
     # fallenHeroTacticsFix: four places reset the unit AI's tactic ([ai+A8h]) to 0 through
     # 0x4F7389 (thiscall(ai, int tactic), ret 4) when it is not 0 already: push ebx|0 / call 4F7389h
     ("TacticReset1", 0x6AAE6D, 0x06),
@@ -1667,6 +1673,18 @@ SITES = [
     ("PoliticianNameRead", 0x81A4FF, 0x11),
     ("TechStatusTechId", 0x58EA03, 0x0D),
     ("GadgetLookup", 0x40423C, 0x10),
+    # politicianEnablesTech, verify only: in the same builder, the portrait of the place (the politiciandata records
+    # [ebx+18Ch], 14h bytes each, +0 the tech ID and +4 the portrait path, matched with [ebx+26Ch]'s tech ID; the
+    # gadget [ebx+eax*4+1C0h] through 0x404432; its texture 0x638823(gadget, path*); its texture coordinates
+    # vtable+D8h(0, 0, 0.75, 0.7734375)); the read of the description handle [ebx+edx*4+210h] and its lookup, up to the
+    # null check (another DLL may replace the text after it); the gadget texture setter 0x638823 (thiscall(gadget, BString*),
+    # ret 4); the player's tech statuses 0x4C5394 (thiscall([world+7Ch], player ID), ret 4: [this+ID*4]) and the
+    # list's entry 0x4804B3 (thiscall(list, index), ret 4: [[list+4]+index*4], count [list+8])
+    ("PoliticianPortraitFill", 0x81A487, 0x72),
+    ("PoliticianDescriptionRead", 0x81A590, 0x39),
+    ("GadgetSetTexture", 0x638823, 0x10),
+    ("TechStatusList", 0x4C5394, 0x18),
+    ("TechStatusAt", 0x4804B3, 0x15),
     # playerIcon: the two calls of the lobby slot's civ portrait FUN_00774D56 (ECX = the slot), after a civ change
     # (case 4 of the slot's setting handler) and after an AI personality change (case 9); the hook runs it itself
     ("PlayerIconCallCiv", 0x776FFC, 5),
@@ -1840,6 +1858,45 @@ SITES = [
     ("AutoScoutSetTactic", 0x4F7ECD, 0x0A),
     ("AutoScoutTacticIndex", 0x948161, 0x08),
     ("AutoScoutIdle", 0x44F1A7, 0x08),
+    # researchOnTheMove: "can take a move" FUN_00487DED (bool thiscall(mgr); callers 0x487EBB, the unit's vtable +8Ch
+    # 0x487E74 that the order code asks, and 0x7D59F8) calls "the queue holds the unit" 0x487D8B at 0x487E1B, then
+    # cmp al,1 / setne al / pop ecx / ret. The call is redirected; the other four callers of 0x487D8B (a unit filter
+    # 0x672427, 0x898A7B, the repair button 0x9AD19C, the train command 0x9CE3BC) keep the stock answer. The range
+    # covers the call and the cmp / setne after it.
+    ("QueueHoldsMoveCall", 0x487E1B, 0x0A),
+    # researchOnTheMove, verify only: the head of 0x487D8B, mov eax,[ecx+24h] / test eax,eax / je 487DA5h /
+    # mov al,[eax+60h] / cmp al,0Dh, which the wrapper calls.
+    ("QueueHoldsHead", 0x487D8B, 0x0C),
+    # shipTechLimit: the refunds of a cancelled research, 0x8D7004(player, cost) (lea of the action's
+    # copy of the cost / push / mov ecx,player / call): the Research action's state 13h at 0x9E6161 (EBP the action,
+    # [ebp+74h]) and the CommandResearch one at 0x9D56AF (ESI the action, [esi+7Ch]); the head of the can-research
+    # test 0x4C6968, bool thiscall(status, unit) (push ebp / mov ebp,[esp+8], then push esi / push ebp / mov esi,ecx,
+    # where the hook continues at 0x4C696D); the status lookup 0x94ADAA, thiscall(root [world+7Ch], player, tech)
+    ("ResearchRefundCall", 0x9E6161, 0x0B),
+    ("CommandResearchRefundCall", 0x9D56AF, 0x0B),
+    ("CanResearchHead", 0x4C6968, 0x0B),
+    ("TechEntryLookup", 0x94ADAA, 0x23),
+    # homeCityTechsInUnits: the research start's refusal of a HomeCity tech, push 12h / mov ecx,esi /
+    # call 44D863h / cmp al,1 / je 9E67C5h, and the lea ebx,[esi+10h] that follows it (the accepted path, before the
+    # payment call 0x9E67E1); the Research update's test of CheckLandHCGatherPoint, push 1Eh / mov ecx,ebx / call
+    # 44D863h, and its test al,al / je 9E6583h
+    ("HcTechResearchRefusal", 0x9E67CE, 0x10),
+    ("ResearchGatherFlagTest", 0x9E6553, 0x0D),
+    # transformChecks: the per-unit execute of the transform command (type 17h, uiTransformSelectedUnit),
+    # FUN_007D64F7 (thiscall(cmd, unit), ret 4). Verify only, its body from the player lookup to the placement
+    # check: [esp+30h] the player (0x7D6531), [esp+14h] the player's proto (0x7D654D), [esp+10h] the command's
+    # player ID (0x7D6595), the cost getter 0x480B1E, then PLACE through world vtable +14h with (proto, player ID,
+    # &pos, &forward, &right, 0, 2, 0, 0, 0, 0) and its test.
+    ("XformExecBody", 0x7D652D, 0xBE),
+    # transformChecks: test al,al / je 7D6762h (8 B) after PLACE, then cmp byte [esi+90h],0 (the payment flag,
+    # 7 B), where the hook goes on; nothing branches inside (cs). ESI = the command, EBP = the unit.
+    ("XformPlaceTest", 0x7D65E3, 0x0F),
+    # transformChecks: the refusal 0x7D6762, lea ecx,[esp+18h] / call 44C817h (the cost list's destructor), then
+    # the pops and ret 4 with AL = 0
+    ("XformRefuse", 0x7D6762, 0x09),
+    # transformChecks: the cost list's constructor 0x44717F and destructor 0x44C817 (thiscall(list))
+    ("CostListCtor", 0x44717F, 0x09),
+    ("CostListDtor", 0x44C817, 0x0B),
 ]
 
 

@@ -367,6 +367,29 @@ rounded up (4 at 452 s, 5 at 491 s, in game). The hooks at `0x7FA6ED` (61 B, res
 `[esp+24h]`) and `0x8D8C88` (53 B, result in `[esp+38h]`) replace the computation with
 `-amount × min([world+108h] / 120000, 15)`.
 
+### truckAttackResourceFix
+
+**The stock action.** A tactics action of type `TruckAttack` (action type 42h, name at 0xBD7AC4, registered at
+0x522DB0) is BUnitTruckAttackAction, vtable 0xB98468. Its update (slot 3Ch, 0x9EC6D4) waits for the game time
+`[action+64h]`, sets the next one 195–205 ms later (0x9EC4B0, the synced RNG stream 2) and runs the hit 0x9EC4E1:
+the units within `[action+24h]` (the action's `maxrange`) of its owner `[action+10h]` (0x4A1C55), and for each one
+of another player that is alive, has hit points, is not dead (0x4802C6), is built (0x44DDB4), passes 0x482865 and
+0x48E237, it first resets the target's resource inventory `[[unit+0B4h]+94h]` (0x58F070 on `+4`: every resource of
+the obfuscated array, `[0C6DF38h]` of them, set to 0 xor its key at 0xC6DF14), then deals the damage (0x49B3D9, or
+0x499422 for a proto without abstract index 12h). The reset is what a trample of a hunt needs; on a building that
+holds resources (a Mill, a plantation, a rice paddy: food or gold 999 with `UnlimitedSupply`) it leaves it at 0 for
+good, and the gather action refuses an empty target. Observed in game with the inventory read from memory: a Mill
+next to an enemy monster truck, or under an enemy mustard gas, went from 999 to 0.
+
+**The hook.** At 0x9EC635 (`mov edx,[edi+0B4h]`, 6 bytes; EBP = the action, EDI = the target, EBX = 0),
+`UhcTruckInventoryHook` calls `UhcTruckKeepsInventory(action, target)`: true for a proto of abstract index 2 (a
+building, 0x44CAC4). Then it goes on at the damage, 0x9EC64D; otherwise it re-executes the `mov` and goes on at
+0x9EC63B, the stock reset.
+
+**Why it is safe.** EAX, ECX and EDX are written before they are read on both continuations (0x9EC63B loads EAX
+and ECX; 0x9EC64D loads ECX, and its branches load EAX and EDX); EBX, ESI, EDI and EBP are kept by the stdcall
+callee. The test reads only the target's proto, the same on every machine. Units are reset as in stock.
+
 ### nowalkfarm
 
 The gather action calls `0x9DDADE` (the spot picker that `farmingRadius` hooks) at `0x6A9067` each
@@ -692,6 +715,49 @@ so it shows that many places. The other list builder, FUN_00818EE5, null-checks 
 - `ageUpBuildings` replaces the call at 0x81A44D, five bytes before: the two sites do not overlap and both verify
   their own bytes; tested together.
 - Interface only, not on a hot path: the lookups run when the dialog is filled (a click), at most ten per politician.
+- The hook is shared (`InstallPoliticianPlaceHook`, `AddPoliticianPlaceObserver` in `features.h`): whichever of
+  `politicianPlacesFix` and `politicianEnablesTech` applies first writes it; the place check runs first, then each
+  observer with the place the politician is about to fill.
+
+### politicianEnablesTech
+
+**Data.** Through [tech tags](#tech-tags): each `<PoliticianEnablesTech>` text by politician, and every tech's `<Icon>`
+text, since the tech record keeps only the texture handle (`[NodeData+14h]`, from 0x621143 → 0x58E3EB) and a gadget's
+texture is set by path. The names become tech IDs at the first dialog after a data load (0x600BE1, `thiscall(db,
+name)`); a name with no tech is logged and left out, and a politician keeps at most four. `OnDatabaseLoad` clears it all.
+
+**The builder.** FUN_0081A2B8 fills place n = `[dlg+26Ch]` after the hook at 0x81A45A (capstone of 0x81A487..0x81A5F4;
+REA `ev_46886807`): the portrait gadget `[dlg+1C0h+4n]` gets the politiciandata record's path (`[dlg+18Ch]`, 14h-byte
+records, `+0` tech ID, `+4` path, count `[dlg+190h]`) through 0x638823 and then the texture coordinates (0, 0, 0.75,
+0.7734375) through its vtable `+D8h`, whatever the layout says; the name `[dlg+1E8h+4n]` the DisplayNameID; the
+description `[dlg+210h+4n]` the RolloverTextID (a DLL beside ours may replace that text at 0x81A5CB).
+
+**The observer** (`PlaceFilled`, before the fill): the place's gadgets by name, `kGadgetByName` (0xAB7C2F) on the
+dialog's root gadget (`[dlg+148h]` through 0x404296, as the bind FUN_0081892B does). Without this key's gadgets in the
+layout, nothing. A politician without tags: this key's gadgets hidden, the stock portrait and description shown, the
+stock description handle (by name) back in `[dlg+210h+4n]`. A tagged one:
+- the stock portrait and description hidden (0x448F13); the builder still fills them, unseen;
+- `EnablesTechPortrait` gets the record's path (0x638823) and the texture coordinates (0, 0, `flag`) through the same
+  vtable `+D8h`, so it shows the top of the same picture;
+- `[dlg+210h+4n]` = the `EnablesTechDescription` handle: the builder (or the DLL beside it) fills the shorter box;
+- per tech: the name gadget gets the DisplayNameID text (0x58EA52, vtable `+80h`) and, in its help text `[gadget+68h]`,
+  the tech's research rollover: 0x4C737C(text, status, player, unit, 1, 0, 1, 1), as the command panel's call 0x4622C5;
+  the status is the player's (0x4C5394(`[world+7Ch]`, player ID), entry 0x4804B3(list, tech ID), checked by its tech
+  ID, else a search), the player `[dlg+13Ch]` through 0x44CB21, the unit `[dlg+140h]` through 0x44CC6D. With no status
+  or an empty result, the RolloverTextID. The icon gadget gets the `<Icon>` path (0x638823) and the same help text.
+  One or two techs use the `EnablesTech%d` row gadgets, three or four the `EnablesTechGrid%d` ones.
+
+The help text shows on hover (a posted mouse move in a `background` copy was enough), and a click on an icon or a
+name reaches the place's button: the politician is selected (seen in game).
+
+**Why it is safe.**
+- Registers and stack: the observer runs inside `UhcPoliticianNoPlace` (stdcall), see politicianPlacesFix.
+- The only write outside this key's gadgets is the description handle `[dlg+210h+4n]`, read by the builder at 0x81A596
+  for this place and by nothing else found in the builder (capstone); every fill sets it again, from a name lookup.
+- The gadget objects come from 0x404296 with the reference released at once (0x40431B), as the stock code does.
+- Interface only, on a click: the dialog is the local player's; the politician chosen is the stock research command.
+- Beside another DLL (our `dinput8.dll`): a patch at 0x81A5CB is after the handle read, so its text fills our box;
+  the site `PoliticianDescriptionRead` (0x81A590, 0x39 bytes) stops before it.
 
 ### kbUnitSyscalls
 
@@ -1999,7 +2065,8 @@ effect (vtable `0xB9E5A8`) of subtype `Enable` (`[+0Ch]` = 10h) with an amount `
   would put in a big-button slot (tech flags 27, 36, 37, 39) go to the next entry.
 - `0x4620B9`: a tech skips "can research here" and the status tests, keeps the prerequisite test (so a tech that waits
   for another tech stays hidden and an age prerequisite gives the age mark), and goes to the build-up as disabled.
-- `0x462317`: every button of a preview is disabled and its two command strings are emptied.
+- `0x462317` (the shared button hook, `panelbuttons.*`, also used by `transformChecks`): every button of a preview is
+  disabled and its two command strings are emptied.
 
 **Why it is safe.**
 - Nothing writes game state: the hooks change which panel the chooser keeps, which entries the refresh collects and how
@@ -3463,8 +3530,13 @@ A kill that reaches a rank and a transform queue the unit's ID. A world tick eve
 `unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
 `[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. The mark hangs on the bone
 `HITPOINTBAR`, as a sprite that faces the camera, 1.15 m over the aura icons' height (`RANK_LIFT` in aoe3-blender-tools' `tools/make_rings.py`): the HP
-bar scales with the camera like the world, so the gap stays at every zoom. Ranks 4 and 5 add stars over rank 3's chevrons: their
-sprite is larger around the same centre, with the glyph scaled down by as much, so the chevrons land where rank 3's do. **Why it is safe:** a model is a
+bar scales with the camera like the world, so the gap stays at every zoom. The marks are soutache knots after the team's approved
+sheet (a loop; a stem with a top loop, one or two tiers of eye-shaped side loops and a tail bar), each one cord drawn as
+circles along Bezier curves, symmetric, its tails at the same lowest height for every rank, and shaded as metal from each texel's place across its
+strand (the line through the two nearest centres). Every mark is centred on the HP bar: the particle hangs at the unit's position (a model
+attachment's particle ignores the `HITPOINTBAR` bone) at a height over the ground, and the bar is drawn at the tag; a point
+higher than the bar drifts sideways in perspective, so the sprite's centre is at the bar's height by kind of unit and the knot
+is drawn high inside the sprite (a camera-facing sprite moves it straight up), its tails at the same height for every rank. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking
@@ -3905,7 +3977,9 @@ name checked against the action's (`[db+1FE4h]`); then:
   range (and area), one line per multiplier (string 42229 or 42230). The key inserts after the damage line a line for
   the ROF and one for the projectiles (`rofTip`, `projectilesTip`, `%s` the number), each with its icon, and a row
   shown in short form (too long for its column, or the `+N more` gadget) carries that whole help text instead of its
-  text without icons;
+  text without icons; in that help text the parentheses around an icon, or around the name right after one (the game's
+  `%1s (%2s) Damage`, `... against %2s (%3s)`), are removed unless `tipParentheses="keep"`, and the key's own lines end
+  with their icon, without parentheses;
 - the multipliers lose the zeros that end their decimals (`, 1.50x` is `, 1.5x`, `1.50X Bonus` is `1.5X Bonus`: a
   number with a decimal point right before an `x` or `X` that ends a word), unless `multiplierZeros="keep"`;
 - an original attack row (its gadget spans the panel to the right edge) longer than that width over the font's
@@ -4237,6 +4311,45 @@ flagged entry after the stock add. Entries move as bytes, as each owns its cost 
 in the entry, so a card that waits keeps it, and a saved game needs nothing more. The wrapper returns the new place, which the
 send gives to the shipment's models.
 
+### researchOnTheMove
+
+`src/features/researchmove.cpp`, no asm. Found with traces and capstone reading.
+The rows: [engine-symbols](engine-symbols.md#wol-requests-70-73-research-for-batch-2-2026-11-20), "Research actions and moving". <!-- private -->
+
+**Why a unit with research stands still.** The research itself never holds the unit: the queue routine 0x9CCB39 adds
+the Research action with `immediate` 0, so it sits in the action list `[mgr+14h]` beside the current action
+`[mgr+24h]`, and the list update 0x485C44 calls every action's update (vtable `+3Ch`, then `+40h`) each tick, current or
+not. What holds the unit is the question the game asks before it gives a unit a new current action: the unit's vtable
+`+8Ch` (0x487E74: speed above zero, a completed building data if any, then 0x487DED). "Can take a move" 0x487DED answers
+false for a current action with flag 9 or of type 2Ah, and otherwise asks 0x487D8B, "the queue holds the unit": true
+when the current action is a Train (0Dh) or a Research (0Ch), or the list holds one (0x487D49 counts a type, with and
+without flag 0). The order code 0x4FA0A5..0x4FA0B7 takes a false as a refusal: the order's action is left in state FFh
+and replaced by idle about 5 s later.
+
+**The change.** One call: 0x487E1B, 0x487DED's call of 0x487D8B, goes to `QueueHoldsUnit(mgr)`, which calls 0x487D8B
+first and returns its answer, except when it is true for a unit (`[mgr+4]`) whose proto has the abstract type and whose
+current action and list hold no Train action: then false. The unit then takes an order as a unit with an empty queue
+does, the Research actions stay in the list, and the list update keeps advancing the first of them (0x9CA1F0) at the
+rate of 0x9BFE33, whatever the current action is.
+
+**Callers.** 0x487DED is asked for every unit every tick: a trace of 18 s in a scenario counted 44,042 calls, 33,024 from
+the leash 0x489B15 (through 0x489B81) and 10,995 from the order code 0x4FA0B5, the rest from 0x49179E and other order
+paths. The wrapper costs a call when the stock answer is false (every unit with an empty queue), and a type test and a
+walk of one list for a unit with a queue. 0x487D8B's other callers keep the stock answer, as they ask whether the unit has
+a queue: a unit filter's option byte `+53h` (0x672427, through 0x4537B4), a test by unit ID (0x898A7B), the repair button
+of the command panel (0x9AD19C: `AutoRepairUnit` or its cancel) and the train command 0x9CE3BC. With the leash asking too,
+a marked unit with research is leashed as an idle unit is.
+
+**What the game does with the rest.** Death and knockout drop the list and refund every queued research (seen: three
+ships back for three techs); the cancel of a queue icon refunds as before; a garrisoned unit (`[unit+6Ch]` ≥ 0) skips
+every action of its list, so the research pauses and goes on when the unit is out; the list is saved with the unit, and
+the wrapper keeps no state, so a loaded game behaves the same.
+
+**Why it is safe.** 0x487DED continues after the call with `cmp al,1 / setne al / pop ecx / ret`: only AL is read. The
+wrapper is `__fastcall(mgr, edx)`, so it takes ECX as stock's `thiscall` does, returns `bool` in AL, and keeps EBX, ESI,
+EDI and EBP; the x87 stack is not used. Deterministic: the answer depends on the unit's proto and its actions only; the
+log (once per unit ID) never feeds back.
+
 ### The research payment (shared)
 
 `src/researchpay.*`, `hooks/researchpay_hooks.asm`, used by `nextResearchFree` and `researchGrants` through
@@ -4331,8 +4444,9 @@ can reuse the address of a proto. It is not saved, and a load applies the effect
   - The command panel FUN_0046188E calls the builder for a tech button at 0x4622C5 (`ev_afcebe91…`) with ESI the entry,
     EBX the player, EDI the unit and `[esp+30h]` the rollover; the button's overlay text, the narrow buffer
     `[esp+2C0h]` (256 chars) that the Buy buttons use for their price, is emptied for each button at 0x461DBC and set on
-    the button at 0x4625E2 (`ev_9abdeb84…`) when not empty. A `WriteCall` at 0x4622C5 (`UhcGrantTechButtonHook`) calls the
-    builder with the same eight arguments, then `UhcGrantTechButton`: with a preview below the full price it writes the
+    the button at 0x4625E2 (`ev_9abdeb84…`) when not empty. The `WriteCall` at 0x4622C5 is the shared tech rollover
+    (`techrollover.*`, since 2026-11-20; it was `UhcGrantTechButtonHook`): it calls the builder with the same eight
+    arguments, then each key's line, here `GrantTechButton`: with a preview below the full price it writes the
     word or price into the empty buffer, which it finds at the panel's `[esp+2C0h]` (ESP + 2E4h in the hook), and appends
     the green line to the rollover with the BString append 0x443960 (`thiscall(text, wchar*, -1, -1)`, `ret 0Ch`).
   - The floating text: `started` with `claimed` shows the label over the paying unit through `floatingtext.h` when its
@@ -4371,6 +4485,74 @@ can reuse the address of a proto. It is not saved, and a load applies the effect
 
 The fps differ by 7 % at about 1.4 ms per frame with the GPU busy by the other games; the main thread did the same work.
 That run's second research was paid by the Market (a tie), so it had no Time factor.
+
+### shipTechLimit
+
+`src/features/shiptechlimit.cpp`; the shared `researchpay.*`, `canresearch.*` (`hooks/canresearch_hooks.asm`) and
+`techrollover.*` (`hooks/techrollover_hooks.asm`).
+
+- **The tag** (`AddCivTagHandler`): `<ShipTechLimit>` gives a number per civ ID (0 to 100000; anything else is logged and
+  skipped). A player's civ is `[[player+20h]]` when `[player+24h]` > 0 (0x4539D3).
+- **A shipment tech:** the player's status entry of the tech has Ships (resource 6) above 0 in its cost list
+  `[status+10h]` (0x44EFFF), the list the research pays and the rollover shows. The status of a research is found by
+  0x94ADAA(`[world+7Ch]`, player ID, tech ID).
+- **Counting** (per player, 16): the shared payment (`AddResearchPayer`) with a claim that never claims: its `started`
+  runs for every research once its action is set up, with `[action+64h]` the player and `[action+68h]` the tech; a
+  shipment tech of a limited player adds 1. `AddResearchRefundObserver` (new in `researchpay.*`) redirects the two calls
+  of the refund 0x8D7004: 0x9E6167 in the Research action's state 13h handler 0x9E60B4 (the cancel: it clears "being
+  researched" with 0x94B85C(…,0,0), refunds `[action+74h]`, then 0x94C285(0)) and 0x9D56B5 in the CommandResearch one
+  (`[action+7Ch]`); a refunded shipment tech takes 1 off. These are the only two refunds of a research action (a capstone
+  scan of `call 8D7004h` over `.text`: the other nine are trains, cards and foundations). A research that completes
+  (state 0Ah) or loses its unit is never refunded, so it keeps its count.
+- **The refusal:** the shared head of the can-research test 0x4C6968 (`bool thiscall(status, unit)`): a 5-byte `jmp`
+  over `push ebp / mov ebp,[esp+8]` to `UhcCanResearchHook`, which asks each filter and returns 0 (`ret 4`) for a refused
+  tech, else replays the two instructions and goes on at 0x4C696D. This key refuses a shipment tech for a unit whose
+  owner `[unit+44h]` has reached his limit. Callers with no unit (the home city's 0x857810 and 0x8579B9) are never
+  refused. The research start 0x9E667A asks it at 0x9E670B before the payment, inside the execution of the research
+  command, so a refused research fails on every machine (0x9E6718: nothing is paid). The command panel asks it at
+  0x4620C0: false takes the button down the stock path that marks it disabled (`[esp+24h]` = 1 at 0x46216A).
+- **The display:** the shared tech rollover (the `call` of the builder 0x4C737C at 0x4622C5): a green or red line
+  `Shipment techs: n/N` appended with 0x443960, and, at the limit, `n/N` in the button's empty overlay text (the panel's
+  256-char buffer `[esp+2C0h]`).
+- **Saved games:** a saved marker per limited player (`savedmarkers.h`, stat 69h, word 0 `'ST' << 16 | player << 8 | 1`,
+  word 1 the count) on one of his living units; the world tick writes it when the count changes and moves it when that
+  unit dies or loses it. A new game (another world, the time going back or the step count jumping, as in
+  `shipmentCounts`) walks the unit table once and reads the markers; a limited player with none gets the sum of the
+  research count bytes `[status+21h]` (bumped by the activation 0x94CF27 at 0x94D02F) over his shipment techs.
+
+**Why it is safe.**
+- The head hook keeps ECX for the stock test and uses only EAX and EDX, which a `thiscall`'s caller does not expect kept;
+  no branch lands at 0x4C6969..0x4C696C (capstone). The refund replacements are `__fastcall` with an unused EDX: the
+  same frame as the `thiscall`, `ret 4`, and they return the refund's result.
+- Deterministic: the count changes only in the research command's execution and the action's state change, on every
+  machine; the filter reads it, and the display only reads.
+- Cost: the filter is a map lookup by civ and one cost read for a limited player's tech; nothing walks a list per call.
+  The world tick does nothing while no count changed; a marker move walks the unit table once.
+- Videos (`record --perf`, other games on the machine, not a perfprobe A/B): key on 490 fps, longest frame 46 ms, none
+  over 50 ms; key off 424 fps, 24 ms, none over 50 ms.
+
+### homeCityTechsInUnits
+
+`src/features/hctechsinunits.cpp`, `hooks/hctechsinunits_hooks.asm`; the shared `canresearch.*`.
+
+- **Stock:** the research start 0x9E667A, after the can-research test (0x9E670B), refuses a tech with status bit 18 (the
+  HomeCity flag) at 0x9E67CE (`push 12h / mov ecx,esi / call 44D863h / cmp al,1 / je 9E67C5h`) and returns false with
+  nothing paid. 0x4C6968 does not refuse HomeCity techs (it skips its "already active" and ResearchLimit tests for bits 18
+  and 29), so the panel shows the button of an obtainable one.
+- **Start hook** (13 bytes at 0x9E67CE): the bit test as stock; a HomeCity tech goes on at 0x9E67DB (the payment) when
+  the researching unit `[action+10h]`'s proto lists it in its command entries `[proto+0E8h]` (6-byte records: word ID,
+  byte kind, 1 a tech; count `[proto+0ECh]`), else to 0x9E67C5 as stock.
+- **Once active:** a filter of the can-research test refuses a HomeCity tech whose status has bit 1 (active) for a unit
+  whose proto lists it, so its button goes away as a normal tech's does.
+- **Gather hook** (9 bytes at 0x9E6553, the Research update's `push 1Eh / mov ecx,ebx / call 44D863h`): AL = the
+  `CheckLandHCGatherPoint` flag as stock; when it is clear, a HomeCity tech without `CheckWaterHCGatherPoint` gets AL = 1,
+  so 0x9E6560..0x9E657B cancel it (state 13h, full refund) while the player has a home city and 0x4C6B9E finds no gather
+  point. `nogathercheck` turns that off (`g_uhcHcGatherCheck`).
+
+**Why it is safe.** Both hooks use EAX, ECX and EDX, which every continuation reloads (the payment loads ECX from EDI;
+0x9E655C tests AL only, and both of its paths reload ECX); EBX, ESI, EDI and EBP are kept. No branch lands inside either
+site (capstone). Only a Research action reaches them, and a HomeCity tech reaches the update only through this key. The
+decision reads the proto and the status: the same on every machine.
 
 ### killBountyTechs, resourceBounty and teamKillBounty
 
@@ -4547,6 +4729,28 @@ target unexplored, or that takes 90 s, gives the block up. When no unexplored ce
 not visible now with the oldest last-seen time (this key's own stamps, game time), the nearest first. Any other action
 (a fight, a flee) is left alone, and the scout goes on when it is idle again.
 
+**Danger** (2026-11-20; `noAvoid` and `noBack` turn the two parts off). *Avoid:* for each player with scouts, each
+scan walks the unit lists of the players whose stance toward it is enemy (0x484D2D on their player) and keeps, by
+unit ID, the buildings (abstract index 2, 0x44CAC4) that are built (0x44DDB4), alive, and have an action with ranged or
+siege damage (the proto's actions `[[proto+44h]+1Ch]`, count `+20h`; the damage record `[action+24h]`, its type byte
+`+5`; the longest maximum `+8` of the 16-byte range entries `[action+18h]`, count `[action+1Ch]`), once the cell they
+stand on is visible to the player (the high half of its bits), or explored on the first scan after the tables were
+built (a loaded game). A dead one is forgotten. Each is a circle of its range + 12 m. *Back:* the scan keeps each
+scout's hit points `[unit+64h]`; a drop is a hit. The units within 40 m (0x4A1C55) that are alive, have a damage action
+and belong to Gaia or to a player whose stance toward the scout's is enemy give the attacker, the nearest (the lower ID
+on a tie); a circle of its reach (at least 6 m) + 16 m around it, or of 24 m around the scout when there is none, is
+kept 120 s of game time (32 at most per player, the oldest dropped first; a hit within 6 m of a circle refreshes it).
+The scout gives its target up and gets the same move order (taking over a stock flee or fight, which would leave it
+in range) to a point out of the attacker's reach + 10 m, 24 to 60 m away (the first of seven headings, from straight
+away to 105° off, that is on the map, standable for its movement type and outside every circle), and keeps it for 8 s
+or until it stops; a hit during a back-off less than 3 s old orders no new one. *Both:* a block whose centre is within a
+circle's radius plus half a block is never a target (unexplored or revisited). The target is, in this order: the
+nearest unexplored one whose straight line from the scout crosses no circle (for a circle the scout is in: comes no
+nearer its centre than the scout is); the seen block
+visited longest ago by such a line; the nearest unexplored one whose line crosses; the oldest seen one whose line
+crosses. A scout whose target block becomes unsafe gets another target (the block is not given up). The circles and the per-proto reach cache are the key's own tables, keyed by unit ID and proto, walked in
+ID and insertion order, rebuilt after a load.
+
 **The leash.** The action manager walks a unit back to its anchor `[mgr+7Ch]` (x, y, z) when its current action has no
 order ID and it strays past a range (0x489B15 → 0x50E50E, a move with tolerance 1.0). That is what makes a flying pet
 circle its start when it has no orders; the animal wander `BUGA::doWander` runs only for a unit in a herd (`[mgr+ACh]`
@@ -4568,14 +4772,58 @@ and commands call, in the world update, so every machine makes the same calls in
 network, and nothing reads the local player. The tables are only a cache: a loaded game (or another game) starts them
 again from the units' tactics and the grid, and the tactic itself is saved with the unit. The hook keeps every register
 the stock head needs (ECX, the flags of its `cmp`), and the stdcall callee keeps EBX, ESI, EDI and EBP. The real clock
-of the `log` timing line only goes to the log.
+of the `log` timing line only goes to the log. The danger tables read only simulation state (the player's own grid
+bits, stances, units, hit points); the attacker search does not depend on the order of the spatial query's list
+(nearest, then lowest ID); the reach cache keyed by proto pointer is a memo of data, emptied when the data changes.
 
 <!-- private:begin -->
 **What was measured.** Two ravens of the Romanians on Great Lakes, the rest of the player idle: 9.4 % / 9.7 % of the
 map explored at 3 / 6 minutes without the key, 63.7 % / 100 % with it. The Dutch envoy alone on the same map: 50.1 % /
 71.1 %. A scan: about 50 µs with two scouts on 155 × 155 cells (with `log`, the order lines make the first scans cost
-milliseconds).
+milliseconds). Danger (2026-11-20, a 260 m map with four enemy outposts and seven Musketeers, an Explorer and an Envoy):
+61.5 % / 70.5 % at 3 / 6 minutes and the Envoy killed with `noAvoid noBack`; 68.7 % / 79.4 % and both alive with the
+default; about 90 µs a scan.
 <!-- private:end -->
+
+### transformChecks
+
+**The stock transform.** `uiTransformSelectedUnit("Proto")` (UI command 0x7E7193) looks the proto up and sends a
+network command, type 17h, for the selection; every machine runs it in the world update. Its per-unit execute
+FUN_007D64F7 (`thiscall(cmd, unit)`, vtable `+54h`), for each selected unit on its own: the player (0x44CB21) and its
+copy of the target (0x45311B, kept at `[esp+14h]`), the target's cost (0x480B1E into a cost list at `[esp+18h]`), the
+unit alive and owned by the command's player, then **PLACE**, world vtable `+14h` (FUN_0050703D), with `(protoId,
+playerId, &unit+14h, &unit+20h, &unit+38h, 0, 2, int* reason, 0, 0, 0)`; then, with the command's payment flag
+`[cmd+90h]`, the payment 0x8D946A (or the "not enough resources" message 42A8h to the local player); then the target,
+created by 0x498ACC at the unit's position and completed by 0x6A1F82 when the unit was built, and the unit removed.
+PLACE applies the target's placement rules and its allowed age (in game: a youth 6 m and 18 m from a gunpowder kraal
+became an Askari maturing, one 32 m away did not); its eighth argument receives the failing rule's `errorstringid`
+(72617 for the gunpowder kraal rule, read in game). The unit itself is an obstruction for the target unless the target
+is `NonCollideable`. Nothing tests the target's build limit.
+
+**The build limit.** The hook at 0x7D65E3 replaces `test al,al / je 7D6762h`, right after PLACE. A refusal of PLACE
+goes to the stock refusal 0x7D6762 (the cost list's destructor, `xor al,al`, `ret 4`). An acceptance calls
+`UhcXformAllowed(player, playerProto, unit)` inside `pushad`: the limit is 0x4C7B5F on the player's copy (−1: none),
+the count the player's living units of the proto ID, from its unit list `[player+F8h]` (count `+FCh`) through the
+unit table. At the limit, the refusal; else the stock continuation 0x7D65EB (the payment). A command for six units
+runs the execute six times in a row, and each new unit is in the list at once, so the sixth sees five.
+
+**The button.** The command panel's button hook (`panelbuttons.*`, at 0x462317, where every grid button joins with its
+state `[esp+24h]`, its click and shift-click commands `[esp+1C0h]` / `[esp+3C0h]` and its rollover BString
+`[esp+18h]`, filled by the command layout at 0x695D60..0x695D82) runs the key's filter. For a click command
+`uiTransformSelectedUnit("Name")` it asks, for the local selection (0x453B28; only when its player `[sel+0Ch]` is the
+local player): the cost once (0x480B1E, then 0x8D6BAE or 0x8D6C1B with shared resources, `[world+6912h]`), the limit
+(as above, counting the units already accepted in this selection), and PLACE for each selected unit with the same
+arguments as the command. No unit passes: state 1 (grey), both commands emptied, and a red line appended to the
+rollover (0x443960): the string of PLACE's reason, or 25528, 41543, 36198 (with the target's display name
+`[proto+140h]`, read in game). Some pass: a yellow "N / M:" line with the first reason. The answer is kept 250 ms of
+real time per target name and selection.
+
+**Why it is safe.** The hook keeps every register but EAX, which neither continuation reads before loading it again
+(AL only fed the test it replaces); the frame (`[esp+14h]`, `[esp+30h]`) is the execute's own, checked by the site
+`XformExecBody`. The count reads simulation state only, walks a list in its own order and decides the same on every
+machine; the log never feeds back. The button filter is interface only: it reads the local selection and calls PLACE
+and the cost getter, which only read (PLACE is what the AI calls to test build spots), and changes only the button.
+`nativePreview` and this key add their filters to the one hook.
 
 ### customWalls
 
@@ -4672,6 +4920,25 @@ A `<civ>` child that civs.xml's parser FUN_0052A590 does not know reaches 0x52BB
 case ignored, calls the handler with the civ, its ID and the text, and goes to the next child; an unknown name runs
 the stock path. `civFirstTC` registers `firstTC` and `sharedBuildLimit` registers `SettlerProtoName`, in `kFeatures`
 order, so whichever comes first installs the hook and the other only adds its name.
+
+### Tech tags
+
+`techtags.cpp` owns the tech parser's loop over the techtree's nodes at 0x61FDB8 (`mov esi,eax / mov ecx,esi / mov
+edx,[ecx+18h]`, 7 bytes, re-executed; EAX = the node; continue at 0x61FDBF, `cmp edx,-1`). `OnTechNode(observer)`
+calls each observer with every node (dataLint keeps it to name the tech of an effect it reports), and
+`AddTechTagHandler(name, handler)` walks the children of each `<Tech>` node (`[node+8]` an array of nodes, `[node+0Ch]`
+their count; a child's name `[[child+4]+18h][[child+18h]]`, case ignored) and calls the handler with the `<Tech>`'s
+`name` attribute (0x598F37) and the child's text, the BString `[child+14h]`, before the parser reads that tech.
+`politicianEnablesTech` registers `PoliticianEnablesTech` and `Icon`.
+
+The parser itself dispatches a tech's children through two tag tables built by FUN_00623702 and ignores a name in
+neither, with no message (REA, `docs/engine-symbols.md`): an added tag is read only by its
+handler here. Adding the name to the parser's own definition table (its tail 0x62391D, as `prototags` does for protos)
+would also accept it inside `<Prereqs>` and `<Effects>` (0x6203A2), which is why the walk is done at the loop instead.
+
+**Why it is safe.** `pushad` / `popad` keep every register around the stdcall dispatch; the flags are written by the
+`cmp` that follows. No branch lands in the 7 bytes (they were dataLint's site; capstone scan). Data load only: once per
+`<Tech>`, a walk over its 10 to 30 children with a name compare each.
 
 ### trainBatchSize
 
@@ -5147,7 +5414,7 @@ in a clean game.
 
 Reads the exe's own failure exits while the data loads: the `<UnitType>` handler's 0x5FCB61, the proto tag find at 0x5F62A2, the
 `<ProtoAction>` look-up at 0x5FA202, and in the effect parse the false setData at 0x6205E9 and the unknown type at 0x65BC56, plus the
-shared action tag, ModifyType and Data subtype hooks. The tech parser's loop 0x61FDB8 keeps the current `<Tech>` node to name it,
+shared action tag, ModifyType and Data subtype hooks. The shared `<Tech>` node hook (`OnTechNode`, [tech tags](#tech-tags)) keeps the current `<Tech>` node to name it,
 and the summary is written when the call 0x61FE4A returns.
 
 **Why it is safe.** Each hook re-executes what it replaces and only records a name, and all of that code runs while the data loads.

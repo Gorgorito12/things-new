@@ -51,6 +51,9 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   profile hc [civ | file]    list the saved single-player home cities and their civs; with a civ
                              or a file name, make it the one a skirmish uses (LastSelectedSPHC;
                              the game must be closed)
+  profile isolate [off]      give the bed its own My Games folder (a copy of the shared one, named
+                             after the bed, through string 42265 of every string table in the bed),
+                             so a test may change its profile while other copies run; off goes back
   profile video [restore]    the video settings of the shared profile (resolution, window mode,
                              antialiasing, shadows) against the expected ones; restore writes the
                              expected ones back (the game must be closed)
@@ -59,8 +62,13 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
                              the files it replaces as *.lang-orig; restore puts those back. The
                              game reads the tables once, at startup: close it first
   skirmish [--map]          from the main menu to a running skirmish with posted clicks only (no
-                             cursor, no focus); --map plays the map `map uhcsheep ...` wrote
+                             cursor, no focus); --map plays the map `map uhcsheep ...` wrote. Each
+                             screen is recognised by its buttons' colour before a click (points
+                             scaled to the client size); an unknown screen stops it with
+                             <bed>\\skirmish-fail-<step>.png instead of a blind click
   click <x> <y> | rclick <x> <y> [right]   posted click / real click (moves the cursor)
+  hover <x> <y>              rest the cursor on a client point, so its tooltip shows: a posted move in
+                             a copy with multipleInstances background, else the real cursor
   drag <x1> <y1> <x2> <y2>   real left drag (box selection), client coordinates
   wheel <x> <y> <steps> [--hold key]  real mouse wheel at a client point (+ zooms in, - out), a key held
   front                      keep the game window above every other window and focus it
@@ -377,6 +385,75 @@ def show_profile(bed):
           f"  AI    {bed / p['ai']}\n  maps  {bed / p['rm']}\n  games {p['my_games']}")
 
 
+ISOLATE_MARK = ".profile-isolated"  # in the bed: the My Games folder string 42265 had before `profile isolate`
+
+
+def bed_string_tables(bed):
+    """Every copy of the TAD string table in the bed: data\\stringtabley.xml, its saved translations
+    (stringtabley.xml.*) and the launcher's translations\\*\\stringtabley.xml, so that a language swap
+    keeps the bed's own My Games folder."""
+    files = sorted((bed / "data").glob("stringtabley.xml*"))
+    if (bed / "translations").is_dir():
+        files += sorted((bed / "translations").glob("*/stringtabley.xml"))
+    return [f for f in files if f.is_file() and not f.name.endswith(".bak")]
+
+
+def set_lua_folder(path, folder):
+    """Writes folder as string 42265 (cStringLuaFolder, the My Games folder) of one string table, keeping
+    its encoding, BOM and line ends; returns the old value, or None when the table has no such string."""
+    raw = path.read_bytes()
+    utf16 = raw[:2] in (b"\xff\xfe", b"\xfe\xff")
+    text = raw.decode("utf-16" if utf16 else "utf-8")
+    pattern = re.compile(r"""(_locID\s*=\s*['"]42265['"][^>]*>)([^<]*)(<)""")
+    m = pattern.search(text)
+    if not m:
+        return None
+    if m.group(2) != folder:
+        text = text[:m.start(2)] + folder + text[m.end(2):]
+        body = text.encode("utf-16-le" if raw[:2] == b"\xff\xfe" else "utf-16-be") if utf16 else text.encode("utf-8")
+        path.write_bytes((raw[:2] if utf16 else b"") + body)
+    return m.group(2)
+
+
+def profile_isolate(bed, off=False):
+    """Gives the bed a My Games folder of its own (a copy of the shared one), so that a test can change
+    its profile (home city, resolution, model detail) while other copies run; `off` puts the shared
+    folder back. The game reads the folder from string 42265 of its string table when it starts."""
+    if bed_pid():
+        sys.exit("testbed: close the game first; it reads the My Games folder only when it starts")
+    mark = bed / ISOLATE_MARK
+    tables = bed_string_tables(bed)
+    if off:
+        if not mark.exists():
+            sys.exit(f"testbed: {bed} is not isolated")
+        shared = mark.read_text(encoding="utf-8").strip()
+        for table in tables:
+            set_lua_folder(table, shared)
+        mark.unlink()
+        print(f"testbed: {bed} uses the shared folder {shared!r} again; its own copy is kept")
+        return
+    shared = bed_profile(bed)["my_games"]
+    if mark.exists():
+        print(f"testbed: {bed} is already isolated: {shared}")
+        return
+    raw = (bed / "data" / "stringtabley.xml").read_bytes()
+    text = raw.decode("utf-16" if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8", "replace")
+    m = re.search(r"""_locID\s*=\s*['"]42265['"][^>]*>([^<]*)<""", text)
+    if not m:
+        sys.exit(f"testbed: no string 42265 in {bed}\\data\\stringtabley.xml")
+    old = m.group(1)
+    own = old.rstrip("\\") + f" {bed.name}\\"
+    target = DOCUMENTS / own.rstrip("\\")
+    if not target.exists():
+        shutil.copytree(shared, target, ignore=shutil.ignore_patterns("Screenshots", "*.log"))
+        print(f"testbed: copied {shared} -> {target}")
+    for table in tables:
+        set_lua_folder(table, own)
+    mark.write_text(old + "\n", encoding="utf-8")
+    _PROFILES.pop(bed, None)
+    print(f"testbed: {bed} now uses {target} ({len(tables)} string tables changed; `profile isolate off` undoes it)")
+
+
 def profile_backup(bed):
     users = my_games(bed) / "Users3"
     stamp = time.strftime("%Y%m%d")
@@ -624,17 +701,127 @@ def launch(bed):
         lock.unlink(missing_ok=True)
 
 
-# Client coordinates at 1920 x 1080: main menu Single Player, Skirmish, the home city's Play, the
-# setup's Play, and the test map in the setup's map list.
-SKIRMISH_CLICKS = ((257, 803, 5), (689, 803, 12), (181, 1029, 10))
-SKIRMISH_MAP = (1440, 403, 3)
+# The skirmish route. Points are client coordinates at 1920 x 1080; the menus scale with the client
+# on both axes (2560 x 1600 and 2560 x 1440 put the same buttons at the same fractions), so every
+# point is scaled to the real client size. Clicks: main menu Single Player, its submenu's Skirmish,
+# the home city's Play, the test map in the setup's map list, the setup's Play.
+SKIRMISH_SINGLE = (257, 803)
+SKIRMISH_SKIRMISH = (689, 803)
+SKIRMISH_HC_PLAY = (181, 1029)
+SKIRMISH_MAP = (1440, 403)
 SKIRMISH_PLAY = (477, 979)
+# Each screen is told by points that must show a button's gold face (about RGB 157,103,1; 183,119,1
+# under the cursor), sampled beside the button text. Checked 2026-11-20 in WoL 1.2.0e: Single Player,
+# Multiplayer, Help and Tools and Exit (Learn to Play is not used: the campaign pack hides it);
+# the submenu's Skirmish; the home city's Play, Back and Manage Home Cities; the setup's Play and Back.
+SKIRMISH_SCREENS = (
+    ("submenu", ((110, 803), (110, 860), (110, 916), (110, 991), (500, 803)), ()),
+    ("menu", ((110, 803), (110, 860), (110, 916), (110, 991)), ((500, 803),)),
+    ("homecity", ((90, 1030), (410, 1030), (130, 767)), ((110, 991),)),
+    ("homecity-noplay", ((410, 1030), (130, 767)), ((90, 1030), (110, 991))),
+    ("setup", ((350, 979), (790, 979)), ((110, 803),)),
+)
+
+
+def _gold(rgb):
+    r, g, b = rgb
+    return b < 30 and 125 <= r <= 205 and 0.55 <= g / max(r, 1) <= 0.72
+
+
+def _box(w, px, x, y, rx=8, ry=4):
+    s, n = [0, 0, 0], 0
+    for yy in range(y - ry, y + ry + 1):
+        for xx in range(x - rx, x + rx + 1):
+            i = (yy * w + xx) * 4
+            s[0] += px[i + 2]; s[1] += px[i + 1]; s[2] += px[i]; n += 1
+    return tuple(v // n for v in s)
+
+
+def menu_screen():
+    """(name, colours) of the pre-game screen on show, by SKIRMISH_SCREENS; name None if unknown."""
+    w, h, px = client_pixels()
+    if w < 640 or h < 480:
+        return None, ()
+    sample = lambda p: _box(w, px, p[0] * w // 1920, p[1] * h // 1080)
+    for name, gold, dark in SKIRMISH_SCREENS:
+        colours = [sample(p) for p in gold]
+        if all(map(_gold, colours)) and not any(_gold(sample(p)) for p in dark):
+            return name, colours
+    return None, ()
+
+
+def scaled_click(point):
+    hwnd = window()
+    rc = RECT()
+    user32.GetClientRect(hwnd, ctypes.byref(rc))
+    posted_click(point[0] * rc.right // 1920, point[1] * rc.bottom // 1080)
+
+
+def skirmish_fail(bed, step, why):
+    path = bed / f"skirmish-fail-{step}.png"
+    try:
+        shot(str(path), 2)
+    except SystemExit:
+        pass
+    sys.exit(f"testbed: skirmish route stopped at {step}: {why} (screen saved as {path})")
+
+
+def wait_screen(bed, names, timeout, step, settle=False):
+    """Waits until one of these screens shows (and, with settle, holds still over two captures 1 s
+    apart: the main menu slides in, and a click during that lands elsewhere). Returns its name."""
+    deadline, last = time.time() + timeout, (None, ())
+    while time.time() < deadline:
+        check_alive(f"the {step} screen")
+        name, colours = menu_screen()
+        if name in names:
+            if not settle:
+                return name
+            if name == last[0] and all(abs(a - b) <= 12 for c1, c2 in zip(colours, last[1])
+                                       for a, b in zip(c1, c2)):
+                return name
+        last = (name, colours)
+        time.sleep(1)
+    skirmish_fail(bed, step, f"expected {' or '.join(names)}, saw {menu_screen()[0] or 'an unknown screen'}")
+
+
+def click_through(bed, point, here, there, timeout, step, tries=3):
+    """Clicks `point` on screen `here` until a screen of `there` shows; never clicks elsewhere."""
+    for _ in range(tries):
+        name = wait_screen(bed, set(here) | set(there), 30, step)
+        if name in there:
+            return name
+        scaled_click(point)
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            check_alive(f"the {step} screen")
+            name = menu_screen()[0]
+            if name in there:
+                return name
+            time.sleep(0.5)
+    skirmish_fail(bed, step, f"{tries} clicks did not lead to {' or '.join(there)}")
+
+
+def skirmish_to_setup(bed):
+    """Main menu -> Single Player -> Skirmish -> the home city's Play -> the setup screen, each
+    screen checked before its click (also used by mapsweep.py)."""
+    wait_screen(bed, {"menu", "submenu"}, 90, "main-menu", settle=True)
+    click_through(bed, SKIRMISH_SINGLE, {"menu"}, {"submenu"}, 5, "single-player")
+    name = click_through(bed, SKIRMISH_SKIRMISH, {"submenu"}, {"homecity", "homecity-noplay"}, 20, "skirmish")
+    if name == "homecity-noplay":
+        skirmish_fail(bed, "homecity", "the home city's Play is grey: no home city chosen "
+                                       "(run `profile hc <Civ>` with the game closed)")
+    wait_screen(bed, {"homecity"}, 30, "homecity", settle=True)
+    time.sleep(3)  # after a game the home city screen ignores a click that comes too early
+    click_through(bed, SKIRMISH_HC_PLAY, {"homecity"}, {"setup"}, 15, "homecity-play")
+    wait_screen(bed, {"setup"}, 30, "setup", settle=True)
 
 
 def skirmish(bed, test_map=False):
     """From the main menu to a running skirmish with posted clicks only: no cursor, no focus, so it
-    runs behind other windows and beside another copy. test_map: the map `map uhcsheep ...` wrote,
-    copied to My Games for the start and removed after it."""
+    runs behind other windows and beside another copy. Each screen is recognised by the colour of
+    its buttons before a click, and a click is repeated until the next screen shows; an unknown
+    screen stops the route with a screenshot instead of a blind click. test_map: the map
+    `map uhcsheep ...` wrote, copied to My Games for the start and removed after it."""
     folder = my_games(bed) / bed_profile(bed)["rm"]
     copies = []
     lock = start_lock()
@@ -643,11 +830,13 @@ def skirmish(bed, test_map=False):
             for ext in (".xs", ".xml"):
                 copies.append(folder / f"uhc-sheep{ext}")
                 shutil.copy2(bed / bed_profile(bed)["rm"] / f"uhcsheep{ext}", copies[-1])
-        for x, y, pause in SKIRMISH_CLICKS + ((SKIRMISH_MAP,) if test_map else ()):
-            posted_click(x, y)
-            time.sleep(pause)
+        skirmish_to_setup(bed)
+        if test_map:
+            scaled_click(SKIRMISH_MAP)
+            time.sleep(3)
+            wait_screen(bed, {"setup"}, 15, "setup-map", settle=True)
         before = game_time(process()) or 0
-        posted_click(*SKIRMISH_PLAY)
+        scaled_click(SKIRMISH_PLAY)
         proc = process()
         wait_until(lambda: (game_time(proc) or 0) > before + 2000, 180, 1, "the skirmish to start")
     finally:
@@ -1071,6 +1260,28 @@ def shot(path, scale=2):
     print(f"{path}: window {w}x{h}, PrintWindow {'ok' if ok else 'FAILED'}, saved at 1/{scale}")
 
 
+def client_pixels(hwnd=None):
+    """The client area as (width, height, BGRA bytes), with PrintWindow like `shot` (it works while
+    the window is covered or in the background)."""
+    hwnd = hwnd or window()
+    rc = RECT()
+    user32.GetClientRect(hwnd, ctypes.byref(rc))
+    w, h = rc.right, rc.bottom
+    screen = user32.GetDC(None)
+    mem = gdi32.CreateCompatibleDC(screen)
+    bmp = gdi32.CreateCompatibleBitmap(screen, w, h)
+    gdi32.SelectObject(mem, bmp)
+    user32.PrintWindow(hwnd, mem, 3)  # PW_CLIENTONLY | PW_RENDERFULLCONTENT
+    header = struct.pack("<IiiHHIIiiII", 40, w, -h, 1, 32, 0, 0, 0, 0, 0, 0)
+    bmi = ctypes.create_string_buffer(header + b"\0" * 16)
+    buf = ctypes.create_string_buffer(w * h * 4)
+    gdi32.GetDIBits(mem, bmp, 0, h, buf, bmi, 0)
+    gdi32.DeleteObject(bmp)
+    gdi32.DeleteDC(mem)
+    user32.ReleaseDC(None, screen)
+    return w, h, buf.raw
+
+
 def ffmpeg_path():
     """ffmpeg for `record`: UHC_FFMPEG, then PATH, then C:\\Tools\\ffmpeg (a static build)."""
     for candidate in (os.environ.get("UHC_FFMPEG"), shutil.which("ffmpeg"), r"C:\Tools\ffmpeg\ffmpeg.exe"):
@@ -1477,13 +1688,18 @@ def test_monitor():
 
 
 def place_window(hwnd):
-    """Moves the game window to a corner of the test monitor, by the last character of the copy's folder:
-    2 top right, 3 bottom left, 4 bottom right, anything else top left, so that four copies form a grid."""
+    """Moves the game window to a place on the test monitor, by the last character of the copy's folder:
+    2 top right, 3 bottom left, 4 bottom right, 5 centre, 6 top centre, 7 bottom centre, 8 middle left,
+    9 middle right, anything else top left. Windows past the four corners overlap others; that is fine,
+    since `shot` and `record` use PrintWindow and clicks are posted to the window."""
     device, _primary, (left, top, right, bottom) = test_monitor()
     rc = RECT()
     user32.GetWindowRect(hwnd, ctypes.byref(rc))
-    x = right - (rc.right - rc.left) if BED.name[-1] in "24" else left
-    y = bottom - (rc.bottom - rc.top) if BED.name[-1] in "34" else top
+    # (share of the free width, share of the free height) for each last character
+    fx, fy = {"2": (1, 0), "3": (0, 1), "4": (1, 1), "5": (0.5, 0.5), "6": (0.5, 0), "7": (0.5, 1),
+              "8": (0, 0.5), "9": (1, 0.5)}.get(BED.name[-1], (0, 0))
+    x = left + int(max(0, (right - left) - (rc.right - rc.left)) * fx)
+    y = top + int(max(0, (bottom - top) - (rc.bottom - rc.top)) * fy)
     if (rc.left, rc.top) == (x, y):
         return
     # SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE
@@ -1753,6 +1969,8 @@ def main(argv):
             profile_hc(bed, " ".join(args[1:]))
         elif args[:1] == ["video"]:
             profile_video(bed, args[1:2] == ["restore"])
+        elif args[:1] == ["isolate"]:
+            profile_isolate(bed, args[1:2] == ["off"])
         else:
             show_profile(bed)
     elif cmd == "lang":
@@ -1845,6 +2063,8 @@ def main(argv):
         skirmish(bed, "--map" in args)
     elif cmd == "click":
         posted_click(int(args[0]), int(args[1]))
+    elif cmd == "hover":
+        hover(int(args[0]), int(args[1]))
     elif cmd == "rclick":
         real_click(int(args[0]), int(args[1]), len(args) > 2 and args[2] == "right")
     elif cmd == "drag":

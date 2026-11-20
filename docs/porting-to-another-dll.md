@@ -13,11 +13,11 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Game files | `bufferedFileReads`, `fastVertexFill`, `fastLastInLine`, `rendererOption`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
 | Population | `decimalPopulation` | [population](porting-code/population.md) |
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
-| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `ageUpBuildings`, `politicianPlacesFix` | [civs](porting-code/civs.md) |
+| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon`, `autoScout` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
@@ -837,8 +837,9 @@ Code: [data](porting-code/data.md#datalint). It needs `AddActionTagHandler`, `On
     proto's set: recorded, then `0x5FC891`; an existing action continues at `0x5FA208`;
   - the `call` at `0x61FE4A` (`E8 B3 FE FF FF`, of the tech parser `0x61FD02`), the last thing the data load reads: the
     hook swaps only the return address, calls the parser, then writes the summary and returns;
-  - a 7-byte `jmp` at `0x61FDB8` (`8B F0 8B CE 8B 51 18`), the tech parser's loop over the `<Tech>` nodes: keep the node
-    (EAX) in `g_uhcLintTech`, re-execute the three instructions, continue at `0x61FDBF`;
+  - the shared `<Tech>` node hook (`OnTechNode` in `src/techtags.*`): a 7-byte `jmp` at `0x61FDB8`
+    (`8B F0 8B CE 8B 51 18`), the tech parser's loop over the tree's nodes, which calls each observer with the node
+    (EAX), re-executes the three instructions and continues at `0x61FDBF`; dataLint keeps the node to name the tech;
   - a 6-byte `jmp` at `0x6205E9` (`0F 84 DB 18 00 00`: `je 621ECAh`, setData false in the effect parse): recorded with
     the node EDI, then `0x621ECA`; otherwise `0x6205EF`. This range is inside `TechRenameEffectParse`, which
     `techRenameEffect` verifies, so dataLint is applied after it;
@@ -1568,6 +1569,29 @@ Code: [civs](porting-code/civs.md#politicianplacesfix).
   `TechStatus obtainable` lines in a civ's `Age0` tech): without the key the age-up click crashes at `0x81A80C`; with
   it the dialog shows four.
 
+### politicianEnablesTech
+
+Code: [civs](porting-code/civs.md#politicianenablestech), and the shared hooks
+[tech tags](porting-code/helpers.md#tech-tags) and the place observer of
+[politicianPlacesFix](porting-code/civs.md#politicianplacesfix).
+
+- **Data:** the shared `<Tech>` node hook at `0x61FDB8` (the dataLint row above): for each `<Tech>` node, walk its
+  children (`[node+8]`, count `[node+0Ch]`; a child's name `[[child+4]+18h][[child+18h]]`, its text the BString
+  `[child+14h]`) and keep the `<PoliticianEnablesTech>` texts and every tech's `<Icon>` text (the tech record keeps
+  only a texture handle at `[NodeData+14h]`). The parser itself ignores a child it does not know. Resolve the names
+  with `0x600BE1` (`thiscall(db, const char*)`) at the first dialog.
+- **Dialog:** in the politicianPlacesFix hook at `0x81A45A`, before the builder fills place n = `[ebx+26Ch]`
+  (EBX = the dialog, EDI = the tech status): find the place's gadgets by name (`0xAB7C2F` on the dialog's root gadget
+  `0x404296([dlg+148h])`). For a tagged politician hide `Poli%dPortrait` and `Poli%dDescription` (`0x448F13`), set
+  this key's portrait texture from the politiciandata record (`[dlg+18Ch]`, 14h-byte entries, `+0` tech ID, `+4` the
+  path; `0x638823(gadget, BString*)`) and its texture coordinates (vtable `+D8h`(0, 0, u, v)), put the shorter
+  description box's handle in `[dlg+210h+4n]` so that the builder fills it, and fill each tech's name (`0x58EA52` of
+  `[NodeData+8]`), help text (`[gadget+68h]`, the rollover builder `0x4C737C(text, status, player, unit, 1, 0, 1, 1)`)
+  and icon (`0x638823` with the `<Icon>` path). Otherwise put the stock description handle back and show the stock
+  gadgets. The tech status: `0x4C5394([world+7Ch], player ID)`, entry `0x4804B3(list, tech ID)`.
+- **Beside another DLL:** WoL's DLL rewrites the description text at `0x81A5CB`; the handle swap keeps working, as
+  the builder reads the handle at `0x81A596`, before that.
+
 ### transformInventory
 
 Code: [techs](porting-code/techs.md#transforminventory).
@@ -1670,6 +1694,18 @@ Code: [buildings](porting-code/buildings.md#donotqueue). It needs `AddProtoTagHa
 - **Site:** the `call` at `0x9CE81A`, of `0x494894`.
 - **Test:** the tag on a unit: with others queued, it goes first and comes out first.
 
+### researchOnTheMove
+
+Code: [buildings](porting-code/buildings.md#researchonthemove). It needs `RequestAbstractUnitType`
+([extra abstract unit types](#extra-abstract-unit-types)).
+
+- **Site:** the `call` at `0x487E1B` (`E8 6B FF FF FF`, then `cmp al,1 / setne al`), of `0x487D8B` "the queue holds the
+  unit", inside `0x487DED` "can take a move", which the unit's vtable `+8Ch` (`0x487E74`) asks for the order code and
+  the leash, for every unit every tick. Verify only: the head of `0x487D8B` (`8B 41 24 85 C0 74 13 8A 40 60 3C 0D`).
+  Leave the four other callers of `0x487D8B` alone (`0x672427`, `0x898A7B`, `0x9AD19C`, `0x9CE3BC`).
+- **Test:** a unit of the type with a research queued walks when ordered, and the research goes on; without the type
+  it stands still.
+
 ### nextResearchFree
 
 Code: [buildings](porting-code/buildings.md#nextresearchfree). It needs `AddTechSubtype`, in the
@@ -1700,6 +1736,38 @@ that key makes free is not asked of this one.
   alive slot of the unit vtable.
 - **Test:** the tags on a building, as in the [modding guide](modding-guide.md#researchgrants): its row counts points, a
   research takes one and costs its share, and a building with a Time factor researches that much slower.
+
+### shipTechLimit
+
+Code: [buildings](porting-code/buildings.md#shiptechlimit). It needs `AddCivTagHandler`, `AddWorldTick`,
+`savedmarkers.h` (stat 69h), and four shared hooks in the [helpers](porting-code/helpers.md#research-payment):
+`AddResearchPayer` (a payer that never claims, to count each paid research) and `AddResearchRefundObserver`, the
+[can-research test](porting-code/helpers.md#can-research-test) and the [tech rollover](porting-code/helpers.md#tech-rollover).
+It comes after `researchGrants`.
+
+- **Refund sites:** the `call`s of `0x8D7004` (the refund of a cost) at `0x9E6167` (the Research action's cancel, state
+  13h, cost `[action+74h]`) and `0x9D56B5` (CommandResearch, `[action+7Ch]`). `[action+64h]` is the player ID and
+  `[action+68h]` the tech ID in both.
+- **Can-research head:** a 5-byte `jmp` at `0x4C6968` (`55 8B 6C 24 08`: `push ebp / mov ebp,[esp+8]`), continue at
+  `0x4C696D`; `bool thiscall(status, unit)`, `ret 4`. A refused tech returns 0 there.
+- **Tech rollover:** the `call` at `0x4622C5` of the builder `0x4C737C` (shared with `researchGrants`' price).
+- **Read only:** `0x44EFFF` (a cost entry: Ships is 6), `0x94ADAA` (a player's status of a tech), the alive slot of the
+  unit vtable.
+- **Test:** `<ShipTechLimit>3</ShipTechLimit>` on a civ, as in the [modding guide](modding-guide.md#shiptechlimit): the
+  fourth shipment tech is refused, a cancel gives the slot back, and a save keeps the count.
+
+### homeCityTechsInUnits
+
+Code: [buildings](porting-code/buildings.md#homecitytechsinunits). It needs the
+[can-research test](porting-code/helpers.md#can-research-test).
+
+- **Start site:** a 13-byte `jmp` at `0x9E67CE` (`6A 12 8B CE E8 8C 70 A6 FF 3C 01 74 EA`: the research start's refusal
+  of a HomeCity tech), continue at `0x9E67DB` (accepted) or `0x9E67C5` (refused). ESI = the tech's status, EBP = the
+  action.
+- **Gather site:** a 9-byte `jmp` at `0x9E6553` (`6A 1E 8B CB E8 07 73 A6 FF`: the Research update's test of
+  `CheckLandHCGatherPoint`), continue at `0x9E655C` with AL = the flag. EBX = the status.
+- **Test:** a card's tech in a council member's `<Tech>` rows, obtainable: it is researched, becomes active, and its
+  button goes away.
 
 ### customWalls
 
@@ -2002,6 +2070,15 @@ Code: [gathering](porting-code/gathering.md#resourcedebt).
   `0x4ED03E` (`0F 8B A6 BA 1B 00`). Check them against your DLL's gather hooks: WoL's gather code may already sit near the tick.
 - **The return addresses that have no floor** are constants in the helper: `0x4E0CFE`, `0x4C379D`, `0x4ED1F3`. A hook of yours on
   those three calls changes nothing as long as the stock return address stays on the stack.
+
+### truckAttackResourceFix
+
+Code: [gathering](porting-code/gathering.md#truckattackresourcefix).
+
+- **Site:** a 6-byte `jmp` at `0x9EC635` (`8B 97 B4 00 00 00`, `mov edx,[edi+0B4h]`) in the TruckAttack hit; the hook goes on
+  at `0x9EC63B` (stock) or `0x9EC64D` (the damage, skipping the inventory reset). WoL's DLL does not patch that range.
+- **Test:** an enemy `MonsterTruckA` placed beside a Mill: with the key the Mill keeps its 999 food and villagers gather
+  there; without it, the Mill is empty and villagers stand idle beside it.
 
 ### displayedRange
 

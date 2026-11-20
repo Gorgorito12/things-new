@@ -18,6 +18,7 @@ Contents:
 - [minUIStats](#minuistats)
 - [playerIcon](#playericon)
 - [autoScout](#autoscout)
+- [transformChecks](#transformchecks)
 
 ## abilitySlots
 
@@ -419,7 +420,7 @@ Contract: [nativePreview](../porting-to-another-dll.md#nativepreview).
 
 Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `IsA` `0x44D7FA` (105 B), `PlayerProtoEntry` `0x45311B` (8 B), `NpSocketPanelSkip` `0x454354` (4 B), `NpGate` `0x46193E` (15 B), `NpProto` `0x461BBD` (11 B), `NpCollectSkip` `0x461C3F` (4 B), `NpTechLayout` `0x4620B9` (12 B), `NpTechBuild` `0x462172` (3 B), `NpButton` `0x462317` (13 B), `NpLayoutNext` `0x46268A` (4 B), `NpCollect` `0x4C58AD` (12 B), `NpCollectAppend` `0x4C59F5` (7 B), `NpTechPrereqAge` `0x4C5DDA` (8 B), `NpTechNoPrereq` `0x4C7330` (6 B), `ProtoByName` `0x5A2346` (32 B), `NpSocketPanel` `0x645FE7` (15 B), `NpSubCiv` `0x646124` (9 B), `NpSubCivSkip` `0x646163` (5 B), `SocketOccupant` `0xA01A20` (14 B).
+Sites: `IsA` `0x44D7FA` (105 B), `PlayerProtoEntry` `0x45311B` (8 B), `NpSocketPanelSkip` `0x454354` (4 B), `NpGate` `0x46193E` (15 B), `NpProto` `0x461BBD` (11 B), `NpCollectSkip` `0x461C3F` (4 B), `NpTechLayout` `0x4620B9` (12 B), `NpTechBuild` `0x462172` (3 B), `NpLayoutNext` `0x46268A` (4 B), `NpCollect` `0x4C58AD` (12 B), `NpCollectAppend` `0x4C59F5` (7 B), `NpTechPrereqAge` `0x4C5DDA` (8 B), `NpTechNoPrereq` `0x4C7330` (6 B), `ProtoByName` `0x5A2346` (32 B), `NpSocketPanel` `0x645FE7` (15 B), `NpSubCiv` `0x646124` (9 B), `NpSubCivSkip` `0x646163` (5 B), `SocketOccupant` `0xA01A20` (14 B).
 
 ### src/features/nativepreview.cpp
 
@@ -450,7 +451,8 @@ Sites: `IsA` `0x44D7FA` (105 B), `PlayerProtoEntry` `0x45311B` (8 B), `NpSocketP
 // - 0x4620B9: a tech skips the "can research here" and status tests but keeps the stock
 //   prerequisite test (0x4C7330, 0x4C5DDA): one waiting for another tech stays hidden, and one
 //   waiting for an age gets its age mark, as on a real Trading Post;
-// - 0x462317: every button of the preview is disabled and gets no command.
+// - 0x462317 (the shared button hook, panelbuttons.*): every button of the preview is disabled and gets
+//   no command.
 //
 // A socket gets a preview when its proto carries NativeSocket (and, with "tagged", the tag
 // <NativePreview/>), names a <SubCiv>, and no building of its socket type stands on it (0xA01A20,
@@ -466,6 +468,7 @@ Sites: `IsA` `0x44D7FA` (105 B), `PlayerProtoEntry` `0x45311B` (8 B), `NpSocketP
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
+#include "../panelbuttons.h"
 #include "../patch.h"
 #include "../prototags.h"
 #include "../unittypes.h"
@@ -479,7 +482,6 @@ void UhcNpGateHook();
 void UhcNpProtoHook();
 void UhcNpCollectHook();
 void UhcNpTechLayoutHook();
-void UhcNpButtonHook();
 }
 
 namespace {
@@ -716,6 +718,17 @@ void LogPreview(const char* unit, const Preview& preview, const char* database, 
            g_buildingName.c_str());
 }
 
+// In a preview every button is disabled (its age mark stays as the stock code set it) and has no command for a
+// click or a shift-click.
+void PreviewButton(const uhc::PanelButton& button) {
+  if (g_uhcNpActive == 0) {
+    return;
+  }
+  button.State() = 1;
+  button.Click()[0] = 0;
+  button.ShiftClick()[0] = 0;
+}
+
 }  // namespace
 
 extern "C" {
@@ -807,12 +820,12 @@ Outcome ApplyNativePreview(const Config& config) {
                  {&sites::kNpSocketPanel, &sites::kNpSocketPanelSkip, &sites::kNpSubCiv, &sites::kNpSubCivSkip,
                   &sites::kNpGate, &sites::kNpProto, &sites::kNpCollect, &sites::kNpCollectAppend,
                   &sites::kNpCollectSkip, &sites::kNpTechLayout, &sites::kNpTechBuild, &sites::kNpLayoutNext,
-                  &sites::kNpTechNoPrereq, &sites::kNpTechPrereqAge, &sites::kNpButton,
+                  &sites::kNpTechNoPrereq, &sites::kNpTechPrereqAge,
                   &sites::kSocketOccupant, &sites::kIsA, &sites::kPlayerProtoEntry, &sites::kProtoByName})) {
     return Outcome::kFailed;
   }
   if (!RequestAbstractUnitType("NativeSocket", &g_nativeSocketType) || !OnDatabaseLoad(&ForgetData) ||
-      !AddProtoTagHandler("NativePreview", &ReadTag)) {
+      !AddProtoTagHandler("NativePreview", &ReadTag) || !AddPanelButtonFilter(&PreviewButton)) {
     return Outcome::kFailed;
   }
   struct Jump {
@@ -824,7 +837,6 @@ Outcome ApplyNativePreview(const Config& config) {
       {sites::kNpSocketPanel, &UhcNpSocketPanelHook, 12}, {sites::kNpSubCiv, &UhcNpSubCivHook, 7},
       {sites::kNpGate, &UhcNpGateHook, 9},                {sites::kNpProto, &UhcNpProtoHook, 9},
       {sites::kNpCollect, &UhcNpCollectHook, 6},          {sites::kNpTechLayout, &UhcNpTechLayoutHook, 7},
-      {sites::kNpButton, &UhcNpButtonHook, 7},
   };
   for (const Jump& jump : jumps) {
     if (!WriteJmp(jump.site.va, reinterpret_cast<const void*>(jump.hook), jump.size)) {
@@ -873,7 +885,6 @@ collectSkip     dd 00461C3Fh    ; the collection loop's next entry
 techNext        dd 004620C0h    ; call 4C6968h: can this unit research the tech
 techBuild       dd 00462172h    ; the tech button's build-up (rollover, icon, cost)
 layoutNext      dd 0046268Ah    ; the layout's next entry
-buttonNext      dd 0046231Eh    ; jge 69700Dh: the grid is full
 
 .code
 
@@ -1008,22 +1019,6 @@ hidden:
     jmp layoutNext
 UhcNpTechLayoutHook ENDP
 
-; 0x462317: mov ebx,[esp+1Ch] / cmp ebx,6 (7 B), where every grid button joins before it is placed.
-; In a preview the button is disabled ([esp+24h] = 1; its age mark [esp+6Ch] stays as the stock
-; code set it) and has no command for a click or a shift-click (the strings at [esp+1C0h] and
-; [esp+3C0h]). The flags of the stolen cmp reach the jge at the continuation.
-UhcNpButtonHook PROC
-    TRACE_ONCE "nativePreview button (0x462317)"
-    cmp g_uhcNpActive, 0
-    je stock
-    mov dword ptr [esp+24h], 1
-    mov byte ptr [esp+1C0h], 0
-    mov byte ptr [esp+3C0h], 0
-stock:
-    mov ebx, dword ptr [esp+1Ch]
-    cmp ebx, 6
-    jmp buttonNext
-UhcNpButtonHook ENDP
 
 END
 ```
@@ -2388,7 +2383,8 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 //   tags as the data writes them (<NumberOfShots>, <NumberProjectiles>: unitinfo.h, Shots), or with
 //   projectiles="combat" as combat fires them (numberOfShots and its "projectiles" option). The multipliers lose the
 //   zeros that end their decimals ("1.50x" is "1.5x"; multiplierZeros="keep" keeps them), and each attack row's help
-//   text gets a line for its ROF and one for its projectiles (rofTip, projectilesTip) after the game's own lines.
+//   text gets a line for its ROF and one for its projectiles (rofTip, projectilesTip) after the game's own lines,
+//   whose parentheses around an icon or around the name after one go (tipParentheses="keep" keeps them).
 // - "[string:ID]" in a text, label or tip: that string of the game's string table, as the player's language has it
 //   (resolved when shown: "[string:68852]" is "Hitpoints" in the English table).
 // - <replace row="..." stock="a,b"/>: while that row shows, those original gadgets are hidden (the hit points and
@@ -3518,10 +3514,13 @@ struct BigPanel {
   std::wstring rofIcon;    // rofIcon="...": each attack row gets its ROF and this icon after its damage
   std::wstring projectilesIcon;  // projectilesIcon="...": shots x projectiles before the reload, when above 1
   bool trimZeros = true;   // multiplierZeros="keep" turns it off: "1.50x" written as "1.5x", "2.00x" as "2x"
+  // tipParentheses="keep" turns it off: the game's help text lines lose the parentheses around an icon and around
+  // the name right after one ("11 <icon> (Ranged) Damage" is "11 <icon> Ranged Damage")
+  bool unwrapIcons = true;
   // The attack rows' help text gets a line for the ROF and one for the projectiles ("%s": the number), each with
   // its icon, after the stock lines (damage, range and area, one per multiplier).
   std::wstring rofTip = L"Attacks every %s s";
-  std::wstring projectilesTip = L"%s projectiles before the reload";
+  std::wstring projectilesTip = L"%s projectiles";
 };
 
 std::vector<Row> g_rows;
@@ -3907,6 +3906,13 @@ bool LoadRows(const std::string& arg) {
         if (g_big.trimZeros && _stricmp(Trim(*zeros).c_str(), "drop") != 0) {
           uhc::Log(L"minUIStats: %ls: multiplierZeros=\"%hs\" is not drop or keep; drop used", g_file.c_str(),
                    zeros->c_str());
+        }
+      }
+      if (const std::string* parentheses = Attr(element, "tipparentheses")) {
+        g_big.unwrapIcons = _stricmp(Trim(*parentheses).c_str(), "keep") != 0;
+        if (g_big.unwrapIcons && _stricmp(Trim(*parentheses).c_str(), "drop") != 0) {
+          uhc::Log(L"minUIStats: %ls: tipParentheses=\"%hs\" is not drop or keep; drop used", g_file.c_str(),
+                   parentheses->c_str());
         }
       }
       for (const auto& [name, field] : {std::pair<const char*, std::wstring*>{"roftip", &g_big.rofTip},
@@ -4589,7 +4595,7 @@ std::wstring TrimMultipliers(const std::wstring& text) {
   return out;
 }
 
-// One help text line of the key: `format` with the number for its %s, then " (<icon>)" as the game's own lines end.
+// One help text line of the key: `format` with the number for its %s, then " <icon>" (no parentheses).
 std::wstring TipLine(const std::wstring& format, const std::wstring& number, const std::wstring& icon) {
   const size_t at = format.find(L"%s");
   if (format.empty() || at == std::wstring::npos) {
@@ -4597,9 +4603,51 @@ std::wstring TipLine(const std::wstring& format, const std::wstring& number, con
   }
   std::wstring line = ExpandStrings(format.substr(0, at) + number + format.substr(at + 2));
   if (!icon.empty()) {
-    line += L" (<icon=\"(16)(" + icon + L")\">)";
+    line += L" <icon=\"(16)(" + icon + L")\">";
   }
   return line;
+}
+
+// A help text without the parentheses around its icons, nor around the name right after an icon: the game's lines
+// "11 <icon> (Ranged) Damage" (string 42226, "%1s (%2s) Damage"), "1.5X Bonus Damage against <icon> (<color>Maneuver
+// Unit</color>)" (42229 and 42230, "... against %2s (%3s)") and "Resists 20% of Ranged (<icon>) Damage" (42223) read
+// "11 <icon> Ranged Damage", "... against <icon> Maneuver Unit" and "... of Ranged <icon> Damage". A pair is removed
+// only when it holds no other parenthesis and does not run past the line (the next "<ttf>").
+std::wstring UnwrapIcons(const std::wstring& text) {
+  static const std::wstring kOpen = L"<icon=\"";
+  std::wstring out = text;
+  for (size_t at = out.find(kOpen); at != std::wstring::npos; at = out.find(kOpen, at + 1)) {
+    const size_t end = out.find(L"\">", at);
+    if (end == std::wstring::npos) {
+      break;
+    }
+    const size_t after = end + 2;
+    size_t before = at;  // "(<icon>)": the icon alone in its pair
+    while (before > 0 && out[before - 1] == L' ') {
+      --before;
+    }
+    size_t close = after;
+    while (close < out.size() && out[close] == L' ') {
+      ++close;
+    }
+    if (before > 0 && out[before - 1] == L'(' && close < out.size() && out[close] == L')') {
+      out.erase(close, 1);
+      out.erase(before - 1, 1);
+      at = before - 1;
+      continue;
+    }
+    if (close < out.size() && close > after && out[close] == L'(') {  // "<icon> (name)": the name after the icon
+      const size_t shut = out.find(L')', close + 1);
+      const size_t line = out.find(L"<ttf>", close + 1);
+      const size_t nested = out.find(L'(', close + 1);
+      if (shut != std::wstring::npos && (line == std::wstring::npos || shut < line) &&
+          (nested == std::wstring::npos || nested > shut)) {
+        out.erase(shut, 1);
+        out.erase(close, 1);
+      }
+    }
+  }
+  return out;
 }
 
 // What starts each bulleted line of a help text the fill builds: 0x4C5076(text, line, 1, 0) puts "<ttf><ttb>" before
@@ -4625,6 +4673,9 @@ void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
     if (g_big.trimZeros) {
       row.value = TrimMultipliers(row.value);
       row.tip = TrimMultipliers(row.tip);
+    }
+    if (g_big.unwrapIcons) {
+      row.tip = UnwrapIcons(row.tip);
     }
     const std::wstring shown = StripMarkup(row.label);
     if (shown.find_first_not_of(L" :") == std::wstring::npos) {
@@ -5513,12 +5564,12 @@ Contract: [autoScout](../porting-to-another-dll.md#autoscout).
 
 Besides the core helpers, it needs: [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `UnitById` `0x44CC6D` (58 B), `AutoScoutIdle` `0x44F1A7` (8 B), `AutoScoutSetTactic` `0x4F7ECD` (10 B), `AutoScoutDoMove` `0x50E36A` (10 B), `AutoScoutCmdExecute` `0x7C8E49` (10 B), `AutoScoutTacticIndex` `0x948161` (8 B).
+Sites: `IsAbstractIndex` `0x44CAC4` (70 B), `UnitById` `0x44CC6D` (58 B), `IsBuilt` `0x44DDB4` (31 B), `AutoScoutIdle` `0x44F1A7` (8 B), `PlayerIsEnemy` `0x484D2D` (32 B), `UnitsNearPoint` `0x4A1C55` (248 B), `AutoScoutSetTactic` `0x4F7ECD` (10 B), `AutoScoutDoMove` `0x50E36A` (10 B), `AutoScoutCmdExecute` `0x7C8E49` (10 B), `AutoScoutTacticIndex` `0x948161` (8 B).
 
 ### src/features/autoscout.cpp
 
 ```cpp
-// autoScout [ScoutTactic [ReturnTactic]] [log]: a unit whose current tactic is ScoutTactic (default "AutoScout")
+// autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]: a unit whose current tactic is ScoutTactic (default "AutoScout")
 // explores the map on its own.
 //
 // The data decides who scouts: a unit gets the behaviour from a tactic of that name in its tactics file, and
@@ -5542,6 +5593,19 @@ Sites: `UnitById` `0x44CC6D` (58 B), `AutoScoutIdle` `0x44F1A7` (8 B), `AutoScou
 // - a scout's leash anchor [mgr+7Ch] follows it, so that a unit that stops scouting stays where it is.
 // Any other action (a fight, a flee) is left alone; the scout goes on once it is idle again.
 //
+// Danger (both on by default; `noAvoid` and `noBack` switch them off):
+// - avoid: each scan, the enemy buildings with a ranged attack (abstract index 2, 0x44CAC4; built, 0x44DDB4; their
+//   owner's stance toward the scout's player is enemy, 0x484D2D; the longest range of the proto's actions that deal
+//   ranged or siege damage) that stand on a cell the player sees now are remembered, by unit ID, until they die (after
+//   a load, a cell it has explored counts as seen, once). Blocks within range + 12 m of one are not targets, and a
+//   target whose straight line crosses one (or, for one the scout is in, goes deeper) comes after every clear target,
+//   unexplored or seen;
+// - back: a scout whose hit points [unit+64h] dropped since the last scan marks a danger circle for 120 s around the
+//   nearest hostile unit with an attack within 40 m (0x4A1C55; Gaia's count), or around itself, gives up its target and
+//   moves away from it (the same move order, taking over a stock flee or fight), out of its reach + 10 m (24 to 60 m),
+//   unless it is on a back-off less than 3 s old; then it goes on scouting. Blocks inside a danger circle are not
+//   targets either.
+//
 // The switch-off: the head of the command execute 0x7C8E49 (hooks/autoscout_hooks.asm), which the world update
 // runs for each command in turn, on every machine. A unit order (command type 0: move, attack, gather,
 // garrison; type 9: stop) from the unit's owner to a scout that is not inside another unit first puts it in its
@@ -5562,6 +5626,7 @@ Sites: `UnitById` `0x44CC6D` (58 B), `AutoScoutIdle` `0x44F1A7` (8 B), `AutoScou
 #include <map>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "../features.h"
@@ -5580,6 +5645,16 @@ constexpr std::uint32_t kScanMs = 500;     // game time between scans
 constexpr std::uint32_t kTargetMs = 90000; // a target taking longer than this is given up
 constexpr int kMaxLogLines = 400;
 constexpr int kMaxTries = 3;
+constexpr float kThreatMargin = 12.0f;     // metres added to an enemy building's range
+constexpr float kDangerMargin = 16.0f;     // metres added to an attacker's reach
+constexpr float kAttackerSearch = 40.0f;   // metres around a hit scout searched for its attacker
+constexpr float kBackoffMeters = 24.0f;
+constexpr std::uint32_t kDangerMs = 120000;
+constexpr std::uint32_t kBackoffMs = 8000;
+constexpr std::uint32_t kRetreatRepeatMs = 3000;  // a hit during a back-off younger than this orders no new one
+constexpr float kMaxBackoffMeters = 60.0f;
+constexpr std::size_t kMaxZones = 32;
+constexpr std::int32_t kBuildingIndex = 2;
 
 struct Vec3 {
   float x, y, z;
@@ -5592,14 +5667,32 @@ using SetTacticFn = char(__thiscall*)(char* mgr, std::int32_t player, std::int32
 using IdleFn = bool(__thiscall*)(const char* mgr);
 using AliveFn = bool(__thiscall*)(const char* unit);
 using WaterFn = std::uint8_t(__thiscall*)(const char* terrain, std::int32_t x, std::int32_t z);
+using IsEnemyFn = bool(__thiscall*)(const char* player, std::int32_t otherId);
+using IsAbstractIndexFn = bool(__thiscall*)(const char* proto, std::int32_t index);
+using IsBuiltFn = bool(__thiscall*)(const char* unit);
+
+// The list FUN_004A1C55 fills (the engine's dynamic array: data, count, capacity).
+struct IdList {
+  std::int32_t* data;
+  std::int32_t count;
+  std::int32_t capacity;
+};
+using UnitsNearFn = std::int32_t(__thiscall*)(const char* world, const float* point, float radius, char precise, IdList* out);
 
 const auto kDoMove = reinterpret_cast<DoMoveFn>(0x0050E36A);
 const auto kSetTactic = reinterpret_cast<SetTacticFn>(0x004F7ECD);
 const auto kIdle = reinterpret_cast<IdleFn>(0x0044F1A7);
+const auto kIsEnemy = reinterpret_cast<IsEnemyFn>(0x00484D2D);
+const auto kIsAbstractIndex = reinterpret_cast<IsAbstractIndexFn>(0x0044CAC4);
+const auto kIsBuilt = reinterpret_cast<IsBuiltFn>(0x0044DDB4);
+const auto kUnitsNear = reinterpret_cast<UnitsNearFn>(0x004A1C55);
 
 std::wstring g_scoutName = L"AutoScout";
 std::wstring g_returnName;
 bool g_log = false;
+bool g_avoid = true;
+bool g_back = true;
+IdList g_found = {nullptr, 0, 0};  // FUN_004A1C55's output, reused
 bool g_switchOff = false;
 int g_logLines = 0;
 
@@ -5648,6 +5741,48 @@ bool Alive(const char* unit) {
 // The database's tactic names, [db+1FF0h] (count +1FF4h): the IDs a tactic's +8 holds (0x5E0CA6 looks one up).
 std::int32_t g_scoutId = -1;
 std::int32_t g_returnId = -1;
+
+// What a proto's actions reach: the longest range of an action with ranged or siege damage (the damage record
+// [action+24h], its type byte +5: 0 hand), of any action with damage, and whether it has one. The proto's actions are
+// [[proto+44h]+1Ch] (count +20h); an action's ranges [action+18h] (16-byte entries, count [action+1Ch], +8 the
+// maximum). A cache by proto (the player's copy), emptied when the data changes.
+struct Reach {
+  float ranged = 0.0f;
+  float any = 0.0f;
+  bool attacks = false;
+};
+std::unordered_map<const char*, Reach> g_reach;
+
+Reach ReachOf(const char* proto) {
+  const auto found = g_reach.find(proto);
+  if (found != g_reach.end()) {
+    return found->second;
+  }
+  Reach reach;
+  const char* data = proto == nullptr ? nullptr : Field<const char*>(proto, 0x44);
+  const char* const* actions = data == nullptr ? nullptr : Field<const char* const*>(data, 0x1C);
+  const std::int32_t count = data == nullptr ? 0 : Field<std::int32_t>(data, 0x20);
+  for (std::int32_t i = 0; actions != nullptr && i < count; ++i) {
+    const char* action = actions[i];
+    const char* damage = action == nullptr ? nullptr : Field<const char*>(action, 0x24);
+    if (damage == nullptr) {
+      continue;
+    }
+    reach.attacks = true;
+    const char* ranges = Field<const char*>(action, 0x18);
+    const std::int32_t entries = Field<std::int32_t>(action, 0x1C);
+    float longest = 0.0f;
+    for (std::int32_t k = 0; ranges != nullptr && k < entries && k < 16; ++k) {
+      longest = std::max(longest, Field<float>(ranges, 16u * k + 8));
+    }
+    reach.any = std::max(reach.any, longest);
+    if (Field<std::uint8_t>(damage, 5) != 0) {
+      reach.ranged = std::max(reach.ranged, longest);
+    }
+  }
+  g_reach.emplace(proto, reach);
+  return reach;
+}
 const char* g_namesDb = nullptr;
 std::int32_t g_namesCount = -1;
 
@@ -5674,6 +5809,7 @@ void ResolveNames() {
   }
   g_namesDb = db;
   g_namesCount = count;
+  g_reach.clear();  // the protos of the previous data are gone
   g_scoutId = FindName(db, g_scoutName);
   g_returnId = g_returnName.empty() ? -1 : FindName(db, g_returnName);
   Note(L"autoScout: %d tactic names; '%ls' is name %d%ls", count, g_scoutName.c_str(), g_scoutId,
@@ -5740,11 +5876,25 @@ struct Map {
 
 Map g_map;
 
+struct Circle {
+  float x = 0.0f, z = 0.0f, r = 0.0f;  // metres
+};
+
+struct Zone {
+  Circle circle;
+  std::uint32_t until = 0;  // game time
+};
+
 struct PlayerGrid {
   std::vector<std::int32_t> unexploredCell[3];  // per block and movement: an unexplored cell one can stand on, or -1
   std::vector<std::uint8_t> visible;            // per block: a cell of it is visible now
   std::vector<std::uint32_t> lastSeen;          // per block: the game time it was last visible
   std::int32_t unexplored = 0;                  // cells
+  std::map<std::int32_t, Circle> threats;       // avoid: the enemy buildings that shoot it has seen, by unit ID
+  std::vector<Zone> zones;                      // back: where its scouts were hit, in the order they were
+  std::vector<Circle> circles;                  // both, this scan
+  std::vector<std::uint8_t> unsafe;             // per block: inside a circle
+  bool fresh = true;                            // no scan yet since the tables were built: explored counts as seen
 };
 
 std::map<std::int32_t, PlayerGrid> g_grids;
@@ -5759,6 +5909,9 @@ struct Scout {
   bool moved = false;            // a heading is known
   float lastX = 0.0f, lastZ = 0.0f, headX = 0.0f, headZ = 0.0f;
   std::set<std::int32_t> given;  // blocks this unit could not reach
+  float hp = -1.0f;              // back: its hit points at the last scan
+  bool retreat = false;          // back: its move is the back-off, not a target
+  std::uint32_t backoffUntil = 0;
 };
 
 std::map<std::int32_t, Scout> g_scouts;
@@ -5912,6 +6065,135 @@ int MoveOf(const char* unit) {
 
 const wchar_t* MoveName(int move) { return move == kAir ? L"air" : move == kWater ? L"water" : L"land"; }
 
+// ---- danger ----------------------------------------------------------------------------------------------------
+
+const char* PlayerAt(const char* world, std::int32_t id) {
+  return id < 0 || id >= Field<std::int32_t>(world, 0x5C) ? nullptr : Field<const char* const*>(world, 0x58)[id];
+}
+
+// The cell of a point in metres, clamped to the map.
+std::int32_t CellAt(float x, float z) {
+  const std::int32_t cx = std::clamp(static_cast<std::int32_t>(x * g_map.inv), 0, g_map.w - 1);
+  const std::int32_t cz = std::clamp(static_cast<std::int32_t>(z * g_map.inv), 0, g_map.h - 1);
+  return cx * g_map.h + cz;
+}
+
+// The player's bits of a cell: low half explored, high half visible now.
+std::uint32_t CellBits(const char* world, std::int32_t player, std::int32_t cell) {
+  if (player >= Field<std::int32_t>(world, 0x2DC)) {
+    return 0;
+  }
+  const std::uint32_t mask = Field<const std::uint32_t*>(world, 0x2D8)[player];
+  return Field<const std::uint32_t*>(Field<const char*>(world, 0x250), 0x20)[cell] & mask;
+}
+
+bool Inside(const Circle& c, float x, float z) { return std::hypot(x - c.x, z - c.z) < c.r; }
+
+// Whether the segment from a to b passes through the circle.
+bool Crosses(const Circle& c, float ax, float az, float bx, float bz) {
+  const float dx = bx - ax, dz = bz - az;
+  const float len2 = dx * dx + dz * dz;
+  float t = len2 > 1e-6f ? ((c.x - ax) * dx + (c.z - az) * dz) / len2 : 0.0f;
+  t = std::clamp(t, 0.0f, 1.0f);
+  return Inside(c, ax + t * dx, az + t * dz);
+}
+
+// avoid: forgets the dead, then remembers the enemy buildings with a ranged attack the player sees now.
+void Discover(const char* world, std::int32_t player, PlayerGrid& grid) {
+  for (auto it = grid.threats.begin(); it != grid.threats.end();) {
+    const char* unit = UnitById(world, it->first);
+    it = unit == nullptr || !Alive(unit) ? grid.threats.erase(it) : std::next(it);
+  }
+  const std::int32_t players = Field<std::int32_t>(world, 0x5C);
+  for (std::int32_t q = 1; q < players; ++q) {
+    const char* other = PlayerAt(world, q);
+    if (q == player || other == nullptr || !kIsEnemy(other, player)) {
+      continue;
+    }
+    const std::int32_t* ids = Field<const std::int32_t*>(other, 0xF8);
+    const std::int32_t count = Field<std::int32_t>(other, 0xFC);
+    for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+      if (grid.threats.count(ids[i]) != 0) {
+        continue;
+      }
+      const char* unit = UnitById(world, ids[i]);
+      const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+      if (proto == nullptr || OwnerId(unit) != q || !kIsAbstractIndex(proto, kBuildingIndex)) {
+        continue;
+      }
+      const Reach reach = ReachOf(proto);
+      if (!(reach.ranged > 0.0f) || !Alive(unit) || !kIsBuilt(unit)) {
+        continue;
+      }
+      const float x = Field<float>(unit, 0x14);
+      const float z = Field<float>(unit, 0x1C);
+      const std::uint32_t bits = CellBits(world, player, CellAt(x, z));
+      if ((bits & (grid.fresh ? 0xFFFFu : 0xFFFF0000u)) == 0) {
+        continue;
+      }
+      grid.threats[ids[i]] = Circle{x, z, reach.ranged + kThreatMargin};
+      if (g_log && g_logLines < kMaxLogLines) {
+        ++g_logLines;
+        uhc::Log(L"autoScout: player %d sees player %d's unit %d (proto %d) at (%.1f, %.1f), range %.1f: avoided within %.1f m",
+                 player, q, ids[i], ProtoId(unit), static_cast<double>(x), static_cast<double>(z),
+                 static_cast<double>(reach.ranged), static_cast<double>(reach.ranged + kThreatMargin));
+      }
+    }
+  }
+  grid.fresh = false;
+}
+
+// The circles of this scan and the blocks they cover (a block whose centre is within a circle's radius plus half a
+// block side).
+void MarkUnsafe(PlayerGrid& grid, std::uint32_t now) {
+  grid.zones.erase(std::remove_if(grid.zones.begin(), grid.zones.end(), [now](const Zone& z) { return z.until <= now; }),
+                   grid.zones.end());
+  grid.circles.clear();
+  for (const auto& [id, circle] : grid.threats) {
+    grid.circles.push_back(circle);
+  }
+  for (const Zone& zone : grid.zones) {
+    grid.circles.push_back(zone.circle);
+  }
+  grid.unsafe.assign(static_cast<std::size_t>(g_map.bw) * g_map.bh, 0);
+  const float side = kBlock / g_map.inv;  // metres
+  for (const Circle& c : grid.circles) {
+    const float reach = c.r + side * 0.5f;
+    const std::int32_t bx0 = std::max(0, static_cast<std::int32_t>((c.x - reach) / side));
+    const std::int32_t bx1 = std::min(g_map.bw - 1, static_cast<std::int32_t>((c.x + reach) / side));
+    const std::int32_t bz0 = std::max(0, static_cast<std::int32_t>((c.z - reach) / side));
+    const std::int32_t bz1 = std::min(g_map.bh - 1, static_cast<std::int32_t>((c.z + reach) / side));
+    for (std::int32_t bx = bx0; bx <= bx1; ++bx) {
+      for (std::int32_t bz = bz0; bz <= bz1; ++bz) {
+        if (std::hypot((bx + 0.5f) * side - c.x, (bz + 0.5f) * side - c.z) < reach) {
+          grid.unsafe[bx * g_map.bh + bz] = 1;
+        }
+      }
+    }
+  }
+}
+
+bool Unsafe(const PlayerGrid& grid, std::int32_t block) {
+  return block >= 0 && static_cast<std::size_t>(block) < grid.unsafe.size() && grid.unsafe[block] != 0;
+}
+
+// Whether the straight line from the unit to the cell crosses a circle; for a circle the unit is inside already,
+// whether it passes nearer its centre than the unit is now (it goes deeper instead of out).
+bool LineCrosses(const PlayerGrid& grid, float ux, float uz, std::int32_t cell) {
+  const Vec3 p = CellPoint(cell, 0.0f);
+  for (const Circle& c : grid.circles) {
+    const float now = std::hypot(ux - c.x, uz - c.z);
+    if (now >= c.r) {
+      if (Crosses(c, ux, uz, p.x, p.z)) {
+        return true;
+      }
+    } else if (Crosses(Circle{c.x, c.z, now - 1.0f}, ux, uz, p.x, p.z)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // The target for a scout: the nearest unexplored cell it can stand on, in a block no other scout of the player
 // holds and it has not given up; else the reachable block not visible now that was seen longest ago.
 bool PickTarget(const char* world, std::int32_t player, const char* unit, Scout& scout,
@@ -5934,59 +6216,90 @@ bool PickTarget(const char* world, std::int32_t player, const char* unit, Scout&
   };
   std::int32_t best = -1;
   float bestDistance = 0.0f;
+  std::int32_t crossing = -1;  // the best target whose straight line crosses a danger circle: only when none is clear
+  float crossingDistance = 0.0f;
+  const float mx = Field<float>(unit, 0x14);
+  const float mz = Field<float>(unit, 0x1C);
   for (std::size_t b = 0; b < blocks; ++b) {
     const std::int32_t cell = grid.unexploredCell[move][b];
-    if (cell < 0 || taken.count(static_cast<std::int32_t>(b)) != 0 || scout.given.count(static_cast<std::int32_t>(b)) != 0) {
+    if (cell < 0 || taken.count(static_cast<std::int32_t>(b)) != 0 || scout.given.count(static_cast<std::int32_t>(b)) != 0 ||
+        Unsafe(grid, static_cast<std::int32_t>(b))) {
       continue;
     }
     const float d = distance(cell);
-    if (best < 0 || d < bestDistance) {
+    if (best >= 0 && d >= bestDistance) {
+      continue;  // a clear target is nearer: a crossing one is never taken then
+    }
+    if (!grid.circles.empty() && LineCrosses(grid, mx, mz, cell)) {
+      if (crossing < 0 || d < crossingDistance) {
+        crossing = cell;
+        crossingDistance = d;
+      }
+    } else if (best < 0 || d < bestDistance) {
       best = cell;
       bestDistance = d;
     }
   }
-  if (best >= 0) {
-    // The nearest unexplored cell of that block it can stand on.
-    const std::int32_t block = BlockOf(best);
+  // The nearest unexplored cell of a block it can stand on.
+  auto unexplored = [&](std::int32_t first) {
+    const std::int32_t block = BlockOf(first);
     const std::int32_t bx = block / g_map.bh;
     const std::int32_t bz = block % g_map.bh;
-    float nearest = distance(best);
+    std::int32_t cellBest = first;
+    float nearest = distance(first);
     for (std::int32_t x = bx * kBlock; x < std::min(g_map.w, (bx + 1) * kBlock); ++x) {
       for (std::int32_t z = bz * kBlock; z < std::min(g_map.h, (bz + 1) * kBlock); ++z) {
         const std::int32_t cell = x * g_map.h + z;
         if (CanStand(cell, move) && !Explored(world, player, cell) && distance(cell) < nearest) {
           nearest = distance(cell);
-          best = cell;
+          cellBest = cell;
         }
       }
     }
-    scout.cell = best;
+    scout.cell = cellBest;
     scout.block = block;
     scout.revisit = false;
     return true;
+  };
+  if (best >= 0) {
+    return unexplored(best);
   }
-  std::uint32_t oldest = 0;
+  // Then the block not visible now that was seen longest ago (the nearest first among equals), by a clear line; then
+  // an unexplored target whose line crosses danger; then a seen one whose line does.
+  std::int32_t revisit = -1, revisitCrossing = -1;
+  std::uint32_t oldest = 0, oldestCrossing = 0;
+  float revisitDistance = 0.0f, revisitCrossingDistance = 0.0f;
   for (std::size_t b = 0; b < blocks; ++b) {
     const std::int32_t cell = g_map.standCell[move][b];
     if (cell < 0 || grid.visible[b] != 0 || taken.count(static_cast<std::int32_t>(b)) != 0 ||
-        scout.given.count(static_cast<std::int32_t>(b)) != 0) {
+        scout.given.count(static_cast<std::int32_t>(b)) != 0 || Unsafe(grid, static_cast<std::int32_t>(b))) {
       continue;
     }
     const float d = distance(cell);
-    if (best < 0 || grid.lastSeen[b] < oldest || (grid.lastSeen[b] == oldest && d < bestDistance)) {
-      best = cell;
-      oldest = grid.lastSeen[b];
-      bestDistance = d;
+    const bool crosses = !grid.circles.empty() && LineCrosses(grid, mx, mz, cell);
+    std::int32_t& pick = crosses ? revisitCrossing : revisit;
+    std::uint32_t& seen = crosses ? oldestCrossing : oldest;
+    float& pickDistance = crosses ? revisitCrossingDistance : revisitDistance;
+    if (pick < 0 || grid.lastSeen[b] < seen || (grid.lastSeen[b] == seen && d < pickDistance)) {
+      pick = cell;
+      seen = grid.lastSeen[b];
+      pickDistance = d;
     }
   }
-  if (best < 0) {
+  if (revisit < 0 && crossing >= 0) {
+    return unexplored(crossing);
+  }
+  if (revisit < 0) {
+    revisit = revisitCrossing;
+  }
+  if (revisit < 0) {
     if (!scout.given.empty()) {
       scout.given.clear();  // everything was given up: try them again on the next scan
     }
     return false;
   }
-  scout.cell = best;
-  scout.block = BlockOf(best);
+  scout.cell = revisit;
+  scout.block = BlockOf(revisit);
   scout.revisit = true;
   return true;
 }
@@ -6034,6 +6347,153 @@ void Order(const char* world, char* unit, std::int32_t id, std::int32_t player, 
     }
     scout.given.insert(scout.block);
     scout.cell = -1;
+  }
+}
+
+// back: the scout moves `meters` away from (ax, az), the first of seven headings (straight away, then 35 degrees
+// either side, wider each time) that ends on the map, on ground it can stand on, outside every danger circle; else
+// the first that it can stand on. False when none is.
+bool Retreat(char* unit, std::int32_t id, const PlayerGrid& grid, Scout& scout, float ax, float az, float meters,
+             std::uint32_t now) {
+  const float x = Field<float>(unit, 0x14);
+  const float z = Field<float>(unit, 0x1C);
+  float dx = x - ax, dz = z - az;
+  float len = std::hypot(dx, dz);
+  if (len < 0.5f) {
+    if (!scout.moved) {
+      return false;
+    }
+    dx = -scout.headX;  // hit by something on top of it: back the way it came
+    dz = -scout.headZ;
+    len = 1.0f;
+  }
+  dx /= len;
+  dz /= len;
+  const int move = MoveOf(unit);
+  const float width = g_map.w / g_map.inv, height = g_map.h / g_map.inv;
+  const float angles[] = {0.0f, 35.0f, -35.0f, 70.0f, -70.0f, 105.0f, -105.0f};
+  std::int32_t fallback = -1;
+  Vec3 point{0.0f, Field<float>(unit, 0x18), 0.0f};
+  bool found = false;
+  for (const float degrees : angles) {
+    const float a = degrees * 3.14159265f / 180.0f;
+    const float px = x + meters * (dx * std::cos(a) - dz * std::sin(a));
+    const float pz = z + meters * (dx * std::sin(a) + dz * std::cos(a));
+    if (px < 1.0f || pz < 1.0f || px > width - 1.0f || pz > height - 1.0f) {
+      continue;
+    }
+    const std::int32_t cell = CellAt(px, pz);
+    if (!CanStand(cell, move)) {
+      continue;
+    }
+    bool safe = true;
+    for (const Circle& c : grid.circles) {
+      safe = safe && !Inside(c, px, pz);
+    }
+    if (safe) {
+      point.x = px;
+      point.z = pz;
+      found = true;
+      break;
+    }
+    if (fallback < 0) {
+      fallback = cell;
+      point.x = px;
+      point.z = pz;
+    }
+  }
+  if (!found && fallback < 0) {
+    return false;
+  }
+  char* mgr = Field<char*>(unit, 0x58);
+  const bool ok = kDoMove(mgr, &point, 0.5f, 0, 1, -1, 0, 0, -1, -1, -1.0f);
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"autoScout: unit %d backs off from (%.1f, %.1f) to (%.1f, %.1f): %ls", id, static_cast<double>(x),
+             static_cast<double>(z), static_cast<double>(point.x), static_cast<double>(point.z), ok ? L"ordered" : L"refused");
+  }
+  if (!ok) {
+    return false;
+  }
+  scout.retreat = true;
+  scout.orderTime = now;
+  scout.actionId = CurrentActionId(mgr);
+  scout.interrupted = false;
+  return true;
+}
+
+// back: the scout lost hit points since the last scan. Its attacker is taken to be the nearest unit within
+// kAttackerSearch that has an attack and whose owner is Gaia or at war with the scout's player (ties: the lower ID).
+void OnHit(const char* world, char* unit, std::int32_t id, std::int32_t player, Scout& scout, std::set<std::int32_t>& taken,
+           PlayerGrid& grid, std::uint32_t now, bool free) {
+  const float x = Field<float>(unit, 0x14);
+  const float z = Field<float>(unit, 0x1C);
+  const float point[3] = {x, Field<float>(unit, 0x18), z};
+  const char* me = PlayerAt(world, player);
+  std::int32_t attacker = -1;
+  float attackerDistance = 0.0f, ax = x, az = z, reachOfAttacker = 0.0f;
+  kUnitsNear(world, point, kAttackerSearch, 1, &g_found);
+  for (std::int32_t i = 0; i < g_found.count && g_found.data != nullptr; ++i) {
+    const std::int32_t otherId = g_found.data[i];
+    const char* other = UnitById(world, otherId);
+    const std::int32_t owner = other == nullptr ? -1 : OwnerId(other);
+    if (other == nullptr || owner < 0 || owner == player || !Alive(other)) {
+      continue;
+    }
+    const char* ownerPlayer = PlayerAt(world, owner);
+    if (owner != 0 && (ownerPlayer == nullptr || me == nullptr || !kIsEnemy(ownerPlayer, player))) {
+      continue;
+    }
+    const Reach reach = ReachOf(Field<const char*>(other, 0x5C));
+    if (!reach.attacks) {
+      continue;
+    }
+    const float d = std::hypot(Field<float>(other, 0x14) - x, Field<float>(other, 0x1C) - z);
+    if (attacker < 0 || d < attackerDistance || (d == attackerDistance && otherId < attacker)) {
+      attacker = otherId;
+      attackerDistance = d;
+      ax = Field<float>(other, 0x14);
+      az = Field<float>(other, 0x1C);
+      reachOfAttacker = reach.any;
+    }
+  }
+  const Circle circle{ax, az, (attacker >= 0 ? std::max(reachOfAttacker, 6.0f) : 8.0f) + kDangerMargin};
+  bool refreshed = false;
+  for (Zone& zone : grid.zones) {
+    if (std::hypot(zone.circle.x - ax, zone.circle.z - az) < 6.0f) {
+      zone.circle = circle;
+      zone.until = now + kDangerMs;
+      refreshed = true;
+    }
+  }
+  if (!refreshed) {
+    if (grid.zones.size() >= kMaxZones) {
+      grid.zones.erase(grid.zones.begin());  // the oldest
+    }
+    grid.zones.push_back(Zone{circle, now + kDangerMs});
+  }
+  MarkUnsafe(grid, now);
+  if (scout.cell >= 0) {
+    taken.erase(scout.block);
+    scout.cell = -1;
+  }
+  scout.backoffUntil = now + kBackoffMs;
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    if (attacker >= 0) {
+      uhc::Log(L"autoScout: unit %d hit at (%.1f, %.1f): unit %d (proto %d, player %d) %.1f m away; danger %.1f m around it for %u s",
+               id, static_cast<double>(x), static_cast<double>(z), attacker, ProtoId(UnitById(world, attacker)),
+               OwnerId(UnitById(world, attacker)), static_cast<double>(attackerDistance), static_cast<double>(circle.r),
+               kDangerMs / 1000);
+    } else {
+      uhc::Log(L"autoScout: unit %d hit at (%.1f, %.1f), no attacker in sight; danger %.1f m around it for %u s", id,
+               static_cast<double>(x), static_cast<double>(z), static_cast<double>(circle.r), kDangerMs / 1000);
+    }
+  }
+  if (free) {
+    // Far enough to leave the attacker's reach with a margin: at least kBackoffMeters, at most kMaxBackoffMeters.
+    const float wanted = attacker >= 0 ? std::max(reachOfAttacker, 6.0f) + 10.0f - attackerDistance : 0.0f;
+    Retreat(unit, id, grid, scout, ax, az, std::clamp(wanted, kBackoffMeters, kMaxBackoffMeters), now);
   }
 }
 
@@ -6103,6 +6563,9 @@ void Scan(char* world, std::uint32_t now) {
       }
     }
   }
+  for (auto& [player, ids] : scouts) {
+    std::sort(ids.begin(), ids.end());
+  }
   for (auto it = g_scouts.begin(); it != g_scouts.end();) {
     const char* unit = UnitById(world, it->first);
     const auto list = unit == nullptr ? scouts.end() : scouts.find(OwnerId(unit));
@@ -6113,9 +6576,12 @@ void Scan(char* world, std::uint32_t now) {
     }
   }
   for (auto& [player, ids] : scouts) {
-    std::sort(ids.begin(), ids.end());
     Summarize(world, player, now);
-    const PlayerGrid& grid = g_grids[player];
+    PlayerGrid& grid = g_grids[player];
+    if (g_avoid) {
+      Discover(world, player, grid);
+    }
+    MarkUnsafe(grid, now);
     std::set<std::int32_t> taken;
     for (const std::int32_t id : ids) {
       const auto found = g_scouts.find(id);
@@ -6145,9 +6611,29 @@ void Scan(char* world, std::uint32_t now) {
       const char* mgr = Field<const char*>(unit, 0x58);
       const bool idle = kIdle(mgr);
       const bool ours = !idle && scout.actionId != 0 && CurrentActionId(mgr) == scout.actionId;
+      const float hp = Field<float>(unit, 0x64);
+      const bool hit = g_back && scout.hp >= 0.0f && hp < scout.hp - 0.01f;
+      scout.hp = hp;
+      if (hit) {
+        // Backs off unless it is already on a fresh back-off; that takes over a stock flee or fight too, which would
+        // leave it in range.
+        const bool backing = scout.retreat && ours && now - scout.orderTime < kRetreatRepeatMs;
+        OnHit(world, unit, id, player, scout, taken, grid, now, !backing);
+        continue;
+      }
       if (!idle && !ours) {
         scout.interrupted = true;  // another action (a flee, a fight): leave it, scout again once it is idle
         continue;
+      }
+      if (scout.retreat) {
+        if (ours && now < scout.backoffUntil) {
+          continue;  // still backing off
+        }
+        scout.retreat = false;  // done: a new target, away from the danger
+      }
+      if (scout.cell >= 0 && Unsafe(grid, scout.block)) {
+        taken.erase(scout.block);  // its target became dangerous: another one (not given up)
+        scout.cell = -1;
       }
       bool order = scout.cell < 0;
       if (scout.cell >= 0) {
@@ -6247,18 +6733,27 @@ Outcome ApplyAutoScout(const Config& config) {
       g_log = true;
       continue;
     }
+    if (_stricmp(arg.c_str(), "avoid") == 0 || _stricmp(arg.c_str(), "noAvoid") == 0) {
+      g_avoid = _stricmp(arg.c_str(), "avoid") == 0;
+      continue;
+    }
+    if (_stricmp(arg.c_str(), "back") == 0 || _stricmp(arg.c_str(), "noBack") == 0) {
+      g_back = _stricmp(arg.c_str(), "back") == 0;
+      continue;
+    }
     const bool valid = !arg.empty() && std::all_of(arg.begin(), arg.end(), [](char c) {
       return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_';
     });
     if (!valid || names == 2) {
-      Log(L"autoScout: bad argument %hs (expected [ScoutTactic [ReturnTactic]] [log]); feature not applied", arg.c_str());
+      Log(L"autoScout: bad argument %hs (expected [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]); feature not applied", arg.c_str());
       return Outcome::kFailed;
     }
     (names == 0 ? g_scoutName : g_returnName) = std::wstring(arg.begin(), arg.end());
     ++names;
   }
   if (!VerifyAll("autoScout", {&sites::kAutoScoutDoMove, &sites::kAutoScoutSetTactic, &sites::kAutoScoutTacticIndex,
-                               &sites::kAutoScoutIdle, &sites::kUnitById})) {
+                               &sites::kAutoScoutIdle, &sites::kUnitById, &sites::kPlayerIsEnemy, &sites::kIsAbstractIndex,
+                               &sites::kIsBuilt, &sites::kUnitsNearPoint})) {
     return Outcome::kFailed;
   }
   if (Matches(sites::kAutoScoutCmdExecute)) {
@@ -6272,6 +6767,8 @@ Outcome ApplyAutoScout(const Config& config) {
   }
   Log(L"autoScout: units in tactic '%ls' explore the map on their own%ls (multiplayer unverified)", g_scoutName.c_str(),
       g_returnName.empty() ? L"" : (std::wstring(L"; they go back to '") + g_returnName + L"'").c_str());
+  Log(L"autoScout: %ls enemy buildings that shoot; %ls", g_avoid ? L"keeps away from" : L"does not avoid",
+      g_back ? L"backs off when hit" : L"does not back off when hit");
   if (!g_switchOff) {
     Log(L"autoScout: limited mode: the command execute head 0x7C8E49 is not stock (another DLL patched it), so an order "
         L"does not switch scouting off; use the Stop-scouting button");
@@ -6323,6 +6820,589 @@ UhcAutoScoutCmdHook PROC
     cmp dword ptr [esi+5Ch], 5
     jmp cmdExecuteNext
 UhcAutoScoutCmdHook ENDP
+
+END
+```
+
+## transformChecks
+
+Contract: [transformChecks](../porting-to-another-dll.md#transformchecks).
+
+Sites: `BStringAppend` `0x443960` (16 B), `CostListCtor` `0x44717F` (9 B), `CostListDtor` `0x44C817` (11 B), `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `PlayerProtoEntry` `0x45311B` (8 B), `CurrentSelectionGroup` `0x453B28` (33 B), `NpButton` `0x462317` (13 B), `BStringFromId` `0x58EA52` (25 B), `ProtoByName` `0x5A2346` (32 B), `XformExecBody` `0x7D652D` (190 B), `XformPlaceTest` `0x7D65E3` (15 B), `XformRefuse` `0x7D6762` (9 B), `PayAffordCheck` `0x8D6BAE` (30 B), `PaySharedAffordCheck` `0x8D6C1B` (26 B).
+
+### src/features/transformchecks.cpp
+
+```cpp
+// transformChecks [log]: transform buttons (uiTransformSelectedUnit) grey out with the reason when no selected unit
+// can transform, and a transform respects the target's build limit.
+//
+// Stock: uiTransformSelectedUnit("Proto") (0x7E7193) sends a network command (type 17h) for the selection. Every
+// machine runs its per-unit execute FUN_007D64F7 for each selected unit on its own: the player's copy of the target
+// proto and its cost (0x480B1E); the unit alive and its owner the command's player; the world placement check PLACE
+// (world vtable +14h, FUN_0050703D) with the target proto at the unit's position, which applies the target's
+// PlacementFile rules (a distanceatmostfromtype from a kraal too) and its AllowedAge; the payment 0x8D946A (or the
+// "not enough resources" message); the new unit, built, at the unit's place; the old unit removed. Nothing tests the
+// target's BuildLimit, and a refused unit gives no sign: the button is always enabled, and a click that fails does
+// nothing.
+//
+// The key:
+// - in the simulation (hooks/transformchecks_hooks.asm, at 0x7D65E3 after PLACE succeeded): a target whose limit
+//   (0x4C7B5F on the player's copy) the player's living units of that proto already reach is refused as PLACE
+//   refuses it (0x7D6762), before the payment. The count walks the player's unit list [player+F8h] (count +FCh): the
+//   same on every machine, and units transformed earlier in the same command count, since each is created at once;
+// - in the command panel (the shared button hook, panelbuttons.h): a button whose command is
+//   uiTransformSelectedUnit("Proto") (its click, or the record's command for a click commandResearch(ID, unit), the
+//   form a command with an <associatedtech> takes) asks, for each of the local player's selected units, the checks
+//   the command makes (the cost of that many units and its affordability 0x8D6BAE / 0x8D6C1B, the build limit,
+//   PLACE with the same arguments). With no
+//   unit that passes, the button is disabled, its click and shift-click emptied, and its rollover gets the reason in
+//   red: the failing placement rule's error string when PLACE gives one, else "Other objects prevent you..." (25528),
+//   "Not enough resources" (41543) or the build limit (36198). With some that pass, the rollover says how many. The
+//   answer is kept 250 ms per button (real time): the panel is interface only, so nothing here reaches the game.
+#include <windows.h>
+
+#include <cstdarg>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cwchar>
+#include <map>
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../panelbuttons.h"
+#include "../patch.h"
+
+extern "C" void UhcXformPlaceHook();
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database, +3C0h the local player
+constexpr DWORD kCacheMs = 250;
+constexpr int kMaxLogLines = 200;
+
+using PlayerByIdFn = char*(__thiscall*)(const char* world, std::int32_t id);
+using UnitByIdFn = char*(__thiscall*)(const char* world, std::int32_t id);
+using PlayerProtoFn = char*(__thiscall*)(const char* player, std::int32_t protoId);
+using ProtoByNameFn = std::int32_t(__thiscall*)(const char* database, const char* name);
+using BuildLimitFn = std::int32_t(__thiscall*)(const char* player, const char* proto);
+using CostListFn = void(__thiscall*)(void* list);
+using CostGetFn = bool(__thiscall*)(const char* player, std::int32_t protoId, void* cost, std::int32_t count);
+using AffordFn = bool(__thiscall*)(const char* player, const void* cost);
+using SelectionFn = const char*(__cdecl*)();
+using AliveFn = bool(__thiscall*)(const char* unit);
+using PlaceFn = bool(__thiscall*)(const char* world, std::int32_t protoId, std::int32_t playerId, const float* pos,
+                                  const float* forward, const float* right, std::int32_t a5, std::int32_t flags,
+                                  std::int32_t* reason, std::int32_t a8, std::int32_t a9, std::int32_t a10);
+using BStringFromIdFn = void*(__thiscall*)(void* text, std::int32_t id);
+using BStringFreeFn = void(__thiscall*)(void* text);
+using AppendFn = void(__thiscall*)(void* text, const wchar_t* more, std::int32_t length, std::int32_t start);
+
+const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
+const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
+const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
+const auto kProtoByName = reinterpret_cast<ProtoByNameFn>(0x005A2346);
+const auto kBuildLimit = reinterpret_cast<BuildLimitFn>(0x004C7B5F);
+const auto kCostCtor = reinterpret_cast<CostListFn>(0x0044717F);
+const auto kCostDtor = reinterpret_cast<CostListFn>(0x0044C817);
+const auto kCostGet = reinterpret_cast<CostGetFn>(0x00480B1E);
+const auto kAfford = reinterpret_cast<AffordFn>(0x008D6BAE);
+const auto kSharedAfford = reinterpret_cast<AffordFn>(0x008D6C1B);
+const auto kSelection = reinterpret_cast<SelectionFn>(0x00453B28);
+const auto kBStringFromId = reinterpret_cast<BStringFromIdFn>(0x0058EA52);
+const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+const auto kAppend = reinterpret_cast<AppendFn>(0x00443960);
+
+constexpr std::int32_t kStringObjects = 25528;      // "Other objects prevent you from placing this here."
+constexpr std::int32_t kStringResources = 41543;    // "Not enough resources"
+constexpr std::int32_t kStringBuildLimit = 36198;   // "You are at the build limit for the %s."
+constexpr std::uint32_t kProtoDisplayName = 0x140;  // the proto's DisplayNameID (read in game)
+
+bool g_log = false;
+int g_logLines = 0;
+
+template <typename T>
+T Field(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
+
+bool Alive(const char* unit) {
+  const auto alive = reinterpret_cast<AliveFn>(Field<const void* const*>(unit, 0)[0xA4 / 4]);
+  return alive(unit);
+}
+
+void Note(const wchar_t* format, ...) {
+  if (!g_log || g_logLines >= kMaxLogLines) {
+    return;
+  }
+  ++g_logLines;
+  wchar_t text[512];
+  va_list args;
+  va_start(args, format);
+  _vsnwprintf_s(text, _TRUNCATE, format, args);
+  va_end(args);
+  uhc::Log(L"%ls", text);
+}
+
+// The player's living units of a proto ID: its unit list [player+F8h] (IDs, count +FCh).
+std::int32_t CountLiving(const char* world, const char* player, std::int32_t protoId) {
+  const auto* ids = Field<const std::int32_t*>(player, 0xF8);
+  const std::int32_t count = Field<std::int32_t>(player, 0xFC);
+  std::int32_t living = 0;
+  for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+    const char* unit = kUnitById(world, ids[i]);
+    const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+    if (proto != nullptr && Field<std::int32_t>(proto, 8) == protoId && Alive(unit)) {
+      ++living;
+    }
+  }
+  return living;
+}
+
+// The limit left for the player's copy of a proto: -1 when it has none.
+std::int32_t LimitLeft(const char* world, const char* player, const char* playerProto) {
+  const std::int32_t limit = kBuildLimit(player, playerProto);
+  if (limit < 0) {
+    return -1;
+  }
+  const std::int32_t left = limit - CountLiving(world, player, Field<std::int32_t>(playerProto, 8));
+  return left < 0 ? 0 : left;
+}
+
+std::wstring StringById(std::int32_t id) {
+  struct BString {
+    const wchar_t* text;
+  } text{nullptr};
+  kBStringFromId(&text, id);
+  std::wstring copy = text.text == nullptr ? L"" : text.text;
+  kBStringFree(&text);
+  return copy;
+}
+
+// ---- The command panel --------------------------------------------------------------------------------------------
+
+struct Verdict {
+  std::int32_t total = 0;  // the local player's selected units
+  std::int32_t pass = 0;   // those that would transform
+  std::wstring reason;     // why the first refused one is refused
+};
+
+struct Cached {
+  DWORD at = 0;
+  std::string selection;  // the selection's player and IDs when it was asked
+  Verdict verdict;
+};
+std::map<std::string, Cached> g_cache;  // by target name
+
+std::string SelectionKey(const char* selection) {
+  std::string key;
+  if (selection == nullptr) {
+    return key;
+  }
+  const std::int32_t count = Field<std::int32_t>(selection, 0x14);
+  const auto* ids = Field<const std::int32_t*>(selection, 0x10);
+  key.append(reinterpret_cast<const char*>(selection + 0x0C), 4);
+  for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+    key.append(reinterpret_cast<const char*>(&ids[i]), 4);
+  }
+  return key;
+}
+
+Verdict Judge(const std::string& name) {
+  Verdict verdict;
+  const char* game = Game();
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const char* db = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  const char* selection = kSelection();
+  if (world == nullptr || db == nullptr || selection == nullptr) {
+    return verdict;
+  }
+  const std::int32_t local = Field<std::int32_t>(game, 0x3C0);
+  if (Field<std::int32_t>(selection, 0x0C) != local) {
+    return verdict;
+  }
+  const char* player = kPlayerById(world, local);
+  const std::int32_t protoId = kProtoByName(db, name.c_str());
+  const char* playerProto = player == nullptr || protoId < 0 ? nullptr : kPlayerProto(player, protoId);
+  if (playerProto == nullptr) {
+    return verdict;
+  }
+
+  // The cost of one more unit: the units accepted so far pay first, as the command pays them in turn.
+  const auto affordable = [&](std::int32_t units) {
+    std::uint32_t cost[4] = {};
+    kCostCtor(cost);
+    bool ok = kCostGet(player, protoId, cost, units);
+    if (ok) {
+      ok = Field<std::uint8_t>(world, 0x6912) != 0 ? kSharedAfford(player, cost) : kAfford(player, cost);
+    }
+    kCostDtor(cost);
+    return ok;
+  };
+  std::int32_t left = LimitLeft(world, player, playerProto);
+
+  const std::int32_t count = Field<std::int32_t>(selection, 0x14);
+  const auto* ids = Field<const std::int32_t*>(selection, 0x10);
+  for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+    const char* unit = kUnitById(world, ids[i]);
+    const char* owner = unit == nullptr ? nullptr : Field<const char*>(unit, 0x44);
+    if (owner == nullptr || Field<std::int32_t>(owner, 0) != local || !Alive(unit)) {
+      continue;
+    }
+    ++verdict.total;
+    std::int32_t reasonId = -1;
+    if (!affordable(verdict.pass + 1)) {
+      reasonId = kStringResources;
+    } else if (left == 0) {
+      reasonId = kStringBuildLimit;
+    } else {
+      std::int32_t placeReason = -1;
+      const auto place = reinterpret_cast<PlaceFn>(Field<const void* const*>(world, 0)[0x14 / 4]);
+      if (!place(world, protoId, local, reinterpret_cast<const float*>(unit + 0x14),
+                 reinterpret_cast<const float*>(unit + 0x20), reinterpret_cast<const float*>(unit + 0x38), 0, 2,
+                 &placeReason, 0, 0, 0)) {
+        reasonId = placeReason > 0 ? placeReason : kStringObjects;
+      }
+    }
+    if (reasonId < 0) {
+      ++verdict.pass;
+      if (left > 0) {
+        --left;
+      }
+      continue;
+    }
+    if (verdict.reason.empty()) {
+      verdict.reason = StringById(reasonId);
+      if (reasonId == kStringBuildLimit) {
+        wchar_t text[256];
+        const std::wstring display = StringById(Field<std::int32_t>(playerProto, kProtoDisplayName));
+        swprintf_s(text, verdict.reason.c_str(), display.c_str());
+        verdict.reason = text;
+      }
+      if (verdict.reason.empty()) {
+        verdict.reason = StringById(kStringObjects);
+      }
+    }
+  }
+  return verdict;
+}
+
+// "uiTransformSelectedUnit("Name")" -> Name; false for any other command.
+bool TargetName(const std::string& command, std::string* name) {
+  const char* click = command.c_str();
+  static const char kPrefix[] = "uiTransformSelectedUnit(";
+  if (_strnicmp(click, kPrefix, sizeof(kPrefix) - 1) != 0) {
+    return false;
+  }
+  const char* open = std::strchr(click + sizeof(kPrefix) - 1, '"');
+  const char* close = open == nullptr ? nullptr : std::strchr(open + 1, '"');
+  if (close == nullptr || close == open + 1) {
+    return false;
+  }
+  name->assign(open + 1, close);
+  return true;
+}
+
+// The command a button runs: its click, or, for a command with an <associatedtech> (whose click is
+// "commandResearch(<command ID>, <unit ID>)"), the <command> of its record in [db+2968h] (4Ch B each, count +296Ch;
+// the record's first dword the wide text).
+std::string ButtonCommand(const char* click) {
+  static const char kPrefix[] = "commandResearch(";
+  if (_strnicmp(click, kPrefix, sizeof(kPrefix) - 1) != 0) {
+    return click;
+  }
+  const std::int32_t id = std::atoi(click + sizeof(kPrefix) - 1);
+  const char* game = Game();
+  const char* db = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  const char* records = db == nullptr ? nullptr : Field<const char*>(db, 0x2968);
+  if (records == nullptr || id < 0 || id >= Field<std::int32_t>(db, 0x296C)) {
+    return "";
+  }
+  const wchar_t* text = Field<const wchar_t*>(records + 0x4C * id, 0);
+  std::string narrow;
+  for (; text != nullptr && *text != 0 && narrow.size() < 256; ++text) {
+    narrow.push_back(*text < 0x80 ? static_cast<char>(*text) : '?');
+  }
+  return narrow;
+}
+
+void TransformButton(const uhc::PanelButton& button) {
+  std::string name;
+  if (!TargetName(ButtonCommand(button.Click()), &name)) {
+    return;
+  }
+  const DWORD now = GetTickCount();
+  const std::string key = SelectionKey(kSelection());
+  Cached& cached = g_cache[name];
+  if (cached.at == 0 || now - cached.at >= kCacheMs || cached.selection != key) {
+    Verdict fresh = Judge(name);
+    if (fresh.pass != cached.verdict.pass || fresh.total != cached.verdict.total ||
+        fresh.reason != cached.verdict.reason) {
+      Note(L"transformChecks: button %hs: %d of %d selected unit(s) can transform%ls%ls", name.c_str(), fresh.pass,
+           fresh.total, fresh.reason.empty() ? L"" : L"; ", fresh.reason.c_str());
+    }
+    cached.verdict = fresh;
+    cached.at = now == 0 ? 1 : now;
+    cached.selection = key;
+  }
+  const Verdict& verdict = cached.verdict;
+  if (verdict.total == 0 || verdict.pass == verdict.total) {
+    return;
+  }
+  std::wstring line;
+  if (verdict.pass == 0) {
+    button.State() = 1;
+    button.Click()[0] = 0;
+    button.ShiftClick()[0] = 0;
+    line = L"\n<color=1, 0.35, 0.35>" + verdict.reason + L"</color>";
+  } else {
+    wchar_t text[96];
+    swprintf_s(text, L"\n<color=1, 0.8, 0.3>%d / %d: </color>", verdict.pass, verdict.total);
+    line = text + verdict.reason;
+  }
+  kAppend(button.Rollover(), line.c_str(), -1, -1);
+}
+
+}  // namespace
+
+extern "C" {
+
+// From the hook at 0x7D65E3, after PLACE accepted the target at the unit's place: false refuses the transform as
+// PLACE does. Simulation code: the same answer on every machine.
+bool __stdcall UhcXformAllowed(const char* player, const char* playerProto, const char* unit) {
+  const char* game = Game();
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  if (world == nullptr || player == nullptr || playerProto == nullptr) {
+    return true;
+  }
+  const char* name = Field<const char*>(playerProto, 0x10);
+  const std::int32_t unitId = unit == nullptr ? -1 : Field<std::int32_t>(unit, 0x10);
+  if (LimitLeft(world, player, playerProto) != 0) {
+    return true;
+  }
+  Note(L"transformChecks: unit %d of player %d refused: at the build limit of %hs (%d)", unitId,
+       Field<std::int32_t>(player, 0), name == nullptr ? "?" : name, kBuildLimit(player, playerProto));
+  return false;
+}
+
+}  // extern "C"
+
+namespace uhc {
+
+Outcome ApplyTransformChecks(const Config& config) {
+  const Config::Args* args = config.First("transformChecks");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  bool log = false;
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      log = true;
+    } else {
+      Log(L"transformChecks: unknown argument %hs (expected: log); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  // The build limit 0x4C7B5F is only called, never written, and is not verified: sharedBuildLimit replaces its first
+  // bytes with a jmp to its own entry, and a call through that hook gives the shared limit, which is the one to check.
+  if (!VerifyAll("transformChecks",
+                 {&sites::kXformExecBody, &sites::kXformPlaceTest, &sites::kXformRefuse, &sites::kCostListCtor,
+                  &sites::kCostListDtor, &sites::kPlayerById, &sites::kUnitById, &sites::kPlayerProtoEntry,
+                  &sites::kProtoByName, &sites::kPayAffordCheck,
+                  &sites::kPaySharedAffordCheck, &sites::kCurrentSelectionGroup, &sites::kBStringFromId,
+                  &sites::kBStringAppend})) {
+    return Outcome::kFailed;
+  }
+  g_log = log;
+  if (!WriteJmp(sites::kXformPlaceTest.va, reinterpret_cast<const void*>(&UhcXformPlaceHook), 8)) {
+    return Outcome::kFailed;
+  }
+  if (!AddPanelButtonFilter(&TransformButton)) {
+    Log(L"transformChecks: the command panel's buttons are taken; the build limit applies, the buttons stay as they "
+        L"are");
+  }
+  Log(L"transformChecks: uiTransformSelectedUnit buttons grey out with the reason, and a transform respects the "
+      L"target's build limit%ls (multiplayer unverified)",
+      log ? L", refusals logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/transformchecks_hooks.asm
+
+```asm
+; The hook of transformChecks in the transform command's per-unit execute FUN_007D64F7 (thiscall(cmd, unit),
+; ret 4), which every machine runs inside the world update. Entered through a jmp written over the stock code, it
+; leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcXformAllowed PROTO STDCALL player:DWORD, playerProto:DWORD, unit:DWORD
+
+.data
+placeNext  dd 007D65EBh    ; cmp byte [esi+90h],0: the payment, then the new unit
+placeFail  dd 007D6762h    ; the refusal: the cost list's destructor, AL = 0, ret 4
+
+.code
+
+; 0x7D65E3: test al,al / je 7D6762h (8 B), right after PLACE (world vtable +14h) returned in AL. ESI = the
+; command, EBP = the unit, [esp+30h] the player, [esp+14h] the player's copy of the target proto. A refusal of
+; PLACE goes to the refusal as in stock; an acceptance asks UhcXformAllowed (the build limit) and goes on to the
+; payment only when it agrees. Every register but EAX is kept; EAX is not read before it is loaded again at
+; either continuation (AL only fed the stolen test).
+UhcXformPlaceHook PROC
+    TRACE_ONCE "transformChecks placement result (0x7D65E3)"
+    test al, al
+    je refuse
+    pushad
+    push ebp                            ; the unit
+    push dword ptr [esp+24h+14h]        ; the player's proto (pushad 20h + one push)
+    push dword ptr [esp+28h+30h]        ; the player (pushad 20h + two pushes)
+    call UhcXformAllowed
+    mov dword ptr [esp+1Ch], eax        ; the EAX that popad restores
+    popad
+    test al, al
+    je refuse
+    jmp placeNext
+refuse:
+    jmp placeFail
+UhcXformPlaceHook ENDP
+
+END
+```
+
+### src/panelbuttons.cpp
+
+```cpp
+#include "panelbuttons.h"
+
+#include <cstddef>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcPanelButtonHook();
+
+namespace {
+
+constexpr std::size_t kMaxFilters = 4;
+uhc::PanelButtonFilter g_filters[kMaxFilters] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+extern "C" void __stdcall UhcPanelButton(char* frame) {
+  const uhc::PanelButton button{frame};
+  for (std::size_t i = 0; i < g_count; ++i) {
+    g_filters[i](button);
+  }
+}
+
+namespace uhc {
+
+bool AddPanelButtonFilter(PanelButtonFilter filter) {
+  if (g_count == kMaxFilters) {
+    Log(L"command panel buttons: no room for another filter");
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("command panel buttons", {&sites::kNpButton}) ||
+        !WriteJmp(sites::kNpButton.va, reinterpret_cast<const void*>(&UhcPanelButtonHook), 7)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_filters[g_count++] = filter;
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/panelbuttons.h
+
+```cpp
+// One hook on each button the command panel lays out (FUN_0046188E at 0x462317, before the button's
+// state and commands are applied), shared by every key that changes a button there (nativePreview,
+// transformChecks): a single jmp, whichever of those keys are on. Interface only: nothing here reaches
+// the simulation.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// The refresh's frame at 0x462317 (its ESP there). The fields a filter may read and write.
+struct PanelButton {
+  char* frame;
+
+  std::int32_t Column() const { return *reinterpret_cast<const std::int32_t*>(frame + 0x1C); }
+  // 0 enabled, 1 disabled (grey), 2 red, 3.
+  std::int32_t& State() const { return *reinterpret_cast<std::int32_t*>(frame + 0x24); }
+  // The console commands of a click and of a shift-click (256-byte narrow buffers).
+  char* Click() const { return frame + 0x1C0; }
+  char* ShiftClick() const { return frame + 0x3C0; }
+  // The text on the button (256-byte narrow buffer, the Buy buttons' price).
+  char* Overlay() const { return frame + 0x2C0; }
+  // The rollover, a BString (its first dword the wide text).
+  void* Rollover() const { return frame + 0x18; }
+};
+
+using PanelButtonFilter = void (*)(const PanelButton& button);
+
+// Writes the jmp the first time (after checking the stock bytes) and adds the filter; filters run in the
+// order they were added.
+bool AddPanelButtonFilter(PanelButtonFilter filter);
+
+}  // namespace uhc
+```
+
+### src/hooks/panelbuttons_hooks.asm
+
+```asm
+; The shared hook on each command panel button (panelbuttons.*), in the refresh FUN_0046188E. Entered
+; through a jmp written over the stock code, it leaves through an explicit jmp to the verified
+; continuation. Interface only: the filters change how a button looks and what a click on it sends.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcPanelButton PROTO STDCALL frame:DWORD
+
+.data
+buttonNext dd 0046231Eh    ; jge 69700Dh: the grid is full
+
+.code
+
+; 0x462317: mov ebx,[esp+1Ch] / cmp ebx,6 (7 B, followed by the jge at 0x46231E), at the start of the
+; layout of one button: [esp+24h] its state, [esp+1C0h] / [esp+3C0h] its click and shift-click
+; commands, [esp+2C0h] its overlay text, [esp+18h] its rollover. The filters get the frame (ESP at the
+; site); every register is kept, then the stock instructions run again and set the flags of the jge.
+UhcPanelButtonHook PROC
+    TRACE_ONCE "command panel button (0x462317)"
+    pushad
+    lea eax, [esp+20h]
+    push eax
+    call UhcPanelButton
+    popad
+    mov ebx, dword ptr [esp+1Ch]
+    cmp ebx, 6
+    jmp buttonNext
+UhcPanelButtonHook ENDP
 
 END
 ```

@@ -98,7 +98,7 @@ Sizes, following the Design rule in wol-requests.md:
 | 39 | `DetonationDeath` | Flag + `DetonationProtoAction`, `DetonationCommand`, `DetonationHitpointThreshold`, `DetonationHitpointDecay` | Absent | L ; the flag's four tags built in `detonationDeath` (2026-11-05) |
 | 40 | Train ahead of the queue | Proto flag `DoNotQueue` (builders and wagons); nothing for shipments | `DoNotQueue` is a tech flag, read by the Research action; legacy has a shipment queue `[hc+288h]`, whose flag `YPRecalcHCTrainQueuePointsWhenShipped` (bit 39h) is read at 0x858508. DE's shipments not checked | S–M |
 | 41 | Reversible timed transform | Power `SwapUnit` with `<reversible/>` and `<activetime>` | Has `SwapUnit`, which never swaps back; `reversible` absent | M |
-| 42 | Veterancy bonus | `VeterancyBonus` ranks per proto + flag `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) | Has `ExperienceUnit` (counts kills, no effect) | L ; the two subtypes built in `veterancyBonus` (2026-11-05), the icons as chevrons of our own (2026-11-06); DE's are HUD images in its selection panel |
+| 42 | Veterancy bonus | `VeterancyBonus` ranks per proto + flag `ExperienceUnit` + `veterancydata.xml` (3 ranks at 1, 2, 3 kills) | Has `ExperienceUnit` (counts kills, no effect) | L ; the two subtypes built in `veterancyBonus` (2026-11-05), the icons as chevrons of our own (2026-11-06), soutache knots since 2026-11-20; DE's are HUD images in its selection panel |
 | 43 | `NativePreview` | Flag on native sockets: shows the settlement's units before a TP stands | Absent | L, UI; built as `nativePreview` (2026-11-08) |
 | 44 | Building rotated / annexed by its builder | Nothing by the builder; in-place building upgrades (`ForceMutate`, `RevertUpgrade`). The player can turn a building while placing it (see below) | Placement rotation: stock, only the key binding is missing | by the builder: needs a design; built with JTMaston's design as `annexFacing` (2026-11-08) |
 | 54 | Resource yield (Tier 5) | `yield` per `<Rate>` entry; subtypes `Yield`, `YieldSpecific`, `YieldBonus`; modify type `ResourceYield` | One `<Yield>` per action, on all resources, but trees only for the `Indians`/`SPCIndians` civs (gather tick 0x4ED0A6); no subtype | M (attribute + subtypes) |
@@ -784,14 +784,17 @@ For a land scout the two are level. Our raven flies over the lake, so its number
 | Target | nearest black ground, long legs (a lap first) | nearest unexplored 2 m cell, by 16 m blocks, biased to the heading |
 | Several scouts | (not tested) | one block per scout |
 | Unreachable ground | a land unit does not try the lake | per movement type; a block it fails to reach is given up |
-| Enemy buildings and armies | no avoidance; the Envoy died in the Hard AI's base | no avoidance |
-| Hit | no flee seen; scouting goes on | a fight or flee is left alone, scouting resumes when idle |
+| Enemy buildings and armies | no avoidance; the Envoy died in the Hard AI's base | keeps away from the enemy buildings that shoot it has seen (2026-11-20) |
+| Hit | no flee seen; scouting goes on | backs off out of the attacker's reach, marks 2 minutes of danger there, scouting goes on elsewhere (2026-11-20) |
 | All explored | not reached; wanders over explored ground | revisits the block seen longest ago |
 | Move order | a detour, scouting resumes | switches it off |
 | Stop | switches it off, the unit stays | switches it off, the unit stays |
 | Units | Envoy and Explorer seen (the data's `AbstractFindScout` list has four more) | any unit whose tactics file has the tactic |
 
-#### Proposed changes to `autoScout` (not implemented)
+#### Proposed changes to `autoScout`
+
+Items 1, 2 and 4 were built on 2026-11-20 ([`autoScout`](modding-guide.md#autoscout), "Danger"; the pack's explorers); 3
+waits for the team's answer; 5 is kept.
 
 1. **Keep away from enemy buildings that shoot** (better than DE, whose Envoy died at 5:40). At each scan, the scout's
    player remembers the enemy Town Centers, towers, forts and other attacking buildings it has seen (enemy:

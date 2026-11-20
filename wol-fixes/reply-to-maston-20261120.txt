@@ -1,0 +1,143 @@
+Reply to JTMaston and Dr.Maxy, 2026-11-20
+==========================================
+
+Everything below was tested in single player in copies of WoL, with our UHC.dll and also beside your own uhc.dll (with our
+dinput8.dll). It was not tested in multiplayer. Each folder in wol-fixes\ has its own README in English.
+
+Paraguayan works (#69): wol-fixes\paraguayan-works\
+--------------------------------------------------
+"We believe it must be caused by the bone skeleton."
+The skeleton is fine: the chimney bones are the arsenal's, in the same places and at the same scale. There were three
+faults:
+- Smoke: the works use effects\smoke\factory_smoke.particle. Its puffs are a quarter of the size of the arsenal's and live
+  half as long, so on these chimneys it is a thin grey wisp that is usually not seen. The arsenal's own white_smoke_b
+  alone was not enough either (it is not always active: the age-2 works showed no smoke for a whole minute). The fix adds
+  works_smoke.particle, which is white_smoke_b made always active. The result is the arsenal's plume. Tell us if you want
+  it lighter.
+- Damage: in the six age 1-2 damage models, 14 of the 35 debris pieces were named "debris_1a.001" and so on. The arsenal's
+  damage template never found them, so they never broke off. They are renamed now. goldworks.xml pointed to a damage file
+  that does not exist (WoL\buildings\works\med_arsenal_age2.dmg). It now uses the arsenal's, like the other two works.
+- Collapse, age 3: the works' age-3 models have the arsenal's bones turned another way, so the arsenal's collapse
+  animation laid the chimneys on their side and left crates floating. The bones now have the arsenal's orientation.
+  The standing building looks the same, and it now collapses upright.
+WoL-paraguayan-works-fix.zip and WoL-paraguayan-works-originals.zip unzip over the WoL folder. Before/after videos are in
+media\. The Heavy Works use other models and were not checked.
+Low model detail ("High Poly Models" off): the works look the same as at high detail, with the same smoke and damage.
+At low detail no building plays the falling-pieces collapse, the arsenal included: they fade out over their rubble. No
+<lowpoly> branch is needed; it would only make the works cheaper to draw, and it would need simpler models of them.
+Note for modders: an anim XML saved with Unix (LF) line endings made the building invisible in our tests. Keep CRLF.
+
+Latin American politicians (#70): key politicianEnablesTech, wol-fixes\politician-ui\
+---------------------------------------------------------------------------------------
+Done as you asked: <PoliticianEnablesTech>TechName</PoliticianEnablesTech> inside the politician's <Tech>, up to 4. It
+enables nothing; it is UI only. A tagged politician shows the flag alone. Under the flag, each tech shows its icon and
+its name from the techtree, and on hover the same rollover as that tech's own button (name, cost, description). Clicking
+the icon or the name selects the politician. A politician without the tag looks as it does today.
+No new art is needed: the key shows the flag part of your current pictures.
+apply_fix.py adds the tags to the 74 LA politicians (from their TechStatus obtainable effects) and adds the gadgets to your
+uipoliticianEuropeandlg.xml. It also fixes PoliticianButton3, which ended at 381 instead of 481. With --strings, it
+removes the hand-written "+ Technologies: ..." list from the politician descriptions in every string table.
+Tested in real Argentine (Ages II to V, 1920x1080 and 1024x768) and Mexican skirmishes: final\real-*.jpg.
+Found in your data: the Age IV Italian wave's second tech, WOTTAimmigrantIT05 (icon "padroni"), is named "Vineyards"
+in string 480112, while the politician's description calls it "Padroni". Smaller differences of the same kind:
+Midsommar / Midsummer, Organizations / Organisations.
+Questions: is the band under the flag the right place for the techs? Are four enough? Should --strings go into the
+release?
+
+Research while moving (#71): key researchOnTheMove, wol-fixes\research-on-the-move\
+-----------------------------------------------------------------------------------
+Give a unit the abstract type ResearchOnTheMove. The game drops unknown <Flag> names, so a flag can't be used; the type
+works because the DLL registers it. Such a unit walks, fights and gathers while its research goes on.
+Today a unit with research queued ignores move orders. The research goes on, but the unit stands still.
+Cancelling or dying refunds as before. Inside a building the research pauses, as it does for any unit inside a building.
+A unit that also has units queued to train stays held, as today.
+apply_fix.py gives the type to the six Mapuche council units.
+Questions: should units that train (caravans, Daimyo) also move while training? Is pausing while garrisoned right?
+
+Mapuche (#72): keys shipTechLimit and homeCityTechsInUnits, wol-fixes\mapuche\
+-----------------------------------------------------------------------------
+- <ShipTechLimit>N</ShipTechLimit> in a civ of civs.xml limits the techs that cost Ships, researched on units or buildings,
+  to N per game. Deck cards don't count. Each limited button shows n/N, and its rollover shows "Shipment techs: n/N". At the
+  limit the research is refused for every player in the game, not only in the interface. Cancelling gives the slot back,
+  and the count survives a saved game. apply_fix.py sets 10 for WallMapu; change it with --limit.
+- A HomeCity tech listed in a unit's or building's <Tech> rows can now be researched there like a normal tech, paying its
+  own cost. Today the game shows the button but silently refuses the research. Once active, the button goes away. The
+  pack uses HCNativeLore on the council instead of MapucheNativeLore, as a demo.
+  Such a research waits until there is a land shipment point, as your CheckLandHCGatherPoint techs do.
+- "Black town center" (Dr.Maxy): we could not tell what it means. Today, with the Town Center destroyed, shipment techs
+  still deliver to the Warchief, because the game uses the Daimyo type as a fallback shipment point. What should the
+  check be: a Town Center drawn black, a destroyed one, or no shipment point at all?
+Questions: should a repeatable tech (crates) count every time (as now) or once? Should a HomeCity tech on a unit be
+researchable when its card is not in the deck? And when a unit researches a HomeCity tech whose card IS in the player's
+deck, what should the card do: grey out as sent, or stay? We could not test it: HCNativeLore is not one of the 6 cards
+of homecitymapuche.xml, so no WallMapu deck holds it. If you have a deck with such a card, tell us which.
+
+Special transforms (#73): key transformChecks, wol-fixes\special-transforms\
+--------------------------------------------------------------------------
+uiTransformSelectedUnit already does what you need: every machine runs it, each selected unit is handled on its own, it
+checks the target's own placement rules at the unit's position (the 20 m kraal rule included) and charges the cost.
+Why your four kraal transforms and the fireship could not be buttons: their maturing protos lacked NonCollideable. The
+unit that transforms stands where the target goes, so placement was refused everywhere. Your other six maturing protos
+already have the flag.
+apply_fix.py turns the youth's four placed transforms and the fishing boat's fireship into command buttons in the same
+columns, adds NonCollideable to those five protos, and fixes the fireship command's proto name (PyrpolikoMaturing). The
+fireship button shows only for the Greeks (Age0Greeks). The maturing period is kept.
+The key transformChecks greys the button out with the reason ("needs a Gunpowder Kraal within 20", "Not enough
+resources", "build limit"). It also checks the build limit, which the game did not do: seven boats made seven fireship
+maturings with a limit of 5. In a group, the units that pass transform, and the button shows "2 / 3".
+Questions: should the button go straight to the final unit instead of the maturing one? Should the build limit also
+count the final unit (Pyrpolikon, limit 5)?
+
+Veterancy marks (#74): wol-fixes\veterancy-marks\
+-------------------------------------------------
+Redrawn twice after your reviews:
+- rank 1: one round bronze loop, now a truer bronze;
+- rank 2: three round silver loops;
+- rank 3: three eye-shaped gold loops;
+- rank 4: five round gold loops;
+- rank 5: five eye-shaped gold loops.
+Every loop sits on a short stem, so there is space between the loops. There are no stars, and each mark has a diagonal
+metallic shine. See marks-x4.png, and marks-ingame.png for the real size.
+Each mark is now centred on the unit's HP bar, within 1 px on infantry and cavalry. Elephants still miss by up to about
+13 px: their bar is toward the head and turns with it.
+Ranks 4 and 5 are gold because you gave no colour: tell us if you want others. At the real size the shine makes the gold
+look pale; we can make it weaker.
+
+Minimized UI, version 6: wol-fixes\min-ui\note-for-team-v6.txt
+---------------------------------------------------------------
+- The tooltip now says "4 projectiles".
+- The parentheses around icons are gone, both ours and the ones in the game's strings. Our tooltip rewrite drops them,
+  so your string tables don't change. The note gives the edited strings if you want them changed everywhere.
+- Machine guns and the Chu Ko Nu fire in bursts from the Attack tags of their animation (Gatling 6, Chu Ko Nu 3), not
+  from numberprojectiles, so the panel shows no number for them. If you write those counts as numberprojectiles in
+  their tactics, the panel shows them. With our key "numberOfShots projectiles" on, combat would multiply by them too.
+- Icons: we kept your own unit-type icons. Found on the way: your staticons\stat_icon_hand_cavalry.ddt is an empty file,
+  so Hand Cavalry shows no icon today.
+
+Mustard gas (#75): key truckAttackResourceFix, wol-fixes\mustard-gas\README.txt
+-------------------------------------------------------------------------------
+It is an engine fault, not your data. The gas attacks with the stock TruckAttack action, the monster truck's. Each hit
+on an enemy unit sets that unit's whole resource inventory to 0, so a Mill, plantation or rice paddy under the gas is
+empty for the rest of the game ("Current Gatherers: 0", still so 6 minutes later). We tried 25 data variants of the gas:
+each one still emptied the Mill or did no damage. POWERtornado, POWERIncendio and the monster truck do the same.
+With the new key, a building hit by a TruckAttack keeps its resources. The damage is unchanged (352 against 357 HP/s on
+a test target).
+
+All together (wol-fixes\final-check-20261120\)
+-----------------------------------------------
+- With our UHC.dll alone, every key of the cfg template on and every pack above applied: 126 keys applied, 0 failed.
+  The test was a WallMapu skirmish against a German AI on Acre. The AI played (39 units at 9:30) and there was no XS
+  error.
+- Beside your own uhc.dll (with our dinput8.dll): 91 applied and 27 failed. The 27 are sites your DLL already holds,
+  as expected. Every new key of this round applied. minUIStats applies, but your DLL holds the building armor row's
+  site, so that row does not show.
+
+Auto scout (#68), as you discussed with us
+------------------------------------------
+- The scout now avoids enemy buildings that shoot once it has seen them, keeping their range + 12 m clear.
+- When hit, it backs off out of reach and keeps scouting.
+- Explorers and cartographers get the Start/Stop buttons in the pack, off at birth.
+- In a test with outposts and musketeers: 79 % of the map explored at 6 minutes, against 70 % before, and both scouts
+  alive, where before the envoy died.
+Question: in DE a plain move order only detours the scout, and it then goes back to scouting. Ours switches scouting
+off. Which do you prefer?

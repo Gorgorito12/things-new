@@ -211,7 +211,7 @@ python -I tools/testbed.py [--bed <folder>] <command> ...
 
 Drives the game of a test copy (default `C:\AoE3-UHC-Test`, or the `UHC_TESTBED` variable) with
 no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wait`, `state`,
-`units`, `explored`, `shot`, `record`, `click`/`rclick`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `log`, `safety`; the
+`units`, `explored`, `shot`, `record`, `click`/`rclick`, `hover`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `log`, `safety`; the
 docstring lists their arguments.
 
 A command that waits on the game ends with exit code 3 when the game dies meanwhile (the message gives
@@ -233,6 +233,9 @@ back. `lang [status|en|restore]` shows each string table of the copy's `data` fo
 puts the mod launcher's English originals (`translations\_originals`) there for captures, keeping the
 replaced files as `*.lang-orig`, and restores them; the game reads the tables only at startup, so both
 refuse while the copy's game runs (`docs/developer-guide.md`, "A WoL copy in English").
+`skirmish` checks each pre-game screen before it clicks (the gold of its buttons, read from the client area, with
+the points scaled to the client size), clicks again when the next screen does not show, and stops with
+`<bed>\skirmish-fail-<step>.png` on a screen it does not know ([wol-migration.md](../docs/wol-migration.md#skirmish-route-for-videos-2026-11-04)).
 `explored [--player N]` prints the share of the map a player has explored and sees now, read from the
 game's visibility grid (`docs/engine-symbols.md`, "Auto scout"): how `autoScout` was measured.
 
