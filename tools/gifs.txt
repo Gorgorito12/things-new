@@ -123,8 +123,8 @@ unitResourceAuras-wol 2 36 3
 unitResourceAuras-wol-control 2 36 3
 veterancyBonus-wol 0 12 1
 veterancyBonus-wol-control 0 12 1
-veterancyBonus-icons-wol 9 24 2
-veterancyBonus-icons-wol-control 9 24 2
+veterancyBonus-icons-wol 3 24 2
+veterancyBonus-icons-wol-control 15 24 2
 killSpawn-wol 2 20 2
 killSpawn-wol-control 2 20 2
 workRateByAbstractType-wol 2 36 3
@@ -306,3 +306,11 @@ autoScout-wol 2 48 4 800:320:560:330+800:270:0:810
 autoScout-wol-control 2 48 4 800:320:560:330+800:270:0:810
 multiplierDecimals-wol 2 12 1 800:60:0:0+800:230:6:390
 multiplierDecimals-wol-control 2 12 1 800:60:0:0+800:230:6:390
+paraguayanWorks-smoke-wol 4 36 3
+paraguayanWorks-smoke-wol-control 4 36 3
+paraguayanWorks-damage-wol 32 24 2
+paraguayanWorks-damage-wol-control 32 24 2
+paraguayanWorks-collapse-wol 62 4 0.5
+paraguayanWorks-collapse-wol-control 67 4 0.5
+shipTechLimit-wol 3 30 3 800:70:0:280+800:240:480:320
+shipTechLimit-wol-control 3 30 3 800:240:480:320

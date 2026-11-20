@@ -24,6 +24,8 @@ set(UHC_SOURCES
   src/xmllist.cpp
   src/worldtick.cpp
   src/researchpay.cpp
+  src/canresearch.cpp
+  src/techrollover.cpp
   src/deathobservers.cpp
   src/killobservers.cpp
   src/unitpanel.cpp
@@ -113,6 +115,8 @@ set(UHC_SOURCES
   src/features/techprereq.cpp
   src/features/orprereqs.cpp
   src/features/shipmentcounts.cpp
+  src/features/shiptechlimit.cpp
+  src/features/hctechsinunits.cpp
   src/features/kothtimer.cpp
   src/features/teams.cpp
   src/features/techrename.cpp
@@ -239,6 +243,9 @@ set(UHC_SOURCES
   src/hooks/killobservers_hooks.asm
   src/hooks/researchpay_hooks.asm
   src/hooks/researchgrant_hooks.asm
+  src/hooks/canresearch_hooks.asm
+  src/hooks/techrollover_hooks.asm
+  src/hooks/hctechsinunits_hooks.asm
   src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm

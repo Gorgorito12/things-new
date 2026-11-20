@@ -56,7 +56,12 @@
                 NumberProjectiles only with its "projectiles" option (neither the game nor another DLL fires them)
        rofTip, projectilesTip  the attack rows' tooltip lines for the rate of fire and the projectiles, after the
                 game's own damage line; %s is the number, [string:ID] works, an empty text means no line.
-                Defaults: "Attacks every %s s" and "%s projectiles before the reload"
+                Defaults: "Attacks every %s s" and "%s projectiles" (version 6: not "before the reload", since a unit
+                such as the Chu Ko Nu does not fire them all at once); each line ends with its icon, no parentheses
+       tipParentheses="keep"  keeps the parentheses of the game's own tooltip lines; by default they go from around
+                an icon and from around the name right after one: "11 (icon) Ranged Damage", "1.5X Bonus Damage
+                against (icon) Maneuver Unit" (strings 42226, 42229, 42230 and 42223 write them; the string tables are
+                left as they are)
        multiplierZeros="keep"  keeps the zeros that end the multipliers; by default "1.50x" is written "1.5x" and
                 "2.00x" "2x" (with the DLL's multiplierDecimals key the game writes two decimals)
        abilities="all": also the attacks of abilities the unit cannot use; by default an attack that only a
@@ -104,7 +109,7 @@
   <!-- Every attack row: the three original ones, then uhcRow3, uhcRow4, uhcRow5, each with its ROF (a
        stopwatch) after the damage, then the projectiles before the reload when above 1 (a revolver's cylinder);
        attacks of abilities the unit cannot use are left out. -->
-  <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed" stockRows="take" rofIcon="ui\ingame\stat_icon_rof" projectilesIcon="ui\ingame\stat_icon_projectiles" rofTip="Attacks every %s s" projectilesTip="%s projectiles before the reload"/>
+  <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed" stockRows="take" rofIcon="ui\ingame\stat_icon_rof" projectilesIcon="ui\ingame\stat_icon_projectiles" rofTip="Attacks every %s s" projectilesTip="%s projectiles"/>
   <!-- uhcRow5 is on the line of the resource held and the AutoGather rate (a villager carrying food,
        a factory, a bank, a trickle): while either shows, uhcRow5 stays empty. -->
   <avoid gadget="unitselectionpanel-unitResourceValue"/>

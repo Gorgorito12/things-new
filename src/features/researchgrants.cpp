@@ -35,7 +35,7 @@
 // through PreviewResearchPay (researchpay.h, every key in the payment's order), for the command panel. A tech button
 // whose research would get a share below 1 shows the free word or the price after it (its overlay text, the buffer the
 // Buy buttons use), and its rollover the cost after the share and a green label; the hook of the panel's call of the
-// rollover builder at 0x4622C5 and of the builder's copy of the cost at 0x4C73FD. A spent point shows the label as a
+// rollover builder at 0x4622C5 (shared, techrollover.h) and of the builder's copy of the cost at 0x4C73FD. A spent point shows the label as a
 // floating text over the paying building, to its owner (floatingtext.h). Options: notext, text=, noprice, free=, log.
 #include <windows.h>
 
@@ -60,6 +60,7 @@
 #include "../patch.h"
 #include "../prototags.h"
 #include "../researchpay.h"
+#include "../techrollover.h"
 #include "../savedmarkers.h"
 #include "../techsubtypes.h"
 #include "../unitpanel.h"
@@ -70,7 +71,6 @@ extern "C" {
 std::int32_t g_uhcGrantTimed = 0;  // researches with a Time factor in progress: the step hooks look only then
 void UhcGrantResearchStepHook();
 void UhcGrantCommandStepHook();
-void UhcGrantTechButtonHook();
 void UhcGrantTipCostHook();
 }
 
@@ -99,11 +99,9 @@ constexpr std::uint32_t kResListCount = 0x00C6DF38;  // the entries of every Res
 using CostCopyFn = void*(__thiscall*)(void* cost, const void* from);
 using CostFillFn = void(__thiscall*)(void* cost, float value);
 using CostScaleFn = void(__thiscall*)(void* cost, float factor);
-using AppendFn = void(__thiscall*)(void* text, const wchar_t* more, std::int32_t length, std::int32_t start);
 const auto kCostCopy = reinterpret_cast<CostCopyFn>(0x00480A73);
 const auto kCostFill = reinterpret_cast<CostFillFn>(0x004E2617);
 const auto kCostScale = reinterpret_cast<CostScaleFn>(0x00480B94);
-const auto kAppend = reinterpret_cast<AppendFn>(0x00443960);  // BString append; -1, -1: all of it, at the end
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -921,10 +919,11 @@ extern "C" void* __stdcall UhcGrantTipCost(void* list, const void* from, const c
   return result;
 }
 
-// From the hook of the panel's call of that builder for a tech button (0x4622C5), once the rollover is built:
-// the button's overlay text (the panel's buffer, 256 chars, empty for a tech) and a line in the rollover.
-extern "C" void __stdcall UhcGrantTechButton(const char* entry, const char* player, const char* unit, void* rollover,
-                                             char* overlay) {
+namespace {
+
+// The shared tech rollover (techrollover.h, the panel's call of that builder at 0x4622C5), once the rollover is
+// built: the button's overlay text (the panel's buffer, 256 chars, empty for a tech) and a line in the rollover.
+void GrantTechButton(const char* entry, const char* player, const char* unit, void* rollover, char* overlay) {
   const Preview preview = PreviewOf(entry, player, unit);
   if (preview.key == nullptr || (preview.share >= 1.0f && preview.grant.tags == nullptr)) {
     if (g_log && entry != nullptr && g_shownPrice.count(TechIdOf(entry)) != 0) {
@@ -939,11 +938,11 @@ extern "C" void __stdcall UhcGrantTechButton(const char* entry, const char* play
   const std::wstring line = L"\n<color=0.4, 1, 0.4>" +
                             (tags != nullptr ? Label(tags->cost, tags->time) : Label(preview.share, 1.0f)) +
                             L"</color>";
-  if (rollover != nullptr && *static_cast<void**>(rollover) != nullptr) {
-    kAppend(rollover, line.c_str(), -1, -1);
-  }
+  uhc::AppendTechRollover(rollover, line.c_str());
   LogShown(TechIdOf(entry), preview.share, overlay != nullptr ? overlay : "");
 }
+
+}  // namespace
 
 // From the step hooks, while a research with a Time factor is in progress: the step of `action`, which adds to
 // [action+offset]; `entry` is its tech's status entry ([entry+18h] the research points).
@@ -1011,9 +1010,8 @@ Outcome ApplyResearchGrants(const Config& config) {
                   &sites::kPaySharedAffordCheck, &sites::kResListGet, &sites::kIsBuilt, &sites::kUnitAliveSlot}) ||
       (g_text && !VerifyFloatingText("researchGrants")) ||
       (g_price && !VerifyAll("researchGrants price",
-                             {&sites::kTechButtonRollover, &sites::kButtonOverlayReset, &sites::kButtonOverlayRead,
-                              &sites::kTechRolloverHead, &sites::kTechTipCostCopy, &sites::kBStringAppend,
-                              &sites::kResListCopy, &sites::kResListScale, &sites::kResListFill})) ||
+                             {&sites::kTechRolloverHead, &sites::kTechTipCostCopy, &sites::kResListCopy,
+                              &sites::kResListScale, &sites::kResListFill})) ||
       !AddResearchPayer("researchGrants", &ClaimGrant, &GrantStarted) ||
       !AddProtoTagHandler("ResearchGrantInterval", &ReadInterval) || !AddProtoTagHandler("ResearchGrantMax", &ReadMax) ||
       !AddProtoTagHandler("ResearchGrantCost", &ReadCost) || !AddProtoTagHandler("ResearchGrantTime", &ReadTime) ||
@@ -1024,9 +1022,8 @@ Outcome ApplyResearchGrants(const Config& config) {
       !AddWorldTick(&Tick) ||
       !WriteJmp(sites::kResearchProgressAdd.va, reinterpret_cast<const void*>(&UhcGrantResearchStepHook), 6) ||
       !WriteJmp(sites::kCommandResearchProgressAdd.va, reinterpret_cast<const void*>(&UhcGrantCommandStepHook), 6) ||
-      (g_price &&
-       (!WriteCall(sites::kTechButtonRollover.va + 0x10, reinterpret_cast<const void*>(&UhcGrantTechButtonHook)) ||
-        !WriteCall(sites::kTechTipCostCopy.va + 4, reinterpret_cast<const void*>(&UhcGrantTipCostHook))))) {
+      (g_price && (!AddTechRolloverLine("researchGrants price", &GrantTechButton) ||
+                   !WriteCall(sites::kTechTipCostCopy.va + 4, reinterpret_cast<const void*>(&UhcGrantTipCostHook))))) {
     return Outcome::kFailed;
   }
   if (!AddUnitPanelRow(&GrantRow)) {
