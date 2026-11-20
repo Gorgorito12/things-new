@@ -262,7 +262,8 @@ while the menu still slides in, or in a client that is not 1920 x 1080, lands on
   A grey home city Play (no `LastSelectedSPHC`) stops it with the hint to run `profile hc`.
 
 `mapsweep.py` goes through the same checked route (`skirmish_to_setup`). Tested on 2026-11-20 in
-`C:\AoE3-UHC-WoLReal`, beside another session's game, at 1920 x 1080 and 1024 x 768 (`wol-fixes/final-check-20261120`).
+`C:\AoE3-UHC-WoLReal` and `C:\WoL-Test`, beside other copies that were starting at the same time: 4 of 4 runs at
+1920 x 1080 reached the game (`wol-fixes/final-check-20261120`). Other client sizes are scaled but not tested yet.
 
 **Two games at once.** Both cfgs need `multipleInstances background`. `C:\AoE3-UHC-WoLReal2` opens at the right of
 the monitor, the first copy at the left. `launch` and `skirmish` wait for each other: copies that start together
