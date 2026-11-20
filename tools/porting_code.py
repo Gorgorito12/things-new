@@ -121,6 +121,7 @@ PAGES = {
         "trainBatchSize": ["src/features/trainbatch.cpp", "src/hooks/trainbatch_hooks.asm"],
         "sharedBuildLimit": ["src/features/sharedlimit.cpp", "src/hooks/sharedlimit_hooks.asm"],
         "doNotQueue": ["src/features/donotqueue.cpp"],
+        "researchOnTheMove": ["src/features/researchmove.cpp"],
         "nextResearchFree": ["src/features/freeresearch.cpp"],
         "researchGrants": ["src/features/researchgrants.cpp", "src/hooks/researchgrant_hooks.asm"],
         "shipTechLimit": ["src/features/shiptechlimit.cpp"],

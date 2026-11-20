@@ -17,7 +17,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon`, `autoScout` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
@@ -1669,6 +1669,18 @@ Code: [buildings](porting-code/buildings.md#donotqueue). It needs `AddProtoTagHa
 
 - **Site:** the `call` at `0x9CE81A`, of `0x494894`.
 - **Test:** the tag on a unit: with others queued, it goes first and comes out first.
+
+### researchOnTheMove
+
+Code: [buildings](porting-code/buildings.md#researchonthemove). It needs `RequestAbstractUnitType`
+([extra abstract unit types](#extra-abstract-unit-types)).
+
+- **Site:** the `call` at `0x487E1B` (`E8 6B FF FF FF`, then `cmp al,1 / setne al`), of `0x487D8B` "the queue holds the
+  unit", inside `0x487DED` "can take a move", which the unit's vtable `+8Ch` (`0x487E74`) asks for the order code and
+  the leash, for every unit every tick. Verify only: the head of `0x487D8B` (`8B 41 24 85 C0 74 13 8A 40 60 3C 0D`).
+  Leave the four other callers of `0x487D8B` alone (`0x672427`, `0x898A7B`, `0x9AD19C`, `0x9CE3BC`).
+- **Test:** a unit of the type with a research queued walks when ordered, and the research goes on; without the type
+  it stands still.
 
 ### nextResearchFree
 

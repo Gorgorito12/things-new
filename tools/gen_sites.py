@@ -1840,6 +1840,15 @@ SITES = [
     ("AutoScoutSetTactic", 0x4F7ECD, 0x0A),
     ("AutoScoutTacticIndex", 0x948161, 0x08),
     ("AutoScoutIdle", 0x44F1A7, 0x08),
+    # researchOnTheMove: "can take a move" FUN_00487DED (bool thiscall(mgr); callers 0x487EBB, the unit's vtable +8Ch
+    # 0x487E74 that the order code asks, and 0x7D59F8) calls "the queue holds the unit" 0x487D8B at 0x487E1B, then
+    # cmp al,1 / setne al / pop ecx / ret. The call is redirected; the other four callers of 0x487D8B (a unit filter
+    # 0x672427, 0x898A7B, the repair button 0x9AD19C, the train command 0x9CE3BC) keep the stock answer. The range
+    # covers the call and the cmp / setne after it.
+    ("QueueHoldsMoveCall", 0x487E1B, 0x0A),
+    # researchOnTheMove, verify only: the head of 0x487D8B, mov eax,[ecx+24h] / test eax,eax / je 487DA5h /
+    # mov al,[eax+60h] / cmp al,0Dh, which the wrapper calls.
+    ("QueueHoldsHead", 0x487D8B, 0x0C),
     # shipTechLimit: the refunds of a cancelled research, 0x8D7004(player, cost) (lea of the action's
     # copy of the cost / push / mov ecx,player / call): the Research action's state 13h at 0x9E6161 (EBP the action,
     # [ebp+74h]) and the CommandResearch one at 0x9D56AF (ESI the action, [esi+7Ch]); the head of the can-research

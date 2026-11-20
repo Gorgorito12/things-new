@@ -4242,6 +4242,45 @@ flagged entry after the stock add. Entries move as bytes, as each owns its cost 
 in the entry, so a card that waits keeps it, and a saved game needs nothing more. The wrapper returns the new place, which the
 send gives to the shipment's models.
 
+### researchOnTheMove
+
+`src/features/researchmove.cpp`, no asm. Found with traces and capstone reading.
+The rows: [engine-symbols](engine-symbols.md#wol-requests-70-73-research-for-batch-2-2026-11-20), "Research actions and moving". <!-- private -->
+
+**Why a unit with research stands still.** The research itself never holds the unit: the queue routine 0x9CCB39 adds
+the Research action with `immediate` 0, so it sits in the action list `[mgr+14h]` beside the current action
+`[mgr+24h]`, and the list update 0x485C44 calls every action's update (vtable `+3Ch`, then `+40h`) each tick, current or
+not. What holds the unit is the question the game asks before it gives a unit a new current action: the unit's vtable
+`+8Ch` (0x487E74: speed above zero, a completed building data if any, then 0x487DED). "Can take a move" 0x487DED answers
+false for a current action with flag 9 or of type 2Ah, and otherwise asks 0x487D8B, "the queue holds the unit": true
+when the current action is a Train (0Dh) or a Research (0Ch), or the list holds one (0x487D49 counts a type, with and
+without flag 0). The order code 0x4FA0A5..0x4FA0B7 takes a false as a refusal: the order's action is left in state FFh
+and replaced by idle about 5 s later.
+
+**The change.** One call: 0x487E1B, 0x487DED's call of 0x487D8B, goes to `QueueHoldsUnit(mgr)`, which calls 0x487D8B
+first and returns its answer, except when it is true for a unit (`[mgr+4]`) whose proto has the abstract type and whose
+current action and list hold no Train action: then false. The unit then takes an order as a unit with an empty queue
+does, the Research actions stay in the list, and the list update keeps advancing the first of them (0x9CA1F0) at the
+rate of 0x9BFE33, whatever the current action is.
+
+**Callers.** 0x487DED is asked for every unit every tick: a trace of 18 s in a scenario counted 44,042 calls, 33,024 from
+the leash 0x489B15 (through 0x489B81) and 10,995 from the order code 0x4FA0B5, the rest from 0x49179E and other order
+paths. The wrapper costs a call when the stock answer is false (every unit with an empty queue), and a type test and a
+walk of one list for a unit with a queue. 0x487D8B's other callers keep the stock answer, as they ask whether the unit has
+a queue: a unit filter's option byte `+53h` (0x672427, through 0x4537B4), a test by unit ID (0x898A7B), the repair button
+of the command panel (0x9AD19C: `AutoRepairUnit` or its cancel) and the train command 0x9CE3BC. With the leash asking too,
+a marked unit with research is leashed as an idle unit is.
+
+**What the game does with the rest.** Death and knockout drop the list and refund every queued research (seen: three
+ships back for three techs); the cancel of a queue icon refunds as before; a garrisoned unit (`[unit+6Ch]` ≥ 0) skips
+every action of its list, so the research pauses and goes on when the unit is out; the list is saved with the unit, and
+the wrapper keeps no state, so a loaded game behaves the same.
+
+**Why it is safe.** 0x487DED continues after the call with `cmp al,1 / setne al / pop ecx / ret`: only AL is read. The
+wrapper is `__fastcall(mgr, edx)`, so it takes ECX as stock's `thiscall` does, returns `bool` in AL, and keeps EBX, ESI,
+EDI and EBP; the x87 stack is not used. Deterministic: the answer depends on the unit's proto and its actions only; the
+log (once per unit ID) never feeds back.
+
 ### The research payment (shared)
 
 `src/researchpay.*`, `hooks/researchpay_hooks.asm`, used by `nextResearchFree` and `researchGrants` through
