@@ -15,6 +15,10 @@
 // does after the fifth (0x81A848), so the dialog lists the politicians it can show. The other builders null-check every
 // gadget (FUN_00818EE5) or place their entries by a fixed index of their own data (the Asian and native dialogs).
 // UI only: the dialog is the local player's, and the politician chosen is sent as the stock command.
+//
+// The same hook serves politicianEnablesTech (AddPoliticianPlaceObserver in features.h): whichever key applies first
+// writes it, and each observer sees every place a politician is about to fill.
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -35,9 +39,14 @@ const auto kGadgetLookup = reinterpret_cast<GadgetLookup>(0x0040423C);
 constexpr std::int32_t kAnyGadget = 0;
 constexpr std::int32_t kTextGadget = 0x10;
 constexpr int kStockPlaces = 5;
+constexpr std::size_t kMaxObservers = 4;
 
 bool g_log = false;
 bool g_logged = false;
+bool g_fix = false;          // politicianPlacesFix applied
+bool g_hookWritten = false;  // the jmp at 0x81A45A
+uhc::PoliticianPlaceObserver g_observers[kMaxObservers] = {};
+std::size_t g_observerCount = 0;
 
 bool HasGadget(void* manager, std::int32_t handle, std::int32_t type) {
   return kGadgetLookup(manager, nullptr, handle, type) != nullptr;
@@ -69,24 +78,53 @@ std::int32_t TechId(const char* techStatus) {
 }  // namespace
 
 // From the hook, for each politician the builder accepts, before it takes the next place. True: no place is left, so
-// the builder ends with the politicians it has.
-extern "C" bool __stdcall UhcPoliticianNoPlace(const char* dlg, const char* techStatus) {
+// the builder ends with the politicians it has (politicianPlacesFix). Otherwise the observers (politicianEnablesTech)
+// see the place the politician is about to fill.
+extern "C" bool __stdcall UhcPoliticianNoPlace(char* dlg, const char* techStatus) {
   const std::int32_t count = *reinterpret_cast<const std::int32_t*>(dlg + 0x26C);
-  const int places = PlaceCount(dlg);
-  if (count < places) {
-    return false;
+  if (g_fix) {
+    const int places = PlaceCount(dlg);
+    if (count >= places) {
+      if (!g_logged || g_log) {
+        g_logged = true;
+        uhc::Log(L"politicianPlacesFix: the European age-up dialog has %d place(s); politician tech %d and any after "
+                 L"it are left out (%ls)",
+                 places, TechId(techStatus),
+                 *reinterpret_cast<const std::uint8_t*>(dlg + 0x144) != 0 ? L"revolutions" : L"age-up");
+      }
+      return true;
+    }
   }
-  if (!g_logged || g_log) {
-    g_logged = true;
-    uhc::Log(L"politicianPlacesFix: the European age-up dialog has %d place(s); politician tech %d and any after it "
-             L"are left out (%ls)",
-             places, TechId(techStatus),
-             *reinterpret_cast<const std::uint8_t*>(dlg + 0x144) != 0 ? L"revolutions" : L"age-up");
+  for (std::size_t i = 0; i < g_observerCount; ++i) {
+    g_observers[i](dlg, techStatus, count);
   }
-  return true;
+  return false;
 }
 
 namespace uhc {
+
+// The hook at 0x81A45A, written once for politicianPlacesFix and the observers.
+bool InstallPoliticianPlaceHook(const char* feature) {
+  if (g_hookWritten) {
+    return true;
+  }
+  if (!VerifyAll(feature, {&sites::kPoliticianPlaceTake, &sites::kPoliticianListEnd, &sites::kPoliticianPanelBind,
+                           &sites::kPoliticianNameBind, &sites::kPoliticianNameRead, &sites::kTechStatusTechId,
+                           &sites::kGadgetLookup}) ||
+      !WriteJmp(sites::kPoliticianPlaceTake.va, reinterpret_cast<const void*>(&UhcPoliticianPlacesHook), 7)) {
+    return false;
+  }
+  g_hookWritten = true;
+  return true;
+}
+
+bool AddPoliticianPlaceObserver(PoliticianPlaceObserver observer, const char* feature) {
+  if (g_observerCount == kMaxObservers || !InstallPoliticianPlaceHook(feature)) {
+    return false;
+  }
+  g_observers[g_observerCount++] = observer;
+  return true;
+}
 
 Outcome ApplyPoliticianPlacesFix(const Config& config) {
   const Config::Args* args = config.First("politicianPlacesFix");
@@ -100,13 +138,10 @@ Outcome ApplyPoliticianPlacesFix(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("politicianPlacesFix", {&sites::kPoliticianPlaceTake, &sites::kPoliticianListEnd,
-                                         &sites::kPoliticianPanelBind, &sites::kPoliticianNameBind,
-                                         &sites::kPoliticianNameRead, &sites::kTechStatusTechId,
-                                         &sites::kGadgetLookup}) ||
-      !WriteJmp(sites::kPoliticianPlaceTake.va, reinterpret_cast<const void*>(&UhcPoliticianPlacesHook), 7)) {
+  if (!InstallPoliticianPlaceHook("politicianPlacesFix")) {
     return Outcome::kFailed;
   }
+  g_fix = true;
   Log(L"politicianPlacesFix: the European age-up dialog lists only the politicians its layout has places for");
   return Outcome::kApplied;
 }

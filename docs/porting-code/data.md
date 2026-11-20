@@ -15,9 +15,9 @@ Contents:
 
 Contract: [dataLint](../porting-to-another-dll.md#datalint).
 
-Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`modifytypes.h`](helpers.md#modify-types), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`modifytypes.h`](helpers.md#modify-types), [`techsubtypes.h`](helpers.md#tech-subtypes), [`techtags.h`](helpers.md#tech-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `LintProtoTagMiss` `0x5F62A2` (8 B), `LintProtoActionMiss` `0x5FA202` (6 B), `LintUnitTypeMiss` `0x5FCB61` (5 B), `LintTechNode` `0x61FDB8` (7 B), `LintTechLoadCall` `0x61FE4A` (5 B), `LintEffectDrop` `0x6205E9` (6 B), `LintEffectType` `0x65BC56` (5 B).
+Sites: `LintProtoTagMiss` `0x5F62A2` (8 B), `LintProtoActionMiss` `0x5FA202` (6 B), `LintUnitTypeMiss` `0x5FCB61` (5 B), `LintTechLoadCall` `0x61FE4A` (5 B), `LintEffectDrop` `0x6205E9` (6 B), `LintEffectType` `0x65BC56` (5 B).
 
 ### src/features/datalint.cpp
 
@@ -51,6 +51,7 @@ Sites: `LintProtoTagMiss` `0x5F62A2` (8 B), `LintProtoActionMiss` `0x5FA202` (6 
 #include "../modifytypes.h"
 #include "../patch.h"
 #include "../techsubtypes.h"
+#include "../techtags.h"
 #include "../unittypes.h"
 
 extern "C" {
@@ -58,10 +59,8 @@ void UhcLintUnitTypeHook();     // hooks/datalint_hooks.asm
 void UhcLintProtoTagHook();
 void UhcLintProtoActionHook();
 void UhcLintDoneHook();
-void UhcLintTechHook();
 void UhcLintEffectHook();
 void UhcLintEffectTypeHook();
-const char* g_uhcLintTech = nullptr;  // the <Tech> node being read
 extern const char* g_uhcSubtypeNode;  // techsubtypes.cpp: the <Effect> node of the last subtype read
 }
 
@@ -71,7 +70,6 @@ constexpr std::uint32_t kUnitTypeMiss = 0x005FCB61;    // the <UnitType> handler
 constexpr std::uint32_t kProtoTagMiss = 0x005F62A2;    // after the tag table's find: test al,al / je / mov edx
 constexpr std::uint32_t kProtoActionMiss = 0x005FA202;  // je 5FC891h: no such action in the proto's set
 constexpr std::uint32_t kTechLoadCall = 0x0061FE4A;    // the call of the tech parser, the last thing the data load reads
-constexpr std::uint32_t kTechNode = 0x0061FDB8;        // the tech parser's loop over the <Tech> nodes
 constexpr std::uint32_t kEffectDrop = 0x006205E9;      // je 621ECAh: setData was false
 constexpr std::uint32_t kEffectType = 0x0065BC56;      // push 512h: no such effect type
 constexpr int kMaxLines = 40;
@@ -173,6 +171,7 @@ constexpr KnownTag kKnownTags[] = {
     {L"ResearchGrantMinCost", "researchGrants"},
     {L"WallPiece", "customWalls"},
     {L"RandomCost", "randomCost"},
+    {L"PoliticianEnablesTech", "politicianEnablesTech"},
 };
 
 std::map<std::wstring, Seen> g_seen[kKinds];
@@ -182,6 +181,7 @@ bool g_done = false;  // the load ended: what comes now is written at once
 const char* g_lastSubtypeNode = nullptr;  // an effect already named as an unknown subtype
 bool g_all = false;
 bool g_file = false;
+const char* g_tech = nullptr;  // the <Tech> node being read (techtags.h)
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -220,7 +220,7 @@ std::wstring EffectTarget(const char* node) {
 }
 
 std::wstring TechName() {
-  const std::wstring name = Attribute(g_uhcLintTech, "name");
+  const std::wstring name = Attribute(g_tech, "name");
   return name.empty() ? std::wstring() : L"tech " + name;
 }
 
@@ -317,6 +317,8 @@ void ActionTagRead(const uhc::ActionTag& tag) {
 
 void ModifyTypeRead(const wchar_t* name, const char* proto) { Note(kModifyType, name, ProtoName(proto)); }
 
+void TechNode(const char* node) { g_tech = node; }
+
 void SubtypeRead(const char* name) {
   g_lastSubtypeNode = g_uhcSubtypeNode;
   Note(kSubtype, Wide(name), TechName());
@@ -408,10 +410,10 @@ Outcome ApplyDataLint(const Config& config) {
     g_on[i] = config.First(kKnownTags[i].key) != nullptr;
   }
   if (!VerifyAll("dataLint", {&sites::kLintUnitTypeMiss, &sites::kLintProtoTagMiss, &sites::kLintProtoActionMiss,
-                              &sites::kLintTechLoadCall, &sites::kLintTechNode, &sites::kLintEffectDrop,
+                              &sites::kLintTechLoadCall, &sites::kLintEffectDrop,
                               &sites::kLintEffectType}) ||
       !OnDatabaseLoad(&NewDatabase) || !WriteCall(kTechLoadCall, reinterpret_cast<const void*>(&UhcLintDoneHook)) ||
-      !WriteJmp(kTechNode, reinterpret_cast<const void*>(&UhcLintTechHook), 7) ||
+      !OnTechNode(&TechNode) ||
       !WriteJmp(kEffectDrop, reinterpret_cast<const void*>(&UhcLintEffectHook), 6) ||
       !WriteJmp(kEffectType, reinterpret_cast<const void*>(&UhcLintEffectTypeHook), 5) ||
       !WriteJmp(kUnitTypeMiss, reinterpret_cast<const void*>(&UhcLintUnitTypeHook), 5) ||
@@ -457,7 +459,6 @@ UhcLintProtoTag PROTO STDCALL :DWORD, :DWORD
 UhcLintProtoAction PROTO STDCALL :DWORD, :DWORD
 UhcLintDone PROTO STDCALL
 UhcLintEffect PROTO STDCALL :DWORD
-EXTERN g_uhcLintTech:DWORD
 
 .data
 unitTypeNext    dd 005FCB66h    ; mov ecx,0D5E620h: the handler's error, then its failure return
@@ -466,7 +467,6 @@ protoTagSkip    dd 005F62BCh    ; add ebp,1: the next child
 protoActionNext dd 005FA208h    ; mov ecx,[edi+44h]: the action exists
 protoActionMiss dd 005FC891h    ; the handler's failure
 techLoad        dd 0061FD02h    ; the tech parser
-techNodeNext    dd 0061FDBFh    ; cmp edx,-1: the tech's name
 effectNext      dd 006205EFh    ; mov eax,esi: the effect is good
 effectDelete    dd 00621ECAh    ; setData was false: the effect is deleted
 effectTypeNext  dd 0065BC5Bh    ; mov ecx,0D5E620h: the type's error
@@ -520,15 +520,6 @@ UhcLintDoneHook PROC
     pop eax
     jmp loadReturn
 UhcLintDoneHook ENDP
-
-; Replaces mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] at 0x61FDB8, the loop over the tree's nodes: EAX = node.
-UhcLintTechHook PROC
-    mov g_uhcLintTech, eax
-    mov esi, eax
-    mov ecx, esi
-    mov edx, dword ptr [ecx+18h]
-    jmp techNodeNext
-UhcLintTechHook ENDP
 
 ; Replaces je 621ECAh at 0x6205E9 in the effect parse 0x620572. The flags are those of test al,al. EDI = the node.
 UhcLintEffectHook PROC

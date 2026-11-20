@@ -13,7 +13,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Game files | `bufferedFileReads`, `fastVertexFill`, `fastLastInLine`, `rendererOption`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
 | Population | `decimalPopulation` | [population](porting-code/population.md) |
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
-| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `ageUpBuildings`, `politicianPlacesFix` | [civs](porting-code/civs.md) |
+| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
@@ -837,8 +837,9 @@ Code: [data](porting-code/data.md#datalint). It needs `AddActionTagHandler`, `On
     proto's set: recorded, then `0x5FC891`; an existing action continues at `0x5FA208`;
   - the `call` at `0x61FE4A` (`E8 B3 FE FF FF`, of the tech parser `0x61FD02`), the last thing the data load reads: the
     hook swaps only the return address, calls the parser, then writes the summary and returns;
-  - a 7-byte `jmp` at `0x61FDB8` (`8B F0 8B CE 8B 51 18`), the tech parser's loop over the `<Tech>` nodes: keep the node
-    (EAX) in `g_uhcLintTech`, re-execute the three instructions, continue at `0x61FDBF`;
+  - the shared `<Tech>` node hook (`OnTechNode` in `src/techtags.*`): a 7-byte `jmp` at `0x61FDB8`
+    (`8B F0 8B CE 8B 51 18`), the tech parser's loop over the tree's nodes, which calls each observer with the node
+    (EAX), re-executes the three instructions and continues at `0x61FDBF`; dataLint keeps the node to name the tech;
   - a 6-byte `jmp` at `0x6205E9` (`0F 84 DB 18 00 00`: `je 621ECAh`, setData false in the effect parse): recorded with
     the node EDI, then `0x621ECA`; otherwise `0x6205EF`. This range is inside `TechRenameEffectParse`, which
     `techRenameEffect` verifies, so dataLint is applied after it;
@@ -1567,6 +1568,29 @@ Code: [civs](porting-code/civs.md#politicianplacesfix).
 - **Test:** WoL's four-place `uipoliticianEuropeandlg.xml` and five politicians of the next age obtainable (two more
   `TechStatus obtainable` lines in a civ's `Age0` tech): without the key the age-up click crashes at `0x81A80C`; with
   it the dialog shows four.
+
+### politicianEnablesTech
+
+Code: [civs](porting-code/civs.md#politicianenablestech), and the shared hooks
+[tech tags](porting-code/helpers.md#tech-tags) and the place observer of
+[politicianPlacesFix](porting-code/civs.md#politicianplacesfix).
+
+- **Data:** the shared `<Tech>` node hook at `0x61FDB8` (the dataLint row above): for each `<Tech>` node, walk its
+  children (`[node+8]`, count `[node+0Ch]`; a child's name `[[child+4]+18h][[child+18h]]`, its text the BString
+  `[child+14h]`) and keep the `<PoliticianEnablesTech>` texts and every tech's `<Icon>` text (the tech record keeps
+  only a texture handle at `[NodeData+14h]`). The parser itself ignores a child it does not know. Resolve the names
+  with `0x600BE1` (`thiscall(db, const char*)`) at the first dialog.
+- **Dialog:** in the politicianPlacesFix hook at `0x81A45A`, before the builder fills place n = `[ebx+26Ch]`
+  (EBX = the dialog, EDI = the tech status): find the place's gadgets by name (`0xAB7C2F` on the dialog's root gadget
+  `0x404296([dlg+148h])`). For a tagged politician hide `Poli%dPortrait` and `Poli%dDescription` (`0x448F13`), set
+  this key's portrait texture from the politiciandata record (`[dlg+18Ch]`, 14h-byte entries, `+0` tech ID, `+4` the
+  path; `0x638823(gadget, BString*)`) and its texture coordinates (vtable `+D8h`(0, 0, u, v)), put the shorter
+  description box's handle in `[dlg+210h+4n]` so that the builder fills it, and fill each tech's name (`0x58EA52` of
+  `[NodeData+8]`), help text (`[gadget+68h]`, the rollover builder `0x4C737C(text, status, player, unit, 1, 0, 1, 1)`)
+  and icon (`0x638823` with the `<Icon>` path). Otherwise put the stock description handle back and show the stock
+  gadgets. The tech status: `0x4C5394([world+7Ch], player ID)`, entry `0x4804B3(list, tech ID)`.
+- **Beside another DLL:** WoL's DLL rewrites the description text at `0x81A5CB`; the handle swap keeps working, as
+  the builder reads the handle at `0x81A596`, before that.
 
 ### transformInventory
 

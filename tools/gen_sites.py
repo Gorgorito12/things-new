@@ -1023,14 +1023,15 @@ SITES = [
     ("AutoGatherPayPoint", 0x4C378A, 7),
     ("ResListSet", 0x58EF83, 10),
     # dataLint: push 0EB4h at the <UnitType> handler's failure; test al,al / je / mov edx,[esp+14h] after the proto tag
-    # table's find; je at the <ProtoAction> handler's failure; the call of the tech parser 0x61FD02; in that
-    # parser, mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] with the next <Tech>; je on setData's false in the effect parse;
-    # push 512h, the effect type's failure
+    # table's find; je at the <ProtoAction> handler's failure; the call of the tech parser 0x61FD02; je on setData's
+    # false in the effect parse; push 512h, the effect type's failure
     ("LintUnitTypeMiss", 0x5FCB61, 5),
     ("LintProtoTagMiss", 0x5F62A2, 8),
     ("LintProtoActionMiss", 0x5FA202, 6),
     ("LintTechLoadCall", 0x61FE4A, 5),
-    ("LintTechNode", 0x61FDB8, 7),
+    # tech tags (src/techtags.*, shared by dataLint and politicianEnablesTech): in the tech parser 0x61FD02,
+    # mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] with the next node of the techtree's root
+    ("TechTagsNode", 0x61FDB8, 7),
     ("LintEffectDrop", 0x6205E9, 6),
     ("LintEffectType", 0x65BC56, 5),
     # the kill queue's ask, thiscall(unit, a, b, c), ret 0Ch: it pushes [unit+10h] for 0x4B4D80; verify only
@@ -1667,6 +1668,18 @@ SITES = [
     ("PoliticianNameRead", 0x81A4FF, 0x11),
     ("TechStatusTechId", 0x58EA03, 0x0D),
     ("GadgetLookup", 0x40423C, 0x10),
+    # politicianEnablesTech, verify only: in the same builder, the portrait of the place (the politiciandata records
+    # [ebx+18Ch], 14h bytes each, +0 the tech ID and +4 the portrait path, matched with [ebx+26Ch]'s tech ID; the
+    # gadget [ebx+eax*4+1C0h] through 0x404432; its texture 0x638823(gadget, path*); its texture coordinates
+    # vtable+D8h(0, 0, 0.75, 0.7734375)); the read of the description handle [ebx+edx*4+210h] and its lookup, up to the
+    # null check (another DLL may replace the text after it); the gadget texture setter 0x638823 (thiscall(gadget, BString*),
+    # ret 4); the player's tech statuses 0x4C5394 (thiscall([world+7Ch], player ID), ret 4: [this+ID*4]) and the
+    # list's entry 0x4804B3 (thiscall(list, index), ret 4: [[list+4]+index*4], count [list+8])
+    ("PoliticianPortraitFill", 0x81A487, 0x72),
+    ("PoliticianDescriptionRead", 0x81A590, 0x39),
+    ("GadgetSetTexture", 0x638823, 0x10),
+    ("TechStatusList", 0x4C5394, 0x18),
+    ("TechStatusAt", 0x4804B3, 0x15),
     # playerIcon: the two calls of the lobby slot's civ portrait FUN_00774D56 (ECX = the slot), after a civ change
     # (case 4 of the slot's setting handler) and after an AI personality change (case 9); the hook runs it itself
     ("PlayerIconCallCiv", 0x776FFC, 5),
