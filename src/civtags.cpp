@@ -11,7 +11,7 @@ extern "C" void UhcCivTagsHook();  // hooks/civfirsttc_hooks.asm
 
 namespace {
 
-constexpr std::size_t kMaxTags = 8;
+constexpr std::size_t kMaxTags = 12;
 constexpr std::uint32_t kUnknownTag = 0x0052BB07;  // xor edi,edi / cmp dword ptr [ebx+80h],edi (8 B)
 
 struct Tag {
