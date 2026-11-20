@@ -4,6 +4,35 @@ Veterancy rank marks as soutache knots (WoL request #74)
 JTMaston: "use soutaches from Hussar uniforms: Rank1 - one single loop in bronze colour. Rank2 - Triloop in silver
 colour. Rank3 - Pointed/spiked triloop in gold colour."
 
+Version 5 (2026-11-20): still our own drawing (nothing is cut from your sheet), now fitted to it. fit_marks.py cuts each
+mark's silhouette out of the sheet as a measuring target only and adjusts our shapes (loop sizes and places, the side loops'
+tilt, the stem, the tail bar, the cord's thickness) until they overlap. Overlap (IoU, 1 = identical) per rank, before and
+after the fit:
+    rank            1      2      3      4      5
+    silhouette   0.889  0.545  0.551  0.568  0.577   before
+                 0.915  0.911  0.920  0.907  0.927   after
+    loop holes   0.806  0.098  0.026  0.032  0.005   before
+                 0.854  0.616  0.588  0.454  0.528   after
+Then, by eye against the sheet: the side loops 15 % shorter, plumper and tilted a little up from the stem, the tail bar's
+ends curving up more, a light band along the top of each strand and its dark side underneath. That costs some overlap
+(silhouettes 0.906, 0.820, 0.846, 0.792, 0.832; holes 0.821, 0.295, 0.265, 0.131, 0.108), since the sheet's eye holes are
+long thin slits, but it reads closer to the sheet. The cord is smooth (soft edges, no stray light dots), and the textures
+keep only their three largest levels so that the mark stays solid in the game. compare-reference.png: your sheet's row
+above, ours below, same scale.
+
+Version 4 (2026-11-20, the reference sheet you approved, reference-approved.webp): every mark is redrawn after it.
+    rank 1   one tall loop like a cursive "l", the cord crossing itself near the bottom, both tails sweeping out;
+             copper-bronze (DA8228, its light and dark tones sampled from the sheet)
+    rank 2   a round top loop on a straight central stem, two eye-shaped side loops, and a tail bar under them whose ends
+             curve up; silver
+    rank 3   the same with a pointed (flame) top loop; gold
+    rank 4   the round top loop and four eye-shaped side loops in two tiers on the stem, then the tail bar; gold
+    rank 5   the same with the pointed top loop; gold
+A thick cord with a dark border, shaded with the sheet's light tone along the top left of each strand and its dark tone
+underneath. compare-reference.png: the sheet's row above, ours below, at the same scale. Every mark stays centred on the
+HP bar and all five end at the same height. Differences left: our side loops lean a little more and sit closer to the tail
+bar, and our shading is simpler than the sheet's painted highlights; at the game's size (marks-ingame.png) they read alike.
+
 Version 2 (2026-11-20, after JTMaston's review): a true bronze, the loops spread apart, rank 3's loops eye-shaped,
 ranks 4 and 5 as his sketches, no stars, and a metallic shine.
 

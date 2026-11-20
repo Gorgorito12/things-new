@@ -3530,9 +3530,9 @@ A kill that reaches a rank and a transform queue the unit's ID. A world tick eve
 `unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
 `[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. The mark hangs on the bone
 `HITPOINTBAR`, as a sprite that faces the camera, 1.15 m over the aura icons' height (`RANK_LIFT` in aoe3-blender-tools' `tools/make_rings.py`): the HP
-bar scales with the camera like the world, so the gap stays at every zoom. The marks are soutache knots (a loop; three round loops;
-three eye-shaped loops; five round loops in three tiers; five eye-shaped loops), each one cord drawn as circles along Bezier
-curves, symmetric, its tails at the same lowest height for every rank, and shaded as metal from each texel's place across its
+bar scales with the camera like the world, so the gap stays at every zoom. The marks are soutache knots after the team's approved
+sheet (a loop; a stem with a top loop, one or two tiers of eye-shaped side loops and a tail bar), each one cord drawn as
+circles along Bezier curves, symmetric, its tails at the same lowest height for every rank, and shaded as metal from each texel's place across its
 strand (the line through the two nearest centres). Every mark is centred on the HP bar: the particle hangs at the unit's position (a model
 attachment's particle ignores the `HITPOINTBAR` bone) at a height over the ground, and the bar is drawn at the tag; a point
 higher than the bar drifts sideways in perspective, so the sprite's centre is at the bar's height by kind of unit and the knot

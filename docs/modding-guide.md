@@ -31,8 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-20 14:53 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 12:52 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
-| Friday 2026-11-20 12:30 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 12:00 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
 | Friday 2026-11-20 11:59 | [`researchOnTheMove`](#researchonthemove) | Added. A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. |
@@ -3825,7 +3825,7 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 12:30
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 14:53
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
@@ -3843,9 +3843,10 @@ with 504 and 346 hit points, and the log shows the ranks.
 
 *In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (filmed again on 2026-11-20 with the soutache knots
 after JTMaston's reviews; 2 `Hussar` against 10 `Crossbowman`, both taking the defaults of their type):* each rank shows its
-mark over the unit's HP bar, clear of it and centred on it: a soutache knot of a hussar's uniform, shaded as polished metal: a
-bronze loop at rank 1, three round silver loops at rank 2, three eye-shaped gold loops at rank 3, five round gold loops at
-rank 4 and five eye-shaped gold loops at rank 5, with clear gaps between the loops; a Crossbowman that kills shows the bronze loop. The floating text gives the rank's name in
+mark over the unit's HP bar, clear of it and centred on it: a soutache knot of a hussar's uniform, drawn after the
+reference sheet JTMaston approved and shaded as polished metal: a copper-bronze loop at rank 1, then a stem with a top loop,
+eye-shaped side loops and a tail bar (silver with a round top at rank 2, gold with a pointed top at rank 3, gold with two
+tiers of side loops at ranks 4 and 5, round and pointed top); a Crossbowman that kills shows the bronze loop. The floating text gives the rank's name in
 its colour. A Hussar reaches rank 5. The five marks, enlarged 4 times:
 [veterancyBonus-marks-x4.png](media/veterancyBonus-marks-x4.png); at the game's own size (default camera, 1920 x 1080):
 [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png).
@@ -3884,7 +3885,7 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
     <VeterancyDefault unittype="AbstractInfantry">
         <VeterancyBonus kills="1" modifytype="Damage">1.3</VeterancyBonus>
     </VeterancyDefault>
-    <VeterancyRank rank="1" name="Veteran" color="B08D57"/>
+    <VeterancyRank rank="1" name="Veteran" color="DA8228"/>
     <VeterancyRank rank="2" name="Elite" color="C8CDD7"/>
     <VeterancyRank rank="3" name="Champion" color="FFCD28"/>
     <VeterancyRank rank="4" name="32485" color="E04040"/>
@@ -3927,19 +3928,26 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   unit already dead. Stock's flag is not needed.
 - **Hit points:** `MaxHP` raises the current ones in proportion: 212.6 became 318.9 at ×1.5.
 - **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows a soutache knot (2026-11-20, JTMaston's
-  #74, in place of the chevrons, redrawn after his review the same day): rank 1 a single loop in bronze (B08D57), rank 2
-  three round loops in silver, rank 3 three eye-shaped loops (each closing in a point) in gold, rank 4 five round loops in
-  three tiers in gold, rank 5 the same five loops eye-shaped in gold; no stars. A rank above the fifth keeps rank 5's mark.
-  Each knot is symmetric, a cord shaded as polished metal (lighter toward the top left of each strand, darker toward the
-  bottom right, a thin bright streak) with a thin black border; its two tails cross under the knot and run out left and
-  right, at the same lowest height for every rank. Rounder loops and gaps between them since the second review.
+  #74, in place of the chevrons; since the end of 2026-11-20 drawn after the reference sheet he approved): rank 1 one tall
+  loop like a cursive "l" in copper-bronze (DA8228), its cord crossing near the bottom and both tails sweeping out; rank 2 a
+  round top loop on a straight stem, two eye-shaped side loops and a tail bar whose ends curve up, in silver; rank 3 the
+  same with a pointed top loop, in gold; rank 4 the round top loop and two tiers of eye-shaped side loops, in gold; rank 5
+  the same with the pointed top loop; no stars. A rank above the fifth keeps rank 5's mark. Each knot is symmetric, a thick
+  cord shaded as polished metal (its light tone along the top left of each strand, its dark tone underneath, the tones
+  sampled from the sheet) with a dark border, and every rank ends at the same lowest height. Our own drawing, fitted to
+  the sheet by the overlap of the silhouettes and of the loops' holes (`wol-fixes/veterancy-marks/fit_marks.py`,
+  private; silhouette IoU 0.79 to 0.91 after the last changes by eye), with three texture levels only, so that the mark
+  stays solid at the game's size. Side by side with the sheet:
+  `wol-fixes/veterancy-marks/compare-reference.png` (private).
 - **Centred on the HP bar (2026-11-20, a standing rule for every mark over a unit):** the mark is horizontally centred on the
   unit's HP bar, never nearer one end. Before, the mark's sprite hung about 1.5 m higher than the bar, and in perspective a
   higher point drifts away from the middle of the screen: measured at the default camera, 0 px for a unit at the screen's
   centre but -5 px at 423 px left of it and +6.5 px at 418 px right of it. Now the sprite's centre is at the bar's own height
   (2.9 m for infantry, 4.1 m for cavalry, 5.1 m for WoL's `AbstractElephant`) and the knot is drawn high inside the sprite,
   which faces the camera, so it rises straight up on screen: measured within 1 px of the bar's centre for Crossbowmen and
-  Hussars, at the default camera and zoomed in, from the screen's centre to 250 px off it. Not fixable this way: an
+  Hussars, at the default camera and zoomed in, from the screen's centre to 250 px off it (the knots after the reference
+  sheet, measured again: Crossbowmen 0 px to 342 px off the centre; a Hussar 0 to 3 px, by where it faces: its bar's tag
+  sits over the rider, a little off the unit's position). Not fixable this way: an
   elephant's bar is not over the unit's position (the `HITPOINTBAR` tag sits toward its head and turns with it), and a
   particle hangs at the unit's position, so an elephant's mark is off its bar by up to about 13 px at a close camera,
   depending on where the elephant faces. In the game: [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png). With no such folder
