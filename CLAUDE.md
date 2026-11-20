@@ -37,7 +37,7 @@ python -I tools/export_public.py --check
 
 There are no unit tests. Every copy of the game, with its data and how to drive it, is in [`docs/developer-guide.md`, section 2](docs/developer-guide.md#2-a-safe-test-bed). The main ones:
 
-- `C:\AoE3-UHC-WoLReal`: the real WoL with **our** DLL (`--bed C:\AoE3-UHC-WoLReal`), and `C:\AoE3-UHC-WoLReal2`, `3`, `4` and `5`, copies to run beside it, one per agent. `5` opens at the same corner of the screen as `C:\AoE3-UHC-WoLReal` (top left), so not both at once. `C:\WoL-Test` is the control with WoL's DLL.
+- `C:\AoE3-UHC-WoLReal`: the real WoL with **our** DLL (`--bed C:\AoE3-UHC-WoLReal`), and `C:\AoE3-UHC-WoLReal2` to `8`, copies to run beside it, one per agent (each window has its own place on the test monitor; they may overlap, `shot` and `record` use PrintWindow). Copies 2 and 4 to 8 have their own profile (`testbed.py profile isolate`), so a test there may change the home city, resolution or model detail while others run; `C:\AoE3-UHC-WoLReal` and `3` share the normal WoL profile. `C:\WoL-Test` is the control with WoL's DLL.
 - `C:\AoE3-UHC-Test`, and private copies per feature (`-Poison`, `-WoL`, `-Spread`).
 
 `python -I tools/testbed.py` plays a test with no clicks: `deploy`, `map`, `launch`, `scenario`, `skirmish`, `wait`, `log`, `units`, `shot`, `close`, `record`. `skirmish` uses posted clicks, so it needs no cursor or focus ([`docs/wol-migration.md`, "Skirmish route"](docs/wol-migration.md#skirmish-route-for-videos-2026-11-04)). Put a `timeout` on every `wait`: when a game ends the clock stops and `wait` never returns.
