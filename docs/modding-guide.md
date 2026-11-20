@@ -31,7 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Friday 2026-11-20 14:53 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
+| Friday 2026-11-20 15:38 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
+| Friday 2026-11-20 15:38 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Friday 2026-11-20 12:52 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
 | Friday 2026-11-20 12:00 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
@@ -45,7 +46,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Tuesday 2026-11-17 10:30 | [`minUIStats`](#minuistats) | Filmed in WoL, with a control. The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. |
 | Friday 2026-11-13 17:27 | [`killSpawn`](#killspawn) | Filmed in WoL, with a control. A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | The tags on the civ in `civs.xml`. |
 | Friday 2026-11-13 13:06 | [`impactBoneFix`](bug-fixes.md#impactbonefix) | Filmed in WoL, with a control. An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | Nothing. |
-| Friday 2026-11-13 11:50 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Friday 2026-11-13 10:46 | [`randomCost`](#randomcost) | Added. `<RandomCost resourcetype="Gold" min="80" max="120"/>` in a proto gives each unit trained a price rolled in that range, a new one after each purchase, and the button shows the exact price. | The tag on the protos that want it. |
 | Friday 2026-11-13 10:03 | [`playerIcon`](#playericon) | Filmed in WoL, with a control. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. |
 | Friday 2026-11-13 09:24 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
@@ -3825,7 +3825,7 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 14:53
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 15:38
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
@@ -3841,15 +3841,12 @@ with 504 and 346 hit points, and the log shows the ranks.
 
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
 
-*In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (filmed again on 2026-11-20 with the soutache knots
-after JTMaston's reviews; 2 `Hussar` against 10 `Crossbowman`, both taking the defaults of their type):* each rank shows its
-mark over the unit's HP bar, clear of it and centred on it: a soutache knot of a hussar's uniform, drawn after the
-reference sheet JTMaston approved and shaded as polished metal: a copper-bronze loop at rank 1, then a stem with a top loop,
-eye-shaped side loops and a tail bar (silver with a round top at rank 2, gold with a pointed top at rank 3, gold with two
-tiers of side loops at ranks 4 and 5, round and pointed top); a Crossbowman that kills shows the bronze loop. The floating text gives the rank's name in
-its colour. A Hussar reaches rank 5. The five marks, enlarged 4 times:
-[veterancyBonus-marks-x4.png](media/veterancyBonus-marks-x4.png); at the game's own size (default camera, 1920 x 1080):
-[veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png).
+*In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (2 `Hussar` against 10 `Crossbowman`, both taking
+the defaults of their type):* each rank shows its mark centred over the unit's HP bar: the soutache knots the WoL team
+approved, a copper loop at rank 1, a silver knot at rank 2, gold knots at ranks 3 to 5; a Crossbowman that kills shows the
+copper loop. The floating text gives the rank's name in its colour. A Hussar reaches rank 5. The five marks enlarged:
+[veterancyBonus-marks-x4.png](media/veterancyBonus-marks-x4.png); in the game at the default camera, on a Hussar and on a
+Crossbowman: [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png).
 [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
 
 ![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
@@ -3927,37 +3924,21 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   hunting gives no rank, and treasure guardians give none either; not a unit of its own; not a trigger's kill, nor a blow from a
   unit already dead. Stock's flag is not needed.
 - **Hit points:** `MaxHP` raises the current ones in proportion: 212.6 became 318.9 at ×1.5.
-- **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows a soutache knot (2026-11-20, JTMaston's
-  #74, in place of the chevrons; since the end of 2026-11-20 drawn after the reference sheet he approved): rank 1 one tall
-  loop like a cursive "l" in copper-bronze (DA8228), its cord crossing near the bottom and both tails sweeping out; rank 2 a
-  round top loop on a straight stem, two eye-shaped side loops and a tail bar whose ends curve up, in silver; rank 3 the
-  same with a pointed top loop, in gold; rank 4 the round top loop and two tiers of eye-shaped side loops, in gold; rank 5
-  the same with the pointed top loop; no stars. A rank above the fifth keeps rank 5's mark. Each knot is symmetric, a thick
-  cord shaded as polished metal (its light tone along the top left of each strand, its dark tone underneath, the tones
-  sampled from the sheet) with a dark border, and every rank ends at the same lowest height. Our own drawing, fitted to
-  the sheet by the overlap of the silhouettes and of the loops' holes (`wol-fixes/veterancy-marks/fit_marks.py`,
-  private; silhouette IoU 0.79 to 0.91 after the last changes by eye), with three texture levels only, so that the mark
-  stays solid at the game's size. Side by side with the sheet:
-  `wol-fixes/veterancy-marks/compare-reference.png` (private).
-- **Centred on the HP bar (2026-11-20, a standing rule for every mark over a unit):** the mark is horizontally centred on the
-  unit's HP bar, never nearer one end. Before, the mark's sprite hung about 1.5 m higher than the bar, and in perspective a
-  higher point drifts away from the middle of the screen: measured at the default camera, 0 px for a unit at the screen's
-  centre but -5 px at 423 px left of it and +6.5 px at 418 px right of it. Now the sprite's centre is at the bar's own height
-  (2.9 m for infantry, 4.1 m for cavalry, 5.1 m for WoL's `AbstractElephant`) and the knot is drawn high inside the sprite,
-  which faces the camera, so it rises straight up on screen: measured within 1 px of the bar's centre for Crossbowmen and
-  Hussars, at the default camera and zoomed in, from the screen's centre to 250 px off it (the knots after the reference
-  sheet, measured again: Crossbowmen 0 px to 342 px off the centre; a Hussar 0 to 3 px, by where it faces: its bar's tag
-  sits over the rider, a little off the unit's position). Not fixable this way: an
-  elephant's bar is not over the unit's position (the `HITPOINTBAR` tag sits toward its head and turns with it), and a
-  particle hangs at the unit's position, so an elephant's mark is off its bar by up to about 13 px at a close camera,
-  depending on where the elephant faces. In the game: [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png). With no such folder
-  the log says so once and the bonuses work as before. Display only: it
-  changes nothing in the simulation. In the minimized interface the unit panel's row shows `Rank 3` and `3 kills`. The art is
-  our own: DE's are images in its selection panel.
-- **Above the HP bar (2026-11-08):** the marks sat on the bar, and the three gold chevrons covered it. Every rank now starts from
-  the same lowest chevron, higher up. Bar and mark scale alike with the camera, so the gap holds at any zoom: seen at the default
-  camera and close up, on cavalry, infantry and artillery. Units packed together can still put a mark over a neighbour's bar.
-  Not checked: ships, buildings.
+- **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows over its HP bar the soutache knot of
+  its rank, the marks the WoL team approved (JTMaston's #74, 2026-11-20), traced from their sheet: rank 1 a copper loop like
+  a cursive "l", its tails sweeping out left and right; rank 2 a silver knot, a round top loop on a stem with two
+  eye-shaped side loops over a tail bar; rank 3 the same in gold with a pointed top loop; rank 4 gold, a round top loop and
+  two tiers of side loops; rank 5 gold, a pointed top loop and two tiers. A rank above the fifth keeps rank 5's mark. With no
+  such folder the log says so once and the bonuses work as before. Display only: it changes nothing in the simulation. In the
+  minimized interface the unit panel's row shows `Rank 3` and `3 kills`. DE's rank icons are images in its selection panel.
+- **Centred on the HP bar:** every mark is horizontally centred on its unit's HP bar, and all five end at the same height
+  above it. The mark's sprite has its centre at the bar's own height (2.9 m for infantry, 4.1 m for cavalry, 5.1 m for WoL's
+  `AbstractElephant`), so it does not drift sideways in perspective. Measured at the default camera, the unit at the
+  screen's centre: a Hussar 0 px from the bar's centre at every rank, a Crossbowman within 1 px
+  ([veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png)). An elephant's bar sits toward its head and
+  turns with it, while the mark hangs at the unit's position, so an elephant's mark can be up to about 13 px off its bar at a
+  close camera. Bar and mark scale alike with the camera, so the gap holds at any zoom; units packed together can put a mark
+  over a neighbour's bar. Not checked: ships, buildings.
 - **Tested in WoL (2026-11-06, marks):** ranks 1 to 3 shown; the mark left at death; a `TransformUnit` Hussar → Cuirassier kept it;
   a saved game loaded with it; with the folder gone, one log line and no crash. 1214 fps against 1252 with the key off, update
   0.17 ms against 0.16, no frame over 50 ms with the key on (60 s, `perfprobe.py`). An AI skirmish of 100 s had 19 units and no XS

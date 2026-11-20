@@ -91,8 +91,8 @@ spreadAnyAccuracy-wol 5 24 2
 spreadAnyAccuracy-wol-control 5 24 2
 startingTC-wol 2 46 3
 startingTC-wol-control 2 30 3
-steadyHitpointBars-wol 16 12 1
-steadyHitpointBars-wol-control 28 12 1
+steadyHitpointBars-wol 20 12 1
+steadyHitpointBars-wol-control 20 12 1
 steadyHitpointBars-datafix-wol 0 12 1
 steadyHitpointBars-datafix-wol-control 0 12 1
 techPrereqRecheck-wol 2 22 2
@@ -123,7 +123,7 @@ unitResourceAuras-wol 2 36 3
 unitResourceAuras-wol-control 2 36 3
 veterancyBonus-wol 0 12 1
 veterancyBonus-wol-control 0 12 1
-veterancyBonus-icons-wol 6 24 2
+veterancyBonus-icons-wol 11 24 2
 veterancyBonus-icons-wol-control 15 24 2
 killSpawn-wol 2 20 2
 killSpawn-wol-control 2 20 2

@@ -3528,15 +3528,14 @@ aura: the update does not run; in a power's `<unitModify>` the name is accepted 
 
 A kill that reaches a rank and a transform queue the unit's ID. A world tick every 250 ms of game time hangs `rank_N.xml` through
 `unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
-`[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. The mark hangs on the bone
-`HITPOINTBAR`, as a sprite that faces the camera, 1.15 m over the aura icons' height (`RANK_LIFT` in aoe3-blender-tools' `tools/make_rings.py`): the HP
-bar scales with the camera like the world, so the gap stays at every zoom. The marks are soutache knots after the team's approved
-sheet (a loop; a stem with a top loop, one or two tiers of eye-shaped side loops and a tail bar), each one cord drawn as
-circles along Bezier curves, symmetric, its tails at the same lowest height for every rank, and shaded as metal from each texel's place across its
-strand (the line through the two nearest centres). Every mark is centred on the HP bar: the particle hangs at the unit's position (a model
-attachment's particle ignores the `HITPOINTBAR` bone) at a height over the ground, and the bar is drawn at the tag; a point
-higher than the bar drifts sideways in perspective, so the sprite's centre is at the bar's height by kind of unit and the knot
-is drawn high inside the sprite (a camera-facing sprite moves it straight up), its tails at the same height for every rank. **Why it is safe:** a model is a
+`[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. The mark is a particle of the
+model, a sprite that faces the camera; a model attachment's particle hangs at the unit's position (it ignores the
+`HITPOINTBAR` bone) at a height over the ground, while the game draws the HP bar at that tag. A point higher than the bar
+drifts sideways in perspective, so the sprite's centre is at the bar's own height by kind of unit (`RANK_BAR_HEIGHTS` in
+aoe3-blender-tools' `tools/make_rings.py`) and the mark is drawn high inside the sprite, which moves it straight up on screen:
+it stays centred on the bar, its lowest point the same height over the bar for every rank, and the bar and the mark scale
+alike with the camera, so the gap holds at every zoom. The images are the team's approved soutache knots, traced from their
+sheet into smooth symmetric curves and rendered with its colours (private), then placed by `make_rings.py --rank-shapes`. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking
