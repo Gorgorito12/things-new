@@ -51,6 +51,9 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   profile hc [civ | file]    list the saved single-player home cities and their civs; with a civ
                              or a file name, make it the one a skirmish uses (LastSelectedSPHC;
                              the game must be closed)
+  profile isolate [off]      give the bed its own My Games folder (a copy of the shared one, named
+                             after the bed, through string 42265 of every string table in the bed),
+                             so a test may change its profile while other copies run; off goes back
   profile video [restore]    the video settings of the shared profile (resolution, window mode,
                              antialiasing, shadows) against the expected ones; restore writes the
                              expected ones back (the game must be closed)
@@ -380,6 +383,75 @@ def show_profile(bed):
     p = bed_profile(bed)
     print(f"testbed: {bed}\n  exe   {p['sha256'][:8]} {p['build'] or 'unknown build'}\n  cfg   {bed / p['cfg']}\n"
           f"  AI    {bed / p['ai']}\n  maps  {bed / p['rm']}\n  games {p['my_games']}")
+
+
+ISOLATE_MARK = ".profile-isolated"  # in the bed: the My Games folder string 42265 had before `profile isolate`
+
+
+def bed_string_tables(bed):
+    """Every copy of the TAD string table in the bed: data\\stringtabley.xml, its saved translations
+    (stringtabley.xml.*) and the launcher's translations\\*\\stringtabley.xml, so that a language swap
+    keeps the bed's own My Games folder."""
+    files = sorted((bed / "data").glob("stringtabley.xml*"))
+    if (bed / "translations").is_dir():
+        files += sorted((bed / "translations").glob("*/stringtabley.xml"))
+    return [f for f in files if f.is_file() and not f.name.endswith(".bak")]
+
+
+def set_lua_folder(path, folder):
+    """Writes folder as string 42265 (cStringLuaFolder, the My Games folder) of one string table, keeping
+    its encoding, BOM and line ends; returns the old value, or None when the table has no such string."""
+    raw = path.read_bytes()
+    utf16 = raw[:2] in (b"\xff\xfe", b"\xfe\xff")
+    text = raw.decode("utf-16" if utf16 else "utf-8")
+    pattern = re.compile(r"""(_locID\s*=\s*['"]42265['"][^>]*>)([^<]*)(<)""")
+    m = pattern.search(text)
+    if not m:
+        return None
+    if m.group(2) != folder:
+        text = text[:m.start(2)] + folder + text[m.end(2):]
+        body = text.encode("utf-16-le" if raw[:2] == b"\xff\xfe" else "utf-16-be") if utf16 else text.encode("utf-8")
+        path.write_bytes((raw[:2] if utf16 else b"") + body)
+    return m.group(2)
+
+
+def profile_isolate(bed, off=False):
+    """Gives the bed a My Games folder of its own (a copy of the shared one), so that a test can change
+    its profile (home city, resolution, model detail) while other copies run; `off` puts the shared
+    folder back. The game reads the folder from string 42265 of its string table when it starts."""
+    if bed_pid():
+        sys.exit("testbed: close the game first; it reads the My Games folder only when it starts")
+    mark = bed / ISOLATE_MARK
+    tables = bed_string_tables(bed)
+    if off:
+        if not mark.exists():
+            sys.exit(f"testbed: {bed} is not isolated")
+        shared = mark.read_text(encoding="utf-8").strip()
+        for table in tables:
+            set_lua_folder(table, shared)
+        mark.unlink()
+        print(f"testbed: {bed} uses the shared folder {shared!r} again; its own copy is kept")
+        return
+    shared = bed_profile(bed)["my_games"]
+    if mark.exists():
+        print(f"testbed: {bed} is already isolated: {shared}")
+        return
+    raw = (bed / "data" / "stringtabley.xml").read_bytes()
+    text = raw.decode("utf-16" if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else "utf-8", "replace")
+    m = re.search(r"""_locID\s*=\s*['"]42265['"][^>]*>([^<]*)<""", text)
+    if not m:
+        sys.exit(f"testbed: no string 42265 in {bed}\\data\\stringtabley.xml")
+    old = m.group(1)
+    own = old.rstrip("\\") + f" {bed.name}\\"
+    target = DOCUMENTS / own.rstrip("\\")
+    if not target.exists():
+        shutil.copytree(shared, target, ignore=shutil.ignore_patterns("Screenshots", "*.log"))
+        print(f"testbed: copied {shared} -> {target}")
+    for table in tables:
+        set_lua_folder(table, own)
+    mark.write_text(old + "\n", encoding="utf-8")
+    _PROFILES.pop(bed, None)
+    print(f"testbed: {bed} now uses {target} ({len(tables)} string tables changed; `profile isolate off` undoes it)")
 
 
 def profile_backup(bed):
@@ -1897,6 +1969,8 @@ def main(argv):
             profile_hc(bed, " ".join(args[1:]))
         elif args[:1] == ["video"]:
             profile_video(bed, args[1:2] == ["restore"])
+        elif args[:1] == ["isolate"]:
+            profile_isolate(bed, args[1:2] == ["off"])
         else:
             show_profile(bed)
     elif cmd == "lang":

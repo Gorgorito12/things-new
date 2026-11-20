@@ -373,10 +373,12 @@ Outcome ApplyTransformChecks(const Config& config) {
       return Outcome::kFailed;
     }
   }
+  // The build limit 0x4C7B5F is only called, never written, and is not verified: sharedBuildLimit replaces its first
+  // bytes with a jmp to its own entry, and a call through that hook gives the shared limit, which is the one to check.
   if (!VerifyAll("transformChecks",
                  {&sites::kXformExecBody, &sites::kXformPlaceTest, &sites::kXformRefuse, &sites::kCostListCtor,
                   &sites::kCostListDtor, &sites::kPlayerById, &sites::kUnitById, &sites::kPlayerProtoEntry,
-                  &sites::kProtoByName, &sites::kBuildLimitEntry, &sites::kPayAffordCheck,
+                  &sites::kProtoByName, &sites::kPayAffordCheck,
                   &sites::kPaySharedAffordCheck, &sites::kCurrentSelectionGroup, &sites::kBStringFromId,
                   &sites::kBStringAppend})) {
     return Outcome::kFailed;
