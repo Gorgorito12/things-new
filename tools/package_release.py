@@ -331,7 +331,7 @@ overhealDecay R[%] [D] [UnitType ...] [holdNear Type M] [log]   overheal above
 showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)
 minUIStats [file]             the minimized interface shows what the normal one shows, and
                               more (rows in minuirows.xml: ROF, range, cost, pop, ...; building
-                              armor; {uhc...} texts)
+                              armor; {{uhc...}} texts)
 multiplierDecimals [N]        the attack rows' bonus multipliers with N decimals (default 2):
                               1.25x instead of 1.3x, in both panels and their tooltips
 attackTypeIcons T S P ...     a bonus multiplier against these unit types shows in the attack
@@ -377,7 +377,8 @@ teamKillBounty [log]          the XP of a marked victim goes to the killer's tea
 cantBeSlowed [log]            a marked unit ignores TargetSpeedBoost
 snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by tech; the strongest snare counts
 stealthTargeting [log]        large units in stealth hidden from enemies; no attack on an unseen stealthed unit
-autoScout [Tactic [Return]] [log]  units in that tactic explore the map on their own; an order switches it off
+autoScout [Tactic [Return]] [noAvoid] [noBack] [log]  units in that tactic explore the map on their own,
+                              away from enemy towers, backing off when hit; an order switches it off
 transformChecks [log]         transform buttons grey out with the reason; a transform respects BuildLimit
 directionalAttack [log]       <DirectionalAttack>: a shot flies past its target and hits what it flies over
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
