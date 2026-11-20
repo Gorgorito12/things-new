@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-20 11:57 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
 | Thursday 2026-11-19 15:22 | [`attackTypeIcons`](#attacktypeicons) | Filmed in WoL, with a control. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
 | Thursday 2026-11-19 15:22 | [`multiplierDecimals`](bug-fixes.md#multiplierdecimals) | Filmed in WoL, with a control. The attack rows' bonus multipliers show two decimals, as the data has them: `1.25x` instead of a rounded `1.3x`, in both panels and their tooltips. | Nothing. |
 | Thursday 2026-11-19 14:11 | [`autoScout`](#autoscout) | Added. A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon and the envoy. |
@@ -1294,6 +1295,7 @@ What the exe decides by civ.
 | [`danceBonusCivs`](#dancebonuscivs) | Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which the exe applies only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`. | **new** | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. | confirmed (single player) |
 | [`wonderCivUnitType`](#wondercivunittype) | `Rangatira` may start the Maori age-up. Without it, the Maori cannot age up. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`ageUpBuildings`](#ageupbuildings) | The age-up button opens the politician dialog on the buildings you list too, not only on the Town Center, and each building offers only the politicians its own proto lists. | **new** | The politicians (techs with `AgeUpgrade`) in those buildings' `<Tech>` lists. | confirmed (single player) |
+| [`politicianEnablesTech`](#politicianenablestech) | A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | **new** | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). | confirmed (single player) |
 | [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | **new** | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. | confirmed (single player) |
 | [`civFirstTC`](#civfirsttc) | A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | **new** | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. | confirmed (single player; Nomad start not tested) |
 | [`firstTC`](#firsttc) | One line for `civFirstTC` and `startingTC`, with the town units and shipments worked out from the civ's tag. | **new** | `<firstTC>` in `civs.xml`, and the proto in `placementrules\colonies.xml` `<starttypes>`. | confirmed (single player) |
@@ -1598,6 +1600,80 @@ ageUpBuildings [log] Proto [Proto ...]
 - **Status:** confirmed (2026-11-13, single player, Dutch): the Market opened the dialog with its three
   politicians and aged up; key off, nothing opened. Not tested: multiplayer, a native civ's council, a
   revolution.
+
+#### politicianEnablesTech
+
+*An immigrant politician shows its flag apart from the techs it unlocks, each tech with its icon, name and rollover.*
+
+**Added:** Friday 2026-11-20 11:15 · **Filmed in WoL:** Friday 2026-11-20 11:57
+
+![politicianEnablesTech in WoL](media/politicianEnablesTech-wol.gif)
+
+*In WoL (scenario, test data: the Aristocrat, and the Argentine waves with two, four and three tags):* the
+Italian, Polish and Scandinavian places show the flag alone and, under it, the techs the wave unlocks, one per
+row for two techs and two per row for three or four. The cursor rests on Trattoria, Laboro Famoso, Polish Legion,
+Transnational Organizations, Resurrectionist Congregation, Biathlon and Midsommar, and each shows the rollover of its
+own research button (with "not available until Age 2" in red, as there); the Aristocrat, with no tag, is as before.
+[Full video (MP4)](media/politicianEnablesTech-wol.mp4).
+
+![politicianEnablesTech in WoL, key off](media/politicianEnablesTech-wol-control.gif)
+
+*In WoL, key off (the same scene and data):* the dialog shows WoL's pictures with the two tech icons drawn in,
+and the cursor on them shows nothing. [Full video (MP4)](media/politicianEnablesTech-wol-control.mp4).
+
+```
+politicianEnablesTech [log] [flag <u> <v>]
+```
+
+- **In WoL without it:** a Latin American politician's picture is the immigrant flag with the icons of its two
+  techs painted in, and its rollover text lists the techs by hand. The icons have no name and no rollover.
+- **Data:** in `techtreey.xml`, inside the politician's `<Tech>`, one line per tech, in the order they show
+  (at most four):
+
+  ```xml
+  <Tech name ='LAItalianII' type ='Normal'>
+      ...
+      <Icon>War of the Triple Alliance\Icons\age_2</Icon>
+      <PoliticianEnablesTech>WOTTAimmigrantIT01</PoliticianEnablesTech>
+      <PoliticianEnablesTech>WOTTAimmigrantIT02</PoliticianEnablesTech>
+  ```
+
+  The tag only drives the dialog: it enables nothing. The politician's `TechStatus obtainable` effects still
+  make the techs available, as now. The game ignores a `<Tech>` child it does not know, so the lines do no harm
+  without the key.
+- **Layout:** `uipoliticianEuropeandlg.xml` gets, in each place `n`, hidden gadgets the key fills:
+  `PoliticianDlg-Poli{n}EnablesTechPortrait` (the flag), `PoliticianDlg-Poli{n}EnablesTechDescription` (the
+  description, ending above the techs), `PoliticianDlg-Poli{n}EnablesTech{k}Icon` and `...Name` (k = 0, 1: one
+  or two techs, one per row) and `PoliticianDlg-Poli{n}EnablesTechGrid{k}Icon` and `...Name` (k = 0 to 3: three
+  or four techs, two per row). `wol-fixes/politician-ui/apply_fix.py` writes them into WoL's file from each
+  place's own portrait and description, for four or five places, and adds the tags to every politician from its
+  `TechStatus obtainable` effects on immigrant techs (74 politicians, 148 tags in WoL 1.2.0e).
+- **Effect:** for a politician with tags, the dialog hides the place's stock portrait and description and shows
+  the flag part of the same picture (`flag`: the share of the picture's width and height, default `0.75 0.5833`,
+  the 145 × 231 pixel flag of WoL's 192 × 396 pictures), the description in a shorter box, and each tech's icon
+  (its `<Icon>`) and name (its `DisplayNameID`). Resting the cursor on an icon or a name shows the rollover of
+  the tech's own research button (name, cost, `RolloverTextID`). A click on them selects the politician, as a
+  click anywhere in its place. A politician without tags looks as without the key. No new picture is needed:
+  `politiciandata.xml` keeps pointing to WoL's pictures.
+- **Strings:** with the techs on screen, the hand-written list at the end of the politicians' rollover texts
+  (`\n+ Technologies:\n- Trattoria: ...`) repeats them. `apply_fix.py --strings` takes it out of every string
+  table (English and the translations); only with the key on, since without it nothing else names the techs.
+- **Not for:** the Asian and native dialogs (their own builders and files); revolutions use the European dialog
+  but have no tags.
+- **Log:** `politicianEnablesTech: ... (flag 0.7500 x 0.5833)` and `applied`; at the first dialog,
+  `politicianEnablesTech: the age-up dialog has this key's gadgets` (or `does not have`: an old layout, nothing
+  changes) and `N politician(s) with M <PoliticianEnablesTech> tag(s)`; a tag naming no tech:
+  `<PoliticianEnablesTech>X</PoliticianEnablesTech> in tech Y: no such tech; left out`; more than four: the rest
+  left out, with a line. With `log`, each place and tech filled. Bad `flag` values: `FAILED`.
+- **Simulation:** interface only: the dialog is the local player's, and the politician chosen is researched as
+  before.
+- **Status:** confirmed (2026-11-20, single player, scenario with test data in `C:\AoE3-UHC-WoLReal5`): the
+  Argentine (Italian, Polish, Scandinavian) and Mexican (French, Chinese, Confederate) waves, two, three and four
+  tags, a politician without tags, a tag naming no tech, accepting a tagged politician (the age-up started), the
+  dialog closed and opened again, English and Spanish, the four-place file and the five-place one, with
+  `politicianPlacesFix` (a fifth politician left out of four places), beside WoL's own DLL (our `dinput8.dll`;
+  WoL's DLL writes its own description text, which goes into the shorter box), and key off. Not tested: 1024 ×
+  768, multiplayer, a saved game, a revolution.
 
 #### startingTC
 

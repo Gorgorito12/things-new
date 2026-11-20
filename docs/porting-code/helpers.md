@@ -17,6 +17,7 @@ Contents:
 - [Action tags](#action-tags)
 - [Transform calls](#transform-calls)
 - [Proto tags](#proto-tags)
+- [Tech tags](#tech-tags)
 - [Civ tags](#civ-tags)
 - [Tech subtypes](#tech-subtypes)
 - [Modify types](#modify-types)
@@ -1307,8 +1308,8 @@ inline constexpr Site kLintProtoActionMiss{"LintProtoActionMiss", 0x005FA202, kL
 inline constexpr std::uint8_t kLintTechLoadCallBytes[] = {0xE8, 0xB3, 0xFE, 0xFF, 0xFF};
 inline constexpr Site kLintTechLoadCall{"LintTechLoadCall", 0x0061FE4A, kLintTechLoadCallBytes, sizeof(kLintTechLoadCallBytes)};
 
-inline constexpr std::uint8_t kLintTechNodeBytes[] = {0x8B, 0xF0, 0x8B, 0xCE, 0x8B, 0x51, 0x18};
-inline constexpr Site kLintTechNode{"LintTechNode", 0x0061FDB8, kLintTechNodeBytes, sizeof(kLintTechNodeBytes)};
+inline constexpr std::uint8_t kTechTagsNodeBytes[] = {0x8B, 0xF0, 0x8B, 0xCE, 0x8B, 0x51, 0x18};
+inline constexpr Site kTechTagsNode{"TechTagsNode", 0x0061FDB8, kTechTagsNodeBytes, sizeof(kTechTagsNodeBytes)};
 
 inline constexpr std::uint8_t kLintEffectDropBytes[] = {0x0F, 0x84, 0xDB, 0x18, 0x00, 0x00};
 inline constexpr Site kLintEffectDrop{"LintEffectDrop", 0x006205E9, kLintEffectDropBytes, sizeof(kLintEffectDropBytes)};
@@ -2174,6 +2175,21 @@ inline constexpr Site kTechStatusTechId{"TechStatusTechId", 0x0058EA03, kTechSta
 inline constexpr std::uint8_t kGadgetLookupBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x3B, 0x15, 0xC0, 0x72, 0xC6, 0x00, 0x74, 0x49, 0x8B, 0xC2, 0x25, 0xFF};
 inline constexpr Site kGadgetLookup{"GadgetLookup", 0x0040423C, kGadgetLookupBytes, sizeof(kGadgetLookupBytes)};
 
+inline constexpr std::uint8_t kPoliticianPortraitFillBytes[] = {0x8B, 0x93, 0x8C, 0x01, 0x00, 0x00, 0x8B, 0x83, 0x6C, 0x02, 0x00, 0x00, 0x8B, 0x0C, 0x2A, 0x3B, 0x8C, 0x83, 0x70, 0x02, 0x00, 0x00, 0x0F, 0x85, 0x78, 0x01, 0x00, 0x00, 0x8B, 0x94, 0x83, 0xC0, 0x01, 0x00, 0x00, 0x52, 0x8D, 0x4C, 0x24, 0x74, 0xE8, 0x7E, 0x9F, 0xBE, 0xFF, 0x83, 0x7C, 0x24, 0x74, 0x00, 0x8B, 0x70, 0x04, 0x74, 0x0D, 0x8B, 0x44, 0x24, 0x70, 0x50, 0xE8, 0x53, 0x9E, 0xBE, 0xFF, 0x83, 0xC4, 0x04, 0x85, 0xF6, 0x74, 0x2A, 0x8B, 0x8B, 0x8C, 0x01, 0x00, 0x00, 0x8D, 0x54, 0x29, 0x04, 0x52, 0x8B, 0xCE, 0xE8, 0x42, 0xE3, 0xE1, 0xFF, 0x8B, 0x06, 0x68, 0x00, 0x00, 0x46, 0x3F, 0x68, 0x00, 0x00, 0x40, 0x3F, 0x6A, 0x00, 0x6A, 0x00, 0x8B, 0xCE, 0xFF, 0x90, 0xD8, 0x00, 0x00, 0x00};
+inline constexpr Site kPoliticianPortraitFill{"PoliticianPortraitFill", 0x0081A487, kPoliticianPortraitFillBytes, sizeof(kPoliticianPortraitFillBytes)};
+
+inline constexpr std::uint8_t kPoliticianDescriptionReadBytes[] = {0x8B, 0x93, 0x6C, 0x02, 0x00, 0x00, 0x8B, 0x84, 0x93, 0x10, 0x02, 0x00, 0x00, 0x50, 0x8D, 0x8C, 0x24, 0x84, 0x00, 0x00, 0x00, 0xE8, 0xF2, 0xAB, 0xCA, 0xFF, 0x83, 0xBC, 0x24, 0x84, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x70, 0x04, 0x74, 0x10, 0x8B, 0x8C, 0x24, 0x80, 0x00, 0x00, 0x00, 0x51, 0xE8, 0x57, 0x9D, 0xBE, 0xFF, 0x83, 0xC4, 0x04, 0x85, 0xF6};
+inline constexpr Site kPoliticianDescriptionRead{"PoliticianDescriptionRead", 0x0081A590, kPoliticianDescriptionReadBytes, sizeof(kPoliticianDescriptionReadBytes)};
+
+inline constexpr std::uint8_t kGadgetSetTextureBytes[] = {0xA1, 0x44, 0x62, 0xC6, 0x00, 0x56, 0x57, 0x8B, 0xF9, 0x8B, 0x48, 0x44, 0xF6, 0x41, 0x04, 0x01};
+inline constexpr Site kGadgetSetTexture{"GadgetSetTexture", 0x00638823, kGadgetSetTextureBytes, sizeof(kGadgetSetTextureBytes)};
+
+inline constexpr std::uint8_t kTechStatusListBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x7C, 0x0B, 0x83, 0xF8, 0x10, 0x7D, 0x06, 0x8B, 0x04, 0x81, 0xC2, 0x04, 0x00, 0x33, 0xC0, 0xC2, 0x04, 0x00};
+inline constexpr Site kTechStatusList{"TechStatusList", 0x004C5394, kTechStatusListBytes, sizeof(kTechStatusListBytes)};
+
+inline constexpr std::uint8_t kTechStatusAtBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x85, 0xD2, 0x7C, 0xF4, 0x3B, 0x51, 0x08, 0x7D, 0xEF, 0x8B, 0x41, 0x04, 0x8B, 0x04, 0x90, 0x85, 0xC0};
+inline constexpr Site kTechStatusAt{"TechStatusAt", 0x004804B3, kTechStatusAtBytes, sizeof(kTechStatusAtBytes)};
+
 inline constexpr std::uint8_t kPlayerIconCallCivBytes[] = {0xE8, 0x55, 0xDD, 0xFF, 0xFF};
 inline constexpr Site kPlayerIconCallCiv{"PlayerIconCallCiv", 0x00776FFC, kPlayerIconCallCivBytes, sizeof(kPlayerIconCallCivBytes)};
 
@@ -2902,6 +2918,13 @@ Outcome ApplyNativeCivs(const Config& config);
 Outcome ApplyBigButton(const Config& config);
 Outcome ApplyAgeUpBuildings(const Config& config);
 Outcome ApplyPoliticianPlacesFix(const Config& config);
+Outcome ApplyPoliticianEnablesTech(const Config& config);
+// politicianplaces.cpp: the European age-up dialog's hook at 0x81A45A, shared by politicianPlacesFix and
+// politicianEnablesTech. The observer sees each politician the list builder accepts (the dialog, its tech status) and
+// the place it is about to fill, before the builder fills it.
+using PoliticianPlaceObserver = void (*)(char* dlg, const char* techStatus, int place);
+bool InstallPoliticianPlaceHook(const char* feature);
+bool AddPoliticianPlaceObserver(PoliticianPlaceObserver observer, const char* feature);
 Outcome ApplyFarmAnim(const Config& config);
 Outcome ApplyFarmingRadius(const Config& config);
 Outcome ApplyWonderCivUnitType(const Config& config);
@@ -3012,6 +3035,8 @@ inline constexpr Feature kFeatures[] = {
     {"bigButtonCivs/noBigButtonBlds", ApplyBigButton},
     {"ageUpBuildings", ApplyAgeUpBuildings},
     {"politicianPlacesFix", ApplyPoliticianPlacesFix},
+    // After politicianPlacesFix: its observer runs in that key's hook (0x81A45A), after the place check.
+    {"politicianEnablesTech", ApplyPoliticianEnablesTech},
     {"enableFarmAnim/enableRectFarmAnim", ApplyFarmAnim},
     // After enableFarmAnim: its indices count that key's entries.
     {"farmingRadius", ApplyFarmingRadius},
@@ -3099,7 +3124,7 @@ inline constexpr const char* kHandledKeys[] = {
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "playericon", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
+    "perffilelog", "multipleinstances", "playericon", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
 };
 
 }  // namespace uhc
@@ -3867,6 +3892,224 @@ UhcProtoTagsHook PROC
     pop ecx
     jmp tableBuilderRet
 UhcProtoTagsHook ENDP
+
+END
+```
+
+## Tech tags
+
+### src/techtags.h
+
+```cpp
+// New child tags of a <Tech> in the techtree: one hook on the tech parser's loop over the tree's nodes (0x61FDB8),
+// shared by every key that reads one and by dataLint, which names the tech an effect belongs to.
+#pragma once
+
+namespace uhc {
+
+// `node` is each node of the techtree's root (a <Tech>, or a comment), as the parser takes it.
+using TechNodeObserver = void (*)(const char* node);
+
+// `techName` is the <Tech>'s name attribute (empty if it has none), `text` the child's text (may be null).
+using TechTagHandler = void (*)(const char* techNode, const wchar_t* techName, const wchar_t* text);
+
+// Calls `observer` for every node the parser takes, before it reads it. Writes the hook the first time, after
+// checking the stock bytes.
+bool OnTechNode(TechNodeObserver observer);
+
+// Makes each child element of a <Tech> named `name` (static text, case ignored) reach `handler`, in file order,
+// before the parser reads that tech. The stock parser does not know the tag and reads past it.
+bool AddTechTagHandler(const char* name, TechTagHandler handler);
+
+}  // namespace uhc
+```
+
+### src/techtags.cpp
+
+```cpp
+#include "techtags.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcTechNodeHook();  // hooks/techtags_hooks.asm
+
+namespace {
+
+constexpr std::size_t kMaxObservers = 8;
+constexpr std::size_t kMaxTags = 16;
+constexpr std::uint32_t kTechNode = 0x0061FDB8;  // mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] (7 B)
+
+using XmlAttributeFn = bool(__thiscall*)(const char* node, const char* name, void** value);
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+
+struct Tag {
+  const char* name;
+  uhc::TechTagHandler handler;
+};
+
+uhc::TechNodeObserver g_observers[kMaxObservers] = {};
+std::size_t g_observerCount = 0;
+Tag g_tags[kMaxTags] = {};
+std::size_t g_tagCount = 0;
+bool g_installed = false;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+// The element's name, as the parser's compare chain reads it: [[node+4]+18h][[node+18h]]; null for a node without one.
+const wchar_t* NodeName(const char* node) {
+  const std::int32_t index = Field<std::int32_t>(node, 0x18);
+  const char* names = Field<const char*>(node, 0x04);
+  if (index < 0 || names == nullptr || index >= Field<std::int32_t>(names, 0x1C)) {
+    return nullptr;
+  }
+  return Field<const wchar_t* const*>(names, 0x18)[index];
+}
+
+// name (narrow) == tag (wide), case ignored.
+bool SameName(const char* name, const wchar_t* tag) {
+  for (;; ++name, ++tag) {
+    const wchar_t a = static_cast<wchar_t>(*name >= 'A' && *name <= 'Z' ? *name + 32 : *name);
+    const wchar_t b = *tag >= L'A' && *tag <= L'Z' ? *tag + 32 : *tag;
+    if (a != b) {
+      return false;
+    }
+    if (a == 0) {
+      return true;
+    }
+  }
+}
+
+// The <Tech>'s name attribute: 0x598F37 hands back the attribute's string object, whose first field is its UTF-16
+// text.
+const wchar_t* TechName(const char* node) {
+  void* value = nullptr;
+  if (!kXmlAttribute(node, "name", &value) || value == nullptr) {
+    return L"";
+  }
+  const wchar_t* text = *static_cast<const wchar_t* const*>(value);
+  return text == nullptr ? L"" : text;
+}
+
+bool Install() {
+  if (g_installed) {
+    return true;
+  }
+  if (!uhc::VerifyAll("tech tags", {&uhc::sites::kTechTagsNode}) ||
+      !uhc::WriteJmp(kTechNode, reinterpret_cast<const void*>(&UhcTechNodeHook), 7)) {
+    return false;
+  }
+  g_installed = true;
+  return true;
+}
+
+}  // namespace
+
+// From the hook, for each node of the techtree's root, before the parser reads it.
+extern "C" void __stdcall UhcTechNodeDispatch(const char* node) {
+  if (node == nullptr) {
+    return;
+  }
+  for (std::size_t i = 0; i < g_observerCount; ++i) {
+    g_observers[i](node);
+  }
+  if (g_tagCount == 0) {
+    return;
+  }
+  const wchar_t* name = NodeName(node);
+  if (name == nullptr || !SameName("tech", name)) {
+    return;
+  }
+  // The children: [node+8] an array of nodes, [node+0Ch] their count (as the effect parse reads a <Target>).
+  const std::int32_t count = Field<std::int32_t>(node, 0x0C);
+  const char* const* children = Field<const char* const*>(node, 0x08);
+  const wchar_t* techName = nullptr;
+  for (std::int32_t c = 0; children != nullptr && c < count; ++c) {
+    const char* child = children[c];
+    const wchar_t* childName = child == nullptr ? nullptr : NodeName(child);
+    if (childName == nullptr) {
+      continue;
+    }
+    for (std::size_t t = 0; t < g_tagCount; ++t) {
+      if (SameName(g_tags[t].name, childName)) {
+        if (techName == nullptr) {
+          techName = TechName(node);
+        }
+        g_tags[t].handler(node, techName, Field<const wchar_t*>(child, 0x14));
+        break;
+      }
+    }
+  }
+}
+
+namespace uhc {
+
+bool OnTechNode(TechNodeObserver observer) {
+  if (g_observerCount == kMaxObservers) {
+    Log(L"tech tags: no room for another observer");
+    return false;
+  }
+  if (!Install()) {
+    return false;
+  }
+  g_observers[g_observerCount++] = observer;
+  return true;
+}
+
+bool AddTechTagHandler(const char* name, TechTagHandler handler) {
+  if (g_tagCount == kMaxTags) {
+    Log(L"tech tags: no room for %hs", name);
+    return false;
+  }
+  if (!Install()) {
+    return false;
+  }
+  g_tags[g_tagCount++] = {name, handler};
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/techtags_hooks.asm
+
+```asm
+; The shared <Tech> node hook (src/techtags.cpp). Entered through a jmp written over the stock code; it re-executes
+; the replaced instructions and leaves through an explicit jmp to the verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcTechNodeDispatch PROTO STDCALL node:DWORD
+
+.data
+techNodeNext dd 0061FDBFh   ; cmp edx,-1: the node's name index
+
+.code
+
+; Replaces mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] at 0x61FDB8, the tech parser's loop over the tree's nodes:
+; EAX = the node. pushad / popad keep every register for the re-executed instructions; the flags are written by the
+; cmp that follows.
+UhcTechNodeHook PROC
+    TRACE_ONCE "tech tags (0x61FDB8)"
+    pushad
+    push eax
+    call UhcTechNodeDispatch
+    popad
+    mov esi, eax
+    mov ecx, esi
+    mov edx, dword ptr [ecx+18h]
+    jmp techNodeNext
+UhcTechNodeHook ENDP
 
 END
 ```

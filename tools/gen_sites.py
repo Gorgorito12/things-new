@@ -1671,12 +1671,12 @@ SITES = [
     # politicianEnablesTech, verify only: in the same builder, the portrait of the place (the politiciandata records
     # [ebx+18Ch], 14h bytes each, +0 the tech ID and +4 the portrait path, matched with [ebx+26Ch]'s tech ID; the
     # gadget [ebx+eax*4+1C0h] through 0x404432; its texture 0x638823(gadget, path*); its texture coordinates
-    # vtable+D8h(0, 0, 0.75, 0.7734375)) and the description (the tech's RolloverTextID [[esp+14h]+0Ch] into the
-    # gadget [ebx+edx*4+210h], text virtual +80h); the gadget texture setter 0x638823 (thiscall(gadget, BString*),
+    # vtable+D8h(0, 0, 0.75, 0.7734375)); the read of the description handle [ebx+edx*4+210h] and its lookup, up to the
+    # null check (another DLL may replace the text after it); the gadget texture setter 0x638823 (thiscall(gadget, BString*),
     # ret 4); the player's tech statuses 0x4C5394 (thiscall([world+7Ch], player ID), ret 4: [this+ID*4]) and the
     # list's entry 0x4804B3 (thiscall(list, index), ret 4: [[list+4]+index*4], count [list+8])
     ("PoliticianPortraitFill", 0x81A487, 0x72),
-    ("PoliticianDescriptionFill", 0x81A590, 0x57),
+    ("PoliticianDescriptionRead", 0x81A590, 0x39),
     ("GadgetSetTexture", 0x638823, 0x10),
     ("TechStatusList", 0x4C5394, 0x18),
     ("TechStatusAt", 0x4804B3, 0x15),

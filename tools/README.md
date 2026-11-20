@@ -211,7 +211,7 @@ python -I tools/testbed.py [--bed <folder>] <command> ...
 
 Drives the game of a test copy (default `C:\AoE3-UHC-Test`, or the `UHC_TESTBED` variable) with
 no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wait`, `state`,
-`units`, `explored`, `shot`, `record`, `click`/`rclick`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `log`, `safety`; the
+`units`, `explored`, `shot`, `record`, `click`/`rclick`, `hover`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `log`, `safety`; the
 docstring lists their arguments.
 
 A command that waits on the game ends with exit code 3 when the game dies meanwhile (the message gives

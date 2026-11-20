@@ -10,12 +10,15 @@
 // The dialog. The hook of politicianPlacesFix at 0x81A45A (AddPoliticianPlaceObserver) runs for each politician the
 // European list builder FUN_0081A2B8 accepts, before it fills place n = [dlg+26Ch]. The builder then sets the
 // portrait's texture from the politiciandata record (0x638823) and its texture coordinates to (0, 0, 0.75, 0.7734375)
-// (vtable +D8h), and the description to the tech's RolloverTextID; see the sites PoliticianPortraitFill and
-// PoliticianDescriptionFill. For a politician with tags this key hides the place's Poli%dPortrait and
-// Poli%dDescription and shows its own gadgets instead, which the layout file adds to the place, hidden:
+// (vtable +D8h), and the description to the tech's RolloverTextID through the handle [dlg+210h+4n]; see the sites
+// PoliticianPortraitFill and PoliticianDescriptionRead. For a politician with tags this key hides the place's
+// Poli%dPortrait and Poli%dDescription and shows its own gadgets instead, which the layout file adds to the place,
+// hidden:
 //   PoliticianDlg-Poli%dEnablesTechPortrait     the same picture, cut to its top part (`flag`, default 0.75 0.5833:
-//                                               the flag of WoL's pictures, 145 x 231 of 192 x 396 pixels);
-//   PoliticianDlg-Poli%dEnablesTechDescription  the RolloverTextID text, in a box that ends above the techs;
+//                                               a 145 x 231 flag in a 192 x 396 picture);
+//   PoliticianDlg-Poli%dEnablesTechDescription  the description, in a box that ends above the techs: the key puts its
+//                                               handle in [dlg+210h+4n], so the builder fills it (beside a DLL that
+//                                               replaces the text at 0x81A5CB, with that DLL's text);
 //   PoliticianDlg-Poli%dEnablesTech%dIcon/Name  one or two techs, one per row;
 //   PoliticianDlg-Poli%dEnablesTechGrid%dIcon/Name  three or four techs, two per row.
 // A politician without tags gets the stock gadgets back, so it looks as without the key. A layout without these
@@ -281,7 +284,7 @@ const char* StatusOf(const char* world, std::int32_t playerId, std::int32_t tech
 }
 
 struct Place {
-  std::int32_t portrait = 0, description = 0;          // the stock gadgets, as the dialog bound them
+  std::int32_t portrait = 0, description = 0;          // the stock gadgets
   std::int32_t myPortrait = 0, myDescription = 0;      // this key's
   std::int32_t icon[kListRows] = {}, name[kListRows] = {};
   std::int32_t gridIcon[kMaxTags] = {}, gridName[kMaxTags] = {};
@@ -290,7 +293,11 @@ struct Place {
 Place PlaceGadgets(const char* dlg, void* panel, int n) {
   Place place;
   place.portrait = Field<std::int32_t>(dlg, 0x1C0 + 4 * n);
-  place.description = Field<std::int32_t>(dlg, 0x210 + 4 * n);
+  // By name: the dialog's own slot may hold this key's box from an earlier opening.
+  place.description = Lookup(panel, L"PoliticianDlg-Poli%dDescription", n);
+  if (place.description == 0) {
+    place.description = Field<std::int32_t>(dlg, 0x210 + 4 * n);
+  }
   place.myPortrait = Lookup(panel, L"PoliticianDlg-Poli%dEnablesTechPortrait", n);
   place.myDescription = Lookup(panel, L"PoliticianDlg-Poli%dEnablesTechDescription", n);
   for (int k = 0; k < kListRows; ++k) {
@@ -407,7 +414,12 @@ void PlaceFilled(char* dlg, const char* techStatus, int n) {
   const std::int32_t techId = data == nullptr ? -1 : Field<std::int32_t>(data, 0);
   const auto found = g_tags.find(techId);
   HideOurs(place);
+  // The description the builder fills next: [dlg+210h+4n] (read at 0x81A596). A tagged politician's goes to this
+  // key's shorter box, so the text is whatever fills it (the RolloverTextID in stock, another DLL's own text beside
+  // it); any other politician's goes back to the stock box.
+  std::int32_t* descriptionSlot = reinterpret_cast<std::int32_t*>(dlg + 0x210 + 4 * n);
   if (found == g_tags.end() || found->second.empty()) {
+    *descriptionSlot = place.description;
     Show(place.portrait, true);
     Show(place.description, true);
     return;
@@ -415,6 +427,7 @@ void PlaceFilled(char* dlg, const char* techStatus, int n) {
   const std::vector<std::int32_t>& techs = found->second;
   Show(place.portrait, false);
   Show(place.description, false);
+  *descriptionSlot = place.myDescription;
 
   // The portrait's top part, from the picture the builder is about to give the stock portrait.
   if (void* portrait = Object(place.myPortrait)) {
@@ -425,10 +438,6 @@ void PlaceFilled(char* dlg, const char* techStatus, int n) {
     }
     Show(place.myPortrait, true);
   }
-  BString description{nullptr};
-  kBStringFromId(&description, Field<std::int32_t>(data, 0x0C));
-  SetText(place.myDescription, description, nullptr);
-  kBStringFree(&description);
   Show(place.myDescription, true);
 
   const std::int32_t playerId = Field<std::int32_t>(dlg, 0x13C);
@@ -477,7 +486,7 @@ Outcome ApplyPoliticianEnablesTech(const Config& config) {
     }
   }
   if (!VerifyAll("politicianEnablesTech",
-                 {&sites::kPoliticianPortraitFill, &sites::kPoliticianDescriptionFill, &sites::kGadgetSetTexture,
+                 {&sites::kPoliticianPortraitFill, &sites::kPoliticianDescriptionRead, &sites::kGadgetSetTexture,
                   &sites::kTechStatusList, &sites::kTechStatusAt, &sites::kTechRolloverHead, &sites::kTechByName,
                   &sites::kPlayerById, &sites::kUnitById, &sites::kGadgetByName, &sites::kGadgetLookupAny,
                   &sites::kGadgetRelease, &sites::kGadgetShow, &sites::kGadgetHide, &sites::kBStringFromWide,

@@ -396,7 +396,7 @@ there:
   | Select a unit | `exec "uiLookAtAndSelectUnit(<id>)"`; `record --select` |
   | Zoom | `normalZoom` by console **before the game loads**: `exec 'configSetFloat("normalZoom", 25)'`. It does not change a running game |
   | Crop the video | `record --crop` |
-  | Click a button, open a tooltip | `click <x> <y>`; `record --hover` |
+  | Click a button, open a tooltip | `click <x> <y>`; `hover <x> <y>` then `shot`; `record --hover` |
   | Unit orders and tech | triggers (`at<s>=...`) and `exec` |
   | Hotkeys, typing, a box drag, the wheel | **Not in background:** `rkey`, `type`, `drag` and `wheel` are real input, which this copy ignores. Take `background` out of the cfg and run that test alone |
 - **Edge scrolling moves the camera:** the game scrolls while the cursor sits at a screen edge

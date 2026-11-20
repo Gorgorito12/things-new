@@ -692,6 +692,49 @@ so it shows that many places. The other list builder, FUN_00818EE5, null-checks 
 - `ageUpBuildings` replaces the call at 0x81A44D, five bytes before: the two sites do not overlap and both verify
   their own bytes; tested together.
 - Interface only, not on a hot path: the lookups run when the dialog is filled (a click), at most ten per politician.
+- The hook is shared (`InstallPoliticianPlaceHook`, `AddPoliticianPlaceObserver` in `features.h`): whichever of
+  `politicianPlacesFix` and `politicianEnablesTech` applies first writes it; the place check runs first, then each
+  observer with the place the politician is about to fill.
+
+### politicianEnablesTech
+
+**Data.** Through [tech tags](#tech-tags): each `<PoliticianEnablesTech>` text by politician, and every tech's `<Icon>`
+text, since the tech record keeps only the texture handle (`[NodeData+14h]`, from 0x621143 → 0x58E3EB) and a gadget's
+texture is set by path. The names become tech IDs at the first dialog after a data load (0x600BE1, `thiscall(db,
+name)`); a name with no tech is logged and left out, and a politician keeps at most four. `OnDatabaseLoad` clears it all.
+
+**The builder.** FUN_0081A2B8 fills place n = `[dlg+26Ch]` after the hook at 0x81A45A (capstone of 0x81A487..0x81A5F4;
+REA `ev_46886807`): the portrait gadget `[dlg+1C0h+4n]` gets the politiciandata record's path (`[dlg+18Ch]`, 14h-byte
+records, `+0` tech ID, `+4` path, count `[dlg+190h]`) through 0x638823 and then the texture coordinates (0, 0, 0.75,
+0.7734375) through its vtable `+D8h`, whatever the layout says; the name `[dlg+1E8h+4n]` the DisplayNameID; the
+description `[dlg+210h+4n]` the RolloverTextID (a DLL beside ours may replace that text at 0x81A5CB).
+
+**The observer** (`PlaceFilled`, before the fill): the place's gadgets by name, `kGadgetByName` (0xAB7C2F) on the
+dialog's root gadget (`[dlg+148h]` through 0x404296, as the bind FUN_0081892B does). Without this key's gadgets in the
+layout, nothing. A politician without tags: this key's gadgets hidden, the stock portrait and description shown, the
+stock description handle (by name) back in `[dlg+210h+4n]`. A tagged one:
+- the stock portrait and description hidden (0x448F13); the builder still fills them, unseen;
+- `EnablesTechPortrait` gets the record's path (0x638823) and the texture coordinates (0, 0, `flag`) through the same
+  vtable `+D8h`, so it shows the top of the same picture;
+- `[dlg+210h+4n]` = the `EnablesTechDescription` handle: the builder (or the DLL beside it) fills the shorter box;
+- per tech: the name gadget gets the DisplayNameID text (0x58EA52, vtable `+80h`) and, in its help text `[gadget+68h]`,
+  the tech's research rollover: 0x4C737C(text, status, player, unit, 1, 0, 1, 1), as the command panel's call 0x4622C5;
+  the status is the player's (0x4C5394(`[world+7Ch]`, player ID), entry 0x4804B3(list, tech ID), checked by its tech
+  ID, else a search), the player `[dlg+13Ch]` through 0x44CB21, the unit `[dlg+140h]` through 0x44CC6D. With no status
+  or an empty result, the RolloverTextID. The icon gadget gets the `<Icon>` path (0x638823) and the same help text.
+  One or two techs use the `EnablesTech%d` row gadgets, three or four the `EnablesTechGrid%d` ones.
+
+The help text shows on hover (a posted mouse move in a `background` copy was enough), and a click on an icon or a
+name reaches the place's button: the politician is selected (seen in game).
+
+**Why it is safe.**
+- Registers and stack: the observer runs inside `UhcPoliticianNoPlace` (stdcall), see politicianPlacesFix.
+- The only write outside this key's gadgets is the description handle `[dlg+210h+4n]`, read by the builder at 0x81A596
+  for this place and by nothing else found in the builder (capstone); every fill sets it again, from a name lookup.
+- The gadget objects come from 0x404296 with the reference released at once (0x40431B), as the stock code does.
+- Interface only, on a click: the dialog is the local player's; the politician chosen is the stock research command.
+- Beside another DLL (our `dinput8.dll`): a patch at 0x81A5CB is after the handle read, so its text fills our box;
+  the site `PoliticianDescriptionRead` (0x81A590, 0x39 bytes) stops before it.
 
 ### kbUnitSyscalls
 
@@ -4673,6 +4716,25 @@ case ignored, calls the handler with the civ, its ID and the text, and goes to t
 the stock path. `civFirstTC` registers `firstTC` and `sharedBuildLimit` registers `SettlerProtoName`, in `kFeatures`
 order, so whichever comes first installs the hook and the other only adds its name.
 
+### Tech tags
+
+`techtags.cpp` owns the tech parser's loop over the techtree's nodes at 0x61FDB8 (`mov esi,eax / mov ecx,esi / mov
+edx,[ecx+18h]`, 7 bytes, re-executed; EAX = the node; continue at 0x61FDBF, `cmp edx,-1`). `OnTechNode(observer)`
+calls each observer with every node (dataLint keeps it to name the tech of an effect it reports), and
+`AddTechTagHandler(name, handler)` walks the children of each `<Tech>` node (`[node+8]` an array of nodes, `[node+0Ch]`
+their count; a child's name `[[child+4]+18h][[child+18h]]`, case ignored) and calls the handler with the `<Tech>`'s
+`name` attribute (0x598F37) and the child's text, the BString `[child+14h]`, before the parser reads that tech.
+`politicianEnablesTech` registers `PoliticianEnablesTech` and `Icon`.
+
+The parser itself dispatches a tech's children through two tag tables built by FUN_00623702 and ignores a name in
+neither, with no message (REA, `docs/engine-symbols.md`): an added tag is read only by its
+handler here. Adding the name to the parser's own definition table (its tail 0x62391D, as `prototags` does for protos)
+would also accept it inside `<Prereqs>` and `<Effects>` (0x6203A2), which is why the walk is done at the loop instead.
+
+**Why it is safe.** `pushad` / `popad` keep every register around the stdcall dispatch; the flags are written by the
+`cmp` that follows. No branch lands in the 7 bytes (they were dataLint's site; capstone scan). Data load only: once per
+`<Tech>`, a walk over its 10 to 30 children with a name compare each.
+
 ### trainBatchSize
 
 The routine that queues units in a building reads its limit from one call, 0x8D051B at 0x9CE645: the player's `[+2ACh]`
@@ -5147,7 +5209,7 @@ in a clean game.
 
 Reads the exe's own failure exits while the data loads: the `<UnitType>` handler's 0x5FCB61, the proto tag find at 0x5F62A2, the
 `<ProtoAction>` look-up at 0x5FA202, and in the effect parse the false setData at 0x6205E9 and the unknown type at 0x65BC56, plus the
-shared action tag, ModifyType and Data subtype hooks. The tech parser's loop 0x61FDB8 keeps the current `<Tech>` node to name it,
+shared action tag, ModifyType and Data subtype hooks. The shared `<Tech>` node hook (`OnTechNode`, [tech tags](#tech-tags)) keeps the current `<Tech>` node to name it,
 and the summary is written when the call 0x61FE4A returns.
 
 **Why it is safe.** Each hook re-executes what it replaces and only records a name, and all of that code runs while the data loads.
