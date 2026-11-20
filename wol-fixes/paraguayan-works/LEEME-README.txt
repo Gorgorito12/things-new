@@ -57,10 +57,25 @@ How to undo
   Unzip WoL-paraguayan-works-originals.zip into the WoL folder the same way, then delete the two
   new files art\WoL\buildings\works\works_smoke.particle and works_smoke.particle.xmb.
 
+Low model detail (checked in game, 2026-11-20)
+  The works have no <lowpoly> branch; the arsenal has one (its own simpler lp_ models). This needs
+  no change. Tested with "High Poly Models" off (Options, Detail Settings; optiongrfxhighmodels in
+  the profile), a Paraguayan player, the three works and a European Arsenal side by side in each
+  age, rows at 50 % HP, one row destroyed in age 1 and one in age 3, with WoL's files and with the
+  fix, then the same at high detail:
+  - The works never vanish and never look wrong. With no <lowpoly> branch the game draws the
+    normal model, so the works look the same at low and high detail; only the arsenal changes to
+    its lp_ model.
+  - Smoke: the same at both details; with the fix, the arsenal's white plume at low detail too.
+  - Damage: at 50 % HP the works look the same at both details.
+  - Collapse: at low detail no building plays the falling-pieces collapse, the arsenal included:
+    it stands upright and fades out over its rubble, in every age, with WoL's files and with the
+    fix alike. So the age 3 bug fixed here (pieces turned) shows only at high detail.
+  A <lowpoly> branch would only make the works cheaper to draw at low detail, and it needs simpler
+  models of the works, which do not exist: the arsenal's lp_ models would show an arsenal.
+
 Not changed, and why
-  - No <lowpoly> branch was added. The arsenal has one (lp_med_arsenal_*), the works have none.
-    Not tested at low model detail: the video settings live in the shared profile, and other test
-    games were running. If the works disappear or show wrong at low model detail, say so.
+  - No <lowpoly> branch was added: none is needed (see "Low model detail" above).
   - No shape= collision attribute (the arsenal's names its own .shp). The works stood, took cannon
     fire and collapsed normally without it.
   - The arsenal's age 2 template puts debris_2i and debris_2j on bone_debris_2h, while both
@@ -130,11 +145,29 @@ Cómo deshacerlo
   Descomprimir WoL-paraguayan-works-originals.zip en la carpeta de WoL de la misma forma, y borrar
   los dos archivos nuevos art\WoL\buildings\works\works_smoke.particle y works_smoke.particle.xmb.
 
+Detalle de modelos bajo (comprobado en el juego, 2026-11-20)
+  Las fábricas no tienen rama <lowpoly>; el arsenal sí (sus propios modelos lp_, más simples). No
+  hace falta cambiar nada. Probado con "Modelos de alta poligonalidad" (High Poly Models)
+  desactivado (Opciones, Configuración de detalles; optiongrfxhighmodels en el perfil), un
+  jugador paraguayo, las tres fábricas y un Arsenal europeo lado a lado en cada edad, filas al
+  50 % de vida, una fila destruida en la edad 1 y otra en la edad 3, con los archivos de WoL y con
+  el arreglo, y luego lo mismo con detalle alto:
+  - Las fábricas nunca desaparecen ni se ven mal. Sin rama <lowpoly> el juego dibuja el modelo
+    normal, así que las fábricas se ven igual con detalle bajo y alto; solo el arsenal pasa a su
+    modelo lp_.
+  - Humo: igual con los dos detalles; con el arreglo, la columna blanca del arsenal también con
+    detalle bajo.
+  - Daños: al 50 % de vida las fábricas se ven igual con los dos detalles.
+  - Derrumbe: con detalle bajo ningún edificio hace el derrumbe con piezas que caen, tampoco el
+    arsenal: queda en pie y se desvanece sobre sus escombros, en cada edad, igual con los archivos
+    de WoL que con el arreglo. Por eso el fallo de la edad 3 corregido aquí (piezas giradas) solo se
+    ve con detalle alto.
+  Una rama <lowpoly> solo haría más barato dibujar las fábricas con detalle bajo, y necesita
+  modelos más simples de las fábricas, que no existen: los modelos lp_ del arsenal mostrarían un
+  arsenal.
+
 No cambiado, y por qué
-  - No se añadió una rama <lowpoly>. El arsenal tiene una (lp_med_arsenal_*), las fábricas ninguna.
-    No se probó con detalle de modelos bajo: los ajustes de vídeo están en el perfil compartido y
-    había otras partidas de prueba abiertas. Si las fábricas desaparecen o se ven mal con detalle
-    bajo, avísenos.
+  - No se añadió una rama <lowpoly>: no hace falta (vea "Detalle de modelos bajo" arriba).
   - Ningún atributo de colisión shape= (el del arsenal nombra su propio .shp). Las fábricas se
     sostuvieron, recibieron cañonazos y se derrumbaron con normalidad sin él.
   - La plantilla de la edad 2 del arsenal pone debris_2i y debris_2j en bone_debris_2h, mientras
@@ -167,3 +200,14 @@ MEDIA (in the "media" folder beside this README, not inside the zips)
   collapse-age3-fixed.jpg, collapse-age3-control.jpg   the first frames of each collapse.
   The damage and collapse runs were filmed with the arsenal's smoke file before works_smoke was
   made; their models are the ones in the zip.
+
+  Low model detail ("High Poly Models" off), a Paraguayan player, no AI; each row of buildings is
+  Food, Wood and Gold works and a European Arsenal. Left: WoL's files; right: with the fix.
+  lowdetail-ages.jpg       ages 1, 2 and 3 (from age 2 on, one row is at 50 % HP).
+  lowdetail-damaged.jpg    age 1, two rows at 50 % HP.
+  lowdetail-collapse.jpg   a row destroyed in age 1 (1.5 s after) and in age 3 (0.6 s and 3.5 s
+      after): standing and fading out, the arsenal too.
+  lowdetail-vs-high.jpg    left LOW, right HIGH detail: the fix in age 3 standing and 0.6 s into
+      the collapse, then WoL's files 0.6 s into the collapse.
+  Detalle de modelos bajo: a la izquierda los archivos de WoL, a la derecha con el arreglo (en
+  lowdetail-vs-high.jpg, a la izquierda detalle bajo y a la derecha alto).
