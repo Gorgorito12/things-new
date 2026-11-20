@@ -31,6 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-20 11:50 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | The tag on the civ in `civs.xml`. |
+| Friday 2026-11-20 11:50 | [`homeCityTechsInUnits`](#homecitytechsinunits) | Added. A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | The card's tech in the `<Tech>` rows, made obtainable for the civ. |
 | Thursday 2026-11-19 15:22 | [`attackTypeIcons`](#attacktypeicons) | Filmed in WoL, with a control. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
 | Thursday 2026-11-19 15:22 | [`multiplierDecimals`](bug-fixes.md#multiplierdecimals) | Filmed in WoL, with a control. The attack rows' bonus multipliers show two decimals, as the data has them: `1.25x` instead of a rounded `1.3x`, in both panels and their tooltips. | Nothing. |
 | Thursday 2026-11-19 14:11 | [`autoScout`](#autoscout) | Added. A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon and the envoy. |
@@ -5075,6 +5077,8 @@ How buildings train, spawn, live and get replaced.
 | [`doNotQueue`](#donotqueue) | `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | **new** | The tag on the protos that want it. | confirmed |
 | [`nextResearchFree`](#nextresearchfree) | A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`researchGrants`](#researchgrants) | A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | **new** | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. | confirmed (single player, also a skirmish vs AI) |
+| [`shipTechLimit`](#shiptechlimit) | `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | **new** | The tag on the civ in `civs.xml`. | confirmed (single player, scenario route) |
+| [`homeCityTechsInUnits`](#homecitytechsinunits) | A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | **new** | The card's tech in the `<Tech>` rows, made obtainable for the civ. | confirmed (single player, scenario route; the deck card not tested) |
 | [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
 | [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`randomCost`](#randomcost) | `<RandomCost resourcetype="Gold" min="80" max="120"/>` in a proto gives each unit trained a price rolled in that range, a new one after each purchase, and the button shows the exact price. | **new** | The tag on the protos that want it. | confirmed (single player, also a skirmish vs AI) |
@@ -6144,7 +6148,7 @@ researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
 - **Log:** `researchGrants: the proto tags ResearchGrant* and the Data subtypes ResearchGrantInterval, ResearchGrantMax
   and ResearchGrantPoints are on; the tech buttons show the price with a point; a floating text over the building that
   pays a point`, `hook reached: research payment (0x9E67E1)`, `hook reached: researchGrants research step (0x9E6622)`,
-  `hook reached: researchGrants tech button (0x4622C5)`, `hook reached: researchGrants tech rollover cost (0x4C73FD)`;
+  `hook reached: tech rollover (0x4622C5)` (the shared hook, since 2026-11-20), `hook reached: researchGrants tech rollover cost (0x4C73FD)`;
   with `log` also `the button of tech 10542 shows Free (cost x0.00)` and `"Free research" shown over unit 0`; a bad
   value: `researchGrants: proto 311 (Church): <ResearchGrantCost> needs a number from 0 to 1, not
   "2"; ignored`. With `log`: `unit 0 (Market) has 2/3 point(s) (game time 40000 ms)`, `unit 2 spends a point on tech
@@ -6189,6 +6193,110 @@ researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
     ran in a background copy beside two other games.
   - Not tested: `CommandResearch` (a research from a `protounitcommands.xml` command, 0x9D54CF / 0x9D58FF), a cancel,
     a transform in place, multiplayer.
+
+#### shipTechLimit
+
+*A civ can research only so many "shipment techs" (techs that cost Ships) per game, as WoL's Mapuche council techs.*
+
+**Added:** Friday 2026-11-20 11:50 · **Filmed in WoL:** Friday 2026-11-20 11:50
+
+![shipTechLimit in WoL](media/shipTechLimit-wol.gif)
+
+*In WoL, with `shipTechLimit log` (scenario route: player 1 is Ethiopian with `<ShipTechLimit>3</ShipTechLimit>` in the
+copy's `civs.xml`, a `MapucheWarchief` and `Age0Mapuche`, 20 Ships granted; the Warchief stays selected and the pointer
+rests on the Coin Crates button):* three shipment techs are queued (Villagers, Food Crates, Wood Crates: 1, 2 and 3 of
+3 in the log), then the Coin Crates research is refused: it does not start and the Ships stay. Every shipment tech
+button shows `3/3`, and the rollover ends with the red line `Shipment techs: 3/3, the limit is reached`. A click on the
+second queued research cancels it: the Ship comes back, the log says 2 of 3, and the Coin Crates research then goes
+through (3 of 3). [Full video (MP4)](media/shipTechLimit-wol.mp4).
+
+![shipTechLimit in WoL, key off](media/shipTechLimit-wol-control.gif)
+
+*In WoL, key off (the same scenario, tag and commands):* the fourth research is paid and queued like the others; no
+count on the buttons, no line in the rollover. [Full video (MP4)](media/shipTechLimit-wol-control.mp4).
+
+![The rollover at the limit](media/shipTechLimit-rollover.png)
+
+```
+shipTechLimit [notext] [log]
+```
+
+| Option | What it does |
+|---|---|
+| `notext` | No count in the rollover and on the buttons; the limit still holds. |
+| `log` | Logs each limit read from `civs.xml`, each research that counts or is given back, and the counts a game starts or loads with. |
+
+- **What a modder writes:** in `civs.xml`, inside the civ: `<ShipTechLimit>N</ShipTechLimit>` (0 to 100000). A civ
+  without the tag has no limit.
+
+  ```xml
+  <civ>
+      <name>WallMapu</name>
+      <ShipTechLimit>12</ShipTechLimit>
+      ...
+  ```
+
+- **What counts:** a research, on a unit or a building, of a tech whose cost has `Ships` (any amount above 0). Home
+  city cards sent from the deck never count: they are not researched. A HomeCity tech that a unit researches with
+  [`homeCityTechsInUnits`](#homecitytechsinunits) does count.
+- **When:** a research counts when it is paid, which is when it is queued; a cancel that refunds it gives the slot back.
+  A repeatable tech (`YPInfiniteTech`, the crates) counts each time. A research that ends without a refund (its unit
+  dies) keeps its count, as the Ship is not given back either.
+- **At the limit:** every other shipment tech of that player is refused for his units: the research does not start on
+  any machine and nothing is paid. The button stays, marked `n/N`, and its rollover ends with the red line `Shipment
+  techs: n/N, the limit is reached` (below the limit, a green `Shipment techs: n/N`). In WoL's interface a refused tech
+  button is drawn as bright as the others, like a tech of a later age: the mark and the line say why.
+- **Saved games:** the counts are saved (on one unit of each player) and come back on load. A game saved without the
+  key starts from the shipment techs the player has researched (repeatable ones by their count).
+- **Log:** `shipTechLimit: civ 48 (WallMapu): at most 12 shipment techs per game`, `shipTechLimit: player 1 paid shipment
+  tech 3934: 1 of 3 (game time 15246 ms)`, `... cancelled shipment tech 3937: 2 of 3`, `game start or load: player 1
+  has 3 of 3 shipment techs`; `hook reached: can-research test (0x4C6968)`, `hook reached: tech rollover (0x4622C5)`.
+- **The AI:** it is refused the same way; an AI plan that keeps asking for a refused tech gets nothing.
+- **Tested in WoL (2026-11-20, single player, scenario route, `C:\AoE3-UHC-WoLReal7`):** limit 3 with four requests
+  (the fourth refused, Ships 20 to 17); a refused click on the button; a cancel (Ships back, count 2, the button usable
+  again); a repeatable tech twice (Food Crates: 2 then 3 of 5); a HomeCity tech researched by a council member counted;
+  a save at 3 of 3 and its load (`game start or load: player 1 has 3 of 3`, a fourth still refused); a player of a civ
+  without the tag (Egyptians) researched five; the key off (control video); a skirmish against a German AI with the key
+  on (the AI played, no `XS: Error`); beside WoL's own DLL (our `dinput8.dll`, `C:\WoL-Test`'s `uhc.dll`: both keys
+  applied, the fourth research refused). Not tested: a WallMapu skirmish with its home city, multiplayer.
+
+#### homeCityTechsInUnits
+
+*A home city card's tech listed in a unit's or a building's `<Tech>` rows can be researched there like a normal tech.*
+
+**Added:** Friday 2026-11-20 11:50
+
+![The stock button of a HomeCity tech on a council member](media/homeCityTechsInUnits-stock.png)
+
+*Key off (stock):* `HCFencingSchool` in `MapucheWiseWoman`'s `<Tech>` rows, made obtainable by `Age0Mapuche`: the
+button shows, enabled, with the card's rollover, but a click (or `researchByID`) does nothing: no queue, no Ship paid,
+no message.
+
+```
+homeCityTechsInUnits [nogathercheck] [log]
+```
+
+| Option | What it does |
+|---|---|
+| `nogathercheck` | A HomeCity tech researched this way only checks the gather point flags it has. |
+| `log` | Logs each HomeCity research a unit starts or is refused. |
+
+- **What a modder writes:** the card's tech in the proto's `<Tech>` rows, e.g. `HCNativeLore` instead of
+  `MapucheNativeLore` on `MapucheWiseWoman`, and makes it obtainable for that civ (a `TechStatus` `obtainable` effect,
+  as `Age0Mapuche` does for the council techs): a card that is not in the player's deck is unobtainable.
+- **What it does:** the research pays the tech's own cost, takes its `ResearchPoints`, and its effects apply when it is
+  done, as any tech's. It is the same tech as the card, so it becomes active either way. Once active, the unit's button
+  goes away (stock skips its "already active" test for HomeCity techs; the key adds it for a proto that lists the tech).
+  A HomeCity research that a proto does not list is still refused, as in stock.
+- **The gather point:** while the player has a home city and no land gather point (no Town Center and none of the stock
+  fallbacks: Outpost, war hut, ... and any `AbstractDaimyo` unit, which WoL's `MapucheWarchief` is), such a research is
+  cancelled and refunded, as a tech with `CheckLandHCGatherPoint`, so a card with `FreeHomeCityUnit` does not lose its
+  units. A card with `CheckWaterHCGatherPoint` keeps the stock water check.
+- **With [`shipTechLimit`](#shiptechlimit):** a HomeCity tech that costs Ships counts when a unit researches it.
+- **Tested in WoL (2026-11-20, single player, scenario route):** `HCNativeLore` on `MapucheWiseWoman`: researched (1
+  Ship), active after its 40 points (status bit 1, research count 1), its button gone, a second request refused. Not
+  tested: the card in a deck (a WallMapu skirmish with its home city: whether the deck greys the card after the
+  research), the gather point check (scenario players have no home city), multiplayer.
 
 #### trainBatchSize
 

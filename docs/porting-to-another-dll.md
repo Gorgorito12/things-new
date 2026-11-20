@@ -17,7 +17,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
-| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
+| Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon`, `autoScout` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
@@ -1700,6 +1700,38 @@ that key makes free is not asked of this one.
   alive slot of the unit vtable.
 - **Test:** the tags on a building, as in the [modding guide](modding-guide.md#researchgrants): its row counts points, a
   research takes one and costs its share, and a building with a Time factor researches that much slower.
+
+### shipTechLimit
+
+Code: [buildings](porting-code/buildings.md#shiptechlimit). It needs `AddCivTagHandler`, `AddWorldTick`,
+`savedmarkers.h` (stat 69h), and four shared hooks in the [helpers](porting-code/helpers.md#research-payment):
+`AddResearchPayer` (a payer that never claims, to count each paid research) and `AddResearchRefundObserver`, the
+[can-research test](porting-code/helpers.md#can-research-test) and the [tech rollover](porting-code/helpers.md#tech-rollover).
+It comes after `researchGrants`.
+
+- **Refund sites:** the `call`s of `0x8D7004` (the refund of a cost) at `0x9E6167` (the Research action's cancel, state
+  13h, cost `[action+74h]`) and `0x9D56B5` (CommandResearch, `[action+7Ch]`). `[action+64h]` is the player ID and
+  `[action+68h]` the tech ID in both.
+- **Can-research head:** a 5-byte `jmp` at `0x4C6968` (`55 8B 6C 24 08`: `push ebp / mov ebp,[esp+8]`), continue at
+  `0x4C696D`; `bool thiscall(status, unit)`, `ret 4`. A refused tech returns 0 there.
+- **Tech rollover:** the `call` at `0x4622C5` of the builder `0x4C737C` (shared with `researchGrants`' price).
+- **Read only:** `0x44EFFF` (a cost entry: Ships is 6), `0x94ADAA` (a player's status of a tech), the alive slot of the
+  unit vtable.
+- **Test:** `<ShipTechLimit>3</ShipTechLimit>` on a civ, as in the [modding guide](modding-guide.md#shiptechlimit): the
+  fourth shipment tech is refused, a cancel gives the slot back, and a save keeps the count.
+
+### homeCityTechsInUnits
+
+Code: [buildings](porting-code/buildings.md#homecitytechsinunits). It needs the
+[can-research test](porting-code/helpers.md#can-research-test).
+
+- **Start site:** a 13-byte `jmp` at `0x9E67CE` (`6A 12 8B CE E8 8C 70 A6 FF 3C 01 74 EA`: the research start's refusal
+  of a HomeCity tech), continue at `0x9E67DB` (accepted) or `0x9E67C5` (refused). ESI = the tech's status, EBP = the
+  action.
+- **Gather site:** a 9-byte `jmp` at `0x9E6553` (`6A 1E 8B CB E8 07 73 A6 FF`: the Research update's test of
+  `CheckLandHCGatherPoint`), continue at `0x9E655C` with AL = the flag. EBX = the status.
+- **Test:** a card's tech in a council member's `<Tech>` rows, obtainable: it is researched, becomes active, and its
+  button goes away.
 
 ### customWalls
 
