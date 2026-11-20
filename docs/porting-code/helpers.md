@@ -3005,6 +3005,7 @@ inline constexpr Feature kFeatures[] = {
     {"snareValues", ApplySnareValues},
     {"stealthTargeting", ApplyStealthTargeting},
     {"autoScout", ApplyAutoScout},
+    // No order constraint: the only key that writes 0x487E1B or verifies 0x487D8B.
     {"researchOnTheMove", ApplyResearchOnTheMove},
     {"customWalls", ApplyCustomWalls},
     {"directionalAttack", ApplyDirectionalAttack},
