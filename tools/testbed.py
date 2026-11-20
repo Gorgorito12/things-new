@@ -59,7 +59,10 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
                              the files it replaces as *.lang-orig; restore puts those back. The
                              game reads the tables once, at startup: close it first
   skirmish [--map]          from the main menu to a running skirmish with posted clicks only (no
-                             cursor, no focus); --map plays the map `map uhcsheep ...` wrote
+                             cursor, no focus); --map plays the map `map uhcsheep ...` wrote. Each
+                             screen is recognised by its buttons' colour before a click (points
+                             scaled to the client size); an unknown screen stops it with
+                             <bed>\\skirmish-fail-<step>.png instead of a blind click
   click <x> <y> | rclick <x> <y> [right]   posted click / real click (moves the cursor)
   hover <x> <y>              rest the cursor on a client point, so its tooltip shows: a posted move in
                              a copy with multipleInstances background, else the real cursor
@@ -626,17 +629,127 @@ def launch(bed):
         lock.unlink(missing_ok=True)
 
 
-# Client coordinates at 1920 x 1080: main menu Single Player, Skirmish, the home city's Play, the
-# setup's Play, and the test map in the setup's map list.
-SKIRMISH_CLICKS = ((257, 803, 5), (689, 803, 12), (181, 1029, 10))
-SKIRMISH_MAP = (1440, 403, 3)
+# The skirmish route. Points are client coordinates at 1920 x 1080; the menus scale with the client
+# on both axes (2560 x 1600 and 2560 x 1440 put the same buttons at the same fractions), so every
+# point is scaled to the real client size. Clicks: main menu Single Player, its submenu's Skirmish,
+# the home city's Play, the test map in the setup's map list, the setup's Play.
+SKIRMISH_SINGLE = (257, 803)
+SKIRMISH_SKIRMISH = (689, 803)
+SKIRMISH_HC_PLAY = (181, 1029)
+SKIRMISH_MAP = (1440, 403)
 SKIRMISH_PLAY = (477, 979)
+# Each screen is told by points that must show a button's gold face (about RGB 157,103,1; 183,119,1
+# under the cursor), sampled beside the button text. Checked 2026-11-20 in WoL 1.2.0e: Single Player,
+# Multiplayer, Help and Tools and Exit (Learn to Play is not used: the campaign pack hides it);
+# the submenu's Skirmish; the home city's Play, Back and Manage Home Cities; the setup's Play and Back.
+SKIRMISH_SCREENS = (
+    ("submenu", ((110, 803), (110, 860), (110, 916), (110, 991), (500, 803)), ()),
+    ("menu", ((110, 803), (110, 860), (110, 916), (110, 991)), ((500, 803),)),
+    ("homecity", ((90, 1030), (410, 1030), (130, 767)), ((110, 991),)),
+    ("homecity-noplay", ((410, 1030), (130, 767)), ((90, 1030), (110, 991))),
+    ("setup", ((350, 979), (790, 979)), ((110, 803),)),
+)
+
+
+def _gold(rgb):
+    r, g, b = rgb
+    return b < 30 and 125 <= r <= 205 and 0.55 <= g / max(r, 1) <= 0.72
+
+
+def _box(w, px, x, y, rx=8, ry=4):
+    s, n = [0, 0, 0], 0
+    for yy in range(y - ry, y + ry + 1):
+        for xx in range(x - rx, x + rx + 1):
+            i = (yy * w + xx) * 4
+            s[0] += px[i + 2]; s[1] += px[i + 1]; s[2] += px[i]; n += 1
+    return tuple(v // n for v in s)
+
+
+def menu_screen():
+    """(name, colours) of the pre-game screen on show, by SKIRMISH_SCREENS; name None if unknown."""
+    w, h, px = client_pixels()
+    if w < 640 or h < 480:
+        return None, ()
+    sample = lambda p: _box(w, px, p[0] * w // 1920, p[1] * h // 1080)
+    for name, gold, dark in SKIRMISH_SCREENS:
+        colours = [sample(p) for p in gold]
+        if all(map(_gold, colours)) and not any(_gold(sample(p)) for p in dark):
+            return name, colours
+    return None, ()
+
+
+def scaled_click(point):
+    hwnd = window()
+    rc = RECT()
+    user32.GetClientRect(hwnd, ctypes.byref(rc))
+    posted_click(point[0] * rc.right // 1920, point[1] * rc.bottom // 1080)
+
+
+def skirmish_fail(bed, step, why):
+    path = bed / f"skirmish-fail-{step}.png"
+    try:
+        shot(str(path), 2)
+    except SystemExit:
+        pass
+    sys.exit(f"testbed: skirmish route stopped at {step}: {why} (screen saved as {path})")
+
+
+def wait_screen(bed, names, timeout, step, settle=False):
+    """Waits until one of these screens shows (and, with settle, holds still over two captures 1 s
+    apart: the main menu slides in, and a click during that lands elsewhere). Returns its name."""
+    deadline, last = time.time() + timeout, (None, ())
+    while time.time() < deadline:
+        check_alive(f"the {step} screen")
+        name, colours = menu_screen()
+        if name in names:
+            if not settle:
+                return name
+            if name == last[0] and all(abs(a - b) <= 12 for c1, c2 in zip(colours, last[1])
+                                       for a, b in zip(c1, c2)):
+                return name
+        last = (name, colours)
+        time.sleep(1)
+    skirmish_fail(bed, step, f"expected {' or '.join(names)}, saw {menu_screen()[0] or 'an unknown screen'}")
+
+
+def click_through(bed, point, here, there, timeout, step, tries=3):
+    """Clicks `point` on screen `here` until a screen of `there` shows; never clicks elsewhere."""
+    for _ in range(tries):
+        name = wait_screen(bed, set(here) | set(there), 30, step)
+        if name in there:
+            return name
+        scaled_click(point)
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            check_alive(f"the {step} screen")
+            name = menu_screen()[0]
+            if name in there:
+                return name
+            time.sleep(0.5)
+    skirmish_fail(bed, step, f"{tries} clicks did not lead to {' or '.join(there)}")
+
+
+def skirmish_to_setup(bed):
+    """Main menu -> Single Player -> Skirmish -> the home city's Play -> the setup screen, each
+    screen checked before its click (also used by mapsweep.py)."""
+    wait_screen(bed, {"menu", "submenu"}, 90, "main-menu", settle=True)
+    click_through(bed, SKIRMISH_SINGLE, {"menu"}, {"submenu"}, 5, "single-player")
+    name = click_through(bed, SKIRMISH_SKIRMISH, {"submenu"}, {"homecity", "homecity-noplay"}, 20, "skirmish")
+    if name == "homecity-noplay":
+        skirmish_fail(bed, "homecity", "the home city's Play is grey: no home city chosen "
+                                       "(run `profile hc <Civ>` with the game closed)")
+    wait_screen(bed, {"homecity"}, 30, "homecity", settle=True)
+    time.sleep(3)  # after a game the home city screen ignores a click that comes too early
+    click_through(bed, SKIRMISH_HC_PLAY, {"homecity"}, {"setup"}, 15, "homecity-play")
+    wait_screen(bed, {"setup"}, 30, "setup", settle=True)
 
 
 def skirmish(bed, test_map=False):
     """From the main menu to a running skirmish with posted clicks only: no cursor, no focus, so it
-    runs behind other windows and beside another copy. test_map: the map `map uhcsheep ...` wrote,
-    copied to My Games for the start and removed after it."""
+    runs behind other windows and beside another copy. Each screen is recognised by the colour of
+    its buttons before a click, and a click is repeated until the next screen shows; an unknown
+    screen stops the route with a screenshot instead of a blind click. test_map: the map
+    `map uhcsheep ...` wrote, copied to My Games for the start and removed after it."""
     folder = my_games(bed) / bed_profile(bed)["rm"]
     copies = []
     lock = start_lock()
@@ -645,11 +758,13 @@ def skirmish(bed, test_map=False):
             for ext in (".xs", ".xml"):
                 copies.append(folder / f"uhc-sheep{ext}")
                 shutil.copy2(bed / bed_profile(bed)["rm"] / f"uhcsheep{ext}", copies[-1])
-        for x, y, pause in SKIRMISH_CLICKS + ((SKIRMISH_MAP,) if test_map else ()):
-            posted_click(x, y)
-            time.sleep(pause)
+        skirmish_to_setup(bed)
+        if test_map:
+            scaled_click(SKIRMISH_MAP)
+            time.sleep(3)
+            wait_screen(bed, {"setup"}, 15, "setup-map", settle=True)
         before = game_time(process()) or 0
-        posted_click(*SKIRMISH_PLAY)
+        scaled_click(SKIRMISH_PLAY)
         proc = process()
         wait_until(lambda: (game_time(proc) or 0) > before + 2000, 180, 1, "the skirmish to start")
     finally:
@@ -1071,6 +1186,28 @@ def shot(path, scale=2):
         rows.append(bytes(px))
     png(path, (w + scale - 1) // scale, len(rows), rows)
     print(f"{path}: window {w}x{h}, PrintWindow {'ok' if ok else 'FAILED'}, saved at 1/{scale}")
+
+
+def client_pixels(hwnd=None):
+    """The client area as (width, height, BGRA bytes), with PrintWindow like `shot` (it works while
+    the window is covered or in the background)."""
+    hwnd = hwnd or window()
+    rc = RECT()
+    user32.GetClientRect(hwnd, ctypes.byref(rc))
+    w, h = rc.right, rc.bottom
+    screen = user32.GetDC(None)
+    mem = gdi32.CreateCompatibleDC(screen)
+    bmp = gdi32.CreateCompatibleBitmap(screen, w, h)
+    gdi32.SelectObject(mem, bmp)
+    user32.PrintWindow(hwnd, mem, 3)  # PW_CLIENTONLY | PW_RENDERFULLCONTENT
+    header = struct.pack("<IiiHHIIiiII", 40, w, -h, 1, 32, 0, 0, 0, 0, 0, 0)
+    bmi = ctypes.create_string_buffer(header + b"\0" * 16)
+    buf = ctypes.create_string_buffer(w * h * 4)
+    gdi32.GetDIBits(mem, bmp, 0, h, buf, bmi, 0)
+    gdi32.DeleteObject(bmp)
+    gdi32.DeleteDC(mem)
+    user32.ReleaseDC(None, screen)
+    return w, h, buf.raw
 
 
 def ffmpeg_path():

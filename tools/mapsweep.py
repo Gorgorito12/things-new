@@ -383,9 +383,7 @@ def start_skirmish(bed, map_name, setup_shot):
     T._WATCHED.clear()
     lock = T.start_lock()
     try:
-        for x, y, pause in T.SKIRMISH_CLICKS:
-            T.posted_click(x, y)
-            time.sleep(pause)
+        T.skirmish_to_setup(bed)
         if display_name(bed, map_name).startswith('"'):
             index = list_index(bed, map_name)
             T.posted_click(*LIST_OPEN)
