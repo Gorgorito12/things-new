@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-20 11:28 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Thursday 2026-11-19 15:22 | [`attackTypeIcons`](#attacktypeicons) | Filmed in WoL, with a control. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
 | Thursday 2026-11-19 15:22 | [`multiplierDecimals`](bug-fixes.md#multiplierdecimals) | Filmed in WoL, with a control. The attack rows' bonus multipliers show two decimals, as the data has them: `1.25x` instead of a rounded `1.3x`, in both panels and their tooltips. | Nothing. |
 | Thursday 2026-11-19 14:11 | [`autoScout`](#autoscout) | Added. A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon and the envoy. |
@@ -61,7 +62,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-11-12 08:17 | [`fastLastInLine`](bug-fixes.md#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
 | Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
 | Wednesday 2026-11-11 15:49 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
-| Wednesday 2026-11-11 15:36 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Tuesday 2026-11-10 17:34 | [`fastVertexFill`](bug-fixes.md#fastvertexfill) | Filmed in WoL, with a control. Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | Nothing. |
 | Tuesday 2026-11-10 17:34 | [`rendererOption`](bug-fixes.md#rendereroption) | Filmed in WoL, with a control. Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | The field in `data\options.xml` and the `dxvk` folder. |
 | Sunday 2026-11-08 10:31 | [`nativePreview`](#nativepreview) | Added. Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. |
@@ -3740,7 +3740,7 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Wednesday 2026-11-11 15:36
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 11:28
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
@@ -3756,11 +3756,12 @@ with 504 and 346 hit points, and the log shows the ranks.
 
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
 
-*In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (Ethiopians, 2 `Hussar` against 10 `Crossbowman`; the
-Hussar has no rows of its own, so it takes the `AbstractCavalry` defaults; the Crossbowman's own row replaces the
-`AbstractInfantry` one):* each rank shows its mark over the unit's HP bar, clear of it: one bronze chevron, two silver,
-three gold, then one white star over the gold chevrons at rank 4 and two at rank 5, and the floating text gives the
-rank's name in its colour (`Veteran` in bronze, `Champion` in gold). The surviving Hussar ends at rank 5 with 8 kills.
+*In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (filmed again on 2026-11-20 with the soutache knots;
+2 `Hussar` against 10 `Crossbowman`, both taking the defaults of their type):* each rank shows its mark over the unit's HP
+bar, clear of it: a soutache knot of a hussar's uniform, one bronze loop at rank 1, a silver trefoil at rank 2, a gold
+trefoil with pointed loops at rank 3, then one white star over the gold knot at rank 4 and two at rank 5; a Crossbowman
+that kills shows the bronze loop. The floating text gives the rank's name in its colour. The surviving Hussar ends at
+rank 5 with 8 kills. The five marks, enlarged 4 times: [veterancyBonus-marks-x4.png](media/veterancyBonus-marks-x4.png).
 [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
 
 ![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
@@ -3838,9 +3839,12 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   hunting gives no rank, and treasure guardians give none either; not a unit of its own; not a trigger's kill, nor a blow from a
   unit already dead. Stock's flag is not needed.
 - **Hit points:** `MaxHP` raises the current ones in proportion: 212.6 became 318.9 at ×1.5.
-- **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows one to three chevrons, then at ranks 4 and 5
-  the three gold chevrons with one or two white stars over them (2026-11-11); a rank above the fifth keeps rank 5's mark.
-  The stars sit over the chevrons, away from the HP bar, and the chevrons stay where rank 3 has them. With no such folder
+- **Rank marks:** with `art\effects\uhc_rings` in the game, a unit with a rank shows a soutache knot (2026-11-20, JTMaston's
+  #74, in place of the chevrons): rank 1 a single loop in bronze, rank 2 a trefoil in silver, rank 3 a trefoil with
+  pointed loops in gold; at ranks 4 and 5 the gold knot with one or two white stars over it (2026-11-11); a rank above the
+  fifth keeps rank 5's mark. Each knot is symmetric, a metallic cord with a thin black border, and its two tails cross
+  under the knot and run out left and right, at the same lowest height for every rank. The stars sit over the knot, away
+  from the HP bar, and the knot stays where rank 3 has it. With no such folder
   the log says so once and the bonuses work as before. Display only: it
   changes nothing in the simulation. In the minimized interface the unit panel's row shows `Rank 3` and `3 kills`. The art is
   our own: DE's are images in its selection panel.
@@ -7405,6 +7409,18 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       multipliers and ends with ` (+N)`; the tooltip lists them all. At 1920 x 1080 every row tested fits.
     - The layout: the key's hit points gadget is one line high (700..714). At the original label's 680..734 it covered
       the left of the first attack row, whose tooltip then never showed there.
+  - **Version 6 (2026-11-20), after JTMaston's review of version 5:**
+    - The projectiles line of the tooltip reads `4 projectiles` (`projectilesTip` defaults to `%s projectiles`): a unit
+      such as the Chu Ko Nu does not fire them all at once.
+    - No parentheses around icons: the key's own lines end with the icon (`Attacks every 3.50 s <stopwatch>`), and in the
+      game's lines the parentheses around an icon or around the name right after one go (`11 <icon> Ranged Damage`,
+      `1.5X Bonus Damage against <icon> Maneuver Unit`; strings 42226, 42229, 42230, 42223). `tipParentheses="keep"` on
+      `<bigPanelRows>` keeps them. The string tables are not changed.
+    - The unit type icons of the multipliers redrawn as the version 4 icons (32x32 BGRA, hard edges, black outline;
+      `make_stat_icon.py --types` in aoe3-blender-tools), at WoL's own file names: Standing unit (red coat) and Line unit
+      (blue coat), the game's infantryman in a shako; Maneuver unit a winged bullet; Shock unit, Artillery, Siege,
+      Mercenary, Hero, Scout (light infantry), Pet, Light cavalry, Hand cavalry (whose file was empty) and a native
+      warrior's arrowhead (a new file, `stat_icon_native_warrior`: WoL's line names the minimap's village icon).
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.
