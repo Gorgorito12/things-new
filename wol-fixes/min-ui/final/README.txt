@@ -7,17 +7,17 @@ Version 6 (2026-11-20), after JTMaston's review of version 5: ..\note-for-team-v
 - No parentheses around icons: our lines end with the icon; the game's lines lose the parentheses around an icon and
   around the name after one ("11 (icon) Ranged Damage", "1.5X Bonus Damage against (icon) Maneuver Unit");
   tipParentheses="keep" keeps them. The edited strings for WoL's tables are in the note.
-- The unit type icons redrawn at 32x32 with the version 4 recipe, at WoL's file names; new Maneuver (winged bullet),
-  Standing unit (red coat, shako) and Line unit (blue coat, shako). Sheet: minUIStats-v6-icons-x4.png.
+- The unit type icons are WoL's own (a redrawn set was tried and not kept). WoL's staticons\stat_icon_hand_cavalry.ddt
+  is an empty 24-byte file, so Hand Cavalry shows no icon.
 - Machine guns and the Chu Ko Nu: their burst comes from the attack anim's Attack tags (traced: the Gatling launches
   6 bullets per cycle, the Chu Ko Nu 3 arrows, one per tag), not from numberprojectiles; the note has the table.
 
     Check (2026-11-20, WoLReal3: our UHC.dll, minUIStats + multiplierDecimals,   Picture (minUIStats-v6-...)     Result
     WoL's wol.cfg lines, scenario players, 1920x1080 unless said)
-    Tooltip: "4 projectiles", no parentheses, new icons (Maneuver, Line, Scout)  tip-escopetero-ranged           pass
-    The panel with the new icons                                                escopetero                      pass
-    Chu Ko Nu: no projectile number (data 1), 2x Line Unit icon                 chukonu, tip-chukonu-ranged     pass
-    Gatling Gun in Bombard: no number (data 1); Shock Unit and Artillery icons  tip-gatling-bombard             pass
+    Tooltip: "4 projectiles", no parentheses, WoL's icons                      tip-escopetero-ranged           pass
+    The panel                                                                   escopetero                      pass
+    Chu Ko Nu: no projectile number (data 1)                                    chukonu, tip-chukonu-ranged     pass
+    Gatling Gun in Bombard: no number (data 1)                                  tip-gatling-bombard             pass
     Schwarzlose in Bombard: "12 projectiles"                                   tip-schwarzlose-bombard         pass
     Spanish table: "Dano de 11 (icon) A distancia", "... contra (icon) Unidad   spanish-tip-escopetero          pass (our
       de Maniobra"                                                                                              two lines
@@ -26,7 +26,6 @@ Version 6 (2026-11-20), after JTMaston's review of version 5: ..\note-for-team-v
     Combat count (trace of the launch 0x499422 and the shot 0x48F8B5, no        (no picture)                    Gatling 6
       projectile key): launches per ROF cycle                                                                   per cycle,
                                                                                                                 Chu Ko Nu 3
-    The icons before / after, enlarged 4 times                                  icons-x4.png                    -
 
 Version 5 follows; its pictures that version 6 did not retake are kept.
 

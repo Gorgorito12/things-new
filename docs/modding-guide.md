@@ -7416,11 +7416,9 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       game's lines the parentheses around an icon or around the name right after one go (`11 <icon> Ranged Damage`,
       `1.5X Bonus Damage against <icon> Maneuver Unit`; strings 42226, 42229, 42230, 42223). `tipParentheses="keep"` on
       `<bigPanelRows>` keeps them. The string tables are not changed.
-    - The unit type icons of the multipliers redrawn as the version 4 icons (32x32 BGRA, hard edges, black outline;
-      `make_stat_icon.py --types` in aoe3-blender-tools), at WoL's own file names: Standing unit (red coat) and Line unit
-      (blue coat), the game's infantryman in a shako; Maneuver unit a winged bullet; Shock unit, Artillery, Siege,
-      Mercenary, Hero, Scout (light infantry), Pet, Light cavalry, Hand cavalry (whose file was empty) and a native
-      warrior's arrowhead (a new file, `stat_icon_native_warrior`: WoL's line names the minimap's village icon).
+    - The unit type icons of the multipliers stay WoL's own: a redrawn set (`make_stat_icon.py --types` in
+      aoe3-blender-tools) was tried and not kept. WoL's `staticons\stat_icon_hand_cavalry.ddt` is an empty 24-byte file,
+      so a multiplier against Hand Cavalry shows no icon.
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.

@@ -116,10 +116,9 @@ minuirows.xml
     the original three too, rofIcon adds the ROF). It goes in data\uhc\. The comments at its top list
     every item and option. No new DLL is needed to change any of it.
 
-art\ui\ingame\*.ddt, art\WoL\ui\ingame\staticons\*.ddt
-    The six drawn icons (stopwatch, hourglass, shield, eye, winged boot, cylinder), and (version 6) the unit type icons
-    of the multipliers redrawn at 32x32 under WoL's own file names (note-for-team-v6.txt lists them), plus
-    stat_icon_native_warrior.ddt, new, for the AbstractNativeWarrior part of the attackTypeIcons line. They go in
+art\ui\ingame\*.ddt
+    The six drawn icons (stopwatch, hourglass, shield, eye, winged boot, cylinder). The unit type icons of the
+    multipliers stay WoL's own. They go in
     art\ui\ingame\ of the mod (version 4: stat_icon_hitpoints.ddt and stat_icon_pop.ddt are no longer used;
     delete them if version 3 put them there).
 
@@ -134,7 +133,7 @@ Install
 -------
 1. Copy proposed-uiunitselectionmin.xml to data\uiunitselectionmin.xml (keep a copy of yours).
 2. Copy minuirows.xml to data\uhc\minuirows.xml.
-3. Copy art\ (ui\ingame\*.ddt and WoL\ui\ingame\staticons\*.ddt) into the mod's art\.
+3. Copy art\ui\ingame\*.ddt to art\ui\ingame\.
 4. Add the line   minUIStats   to Startup\wol.cfg.
 5. Keep optionminimizedui on (WoL's profile has it on).
 
@@ -185,9 +184,8 @@ Notes
 
 Tested on 2026-11-17 (single player, WoL, 1920 x 1080, the panel at native pixels with the health bar)
 -------------------------------------------------------------------------------------------------------
-Version 6 (2026-11-20): the tooltip says "N projectiles", no parentheses around icons (ours and the game's lines), every
-unit type icon of the multipliers at 32x32 in the version 4 style, new Maneuver, Standing and Line unit icons:
-final\README.txt and ..\note-for-team-v6.txt.
+Version 6 (2026-11-20): the tooltip says "N projectiles", no parentheses around icons (ours and the game's lines), WoL's
+own unit type icons: final\README.txt and ..\note-for-team-v6.txt.
 Version 5 (2026-11-19): projectiles from the data, two-decimal multipliers, WoL's attackTypeIcons types, tooltips,
 1024x768 rows ending in "(+N)", the hit points gadget one line high (it covered the first attack row's tooltip):
 final\README.txt and ..\note-for-team-v5.txt.

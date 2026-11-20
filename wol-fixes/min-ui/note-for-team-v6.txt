@@ -61,40 +61,12 @@ Minimized UI, version 6: answers to JTMaston's points on version 5
    tags in its anim. Tell us if you would rather have the panel count the anim's Attack tags by itself.
 
 4. Icons
-   Every unit type icon the attack rows and their tooltips show after a multiplier ("1.5x (icon)") that was not 32x32 is
-   redrawn like the version 4 icons (32x32, solid shapes, hard edges, a black line around each part, a 2-pixel black
-   outline, round parts a little wider than tall), same motif, same colours, same file name, so no data change:
-       ui\ingame\stat_icon_siege          siege damage: a field gun on its carriage
-       ui\ingame\stat_icon_artillery      Artillery: two crossed cannons
-       ui\ingame\stat_icon_cavalry        Shock Unit: the golden lightning bolt between white wings
-       ui\ingame\stat_mercenary           Mercenary: a curved sabre
-       ui\ingame\stat_hero                Hero: a gold star
-       ui\ingame\stat_light_infantry      Scout Unit: a white dove
-       ui\ingame\stat_icon_pet            Pet: a dog's head
-       ui\ingame\stat_light_cav           light cavalry: a bow with an arrow
-       WoL\ui\ingame\staticons\stat_icon_hand_cavalry   Hand Cavalry: a closed helmet. Your file is 24 bytes, a
-                                          header with no picture, so this row showed no icon at all.
-   New, as you asked:
-       WoL\ui\ingame\staticons\stat_icon_ranged         Maneuver Unit: a winged bullet
-       ui\ingame\stat_icon_infantry and
-       WoL\ui\ingame\staticons\stat_icon_standing_unit  Standing Unit: the infantryman of the old icon in a shako, red coat
-       ui\ingame\stat_icon_heavy_infantry               Line Unit: the same soldier, blue coat
-   Before and after, enlarged 4 times: final\minUIStats-v6-icons-x4.png. In the game: final\minUIStats-v6-escopetero.jpg
-   and the -tip- pictures.
-   Two notes:
-   - your attackTypeIcons line gives AbstractNativeWarrior the minimap's village icon (ui\minimap\native_settlement_16x16);
-     redrawing that file would change the minimap too, so the arrowhead went to a new file,
-     WoL\ui\ingame\staticons\stat_icon_native_warrior.ddt. To use it, change that part of the line to
-     "AbstractNativeWarrior 42022 WoL\ui\ingame\staticons\stat_icon_native_warrior".
-   - the same line gives the Coyote Runner (AbstractCoyoteMan) ui\ingame\stat_icon_heavy_infantry, so it now shows the
-     blue Line Unit soldier too. Say if it should get its own icon.
-   Not redrawn, since the minimized panel never shows them: WoL's stat_icon_ceasefire, _hand_bonus, _hp_bonus,
-   _inspiration, _range_bonus, the empty staticons\stat_icon_ranged_cavalry and staticons\stat_icon_skirmisher, and
-   ui\ingame\stat_icon_hand_cav, _heavy_cav, _heavy_cavalry, _hand_cavalry. The 32x32 ones are kept as they are (attack,
-   ranged, range, area, building, guardian, huntable, ship, villager, siege_troop, informers, skirmisher, export, wagon,
-   WoL's heavy_cavalry).
+   We keep your own icons for the unit types (Maneuver, Line, Standing, Shock...); only the six icons of version 4 that
+   you liked (stopwatch, hourglass, shield, eye, winged boot, cylinder) are ours.
+   One finding: your WoL\ui\ingame\staticons\stat_icon_hand_cavalry.ddt, the icon your attackTypeIcons line gives
+   AbstractHandCavalry, is an empty 24-byte file (a header with no picture), so a multiplier against Hand Cavalry shows
+   no icon today.
 
-Install: the new icons are in art\ (ui\ingame\ and WoL\ui\ingame\staticons\, at their paths), with the version 4 ones.
 Everything else is as in version 5. The pictures and the test table are in final\README.txt.
 
 Veterancy (#74), for the same review: the rank marks are now soutache knots (rank 1 a bronze loop, rank 2 a silver
