@@ -6911,7 +6911,7 @@ What the panels and the fog of war show.
 | [`attackTypeIcons`](#attacktypeicons) | A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | **in `wol.cfg`** | Nothing: the line of `wol.cfg`. | confirmed (single player, UI) |
 | [`minUIStats`](#minuistats) | The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | **new** | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. | confirmed (single player, UI) |
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
-| [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon and the envoy. | confirmed (single player) |
+| [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. | confirmed (single player) |
 
 #### nativePreview
 
@@ -7744,7 +7744,7 @@ playerIcon <avatarId>
 
 #### autoScout
 
-*A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off.*
+*A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off.*
 
 **Added:** Thursday 2026-11-19 14:11 · **Filmed in WoL:** Thursday 2026-11-19 14:11
 
@@ -7768,14 +7768,16 @@ the minimap stays as it was at the start: 9.4 % explored at 3 minutes, 9.7 % at 
 the game (`testbed.py explored`).*
 
 ```
-autoScout [ScoutTactic [ReturnTactic]] [log]
+autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
 ```
 
 - **What a modder writes:** a tactic named `AutoScout` (or `ScoutTactic`) in the unit's tactics file, and two buttons
   whose `<command>` is `unitSetTactic("AutoScout")` and `unitSetTactic("Normal")`. A unit whose **first** tactic is
   the scouting one scouts from birth; with it second, it scouts when the button is pressed. The pack
   `wol-fixes/auto-scout` (`apply_fix.py <WoL folder>`, `--restore` to undo) does it for the raven, the two pet parrots,
-  the French balloon and the Dutch envoy, and its README says how to do it for any unit:
+  the French balloon, the Dutch envoy and the European explorers (`Explorer` and `WOLcartographer`, off at birth, with a
+  scouting copy of their `Volley` tactic that neither attacks on its own nor answers an attack, and runs away when hit),
+  and its README says how to do it for any unit:
 
   ```xml
   <tactic>AutoScout<action>Move</action>
@@ -7797,6 +7799,15 @@ autoScout [ScoutTactic [ReturnTactic]] [log]
   take the same 16 m block. A scout that stops short of its target, or takes more than 90 s, gives that block up (an
   island, a cliff). With the whole map explored, it flies to the block not in sight that was seen longest ago.
   A fight, a flee or any other action is left alone: the scout goes on once it is idle.
+- **Danger** (both on unless `noAvoid` / `noBack`):
+  - *Enemy buildings that shoot:* once the player has seen an enemy building with a ranged or siege attack (a Town
+    Center, an outpost, a tower, a fort), its range plus 12 m is no target any more, and a target whose straight line
+    crosses it is taken only when no other is left. Only what the player has seen counts.
+  - *Hit:* a scout that lost hit points since the last scan marks 2 minutes of danger around its attacker (the nearest
+    enemy, or Gaia, unit with an attack within 40 m; its reach + 16 m), gives up its target and moves 24 m away from
+    it, then scouts elsewhere. It stays in its scouting tactic. When the game's own flee or fight has taken over
+    (`<runaway>1</runaway>` flees), that is left alone.
+  - A scout can still be shot before it sees what shoots it: an outpost can outrange a scout's line of sight.
 - **Switch-off:** a move, attack, gather, garrison or Stop order given by the unit's owner puts it back in its other
   tactic (`ReturnTactic`, else the first tactic of its file that is not the scouting one) before the order applies,
   as DE's Stop, Garrison and AttackMove do. The Stop-scouting button does the same. A scout stays where it is when it
@@ -7812,7 +7823,10 @@ autoScout [ScoutTactic [ReturnTactic]] [log]
   tables (targets, blocks given up) are rebuilt from the units and the grid.
 - **Cost:** a scan takes about 50 µs with two scouts on a 155 × 155-cell map. With `log`, the first orders write a
   line each, which costs milliseconds: keep `log` for testing.
-- **Log:** `autoScout: units in tactic 'AutoScout' explore the map on their own`; with `log`: `'AutoScout' is name 17`,
+- **Log:** `autoScout: units in tactic 'AutoScout' explore the map on their own`, `keeps away from enemy buildings
+  that shoot; backs off when hit`; with `log`: `player 1 sees player 2's unit 3 (proto 439) at (159.0, 147.0), range
+  40.0: avoided within 52.0 m`, `unit 1 hit at (…): unit 3 (proto 439, player 2) 21.4 m away; danger 56.0 m around it for
+  120 s`, `unit 0 backs off from (…) to (…): ordered`, `'AutoScout' is name 17`,
   `map of 155 x 155 cells`, a line per order (`unit 1280 (proto 2070, player 1, air) at (48.3, 131.6) -> unexplored
   cell (…), block 34: ordered`), `stopped … block 210 given up`, `got an order (command type 9): back to tactic 0`,
   and every 120 scans their cost.

@@ -4570,6 +4570,26 @@ target unexplored, or that takes 90 s, gives the block up. When no unexplored ce
 not visible now with the oldest last-seen time (this key's own stamps, game time), the nearest first. Any other action
 (a fight, a flee) is left alone, and the scout goes on when it is idle again.
 
+**Danger** (2026-11-20; `noAvoid` and `noBack` turn the two parts off). *Avoid:* for each player with scouts, each
+scan walks the unit lists of the players whose stance toward it is enemy (0x484D2D on their player) and keeps, by
+unit ID, the buildings (abstract index 2, 0x44CAC4) that are built (0x44DDB4), alive, and have an action with ranged or
+siege damage (the proto's actions `[[proto+44h]+1Ch]`, count `+20h`; the damage record `[action+24h]`, its type byte
+`+5`; the longest maximum `+8` of the 16-byte range entries `[action+18h]`, count `[action+1Ch]`), once the cell they
+stand on is visible to the player (the high half of its bits), or explored on the first scan after the tables were
+built (a loaded game). A dead one is forgotten. Each is a circle of its range + 12 m. *Back:* the scan keeps each
+scout's hit points `[unit+64h]`; a drop is a hit. The units within 40 m (0x4A1C55) that are alive, have a damage action
+and belong to Gaia or to a player whose stance toward the scout's is enemy give the attacker, the nearest (the lower ID
+on a tie); a circle of its reach (at least 6 m) + 16 m around it, or of 24 m around the scout when there is none, is
+kept 120 s of game time (32 at most per player, the oldest dropped first; a hit within 6 m of a circle refreshes it).
+The scout gives its target up, and when it is idle or on this key's move, it gets the same move order to a point 24 m
+away from the attacker (the first of seven headings, from straight away to 105° off, that is on the map, standable for
+its movement type and outside every circle), and keeps it for 8 s or until it stops; a stock flee or fight (another
+action) is left alone. *Both:* a block whose centre is within a circle's radius plus half a block is never a target
+(unexplored or revisited); a target whose straight line from the scout crosses a circle the scout is not inside is
+taken only when no clear one is left; a scout whose target block becomes unsafe gets another target (the block is not
+given up). The circles and the per-proto reach cache are the key's own tables, keyed by unit ID and proto, walked in
+ID and insertion order, rebuilt after a load.
+
 **The leash.** The action manager walks a unit back to its anchor `[mgr+7Ch]` (x, y, z) when its current action has no
 order ID and it strays past a range (0x489B15 → 0x50E50E, a move with tolerance 1.0). That is what makes a flying pet
 circle its start when it has no orders; the animal wander `BUGA::doWander` runs only for a unit in a herd (`[mgr+ACh]`
@@ -4591,7 +4611,9 @@ and commands call, in the world update, so every machine makes the same calls in
 network, and nothing reads the local player. The tables are only a cache: a loaded game (or another game) starts them
 again from the units' tactics and the grid, and the tactic itself is saved with the unit. The hook keeps every register
 the stock head needs (ECX, the flags of its `cmp`), and the stdcall callee keeps EBX, ESI, EDI and EBP. The real clock
-of the `log` timing line only goes to the log.
+of the `log` timing line only goes to the log. The danger tables read only simulation state (the player's own grid
+bits, stances, units, hit points); the attacker search does not depend on the order of the spatial query's list
+(nearest, then lowest ID); the reach cache keyed by proto pointer is a memo of data, emptied when the data changes.
 
 <!-- private:begin -->
 **What was measured.** Two ravens of the Romanians on Great Lakes, the rest of the player idle: 9.4 % / 9.7 % of the
