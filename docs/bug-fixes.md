@@ -474,6 +474,8 @@ betterfreedynamicunit
 
 *A poison cloud, a tornado or a monster truck no longer leaves the Mills and plantations it touched empty for good.*
 
+**Added:** Friday 2026-11-20 11:39 · **Filmed in WoL:** Friday 2026-11-20 11:39
+
 ![truckAttackResourceFix in WoL](media/truckAttackResourceFix-wol.gif)
 
 *In WoL, with `truckAttackResourceFix log` (Ethiopians, a scenario):* an enemy's mustard gas (`gwMustardGas`) has covered
