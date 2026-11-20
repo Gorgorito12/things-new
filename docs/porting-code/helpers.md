@@ -2398,12 +2398,6 @@ inline constexpr Site kAutoScoutTacticIndex{"AutoScoutTacticIndex", 0x00948161, 
 inline constexpr std::uint8_t kAutoScoutIdleBytes[] = {0x8B, 0x41, 0x24, 0x85, 0xC0, 0x74, 0x0C, 0x8A};
 inline constexpr Site kAutoScoutIdle{"AutoScoutIdle", 0x0044F1A7, kAutoScoutIdleBytes, sizeof(kAutoScoutIdleBytes)};
 
-inline constexpr std::uint8_t kQueueHoldsMoveCallBytes[] = {0xE8, 0x6B, 0xFF, 0xFF, 0xFF, 0x3C, 0x01, 0x0F, 0x95, 0xC0};
-inline constexpr Site kQueueHoldsMoveCall{"QueueHoldsMoveCall", 0x00487E1B, kQueueHoldsMoveCallBytes, sizeof(kQueueHoldsMoveCallBytes)};
-
-inline constexpr std::uint8_t kQueueHoldsHeadBytes[] = {0x8B, 0x41, 0x24, 0x85, 0xC0, 0x74, 0x13, 0x8A, 0x40, 0x60, 0x3C, 0x0D};
-inline constexpr Site kQueueHoldsHead{"QueueHoldsHead", 0x00487D8B, kQueueHoldsHeadBytes, sizeof(kQueueHoldsHeadBytes)};
-
 inline constexpr std::uint8_t kResearchRefundCallBytes[] = {0x8D, 0x45, 0x74, 0x50, 0x8B, 0xCF, 0xE8, 0x98, 0x0E, 0xEF, 0xFF};
 inline constexpr Site kResearchRefundCall{"ResearchRefundCall", 0x009E6161, kResearchRefundCallBytes, sizeof(kResearchRefundCallBytes)};
 
@@ -2421,6 +2415,21 @@ inline constexpr Site kHcTechResearchRefusal{"HcTechResearchRefusal", 0x009E67CE
 
 inline constexpr std::uint8_t kResearchGatherFlagTestBytes[] = {0x6A, 0x1E, 0x8B, 0xCB, 0xE8, 0x07, 0x73, 0xA6, 0xFF, 0x84, 0xC0, 0x74, 0x23};
 inline constexpr Site kResearchGatherFlagTest{"ResearchGatherFlagTest", 0x009E6553, kResearchGatherFlagTestBytes, sizeof(kResearchGatherFlagTestBytes)};
+
+inline constexpr std::uint8_t kXformExecBodyBytes[] = {0x8B, 0xF8, 0x85, 0xFF, 0x89, 0x7C, 0x24, 0x30, 0x0F, 0x84, 0x30, 0x02, 0x00, 0x00, 0x8B, 0x86, 0x8C, 0x00, 0x00, 0x00, 0x50, 0x8B, 0xCF, 0xE8, 0xD2, 0xCB, 0xC7, 0xFF, 0x8B, 0xD8, 0x85, 0xDB, 0x89, 0x5C, 0x24, 0x14, 0x0F, 0x84, 0x14, 0x02, 0x00, 0x00, 0x8D, 0x4C, 0x24, 0x18, 0xE8, 0x1F, 0x0C, 0xC7, 0xFF, 0x8B, 0x5B, 0x08, 0x6A, 0x01, 0x8D, 0x4C, 0x24, 0x1C, 0x51, 0x53, 0x8B, 0xCF, 0xE8, 0xAC, 0xA5, 0xCA, 0xFF, 0x84, 0xC0, 0x0F, 0x84, 0xE8, 0x01, 0x00, 0x00, 0x8B, 0x55, 0x00, 0x8B, 0xCD, 0xFF, 0x92, 0xA4, 0x00, 0x00, 0x00, 0x84, 0xC0, 0x0F, 0x84, 0xD5, 0x01, 0x00, 0x00, 0x8B, 0x46, 0x20, 0x8B, 0x4D, 0x44, 0x3B, 0x01, 0x89, 0x44, 0x24, 0x10, 0x0F, 0x85, 0xC3, 0x01, 0x00, 0x00, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0xB6, 0x01, 0x00, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x0F, 0x84, 0xA8, 0x01, 0x00, 0x00, 0x8B, 0x11, 0x6A, 0x00, 0x6A, 0x00, 0x6A, 0x00, 0x6A, 0x00, 0x6A, 0x02, 0x6A, 0x00, 0x8D, 0x45, 0x38, 0x50, 0x8B, 0x44, 0x24, 0x2C, 0x8D, 0x7D, 0x20, 0x57, 0x8D, 0x5D, 0x14, 0x53, 0x50, 0x8B, 0x86, 0x8C, 0x00, 0x00, 0x00, 0x50, 0xFF, 0x52, 0x14, 0x84, 0xC0, 0x0F, 0x84, 0x77, 0x01, 0x00, 0x00};
+inline constexpr Site kXformExecBody{"XformExecBody", 0x007D652D, kXformExecBodyBytes, sizeof(kXformExecBodyBytes)};
+
+inline constexpr std::uint8_t kXformPlaceTestBytes[] = {0x84, 0xC0, 0x0F, 0x84, 0x77, 0x01, 0x00, 0x00, 0x80, 0xBE, 0x90, 0x00, 0x00, 0x00, 0x00};
+inline constexpr Site kXformPlaceTest{"XformPlaceTest", 0x007D65E3, kXformPlaceTestBytes, sizeof(kXformPlaceTestBytes)};
+
+inline constexpr std::uint8_t kXformRefuseBytes[] = {0x8D, 0x4C, 0x24, 0x18, 0xE8, 0xAC, 0x60, 0xC7, 0xFF};
+inline constexpr Site kXformRefuse{"XformRefuse", 0x007D6762, kXformRefuseBytes, sizeof(kXformRefuseBytes)};
+
+inline constexpr std::uint8_t kCostListCtorBytes[] = {0x56, 0x8B, 0xF1, 0xC7, 0x06, 0x00, 0x00, 0x00, 0x00};
+inline constexpr Site kCostListCtor{"CostListCtor", 0x0044717F, kCostListCtorBytes, sizeof(kCostListCtorBytes)};
+
+inline constexpr std::uint8_t kCostListDtorBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x85, 0xC0, 0x74, 0x0B, 0x50, 0xB9};
+inline constexpr Site kCostListDtor{"CostListDtor", 0x0044C817, kCostListDtorBytes, sizeof(kCostListDtorBytes)};
 
 }  // namespace uhc::sites
 ```
@@ -2875,7 +2884,7 @@ Outcome ApplyResourceBounty(const Config& config);
 Outcome ApplyCantBeSlowed(const Config& config);
 Outcome ApplyStealthTargeting(const Config& config);
 Outcome ApplyAutoScout(const Config& config);
-Outcome ApplyResearchOnTheMove(const Config& config);
+Outcome ApplyTransformChecks(const Config& config);
 Outcome ApplyCustomWalls(const Config& config);
 Outcome ApplyDirectionalAttack(const Config& config);
 Outcome ApplySnareValues(const Config& config);
@@ -3031,8 +3040,7 @@ inline constexpr Feature kFeatures[] = {
     {"snareValues", ApplySnareValues},
     {"stealthTargeting", ApplyStealthTargeting},
     {"autoScout", ApplyAutoScout},
-    // No order constraint: the only key that writes 0x487E1B or verifies 0x487D8B.
-    {"researchOnTheMove", ApplyResearchOnTheMove},
+    {"transformChecks", ApplyTransformChecks},
     {"customWalls", ApplyCustomWalls},
     {"directionalAttack", ApplyDirectionalAttack},
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
@@ -3128,7 +3136,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",

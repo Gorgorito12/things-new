@@ -23,6 +23,7 @@ set(UHC_SOURCES
   src/unittypes.cpp
   src/xmllist.cpp
   src/worldtick.cpp
+  src/panelbuttons.cpp
   src/researchpay.cpp
   src/canresearch.cpp
   src/techrollover.cpp
@@ -61,6 +62,7 @@ set(UHC_SOURCES
   src/features/stealthtarget.cpp
   src/features/autoscout.cpp
   src/features/researchmove.cpp
+  src/features/transformchecks.cpp
   src/features/customwalls.cpp
   src/features/directional.cpp
   src/features/snarevalues.cpp
@@ -223,6 +225,8 @@ set(UHC_SOURCES
   src/hooks/cantslow_hooks.asm
   src/hooks/stealthtarget_hooks.asm
   src/hooks/autoscout_hooks.asm
+  src/hooks/panelbuttons_hooks.asm
+  src/hooks/transformchecks_hooks.asm
   src/hooks/customwalls_hooks.asm
   src/hooks/directional_hooks.asm
   src/hooks/datalint_hooks.asm

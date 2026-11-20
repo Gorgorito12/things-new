@@ -29,7 +29,6 @@ collectSkip     dd 00461C3Fh    ; the collection loop's next entry
 techNext        dd 004620C0h    ; call 4C6968h: can this unit research the tech
 techBuild       dd 00462172h    ; the tech button's build-up (rollover, icon, cost)
 layoutNext      dd 0046268Ah    ; the layout's next entry
-buttonNext      dd 0046231Eh    ; jge 69700Dh: the grid is full
 
 .code
 
@@ -164,21 +163,5 @@ hidden:
     jmp layoutNext
 UhcNpTechLayoutHook ENDP
 
-; 0x462317: mov ebx,[esp+1Ch] / cmp ebx,6 (7 B), where every grid button joins before it is placed.
-; In a preview the button is disabled ([esp+24h] = 1; its age mark [esp+6Ch] stays as the stock
-; code set it) and has no command for a click or a shift-click (the strings at [esp+1C0h] and
-; [esp+3C0h]). The flags of the stolen cmp reach the jge at the continuation.
-UhcNpButtonHook PROC
-    TRACE_ONCE "nativePreview button (0x462317)"
-    cmp g_uhcNpActive, 0
-    je stock
-    mov dword ptr [esp+24h], 1
-    mov byte ptr [esp+1C0h], 0
-    mov byte ptr [esp+3C0h], 0
-stock:
-    mov ebx, dword ptr [esp+1Ch]
-    cmp ebx, 6
-    jmp buttonNext
-UhcNpButtonHook ENDP
 
 END

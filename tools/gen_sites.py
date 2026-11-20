@@ -1864,6 +1864,21 @@ SITES = [
     # 44D863h, and its test al,al / je 9E6583h
     ("HcTechResearchRefusal", 0x9E67CE, 0x10),
     ("ResearchGatherFlagTest", 0x9E6553, 0x0D),
+    # transformChecks: the per-unit execute of the transform command (type 17h, uiTransformSelectedUnit),
+    # FUN_007D64F7 (thiscall(cmd, unit), ret 4). Verify only, its body from the player lookup to the placement
+    # check: [esp+30h] the player (0x7D6531), [esp+14h] the player's proto (0x7D654D), [esp+10h] the command's
+    # player ID (0x7D6595), the cost getter 0x480B1E, then PLACE through world vtable +14h with (proto, player ID,
+    # &pos, &forward, &right, 0, 2, 0, 0, 0, 0) and its test.
+    ("XformExecBody", 0x7D652D, 0xBE),
+    # transformChecks: test al,al / je 7D6762h (8 B) after PLACE, then cmp byte [esi+90h],0 (the payment flag,
+    # 7 B), where the hook goes on; nothing branches inside (cs). ESI = the command, EBP = the unit.
+    ("XformPlaceTest", 0x7D65E3, 0x0F),
+    # transformChecks: the refusal 0x7D6762, lea ecx,[esp+18h] / call 44C817h (the cost list's destructor), then
+    # the pops and ret 4 with AL = 0
+    ("XformRefuse", 0x7D6762, 0x09),
+    # transformChecks: the cost list's constructor 0x44717F and destructor 0x44C817 (thiscall(list))
+    ("CostListCtor", 0x44717F, 0x09),
+    ("CostListDtor", 0x44C817, 0x0B),
 ]
 
 
