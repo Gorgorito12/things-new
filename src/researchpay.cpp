@@ -7,6 +7,8 @@
 // claim it pays as stock. A claim with share 0 skips the payment; a share between 0 and 1 pays a scaled copy of
 // the cost, built in a local list, so the tech's own cost is never written. The copy that follows gets the same
 // share (0x4E2617 fills it with 0, 0x480B94 scales it), so a cancel refunds what was paid, never more.
+// A cancelled research is refunded by 0x8D7004(player, cost) at 0x9E6167 (Research, state 13h) and 0x9D56B5
+// (CommandResearch): AddResearchRefundObserver redirects both calls and reports the action after the refund.
 // PreviewResearchPay asks the same claims in the same order for a display of the price, and changes nothing.
 #include "researchpay.h"
 
@@ -29,8 +31,12 @@ constexpr std::size_t kMaxPayers = 4;
 constexpr std::uint32_t kResearchCopyCall = 0x009E68A0;         // to [action+74h]
 constexpr std::uint32_t kCommandResearchCopyCall = 0x009D5548;  // to [action+7Ch]
 constexpr std::uint32_t kResListCount = 0x00C6DF38;             // the entries of every ResList
+constexpr std::uint32_t kResearchRefundCall = 0x009E6167;       // refunds [action+74h]
+constexpr std::uint32_t kCommandResearchRefundCall = 0x009D56B5;  // refunds [action+7Ch]
 
 using PayFn = bool(__thiscall*)(void* player, const void* cost);
+using RefundFn = bool(__thiscall*)(void* player, const void* cost);
+const auto kRefund = reinterpret_cast<RefundFn>(0x008D7004);
 using CostCopyFn = void*(__thiscall*)(void* cost, const void* from);
 using CostFillFn = void(__thiscall*)(void* cost, float value);
 using CostScaleFn = void(__thiscall*)(void* cost, float factor);
@@ -46,6 +52,9 @@ struct Payer {
 };
 
 Payer g_payers[kMaxPayers] = {};
+uhc::ResearchRefunded g_refunded[kMaxPayers] = {};
+std::size_t g_refundedCount = 0;
+bool g_refundInstalled = false;
 std::size_t g_payerCount = 0;
 bool g_installed = false;
 
@@ -96,6 +105,18 @@ void* CopyCost(void* cost, const void* from, std::uint32_t offset) {
   return result;
 }
 
+bool Refund(void* player, const void* cost, std::uint32_t offset) {
+  const bool result = kRefund(player, cost);
+  const char* action = static_cast<const char*>(cost) - offset;
+  for (std::size_t i = 0; i < g_refundedCount; ++i) {
+    g_refunded[i](action);
+  }
+  return result;
+}
+
+bool __fastcall RefundResearch(void* player, void*, const void* cost) { return Refund(player, cost, 0x74); }
+bool __fastcall RefundCommandResearch(void* player, void*, const void* cost) { return Refund(player, cost, 0x7C); }
+
 void* __fastcall CopyResearchCost(void* cost, void*, const void* from) { return CopyCost(cost, from, 0x74); }
 void* __fastcall CopyCommandResearchCost(void* cost, void*, const void* from) { return CopyCost(cost, from, 0x7C); }
 
@@ -143,6 +164,23 @@ bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPaySt
     g_installed = true;
   }
   g_payers[g_payerCount++] = {feature, claim, started};
+  return true;
+}
+
+bool AddResearchRefundObserver(const char* feature, ResearchRefunded refunded) {
+  if (g_refundedCount == kMaxPayers) {
+    Log(L"research refunds: more than %u keys", static_cast<unsigned>(kMaxPayers));
+    return false;
+  }
+  if (!g_refundInstalled) {
+    if (!VerifyAll(feature, {&sites::kResearchRefundCall, &sites::kCommandResearchRefundCall}) ||
+        !WriteCall(kResearchRefundCall, reinterpret_cast<const void*>(&RefundResearch)) ||
+        !WriteCall(kCommandResearchRefundCall, reinterpret_cast<const void*>(&RefundCommandResearch))) {
+      return false;
+    }
+    g_refundInstalled = true;
+  }
+  g_refunded[g_refundedCount++] = refunded;
   return true;
 }
 

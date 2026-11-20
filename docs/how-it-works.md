@@ -3486,8 +3486,10 @@ A kill that reaches a rank and a transform queue the unit's ID. A world tick eve
 `unitmodels.*`, walks only the units with a mark, and removes the mark of a dead unit. One walk over the world's units
 `[world+0Ch]` runs on a new world or a jump of the clock, which finds the ranks of a loaded game. The mark hangs on the bone
 `HITPOINTBAR`, as a sprite that faces the camera, 1.15 m over the aura icons' height (`RANK_LIFT` in aoe3-blender-tools' `tools/make_rings.py`): the HP
-bar scales with the camera like the world, so the gap stays at every zoom. Ranks 4 and 5 add stars over rank 3's chevrons: their
-sprite is larger around the same centre, with the glyph scaled down by as much, so the chevrons land where rank 3's do. **Why it is safe:** a model is a
+bar scales with the camera like the world, so the gap stays at every zoom. The marks are soutache knots (a loop, a trefoil, a
+pointed trefoil), each one cord drawn as circles along Bezier curves, symmetric, its tails at the same lowest height for every
+rank. Ranks 4 and 5 add stars over rank 3's knot: their sprite is larger around the same centre, with the glyph scaled down by
+as much, so the knot lands where rank 3's does. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking
@@ -3928,7 +3930,9 @@ name checked against the action's (`[db+1FE4h]`); then:
   range (and area), one line per multiplier (string 42229 or 42230). The key inserts after the damage line a line for
   the ROF and one for the projectiles (`rofTip`, `projectilesTip`, `%s` the number), each with its icon, and a row
   shown in short form (too long for its column, or the `+N more` gadget) carries that whole help text instead of its
-  text without icons;
+  text without icons; in that help text the parentheses around an icon, or around the name right after one (the game's
+  `%1s (%2s) Damage`, `... against %2s (%3s)`), are removed unless `tipParentheses="keep"`, and the key's own lines end
+  with their icon, without parentheses;
 - the multipliers lose the zeros that end their decimals (`, 1.50x` is `, 1.5x`, `1.50X Bonus` is `1.5X Bonus`: a
   number with a decimal point right before an `x` or `X` that ends a word), unless `multiplierZeros="keep"`;
 - an original attack row (its gadget spans the panel to the right edge) longer than that width over the font's
@@ -4354,8 +4358,9 @@ can reuse the address of a proto. It is not saved, and a load applies the effect
   - The command panel FUN_0046188E calls the builder for a tech button at 0x4622C5 (`ev_afcebe91…`) with ESI the entry,
     EBX the player, EDI the unit and `[esp+30h]` the rollover; the button's overlay text, the narrow buffer
     `[esp+2C0h]` (256 chars) that the Buy buttons use for their price, is emptied for each button at 0x461DBC and set on
-    the button at 0x4625E2 (`ev_9abdeb84…`) when not empty. A `WriteCall` at 0x4622C5 (`UhcGrantTechButtonHook`) calls the
-    builder with the same eight arguments, then `UhcGrantTechButton`: with a preview below the full price it writes the
+    the button at 0x4625E2 (`ev_9abdeb84…`) when not empty. The `WriteCall` at 0x4622C5 is the shared tech rollover
+    (`techrollover.*`, since 2026-11-20; it was `UhcGrantTechButtonHook`): it calls the builder with the same eight
+    arguments, then each key's line, here `GrantTechButton`: with a preview below the full price it writes the
     word or price into the empty buffer, which it finds at the panel's `[esp+2C0h]` (ESP + 2E4h in the hook), and appends
     the green line to the rollover with the BString append 0x443960 (`thiscall(text, wchar*, -1, -1)`, `ret 0Ch`).
   - The floating text: `started` with `claimed` shows the label over the paying unit through `floatingtext.h` when its
@@ -4394,6 +4399,74 @@ can reuse the address of a proto. It is not saved, and a load applies the effect
 
 The fps differ by 7 % at about 1.4 ms per frame with the GPU busy by the other games; the main thread did the same work.
 That run's second research was paid by the Market (a tie), so it had no Time factor.
+
+### shipTechLimit
+
+`src/features/shiptechlimit.cpp`; the shared `researchpay.*`, `canresearch.*` (`hooks/canresearch_hooks.asm`) and
+`techrollover.*` (`hooks/techrollover_hooks.asm`).
+
+- **The tag** (`AddCivTagHandler`): `<ShipTechLimit>` gives a number per civ ID (0 to 100000; anything else is logged and
+  skipped). A player's civ is `[[player+20h]]` when `[player+24h]` > 0 (0x4539D3).
+- **A shipment tech:** the player's status entry of the tech has Ships (resource 6) above 0 in its cost list
+  `[status+10h]` (0x44EFFF), the list the research pays and the rollover shows. The status of a research is found by
+  0x94ADAA(`[world+7Ch]`, player ID, tech ID).
+- **Counting** (per player, 16): the shared payment (`AddResearchPayer`) with a claim that never claims: its `started`
+  runs for every research once its action is set up, with `[action+64h]` the player and `[action+68h]` the tech; a
+  shipment tech of a limited player adds 1. `AddResearchRefundObserver` (new in `researchpay.*`) redirects the two calls
+  of the refund 0x8D7004: 0x9E6167 in the Research action's state 13h handler 0x9E60B4 (the cancel: it clears "being
+  researched" with 0x94B85C(…,0,0), refunds `[action+74h]`, then 0x94C285(0)) and 0x9D56B5 in the CommandResearch one
+  (`[action+7Ch]`); a refunded shipment tech takes 1 off. These are the only two refunds of a research action (a capstone
+  scan of `call 8D7004h` over `.text`: the other nine are trains, cards and foundations). A research that completes
+  (state 0Ah) or loses its unit is never refunded, so it keeps its count.
+- **The refusal:** the shared head of the can-research test 0x4C6968 (`bool thiscall(status, unit)`): a 5-byte `jmp`
+  over `push ebp / mov ebp,[esp+8]` to `UhcCanResearchHook`, which asks each filter and returns 0 (`ret 4`) for a refused
+  tech, else replays the two instructions and goes on at 0x4C696D. This key refuses a shipment tech for a unit whose
+  owner `[unit+44h]` has reached his limit. Callers with no unit (the home city's 0x857810 and 0x8579B9) are never
+  refused. The research start 0x9E667A asks it at 0x9E670B before the payment, inside the execution of the research
+  command, so a refused research fails on every machine (0x9E6718: nothing is paid). The command panel asks it at
+  0x4620C0: false takes the button down the stock path that marks it disabled (`[esp+24h]` = 1 at 0x46216A).
+- **The display:** the shared tech rollover (the `call` of the builder 0x4C737C at 0x4622C5): a green or red line
+  `Shipment techs: n/N` appended with 0x443960, and, at the limit, `n/N` in the button's empty overlay text (the panel's
+  256-char buffer `[esp+2C0h]`).
+- **Saved games:** a saved marker per limited player (`savedmarkers.h`, stat 69h, word 0 `'ST' << 16 | player << 8 | 1`,
+  word 1 the count) on one of his living units; the world tick writes it when the count changes and moves it when that
+  unit dies or loses it. A new game (another world, the time going back or the step count jumping, as in
+  `shipmentCounts`) walks the unit table once and reads the markers; a limited player with none gets the sum of the
+  research count bytes `[status+21h]` (bumped by the activation 0x94CF27 at 0x94D02F) over his shipment techs.
+
+**Why it is safe.**
+- The head hook keeps ECX for the stock test and uses only EAX and EDX, which a `thiscall`'s caller does not expect kept;
+  no branch lands at 0x4C6969..0x4C696C (capstone). The refund replacements are `__fastcall` with an unused EDX: the
+  same frame as the `thiscall`, `ret 4`, and they return the refund's result.
+- Deterministic: the count changes only in the research command's execution and the action's state change, on every
+  machine; the filter reads it, and the display only reads.
+- Cost: the filter is a map lookup by civ and one cost read for a limited player's tech; nothing walks a list per call.
+  The world tick does nothing while no count changed; a marker move walks the unit table once.
+- Videos (`record --perf`, other games on the machine, not a perfprobe A/B): key on 490 fps, longest frame 46 ms, none
+  over 50 ms; key off 424 fps, 24 ms, none over 50 ms.
+
+### homeCityTechsInUnits
+
+`src/features/hctechsinunits.cpp`, `hooks/hctechsinunits_hooks.asm`; the shared `canresearch.*`.
+
+- **Stock:** the research start 0x9E667A, after the can-research test (0x9E670B), refuses a tech with status bit 18 (the
+  HomeCity flag) at 0x9E67CE (`push 12h / mov ecx,esi / call 44D863h / cmp al,1 / je 9E67C5h`) and returns false with
+  nothing paid. 0x4C6968 does not refuse HomeCity techs (it skips its "already active" and ResearchLimit tests for bits 18
+  and 29), so the panel shows the button of an obtainable one.
+- **Start hook** (13 bytes at 0x9E67CE): the bit test as stock; a HomeCity tech goes on at 0x9E67DB (the payment) when
+  the researching unit `[action+10h]`'s proto lists it in its command entries `[proto+0E8h]` (6-byte records: word ID,
+  byte kind, 1 a tech; count `[proto+0ECh]`), else to 0x9E67C5 as stock.
+- **Once active:** a filter of the can-research test refuses a HomeCity tech whose status has bit 1 (active) for a unit
+  whose proto lists it, so its button goes away as a normal tech's does.
+- **Gather hook** (9 bytes at 0x9E6553, the Research update's `push 1Eh / mov ecx,ebx / call 44D863h`): AL = the
+  `CheckLandHCGatherPoint` flag as stock; when it is clear, a HomeCity tech without `CheckWaterHCGatherPoint` gets AL = 1,
+  so 0x9E6560..0x9E657B cancel it (state 13h, full refund) while the player has a home city and 0x4C6B9E finds no gather
+  point. `nogathercheck` turns that off (`g_uhcHcGatherCheck`).
+
+**Why it is safe.** Both hooks use EAX, ECX and EDX, which every continuation reloads (the payment loads ECX from EDI;
+0x9E655C tests AL only, and both of its paths reload ECX); EBX, ESI, EDI and EBP are kept. No branch lands inside either
+site (capstone). Only a Research action reaches them, and a HomeCity tech reaches the update only through this key. The
+decision reads the proto and the status: the same on every machine.
 
 ### killBountyTechs, resourceBounty and teamKillBounty
 

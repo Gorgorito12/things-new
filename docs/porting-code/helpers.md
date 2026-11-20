@@ -32,6 +32,8 @@ Contents:
 - [State kept for a saved game](#state-kept-for-a-saved-game)
 - [Direct3D hooks](#direct3d-hooks)
 - [Research payment](#research-payment)
+- [Can-research test](#can-research-test)
+- [Tech rollover](#tech-rollover)
 - [ROF reads](#rof-reads)
 - [Floating bars](#floating-bars)
 
@@ -2399,6 +2401,24 @@ inline constexpr Site kAutoScoutTacticIndex{"AutoScoutTacticIndex", 0x00948161, 
 inline constexpr std::uint8_t kAutoScoutIdleBytes[] = {0x8B, 0x41, 0x24, 0x85, 0xC0, 0x74, 0x0C, 0x8A};
 inline constexpr Site kAutoScoutIdle{"AutoScoutIdle", 0x0044F1A7, kAutoScoutIdleBytes, sizeof(kAutoScoutIdleBytes)};
 
+inline constexpr std::uint8_t kResearchRefundCallBytes[] = {0x8D, 0x45, 0x74, 0x50, 0x8B, 0xCF, 0xE8, 0x98, 0x0E, 0xEF, 0xFF};
+inline constexpr Site kResearchRefundCall{"ResearchRefundCall", 0x009E6161, kResearchRefundCallBytes, sizeof(kResearchRefundCallBytes)};
+
+inline constexpr std::uint8_t kCommandResearchRefundCallBytes[] = {0x8D, 0x46, 0x7C, 0x50, 0x8B, 0xCF, 0xE8, 0x4A, 0x19, 0xF0, 0xFF};
+inline constexpr Site kCommandResearchRefundCall{"CommandResearchRefundCall", 0x009D56AF, kCommandResearchRefundCallBytes, sizeof(kCommandResearchRefundCallBytes)};
+
+inline constexpr std::uint8_t kCanResearchHeadBytes[] = {0x55, 0x8B, 0x6C, 0x24, 0x08, 0x56, 0x55, 0x8B, 0xF1, 0xE8, 0x10};
+inline constexpr Site kCanResearchHead{"CanResearchHead", 0x004C6968, kCanResearchHeadBytes, sizeof(kCanResearchHeadBytes)};
+
+inline constexpr std::uint8_t kTechEntryLookupBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x7C, 0x19, 0x83, 0xF8, 0x10, 0x7D, 0x14, 0x8B, 0x0C, 0x81, 0x85, 0xC9, 0x74, 0x0D, 0x8B, 0x44, 0x24, 0x08, 0x50, 0xE8, 0xC2, 0x2A, 0x00, 0x00, 0xC2, 0x08, 0x00, 0x33, 0xC0};
+inline constexpr Site kTechEntryLookup{"TechEntryLookup", 0x0094ADAA, kTechEntryLookupBytes, sizeof(kTechEntryLookupBytes)};
+
+inline constexpr std::uint8_t kHcTechResearchRefusalBytes[] = {0x6A, 0x12, 0x8B, 0xCE, 0xE8, 0x8C, 0x70, 0xA6, 0xFF, 0x3C, 0x01, 0x74, 0xEA, 0x8D, 0x5E, 0x10};
+inline constexpr Site kHcTechResearchRefusal{"HcTechResearchRefusal", 0x009E67CE, kHcTechResearchRefusalBytes, sizeof(kHcTechResearchRefusalBytes)};
+
+inline constexpr std::uint8_t kResearchGatherFlagTestBytes[] = {0x6A, 0x1E, 0x8B, 0xCB, 0xE8, 0x07, 0x73, 0xA6, 0xFF, 0x84, 0xC0, 0x74, 0x23};
+inline constexpr Site kResearchGatherFlagTest{"ResearchGatherFlagTest", 0x009E6553, kResearchGatherFlagTestBytes, sizeof(kResearchGatherFlagTestBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -2844,6 +2864,8 @@ Outcome ApplyDataLint(const Config& config);
 Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
 Outcome ApplyResearchGrants(const Config& config);
+Outcome ApplyShipTechLimit(const Config& config);
+Outcome ApplyHomeCityTechsInUnits(const Config& config);
 Outcome ApplyKillBountyTechs(const Config& config);
 Outcome ApplyTeamKillBounty(const Config& config);
 Outcome ApplyResourceBounty(const Config& config);
@@ -2980,6 +3002,10 @@ inline constexpr Feature kFeatures[] = {
     {"nextResearchFree", ApplyNextResearchFree},
     // After nextResearchFree: a research it makes free is not asked of this key (the shared payment, researchpay.h).
     {"researchGrants", ApplyResearchGrants},
+    // After researchGrants: a payer of the shared research payment that claims nothing (it counts), and a line of
+    // the shared tech rollover after the price.
+    {"shipTechLimit", ApplyShipTechLimit},
+    {"homeCityTechsInUnits", ApplyHomeCityTechsInUnits},
     {"killBountyTechs", ApplyKillBountyTechs},
     {"teamKillBounty", ApplyTeamKillBounty},
     {"resourceBounty", ApplyResourceBounty},
@@ -3098,7 +3124,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
@@ -3915,7 +3941,7 @@ extern "C" void UhcCivTagsHook();  // hooks/civfirsttc_hooks.asm
 
 namespace {
 
-constexpr std::size_t kMaxTags = 8;
+constexpr std::size_t kMaxTags = 12;
 constexpr std::uint32_t kUnknownTag = 0x0052BB07;  // xor edi,edi / cmp dword ptr [ebx+80h],edi (8 B)
 
 struct Tag {
@@ -5998,7 +6024,8 @@ void RemoveUnitModel(char* unit, std::int32_t model) { kRemoveModel(unit, model)
 //
 // Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay, 66h
 // researchGrants (two kinds, told apart by word 0), 67h shipmentCounts (per-player state on one carrier unit), 68h
-// randomCost (the game seed and the purchase counts, on one carrier unit).
+// randomCost (the game seed and the purchase counts, on one carrier unit), 69h shipTechLimit (a player's count, on
+// one of his units).
 #pragma once
 
 #include <cstdint>
@@ -6308,6 +6335,13 @@ using ResearchPayStarted = void (*)(char* action, float share, bool claimed);
 // Writes the hooks the first time, after checking the stock bytes of the four sites.
 bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPayStarted started);
 
+// Called when a research is cancelled and refunded, after the refund: the Research action's state change to 13h
+// (the call 0x8D7004 at 0x9E6167, the refund of [action+74h]) and the CommandResearch one (0x9D56B5, [action+7Ch]).
+// [action+64h] is the player ID and [action+68h] the tech ID in both. A research whose action ends another way
+// (completed, or its unit gone) is not reported. The hooks are written the first time, after checking their bytes.
+using ResearchRefunded = void (*)(const char* action);
+bool AddResearchRefundObserver(const char* feature, ResearchRefunded refunded);
+
 // What the payment would do now with a research of `cost` by `researcher` for `player`: the keys are asked in the
 // same order, with `preview` set. Returns the name of the key that would claim it, with *share, or nullptr with
 // *share 1. For a display of the price: nothing is spent or remembered.
@@ -6328,6 +6362,8 @@ const char* PreviewResearchPay(const char* researcher, const char* player, const
 // claim it pays as stock. A claim with share 0 skips the payment; a share between 0 and 1 pays a scaled copy of
 // the cost, built in a local list, so the tech's own cost is never written. The copy that follows gets the same
 // share (0x4E2617 fills it with 0, 0x480B94 scales it), so a cancel refunds what was paid, never more.
+// A cancelled research is refunded by 0x8D7004(player, cost) at 0x9E6167 (Research, state 13h) and 0x9D56B5
+// (CommandResearch): AddResearchRefundObserver redirects both calls and reports the action after the refund.
 // PreviewResearchPay asks the same claims in the same order for a display of the price, and changes nothing.
 #include "researchpay.h"
 
@@ -6350,8 +6386,12 @@ constexpr std::size_t kMaxPayers = 4;
 constexpr std::uint32_t kResearchCopyCall = 0x009E68A0;         // to [action+74h]
 constexpr std::uint32_t kCommandResearchCopyCall = 0x009D5548;  // to [action+7Ch]
 constexpr std::uint32_t kResListCount = 0x00C6DF38;             // the entries of every ResList
+constexpr std::uint32_t kResearchRefundCall = 0x009E6167;       // refunds [action+74h]
+constexpr std::uint32_t kCommandResearchRefundCall = 0x009D56B5;  // refunds [action+7Ch]
 
 using PayFn = bool(__thiscall*)(void* player, const void* cost);
+using RefundFn = bool(__thiscall*)(void* player, const void* cost);
+const auto kRefund = reinterpret_cast<RefundFn>(0x008D7004);
 using CostCopyFn = void*(__thiscall*)(void* cost, const void* from);
 using CostFillFn = void(__thiscall*)(void* cost, float value);
 using CostScaleFn = void(__thiscall*)(void* cost, float factor);
@@ -6367,6 +6407,9 @@ struct Payer {
 };
 
 Payer g_payers[kMaxPayers] = {};
+uhc::ResearchRefunded g_refunded[kMaxPayers] = {};
+std::size_t g_refundedCount = 0;
+bool g_refundInstalled = false;
 std::size_t g_payerCount = 0;
 bool g_installed = false;
 
@@ -6416,6 +6459,18 @@ void* CopyCost(void* cost, const void* from, std::uint32_t offset) {
   }
   return result;
 }
+
+bool Refund(void* player, const void* cost, std::uint32_t offset) {
+  const bool result = kRefund(player, cost);
+  const char* action = static_cast<const char*>(cost) - offset;
+  for (std::size_t i = 0; i < g_refundedCount; ++i) {
+    g_refunded[i](action);
+  }
+  return result;
+}
+
+bool __fastcall RefundResearch(void* player, void*, const void* cost) { return Refund(player, cost, 0x74); }
+bool __fastcall RefundCommandResearch(void* player, void*, const void* cost) { return Refund(player, cost, 0x7C); }
 
 void* __fastcall CopyResearchCost(void* cost, void*, const void* from) { return CopyCost(cost, from, 0x74); }
 void* __fastcall CopyCommandResearchCost(void* cost, void*, const void* from) { return CopyCost(cost, from, 0x7C); }
@@ -6467,6 +6522,23 @@ bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPaySt
   return true;
 }
 
+bool AddResearchRefundObserver(const char* feature, ResearchRefunded refunded) {
+  if (g_refundedCount == kMaxPayers) {
+    Log(L"research refunds: more than %u keys", static_cast<unsigned>(kMaxPayers));
+    return false;
+  }
+  if (!g_refundInstalled) {
+    if (!VerifyAll(feature, {&sites::kResearchRefundCall, &sites::kCommandResearchRefundCall}) ||
+        !WriteCall(kResearchRefundCall, reinterpret_cast<const void*>(&RefundResearch)) ||
+        !WriteCall(kCommandResearchRefundCall, reinterpret_cast<const void*>(&RefundCommandResearch))) {
+      return false;
+    }
+    g_refundInstalled = true;
+  }
+  g_refunded[g_refundedCount++] = refunded;
+  return true;
+}
+
 const char* PreviewResearchPay(const char* researcher, const char* player, const char* cost, float* share) {
   for (std::size_t i = 0; i < g_payerCount; ++i) {
     float claimed = 1.0f;
@@ -6513,6 +6585,284 @@ UhcCommandResearchPayHook PROC
     invoke UhcResearchPay, esi, ecx, eax
     ret 4
 UhcCommandResearchPayHook ENDP
+
+END
+```
+
+## Can-research test
+
+### src/canresearch.h
+
+```cpp
+// The can-research test 0x4C6968, shared by every key that refuses a tech there (shipTechLimit, homeCityTechsInUnits):
+// one jmp at its head, whichever of those keys are on.
+//
+// 0x4C6968 is `bool thiscall(status, unit)`, ret 4: the player's status entry of a tech and the unit that would
+// research it (null for some callers, such as the home city's). Every research asks it: the command panel (0x4620C0,
+// whose false shows the button greyed or hides it), the research start 0x9E670B (the command's execution, on every
+// machine: false refuses the research before its payment), the AI, researchByID and the politician lists.
+#pragma once
+
+namespace uhc {
+
+// Asked before the stock test, in the order the keys added them (their kFeatures order). Return true to refuse
+// the tech for that unit: the test answers false and the stock checks do not run. Runs often (the panel asks each
+// tech button every refresh): keep it cheap for a tech the key does not care about.
+using CanResearchFilter = bool (*)(const char* status, const char* unit);
+
+// Writes the hook the first time, after checking the stock bytes of the head.
+bool AddCanResearchFilter(const char* feature, CanResearchFilter refuse);
+
+}  // namespace uhc
+```
+
+### src/canresearch.cpp
+
+```cpp
+// The head of the can-research test 0x4C6968 (push ebp / mov ebp,[esp+8], 5 B) goes to UhcCanResearchHook
+// (hooks/canresearch_hooks.asm), which asks UhcCanResearchRefused and either answers false or runs the stock test.
+#include "canresearch.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" {
+std::int32_t g_uhcCanResearchFilters = 0;  // the hook calls UhcCanResearchRefused only when there is a filter
+void UhcCanResearchHook();
+}
+
+namespace {
+
+constexpr std::size_t kMaxFilters = 4;
+
+uhc::CanResearchFilter g_filters[kMaxFilters] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+extern "C" bool __stdcall UhcCanResearchRefused(const char* status, const char* unit) {
+  if (status == nullptr) {
+    return false;
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    if (g_filters[i](status, unit)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+namespace uhc {
+
+bool AddCanResearchFilter(const char* feature, CanResearchFilter refuse) {
+  if (g_count == kMaxFilters) {
+    Log(L"can-research test: more than %u keys", static_cast<unsigned>(kMaxFilters));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll(feature, {&sites::kCanResearchHead}) ||
+        !WriteJmp(sites::kCanResearchHead.va, reinterpret_cast<const void*>(&UhcCanResearchHook), 5)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_filters[g_count++] = refuse;
+  g_uhcCanResearchFilters = static_cast<std::int32_t>(g_count);
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/canresearch_hooks.asm
+
+```asm
+; The can-research test's head (src/canresearch.cpp), shared by shipTechLimit and homeCityTechsInUnits.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcCanResearchRefused PROTO STDCALL status:DWORD, unit:DWORD
+EXTERN g_uhcCanResearchFilters:DWORD
+
+.data
+canResearchNext dd 004C696Dh    ; push esi: the stock test after its first two instructions
+
+.code
+
+; 0x4C6968: push ebp / mov ebp,[esp+8] (5 B), the head of bool thiscall(status, unit), ret 4. No branch lands
+; inside it. On entry ECX = the status, [esp+4] = the unit. EAX and EDX are free (the caller expects them
+; clobbered); ECX is kept for the stock test. A refused tech returns 0 with ret 4, as the stock test's false.
+UhcCanResearchHook PROC
+    TRACE_ONCE "can-research test (0x4C6968)"
+    cmp g_uhcCanResearchFilters, 0
+    je stock
+    push ecx
+    push dword ptr [esp+8]          ; the unit
+    push ecx                        ; the status
+    call UhcCanResearchRefused
+    pop ecx
+    test al, al
+    jne refused
+stock:
+    push ebp
+    mov ebp, dword ptr [esp+8]
+    jmp canResearchNext
+refused:
+    xor eax, eax
+    ret 4
+UhcCanResearchHook ENDP
+
+END
+```
+
+## Tech rollover
+
+### src/techrollover.h
+
+```cpp
+// The rollover of a tech button in the command panel, shared by every key that adds to it (researchGrants' price,
+// shipTechLimit's count): one replaced call, 0x4622C5, the panel's call of the rollover builder 0x4C737C in the
+// command panel refresh FUN_0046188E. Display only: nothing here reaches the simulation.
+#pragma once
+
+namespace uhc {
+
+// Called once the stock rollover is built, in the order the keys added them. `entry` is the player's status entry
+// of the tech, `player` the local player, `unit` the selected unit, `rollover` the rollover text (a BString:
+// AppendTechRollover adds to it) and `overlay` the button's overlay text (the panel's buffer, 256 chars, empty for a
+// tech; researchGrants writes its price there).
+using TechRolloverLine = void (*)(const char* entry, const char* player, const char* unit, void* rollover,
+                                  char* overlay);
+
+// Writes the hook the first time, after checking the stock bytes of the call and of the buffers it relies on.
+bool AddTechRolloverLine(const char* feature, TechRolloverLine line);
+
+// Appends text (game markup such as <color=1, 0.4, 0.4> allowed) to a rollover handed to a TechRolloverLine.
+void AppendTechRollover(void* rollover, const wchar_t* text);
+
+}  // namespace uhc
+```
+
+### src/techrollover.cpp
+
+```cpp
+// The panel's call of the tech rollover builder at 0x4622C5 goes to UhcTechRolloverHook
+// (hooks/techrollover_hooks.asm): it calls the builder with the same arguments, then UhcTechRolloverLines, which
+// calls each key's line in order.
+#include "techrollover.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcTechRolloverHook();
+
+namespace {
+
+constexpr std::size_t kMaxLines = 4;
+constexpr std::uint32_t kRolloverCall = 0x004622C5;  // kTechButtonRollover + 10h
+
+using AppendFn = void(__thiscall*)(void* text, const wchar_t* more, std::int32_t length, std::int32_t start);
+const auto kAppend = reinterpret_cast<AppendFn>(0x00443960);  // BString append; -1, -1: all of it, at the end
+
+uhc::TechRolloverLine g_lines[kMaxLines] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+extern "C" void __stdcall UhcTechRolloverLines(const char* entry, const char* player, const char* unit, void* rollover,
+                                               char* overlay) {
+  if (entry == nullptr) {
+    return;
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    g_lines[i](entry, player, unit, rollover, overlay);
+  }
+}
+
+namespace uhc {
+
+bool AddTechRolloverLine(const char* feature, TechRolloverLine line) {
+  if (g_count == kMaxLines) {
+    Log(L"tech rollover: more than %u keys", static_cast<unsigned>(kMaxLines));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll(feature, {&sites::kTechButtonRollover, &sites::kButtonOverlayReset, &sites::kButtonOverlayRead,
+                             &sites::kTechRolloverHead, &sites::kBStringAppend}) ||
+        !WriteCall(kRolloverCall, reinterpret_cast<const void*>(&UhcTechRolloverHook))) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_lines[g_count++] = line;
+  return true;
+}
+
+void AppendTechRollover(void* rollover, const wchar_t* text) {
+  if (rollover != nullptr && *static_cast<void**>(rollover) != nullptr && text != nullptr) {
+    kAppend(rollover, text, -1, -1);
+  }
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/techrollover_hooks.asm
+
+```asm
+; The tech button's rollover (src/techrollover.cpp), shared by researchGrants and shipTechLimit. Display only.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcTechRolloverLines PROTO STDCALL entry:DWORD, player:DWORD, unit:DWORD, rollover:DWORD, overlay:DWORD
+
+.data
+kTechRollover dd 004C737Ch      ; the tech rollover builder, cdecl with 8 arguments
+
+.code
+
+; Replaces the call of the tech rollover builder 0x4C737C at 0x4622C5 in the command panel refresh FUN_0046188E.
+; Entry: the 8 cdecl arguments at [esp+4]..[esp+20h] (the rollover, the tech entry, the player, the unit, 1, 0, 1,
+; 1); the panel's ESP before it pushed them is ESP+24h here, so the button's overlay text [esp+2C0h] there is
+; [esp+2E4h]. Calls the builder with the same arguments, then the keys' lines. The panel cleans the arguments
+; (add esp,20h) and reloads EAX, ECX and EDX before use; EBX, ESI, EDI and EBP are kept by both calls.
+UhcTechRolloverHook PROC
+    TRACE_ONCE "tech rollover (0x4622C5)"
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    push dword ptr [esp+20h]
+    call dword ptr [kTechRollover]
+    add esp, 20h
+    lea eax, [esp+2E4h]
+    push eax                    ; the overlay text
+    push dword ptr [esp+8]      ; the rollover
+    push dword ptr [esp+18h]    ; the unit
+    push dword ptr [esp+18h]    ; the player
+    push dword ptr [esp+18h]    ; the tech entry
+    call UhcTechRolloverLines
+    ret
+UhcTechRolloverHook ENDP
 
 END
 ```

@@ -22,6 +22,13 @@ using ResearchPayStarted = void (*)(char* action, float share, bool claimed);
 // Writes the hooks the first time, after checking the stock bytes of the four sites.
 bool AddResearchPayer(const char* feature, ResearchPayClaim claim, ResearchPayStarted started);
 
+// Called when a research is cancelled and refunded, after the refund: the Research action's state change to 13h
+// (the call 0x8D7004 at 0x9E6167, the refund of [action+74h]) and the CommandResearch one (0x9D56B5, [action+7Ch]).
+// [action+64h] is the player ID and [action+68h] the tech ID in both. A research whose action ends another way
+// (completed, or its unit gone) is not reported. The hooks are written the first time, after checking their bytes.
+using ResearchRefunded = void (*)(const char* action);
+bool AddResearchRefundObserver(const char* feature, ResearchRefunded refunded);
+
 // What the payment would do now with a research of `cost` by `researcher` for `player`: the keys are asked in the
 // same order, with `preview` set. Returns the name of the key that would claim it, with *share, or nullptr with
 // *share 1. For a display of the price: nothing is spent or remembered.
