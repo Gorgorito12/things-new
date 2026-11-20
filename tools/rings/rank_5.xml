@@ -13,6 +13,11 @@
 						<file>effects\uhc_rings\icon_rank_5_unit.particle</file>
 					</assetreference>
 				</none>
+				<abstractelephant>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\icon_rank_5_elephant.particle</file>
+					</assetreference>
+				</abstractelephant>
 				<abstractcavalry>
 					<assetreference type="ParticleSystem">
 						<file>effects\uhc_rings\icon_rank_5_cavalry.particle</file>

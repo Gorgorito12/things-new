@@ -55,7 +55,7 @@
 		<inneryradius>0.000</inneryradius>
 		<outerzradius>0.000</outerzradius>
 		<innerzradius>0.000</innerzradius>
-		<centerheight>4.350</centerheight>
+		<centerheight>2.900</centerheight>
 		<offaxis>0.000</offaxis>
 		<offaxisspread>0.000</offaxisspread>
 		<offplane>0.000</offplane>
@@ -95,7 +95,7 @@
 	<scale>
 		<loopingcycle>0</loopingcycle>
 		<numstages>0</numstages>
-		<scale>0.750</scale>
+		<scale>2.121</scale>
 		<scalevar>0.000</scalevar>
 		<xscale>1.000</xscale>
 		<xscalevar>0.000</xscalevar>

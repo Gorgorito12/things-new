@@ -35,6 +35,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
 | Friday 2026-11-20 11:59 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 11:59 | [`researchOnTheMove`](#researchonthemove) | Added. A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. |
+| Friday 2026-11-20 12:30 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 11:50 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | The tag on the civ in `civs.xml`. |
 | Friday 2026-11-20 11:50 | [`homeCityTechsInUnits`](#homecitytechsinunits) | Added. A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | The card's tech in the `<Tech>` rows, made obtainable for the civ. |
 | Thursday 2026-11-19 15:22 | [`attackTypeIcons`](#attacktypeicons) | Filmed in WoL, with a control. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
@@ -3820,7 +3821,7 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 11:59
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 12:30
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
@@ -3837,10 +3838,10 @@ with 504 and 346 hit points, and the log shows the ranks.
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
 
 *In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (filmed again on 2026-11-20 with the soutache knots
-after JTMaston's review; 2 `Hussar` against 10 `Crossbowman`, both taking the defaults of their type):* each rank shows its
-mark over the unit's HP bar, clear of it: a soutache knot of a hussar's uniform, shaded as polished metal: a bronze loop at
-rank 1, three round silver loops at rank 2, three eye-shaped gold loops at rank 3, five round gold loops at rank 4 and five
-eye-shaped gold loops at rank 5; a Crossbowman that kills shows the bronze loop. The floating text gives the rank's name in
+after JTMaston's reviews; 2 `Hussar` against 10 `Crossbowman`, both taking the defaults of their type):* each rank shows its
+mark over the unit's HP bar, clear of it and centred on it: a soutache knot of a hussar's uniform, shaded as polished metal: a
+bronze loop at rank 1, three round silver loops at rank 2, three eye-shaped gold loops at rank 3, five round gold loops at
+rank 4 and five eye-shaped gold loops at rank 5, with clear gaps between the loops; a Crossbowman that kills shows the bronze loop. The floating text gives the rank's name in
 its colour. A Hussar reaches rank 5. The five marks, enlarged 4 times:
 [veterancyBonus-marks-x4.png](media/veterancyBonus-marks-x4.png); at the game's own size (default camera, 1920 x 1080):
 [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png).
@@ -3927,8 +3928,17 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   three tiers in gold, rank 5 the same five loops eye-shaped in gold; no stars. A rank above the fifth keeps rank 5's mark.
   Each knot is symmetric, a cord shaded as polished metal (lighter toward the top left of each strand, darker toward the
   bottom right, a thin bright streak) with a thin black border; its two tails cross under the knot and run out left and
-  right, at the same lowest height for every rank. Ranks 4 and 5 are larger sprites around the same centre, so their tails
-  keep the same gap to the HP bar. With no such folder
+  right, at the same lowest height for every rank. Rounder loops and gaps between them since the second review.
+- **Centred on the HP bar (2026-11-20, a standing rule for every mark over a unit):** the mark is horizontally centred on the
+  unit's HP bar, never nearer one end. Before, the mark's sprite hung about 1.5 m higher than the bar, and in perspective a
+  higher point drifts away from the middle of the screen: measured at the default camera, 0 px for a unit at the screen's
+  centre but -5 px at 423 px left of it and +6.5 px at 418 px right of it. Now the sprite's centre is at the bar's own height
+  (2.9 m for infantry, 4.1 m for cavalry, 5.1 m for WoL's `AbstractElephant`) and the knot is drawn high inside the sprite,
+  which faces the camera, so it rises straight up on screen: measured within 1 px of the bar's centre for Crossbowmen and
+  Hussars, at the default camera and zoomed in, from the screen's centre to 250 px off it. Not fixable this way: an
+  elephant's bar is not over the unit's position (the `HITPOINTBAR` tag sits toward its head and turns with it), and a
+  particle hangs at the unit's position, so an elephant's mark is off its bar by up to about 13 px at a close camera,
+  depending on where the elephant faces. In the game: [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png). With no such folder
   the log says so once and the bonuses work as before. Display only: it
   changes nothing in the simulation. In the minimized interface the unit panel's row shows `Rank 3` and `3 kills`. The art is
   our own: DE's are images in its selection panel.
