@@ -6258,7 +6258,7 @@ shipTechLimit [notext] [log]
   a save at 3 of 3 and its load (`game start or load: player 1 has 3 of 3`, a fourth still refused); a player of a civ
   without the tag (Egyptians) researched five; the key off (control video); a skirmish against a German AI with the key
   on (the AI played, no `XS: Error`); beside WoL's own DLL (our `dinput8.dll`, `C:\WoL-Test`'s `uhc.dll`: both keys
-  applied, the fourth research refused). Not tested: a WallMapu skirmish with its home city, multiplayer.
+  applied, the fourth research refused); `researchGrants` on the shared rollover with both keys on: its `Free` word and green line as before ([picture](media/shipTechLimit-researchGrants-regression.png)). Not tested: a WallMapu skirmish with its home city, multiplayer.
 
 #### homeCityTechsInUnits
 
