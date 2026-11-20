@@ -24,7 +24,8 @@
 // - 0x4620B9: a tech skips the "can research here" and status tests but keeps the stock
 //   prerequisite test (0x4C7330, 0x4C5DDA): one waiting for another tech stays hidden, and one
 //   waiting for an age gets its age mark, as on a real Trading Post;
-// - 0x462317: every button of the preview is disabled and gets no command.
+// - 0x462317 (the shared button hook, panelbuttons.*): every button of the preview is disabled and gets
+//   no command.
 //
 // A socket gets a preview when its proto carries NativeSocket (and, with "tagged", the tag
 // <NativePreview/>), names a <SubCiv>, and no building of its socket type stands on it (0xA01A20,
@@ -40,6 +41,7 @@
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
+#include "../panelbuttons.h"
 #include "../patch.h"
 #include "../prototags.h"
 #include "../unittypes.h"
@@ -53,7 +55,6 @@ void UhcNpGateHook();
 void UhcNpProtoHook();
 void UhcNpCollectHook();
 void UhcNpTechLayoutHook();
-void UhcNpButtonHook();
 }
 
 namespace {
@@ -290,6 +291,17 @@ void LogPreview(const char* unit, const Preview& preview, const char* database, 
            g_buildingName.c_str());
 }
 
+// In a preview every button is disabled (its age mark stays as the stock code set it) and has no command for a
+// click or a shift-click.
+void PreviewButton(const uhc::PanelButton& button) {
+  if (g_uhcNpActive == 0) {
+    return;
+  }
+  button.State() = 1;
+  button.Click()[0] = 0;
+  button.ShiftClick()[0] = 0;
+}
+
 }  // namespace
 
 extern "C" {
@@ -386,7 +398,7 @@ Outcome ApplyNativePreview(const Config& config) {
     return Outcome::kFailed;
   }
   if (!RequestAbstractUnitType("NativeSocket", &g_nativeSocketType) || !OnDatabaseLoad(&ForgetData) ||
-      !AddProtoTagHandler("NativePreview", &ReadTag)) {
+      !AddProtoTagHandler("NativePreview", &ReadTag) || !AddPanelButtonFilter(&PreviewButton)) {
     return Outcome::kFailed;
   }
   struct Jump {
@@ -398,7 +410,6 @@ Outcome ApplyNativePreview(const Config& config) {
       {sites::kNpSocketPanel, &UhcNpSocketPanelHook, 12}, {sites::kNpSubCiv, &UhcNpSubCivHook, 7},
       {sites::kNpGate, &UhcNpGateHook, 9},                {sites::kNpProto, &UhcNpProtoHook, 9},
       {sites::kNpCollect, &UhcNpCollectHook, 6},          {sites::kNpTechLayout, &UhcNpTechLayoutHook, 7},
-      {sites::kNpButton, &UhcNpButtonHook, 7},
   };
   for (const Jump& jump : jumps) {
     if (!WriteJmp(jump.site.va, reinterpret_cast<const void*>(jump.hook), jump.size)) {
