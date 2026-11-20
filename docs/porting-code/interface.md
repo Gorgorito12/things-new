@@ -6828,7 +6828,7 @@ END
 
 Contract: [transformChecks](../porting-to-another-dll.md#transformchecks).
 
-Sites: `BStringAppend` `0x443960` (16 B), `CostListCtor` `0x44717F` (9 B), `CostListDtor` `0x44C817` (11 B), `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `PlayerProtoEntry` `0x45311B` (8 B), `CurrentSelectionGroup` `0x453B28` (33 B), `NpButton` `0x462317` (13 B), `BuildLimitEntry` `0x4C7B5F` (5 B), `BStringFromId` `0x58EA52` (25 B), `ProtoByName` `0x5A2346` (32 B), `XformExecBody` `0x7D652D` (190 B), `XformPlaceTest` `0x7D65E3` (15 B), `XformRefuse` `0x7D6762` (9 B), `PayAffordCheck` `0x8D6BAE` (30 B), `PaySharedAffordCheck` `0x8D6C1B` (26 B).
+Sites: `BStringAppend` `0x443960` (16 B), `CostListCtor` `0x44717F` (9 B), `CostListDtor` `0x44C817` (11 B), `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `PlayerProtoEntry` `0x45311B` (8 B), `CurrentSelectionGroup` `0x453B28` (33 B), `NpButton` `0x462317` (13 B), `BStringFromId` `0x58EA52` (25 B), `ProtoByName` `0x5A2346` (32 B), `XformExecBody` `0x7D652D` (190 B), `XformPlaceTest` `0x7D65E3` (15 B), `XformRefuse` `0x7D6762` (9 B), `PayAffordCheck` `0x8D6BAE` (30 B), `PaySharedAffordCheck` `0x8D6C1B` (26 B).
 
 ### src/features/transformchecks.cpp
 
@@ -7208,10 +7208,12 @@ Outcome ApplyTransformChecks(const Config& config) {
       return Outcome::kFailed;
     }
   }
+  // The build limit 0x4C7B5F is only called, never written, and is not verified: sharedBuildLimit replaces its first
+  // bytes with a jmp to its own entry, and a call through that hook gives the shared limit, which is the one to check.
   if (!VerifyAll("transformChecks",
                  {&sites::kXformExecBody, &sites::kXformPlaceTest, &sites::kXformRefuse, &sites::kCostListCtor,
                   &sites::kCostListDtor, &sites::kPlayerById, &sites::kUnitById, &sites::kPlayerProtoEntry,
-                  &sites::kProtoByName, &sites::kBuildLimitEntry, &sites::kPayAffordCheck,
+                  &sites::kProtoByName, &sites::kPayAffordCheck,
                   &sites::kPaySharedAffordCheck, &sites::kCurrentSelectionGroup, &sites::kBStringFromId,
                   &sites::kBStringAppend})) {
     return Outcome::kFailed;

@@ -10,7 +10,7 @@
 // The data file veterancy.xml (the build's data folder, hostfiles.h) holds what is not per proto:
 //   <Veterancy>
 //     <VeterancyDefault unittype="AbstractInfantry"> <VeterancyBonus .../> ... </VeterancyDefault>
-//     <VeterancyRank rank="1" name="Veteran" color="B08D57"/>
+//     <VeterancyRank rank="1" name="Veteran" color="DA8228"/>
 //   </Veterancy>
 // A default's rows go to every proto of that unit type with no rows of its own (the first default in the file
 // whose type the player's proto has); a proto's own rows replace the defaults entirely. A rank's name (a text,
