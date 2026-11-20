@@ -6493,6 +6493,7 @@ What happens when a tech activates or a unit changes proto.
 | [`orPrereqsQty`](#orprereqsqty) | `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | **new** | The attribute on the techs that want it. | confirmed (single player) |
 | [`shipmentCounts`](#shipmentcounts) | Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | **new** | The effect in the cards or techs that want it. | confirmed (single player) |
 | [`kothTimer`](#kothtimer) | The King of the Hill time comes from a table by the number of players, or of teams. | **new** | Nothing. | confirmed (single player) |
+| [`transformChecks`](#transformchecks) | A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | **new** | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. | confirmed (single player) |
 
 #### hcTargetTechs
 
@@ -6894,6 +6895,68 @@ unitTypeTechs [log]
   healed his fighting Tomahawk ([`healNonIdle`](#healnonidle), `busyRate=50`), which lost 4.3 HP/s and won at 77.6 HP, and had taken
   it to 165 of 150 before ([`overhealSources`](#overhealsources), `cap=110`); Player 2's healer, without the techs, never healed his
   Tomahawk during the fight (6.3 HP/s, dead at 36 s) and left it at 150.
+
+#### transformChecks
+
+*A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit.*
+
+![transformChecks in WoL](media/transformChecks-wol.gif)
+
+*In WoL, with `transformChecks log` and `wol-fixes/special-transforms` (a scenario, Zulu youths in the Fortress age, a
+Gunpowder Kraal in the middle):* three youths are selected, two near the kraal and one 28 m away. The Askari button's
+tooltip says `2 / 3` and why the third cannot; a click turns the two near ones into Askari maturing units (the cost is
+paid twice) and their Askaris come out; the far youth stays, and with it alone the button is grey with the kraal rule
+in red. [Full video (MP4)](media/transformChecks-wol.mp4).
+
+![transformChecks in WoL, key off](media/transformChecks-wol-control.gif)
+
+*In WoL, key off, the pack applied (the same scene):* the button is the pack's, so the click transforms the same two
+youths: the kraal rule is the game's. The far youth stays too, but nothing says why, and the button stays enabled.
+[Full video (MP4)](media/transformChecks-wol-control.mp4).
+
+```
+transformChecks [log]
+```
+
+- **What it is for:** buttons whose `<command>` is `uiTransformSelectedUnit("<proto>")`, such as the Zulu youth's
+  maturings and, with the pack `wol-fixes/special-transforms`, the four kraal maturings and the Greek fireship (WoL
+  #73). The transform itself needs no key: the game sends the command to every machine and, for each selected unit
+  on its own, checks the target proto's `PlacementFile` rules and `AllowedAge` at the unit's position (so the
+  kraal rule `distanceatmostfromtype ... AFRICANgunpowderkraal` of `maturinggunpowder.xml` applies to a button
+  too), charges the target's cost, and puts the target, built, where the unit stood.
+- **What the key adds:**
+  - **the button:** for each of your selected units the panel asks the same checks (the cost, the build limit, the
+    placement). With none that passes, the button is grey, a click does nothing, and the tooltip ends with the
+    reason in red: the placement rule's own `errorstringid` text ("This unit must be matured near a Gunpowder
+    Kraal."), "Not enough resources" or "You are at the build limit for the …". With some that pass, the tooltip
+    says how many ("2 / 3: …") and the click transforms those. Without the key the button is always enabled and a
+    refused unit does nothing, silently;
+  - **the build limit:** a target whose `<BuildLimit>` the player's living units of that proto reach is refused, unit
+    by unit, before the payment. Without the key six fishing boats pressed together made six `PyrpolikoMaturing`
+    with a limit of 5.
+- **The data:** the target must not collide with the unit that becomes it: give it `<Flag>NonCollideable</Flag>`
+  (WoL's `WOL*Maturing` protos have it; the pack adds it to the five others). Otherwise the transform is refused as
+  "Other objects prevent you from placing this here". A button on a proto every civ has (the fishing boat) needs
+  `<associatedtech>` in its `protounitcommands.xml` entry, or every civ sees it: the game does not check, when the
+  command runs, that the target is enabled for the player.
+- **Shared:** the command panel's button hook (0x462317) with [`nativePreview`](#nativepreview).
+- **Simulation:** the build limit, yes: everyone needs the key. The button is interface only.
+- **Log:** `transformChecks: … applied`; with `log`, a line when a button's answer changes (`button
+  AFRICANaskariMATURING: 0 of 1 selected unit(s) can transform; This unit must be matured near a Gunpowder Kraal.`)
+  and one per refused unit (`unit 1 of player 1 refused: at the build limit of PyrpolikoMaturing (5)`).
+- **Saved games:** the key keeps no state; the maturing units and the limit count are the game's.
+- **Status:** confirmed (2026-11-20, single player, WoL, scenarios; screenshots in `wol-fixes/special-transforms/final`):
+  youths 6 m and 18 m from a Gunpowder Kraal transformed, 28 m and 32 m refused with 72617's text; the Horse Kraal
+  the same (10 m yes, 28 m no, 72616); a group of three gave `2 / 3` and two transforms; 30 gold left: "Not enough
+  resources" on every button that costs gold; seven Greek fishing boats pressed together made five `PyrpolikoMaturing`
+  (limit 5) and the two others were refused, their button then grey with "You are at the build limit for the
+  Pyrpoliko."; key off, six boats made six (the sixth Pyrpolikon never came: its own limit is 5); a player without
+  `Age0Greeks` had no fireship button (the pack's `<associatedtech>`), and with the console command still transformed
+  (the game does not check that the target is enabled); beside WoL's DLL (`dinput8.dll`) both
+  hooks were reached and the same group gave `2 / 3` and two transforms; `nativePreview` still applied with the shared
+  hook. Not tested: multiplayer, an AI game with the pack (WoL's AI builds these maturing protos with build plans, which
+  do not need the `<Train>` rows the pack removes: an inference), the reload of a game saved during a maturing (the
+  console `loadGame` did not visibly reload).
 
 ### Interface
 

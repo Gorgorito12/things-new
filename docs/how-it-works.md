@@ -1999,7 +1999,8 @@ effect (vtable `0xB9E5A8`) of subtype `Enable` (`[+0Ch]` = 10h) with an amount `
   would put in a big-button slot (tech flags 27, 36, 37, 39) go to the next entry.
 - `0x4620B9`: a tech skips "can research here" and the status tests, keeps the prerequisite test (so a tech that waits
   for another tech stays hidden and an age prerequisite gives the age mark), and goes to the build-up as disabled.
-- `0x462317`: every button of a preview is disabled and its two command strings are emptied.
+- `0x462317` (the shared button hook, `panelbuttons.*`, also used by `transformChecks`): every button of a preview is
+  disabled and its two command strings are emptied.
 
 **Why it is safe.**
 - Nothing writes game state: the hooks change which panel the chooser keeps, which entries the refresh collects and how
@@ -4576,6 +4577,46 @@ map explored at 3 / 6 minutes without the key, 63.7 % / 100 % with it. The Dutch
 71.1 %. A scan: about 50 µs with two scouts on 155 × 155 cells (with `log`, the order lines make the first scans cost
 milliseconds).
 <!-- private:end -->
+
+### transformChecks
+
+**The stock transform.** `uiTransformSelectedUnit("Proto")` (UI command 0x7E7193) looks the proto up and sends a
+network command, type 17h, for the selection; every machine runs it in the world update. Its per-unit execute
+FUN_007D64F7 (`thiscall(cmd, unit)`, vtable `+54h`), for each selected unit on its own: the player (0x44CB21) and its
+copy of the target (0x45311B, kept at `[esp+14h]`), the target's cost (0x480B1E into a cost list at `[esp+18h]`), the
+unit alive and owned by the command's player, then **PLACE**, world vtable `+14h` (FUN_0050703D), with `(protoId,
+playerId, &unit+14h, &unit+20h, &unit+38h, 0, 2, int* reason, 0, 0, 0)`; then, with the command's payment flag
+`[cmd+90h]`, the payment 0x8D946A (or the "not enough resources" message 42A8h to the local player); then the target,
+created by 0x498ACC at the unit's position and completed by 0x6A1F82 when the unit was built, and the unit removed.
+PLACE applies the target's placement rules and its allowed age (in game: a youth 6 m and 18 m from a gunpowder kraal
+became an Askari maturing, one 32 m away did not); its eighth argument receives the failing rule's `errorstringid`
+(72617 for the gunpowder kraal rule, read in game). The unit itself is an obstruction for the target unless the target
+is `NonCollideable`. Nothing tests the target's build limit.
+
+**The build limit.** The hook at 0x7D65E3 replaces `test al,al / je 7D6762h`, right after PLACE. A refusal of PLACE
+goes to the stock refusal 0x7D6762 (the cost list's destructor, `xor al,al`, `ret 4`). An acceptance calls
+`UhcXformAllowed(player, playerProto, unit)` inside `pushad`: the limit is 0x4C7B5F on the player's copy (−1: none),
+the count the player's living units of the proto ID, from its unit list `[player+F8h]` (count `+FCh`) through the
+unit table. At the limit, the refusal; else the stock continuation 0x7D65EB (the payment). A command for six units
+runs the execute six times in a row, and each new unit is in the list at once, so the sixth sees five.
+
+**The button.** The command panel's button hook (`panelbuttons.*`, at 0x462317, where every grid button joins with its
+state `[esp+24h]`, its click and shift-click commands `[esp+1C0h]` / `[esp+3C0h]` and its rollover BString
+`[esp+18h]`, filled by the command layout at 0x695D60..0x695D82) runs the key's filter. For a click command
+`uiTransformSelectedUnit("Name")` it asks, for the local selection (0x453B28; only when its player `[sel+0Ch]` is the
+local player): the cost once (0x480B1E, then 0x8D6BAE or 0x8D6C1B with shared resources, `[world+6912h]`), the limit
+(as above, counting the units already accepted in this selection), and PLACE for each selected unit with the same
+arguments as the command. No unit passes: state 1 (grey), both commands emptied, and a red line appended to the
+rollover (0x443960): the string of PLACE's reason, or 25528, 41543, 36198 (with the target's display name
+`[proto+140h]`, read in game). Some pass: a yellow "N / M:" line with the first reason. The answer is kept 250 ms of
+real time per target name and selection.
+
+**Why it is safe.** The hook keeps every register but EAX, which neither continuation reads before loading it again
+(AL only fed the test it replaces); the frame (`[esp+14h]`, `[esp+30h]`) is the execute's own, checked by the site
+`XformExecBody`. The count reads simulation state only, walks a list in its own order and decides the same on every
+machine; the log never feeds back. The button filter is interface only: it reads the local selection and calls PLACE
+and the cost getter, which only read (PLACE is what the AI calls to test build spots), and changes only the button.
+`nativePreview` and this key add their filters to the one hook.
 
 ### customWalls
 

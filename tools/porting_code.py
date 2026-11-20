@@ -151,6 +151,8 @@ PAGES = {
         "minUIStats": ["src/features/minuistats.cpp", "src/hooks/minuistats_hooks.asm"],
         "playerIcon": ["src/features/playericon.cpp", "src/hooks/playericon_hooks.asm"],
         "autoScout": ["src/features/autoscout.cpp", "src/hooks/autoscout_hooks.asm"],
+        "transformChecks": ["src/features/transformchecks.cpp", "src/hooks/transformchecks_hooks.asm",
+                            "src/panelbuttons.cpp", "src/panelbuttons.h", "src/hooks/panelbuttons_hooks.asm"],
     }),
 }
 
