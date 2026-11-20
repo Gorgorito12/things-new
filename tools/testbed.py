@@ -61,6 +61,8 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   skirmish [--map]          from the main menu to a running skirmish with posted clicks only (no
                              cursor, no focus); --map plays the map `map uhcsheep ...` wrote
   click <x> <y> | rclick <x> <y> [right]   posted click / real click (moves the cursor)
+  hover <x> <y>              rest the cursor on a client point, so its tooltip shows: a posted move in
+                             a copy with multipleInstances background, else the real cursor
   drag <x1> <y1> <x2> <y2>   real left drag (box selection), client coordinates
   wheel <x> <y> <steps> [--hold key]  real mouse wheel at a client point (+ zooms in, - out), a key held
   front                      keep the game window above every other window and focus it
@@ -1850,6 +1852,8 @@ def main(argv):
         skirmish(bed, "--map" in args)
     elif cmd == "click":
         posted_click(int(args[0]), int(args[1]))
+    elif cmd == "hover":
+        hover(int(args[0]), int(args[1]))
     elif cmd == "rclick":
         real_click(int(args[0]), int(args[1]), len(args) > 2 and args[2] == "right")
     elif cmd == "drag":
