@@ -31,7 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Friday 2026-11-20 11:57 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
+| Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
 | Friday 2026-11-20 11:50 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | The tag on the civ in `civs.xml`. |
 | Friday 2026-11-20 11:50 | [`homeCityTechsInUnits`](#homecitytechsinunits) | Added. A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | The card's tech in the `<Tech>` rows, made obtainable for the civ. |
 | Friday 2026-11-20 11:28 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
@@ -1607,7 +1607,7 @@ ageUpBuildings [log] Proto [Proto ...]
 
 *An immigrant politician shows its flag apart from the techs it unlocks, each tech with its icon, name and rollover.*
 
-**Added:** Friday 2026-11-20 11:15 · **Filmed in WoL:** Friday 2026-11-20 11:57
+**Added:** Friday 2026-11-20 11:15 · **Filmed in WoL:** Friday 2026-11-20 11:59
 
 ![politicianEnablesTech in WoL](media/politicianEnablesTech-wol.gif)
 
