@@ -367,6 +367,29 @@ rounded up (4 at 452 s, 5 at 491 s, in game). The hooks at `0x7FA6ED` (61 B, res
 `[esp+24h]`) and `0x8D8C88` (53 B, result in `[esp+38h]`) replace the computation with
 `-amount × min([world+108h] / 120000, 15)`.
 
+### truckAttackResourceFix
+
+**The stock action.** A tactics action of type `TruckAttack` (action type 42h, name at 0xBD7AC4, registered at
+0x522DB0) is BUnitTruckAttackAction, vtable 0xB98468. Its update (slot 3Ch, 0x9EC6D4) waits for the game time
+`[action+64h]`, sets the next one 195–205 ms later (0x9EC4B0, the synced RNG stream 2) and runs the hit 0x9EC4E1:
+the units within `[action+24h]` (the action's `maxrange`) of its owner `[action+10h]` (0x4A1C55), and for each one
+of another player that is alive, has hit points, is not dead (0x4802C6), is built (0x44DDB4), passes 0x482865 and
+0x48E237, it first resets the target's resource inventory `[[unit+0B4h]+94h]` (0x58F070 on `+4`: every resource of
+the obfuscated array, `[0C6DF38h]` of them, set to 0 xor its key at 0xC6DF14), then deals the damage (0x49B3D9, or
+0x499422 for a proto without abstract index 12h). The reset is what a trample of a hunt needs; on a building that
+holds resources (a Mill, a plantation, a rice paddy: food or gold 999 with `UnlimitedSupply`) it leaves it at 0 for
+good, and the gather action refuses an empty target. Observed in game with the inventory read from memory: a Mill
+next to an enemy monster truck, or under an enemy mustard gas, went from 999 to 0.
+
+**The hook.** At 0x9EC635 (`mov edx,[edi+0B4h]`, 6 bytes; EBP = the action, EDI = the target, EBX = 0),
+`UhcTruckInventoryHook` calls `UhcTruckKeepsInventory(action, target)`: true for a proto of abstract index 2 (a
+building, 0x44CAC4). Then it goes on at the damage, 0x9EC64D; otherwise it re-executes the `mov` and goes on at
+0x9EC63B, the stock reset.
+
+**Why it is safe.** EAX, ECX and EDX are written before they are read on both continuations (0x9EC63B loads EAX
+and ECX; 0x9EC64D loads ECX, and its branches load EAX and EDX); EBX, ESI, EDI and EBP are kept by the stdcall
+callee. The test reads only the target's proto, the same on every machine. Units are reset as in stock.
+
 ### nowalkfarm
 
 The gather action calls `0x9DDADE` (the spot picker that `farmingRadius` hooks) at `0x6A9067` each

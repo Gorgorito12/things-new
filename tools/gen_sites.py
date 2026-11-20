@@ -1462,6 +1462,11 @@ SITES = [
     # proto flag 9Ch (Invulnerable) test: cmp [ecx+54h],9Ch / jbe 49B40Fh / ... / ja 4CA52Bh
     # (no damage) (22 B)
     ("DamageInvulnerableTest", 0x49B3F3, 0x16),
+    # truckAttackResourceFix: the TruckAttack hit (BUnitTruckAttackAction, vtable 0xB98468, update slot 3Ch
+    # 0x9EC6D4 -> 0x9EC4E1; EBP = the action, EDI = the target in its loop over the units in range, EBX = 0):
+    # mov edx,[edi+0B4h] / mov eax,[edx+94h] / cmp eax,ebx / je 9EC64Dh / lea ecx,[eax+4] / call 58F070h, which sets
+    # every resource of the target's inventory to 0 (the obfuscated array of 0x58F070), then the damage at 0x9EC64D
+    ("TruckAttackInventoryReset", 0x9EC635, 0x18),
     # fallenHeroTacticsFix: four places reset the unit AI's tactic ([ai+A8h]) to 0 through
     # 0x4F7389 (thiscall(ai, int tactic), ret 4) when it is not 0 already: push ebx|0 / call 4F7389h
     ("TacticReset1", 0x6AAE6D, 0x06),

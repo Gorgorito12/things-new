@@ -1320,6 +1320,22 @@ rest by capstone (`cs`), memory reads and a read breakpoint (`trace_writes.py --
 | `kbCanPath2` | 0x8827CC | REA | Goes through the AI knowledge base of the AI player `[0xC66664]` (`[player+80h]`, 0x87157B): not usable from simulation code for every player. |
 | Animal wander | `BUGA::doWander` 0x4E35B9 (from 0x4E35AA) | REA | Only for a herded unit: the herd of `[mgr+ACh]` in the herd manager `[world+C0h]` (centre `[herd+4]`/`+0Ch`, radius `[herd+20h]`), a child move every 120 s. Cfg `noWander` at 0xD98F88 (every animal). `<WanderDistance>` is `[proto+C8h]` (0x5FC783); `<Flag>Wanders</Flag>` is bit 0 of `[[proto+50h]+4]`. WoL's raven has no herd (`[mgr+ACh]` = -1 in game): its circle came from the leash, not from the wander. |
 
+### The TruckAttack action and resource inventories (for `truckAttackResourceFix`, WoL #75, 2026-11-20)
+
+Evidence: REA `ev_f509cc12…` (the string `TruckAttack` 0xBD7AC4, referenced by 0x522DB0, the action type names),
+`ev_29d92241…` (the vtable 0xB98468); bundle `rea/evidence/wol-20261120-G/age3y-truckattack.json`. Ghidra has no
+function at the action's methods, so they were read with capstone (`rea/evidence/wol-20261120-G/truckattack_cs.txt`).
+In game (WoL copy, 2026-11-20): the action list of an enemy `MonsterTruckA`, and the inventory of Mills read from
+memory (`inv.py` in the same folder).
+
+| Name | Address | Status | Notes |
+|---|---|---|---|
+| Action type `TruckAttack` | 42h (name 0xBD7AC4, registered at 0x522DB0 in the type name list FUN_0052277E) | confirmed (REA, in game) | The tactics `<type>TruckAttack</type>`. In game the truck's action had vtable 0xB98468 and type byte 42h at `+60h`. |
+| TruckAttack update | 0x9EC6D4, slot 3Ch of 0xB98468 | confirmed (`cs`) | When the game time `[world+108h]` reaches `[action+64h]`: 0x9EC4B0 (next time = now + 195 + rand(0..10) ms, synced RNG stream 2), then the hit 0x9EC4E1. |
+| TruckAttack hit | 0x9EC4E1, `thiscall(action)` | confirmed (`cs`, in game) | The units within `[action+24h]` of the owner `[action+10h]` (0x4A1C55 into the static list 0xDD0100); per unit of another player: alive (vtable +A4h), `[unit+64h]` > 0, not dead 0x4802C6, built 0x44DDB4, not 0x482865, 0x48E237(player); then **0x58F070 on `[[unit+0B4h]+94h]+4`** (0x9EC635..0x9EC648: the target's inventory set to 0), then the damage: 0x49B3D9 for a proto of abstract index 12h (0x9EC699), else 0x499422 (0x9EC6B6). Site `TruckAttackInventoryReset` (`truckAttackResourceFix`). |
+| Resource inventory | `[[unit+0B4h]+94h]`: `+4` the array, one obfuscated float per resource (`[0C6DF38h]` of them; value = dword xor `[0C6DF14h + 4·i]`), `+8` a total (xor `[0C6DF10h]`) | confirmed (in game) | A Mill reads food 999; after an enemy mustard gas or monster truck, 0 everywhere. The same keys as the player stockpile `[player+230h]`. |
+| Inventory reset | 0x58F070, `thiscall(inv + 4)` | confirmed (`cs`) | Writes 0 xor key to `+4` (the total) and to every array entry. |
+
 ### LAN lobby slots and avatars (for `playerIcon`, 2026-11-13)
 
 REA (Ghidra 12.1.4) and capstone (`cs`) on the stock exe; bundles `rea/evidence/age3y-b1a1dab7/lobby-avatar-59-20261113.json` and `player-icon-59-20261113.json`. The study is in [de-parity.md](de-parity.md#59-player-icons-in-lan-lobbies-two-copies-on-one-pc).
