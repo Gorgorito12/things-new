@@ -61,7 +61,9 @@ Mapuche (#72): keys shipTechLimit and homeCityTechsInUnits, wol-fixes\mapuche\
   still deliver to the Warchief, because the game uses the Daimyo type as a fallback shipment point. What should the
   check be: a Town Center drawn black, a destroyed one, or no shipment point at all?
 Questions: should a repeatable tech (crates) count every time (as now) or once? Should a HomeCity tech on a unit be
-researchable when its card is not in the deck?
+researchable when its card is not in the deck? And when a unit researches a HomeCity tech whose card IS in the player's
+deck, what should the card do: grey out as sent, or stay? We could not test it: HCNativeLore is not one of the 6 cards
+of homecitymapuche.xml, so no WallMapu deck holds it. If you have a deck with such a card, tell us which.
 
 Special transforms (#73): key transformChecks, wol-fixes\special-transforms\
 --------------------------------------------------------------------------
@@ -113,6 +115,15 @@ empty for the rest of the game ("Current Gatherers: 0", still so 6 minutes later
 each one still emptied the Mill or did no damage. POWERtornado, POWERIncendio and the monster truck do the same.
 With the new key, a building hit by a TruckAttack keeps its resources. The damage is unchanged (352 against 357 HP/s on
 a test target).
+
+All together (wol-fixes\final-check-20261120\)
+-----------------------------------------------
+- With our UHC.dll alone, every key of the cfg template on and every pack above applied: 126 keys applied, 0 failed.
+  The test was a WallMapu skirmish against a German AI on Acre. The AI played (39 units at 9:30) and there was no XS
+  error.
+- Beside your own uhc.dll (with our dinput8.dll): 91 applied and 27 failed. The 27 are sites your DLL already holds,
+  as expected. Every new key of this round applied. minUIStats applies, but your DLL holds the building armor row's
+  site, so that row does not show.
 
 Auto scout (#68), as you discussed with us
 ------------------------------------------
