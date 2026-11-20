@@ -31,15 +31,16 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-20 12:52 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
 | Friday 2026-11-20 12:30 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 12:00 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
 | Friday 2026-11-20 11:59 | [`researchOnTheMove`](#researchonthemove) | Added. A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. |
 | Friday 2026-11-20 11:50 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | The tag on the civ in `civs.xml`. |
 | Friday 2026-11-20 11:50 | [`homeCityTechsInUnits`](#homecitytechsinunits) | Added. A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | The card's tech in the `<Tech>` rows, made obtainable for the civ. |
+| Friday 2026-11-20 11:39 | [`truckAttackResourceFix`](bug-fixes.md#truckattackresourcefix) | Added. A `TruckAttack` (the mustard gas, the tornado, the fire power, the monster truck) no longer empties the Mills, plantations and other gather buildings it hits, so villagers can still gather there afterwards. | Nothing. |
 | Thursday 2026-11-19 15:22 | [`attackTypeIcons`](#attacktypeicons) | Filmed in WoL, with a control. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
 | Thursday 2026-11-19 15:22 | [`multiplierDecimals`](bug-fixes.md#multiplierdecimals) | Filmed in WoL, with a control. The attack rows' bonus multipliers show two decimals, as the data has them: `1.25x` instead of a rounded `1.3x`, in both panels and their tooltips. | Nothing. |
-| Thursday 2026-11-19 14:11 | [`autoScout`](#autoscout) | Added. A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon and the envoy. |
 | Tuesday 2026-11-17 14:11 | [`preloadDll`](#preloaddll) | Added. Our `dinput8.dll` also loads another DLL of the game folder, such as WoL's `WoL.dll`, at the moment WoL's own `dinput8.dll` loader would. | Nothing. |
 | Tuesday 2026-11-17 10:30 | [`minUIStats`](#minuistats) | Filmed in WoL, with a control. The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. |
 | Friday 2026-11-13 17:27 | [`killSpawn`](#killspawn) | Filmed in WoL, with a control. A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | The tags on the civ in `civs.xml`. |
@@ -7248,7 +7249,7 @@ What the panels and the fog of war show.
 | [`attackTypeIcons`](#attacktypeicons) | A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | **in `wol.cfg`** | Nothing: the line of `wol.cfg`. | confirmed (single player, UI) |
 | [`minUIStats`](#minuistats) | The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | **new** | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. | confirmed (single player, UI) |
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
-| [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon and the envoy. | confirmed (single player) |
+| [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. | confirmed (single player) |
 
 #### nativePreview
 
@@ -8091,9 +8092,9 @@ playerIcon <avatarId>
 
 #### autoScout
 
-*A unit explores the map on its own, unexplored ground first, as DE's envoys do: a tactic in its tactics file switches it on, and any order switches it off.*
+*A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off.*
 
-**Added:** Thursday 2026-11-19 14:11 · **Filmed in WoL:** Thursday 2026-11-19 14:11
+**Added:** Thursday 2026-11-19 14:11 · **Filmed in WoL:** Friday 2026-11-20 12:52
 
 ![autoScout in WoL](media/autoScout-wol.gif)
 
@@ -8109,20 +8110,35 @@ the minimap stays as it was at the start: 9.4 % explored at 3 minutes, 9.7 % at 
 
 [Full video (MP4)](media/autoScout-wol-control.mp4).
 
+![autoScout backs off when hit](media/autoScout-back-wol.gif)
+
+*In WoL, with `autoScout log` (2026-11-20; a test map with four enemy outposts and two groups of enemy Musketeers, the
+camera on the selected Explorer, which scouts with the Envoy):* the Explorer sees an outpost, is shot, marks the
+danger and moves out of the outpost's reach, then scouts elsewhere; the log lines at the bottom say each step. 346 of
+its 400 hit points left at 91 s. [Full video (MP4)](media/autoScout-back-wol.mp4).
+
+![autoScout without the danger parts](media/autoScout-back-wol-control.gif)
+
+*The same map with `autoScout noAvoid noBack` (the behaviour of 2026-11-19):* the Explorer keeps to its targets when
+shot and is at 290 hit points at 87 s. On this map the difference shows over minutes more than in one clip: see the
+status below. [Full video (MP4)](media/autoScout-back-wol-control.mp4).
+
 ![The minimap at 3 and 6 minutes](media/autoScout-minimaps.jpg)
 
 *The minimap of the two games at 3 and 6 minutes of game time: the share is the player's explored grid, read from
 the game (`testbed.py explored`).*
 
 ```
-autoScout [ScoutTactic [ReturnTactic]] [log]
+autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
 ```
 
 - **What a modder writes:** a tactic named `AutoScout` (or `ScoutTactic`) in the unit's tactics file, and two buttons
   whose `<command>` is `unitSetTactic("AutoScout")` and `unitSetTactic("Normal")`. A unit whose **first** tactic is
   the scouting one scouts from birth; with it second, it scouts when the button is pressed. The pack
   `wol-fixes/auto-scout` (`apply_fix.py <WoL folder>`, `--restore` to undo) does it for the raven, the two pet parrots,
-  the French balloon and the Dutch envoy, and its README says how to do it for any unit:
+  the French balloon, the Dutch envoy and the European explorers (`Explorer` and `WOLcartographer`, off at birth, with a
+  scouting copy of their `Volley` tactic that neither attacks on its own nor answers an attack, and runs away when hit),
+  and its README says how to do it for any unit:
 
   ```xml
   <tactic>AutoScout<action>Move</action>
@@ -8144,6 +8160,16 @@ autoScout [ScoutTactic [ReturnTactic]] [log]
   take the same 16 m block. A scout that stops short of its target, or takes more than 90 s, gives that block up (an
   island, a cliff). With the whole map explored, it flies to the block not in sight that was seen longest ago.
   A fight, a flee or any other action is left alone: the scout goes on once it is idle.
+- **Danger** (both on unless `noAvoid` / `noBack`):
+  - *Enemy buildings that shoot:* once the player has seen an enemy building with a ranged or siege attack (a Town
+    Center, an outpost, a tower, a fort), its range plus 12 m is no target any more, and a target whose straight line
+    crosses it is taken only when nothing else is left, not even ground to look at again. Only what the player has
+    seen counts.
+  - *Hit:* a scout that lost hit points since the last scan marks 2 minutes of danger around its attacker (the nearest
+    enemy, or Gaia, unit with an attack within 40 m; its reach + 16 m), gives up its target and moves out of the
+    attacker's reach (24 to 60 m away, instead of the game's own short flee), then scouts elsewhere. It stays in its
+    scouting tactic.
+  - A scout can still be shot before it sees what shoots it: an outpost can outrange a scout's line of sight.
 - **Switch-off:** a move, attack, gather, garrison or Stop order given by the unit's owner puts it back in its other
   tactic (`ReturnTactic`, else the first tactic of its file that is not the scouting one) before the order applies,
   as DE's Stop, Garrison and AttackMove do. The Stop-scouting button does the same. A scout stays where it is when it
@@ -8157,9 +8183,13 @@ autoScout [ScoutTactic [ReturnTactic]] [log]
   the game's own move order, and no network command is sent. Not tested in multiplayer.
 - **Saved games:** the tactic is saved with the unit, so a loaded game goes on scouting (tested); the key's own
   tables (targets, blocks given up) are rebuilt from the units and the grid.
-- **Cost:** a scan takes about 50 µs with two scouts on a 155 × 155-cell map. With `log`, the first orders write a
+- **Cost:** a scan takes about 50 µs with two scouts on a 155 × 155-cell map, about 90 µs with the danger tables (two
+  scouts, four enemy outposts, 130 × 130 cells). With `log`, the first orders write a
   line each, which costs milliseconds: keep `log` for testing.
-- **Log:** `autoScout: units in tactic 'AutoScout' explore the map on their own`; with `log`: `'AutoScout' is name 17`,
+- **Log:** `autoScout: units in tactic 'AutoScout' explore the map on their own`, `keeps away from enemy buildings
+  that shoot; backs off when hit`; with `log`: `player 1 sees player 2's unit 3 (proto 439) at (159.0, 147.0), range
+  40.0: avoided within 52.0 m`, `unit 1 hit at (…): unit 3 (proto 439, player 2) 21.4 m away; danger 56.0 m around it for
+  120 s`, `unit 0 backs off from (…) to (…): ordered`, `'AutoScout' is name 17`,
   `map of 155 x 155 cells`, a line per order (`unit 1280 (proto 2070, player 1, air) at (48.3, 131.6) -> unexplored
   cell (…), block 34: ordered`), `stopped … block 210 given up`, `got an order (command type 9): back to tactic 0`,
   and every 120 scans their cost.
@@ -8170,6 +8200,18 @@ autoScout [ScoutTactic [ReturnTactic]] [log]
   save and load kept it scouting, a raven killed while scouting and one killed after: no error. A/B with
   `perfprobe.py` (90 s, the same skirmish, two other games running on the machine): 628 fps against 589, main thread
   87 % against 89 %, one 420 ms frame in the key-on run whose scans all took under 0.3 ms.
+  **Danger (2026-11-20, single player, WoL):** a 260 m test map, player 1 (Ethiopians) with an Explorer and an Envoy in
+  `AutoScout`, player 2 with four outposts and seven Musketeers. Key with `noAvoid noBack`: 61.5 % explored at 3 minutes,
+  70.5 % at 6; the Envoy was killed at about 4:50, the Explorer fell to 24 of 400 hit points at 2:00 and stood healing
+  for the last 4 minutes. Default key: 68.7 % / 79.4 %, both alive, the Explorer never below 211, the Envoy never hit.
+  Earlier builds of the same day showed the faults that were fixed: a scout let the game's short flee keep it in an
+  outpost's range, and a target past the danger was taken before ground to look at again. A skirmish on Acre against a
+  Moderate German AI (`wolOtto`), the Dutch Explorer put in `AutoScout` at 1:28: 17.5 % at 3:09, 40.5 % at 6:20, the
+  Explorer at full hit points; the AI went from 15 to 26 units, no XS error. The pack's explorer tactics were checked as
+  XML and in game (`unitSetTactic("AutoScout")` from the console; the two buttons were not clicked). Beside WoL's DLL
+  (`dinput8.dll`, its `uhc.dll`): applied, back-offs in the log. A/B with `perfprobe.py` (100 s, no `log`, the same
+  map, other games running on the machine): 1263 fps against 1278, update 0.134 ms against 0.140, main thread 79 %
+  against 75 %, one 67 ms frame with the key's danger parts on and none off.
 
 ## 6. Editing the game data
 

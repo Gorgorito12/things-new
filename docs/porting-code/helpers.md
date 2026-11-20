@@ -1922,6 +1922,9 @@ inline constexpr Site kStunTargetCheck{"StunTargetCheck", 0x009E909E, kStunTarge
 inline constexpr std::uint8_t kDamageInvulnerableTestBytes[] = {0x81, 0x79, 0x54, 0x9C, 0x00, 0x00, 0x00, 0x76, 0x13, 0x8B, 0x41, 0x50, 0x8A, 0x50, 0x13, 0x83, 0xE2, 0x10, 0x89, 0x54, 0x24, 0x08};
 inline constexpr Site kDamageInvulnerableTest{"DamageInvulnerableTest", 0x0049B3F3, kDamageInvulnerableTestBytes, sizeof(kDamageInvulnerableTestBytes)};
 
+inline constexpr std::uint8_t kTruckAttackInventoryResetBytes[] = {0x8B, 0x97, 0xB4, 0x00, 0x00, 0x00, 0x8B, 0x82, 0x94, 0x00, 0x00, 0x00, 0x3B, 0xC3, 0x74, 0x08, 0x8D, 0x48, 0x04, 0xE8, 0x23, 0x2A, 0xBA, 0xFF};
+inline constexpr Site kTruckAttackInventoryReset{"TruckAttackInventoryReset", 0x009EC635, kTruckAttackInventoryResetBytes, sizeof(kTruckAttackInventoryResetBytes)};
+
 inline constexpr std::uint8_t kTacticReset1Bytes[] = {0x53, 0xE8, 0x16, 0xC5, 0xE4, 0xFF};
 inline constexpr Site kTacticReset1{"TacticReset1", 0x006AAE6D, kTacticReset1Bytes, sizeof(kTacticReset1Bytes)};
 
@@ -2985,6 +2988,7 @@ Outcome ApplyGatherFix(const Config& config);
 Outcome ApplyRofFix(const Config& config);
 Outcome ApplyStunMovingTargetFix(const Config& config);
 Outcome ApplyNoDamageOnUnbuiltFoundations(const Config& config);
+Outcome ApplyTruckAttackResourceFix(const Config& config);
 Outcome ApplyFallenHeroTacticsFix(const Config& config);
 Outcome ApplyImpactBoneFix(const Config& config);
 Outcome ApplyCustomImpactTypes(const Config& config);
@@ -3105,6 +3109,7 @@ inline constexpr Feature kFeatures[] = {
     {"rofFix", ApplyRofFix},
     {"stunMovingTargetFix", ApplyStunMovingTargetFix},
     {"noDamageOnUnbuiltFoundations", ApplyNoDamageOnUnbuiltFoundations},
+    {"truckAttackResourceFix", ApplyTruckAttackResourceFix},
     {"fallenHeroTacticsFix", ApplyFallenHeroTacticsFix},
     {"impactBoneFix", ApplyImpactBoneFix},
     {"customImpactTypes", ApplyCustomImpactTypes},
@@ -3177,7 +3182,7 @@ inline constexpr const char* kHandledKeys[] = {
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "playericon", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
+    "perffilelog", "multipleinstances", "playericon", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
 };
 
 }  // namespace uhc

@@ -2071,6 +2071,15 @@ Code: [gathering](porting-code/gathering.md#resourcedebt).
 - **The return addresses that have no floor** are constants in the helper: `0x4E0CFE`, `0x4C379D`, `0x4ED1F3`. A hook of yours on
   those three calls changes nothing as long as the stock return address stays on the stack.
 
+### truckAttackResourceFix
+
+Code: [gathering](porting-code/gathering.md#truckattackresourcefix).
+
+- **Site:** a 6-byte `jmp` at `0x9EC635` (`8B 97 B4 00 00 00`, `mov edx,[edi+0B4h]`) in the TruckAttack hit; the hook goes on
+  at `0x9EC63B` (stock) or `0x9EC64D` (the damage, skipping the inventory reset). WoL's DLL does not patch that range.
+- **Test:** an enemy `MonsterTruckA` placed beside a Mill: with the key the Mill keeps its 999 food and villagers gather
+  there; without it, the Mill is empty and villagers stand idle beside it.
+
 ### displayedRange
 
 Code: [gathering](porting-code/gathering.md#displayedrange). It needs `AddProtoTagHandler`, `AddWorldTick`,

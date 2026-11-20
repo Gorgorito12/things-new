@@ -367,6 +367,29 @@ rounded up (4 at 452 s, 5 at 491 s, in game). The hooks at `0x7FA6ED` (61 B, res
 `[esp+24h]`) and `0x8D8C88` (53 B, result in `[esp+38h]`) replace the computation with
 `-amount × min([world+108h] / 120000, 15)`.
 
+### truckAttackResourceFix
+
+**The stock action.** A tactics action of type `TruckAttack` (action type 42h, name at 0xBD7AC4, registered at
+0x522DB0) is BUnitTruckAttackAction, vtable 0xB98468. Its update (slot 3Ch, 0x9EC6D4) waits for the game time
+`[action+64h]`, sets the next one 195–205 ms later (0x9EC4B0, the synced RNG stream 2) and runs the hit 0x9EC4E1:
+the units within `[action+24h]` (the action's `maxrange`) of its owner `[action+10h]` (0x4A1C55), and for each one
+of another player that is alive, has hit points, is not dead (0x4802C6), is built (0x44DDB4), passes 0x482865 and
+0x48E237, it first resets the target's resource inventory `[[unit+0B4h]+94h]` (0x58F070 on `+4`: every resource of
+the obfuscated array, `[0C6DF38h]` of them, set to 0 xor its key at 0xC6DF14), then deals the damage (0x49B3D9, or
+0x499422 for a proto without abstract index 12h). The reset is what a trample of a hunt needs; on a building that
+holds resources (a Mill, a plantation, a rice paddy: food or gold 999 with `UnlimitedSupply`) it leaves it at 0 for
+good, and the gather action refuses an empty target. Observed in game with the inventory read from memory: a Mill
+next to an enemy monster truck, or under an enemy mustard gas, went from 999 to 0.
+
+**The hook.** At 0x9EC635 (`mov edx,[edi+0B4h]`, 6 bytes; EBP = the action, EDI = the target, EBX = 0),
+`UhcTruckInventoryHook` calls `UhcTruckKeepsInventory(action, target)`: true for a proto of abstract index 2 (a
+building, 0x44CAC4). Then it goes on at the damage, 0x9EC64D; otherwise it re-executes the `mov` and goes on at
+0x9EC63B, the stock reset.
+
+**Why it is safe.** EAX, ECX and EDX are written before they are read on both continuations (0x9EC63B loads EAX
+and ECX; 0x9EC64D loads ECX, and its branches load EAX and EDX); EBX, ESI, EDI and EBP are kept by the stdcall
+callee. The test reads only the target's proto, the same on every machine. Units are reset as in stock.
+
 ### nowalkfarm
 
 The gather action calls `0x9DDADE` (the spot picker that `farmingRadius` hooks) at `0x6A9067` each
@@ -4706,6 +4729,28 @@ target unexplored, or that takes 90 s, gives the block up. When no unexplored ce
 not visible now with the oldest last-seen time (this key's own stamps, game time), the nearest first. Any other action
 (a fight, a flee) is left alone, and the scout goes on when it is idle again.
 
+**Danger** (2026-11-20; `noAvoid` and `noBack` turn the two parts off). *Avoid:* for each player with scouts, each
+scan walks the unit lists of the players whose stance toward it is enemy (0x484D2D on their player) and keeps, by
+unit ID, the buildings (abstract index 2, 0x44CAC4) that are built (0x44DDB4), alive, and have an action with ranged or
+siege damage (the proto's actions `[[proto+44h]+1Ch]`, count `+20h`; the damage record `[action+24h]`, its type byte
+`+5`; the longest maximum `+8` of the 16-byte range entries `[action+18h]`, count `[action+1Ch]`), once the cell they
+stand on is visible to the player (the high half of its bits), or explored on the first scan after the tables were
+built (a loaded game). A dead one is forgotten. Each is a circle of its range + 12 m. *Back:* the scan keeps each
+scout's hit points `[unit+64h]`; a drop is a hit. The units within 40 m (0x4A1C55) that are alive, have a damage action
+and belong to Gaia or to a player whose stance toward the scout's is enemy give the attacker, the nearest (the lower ID
+on a tie); a circle of its reach (at least 6 m) + 16 m around it, or of 24 m around the scout when there is none, is
+kept 120 s of game time (32 at most per player, the oldest dropped first; a hit within 6 m of a circle refreshes it).
+The scout gives its target up and gets the same move order (taking over a stock flee or fight, which would leave it
+in range) to a point out of the attacker's reach + 10 m, 24 to 60 m away (the first of seven headings, from straight
+away to 105° off, that is on the map, standable for its movement type and outside every circle), and keeps it for 8 s
+or until it stops; a hit during a back-off less than 3 s old orders no new one. *Both:* a block whose centre is within a
+circle's radius plus half a block is never a target (unexplored or revisited). The target is, in this order: the
+nearest unexplored one whose straight line from the scout crosses no circle (for a circle the scout is in: comes no
+nearer its centre than the scout is); the seen block
+visited longest ago by such a line; the nearest unexplored one whose line crosses; the oldest seen one whose line
+crosses. A scout whose target block becomes unsafe gets another target (the block is not given up). The circles and the per-proto reach cache are the key's own tables, keyed by unit ID and proto, walked in
+ID and insertion order, rebuilt after a load.
+
 **The leash.** The action manager walks a unit back to its anchor `[mgr+7Ch]` (x, y, z) when its current action has no
 order ID and it strays past a range (0x489B15 → 0x50E50E, a move with tolerance 1.0). That is what makes a flying pet
 circle its start when it has no orders; the animal wander `BUGA::doWander` runs only for a unit in a herd (`[mgr+ACh]`
@@ -4727,13 +4772,17 @@ and commands call, in the world update, so every machine makes the same calls in
 network, and nothing reads the local player. The tables are only a cache: a loaded game (or another game) starts them
 again from the units' tactics and the grid, and the tactic itself is saved with the unit. The hook keeps every register
 the stock head needs (ECX, the flags of its `cmp`), and the stdcall callee keeps EBX, ESI, EDI and EBP. The real clock
-of the `log` timing line only goes to the log.
+of the `log` timing line only goes to the log. The danger tables read only simulation state (the player's own grid
+bits, stances, units, hit points); the attacker search does not depend on the order of the spatial query's list
+(nearest, then lowest ID); the reach cache keyed by proto pointer is a memo of data, emptied when the data changes.
 
 <!-- private:begin -->
 **What was measured.** Two ravens of the Romanians on Great Lakes, the rest of the player idle: 9.4 % / 9.7 % of the
 map explored at 3 / 6 minutes without the key, 63.7 % / 100 % with it. The Dutch envoy alone on the same map: 50.1 % /
 71.1 %. A scan: about 50 µs with two scouts on 155 × 155 cells (with `log`, the order lines make the first scans cost
-milliseconds).
+milliseconds). Danger (2026-11-20, a 260 m map with four enemy outposts and seven Musketeers, an Explorer and an Envoy):
+61.5 % / 70.5 % at 3 / 6 minutes and the Envoy killed with `noAvoid noBack`; 68.7 % / 79.4 % and both alive with the
+default; about 90 µs a scan.
 <!-- private:end -->
 
 ### transformChecks
