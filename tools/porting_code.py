@@ -43,6 +43,8 @@ PAGES = {
         "State kept for a saved game": ["src/savedmarkers.h"],
         "Direct3D hooks": ["src/d3d9hooks.h", "src/d3d9hooks.cpp"],
         "Research payment": ["src/researchpay.h", "src/researchpay.cpp", "src/hooks/researchpay_hooks.asm"],
+        "Can-research test": ["src/canresearch.h", "src/canresearch.cpp", "src/hooks/canresearch_hooks.asm"],
+        "Tech rollover": ["src/techrollover.h", "src/techrollover.cpp", "src/hooks/techrollover_hooks.asm"],
         "ROF reads": ["src/rofreads.h", "src/rofreads.cpp", "src/hooks/rofreads_hooks.asm"],
         "Floating bars": ["src/floatingbars.h", "src/floatingbars.cpp", "src/hooks/floatingbars_hooks.asm"],
     }),
@@ -121,6 +123,8 @@ PAGES = {
         "doNotQueue": ["src/features/donotqueue.cpp"],
         "nextResearchFree": ["src/features/freeresearch.cpp"],
         "researchGrants": ["src/features/researchgrants.cpp", "src/hooks/researchgrant_hooks.asm"],
+        "shipTechLimit": ["src/features/shiptechlimit.cpp"],
+        "homeCityTechsInUnits": ["src/features/hctechsinunits.cpp", "src/hooks/hctechsinunits_hooks.asm"],
         "maintainWaitForPop": ["src/features/maintain.cpp", "src/hooks/maintain_hooks.asm"],
         "noTrainNearEnemyTC": ["src/features/notrainneartc.cpp", "src/hooks/notrainneartc_hooks.asm"],
         "lifespanAfterConstruction": ["src/features/lifespan.cpp", "src/hooks/lifespan_hooks.asm"],
@@ -165,6 +169,7 @@ HELPER_OF = {
     "modifiers.h": "modifier-walk", "unitpanel.h": "unit-panel-row-the-minimized-interface", "datarefs.h": "data-refs", "unitinfo.h": "unit-info-for-the-panels",
     "namelists.h": "name-lists", "unitmodels.h": "models-on-a-unit",
     "savedmarkers.h": "state-kept-for-a-saved-game", "researchpay.h": "research-payment",
+    "canresearch.h": "can-research-test", "techrollover.h": "tech-rollover",
     "rofreads.h": "rof-reads", "floatingbars.h": "floating-bars",
 }
 LANG = {".cpp": "cpp", ".h": "cpp", ".asm": "asm", ".inc": "asm"}

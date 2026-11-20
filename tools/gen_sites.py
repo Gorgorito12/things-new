@@ -1840,6 +1840,21 @@ SITES = [
     ("AutoScoutSetTactic", 0x4F7ECD, 0x0A),
     ("AutoScoutTacticIndex", 0x948161, 0x08),
     ("AutoScoutIdle", 0x44F1A7, 0x08),
+    # shipTechLimit: the refunds of a cancelled research, 0x8D7004(player, cost) (lea of the action's
+    # copy of the cost / push / mov ecx,player / call): the Research action's state 13h at 0x9E6161 (EBP the action,
+    # [ebp+74h]) and the CommandResearch one at 0x9D56AF (ESI the action, [esi+7Ch]); the head of the can-research
+    # test 0x4C6968, bool thiscall(status, unit) (push ebp / mov ebp,[esp+8], then push esi / push ebp / mov esi,ecx,
+    # where the hook continues at 0x4C696D); the status lookup 0x94ADAA, thiscall(root [world+7Ch], player, tech)
+    ("ResearchRefundCall", 0x9E6161, 0x0B),
+    ("CommandResearchRefundCall", 0x9D56AF, 0x0B),
+    ("CanResearchHead", 0x4C6968, 0x0B),
+    ("TechEntryLookup", 0x94ADAA, 0x23),
+    # homeCityTechsInUnits: the research start's refusal of a HomeCity tech, push 12h / mov ecx,esi /
+    # call 44D863h / cmp al,1 / je 9E67C5h, and the lea ebx,[esi+10h] that follows it (the accepted path, before the
+    # payment call 0x9E67E1); the Research update's test of CheckLandHCGatherPoint, push 1Eh / mov ecx,ebx / call
+    # 44D863h, and its test al,al / je 9E6583h
+    ("HcTechResearchRefusal", 0x9E67CE, 0x10),
+    ("ResearchGatherFlagTest", 0x9E6553, 0x0D),
     # transformChecks: the per-unit execute of the transform command (type 17h, uiTransformSelectedUnit),
     # FUN_007D64F7 (thiscall(cmd, unit), ret 4). Verify only, its body from the player lookup to the placement
     # check: [esp+30h] the player (0x7D6531), [esp+14h] the player's proto (0x7D654D), [esp+10h] the command's

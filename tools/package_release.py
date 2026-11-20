@@ -366,6 +366,8 @@ customWalls [log]             <WallPiece> tags: a wallBuild proto lays its own p
 doNotQueue [log]              <DoNotQueue/> trains a proto, and a card with that tech flag ships, ahead of the queue
 nextResearchFree [log]        a Data tech effect makes a building's next research free
 researchGrants [log]          <ResearchGrantInterval> buildings gather points that make researches cheaper or free
+shipTechLimit [log]           <ShipTechLimit>N</ShipTechLimit> in a civ caps its techs that cost Ships per game
+homeCityTechsInUnits [log]    a home city card listed in a proto's <Tech> rows is researched there like a tech
 killBountyTechs [log]         a Data tech effect may change a proto's Bounty
 resourceBounty [log]          <Bounty resourcetype> pays a resource at the kill
 teamKillBounty [log]          the XP of a marked victim goes to the killer's team

@@ -14,7 +14,8 @@
 //   tags as the data writes them (<NumberOfShots>, <NumberProjectiles>: unitinfo.h, Shots), or with
 //   projectiles="combat" as combat fires them (numberOfShots and its "projectiles" option). The multipliers lose the
 //   zeros that end their decimals ("1.50x" is "1.5x"; multiplierZeros="keep" keeps them), and each attack row's help
-//   text gets a line for its ROF and one for its projectiles (rofTip, projectilesTip) after the game's own lines.
+//   text gets a line for its ROF and one for its projectiles (rofTip, projectilesTip) after the game's own lines,
+//   whose parentheses around an icon or around the name after one go (tipParentheses="keep" keeps them).
 // - "[string:ID]" in a text, label or tip: that string of the game's string table, as the player's language has it
 //   (resolved when shown: "[string:68852]" is "Hitpoints" in the English table).
 // - <replace row="..." stock="a,b"/>: while that row shows, those original gadgets are hidden (the hit points and
@@ -1144,10 +1145,13 @@ struct BigPanel {
   std::wstring rofIcon;    // rofIcon="...": each attack row gets its ROF and this icon after its damage
   std::wstring projectilesIcon;  // projectilesIcon="...": shots x projectiles before the reload, when above 1
   bool trimZeros = true;   // multiplierZeros="keep" turns it off: "1.50x" written as "1.5x", "2.00x" as "2x"
+  // tipParentheses="keep" turns it off: the game's help text lines lose the parentheses around an icon and around
+  // the name right after one ("11 <icon> (Ranged) Damage" is "11 <icon> Ranged Damage")
+  bool unwrapIcons = true;
   // The attack rows' help text gets a line for the ROF and one for the projectiles ("%s": the number), each with
   // its icon, after the stock lines (damage, range and area, one per multiplier).
   std::wstring rofTip = L"Attacks every %s s";
-  std::wstring projectilesTip = L"%s projectiles before the reload";
+  std::wstring projectilesTip = L"%s projectiles";
 };
 
 std::vector<Row> g_rows;
@@ -1533,6 +1537,13 @@ bool LoadRows(const std::string& arg) {
         if (g_big.trimZeros && _stricmp(Trim(*zeros).c_str(), "drop") != 0) {
           uhc::Log(L"minUIStats: %ls: multiplierZeros=\"%hs\" is not drop or keep; drop used", g_file.c_str(),
                    zeros->c_str());
+        }
+      }
+      if (const std::string* parentheses = Attr(element, "tipparentheses")) {
+        g_big.unwrapIcons = _stricmp(Trim(*parentheses).c_str(), "keep") != 0;
+        if (g_big.unwrapIcons && _stricmp(Trim(*parentheses).c_str(), "drop") != 0) {
+          uhc::Log(L"minUIStats: %ls: tipParentheses=\"%hs\" is not drop or keep; drop used", g_file.c_str(),
+                   parentheses->c_str());
         }
       }
       for (const auto& [name, field] : {std::pair<const char*, std::wstring*>{"roftip", &g_big.rofTip},
@@ -2215,7 +2226,7 @@ std::wstring TrimMultipliers(const std::wstring& text) {
   return out;
 }
 
-// One help text line of the key: `format` with the number for its %s, then " (<icon>)" as the game's own lines end.
+// One help text line of the key: `format` with the number for its %s, then " <icon>" (no parentheses).
 std::wstring TipLine(const std::wstring& format, const std::wstring& number, const std::wstring& icon) {
   const size_t at = format.find(L"%s");
   if (format.empty() || at == std::wstring::npos) {
@@ -2223,9 +2234,51 @@ std::wstring TipLine(const std::wstring& format, const std::wstring& number, con
   }
   std::wstring line = ExpandStrings(format.substr(0, at) + number + format.substr(at + 2));
   if (!icon.empty()) {
-    line += L" (<icon=\"(16)(" + icon + L")\">)";
+    line += L" <icon=\"(16)(" + icon + L")\">";
   }
   return line;
+}
+
+// A help text without the parentheses around its icons, nor around the name right after an icon: the game's lines
+// "11 <icon> (Ranged) Damage" (string 42226, "%1s (%2s) Damage"), "1.5X Bonus Damage against <icon> (<color>Maneuver
+// Unit</color>)" (42229 and 42230, "... against %2s (%3s)") and "Resists 20% of Ranged (<icon>) Damage" (42223) read
+// "11 <icon> Ranged Damage", "... against <icon> Maneuver Unit" and "... of Ranged <icon> Damage". A pair is removed
+// only when it holds no other parenthesis and does not run past the line (the next "<ttf>").
+std::wstring UnwrapIcons(const std::wstring& text) {
+  static const std::wstring kOpen = L"<icon=\"";
+  std::wstring out = text;
+  for (size_t at = out.find(kOpen); at != std::wstring::npos; at = out.find(kOpen, at + 1)) {
+    const size_t end = out.find(L"\">", at);
+    if (end == std::wstring::npos) {
+      break;
+    }
+    const size_t after = end + 2;
+    size_t before = at;  // "(<icon>)": the icon alone in its pair
+    while (before > 0 && out[before - 1] == L' ') {
+      --before;
+    }
+    size_t close = after;
+    while (close < out.size() && out[close] == L' ') {
+      ++close;
+    }
+    if (before > 0 && out[before - 1] == L'(' && close < out.size() && out[close] == L')') {
+      out.erase(close, 1);
+      out.erase(before - 1, 1);
+      at = before - 1;
+      continue;
+    }
+    if (close < out.size() && close > after && out[close] == L'(') {  // "<icon> (name)": the name after the icon
+      const size_t shut = out.find(L')', close + 1);
+      const size_t line = out.find(L"<ttf>", close + 1);
+      const size_t nested = out.find(L'(', close + 1);
+      if (shut != std::wstring::npos && (line == std::wstring::npos || shut < line) &&
+          (nested == std::wstring::npos || nested > shut)) {
+        out.erase(shut, 1);
+        out.erase(close, 1);
+      }
+    }
+  }
+  return out;
 }
 
 // What starts each bulleted line of a help text the fill builds: 0x4C5076(text, line, 1, 0) puts "<ttf><ttb>" before
@@ -2251,6 +2304,9 @@ void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
     if (g_big.trimZeros) {
       row.value = TrimMultipliers(row.value);
       row.tip = TrimMultipliers(row.tip);
+    }
+    if (g_big.unwrapIcons) {
+      row.tip = UnwrapIcons(row.tip);
     }
     const std::wstring shown = StripMarkup(row.label);
     if (shown.find_first_not_of(L" :") == std::wstring::npos) {
