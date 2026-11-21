@@ -1368,6 +1368,20 @@ REA (Ghidra) and capstone (`cs`) on the stock exe, then the live objects logged 
 | Pre-game message dialog | `[[0xC66234]+920h]`, shown through the UI object's vtable +24h / +28h (0x6F2188, 0x6F2105) → 0x838E3A / 0x838F48 → 0x5183C6 | confirmed (`cs`) | One dialog gadget (`pregame-messagedialog-prompt`): a new message rewrites its text, nothing stacks. |
 | Game settings table | 0xD840E4, 88h bytes per entry (UTF-16 name, then type and ID); the setting's index is its ID: `GameRecordGame` 17h (bool), `GameStartingAge` 18h, `GameKOTH` 27h | confirmed (`cs`, in game) | Bool set 0xA26341 `thiscall(id, value)` and int set 0xA26321 send to every player (0xA2B475). 0x704D7E restores the last lobby's values, which the profile keeps in `MultiplayerGameSettings`; `gamerecordgame` true there opened the hosted lobby with Record Game ticked. |
 
+### The game setup lobby's player slots (for #81, 2026-11-21)
+
+REA (Ghidra 12.1.4) on the stock exe, `rea/evidence/age3y-b1a1dab7/r1121-f-lobby-slots.json`, and capstone (`cs`). WoL's DLL
+replaces `MPGameSetupPage` and `MPPlayerSlot` with classes of its own (`docs/wol-uhc-map.md`), so in WoL these are the
+stock base, not what runs.
+
+| Name | Address | Status | Notes |
+|---|---|---|---|
+| MPGameSetupPage init | FUN_008B831E (vtable entry at 0xB8CCD4) | confirmed (REA) | Loads `uiMPGameSetupPage.xml` (LAN) or `uiMPESOGameSetupPage2.xml`; binds the page gadgets (`[+5C0h]`..`[+63Ch]`) and 8 slots at `[page+154h]`, 7Ch bytes each. |
+| Slot gadget setter | 0x777B20 `thiscall(slot, index, gadget)` | confirmed (REA) | Stores `[slot+20h+index*4]`. Indexes: 0 row, 1 Highlight, 2 Avatar, 3 nametext, 4 AIDropdown, 5 xfer, 6 team, 7 TeamColor, 8 CivFlag, 9 HCLevel, 0Ah HandicapLabel, 0Bh Handicap, 0Ch LatencyLabel, 0Dh Latency, 0Eh ReadyLabel, 0Fh Ready, 10h kick, 11h Civ. |
+| Slot vtable | 0xB93014; +38h = the slot's event handler 0x776702 `thiscall(type, gadget, data)` `ret 0Ch` | observed (`cs`) | Type 0Ah (dropdowns): team `[+38h]`, `[+3Ch]`, `[+64h]`, `[+6Ch]`, `[+70h]`, AIDropdown `[+30h]`, `[+4Ch]`; type 2: Ready `[+5Ch]`, kick `[+60h]`, `[+40h]`. No case for nametext `[+2Ch]` or xfer `[+34h]`. |
+| Page event handler | 0x8B9846 (not a Ghidra function) | observed (`cs`) | Event types 0, 2, 0Ah, 0Fh (tables 0x8B9E64 / 0x8B9E50); unmatched gadgets go to each slot's +38h (0x8B9A3F, 0x8B9D38). |
+| Slot move | not found | unknown | Nothing found reads the xfer gadget `[slot+34h]` (capstone over 0x760000-0x8D0000, loops of 7Ch). In game (WoL), posted and real drags of the host's name, clicks on an open slot and its AI list did not move the host out of slot 1. |
+
 ### Impact types and impact effects (for `impactBoneFix` and `customImpactTypes`, 2026-11-12)
 
 REA (Ghidra 12.1.4) on the stock exe, records in `rea/evidence/age3y-b1a1dab7/impact49-50.json`; `cs` = capstone over
