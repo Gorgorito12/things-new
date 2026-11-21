@@ -1,6 +1,9 @@
 Random maps: test results and one fix
 =====================================
 
+2026-11-21: "NEW" Levant has its own note, levant-20261121.txt (a player can start with nothing in
+6- and 8-player team games; the fixed script is in levant\RM4\NEWLevant.xs).
+
 What was tested
 ---------------
 Every random map in RM4 that has an .xml (208 maps) was generated, loaded and played for 30 seconds of

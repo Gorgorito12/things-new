@@ -401,6 +401,49 @@ trigger (`trigger3\uhckoth.xml`, read at startup) that moves every unit to the h
   cliffs to normal games); WOLAlps, WolGreenland and WOLFjord had the include commented out; galapagos'
   commented line used an undefined `bigLoc` and its X for the Y.
 
+## "NEW" Levant again (#78, 2026-11-21)
+
+JTMaston: "This map crashes the game. We would like to know what causes the crash so we can prevent it in
+future maps." Diagnosis only, as the user chose. The note for the WoL team is
+`wol-fixes/maps/levant-20261121.txt`, the fixed script `wol-fixes/maps/levant/RM4/NEWLevant.xs` (diff beside
+it). Evidence: `rea/evidence/levant-20261121/` (gitignored): `starts-*.csv` / `.out`, `skirmish.csv`,
+`sweep.out`, `editor.csv`, `runs/`, `units/`, `shots/`, the bed hashes before and after.
+
+**Bed.** `C:\AoE3-UHC-WoLReal12` (its own profile) with WoL's `uhc.dll` c070d138, WoL-Test's `Startup\wol.cfg`,
+the **Steam install's** `AI4` files (6 differ from WoL-Test's: `aiWoLMain.xs`, `_TeRauparaha.xs` and four
+personalities; Steam's `wolEmmanuel` and `wolMariano` personalities are empty), and our `dinput8.dll` as the
+harness (`perfExecFile`, `multipleInstances background`, `xsErrorLog`, `perfStats`). Our DLL, cfg and AI files
+were put back afterwards. The first editor runs were on `WoLReal4`, given back to another session mid-way.
+
+**[O] Found: a player can start with nothing.** `tools/mapstarts.py` (new) generates the map in the editor
+without the save and load and counts each player's Town Centers: 175 generations (2 to 8 players × seeds 1-25,
+2 teams) gave 7 players with no Town Center and no units, only the water flag: 6 players 4/25 (seeds 5, 9, 17,
+25), 8 players 3/25 (13, 14, 23), every other count 0/25. The Town Center object (lines 536-555) has four
+constraints at once: within `TCfloat` (100 m at 6+ players) of a spot that `rmPlacePlayersLine` puts on the map
+edge, inside `playerEdgeConstraint` (40 % of the map from the centre), 60 m from other Town Centers
+(`avoidTownCenterFar`, equal teams only) and 25 m from water or cliffs. When no point fits, nothing is placed,
+and line 638 takes `rmGetUnitPosition` of unit -1, so the player's starting units, mine, herds and nugget fail
+too. Removing the edge circle or the 60 m alone fixes all 7 seeds; removing the 25 m alone fixes 6 of 7. An
+unchanged copy under another name fails on the same seeds (the variants are fair).
+
+**[O] The fix** (two fallback object definitions, 150 m / 28 m / 10 m from water, then no constraints, and the
+start built on the Town Center that exists): 100 generations (2, 4, 6, 8 players × seeds 1-25), every player
+had a Town Center.
+
+**[O] No start is not a crash here.** A copy of the map that never places one player's Town Center, in a 2v2
+skirmish: the AI teammate with nothing, 10 minutes, no crash or XS error; the human with nothing, "You abandon
+your colony" at once and the AIs play on, 3 minutes, no crash.
+
+**The skirmish sweep** (`tools/mapsweep.py`, new options `--teams`, `--ffa`, `--koth`, `--save-load`, `--label`;
+the setup shows every AI as "Team ?", so teams and rules are set by posted clicks): 11 skirmishes of 10 minutes
+(8p 4v4 ×2 and FFA, 6p 3v3 and FFA, 4p 2v2, FFA and King of the Hill, 2p vs Otto, Naser and Te Rauparaha;
+European, Middle Eastern, Asian, African and native AIs), all ok, no crash report, no XS error, plus a 2v2
+saved and loaded; the table is in
+the note for the WoL team. The save at 5 minutes and the load worked, but the loaded game comes back behind the
+"Game Paused" dialog and the first `--save-load` did not press Continue (it now clicks it; not rerun, the
+round was closed). Not tested: a skirmish on a failing seed (whether the setup keeps `gamerandomseed` is
+unknown), our King of the Hill version in a skirmish, longer games, Hard/Expert, multiplayer.
+
 ## What is left
 
 1. **No crash reproduced.** The players' crash reports remain unexplained. Next: the suspects at more
