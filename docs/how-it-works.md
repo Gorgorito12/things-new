@@ -3717,7 +3717,9 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   hook clears it and takes the stock path. Otherwise `UhcGatherPanelRow(unit, selection, row)`
   checks the stock gate (except Herdable and the AutoGather action), the optional unit type and the
   record. The record is valid when the unit's ID matches, `[[unit+58h]+24h]` (the current action) is
-  the recorded action, that action's state is 5 and its `[+10h]` is the unit, the resource is below
+  the recorded action (or, for a villager on a tree, an action of vtable 0xB979D8 in its state 5: there
+  the Gather action that ticks is not the current one; seen in game 2026-11-21, where the strict test
+  hid every wood rate), that action's state is 5 and its `[+10h]` is the unit, the resource is below
   `[db+80h]`, the rate is above 0, the record is at most max(2.5 s, 2 × elapsed) old in game time
   (capped at 60 s), the player's `[+338h]` is 0 and the target (if it still exists) is not an
   `AbstractShrine`. On success the hook sets the pending flag, EBX = the row, and jumps to the

@@ -4663,6 +4663,14 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
   interface: the row in the unit panel, gone when the villager stops and with two villagers selected,
   and the data ref. In the normal interface, on the stock game (2026-10-29): the row under the HP row.
   Other targets, whole-number rates, a `<UnitType>` and `DoNotShowAutoGatherRate` were not tested.
+- **Fixed (2026-11-21): wood.** A villager on a tree showed no row: while it chops and gathers, its current action is
+  not the Gather action that ticks (that one has vtable 0xB97880; the current one 0xB979D8, in its state 5), and
+  the record test wanted them equal. The test now also takes that current action, with the record's own action,
+  state, owner and age as before. Tested in WoL with every UI key of the minimized panel (`minUIStats`,
+  `multiplierDecimals`, `resourceGatherAuras`, `resourceDebt`; 40 applied, 0 failed), both interfaces, the same
+  value in each: berries 0.67/s, a `Mine` 0.60/s, a `Mill` 0.50/s, `TreeGreatLakes` 0.50/s, crates 8/s
+  (pictures `wol-fixes/min-ui/final/minUIStats-v7-allkeys-gather-*` and `-bigui-*`). Beside WoL's own `uhc.dll`
+  (our `dinput8.dll`): see the minUIStats version 7 notes.
 
 #### autoGatherScaleByContained
 
@@ -7829,6 +7837,25 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       type's icon after it (`30% <hand>  20% <ranged>` with `multiarmor`), in the `armor` and `armorValue` items and in
       the original resists value of the minimized panel, which the key now rewrites for every unit (it was
       `0.30`, the exe's `%.2f`). Beside another DLL that changed the resists armor test, that DLL's text stays.
+    - The `inventory` item (`Holds: ...`) leaves out a proto with an infinite resource (proto flag 24h: a `Mill`,
+      where it read `999/100`; the stock row says `Infinite`), writes the amount alone when the unit has no initial
+      amount (a placed `Mine` read `1928/0`), rounds up as the stock row does (`1929`), and its icon is the panel's
+      size (`(10)`, it was `(16)`).
+    - `speed` and the tactic's `<speedmodifier>` (JTMaston's question): the item is the unit's live maximum speed,
+      the same function the big interface's Speed row reads, so it includes the current tactic's speed modifier.
+      WoL's `Falconet` (`MaxVelocity` 4, `falconet.tactics`: Limber 1.0, Bombard 0.4): `4` in Limber and `1.60` in
+      Bombard after `unitSetTactic("Bombard")`, within the panel's next refresh, in both interfaces. Moved by a
+      trigger's `Move To Point` while in Bombard, it went back to Limber and moved at 4.0 m/s (44.1 m in 11.0 s; the
+      one left in Limber 3.99 m/s): the game limbers artillery to move, so 1.60 is never a speed it moves at, and the
+      panel showed 4 again after the move. Pictures `wol-fixes/min-ui/final/minUIStats-v7-falconet-*` and
+      `-bigui-falconet-*`.
+    - Tested in WoL (2026-11-21, single player, Ethiopians, our `UHC.dll` with `minUIStats`, `multiplierDecimals`,
+      `showGatherRate`, WoL's `wol.cfg` lines with `attackTypeIcons`, the pack's layout and rows, 1920 x 1080): the
+      resists `20%` / `75%`, the tooltip `Rate of fire: 3.50s` and `3s`; gatherers in both interfaces with the same
+      value (berries 0.67/s, a Mine 0.60/s, the Mill 0.50/s, trees 0.50/s after the
+      [`showGatherRate`](#showgatherrate) fix below); with `resourceGatherAuras` and `resourceDebt` on too, 40
+      applied, 0 failed, the same rows. The shipped file's commented `Gathers: {gatherRate}` row was tried in a gadget
+      at `uhcRow2`'s place: `Gathers: Wood 0.50/s`, the same value as the stock rate row.
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.

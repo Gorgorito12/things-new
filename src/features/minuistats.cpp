@@ -313,6 +313,9 @@ const auto kAttackListFill = reinterpret_cast<AttackListFn>(0x00487EEE);
 const auto kResListGet = reinterpret_cast<ResListGetFn>(0x0044EFFF);
 const auto kResourceIcon = reinterpret_cast<ResourceIconFn>(0x00706EFB);
 const auto kHoldsResource = reinterpret_cast<UnitTestFn>(0x0045EE8B);
+using ProtoFlagFn = bool(__thiscall*)(const char* proto, std::int32_t flag);
+const auto kProtoFlag = reinterpret_cast<ProtoFlagFn>(0x0045EE02);
+constexpr std::int32_t kInfiniteFlag = 0x24;  // the stock resource row writes "Infinite" for it
 const auto kHeldResource = reinterpret_cast<UnitResourceFn>(0x004DBEC1);
 const auto kHeldAmount = reinterpret_cast<UnitAmountFn>(0x004E5979);
 const auto kHeldInitial = reinterpret_cast<UnitAmountFn>(0x00494503);
@@ -702,19 +705,28 @@ bool ItemBounty(const char* unit, std::wstring* out) {  // <Bounty>, float [prot
   return true;
 }
 
-// What a mine, bush, carcass or herd animal holds, as the stock "resource held" row reads it.
+// What a mine, bush, carcass or herd animal holds, as the stock "resource held" row reads it. A proto with an
+// infinite resource (flag 24h, a Mill or a Plantation: the stock row writes "Infinite") answers nothing: its amount
+// is a placeholder (a Mill read 999/100).
 bool ItemInventory(const char* unit, std::wstring* out) {
   const char* database = Database();
-  if (database == nullptr || !kHoldsResource(unit)) {
+  if (database == nullptr || !kHoldsResource(unit) || kProtoFlag(Field<const char*>(unit, 0x5C), kInfiniteFlag)) {
     return false;
   }
   const std::int32_t resource = kHeldResource(unit);
   if (resource < 0) {
     return false;
   }
+  // Rounded up as the stock row writes it (a Silver Mine with 1928.x: 1929, a tree 268.x: 269); the initial amount
+  // only when the unit has one (a placed Mine has 0: the stock row writes the amount alone).
+  const int amount = static_cast<int>(std::ceil(kHeldAmount(unit, resource)));
+  const int initial = static_cast<int>(kHeldInitial(unit, resource) + 0.5f);
   wchar_t text[96];
-  swprintf_s(text, L"%d/%d <icon=\"(16)(%hs)\">", static_cast<int>(kHeldAmount(unit, resource)),
-             static_cast<int>(kHeldInitial(unit, resource)), kResourceIcon(database, resource));
+  if (initial > 0) {
+    swprintf_s(text, L"%d/%d <icon=\"(%d)(%hs)\">", amount, initial, kIconSize, kResourceIcon(database, resource));
+  } else {
+    swprintf_s(text, L"%d <icon=\"(%d)(%hs)\">", amount, kIconSize, kResourceIcon(database, resource));
+  }
   *out = text;
   return true;
 }
@@ -2868,7 +2880,7 @@ Outcome ApplyMinUiStats(const Config& config) {
                   &sites::kBStringAssign, &sites::kBStringFree, &sites::kCurrentUnitRef, &sites::kMaxHitpointsGetter,
                   &sites::kLosGetterHead, &sites::kMaxContained, &sites::kIsA, &sites::kAttackListFill,
                   &sites::kResListGet, &sites::kResourceIconText, &sites::kHoldsResource, &sites::kMainResource,
-                  &sites::kHeldAmount, &sites::kUnitCarryCapacity})) {
+                  &sites::kHeldAmount, &sites::kUnitCarryCapacity, &sites::kProtoFlag})) {
     return Outcome::kFailed;
   }
   // The build and regeneration items mirror stock code they never write to; they are checked apart, so another DLL
