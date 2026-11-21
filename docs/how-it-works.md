@@ -4825,12 +4825,32 @@ runs the execute six times in a row, and each new unit is in the list at once, s
 state `[esp+24h]`, its click and shift-click commands `[esp+1C0h]` / `[esp+3C0h]` and its rollover BString
 `[esp+18h]`, filled by the command layout at 0x695D60..0x695D82) runs the key's filter. For a click command
 `uiTransformSelectedUnit("Name")` it asks, for the local selection (0x453B28; only when its player `[sel+0Ch]` is the
-local player): the cost once (0x480B1E, then 0x8D6BAE or 0x8D6C1B with shared resources, `[world+6912h]`), the limit
-(as above, counting the units already accepted in this selection), and PLACE for each selected unit with the same
-arguments as the command. No unit passes: state 1 (grey), both commands emptied, and a red line appended to the
-rollover (0x443960): the string of PLACE's reason, or 25528, 41543, 36198 (with the target's display name
-`[proto+140h]`, read in game). Some pass: a yellow "N / M:" line with the first reason. The answer is kept 250 ms of
-real time per target name and selection.
+local player), for each selected unit in the command's own order: PLACE with the same arguments as the command, the
+limit (as above, counting the units already accepted in this selection), then the cost of one more unit (0x480B1E,
+then 0x8D6BAE or 0x8D6C1B with shared resources, `[world+6912h]`). No unit passes: state 1 (grey), both commands
+emptied, and a red line appended to the rollover (0x443960): the string of PLACE's reason, or 25528 or 36198 (with the
+target's display name `[proto+140h]`, read in game). The exception is a refusal for the cost alone (every refused unit
+passed PLACE and the limit): the button keeps its state and its commands and gets only the red 41543 ("Not enough
+resources"), so the click reaches the execute, whose payment fails at 0x7D6610 and calls the stock "can't pay" message
+0x8D271A (string 42A8h = 17064, the missing resources, 2000 ms, and sound entry 4 when the message call returns true),
+the routine the train enqueue (0x9EB132) and the research (0x9E6824) call. A group of three youths gave one message.
+A button whose click is `commandResearch(ID, unit)` (a command with an `<associatedtech>`, the fireship) runs the
+command as a one-shot research of that unit, and a failed transform still took the button off that boat (seen in
+game), so in that case the click and shift-click are rewritten to `uiTransformSelectedUnit("Name")`, the command the
+record runs. Some pass: a yellow "N / M:" line with the
+first reason. The answer is kept 250 ms of real time per target name and selection.
+
+**What a transformed maturing shows (data, not the key).** The kraal maturings' anim files (`maturing2.xml` to
+`maturing4.xml`) pick their submodel with `<logic type="BuildingCompletion">`: the dancing youth (`lvl1`..`lvl6`,
+the youth model with the dance, the chant sound set and particles) from 1 % to 99 % built, and `finished` (only the
+soil decal) at 100 %. A placed maturing dances while the youth builds it; the transform creates the target already
+built (0x498ACC, then 0x6A1F82 when the old unit was built), so it shows `finished` from its first frame: no dancer.
+Their final unit comes from a single-use `Spawn` action in the tactics, which fires when the maturing unit is
+complete, so after a transform it comes out at once, and the maturing unit only lingers until its `<Lifespan>` ends
+(seen in game: the Askari next to the maturing ground within a second of the click, the ground gone 20 s later). The
+fix is in the data: give `finished` the `lvl6` dancer, without its Death anim (the maturing dies at the end of its
+lifespan, and a falling youth would show then); the youth then dances beside the new unit for that lifespan, and a
+placed maturing does the same after it is built.
 
 **Why it is safe.** The hook keeps every register but EAX, which neither continuation reads before loading it again
 (AL only fed the test it replaces); the frame (`[esp+14h]`, `[esp+30h]`) is the execute's own, checked by the site
