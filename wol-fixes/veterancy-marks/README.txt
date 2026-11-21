@@ -35,6 +35,10 @@ Files
                                     metal edge and loop holes traced as smooth closed curves (traced\rank_N.json) and
                                     rendered with your sheet's colours under a dark border (traced\rank_N.png)
     traced\                         those curves and images, and shapes.json (pixels per glyph unit)
+    border-review.png               a review (2026-11-21, not yet chosen): the border a little darker, inward only (the
+                                    silhouette and the holes do not move), today against +6, +12 and +18 px of
+                                    traced\rank_N.png; at 4 times the texture, and over the game's pixels enlarged and at
+                                    the real size. trace_marks.py --border N makes a variant; border_review.py the sheet
 
 Overlap with your sheet (IoU, 1 = identical):
     rank                 1      2      3      4      5
