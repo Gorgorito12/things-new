@@ -2029,6 +2029,25 @@ SITES = [
     # editorSearch: a proto's display name string ID [proto+144h], as FUN_008F7A89 reads it (mov eax,[ecx+144h] /
     # cmp eax,-1)
     ("EditorProtoDisplayName", 0x8F7A89, 9),
+    # editorSearch, trigger editor: the condition/effect panel's fill FUN_00825757 (thiscall(editor), plain ret; its
+    # head sub esp,28h / mov eax,[0C66234h] / push ebp / mov ebp,[eax+97Ch]), run by the Triggers / Conditions /
+    # Effects buttons after mov [esi+1C0h],ebp (0x8264F0). It sets the "Type:" textField's names and entry data
+    # (each type's index) with lea ecx,[esp+20h] / push ecx / mov ecx,ebx / call 5BECAAh / lea edx,[esp+2Ch] /
+    # push edx / mov ecx,ebx / call 0AC19D9h (0x8258A0, replaced up to the continuation mov ecx,edi at 0x8258B8).
+    ("EditorTypeListSet", 0x8258A0, 0x1A),
+    ("EditorTypeFillHead", 0x825757, 0x0F),
+    ("EditorTypeFillMode", 0x8264F0, 0x0B),
+    # editorSearch: the trigger parameter builder (gadtrigparam.cpp) gives a parameter's textField its list with
+    # mov ecx,edi / call 5BECAAh: techs [[game+97Ch]+6Ch] (0x8289D5), units +84h (0x828A27), unit types +90h
+    # (0x828A4E). 0x5BECAA thiscall(field, array*) copies the names ([array], count [array+4]); 0xAC19D9 the entry data.
+    ("EditorParamTechList", 0x8289C3, 0x17),
+    ("EditorParamProtoList", 0x828A13, 0x19),
+    ("EditorParamUnitTypeList", 0x828A3A, 0x19),
+    ("EditorSetList", 0x5BECAA, 0x11),
+    ("EditorSetData", 0xAC19D9, 0x0F),
+    # editorSearch: a parameter's change (event 10, 0x829E29): the field's current index 0xAC0D1B, its entry's text
+    # 0xAC0EEA, given to the parameter (0x82AC1C): the value is the text picked, not an index into the stock list.
+    ("EditorParamPickText", 0x829E65, 0x24),
 ]
 
 

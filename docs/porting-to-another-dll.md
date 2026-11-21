@@ -1329,12 +1329,16 @@ hook calls `BeforePresent` from it).
 
 - **Sites:** three calls redirected, 5 bytes each (`E8 rel32`): `0x7F537D` (to `0xAD0056`, the Objects palette's add),
   `0x9991D0` and `0x999547` (to `0xAC9228`, the Forbidden Units/Techs allowed list's add, units and techs). The hooks
-  jump to the stock callee when the entry matches. Check them against your DLL first: another key that filters those
-  lists must share the call.
+  jump to the stock callee when the entry matches. The trigger editor: three more calls redirected, `0x8289D5`,
+  `0x828A27`, `0x828A4E` (to `0x5BECAA`, the tech, unit and unit type parameter lists), and a 24-byte `jmp` at
+  `0x8258A0` (`8D 4C 24 20 51 8B CB E8 …`, the type list's names and data), continue at `0x8258B8`. Check them against
+  your DLL first: another key that filters those lists must share the call.
 - **Called, verify only:** the palette's refresh slot (vtable `0xB92768` +20h = `0xAD01FD`), the fills `0x99912F` and
-  `0x999493`, the list's select `0xAC8A43`, `0x58EA52` and `0x4010CA` (a proto's display name), `0x40423C`, `0x433812`.
-- **Layouts:** a `textField` `EditorProtoPaletteSearch` inside `EditorProtoPalette` (`uieditorpalettes.xml`) and
-  `ForbiddenUnitsTechs_Search` in `uiforbiddenunitstechs.xml` (`wol-fixes/editor`).
+  `0x999493`, the list's select `0xAC8A43`, the trigger panel's fill `0x825757`, `0xAC19D9`, `0x58EA52` and `0x4010CA`
+  (a proto's display name), `0x40423C`, `0x433812`.
+- **Layouts:** a `textField` `EditorProtoPaletteSearch` inside `EditorProtoPalette` (`uieditorpalettes.xml`),
+  `ForbiddenUnitsTechs_Search` in `uiforbiddenunitstechs.xml` and `trEdit-CondEffPanel-search` in
+  `trEdit-CondEffPanel` (`uitriggereditor.xml`) (`wol-fixes/editor`).
 - **Test:** in the editor, Place Object, click the field and type (`testbed.py chars musk`): the palette keeps the
   matching entries and the log says `Objects palette "musk": 9 shown, 3202 hidden`.
 
