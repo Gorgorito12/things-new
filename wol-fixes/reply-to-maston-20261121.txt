@@ -48,6 +48,29 @@ Ranged gathering (#80): key autoGatherFrom
   order, a fight or a gather in progress always wins.
 Questions: do you need buildings that gather? Should trees stay close-range?
 
+Observer UI (#81): wol-fixes\observer\ (diagnosis)
+--------------------------------------------------
+"Doesn't work with all maps": the observer panel is trigger code inside the maps. 36 of the 213 RM4 maps have it (30
+ESOC_*, NEWMagdalena and 5 vividly*), as your lobby tooltip says ("Only functionable with ESOC UI2.2 maps").
+"Broke many versions ago", two causes:
+1. In all 36 maps the switch reads if (false == true), so the observer part never runs.
+2. With the switch on, the trigger script no longer compiles: the maps define their own kbGetTechID, and wolai.upl now
+   registers a function with the same name (trigtemp.xs Error 0034). All triggers are lost, StartInsertion included,
+   which is what your uhc.dll looks for.
+With the switch on and the map's helper renamed, the panel runs again (tested in a LAN game hosted alone, with an AI as
+the observer), but it was made for the old UI: the resources are one row off (no oil), it is drawn over your own
+resource panel, some flags are wrong, villagers count as military, and the big UI breaks it. test_patch.py in the folder
+writes the two map edits for the 36 maps into a separate folder; the README has the screenshots.
+Not tested: a real human observer (it needs a second player joining), other resolutions.
+Two ways forward (we have not built either yet):
+(a) fix ESOC's panel with your DLL: the two map edits first, then the panel code for WoL's resources, civs and units,
+    then the observer UI files rebuilt from your current UI in its 7 resolutions. It stays limited to these maps.
+(b) our own observer key, for any map and resolution with your current UI. Every player needs the same DLL, and the
+    observer still takes a slot.
+Questions: which observer do your players use today, ESOC's panel or only the replay viewer? Is this the panel that
+broke? Should the two map edits go into the 36 maps now? (a) or (b)? Which resolutions do your players use? Does an
+observer ever use the big UI?
+
 Scenario Editor (#82): key editorSearch, wol-fixes\editor\
 -----------------------------------------------------------
 Search fields in the Objects palette, in the Forbidden Units/Techs dialog (units and techs) and in the trigger editor
