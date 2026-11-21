@@ -396,6 +396,42 @@ building, 0x44CAC4). Then it goes on at the damage, 0x9EC64D; otherwise it re-ex
 and ECX; 0x9EC64D loads ECX, and its branches load EAX and EDX); EBX, ESI, EDI and EBP are kept by the stdcall
 callee. The test reads only the target's proto, the same on every machine. Units are reset as in stock.
 
+### deadReplacementAtZeroInventory
+
+**The stock replacement.** `<DeadReplacement>` (handler 0x5FC33B) stores a proto ID at `[proto+F8h]`. The death
+replacement FUN_004B4F2F places it once per unit (state bit 29h) through 0x506F61 (the placement test, the creation
+0x498ACC). It has four callers: the kill handler 0x4B4F70 (0x4B527E; not for a `DeadReplacementWhenDestroyed` proto,
+flag 4Ah), the two removal paths of a flag-4Ah proto (0x4E6FC6 and 0x6A4013) and the state check FUN_00482152
+(0x4F1680). A unit with `DieAtZeroResources` (flag 0Eh) and `DoNotDieAtZeroHitpoints` (which clears the default flag
+0Dh) is never killed at 0 HP: the state check turns it into a body (state bit 12, owner gaia, the death sound) and
+calls the replacement at once, so a hunt or a herdable leaves it beside the body it has just become. When the body is
+used up, the same check asks the kill queue, but the unit update marks the body for removal (state bit 7) and the
+world removes it in the same update (0x495D61 → 0x4726B2), before the queue's drain: the kill handler never sees it.
+Observed with hardware breakpoints on a cow emptied by settlers: the inventory test 0x4B43B0 and the kill queue ask
+ran, then the removal, and no kill handler for it. The two updates that remove a unit marked so call the removal
+notice FUN_00495D6B first (0x495DEE in FUN_00482F16, 0x6A3FF0 in 0x5116xx), then place the replacement of a flag-4Ah
+proto.
+
+**The hooks** (`hooks/deadrepl_hooks.asm`).
+- The replacement's head 0x4B4F2F (7 bytes, `push ecx / push esi / mov esi,ecx / mov eax,[esi+68h]`, continuation
+  0x4B4F36): `UhcDeadReplacementSkip(unit, return address)` is true only for the return address 0x4F1685 and a proto
+  with flag 0Eh, without flag 0Dh, and a replacement; the hook then returns with nothing done (bit 29h stays clear).
+- The removal notice's head 0x495D6B (5 bytes, `mov eax,[0C66234h]`, continuation 0x495D70):
+  `UhcDeadReplacementOnRemove(unit)` calls FUN_004B4F2F for a body (state bit 12) of such a proto whose bit 29h is
+  clear. The call goes through the first hook with a return address in the DLL, so it is stock. The replacement then
+  comes at the moment and through the same code as for a `DeadReplacementWhenDestroyed` proto.
+
+A body killed by the kill handler (a trigger's `Kill`) gets the replacement there, as in stock; bit 29h keeps it to one
+either way. The trigger `Destroy` removes a unit without the notice, so a body destroyed that way leaves nothing, as a
+flag-4Ah proto does in stock.
+
+**Why it is safe.** At the head, EAX and EDX are not inputs (thiscall with no argument) and each caller reloads EAX
+before reading it; ECX is pushed and restored around the stdcall callee, which keeps EBX, ESI, EDI and EBP. A skipped
+call returns as the stock function does when bit 29h is set. At the notice, ECX is restored and EAX is written by the
+stolen instruction. The decisions read only the unit's proto and state bits, the same on every machine. Evidence:
+`rea/evidence/age3y-b1a1dab7/r1121-b-deadrepl-detonation-heal.json` (`ev_df5ab456…`, FUN_00482152), capstone over the
+exe for FUN_004B4F2F, its callers, 0x506F61, 0x495D6B and 0x4B4D80.
+
 ### nowalkfarm
 
 The gather action calls `0x9DDADE` (the spot picker that `farmingRadius` hooks) at `0x6A9067` each
@@ -1146,7 +1182,16 @@ entry's sound sets at the point.
 
 After the area damage, the key calls FUN_004CB11C with a zeroed record of 70h bytes that has only those fields: the
 action at `+10h`, the point at `+64h` (so the default direction) and `+28h` = 0 (the `particleSet`). The point is the
-unit's position, copied before the area damage. By default the action is the detonating one, so its own
+unit's position, copied before the area damage. **Since 2026-11-21 (#86)** a unit whose obstruction radius
+(`<ObstructionRadiusX>` `[proto+88h]`, handler 0x5F5972; `<ObstructionRadiusZ>` `[proto+8Ch]`, 0x5F59C8) is 1.5 m or more
+on either side gets one call per point of a grid over its footprint: `round(2r / 3)` points per side (at least 2, at most
+3), from −0.75 r to +0.75 r along its right vector `[unit+38h]` and its forward vector `[unit+20h]`, at the unit's
+height; a `TownCenter` (4.5 × 4.5) gets 3 × 3, a `House` (2 × 2) 2 × 2. Each call is the stock visual of a shot landing
+there, with its own visibility test. The victims: the area damage hands each one to TakeDamage 0x49B3D9 with the
+impact argument −2 (no impact effect) and the bool the stock caller takes from the action's flag bit 6, which TakeDamage
+reads only to skip the hit and pain sounds (0x484136 types 3 and 2, 0x49BC87). The key passes 1, so the victims only
+flinch (0x49C0D4, played either way) and the only effect and sound is the blast on the dying unit. The damage path does
+not read the bool (REA `ev_32be21bf…`, FUN_0049B3D9; `ev_71ba0bc4…`, FUN_004C9D89; `ev_22c85aa1…`, FUN_0049C0D4). By default the action is the detonating one, so its own
 `<impacteffect>` plays (nothing when it has none: `[action+70h]` < 0). `<DetonationImpactEffect>path</DetonationImpactEffect>`
 names another impact effect: its handler, during the proto load, passes the node's text field `[node+14h]` to
 FUN_0058F017 as the tactics handler does, which finds the file or loads it and returns its ID (< 0 on failure, logged
@@ -3104,18 +3149,29 @@ overheal (only the single-target heal action knows its healer).
 | Site | Stolen | Hook does | Continues at |
 |---|---|---|---|
 | 0x4823A3 | `push ecx / push esi / mov esi,ecx / cmp [esi+8],8` (8 B; ECX = unit, `[esp+4]` = amount) | `UhcOverhealAddHp(unit, &amount)`: a positive amount on a marked unit is lowered to reach at most the reference, unless `g_uhcOverhealAllow`; then the stolen bytes | 0x4823AB (`jbe`, on the stolen `cmp`) |
-| 0x9E0BBB | `call 480408h` (ECX = EDI = target, healer `[esi+10h]`) | `UhcOverhealTickLimit` in ST0: for a marked target, the reference with a healer of no source type, min(reference × cap %, max) with a capped source; else the stock max | 0x9E0BC0 |
-| 0x9E0CE9 | `call 4823A3h` (the tick's heal) | `g_uhcOverhealAllow` = 1 + the index of the healer's first source type (0: none), the stolen call, then 0 | 0x9E0CEE |
-| 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | `UhcOverhealSearchRatio` in ST0: for a marked candidate, HP / reference with a normal healer, HP / cap limit with a capped source (stock rules: 0 below 1e-6, 1.0 from the limit: no candidate); else the stock ratio | 0x9CD989 |
+| 0x9E0BBB | `call 480408h` (ECX = EDI = target, ESI = the unit's heal action: healer `[esi+10h]`, the player's copy of its tactics action `[esi+4]`) | `UhcOverhealTickLimit(target, action)` in ST0: for a marked target, the reference when the action does not overheal, min(reference × cap %, max) when it does with a cap; else the stock max | 0x9E0BC0 |
+| 0x9E0CE9 | `call 4823A3h` (the tick's heal; ESI the unit's action) | `g_uhcOverhealAllow` = 1 for an overhealing action (its cap in `g_uhcOverhealAllowCap`), the stolen call, then 0 | 0x9E0CEE |
+| 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | `UhcOverhealSearchRatio` in ST0: for a marked candidate, HP / reference when none of the healer's actions overheals, HP / the highest limit of those that do (stock rules: 0 below 1e-6, 1.0 from the limit: no candidate); else the stock ratio | 0x9CD989 |
 
-**`cap` and `rate`** (per source type, `g_options[i]`). In the add-HP hook, with `g_uhcOverhealAllow` = i + 1 (only
-the heal tick of a source healer sets it): with `rate`, the part of the amount above the reference becomes (HP +
-amount − max(HP, reference)) × rate / 100, the part below is kept; with `cap`, the amount is then lowered so that HP
-stops at reference × cap / 100. The tick's limit and the search's ratio above use the same limit, so the heal action
-ends when the unit reaches it (state 10) and a unit at its cap is no candidate, as a normal healer at the reference;
-without that a capped source would heal 0 HP forever. The C functions return a float in ST0 (x86 `__stdcall`), and
-change only EAX, ECX and EDX, as the stolen calls do. Without options every path calls what the hooks called before
-(`0x480408`, `UhcOverhealReferenceOf`, `0x45F295`, `UhcOverhealRatioOf`).
+**Which action overheals (2026-11-21, JTMaston's #85).** The heal tick's action ESI is the unit's action; `[esi+4]` is
+the player's copy of the tactics action, the same object whose `<rate>` entries the tick reads (`mov ecx,[esi+4]` /
+`call 487C45h` at 0x9E0CC3, REA `ev_d240f09a…`, `ev_5be39379…`: the rate list `[action+0Ch]`, count `[+10h]`, 0Ch-byte
+entries). `<CanOverheal>` and `<OverhealCap>` (percent, 100 to 1000) come through the shared action tag hook
+(`actiontags.h`), from a tactics `<action>` or a `<ProtoAction>`, and are kept by (proto ID `[proto+4]`, action name index
+`[action+4]`), which every player's copy keeps; a tactics file read for several protos gives each its own entry. A tag on
+an action whose name has no "heal" is logged and dropped (the heal tick would never read it). The Data subtypes
+`CanOverheal` and `OverhealCap` (`AddTechActionSubtype`, `action=`/`allactions=`) keep a value per copy of an action (its
+address, guarded by the same key) through the stock value function 0x7F892A, from the tag's value (or 0, none): `Assign`
+1 or 0 turns it on or off, `Absolute` adds. A value above 0.5 is on. Both maps are cleared at each database load; the
+techs apply again on a load. The search knows only the healer, so it takes the best of the healer's actions (its proto
+copy's action set `[proto+44h]`, `[set+1Ch]`, count `[set+20h]`): one without a cap wins, else the highest cap. A cfg
+type is an explicit opt-in: a healer of it overheals with every action, to its `cap=`. In the add-HP hook, with
+`g_uhcOverhealAllow` set (only the heal tick of an overhealing action sets it), the amount is lowered so that HP stops at
+reference × cap / 100; it is not scaled any more (the cfg's `rate=` is gone: above the reference the action heals at
+its own `<rate>`, as below it). The tick's limit and the search's ratio use the same limit, so the heal action ends when
+the unit reaches it (state 10) and a unit at its cap is no candidate; without that a capped healer would heal 0 HP
+forever. The C functions return a float in ST0 (x86 `__stdcall`), and change only EAX, ECX and EDX, as the stolen
+calls do.
 
 **Why it is safe.** The decisions read only protos and HP (the same on every machine) and the cap
 only lowers a positive amount; damage (negative amounts) and the setter's other callers are
@@ -3170,6 +3226,16 @@ forgets every unit, and so does a data reload); for each unit, the unit table lo
 gone, dead or unmarked units are forgotten. A unit at or below its reference is forgotten; one whose
 last gain is less than `delay` ago waits; otherwise HP = max(HP − rate × elapsed, reference)
 through the stock setter FUN_004820A1(unit, value, 0).
+
+**The rate and delay per proto (2026-11-21, JTMaston's #85).** `<OverhealDecay delay="S">R</OverhealDecay>` comes through
+the shared proto tag hook (`prototags.h`; the attribute through the XML attribute reader 0x598F37 and 0x402733) and is
+kept by proto ID `[proto+8]`: R % of the reference per second, S seconds. The Data subtypes `OverhealDecay` and
+`OverhealDecayDelay` (`AddTechSubtype`) keep a value per player's copy of a proto (its address, guarded by its ID), from
+the tag's (or the default's) through 0x7F892A; a target that names a unit type reaches every proto of the type, as the
+stock subtypes do. At each gain and each tick the unit's proto copy `[unit+5Ch]` gives the rate and delay: its tech value,
+else its tag, else the cfg line's values, else 2 % and 0 s. A rate of 0 does not note the unit, and stops a noted one.
+Both maps are cleared at each database load. The saved marker (stat 65h) still holds only the last gain; the rate is
+read again after a load.
 
 **`holdNear`.** For a unit past its delay, before the decay, each `holdNear` entry runs the world's spatial query
 FUN_004A1C55(world, &[unit+14h], metres, 1, list) (`noTrainNearEnemyTC`'s: the IDs of the units whose distance to the

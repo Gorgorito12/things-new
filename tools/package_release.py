@@ -228,6 +228,7 @@ gatherFix                     gather on a fixed interval (the data's rate)
 rofFix, stunMovingTargetFix   orders keep the attack timer; stuns survive a moving target
 noDamageOnUnbuiltFoundations  unbuilt foundations take no damage
 truckAttackResourceFix [log] a TruckAttack no longer empties the buildings it hits
+deadReplacementAtZeroInventory [log] a hunt or herdable leaves its DeadReplacement when its body is used up
 fallenHeroTacticsFix          knocked-out or stunned units keep their tactic
 impactBoneFix [all]           impact effects hung on scaled bones keep their size
 customImpactTypes <names>     impact types after the 15 stock ones (.dmg, ImpactType)
@@ -321,11 +322,11 @@ overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [bar=Texture] [stat[=Labe
                               of marked units use InitialHitpoints as 100 % (overheal up to
                               MaxHitpoints); segment: the HP above it in orange, Overwatch style
                               and on the portrait bar; stat: an Overheal row
-overhealSources [UnitType [cap=P] [rate=P] ...] [log]   only marked healers
-                              (AbstractOverhealer) heal overheal units above
-                              InitialHitpoints; per type a cap and a rate above it
-overhealDecay R[%] [D] [UnitType ...] [holdNear Type M] [log]   overheal above
-                              InitialHitpoints decays at R HP/s, D s after the last
+overhealSources [UnitType [cap=P] ...] [log]   only heal actions with <CanOverheal>1
+                              heal overheal units above InitialHitpoints, up to
+                              <OverhealCap> (Data subtypes CanOverheal, OverhealCap)
+overhealDecay [R[%] [D]] [UnitType ...] [holdNear Type M] [log]   overheal above
+                              InitialHitpoints decays at <OverhealDecay> % per s (default 2), D s after the last
                               heal (Overwatch style); not while an own unit of Type is
                               within M metres
 showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)

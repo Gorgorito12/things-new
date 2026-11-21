@@ -87,6 +87,7 @@ set(UHC_SOURCES
   src/features/decimalpop.cpp
   src/features/dodge.cpp
   src/features/dopples.cpp
+  src/features/deadreplacement.cpp
   src/features/fame.cpp
   src/features/farms.cpp
   src/features/fileio.cpp
@@ -189,6 +190,7 @@ set(UHC_SOURCES
   src/hooks/decimalpop_hooks.asm
   src/hooks/dodge_hooks.asm
   src/hooks/dopple_hooks.asm
+  src/hooks/deadrepl_hooks.asm
   src/hooks/dot_hooks.asm
   src/hooks/fame_hooks.asm
   src/hooks/gatherrate_hooks.asm

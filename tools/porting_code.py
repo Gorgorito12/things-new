@@ -118,6 +118,7 @@ PAGES = {
         "truckAttackResourceFix": ["src/features/truckattack.cpp", "src/hooks/truckattack_hooks.asm"],
         "autoGatherFrom": ["src/features/autogatherfrom.cpp"],
         "herdWalkAwayFix": ["src/features/herdwalkaway.cpp"],
+        "deadReplacementAtZeroInventory": ["src/features/deadreplacement.cpp", "src/hooks/deadrepl_hooks.asm"],
     }),
     "buildings": ("Buildings and training", {
         "liveBuildingWorkRate": ["src/features/workrate.cpp", "src/hooks/workrate_hooks.asm"],

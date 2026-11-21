@@ -572,7 +572,10 @@ Code: [combat](porting-code/combat.md#detonationdeath). It needs `AddProtoTagHan
 - **The blast on screen:** no site is written. After the area damage the key calls the terrain impact `0x4CB11C`
   (`thiscall(projectile, point)`, `ret 4`) with a zeroed record of 70h bytes holding the action at `+10h` and the point
   at `+64h`; for `<DetonationImpactEffect>` it reads the effect with `0x58F017` (`thiscall([[0C66234h]+0BB8h], &text)`,
-  the node's text field `[node+14h]`) at the data load and passes a stand-in action whose `+70h` is that ID.
+  the node's text field `[node+14h]`) at the data load and passes a stand-in action whose `+70h` is that ID. A unit with
+  an obstruction radius (`[proto+88h]` or `[proto+8Ch]`) of 1.5 m or more gets one call per point of a grid over its
+  footprint (`round(2r / 3)` per side, 2 to 3, within ±0.75 r along `[unit+38h]` and `[unit+20h]`). The area damage's
+  ninth argument is 1, so its victims play no hit or pain sound; the damage does not read it.
 - **The delete calls:** `0x7CD0CF` (HP setter `0x4820A1`) and `0x7CD0DC` (kill queue `0x4B4DC2`) are `call`s to the
   asm hooks of `detonation_hooks.asm`: each pushes ECX (the unit), then EDI (the delete command) and ECX for the
   helper, pops ECX and `jmp`s to the stock callee. Bit 3 of the command's flag bits (`[[cmd+58h]] & 8`, size
@@ -2017,19 +2020,26 @@ Code: [healing](porting-code/healing.md#overhealhitpointbars).
 Code: [healing](porting-code/healing.md#overhealsources).
 
 - **Needs** overhealHitpointBars' types and helpers (above); apply it after that key.
-- **Globals:** `g_uhcOverhealSourceTypes[8]`, `g_uhcOverhealSourceTypeCount`, `g_uhcOverhealAllow`.
+- **Globals:** `g_uhcOverhealSourceTypes[8]`, `g_uhcOverhealSourceTypeCount` (the cfg's opt-in types), `g_uhcOverhealAllow`,
+  `g_uhcOverhealAllowCap`.
+- **Which action overheals:** `<CanOverheal>` and `<OverhealCap>` through `AddActionTagHandler`, kept by (`[proto+4]`,
+  `[action+4]`); the Data subtypes `CanOverheal` and `OverhealCap` through `AddTechActionSubtype`, kept by the address
+  of the player's copy of the action (guarded by the same key) and computed with `0x7F892A`. Clear both at each
+  database load (`OnDatabaseLoad`).
 - **Add-HP hook** at `0x4823A3` (8 B: `push ecx; push esi; mov esi,ecx; cmp dword ptr [esi+8],8`),
   ECX = unit, `[esp+4]` = amount (float), `[esp+8]` = flag: pushad, `UhcOverhealAddHp(unit,
   &amount)` (may lower the amount in place), popad, redo the 8 bytes, → `0x4823AB` (`jbe` on the
   `cmp`). Lowering rule: amount > 0, the unit's proto marked, `g_uhcOverhealAllow` = 0 and
   HP + amount > reference → amount = max(reference − HP, 0).
-- **Tick max hook** at `0x9E0BBB` (5 B, `call 480408h`), ECX = EDI = target, ESI = the action
-  (healer `[esi+10h]`), FPU stack empty: ST0 = the reference for a marked target and a non-source
-  healer, else the stock max; → `0x9E0BC0`.
-- **Tick add hook** at `0x9E0CE9` (5 B, `call 4823A3h`): `g_uhcOverhealAllow` = the healer is a
-  source; the stolen call; `g_uhcOverhealAllow` = 0; → `0x9E0CEE`.
+- **Tick max hook** at `0x9E0BBB` (5 B, `call 480408h`), ECX = EDI = target, ESI = the unit's action
+  (healer `[esi+10h]`, the player's copy of its tactics action `[esi+4]`), FPU stack empty: ST0 = the reference for
+  a marked target and an action that does not overheal, min(reference × cap, max) for one that does; else the stock
+  max; → `0x9E0BC0`.
+- **Tick add hook** at `0x9E0CE9` (5 B, `call 4823A3h`): `g_uhcOverhealAllow` = the action overheals (and
+  `g_uhcOverhealAllowCap` its cap); the stolen call; `g_uhcOverhealAllow` = 0; → `0x9E0CEE`.
 - **Search hook** at `0x9CD984` (5 B, `call 45F295h`), ECX = ESI = candidate, healer `[ebp+4]`:
-  ST0 = HP / reference (stock rules) for a marked candidate and a non-source healer, else the stock
+  ST0 = HP / reference (stock rules) for a marked candidate when none of the healer's actions (`[proto+44h]`,
+  `[set+1Ch]`, `[set+20h]`) overheals, HP / the highest limit of those that do, else the stock
   ratio; → `0x9CD989`. Coexists with smartHealTargets and healNonIdle (other sites of the loop).
 - **The add-HP hook is shared** with overhealDecay: `InstallOverhealAddHook()` writes it once.
 
@@ -2052,6 +2062,10 @@ Code: [healing](porting-code/healing.md#overhealdecay).
   alive (`vtbl+A4h`), marked; at or below the reference → forget; inside the delay → skip; else
   `FUN_004820A1(unit, max(HP − rate × elapsed / 1000, reference), 0)` (rate in HP/s, or the
   reference × % / 100).
+- **Rate and delay per proto:** `<OverhealDecay delay="S">R</OverhealDecay>` through `AddProtoTagHandler` (the
+  attribute with `0x598F37` / `0x402733`), kept by `[proto+8]`; the Data subtypes `OverhealDecay` and
+  `OverhealDecayDelay` through `AddTechSubtype`, kept by the address of the player's copy of the proto. A unit takes its
+  proto copy's tech value, else its tag, else the cfg's, else 2 % and 0 s; a rate of 0 is not noted.
 - **Never** below the reference, never the real clock, never pointer order.
 
 ### Unit panel row (the minimized interface)
@@ -2165,6 +2179,21 @@ Code: [gathering](porting-code/gathering.md#truckattackresourcefix).
   at `0x9EC63B` (stock) or `0x9EC64D` (the damage, skipping the inventory reset). WoL's DLL does not patch that range.
 - **Test:** an enemy `MonsterTruckA` placed beside a Mill: with the key the Mill keeps its 999 food and villagers gather
   there; without it, the Mill is empty and villagers stand idle beside it.
+
+### deadReplacementAtZeroInventory
+
+Code: [gathering](porting-code/gathering.md#deadreplacementatzeroinventory).
+
+- **Sites:** a 7-byte `jmp` at `0x4B4F2F` (`51 56 8B F1 8B 46 68`, the head of the death replacement; continuation
+  `0x4B4F36`) and a 5-byte `jmp` at `0x495D6B` (`A1 34 62 C6 00`, `mov eax,[0C66234h]`, the head of the removal notice;
+  continuation `0x495D70`). Verify the calls `0x4F1680` (`E8 AA 38 FC FF`), `0x495DEE` and `0x6A3FF0` too: the first hook
+  recognises its caller by the return address `0x4F1685`. Neither DLL of WoL patches these bytes in the map of
+  [wol-uhc-map.md](wol-uhc-map.md). <!-- private -->
+- **Logic:** the head returns at once when called from `0x4F1685` for a unit whose proto has a `<DeadReplacement>`
+  (`[proto+F8h]` ≥ 0), proto flag `0Eh` (`DieAtZeroResources`) and not `0Dh` (cleared by `DoNotDieAtZeroHitpoints`). The
+  notice, for such a unit with state bit 12 (a body) and without state bit 29h (already replaced), calls `0x4B4F2F`.
+- **Test:** a `Cow` with `<DeadReplacement>Turkey</DeadReplacement>`, killed by a trigger: no turkey while the body lies
+  there; settlers gather it, and the turkey appears where the body was when it is used up.
 
 ### displayedRange
 

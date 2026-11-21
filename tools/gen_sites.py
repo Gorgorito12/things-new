@@ -981,6 +981,17 @@ SITES = [
     ("TechRemoveHead", 0x94DCB2, 6),
     ("TechLoadHead", 0x94DDEA, 7),
     ("IsEnemyHead", 0x484D2D, 6),
+    # deadReplacementAtZeroInventory: the head of the death replacement FUN_004B4F2F (push ecx / push esi /
+    # mov esi,ecx / mov eax,[esi+68h], then test eax,eax / jne 4E6220h, the continuation at 0x4B4F36); its
+    # call at 0x4F1680 in the state check's body path (a DieAtZeroResources unit at 0 HP becomes a body)
+    # (verify only: the hook asks the caller's return address, 0x4F1685). The head of the removal notice
+    # FUN_00495D6B (mov eax,[0C66234h], then push esi / push edi at 0x495D70) and its only two calls, in the
+    # paths that remove a unit marked for removal (state bit 7) and then test DeadReplacementWhenDestroyed
+    ("DeadReplacementHead", 0x4B4F2F, 0x0F),
+    ("CorpseReplacementCall", 0x4F1680, 5),
+    ("RemovalNoticeHead", 0x495D6B, 7),
+    ("RemovalNoticeCall1", 0x495DEE, 5),
+    ("RemovalNoticeCall2", 0x6A3FF0, 5),
     # detonationDeath: the only call of the kill handler, in the kill queue's drain 0x493D46; the head of
     # the area damage, verify only
     ("DetonationKillCall", 0x493D8F, 5),

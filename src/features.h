@@ -46,6 +46,7 @@ Outcome ApplyKillSpawn(const Config& config);
 Outcome ApplyHcTargetTechs(const Config& config);
 Outcome ApplyDetonationDeath(const Config& config);
 Outcome ApplyAnnexFacing(const Config& config);
+Outcome ApplyDeadReplacementAtZeroInventory(const Config& config);
 Outcome ApplyAccuracyTechs(const Config& config);
 Outcome ApplyCratePriority(const Config& config);
 Outcome ApplySharedBuildLimit(const Config& config);
@@ -295,6 +296,7 @@ inline constexpr Feature kFeatures[] = {
     {"detonationDeath", ApplyDetonationDeath},
     // Shares the death observer (deathobservers.h) with detonationDeath; its observer runs after that one.
     {"annexFacing", ApplyAnnexFacing},
+    {"deadReplacementAtZeroInventory", ApplyDeadReplacementAtZeroInventory},
     {"steadyHitpointBars", ApplySteadyHitpointBars},
     // After overhealHitpointBars: both add bars through the shared floating bar hooks (floatingbars.h), the segment
     // first.
@@ -349,7 +351,7 @@ inline constexpr const char* kHandledKeys[] = {
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
+    "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory",
 };
 
 }  // namespace uhc

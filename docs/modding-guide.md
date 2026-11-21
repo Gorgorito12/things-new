@@ -34,6 +34,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 11:55 | [`herdWalkAwayFix`](bug-fixes.md#herdwalkawayfix) | Added. A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in. | Nothing; for nomads, `wol-fixes/me-herdables`. |
 | Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
 | Saturday 2026-11-21 11:23 | [`editorSearch`](#editorsearch) | Added. The scenario editor's Objects palette and its Forbidden Units/Techs dialog get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml` and `uiforbiddenunitstechs.xml`: `wol-fixes/editor` has both. |
+| Saturday 2026-11-21 12:00 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only heal actions with `<CanOverheal>1</CanOverheal>` heal those units above `InitialHitpoints`, up to their `<OverhealCap>`, and techs can turn it on or off; every other heal stops there. | `overhealHitpointBars`, and the tags on the `Heal` actions that may overheal. |
+| Saturday 2026-11-21 11:54 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
+| Saturday 2026-11-21 11:07 | [`deadReplacementAtZeroInventory`](bug-fixes.md#deadreplacementatzeroinventory) | Added. A hunt, a herdable or any unit that leaves a body to gather drops its `<DeadReplacement>` when the body is used up, not when it falls. | `<DeadReplacement>` on the protos that want one (none has it today). |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -52,7 +55,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-13 13:06 | [`impactBoneFix`](bug-fixes.md#impactbonefix) | Filmed in WoL, with a control. An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | Nothing. |
 | Friday 2026-11-13 10:46 | [`randomCost`](#randomcost) | Added. `<RandomCost resourcetype="Gold" min="80" max="120"/>` in a proto gives each unit trained a price rolled in that range, a new one after each purchase, and the button shows the exact price. | The tag on the protos that want it. |
 | Friday 2026-11-13 10:03 | [`playerIcon`](#playericon) | Filmed in WoL, with a control. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. |
-| Friday 2026-11-13 09:24 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Friday 2026-11-13 09:01 | [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) | Added. The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. |
 | Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added. The King of the Hill time comes from a table by the number of players, or of teams. | Nothing. |
 | Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added. Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
@@ -66,8 +68,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-11-12 15:52 | [`stealthTargeting`](bug-fixes.md#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
-| Thursday 2026-11-12 13:25 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
-| Thursday 2026-11-12 13:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | `overhealHitpointBars`. |
+| Thursday 2026-11-12 13:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
 | Thursday 2026-11-12 11:40 | [`menuOptions`](bug-fixes.md#menuoptions) | Added. Lets the player switch `bufferedFileReads` and `fastVertexFill` on or off in the options menu, from the next start. | A field per key in `data\options.xml`. |
 | Thursday 2026-11-12 08:17 | [`fastLastInLine`](bug-fixes.md#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
 | Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
@@ -2108,8 +2109,8 @@ Who heals, whom, and how far.
 | [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | **new** | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). | confirmed (automatic healing) |
 | [`smartHealTargets`](#smarthealtargets) | A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | **new** | Nothing (unit types or proto names are optional). | confirmed |
 | [`overhealHitpointBars`](#overhealhitpointbars) | The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | **new** | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. | confirmed (single player, UI) |
-| [`overhealSources`](#overhealsources) | Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | **new** | `overhealHitpointBars`, and the source unit type on the healers that may overheal. | confirmed |
-| [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | **new** | `overhealHitpointBars`. | confirmed |
+| [`overhealSources`](#overhealsources) | Only heal actions with `<CanOverheal>1</CanOverheal>` heal those units above `InitialHitpoints`, up to their `<OverhealCap>`, and techs can turn it on or off; every other heal stops there. | **new** | `overhealHitpointBars`, and the tags on the `Heal` actions that may overheal. | confirmed (single player) |
+| [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | **new** | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. | confirmed (single player) |
 
 #### healNonIdle
 
@@ -2489,7 +2490,24 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
 
 *Only chosen healers can heal a unit above its normal health.*
 
-**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Thursday 2026-11-12 13:25
+**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Saturday 2026-11-21 12:00
+
+![overhealSources with CanOverheal in WoL](media/overhealSources-canoverheal-wol.gif)
+
+*In WoL, with `overhealSources log`, `overhealDecay log` and `overhealHitpointBars AbstractOverheal segment stat` (2026-11-21,
+a scenario; a `Pikeman` marked for the test, `MaxHitpoints` 156, and an `NAnurse` beside it, both selected; the techs
+`UHCOvhNurseOn` and `UHCOvhNurseOff` are test data: `Data` `CanOverheal` with `action="Heal"`, `Assign` 1 and 0):* hit at 8
+s, the nurse heals it to its 100 %, `122.2/148`, and stops: her `Heal` has no `<CanOverheal>`. At 22 s a trigger gives
+player 1 `UHCOvhNurseOn`, and she takes it to `148.2/148`, its max (`tech subtype CanOverheal, relativity 1, amount 1: 0
+-> 1`). At 42 s `UHCOvhNurseOff` (`1 -> 0`): she stops, and the overheal decays at the default 2 % a second (2.44 HP/s)
+back to `122.2` by 55 s. [Full video (MP4)](media/overhealSources-canoverheal-wol.mp4).
+
+![overhealSources with CanOverheal in WoL, key off](media/overhealSources-canoverheal-wol-control.gif)
+
+*In WoL, `overhealSources` and `overhealDecay` off (the same data and scene):* the nurse heals the Pikeman straight to
+`148.2`, before any tech, and it stays there. [Full video (MP4)](media/overhealSources-canoverheal-wol-control.mp4).
+
+*The videos below were filmed before 2026-11-21, when a healer's unit type made it a source (`AbstractOverhealer`, then the default); a type named in the cfg still works that way.*
 
 ![overhealSources in WoL](media/overhealSources-wol.gif)
 
@@ -2528,18 +2546,36 @@ healed at about 10 HP/s to 150, then at 5 HP/s, and stops at `165/150`, 110 %.
 back. [Full video (MP4)](media/overhealSources-cap-wol-control.mp4).
 
 ```
-overhealSources [<UnitType> [cap=<percent>] [rate=<percent>] ...] [log]   default AbstractOverhealer; up to 8 types
+overhealSources [<UnitType> [cap=<percent>] ...] [log]   no type by default; up to 8 types
 ```
 
-- **`cap=<percent>`** (100 to 1000) after a source type: its healers heal a marked unit to at most that percent of its
-  100 %, and never above `MaxHitpoints` (the default, as before). Their heal action ends there and their search skips a
-  unit at its cap, as for a normal healer at the 100 %. `cap=100` makes the type a normal healer for marked units.
-- **`rate=<percent>`** (1 to 1000, default 100) after a source type: the part of each of its heals that lands above the
-  100 % is that percent of the stock amount; below the 100 % the heal is unchanged.
-- **Per type:** the options belong to the type they follow, e.g. `overhealSources AbstractMonk cap=105 Surgeon cap=120
-  rate=50`. A healer of several listed types takes the options of the first one listed. `50%` works too.
-- **A bad option** stops the key: `overhealSources: cap=110: expected <UnitType> [cap=<percent>, 100 to 1000]
-  [rate=<percent>, 1 to 1000] after each source type; feature not applied` (also for an option before any type).
+```xml
+<action>
+    <name>Heal</name>
+    <type>Heal</type>
+    <rate type="LogicalTypeHealed">5.0</rate>
+    <CanOverheal>1</CanOverheal>      <!-- this heal may go above the 100 % (default 0) -->
+    <OverhealCap>110</OverhealCap>    <!-- up to 110 % of the 100 % (100 to 1000; default: up to MaxHitpoints) -->
+</action>
+```
+
+- **Which heals overheal (2026-11-21, JTMaston's #85):** the heal action says so itself. `<CanOverheal>1</CanOverheal>`
+  in a `Heal` action, in its `.tactics` file or in the proto's `<ProtoAction>`, lets that action heal a marked unit above
+  its 100 %; without it (the default) the action stops there. `<OverhealCap>percent</OverhealCap>` (100 to 1000) stops it
+  at that percent of the 100 % (never above `MaxHitpoints`); without it, up to `MaxHitpoints`. Above the 100 % the action
+  heals at its own `<rate>`, as below it: there is no separate overheal rate. A `.tactics` file shared by several protos
+  gives the tags to each of them; a `<ProtoAction>` to its proto only. The tags on an action whose name has no "Heal" are
+  logged and ignored, and so is a bad value (`<CanOverheal>` takes 1 or 0).
+- **Techs:** a `Data` effect of subtype `CanOverheal` or `OverhealCap`, with `action="Heal"` (or `allactions="1"`),
+  changes them for the player who gets the tech, as stock's `Damage` changes an action:
+  `<Effect type="Data" amount="1" subtype="CanOverheal" action="Heal" relativity="Assign"><Target type="ProtoUnit">NAnurse</Target></Effect>`
+  turns it on, `amount="0"` with `Assign` turns it off, `OverhealCap` with `Assign` sets the cap (`Absolute` adds, as for
+  any value). A saved game gets them back when its techs apply again on the load.
+- **`AbstractOverhealer` is no longer a source by default.** The cfg's unit types are an explicit opt-in that still works
+  (until the data moves to the tags): a healer of a listed type overheals with every heal action, to its type's
+  `cap=<percent>` (100 to 1000) or up to `MaxHitpoints`. `rate=` is gone: it is logged and ignored (`rate= is gone, an
+  overhealing action heals at its own <Rate>; ignored`). A bad `cap=` stops the key: `overhealSources: cap=110: expected
+  <UnitType> [cap=<percent>, 100 to 1000] after each type; feature not applied` (also for an option before any type).
 - **Measured in WoL (2026-11-11),** the scene above: 107.8 → 123.6 → 140.0 in steps of 1.6 s (about 10 HP/s), then
   152.7 → 160.4 in 1.55 s (5.0 HP/s), held at 165.0; without the options 159.0 → 174.8 in 1.57 s (10 HP/s) up to 180.
   At the start, a fresh Tomahawk (150) was taken to 165 by the source, 180 without the cap.
@@ -2549,32 +2585,46 @@ overhealSources [<UnitType> [cap=<percent>] [rate=<percent>] ...] [log]   defaul
   have overheal, and its 100 % (`InitialHitpoints`, scaled when an aura changes the max) is the
   limit here. Without that line the key is not applied.
 - **Effect,** for a marked unit:
-  - a healer whose proto is of a source type (default `AbstractOverhealer`, a new marker; an existing
-    type or a proto name works too) heals it up to `MaxHitpoints`;
-  - any other healer heals it only up to its 100 %: its automatic search does not pick a marked
+  - a heal action with `<CanOverheal>1</CanOverheal>` (or a healer of a type named in the cfg) heals it up to
+    its `<OverhealCap>` or `MaxHitpoints`;
+  - any other heal action heals it only up to its 100 %: its automatic search does not pick a marked
     unit at its 100 %, and its heal action ends when the unit gets there (the healer goes idle);
     a direct order on such a unit ends at once;
   - every other way of gaining HP stops at the 100 % too: regeneration, the Regeneration dance,
     area heals, self heals, powers and triggers that add HP. Only the single-target heal action of
-    a source healer overheals. Damage, and code that sets HP rather than adding it (creation,
+    an overhealing action overheals. Damage, and code that sets HP rather than adding it (creation,
     transforms, the aura rescale), are not touched.
 
   Unmarked units heal as before.
-- **WoL needs:** the source type on the healers that may overheal, e.g.
-  `<UnitType>AbstractOverhealer</UnitType>` on `xpMedicineMan` in `data\protoy.xml`, or name an existing
-  type: `overhealSources AbstractMonk`, or a proto: `overhealSources xpMedicineMan`.
-- **Log:** `overhealSources: only healers of unittype X heal marked units above their 100 %; every
-  other heal stops there (multiplayer unverified)`; when the data loads `unit types: X -> <ID> …`;
+- **WoL needs:** `<CanOverheal>1</CanOverheal>` (and `<OverhealCap>` where wanted) in the `Heal` actions that may
+  overheal, in their `.tactics` files or `<ProtoAction>`; until then, a cfg type keeps today's behaviour:
+  `overhealSources AbstractOverhealer cap=110`.
+- **Log:** `overhealSources: only heal actions with <CanOverheal>1</CanOverheal> (Data subtypes CanOverheal and
+  OverhealCap) heal marked units above their 100 %; every other heal stops there (multiplayer unverified)`; with `log`,
+  each tag as the data loads, `overhealSources: proto Surgeon, action Heal (protoy): <CanOverheal> 1`, each tech,
+  `overhealSources: proto 1682, action Heal, tech subtype CanOverheal, relativity 3, amount 0: 1 -> 0`; a tag on another
+  action, `proto Settler, action Build: <CanOverheal> is for heal actions only, ignored`, a bad value, `proto
+  ypMonkIndian, action Heal: <OverhealCap>abc</OverhealCap> needs a percent from 100 to 1000, ignored`;
   in a game `hook reached: overhealSources heal search (0x9CD984)`, `heal tick (0x9E0BBB)`, `heal
   (0x9E0CE9)` and `overheal add HP (0x4823A3)`. With `log`, the first of each proto: `overhealSources:
-  a heal of unit N (Tomahawk) stops at its 100 % 150.0 (…; not from a source healer)` and `…unit N
-  (Tomahawk) is healed above its 100 % 150.0 by a source healer (…; rate 50 %)`; with a cap, `overhealSources: a
-  source heal of unit N (xpTomahawk) stops at its cap 165.0, 110 % of its 100 % 150.0 (…)`. The startup line lists the
-  options after each type: `AbstractOverhealer (up to 110 %, rate 50 % above 100 %)`. Without
+  a heal of unit N (Pikeman) stops at its 100 % 122.2 (…; not from an overhealing heal)` and `…unit N
+  (Pikeman) is healed above its 100 % 122.2 by an overhealing heal (…)`; with a cap, `overhealSources: an
+  overheal of unit N (Longbowman) stops at its cap 132.0, 110 % of its 100 % 120.0 (…)`. With cfg types the startup
+  line adds `; and every heal of a healer of unittype AbstractOverhealer (up to 110 %)`. Without
   `overhealHitpointBars`: `overhealSources: needs overhealHitpointBars, …; feature not applied`.
 - **Simulation:** yes. Every machine needs the same line (and `overhealHitpointBars` with the same
   types). The source type is a new unit type, which changes the unit type count.
 - **Status:** confirmed in single player.
+  - **`<CanOverheal>`, `<OverhealCap>` and the techs (2026-11-21, WoL, scenarios; British `Longbowman` and `Pikeman` marked for
+    the test, 120 of 144 and 130 of 156):** a `Surgeon` with both tags in its `<ProtoAction>` (cap 110) held its Longbowman at
+    `132.0`, 110 % of 120; an `xpMedicineMan` with `<CanOverheal>1</CanOverheal>` in `healer.tactics` (no cap) took its
+    Longbowman to `144.0`, its max (the same file gave the tag to `Imam`, `NatMedicineMan` and `AboriginalElder` too); an
+    `NAnurse` without it stopped at the 100 %, 122.2, until `UHCOvhNurseOn` (`Assign` 1), then 148.2, and after
+    `UHCOvhNurseOff` (`Assign` 0) the overheal decayed to 122.2 in about 11 s; `UHCOvhNurseCap` (`Assign` 120) stopped her at
+    `146.6`. Player 2's nurse, without the techs, kept its Pikeman at 122.2 the whole time. A saved game loaded with
+    the techs active kept them (a Pikeman held at 148.2 with its decay set to 0 by a tech stayed there after the load).
+    `<CanOverheal>` on a Settler's `Build` and `<OverhealCap>abc</OverhealCap>` were logged and ignored. The keys applied
+    and worked beside WoL's own `uhc.dll` (our `dinput8.dll`), and an AI skirmish (Germans, `wolOtto`) played with them on (17 AI units at 159 s, no XS error). `perfprobe.py`, 60 s of 20 marked Longbowmen with 5 healers against 20 Pikemen with 3 overhealing nurses: keys on 526 fps, update 0.20 ms, main thread 65 %, no frame over 50 ms; keys off 578 fps, 0.24 ms, 77 %, none (other games ran beside it). Not tested: multiplayer.
   - **In WoL (2026-11-04):** a `NAnurse` healed a marked Tomahawk to `150/150` and stopped, and a source
     medicine man took it to `179/150`; without the key the nurse herself went past it. The Regeneration
     dance stopped at `150/150`, and went to `180/150` without the key.
@@ -2624,8 +2674,23 @@ then 2 HP/s back to 150 at 41.6 s. [Full video (MP4)](media/overhealDecay-holdne
 [Full video (MP4)](media/overhealDecay-holdnear-wol-control.mp4).
 
 ```
-overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [holdNear <UnitType> <metres> ...] [log]
+overhealDecay [<rate>[%] [<delay>]] [<UnitType> ...] [holdNear <UnitType> <metres> ...] [log]
 ```
+
+```xml
+<Unit name="Longbowman">
+    <OverhealDecay delay="2">5</OverhealDecay>   <!-- 5 % of its 100 % per second, 2 s after its last gain -->
+</Unit>
+```
+
+- **Per proto (2026-11-21, JTMaston's #85):** `<OverhealDecay delay="S">R</OverhealDecay>` in a marked unit's proto: it
+  loses R % of its 100 % per second, S seconds (default 0) after its last gain; 0 keeps its overheal. A marked proto
+  without the tag takes the cfg line's rate and delay, or **2 % per second and no delay** when the line has none: the
+  line `overhealDecay` alone is the switch. A bad value is logged and the tag ignored.
+- **Techs:** `Data` effects of subtype `OverhealDecay` (the percent) and `OverhealDecayDelay` (seconds) on a proto or a
+  unit type change them for the player who gets the tech:
+  `<Effect type="Data" amount="0" subtype="OverhealDecay" relativity="Assign"><Target type="ProtoUnit">AbstractInfantry</Target></Effect>`
+  stops the decay of that player's infantry. A saved game gets them back when its techs apply again on the load.
 
 - **`holdNear <UnitType> <metres>`** (up to 4; more than 0, at most 200 m): a unit due to decay keeps its HP while a
   unit of that type (or proto) **of the same player**, alive and built, other than itself, is within that distance
@@ -2641,12 +2706,12 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [holdNear <UnitType> <metres>
 
 - **Needs** [`overhealHitpointBars`](#overhealhitpointbars): its types mark the units and its
   100 % (`InitialHitpoints`, scaled when an aura changes the max) is where the decay stops.
-- **Effect:** a marked unit whose HP is above its 100 % loses `rate` HP per second (`2`), or
-  `rate` percent of its 100 % per second (`1%`), counted in game time (paused games and game speed
+- **Effect:** a marked unit whose HP is above its 100 % loses its proto's `<OverhealDecay>` percent of its 100 % per
+  second, or the line's `rate` HP per second (`2`) or percent (`2%`), 2 % by default, counted in game time (paused games and game speed
   follow), once `delay` seconds (default 0, decimals allowed) have passed since it last gained HP
   above its 100 %. It stops exactly at its 100 %: the decay never goes below it and never kills.
   With unit types (or proto names) listed, only marked units of those types decay. Works with or
-  without [`overhealSources`](#overhealsources): with it, only source healers create overheal to
+  without [`overhealSources`](#overhealsources): with it, only overhealing heal actions create overheal to
   decay; without it, any heal above the 100 % does.
 - **What counts as a gain:** any heal that takes the unit above its 100 % (healers, area heals,
   powers…) restarts the delay. Regeneration (the unit's own, and the Regeneration dance) does not:
@@ -2654,8 +2719,11 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [holdNear <UnitType> <metres>
   above its 100 % decays at once (the rate minus what it regenerates). With `overhealSources`,
   regeneration never passes the 100 % anyway. HP that a unit has above its 100 % without any gain
   (a transform into another marked proto, for instance) does not decay until its next gain.
-- **Log:** `overhealDecay: marked units above their 100 % lose R HP per second of game time, D s
-  after their last gain, down to it (multiplayer unverified)`; in a game `hook reached: overheal add
+- **Log:** `overhealDecay: marked units above their 100 % lose their <OverhealDecay> (% of it per second, after its
+  delay; Data subtypes OverhealDecay and OverhealDecayDelay), or 2.00 % of it per second of game time 0.0 s after their
+  last gain, down to it (multiplayer unverified)`; with `log`, each tag, `overhealDecay: proto Longbowman loses 5.00 % of
+  its 100 % per second, 2.0 s after its last gain`, and each tech, `overhealDecay: proto Pikeman, tech subtype
+  OverhealDecay, relativity 3, amount 0: 2 -> 0`; in a game `hook reached: overheal add
   HP (0x4823A3)`, `hook reached: world update (0x481A57)`, `hook reached: overhealDecay
   regeneration (0x490881)` and, with a Regeneration dance, `overhealDecay Regeneration dance
   (0x67A03B)`. With `log`, the first of each proto:
@@ -2672,6 +2740,12 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [holdNear <UnitType> <metres>
   to 30.2 s in both runs (WoL, 2026-11-06). A unit transformed while it waits loses that until its next gain.
   `holdNear` keeps nothing of its own: it looks again on every tick.
 - **Status:** confirmed in single player.
+  - **`<OverhealDecay>` and the techs (2026-11-21, WoL, scenarios):** a Longbowman with `<OverhealDecay delay="2">5</OverhealDecay>`
+    went from 144 to 138 in a second, 2 s after its healer's last heal (5 % of 120 per second); a Pikeman without the tag
+    decayed at the default 2 % (2.44 HP/s of its 122.2) with the line `overhealDecay log` alone; `UHCOvhDecayInfantry`
+    (`Assign` 0 on `AbstractInfantry`) stopped player 2's Pikeman at 148.2, also after a save and a load, while player 1's,
+    without it, decayed. The tag's log line: `overhealDecay: proto Longbowman loses 5.00 % of its 100 % per second, 2.0 s
+    after its last gain`.
   - **In WoL (2026-11-12):** with `overhealDecay 3 1`, a marked Sepoy at `216/180` went down 3 HP a second from
     1 s after its healer was removed, to `180/180`, and the orange ends of both bars and the row went with it
     (`decays from 216.0 toward its 100 % 180.0 at 3.00 HP/s`, then `is back at its 100 % 180.0`); without the key
@@ -2717,9 +2791,35 @@ Attacks, armor, and what a hit does.
 
 #### detonationDeath
 
-*A unit can deal area damage around itself when it dies, and the blast shows where it hits.*
+*A unit can deal area damage around itself when it dies, and the blast shows on the unit that dies, over the whole of a building.*
 
-**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Friday 2026-11-13 09:24
+**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Saturday 2026-11-21 11:54
+
+![detonationDeath on a building in WoL](media/detonationDeath-building-wol.gif)
+
+*In WoL, with `detonationDeath log` (2026-11-21, a scenario; a `TownCenter` whose `CitadelBombardAttack` is its blast, 60
+Siege, `DamageArea` 10, `GAIAEnemy`, `<DetonationImpactEffect>effects\impacts\mortar</DetonationImpactEffect>`; eight Gaia
+`CoveredWagon` around it, their HP on screen):* a trigger destroys the Town Center at 55 s, and it blows up over its
+whole footprint, nine explosions on the building (`blast drawn at 9 points over its footprint`). The wagons show no
+explosion of their own and go from 250 to between 217.6 and 238.0 HP, the same as with the previous version of the key.
+[Full video (MP4)](media/detonationDeath-building-wol.mp4).
+
+![detonationDeath on a building in WoL, key off](media/detonationDeath-building-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* the Town Center collapses with its stock destruction only, and the wagons
+keep 250 HP. [Full video (MP4)](media/detonationDeath-building-wol-control.mp4).
+
+![detonationDeath on a unit in WoL](media/detonationDeath-onunit-wol.gif)
+
+*In WoL, with the key (the same scenario; a British `Grenadier` whose `BuildingAttack` is its blast, 40 Siege,
+`DamageArea` 6, the mortar effect; three Gaia `CoveredWagon` beside it):* a trigger kills the grenadier at 20 s: one
+mortar explosion where it stood (`blast drawn at 1 point`), none on the wagons, which go to 243.2, 233.9 and 235.2 HP.
+[Full video (MP4)](media/detonationDeath-onunit-wol.mp4).
+
+![detonationDeath on a unit in WoL, key off](media/detonationDeath-onunit-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* the grenadier falls, nothing explodes, and the wagons keep 250 HP.
+[Full video (MP4)](media/detonationDeath-onunit-wol-control.mp4).
 
 ![detonationDeath blast in WoL](media/detonationDeath-blast-wol.gif)
 
@@ -2832,6 +2932,12 @@ detonationDeath [log]
   effect stays. It is only drawn where the player can see, as a shot's landing is: a blast in the fog or the black
   map damages as usual and shows nothing. Over water the effect's water entry plays (`terrainwater`; for the mortar a
   water burst with its sound). Drawing and sound only: nothing in the simulation changes.
+- **The blast is on the unit that dies, not on what it hits (2026-11-21, JTMaston's #86):** a wide unit, a building or a
+  ship (`ObstructionRadiusX` or `ObstructionRadiusZ` from 1.5), bursts over its whole footprint: the effect plays at a grid
+  of points over it, about one every 3 m and at most 3 × 3 (a `House` 2 × 2, a `TownCenter` 3 × 3), so the building
+  itself blows up; a smaller unit gets the effect once, where it stood. The units hit show no effect of their own (the
+  game's area damage draws none: they only flinch) and, since this change, play no hit or pain sound: the only explosion
+  seen and heard is the one on the unit that dies. The damage is the same as before.
 - **A unit with `KnockoutDeath`** (WoL's `Engineer`, explorers, heroes) is knocked out, not killed, so it does not
   detonate (since 2026-11-13). `<DetonationOnKnockout>1</DetonationOnKnockout>` on the proto makes it detonate at each
   knockout: once per knockout, as damage while it lies knocked out does nothing, and again at the next knockout after
@@ -2863,7 +2969,7 @@ detonationDeath [log]
 - **Log:** `detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold, DetonationHitpointDecay, DetonationImpactEffect and DetonationOnKnockout are on`, in game `knocked out (KnockoutDeath), no blast` and a blast line ending in `(a trigger's Kill)`, with `log` `detonationDeath: proto 298 detonates when knocked out`, with `log` `detonationDeath: proto 714: its blast plays the impact effect effects\impacts\mortar (11)` / `its blast plays no impact effect`, and without `log` `<DetonationImpactEffect> X is not an impact effect, ignored`; with `log` `detonationDeath: proto 296 detonates on its command Detonate (a delete)` / `detonates at 25 % of its hit points` / `loses 100.00 hit points a second under its threshold`, and in game `detonationDeath: unit 0, proto 323: HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, `… loses 100.00 HP a second from here`, `unit 0 decayed to 0: kill queued`, a blast line ending in `(a delete)`, or `deleted without a DetonationCommand, no blast`, and with `log`: `detonationDeath: proto 294 fires Build` and
 - **Performance:** every loss of hit points asks the tag table once (a map lookup by proto ID), and the decay walks only
   the decaying units each world update. Measured with `perfprobe.py` (60 s, 30 Pikemen against 30, no tag on them): key on 1467 fps, main thread 79 %, longest frame 2.5 s (the load) and no frame over 50 ms after it; key off 1444 fps, 81 %, 3.7 s. With 30 Musketeers of 4000 HP against 30 that carry a threshold and a decay of 100 HP/s the game ran at 640 fps against 1461 and the render time tripled: that is the decaying units themselves (the HP setter's damage visuals on 30 units every update), not the hook, which runs on untagged units at no measurable cost.
-  `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0`. Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
+  `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0; blast drawn at 1 point` (a building: `blast drawn at 9 points over its footprint`). Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
 ![detonationDeath threshold and decay in WoL](media/detonationDeath-threshold-wol.gif)
 
 *In WoL, with the key (a Musketeer of 4000 HP, threshold 0.25, decay 100, a trigger that takes 76 % of its HP):* from
@@ -2883,6 +2989,13 @@ detonationDeath [log]
 *In WoL, key off (the same data):* the Delete key removes it with no line.
 [Full video (MP4)](media/detonationDeath-command-wol-control.mp4).
 
+- **Tested in WoL (2026-11-21, the blast on the unit that dies, JTMaston's #86):** the two videos above. The damage is
+  the same as before the change: with the build of 2026-11-20 and the same data and scene, the eleven wagons ended at the
+  same HP to the tenth (217.6 to 243.2). The area damage was read in REA: it draws nothing on the units it hits (they
+  flinch; the impact argument of TakeDamage is −2), so the only change for them is that they no longer play a hit sound.
+  A chain of three Gaia grenadiers (one killed, the two beside it at 5 HP): three blasts, one per grenadier, each `blast
+  drawn at 1 point`. Beside WoL's own `uhc.dll` (our `dinput8.dll`): applied, and a grenadier's blast as above. An AI
+  skirmish (Germans, `wolOtto`) with the key and the test data on: 17 AI units at 159 s, no XS error.
 - **Tested in WoL (2026-11-13, the blast on screen):** the scene of the first two videos (Ethiopians against an enemy
   of six `WOLScytheman`): four blasts, `unit 3, proto 714, at 41.9, 45.1` and `unit 2 … at 43.8, 45.2` (the archers,
   mortar effect) and `unit 1, proto 1482, at 38.5, 45.9` and `unit 0 … at 36.9, 46.6` (the Engineers, dynamite), each
