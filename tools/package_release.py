@@ -370,6 +370,7 @@ researchOnTheMove [log]       units of type ResearchOnTheMove take orders and wa
 nextResearchFree [log]        a Data tech effect makes a building's next research free
 researchGrants [log]          <ResearchGrantInterval> buildings gather points that make researches cheaper or free
 shipTechLimit [log]           <ShipTechLimit>N</ShipTechLimit> in a civ caps its techs that cost Ships per game
+                              (repeatable techs excepted)
 homeCityTechsInUnits [log]    a home city card listed in a proto's <Tech> rows is researched there like a tech
 killBountyTechs [log]         a Data tech effect may change a proto's Bounty
 resourceBounty [log]          <Bounty resourcetype> pays a resource at the kill

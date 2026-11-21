@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Saturday 2026-11-21 11:35 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | The tag on the civ in `civs.xml`. |
 | Saturday 2026-11-21 11:34 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
@@ -39,7 +40,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-20 12:00 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
 | Friday 2026-11-20 11:59 | [`researchOnTheMove`](#researchonthemove) | Added. A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. |
-| Friday 2026-11-20 11:50 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | The tag on the civ in `civs.xml`. |
 | Friday 2026-11-20 11:50 | [`homeCityTechsInUnits`](#homecitytechsinunits) | Added. A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | The card's tech in the `<Tech>` rows, made obtainable for the civ. |
 | Friday 2026-11-20 11:39 | [`truckAttackResourceFix`](bug-fixes.md#truckattackresourcefix) | Added. A `TruckAttack` (the mustard gas, the tornado, the fire power, the monster truck) no longer empties the Mills, plantations and other gather buildings it hits, so villagers can still gather there afterwards. | Nothing. |
 | Thursday 2026-11-19 15:22 | [`attackTypeIcons`](#attacktypeicons) | Filmed in WoL, with a control. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
@@ -5240,7 +5240,7 @@ How buildings train, spawn, live and get replaced.
 | [`researchOnTheMove`](#researchonthemove) | A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | **new** | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. | confirmed (single player) |
 | [`nextResearchFree`](#nextresearchfree) | A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`researchGrants`](#researchgrants) | A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | **new** | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. | confirmed (single player, also a skirmish vs AI) |
-| [`shipTechLimit`](#shiptechlimit) | `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | **new** | The tag on the civ in `civs.xml`. | confirmed (single player, scenario route) |
+| [`shipTechLimit`](#shiptechlimit) | `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | **new** | The tag on the civ in `civs.xml`. | confirmed (single player, scenario route) |
 | [`homeCityTechsInUnits`](#homecitytechsinunits) | A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | **new** | The card's tech in the `<Tech>` rows, made obtainable for the civ. | confirmed (single player, scenario route; the deck card not tested) |
 | [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
 | [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
@@ -6430,17 +6430,22 @@ researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
 
 *A civ can research only so many "shipment techs" (techs that cost Ships) per game, as WoL's Mapuche council techs.*
 
-**Added:** Friday 2026-11-20 11:50 · **Filmed in WoL:** Friday 2026-11-20 11:50
+**Added:** Friday 2026-11-20 11:50 · **Filmed in WoL:** Saturday 2026-11-21 11:35
 
 ![shipTechLimit in WoL](media/shipTechLimit-wol.gif)
 
-*In WoL, with `shipTechLimit log` (scenario route: player 1 is Ethiopian with `<ShipTechLimit>3</ShipTechLimit>` in the
-copy's `civs.xml`, a `MapucheWarchief` and `Age0Mapuche`, 20 Ships granted; the Warchief stays selected and the pointer
-rests on the Coin Crates button):* three shipment techs are queued (Villagers, Food Crates, Wood Crates: 1, 2 and 3 of
-3 in the log), then the Coin Crates research is refused: it does not start and the Ships stay. Every shipment tech
-button shows `3/3`, and the rollover ends with the red line `Shipment techs: 3/3, the limit is reached`. A click on the
-second queued research cancels it: the Ship comes back, the log says 2 of 3, and the Coin Crates research then goes
-through (3 of 3). [Full video (MP4)](media/shipTechLimit-wol.mp4).
+*In WoL, with `shipTechLimit log` (2026-11-21, after #91; a skirmish on a test map, player 1 Portuguese with
+`<ShipTechLimit>3</ShipTechLimit>` in the copy's `civs.xml`, a `MapucheWarchief` and `Age0Mapuche`, 10 Ships granted;
+the Warchief stays selected; the GIF shows the log and the command panel):* three council techs that are not
+repeatable are queued (Fowl, Food Crates 2, Wood Crates 2: 1, 2 and 3 of 3 in the log) and their buttons show `3/3`;
+then the repeatable Food Crates 1 (`YPInfiniteTech`) is queued at the limit, with no log line, and Coin Crates 2 is
+refused (no fifth entry in the queue). The repeatable crate buttons (purple frames) never get the `3/3` mark.
+[Full video (MP4)](media/shipTechLimit-wol.mp4).
+
+![The rollovers of a repeatable and a limited tech at the limit](media/shipTechLimit-infinite-rollover.png)
+
+*At the limit (Dutch, the same test):* the repeatable Food Crates 1 (top) has no `Shipment techs` line and stays
+usable; Food Crates 2 (bottom) ends with the red line `Shipment techs: 3/3, the limit is reached`.
 
 ![shipTechLimit in WoL, key off](media/shipTechLimit-wol-control.gif)
 
@@ -6471,26 +6476,42 @@ shipTechLimit [notext] [log]
 - **What counts:** a research, on a unit or a building, of a tech whose cost has `Ships` (any amount above 0). Home
   city cards sent from the deck never count: they are not researched. A HomeCity tech that a unit researches with
   [`homeCityTechsInUnits`](#homecitytechsinunits) does count.
+- **Repeatable techs are outside the limit** (`<Flag>YPInfiniteTech</Flag>`, as the crates; JTMaston's #91, 2026-11-21):
+  they never count, they are never refused at the limit, and their rollover has no `Shipment techs` line.
 - **When:** a research counts when it is paid, which is when it is queued; a cancel that refunds it gives the slot back.
-  A repeatable tech (`YPInfiniteTech`, the crates) counts each time. A research that ends without a refund (its unit
-  dies) keeps its count, as the Ship is not given back either.
+  A research that ends without a refund (its unit dies) keeps its count, as the Ship is not given back either.
 - **At the limit:** every other shipment tech of that player is refused for his units: the research does not start on
   any machine and nothing is paid. The button stays, marked `n/N`, and its rollover ends with the red line `Shipment
   techs: n/N, the limit is reached` (below the limit, a green `Shipment techs: n/N`). In WoL's interface a refused tech
   button is drawn as bright as the others, like a tech of a later age: the mark and the line say why.
 - **Saved games:** the counts are saved (on one unit of each player) and come back on load. A game saved without the
-  key starts from the shipment techs the player has researched (repeatable ones by their count).
+  key starts from the shipment techs the player has researched. A game saved by a build before 2026-11-21 (whose count
+  held the repeatable techs) loads with them taken out, logged as `player 1's count from an older build (5) held
+  repeatable techs: now 3`; a repeatable research still queued at that save stays counted.
 - **Log:** `shipTechLimit: civ 48 (WallMapu): at most 12 shipment techs per game`, `shipTechLimit: player 1 paid shipment
-  tech 3934: 1 of 3 (game time 15246 ms)`, `... cancelled shipment tech 3937: 2 of 3`, `game start or load: player 1
-  has 3 of 3 shipment techs`; `hook reached: can-research test (0x4C6968)`, `hook reached: tech rollover (0x4622C5)`.
+  tech 3934: 1 of 3 (game time 15246 ms)`, `... cancelled shipment tech 3946: 2 of 3`, `game start or load: player 1
+  has 3 of 3 shipment techs`, after loading an older build's save `player 1's count from an older build (2) held
+  repeatable techs: now 1`; `hook reached: can-research test (0x4C6968)`, `hook reached: tech rollover (0x4622C5)`.
 - **The AI:** it is refused the same way; an AI plan that keeps asking for a refused tech gets nothing.
 - **Tested in WoL (2026-11-20, single player, scenario route, `C:\AoE3-UHC-WoLReal7`):** limit 3 with four requests
   (the fourth refused, Ships 20 to 17); a refused click on the button; a cancel (Ships back, count 2, the button usable
-  again); a repeatable tech twice (Food Crates: 2 then 3 of 5); a HomeCity tech researched by a council member counted;
+  again); a repeatable tech twice (Food Crates: 2 then 3 of 5, the rule before #91); a HomeCity tech researched by a council member counted;
   a save at 3 of 3 and its load (`game start or load: player 1 has 3 of 3`, a fourth still refused); a player of a civ
   without the tag (Egyptians) researched five; the key off (control video); a skirmish against a German AI with the key
   on (the AI played, no `XS: Error`); beside WoL's own DLL (our `dinput8.dll`, `C:\WoL-Test`'s `uhc.dll`: both keys
-  applied, the fourth research refused); `researchGrants` on the shared rollover with both keys on: its `Free` word and green line as before ([picture](media/shipTechLimit-researchGrants-regression.png)). Not tested: a WallMapu skirmish with its home city, multiplayer.
+  applied, the fourth research refused); `researchGrants` on the shared rollover with both keys on: its `Free` word and green line as before ([picture](media/shipTechLimit-researchGrants-regression.png)). Not tested: a WallMapu skirmish with its home city.
+- **Tested in WoL (2026-11-21, #91, single player, skirmishes on a test map in `C:\AoE3-UHC-WoLReal11`, Dutch and
+  Portuguese with a limit of 3 and a `MapucheWarchief`):** a repeatable tech (Food Crates 1) queued below the limit and
+  at it: paid, queued and researched, no count and no log line; three other council techs counted 1, 2, 3 of 3; at the
+  limit Wood Crates 2 was refused (`... is not ready to research`, the Ships stayed) while Coin Crates 1 and Food Crates
+  1 (repeatable) were accepted; their buttons had no `3/3` mark and their rollover no line (picture above); a queued
+  repeatable research cancelled from the queue: the Ship came back, the count stayed 3 of 3, no log line; saved at 3 of 3
+  and loaded: `game start or load: player 1 has 3 of 3 shipment techs`, Food Crates 1 still accepted and a limited
+  tech still refused; a save of the build before #91 holding a count of 2 (Villagers 1 and the repeatable Food Crates
+  1), loaded with this build: `player 1's count from an older build (2) held repeatable techs: now 1`;
+  beside WoL's own DLL (our `dinput8.dll`, its `uhc.dll`): the key applied, three council techs 1 to 3 of 3, Food Crates
+  1 and Coin Crates 1 (repeatable) queued with no count, Coin Crates 2 refused; the key off is the control video above
+  (unchanged).
 
 #### homeCityTechsInUnits
 

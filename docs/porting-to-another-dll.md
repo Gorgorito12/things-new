@@ -1792,9 +1792,11 @@ It comes after `researchGrants`.
   `0x4C696D`; `bool thiscall(status, unit)`, `ret 4`. A refused tech returns 0 there.
 - **Tech rollover:** the `call` at `0x4622C5` of the builder `0x4C737C` (shared with `researchGrants`' price).
 - **Read only:** `0x44EFFF` (a cost entry: Ships is 6), `0x94ADAA` (a player's status of a tech), the alive slot of the
-  unit vtable.
+  unit vtable, and the status's bit 29 (`YPInfiniteTech`: the bitset `[status+4]`, its bit count `[status+8]`): a
+  repeatable tech is outside the rule everywhere (count, refusal, rollover).
 - **Test:** `<ShipTechLimit>3</ShipTechLimit>` on a civ, as in the [modding guide](modding-guide.md#shiptechlimit): the
-  fourth shipment tech is refused, a cancel gives the slot back, and a save keeps the count.
+  fourth shipment tech is refused, a cancel gives the slot back, and a save keeps the count; a repeatable crate tech
+  that costs a Ship neither counts nor is refused at the limit.
 
 ### homeCityTechsInUnits
 

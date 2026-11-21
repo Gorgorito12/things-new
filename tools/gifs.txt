@@ -316,7 +316,7 @@ paraguayanWorks-damage-wol 32 24 2
 paraguayanWorks-damage-wol-control 32 24 2
 paraguayanWorks-collapse-wol 62 4 0.5
 paraguayanWorks-collapse-wol-control 67 4 0.5
-shipTechLimit-wol 3 30 3 800:70:0:280+800:240:480:320
+shipTechLimit-wol 2 36 3 800:70:0:375+800:240:480:480
 shipTechLimit-wol-control 3 30 3 800:240:480:320
 transformChecks-wol 3 12 1 800:700:380:60+800:230:1060:850
 transformChecks-wol-control 3 12 1 800:700:380:60+800:230:1060:850

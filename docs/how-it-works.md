@@ -4498,7 +4498,10 @@ That run's second research was paid by the Market (a tie), so it had no Time fac
   skipped). A player's civ is `[[player+20h]]` when `[player+24h]` > 0 (0x4539D3).
 - **A shipment tech:** the player's status entry of the tech has Ships (resource 6) above 0 in its cost list
   `[status+10h]` (0x44EFFF), the list the research pays and the rollover shows. The status of a research is found by
-  0x94ADAA(`[world+7Ch]`, player ID, tech ID).
+  0x94ADAA(`[world+7Ch]`, player ID, tech ID). A repeatable tech is not one (#91, 2026-11-21): the flag
+  `YPInfiniteTech` is bit 29 of the status's bitset (`[status+4]` bytes, `[status+8]` bit count; the bit index the flag
+  parser 0x622B7D gives it, read as stock's 0x44D863 reads a status bit), so the payment, the refund, the refusal, the
+  rollover line and the load fallback all skip it.
 - **Counting** (per player, 16): the shared payment (`AddResearchPayer`) with a claim that never claims: its `started`
   runs for every research once its action is set up, with `[action+64h]` the player and `[action+68h]` the tech; a
   shipment tech of a limited player adds 1. `AddResearchRefundObserver` (new in `researchpay.*`) redirects the two calls
@@ -4517,11 +4520,15 @@ That run's second research was paid by the Market (a tie), so it had no Time fac
 - **The display:** the shared tech rollover (the `call` of the builder 0x4C737C at 0x4622C5): a green or red line
   `Shipment techs: n/N` appended with 0x443960, and, at the limit, `n/N` in the button's empty overlay text (the panel's
   256-char buffer `[esp+2C0h]`).
-- **Saved games:** a saved marker per limited player (`savedmarkers.h`, stat 69h, word 0 `'ST' << 16 | player << 8 | 1`,
+- **Saved games:** a saved marker per limited player (`savedmarkers.h`, stat 69h, word 0 `'ST' << 16 | player << 8 | 2`,
   word 1 the count) on one of his living units; the world tick writes it when the count changes and moves it when that
   unit dies or loses it. A new game (another world, the time going back or the step count jumping, as in
   `shipmentCounts`) walks the unit table once and reads the markers; a limited player with none gets the sum of the
-  research count bytes `[status+21h]` (bumped by the activation 0x94CF27 at 0x94D02F) over his shipment techs.
+  research count bytes `[status+21h]` (bumped by the activation 0x94CF27 at 0x94D02F) over his shipment techs. A marker
+  of kind 1 comes from a build before #91, whose count held the repeatable techs: on load it loses the sum of the count
+  bytes of the player's repeatable techs that cost Ships, is rewritten in place as kind 2, and the change is logged. A
+  repeatable research paid but still queued at that save was not activated yet, so it stays in the count (a slot too
+  many, until the game ends).
 
 **Why it is safe.**
 - The head hook keeps ECX for the stock test and uses only EAX and EDX, which a `thiscall`'s caller does not expect kept;
