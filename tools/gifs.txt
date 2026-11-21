@@ -148,8 +148,6 @@ nextResearchFree-wol 2 30 3
 nextResearchFree-wol-control 2 30 3
 cantBeSlowed-wol 0 12 1
 cantBeSlowed-wol-control 0 12 1
-cantBeSlowed-cannotsnare-wol 3 12 1
-cantBeSlowed-cannotsnare-wol-control 3 12 1
 detonationDeath-threshold-wol 2 12 1
 detonationDeath-threshold-wol-control 2 12 1
 detonationDeath-command-wol 3 12 1

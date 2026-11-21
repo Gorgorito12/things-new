@@ -1271,6 +1271,10 @@ Code: [combat](porting-code/combat.md#cantbeslowed).
 - **Site:** a 6-byte `jmp` at `0x4DD201` (`6A 01 6A FF 6A FF`), continue at `0x4DD207`, exit `0x48FA49`. Write it after
   anything that verifies the snare's bytes.
 - **Test:** a marked and an unmarked unit of the same speed under a `TargetSpeedBoost` attack.
+- **Since 2026-11-21** the hook reads only the target: the attacker's type `CannotSnare` was retired (an attack that
+  should not snare loses its `<TargetSpeedBoost>` in the tactics). A port that copied the older code drops the second
+  test and the `RequestAbstractUnitType("CannotSnare", …)`.
+
 ### stealthTargeting
 
 Code: [combat](porting-code/combat.md#stealthtargeting).

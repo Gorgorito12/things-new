@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Saturday 2026-11-21 10:23 | [`cantBeSlowed`](#cantbeslowed) | Filmed in WoL, with a control. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | The type on the protos that want it. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -98,7 +99,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-06 10:47 | [`doNotQueue`](#donotqueue) | Filmed in WoL, with a control. `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | The tag on the protos that want it. |
 | Friday 2026-11-06 09:06 | [`linkedResource`](#linkedresource) | Filmed in WoL, with a control. A resource building gathers the stock of a mine beside it. | The tags on a resource building of your own. |
 | Friday 2026-11-06 07:32 | [`displayedRange`](#displayedrange) | Added. A selected unit shows a ring of the radius of `<DisplayedRange>`. | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. |
-| Thursday 2026-11-05 15:23 | [`cantBeSlowed`](#cantbeslowed) | Filmed in WoL, with a control. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | The type on the protos that want it. |
 | Thursday 2026-11-05 13:29 | [`pillageGold`](#pillagegold) | Added. A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | The type and the tag on the protos. |
 | Thursday 2026-11-05 10:29 | [`accuracyTechs`](#accuracytechs) | Filmed in WoL, with a control. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 10:29 | [`cratePriority`](#cratepriority) | Filmed in WoL, with a control. The order in which a civ's units gather crates, instead of the exe's hardcoded one. | One line per civ in `wol.cfg`. |
@@ -2704,7 +2704,7 @@ Attacks, armor, and what a hit does.
 | [`containedUnitsROF`](#containedunitsrof) | An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | **new** | The attribute on the attacks that want it (none has it today). | confirmed |
 | [`numberOfShots`](#numberofshots) | An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | **new** | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. | confirmed (single player) |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
-| [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | **new** | The type on the protos that want it. | confirmed |
+| [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | **new** | The type on the protos that want it. | confirmed |
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
 | [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
 | [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | **new** | The rows on the protos that want them. | confirmed |
@@ -3837,9 +3837,9 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
 
 #### cantBeSlowed
 
-*Chosen units can't be slowed by attacks, and chosen attackers can't slow others.*
+*Chosen units can't be slowed by attacks.*
 
-**Added:** Thursday 2026-11-05 09:39 · **Filmed in WoL:** Thursday 2026-11-05 15:23
+**Added:** Thursday 2026-11-05 09:39 · **Filmed in WoL:** Saturday 2026-11-21 10:23
 
 ![cantBeSlowed in WoL](media/cantBeSlowed-wol.gif)
 
@@ -3850,17 +3850,6 @@ on each):* the Halberdier walks away and the Skirmisher falls behind. [Full vide
 
 *In WoL, key off (the same data):* both are snared and walk level. [Full video (MP4)](media/cantBeSlowed-wol-control.mp4).
 
-![CannotSnare in WoL](media/cantBeSlowed-cannotsnare-wol.gif)
-
-*In WoL, with `cantBeSlowed` and `CannotSnare` on the Uhlan (Ethiopians; two Settlers of 4000 HP walking the same way, two
-Uhlans on the upper one and two Hussars on the lower one):* the Settler under the Uhlans is not snared and pulls ahead.
-[Full video (MP4)](media/cantBeSlowed-cannotsnare-wol.mp4).
-
-![CannotSnare in WoL, key off](media/cantBeSlowed-cannotsnare-wol-control.gif)
-
-*In WoL, key off (the same data):* both Settlers are snared and walk level.
-[Full video (MP4)](media/cantBeSlowed-cannotsnare-wol-control.mp4).
-
 ```
 cantBeSlowed [log]
 ```
@@ -3869,31 +3858,29 @@ cantBeSlowed [log]
 <Unit name="Halberdier">
     <UnitType>CantBeSlowed</UnitType>
 </Unit>
-<Unit name="Uhlan">
-    <UnitType>CannotSnare</UnitType>
-</Unit>
 ```
 
 - **In WoL today:** every `TargetSpeedBoost` attack slows its target to 0.65 of its speed for 3 s. JTMaston's #38.
 - **Effect:** a unit whose proto has the type `CantBeSlowed` is not snared. The hit still does its damage. A
-  `damageOverTime` poison with `<AttachSnare>` does not slow it either. A unit whose proto has the type `CannotSnare`
-  (DE's flag of that name) does not snare with its own `TargetSpeedBoost` attacks, nor with a poison it attaches; its
-  hits still do their damage. Both types are DE's names, so DE data works unchanged.
-- **What it does not cover:** a speed aura or tech, which are not snares. A poison whose attacker is gone (dead or
-  deleted) snares as stock on its later ticks: the attacker's type cannot be read any more.
+  `damageOverTime` poison with `<AttachSnare>` does not slow it either. The type is DE's name, so DE data works unchanged.
+- **`CannotSnare` retired (2026-11-21):** the type on the attacker (DE's flag of that name, from 2026-11-05) is gone, at
+  JTMaston's request: an attacker that should not snare has the snare taken out of that attack in its tactics file
+  (no `<TargetSpeedBoost>` in the action), which needs no key. A proto that still lists `<UnitType>CannotSnare</UnitType>`
+  loads with no error and snares as stock.
+- **What it does not cover:** a speed aura or tech, which are not snares.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data.
-- **Log:** `cantBeSlowed: the abstract types CantBeSlowed (on the target) and CannotSnare (on the attacker) are on`,
-  `hook reached: cantBeSlowed (0x4DD201)`, and with `log` `cantBeSlowed: proto 316 ignores a snare` or
-  `cantBeSlowed: proto 171 does not snare (CannotSnare)`.
+- **Log:** `cantBeSlowed: the abstract type CantBeSlowed (on the target) is on`,
+  `hook reached: cantBeSlowed (0x4DD201)`, and with `log` `cantBeSlowed: proto 316 ignores a snare`.
 - **Tested in WoL (2026-11-05):** a Halberdier and a Skirmisher of speed 4 with 4000 HP, 58 m apart, walking off with two
   Uhlans on each. With the key the Halberdier was 19.5 m ahead at the first reading, and the log shows 16 snares ignored.
   With the key off it was 4.5 m ahead, and no line. A marked Halberdier under three archers with `<AttachSnare>` logged
   19 snares ignored in 20 s. Not tested: multiplayer.
-- **`CannotSnare` tested in WoL (2026-11-05):** two Settlers of 4000 HP, speed 4, walking 44 m, one under two Uhlans
-  with the type and one under two stock Hussars. With the key the first was 10 m ahead after 10 s of walking (63.8
-  against 53.6 on the x axis) and the log counted 35 snares not applied; with the key off both walked level and the log
-  had no line. The hook was reached in the first fight (`hook reached: cantBeSlowed (0x4DD201)`). Not tested: a poison's
-  `AttachSnare` from a `CannotSnare` unit, multiplayer.
+- **Retirement tested in WoL (2026-11-21):** `xpAenna` and `Uhlan` with `<UnitType>CannotSnare</UnitType>` left in
+  `protoy.xml`, the Aenna's arrows with a `damageOverTime` poison and `<AttachSnare>0.5</AttachSnare>`, and a Halberdier
+  with `CantBeSlowed`. The data loaded with no message and the name was not registered (no `unit types: CannotSnare`
+  line). The poisoned Skirmisher and Musketeer walked at half speed (`speed 2.00` and `2.60` in the tick lines), so an
+  attacker with the old type snares like any other; the Halberdier logged `ignores a snare` on each hit. `cantBeSlowed`,
+  `snareOnlyHitUnit`, `snareValues` and `damageOverTime` were applied and reached their hooks.
 #### veterancyBonus
 
 *Units grow stronger as they get kills.*
