@@ -273,8 +273,8 @@ orPrereqsQty-wol 2 24 2
 orPrereqsQty-wol-control 0 24 2
 shipmentCounts-wol 30 90 8
 shipmentCounts-wol-control 30 90 8
-shipmentCounts-reward-wol 4 16 2
-shipmentCounts-reward-wol-control 4 16 2
+shipmentCounts-reward-wol 6 20 2
+shipmentCounts-reward-wol-control 2 20 2
 kothTimer-wol 4 24 2
 kothTimer-wol-control 4 24 2
 politicianPlacesFix-wol 4 12 1
@@ -291,7 +291,7 @@ randomCost-wol-control 8 33 3 800:72:0:0+800:300:900:0+800:110:0:190
 impactBoneFix-wol-set-temple 12 12 1
 impactBoneFix-wol-set-temple-control 0 12 1
 impactBoneFix-wol-set-collapse 18 12 1
-autoScout-wol 2 48 4 800:320:560:330+800:270:0:810
+autoScout-wol 2 48 4 800:400:560:150+800:270:0:810
 autoScout-wol-control 2 48 4 800:320:560:330+800:270:0:810
 multiplierDecimals-wol 2 12 1 800:60:0:0+800:230:6:390
 multiplierDecimals-wol-control 2 12 1 800:60:0:0+800:230:6:390

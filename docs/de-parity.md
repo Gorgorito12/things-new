@@ -774,7 +774,8 @@ and only a gap of more than a few points means something):
 | DE Envoy, game 1 (Hard AI; killed at ~5:40) | 52.2 % | 69.0 % |
 | DE Envoy, game 2 (Easy AI) | 53.9 % | 68.5 % |
 | `autoScout`, WoL's Dutch Envoy alone | 50.1 % | 71.1 % |
-| `autoScout`, two Romanian ravens (flying) | 63.7 % | 100 % |
+| `autoScout`, two Romanian ravens (flying; 2026-11-19, without the danger parts) | 63.7 % | 100 % |
+| `autoScout`, the same, default key (2026-11-21; the enemy Town Center's ground left out) | 64.6 % | 97.8 % |
 | Raven, key off | 9.4 % | 9.7 % |
 
 For a land scout the two are level. Our raven flies over the lake, so its numbers are not comparable.
