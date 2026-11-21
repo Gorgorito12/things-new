@@ -1428,6 +1428,20 @@ observed, [I] = inferred, [U] = unknown.
 | A textField's list | 0x5BECAA `thiscall(field, array*)`, `ret 4`: copies `[array]`/`[array+4]` BStrings into `[field+174h]`; 0xAC19D9 `thiscall(field, array*)` the entry data into `[field+198h]`; 0x5C356B redraws | confirmed (`cs`, in game) | An entry's data 0xAC0B6B. |
 | Trigger editor condition/effect panel | fill FUN_00825757 `thiscall(editor)`, plain `ret`: the type names and data from the trigger system (conditions 0x97B4FE/0x5919FA, effects 0x97B51D/0x97B502), set at 0x8258A0 on `trEdit-CondEffPanel-type` (`[editor+194h]`, 0x8244F4), then 0x8246E8, 0x82481C and 0x825D8F (or 0x824BDB, 0x824E04): the list of the trigger's conditions or effects and the selected one's parameters | confirmed (`cs`, in game) | Run by the mode buttons after `mov [esi+1C0h],ebp` (0x8264F0; 1 conditions, 2 effects). [O] Run again with a different text, it rebuilds the type list and the open parameters, and the selection stays. Selecting a condition (0x825933, event 12h) finds its type in the list by name and selects it (0x5C36AE), else none; the field still shows the type. 218 effect types and 61 condition types in WoL. |
 
+### The game setup lobby's player slots (for #81, 2026-11-21)
+
+REA (Ghidra 12.1.4) on the stock exe, `rea/evidence/age3y-b1a1dab7/r1121-f-lobby-slots.json`, and capstone (`cs`). WoL's DLL
+replaces `MPGameSetupPage` and `MPPlayerSlot` with classes of its own (`docs/wol-uhc-map.md`), so in WoL these are the
+stock base, not what runs.
+
+| Name | Address | Status | Notes |
+|---|---|---|---|
+| MPGameSetupPage init | FUN_008B831E (vtable entry at 0xB8CCD4) | confirmed (REA) | Loads `uiMPGameSetupPage.xml` (LAN) or `uiMPESOGameSetupPage2.xml`; binds the page gadgets (`[+5C0h]`..`[+63Ch]`) and 8 slots at `[page+154h]`, 7Ch bytes each. |
+| Slot gadget setter | 0x777B20 `thiscall(slot, index, gadget)` | confirmed (REA) | Stores `[slot+20h+index*4]`. Indexes: 0 row, 1 Highlight, 2 Avatar, 3 nametext, 4 AIDropdown, 5 xfer, 6 team, 7 TeamColor, 8 CivFlag, 9 HCLevel, 0Ah HandicapLabel, 0Bh Handicap, 0Ch LatencyLabel, 0Dh Latency, 0Eh ReadyLabel, 0Fh Ready, 10h kick, 11h Civ. |
+| Slot vtable | 0xB93014; +38h = the slot's event handler 0x776702 `thiscall(type, gadget, data)` `ret 0Ch` | observed (`cs`) | Type 0Ah (dropdowns): team `[+38h]`, `[+3Ch]`, `[+64h]`, `[+6Ch]`, `[+70h]`, AIDropdown `[+30h]`, `[+4Ch]`; type 2: Ready `[+5Ch]`, kick `[+60h]`, `[+40h]`. No case for nametext `[+2Ch]` or xfer `[+34h]`. |
+| Page event handler | 0x8B9846 (not a Ghidra function) | observed (`cs`) | Event types 0, 2, 0Ah, 0Fh (tables 0x8B9E64 / 0x8B9E50); unmatched gadgets go to each slot's +38h (0x8B9A3F, 0x8B9D38). |
+| Slot move | not found | unknown | Nothing found reads the xfer gadget `[slot+34h]` (capstone over 0x760000-0x8D0000, loops of 7Ch). In game (WoL), posted and real drags of the host's name, clicks on an open slot and its AI list did not move the host out of slot 1. |
+
 ### Impact types and impact effects (for `impactBoneFix` and `customImpactTypes`, 2026-11-12)
 
 REA (Ghidra 12.1.4) on the stock exe, records in `rea/evidence/age3y-b1a1dab7/impact49-50.json`; `cs` = capstone over
