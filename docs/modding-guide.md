@@ -3781,7 +3781,10 @@ numberOfShots [projectiles] [log]
   aiming pose instead of the ramrod. A `Falconet` with 3 shots 0.6 s apart (`Bombard_reload`) logged the idle animation
   after its quick shots and kept firing; against Settlers it starts a new burst after one or two shots, with the change and
   without it alike (a new target). Two `Pikeman`s with 3 hits 0.3 s apart (no reload animation): bursts of 3 hits as before.
-  Not tested: multiplayer, beside WoL's DLL.
+  Performance (`perfprobe.py`, 60 s, 30 Skirmishers with 3-shot bursts against 30 Crossbowmen): with the key 792 fps, update
+  0.1 ms, render 1.2 ms, main thread 84 %; key off 790 fps, 0.2 ms, 1.2 ms, 84 %; no frame over 50 ms in either. An AI
+  skirmish of 100 s (`wolOtto`, Germans) with the key on: no XS error, the AI built a Manor and gathered. The hook's site is
+  in none of the 287 ranges WoL's DLL patches (`wol-memdiff.txt`). Not tested: multiplayer, a game beside WoL's DLL.
 
 #### broadsideMuzzleLimit
 
