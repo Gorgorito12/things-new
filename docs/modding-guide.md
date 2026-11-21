@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Saturday 2026-11-21 11:23 | [`editorSearch`](#editorsearch) | Added. The scenario editor's Objects palette and its Forbidden Units/Techs dialog get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml` and `uiforbiddenunitstechs.xml`: `wol-fixes/editor` has both. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -8283,6 +8284,8 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
 #### editorSearch
 
 *In the scenario editor, a search field above the list of objects and in the Forbidden Units/Techs dialog: type part of a name and the list shows only what matches.*
+
+**Added:** Saturday 2026-11-21 11:23 · **Filmed in WoL:** Saturday 2026-11-21 11:23
 
 ![editorSearch in WoL](media/editorSearch-wol.gif)
 
