@@ -2362,7 +2362,7 @@ Contract: [minUIStats](../porting-to-another-dll.md#minuistats).
 
 Besides the core helpers, it needs: [`datarefs.h`](helpers.md#data-refs), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetLookupAny` `0x404296` (49 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `ResListGet` `0x44EFFF` (61 B), `HoldsResource` `0x45EE8B` (20 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `RateLookupHead` `0x487C45` (16 B), `AttackListFill` `0x487EEE` (24 B), `RegenPlayerHead` `0x4905E1` (16 B), `RegenRateRead` `0x4907FF` (31 B), `UnitCarryCapacity` `0x494503` (16 B), `ActionRangeEntry` `0x4946D6` (55 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `StackLayoutCall` `0x4C7DB3` (14 B), `MinBlockChoice` `0x4C8276` (11 B), `StackLayout` `0x4C8F49` (675 B), `StackFillReset` `0x4C9458` (42 B), `StackFillCurrent` `0x4C9587` (65 B), `StackFillAppend` `0x4C979A` (27 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `StatFillRowCap` `0x4D7944` (28 B), `AttackRowName` `0x4D7A2E` (116 B), `AttackRowDamage` `0x4D7AC8` (273 B), `AttackRowTypeIcon` `0x4D7BD9` (126 B), `AttackRowRange` `0x4D7D2A` (120 B), `AttackRowSiege` `0x4D8265` (79 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `BStringFromId` `0x58EA52` (25 B), `PowerUnitActionStore` `0x5F22CA` (54 B), `ActionRawName` `0x5F8FC3` (24 B), `MinResistsUnitGate` `0x698BE2` (26 B), `MinResistsArmorTest` `0x698BFC` (26 B), `AttackRowCold` `0x69B617` (128 B), `AttackRowModifier` `0x69FDDC` (28 B), `AttackRowTyped` `0x69FE1F` (25 B), `AbilityAvailableTest` `0x6EE68C` (118 B), `CurrentUnitRef` `0x6F49B1` (65 B), `ResourceIconText` `0x706EFB` (16 B), `BuildPointsAdd` `0x7ADE95` (16 B), `BuildPointsAddCall` `0x9C4BE3` (30 B), `BuilderFactor` `0x9C4C0C` (26 B), `BuildTickRateHead` `0x9D3D6B` (16 B), `BuildTickScale` `0x9D3D80` (71 B), `BuildTickAdd` `0x9D3DE9` (12 B), `GadgetByName` `0xAB7C2F` (38 B), `PowerUnitActionVtable` `0xB855F4` (4 B).
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetLookupAny` `0x404296` (49 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `ResListGet` `0x44EFFF` (61 B), `ProtoFlag` `0x45EE02` (53 B), `HoldsResource` `0x45EE8B` (20 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `RateLookupHead` `0x487C45` (16 B), `AttackListFill` `0x487EEE` (24 B), `RegenPlayerHead` `0x4905E1` (16 B), `RegenRateRead` `0x4907FF` (31 B), `UnitCarryCapacity` `0x494503` (16 B), `ActionRangeEntry` `0x4946D6` (55 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `StackLayoutCall` `0x4C7DB3` (14 B), `MinBlockChoice` `0x4C8276` (11 B), `StackLayout` `0x4C8F49` (675 B), `StackFillReset` `0x4C9458` (42 B), `StackFillCurrent` `0x4C9587` (65 B), `StackFillAppend` `0x4C979A` (27 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `StatFillRowCap` `0x4D7944` (28 B), `AttackRowName` `0x4D7A2E` (116 B), `AttackRowDamage` `0x4D7AC8` (273 B), `AttackRowTypeIcon` `0x4D7BD9` (126 B), `AttackRowRange` `0x4D7D2A` (120 B), `AttackRowSiege` `0x4D8265` (79 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `BStringFromId` `0x58EA52` (25 B), `PowerUnitActionStore` `0x5F22CA` (54 B), `ActionRawName` `0x5F8FC3` (24 B), `MinResistsUnitGate` `0x698BE2` (26 B), `MinResistsArmorTest` `0x698BFC` (26 B), `AttackRowCold` `0x69B617` (128 B), `AttackRowModifier` `0x69FDDC` (28 B), `AttackRowTyped` `0x69FE1F` (25 B), `AbilityAvailableTest` `0x6EE68C` (118 B), `CurrentUnitRef` `0x6F49B1` (65 B), `ResourceIconText` `0x706EFB` (16 B), `BuildPointsAdd` `0x7ADE95` (16 B), `BuildPointsAddCall` `0x9C4BE3` (30 B), `BuilderFactor` `0x9C4C0C` (26 B), `BuildTickRateHead` `0x9D3D6B` (16 B), `BuildTickScale` `0x9D3D80` (71 B), `BuildTickAdd` `0x9D3DE9` (12 B), `GadgetByName` `0xAB7C2F` (38 B), `PowerUnitActionVtable` `0xB855F4` (4 B).
 
 ### src/features/minuistats.cpp
 
@@ -2682,6 +2682,9 @@ const auto kAttackListFill = reinterpret_cast<AttackListFn>(0x00487EEE);
 const auto kResListGet = reinterpret_cast<ResListGetFn>(0x0044EFFF);
 const auto kResourceIcon = reinterpret_cast<ResourceIconFn>(0x00706EFB);
 const auto kHoldsResource = reinterpret_cast<UnitTestFn>(0x0045EE8B);
+using ProtoFlagFn = bool(__thiscall*)(const char* proto, std::int32_t flag);
+const auto kProtoFlag = reinterpret_cast<ProtoFlagFn>(0x0045EE02);
+constexpr std::int32_t kInfiniteFlag = 0x24;  // the stock resource row writes "Infinite" for it
 const auto kHeldResource = reinterpret_cast<UnitResourceFn>(0x004DBEC1);
 const auto kHeldAmount = reinterpret_cast<UnitAmountFn>(0x004E5979);
 const auto kHeldInitial = reinterpret_cast<UnitAmountFn>(0x00494503);
@@ -3071,19 +3074,28 @@ bool ItemBounty(const char* unit, std::wstring* out) {  // <Bounty>, float [prot
   return true;
 }
 
-// What a mine, bush, carcass or herd animal holds, as the stock "resource held" row reads it.
+// What a mine, bush, carcass or herd animal holds, as the stock "resource held" row reads it. A proto with an
+// infinite resource (flag 24h, a Mill or a Plantation: the stock row writes "Infinite") answers nothing: its amount
+// is a placeholder (a Mill read 999/100).
 bool ItemInventory(const char* unit, std::wstring* out) {
   const char* database = Database();
-  if (database == nullptr || !kHoldsResource(unit)) {
+  if (database == nullptr || !kHoldsResource(unit) || kProtoFlag(Field<const char*>(unit, 0x5C), kInfiniteFlag)) {
     return false;
   }
   const std::int32_t resource = kHeldResource(unit);
   if (resource < 0) {
     return false;
   }
+  // Rounded up as the stock row writes it (a Silver Mine with 1928.x: 1929, a tree 268.x: 269); the initial amount
+  // only when the unit has one (a placed Mine has 0: the stock row writes the amount alone).
+  const int amount = static_cast<int>(std::ceil(kHeldAmount(unit, resource)));
+  const int initial = static_cast<int>(kHeldInitial(unit, resource) + 0.5f);
   wchar_t text[96];
-  swprintf_s(text, L"%d/%d <icon=\"(16)(%hs)\">", static_cast<int>(kHeldAmount(unit, resource)),
-             static_cast<int>(kHeldInitial(unit, resource)), kResourceIcon(database, resource));
+  if (initial > 0) {
+    swprintf_s(text, L"%d/%d <icon=\"(%d)(%hs)\">", amount, initial, kIconSize, kResourceIcon(database, resource));
+  } else {
+    swprintf_s(text, L"%d <icon=\"(%d)(%hs)\">", amount, kIconSize, kResourceIcon(database, resource));
+  }
   *out = text;
   return true;
 }
@@ -5237,7 +5249,7 @@ Outcome ApplyMinUiStats(const Config& config) {
                   &sites::kBStringAssign, &sites::kBStringFree, &sites::kCurrentUnitRef, &sites::kMaxHitpointsGetter,
                   &sites::kLosGetterHead, &sites::kMaxContained, &sites::kIsA, &sites::kAttackListFill,
                   &sites::kResListGet, &sites::kResourceIconText, &sites::kHoldsResource, &sites::kMainResource,
-                  &sites::kHeldAmount, &sites::kUnitCarryCapacity})) {
+                  &sites::kHeldAmount, &sites::kUnitCarryCapacity, &sites::kProtoFlag})) {
     return Outcome::kFailed;
   }
   // The build and regeneration items mirror stock code they never write to; they are checked apart, so another DLL
