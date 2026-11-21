@@ -33,6 +33,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 |---|---|---|---|
 | Saturday 2026-11-21 15:50 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Saturday 2026-11-21 15:50 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
+| Saturday 2026-11-21 16:00 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Saturday 2026-11-21 15:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
 | Saturday 2026-11-21 15:25 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Saturday 2026-11-21 15:06 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
@@ -40,7 +41,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 12:11 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
 | Saturday 2026-11-21 12:07 | [`ageFiveShipments`](#agefiveshipments) | Added. Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | `<age>4</age>` on the cards that want it. |
 | Saturday 2026-11-21 12:07 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
-| Saturday 2026-11-21 12:04 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Saturday 2026-11-21 12:00 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only heal actions with `<CanOverheal>1</CanOverheal>` heal those units above `InitialHitpoints`, up to their `<OverhealCap>`, and techs can turn it on or off; every other heal stops there. | `overhealHitpointBars`, and the tags on the `Heal` actions that may overheal. |
 | Saturday 2026-11-21 11:55 | [`herdWalkAwayFix`](bug-fixes.md#herdwalkawayfix) | Added. A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in. | Nothing; for nomads, `wol-fixes/me-herdables`. |
 | Saturday 2026-11-21 11:54 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
@@ -7827,16 +7827,16 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 *A selected unit shows its range on the ground while Alt is held: one ring per ranged attack.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Saturday 2026-11-21 12:04
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Saturday 2026-11-21 16:00
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
-*In WoL, with `displayedRange log` (Swedes, a skirmish; test data: `<DisplayRange>1</DisplayRange>` on the Fort, the Falconet and the
-Crossbowman, `<Flag>AlwaysDisplayRange</Flag>` on the Outpost):* the Fort is selected and shows nothing; Alt held, its 40 m anti-ship and 26 m cannon rings; Alt released, none; the Outpost, selected, shows its 40 and 24 m at once, with no Alt; two Crossbowmen with Alt show 16 and 6 m each. The log names each ring. [Full video (MP4)](media/displayedRange-wol.mp4).
+*In WoL, with `displayedRange log` (Ethiopians, a scenario, the rings at their true size; test data: `<DisplayRange>1</DisplayRange>` on
+the Fort and the Crossbowman, `<Flag>AlwaysDisplayRange</Flag>` on the Outpost):* the Fort is selected and shows nothing; Alt held, its 40 m anti-ship and 26 m cannon rings; Alt released, none; the Outpost, selected, shows its 40 and 24 m at once, with no Alt; two Crossbowmen with Alt show 16 and 6 m each. The log names each ring. [Full video (MP4)](media/displayedRange-wol.mp4).
 
 ![displayedRange in WoL, key off](media/displayedRange-wol-control.gif)
 
-*In WoL, key off (the same data and the same Alt):* no ring; Alt only shows the HP bars, as in stock.
+*In WoL, key off (Swedes, a skirmish, with that data and the Falconet's `<DisplayRange>`, and the same Alt):* no ring; Alt only shows the HP bars, as in stock.
 [Full video (MP4)](media/displayedRange-wol-control.mp4).
 
 ```
@@ -7869,7 +7869,12 @@ displayedRange [log]
   values instead.
 - **Sizes:** each radius goes to the nearest ring of `tools/rings`: 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
   32, 36, 40, 45, 50, 60, 70, 80 and 100 m (aoe3-blender-tools' `make_rings.py`, `RANGES`; the line widens a little on
-  the large ones so it stays visible).
+  the large ones so it stays visible). The line's outer edge is at the radius.
+- **Before 2026-11-21 the rings showed half their radius:** the 12 m ring was drawn at 6 m (measured with crates at
+  known distances), because the game takes a flat particle's scale as its full width and `make_rings.py` wrote the
+  half width. The `range_*.particle` files of `tools/rings` are fixed (scale doubled; the textures are the same):
+  copy them again to `art/effects/uhc_rings`. Measured after the fix: the 4 m ring passes between markers at 2.83 and
+  4.47 m, the 12 m ring between 11.66 and 12.17 m, the 30 m ring between 29.73 and 31.11 m.
 - **Files:** `range_<metres>.xml`, its particle and its texture, in `art/effects/uhc_rings` for everyone who should see it.
 - **How far an aura reaches:** its `<MaxRange>` goes from the centre of its unit to the edge of the target: a 6.2 m aura
   took trees at 6.0, 6.3 and 7.2 m, and not at 8.9 m. So a small range can stay under a big building's model.
