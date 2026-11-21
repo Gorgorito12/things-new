@@ -4013,8 +4013,10 @@ the manager's hide (0x448F13), again after each fill of the panel (which shows t
 refresh skips. Without the key nothing hides them, and the panel reads as the mod's. The `hitpoints` item is the
 minimized block's `%d/%d` (0x698B63), or, with `overhealHitpointBars`, that key's max (its 100 % value, 0x698B35) and its
 colour above it (`unitinfo::HitpointsText`; the stock gadget prints the colour markup as text, the key's gadget draws
-it). The `armor` item is the stock armor with its damage type's icon, or with `multiarmor` every armor above 0 by damage
-type (`unitinfo::Armors`, multiarmor's own records), and nothing when another DLL changed the block's armor test
+it). The `armor` item is the stock armor as a percent stuck to the value, to a tenth (`30%`, `12.5%`), with its damage
+type's icon, or with `multiarmor` every armor above 0 by damage type (`unitinfo::Armors`, multiarmor's own records);
+the original resists value (the exe's `%.2f %s`, 0x698C41..) is rewritten the same way at each fill. Both answer
+nothing when another DLL changed the block's armor test
 (0x698BFC..): that DLL's own resists row then shows. `<stockLabel>` (an original label's text written over the game's
 while it shows) stays for layouts that want it. `[icon:path]` in the data file is the icon markup at the panel's size.
 `[string:ID]` in a text, label or tip is that string of the string table (0x58EA52), resolved when the row is shown,

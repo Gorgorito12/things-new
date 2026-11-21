@@ -11,7 +11,7 @@ and more, in a symmetric layout that keeps the top band for the unit portraits o
 - right of the player's name, the mirror block: line of sight (an eye) and the live speed (a winged
   boot; with techs, snares and auras), then the train time (an hourglass) and the garrison (a door);
 - under the unit's name: what the unit is doing or what acts on it ("Done in 0:12", "Builds 1.00/s",
-  "Regen 1/s", "Overheal +50", "Poison 3 x 8 s", "Aura pays 0.10 (wood)/s");
+  "Regen 1/s", "Overheal +50", "Poison 3 x 8s", "Aura pays 0.10 (wood)/s");
 - hit points as the word ("Hitpoints: 100/100", the word from the string table, so it follows the
   player's language) and resists with a shield, in the original places;
 - every attack row gets its rate of fire right after its damage, with a stopwatch, then, when the attack
@@ -19,8 +19,8 @@ and more, in a symmetric layout that keeps the top band for the unit portraits o
   them), that number with a revolver's cylinder:
   "Ranged ATK:  11 (ranged) 3.50 (stopwatch) 4 (cylinder) 1 (area) 14 (range), 1.5x (...), 1.25x (...)";
   the multipliers without the zeros at their end (with the DLL's multiplierDecimals they have two decimals),
-  and the tooltip of each attack row: the game's own lines plus "Attacks every 3.50 s" and
-  "4 projectiles before the reload" (version 5);
+  and the tooltip of each attack row: the game's own lines plus "Rate of fire: 3.50s" and
+  "4 projectiles" (version 7);
 - the attack rows the minimized UI had no room for (the 4th attack on, Gatherers, Group Health), and the
   attacks the big UI itself has no room for (it stops at 9 rows);
 - only the attacks the unit can use: an ability's attack (Crack Shot, Sharpshooter, Swashbuckler, ...)
@@ -28,7 +28,7 @@ and more, in a symmetric layout that keeps the top band for the unit portraits o
   the player's). The big UI lists every attack of the tactics file, usable or not; the minimized one with
   the key does not;
 - the armor of buildings; with the DLL's multiarmor, every armor of the unit
-  ("0.30 (hand)  0.20 (ranged)  0.10 (siege)");
+  ("30% (hand)  20% (ranged)  10% (siege)"; the armor is a percent stuck to the value since version 7);
 - more you can switch on in minuirows.xml (commented rows): minimum range, area, build points and
   limit, bounty, lifespan left, what a mine or animal holds, the gather rate, the random price range,
   the cards sent per age, base speed, armor, veterancy rank;

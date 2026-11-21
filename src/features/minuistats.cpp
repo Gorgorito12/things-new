@@ -155,6 +155,20 @@ std::wstring Number(float value) {
   return text;
 }
 
+// An armor as a percent stuck to its value, to a tenth: 0.30 is "30%", 0.125 "12.5%".
+std::wstring Percent(float value) {
+  wchar_t text[32];
+  const float tenths = std::floor(value * 1000.0f + 0.5f);
+  const int whole = static_cast<int>(tenths) / 10;
+  const int tenth = static_cast<int>(tenths) % 10;
+  if (tenth == 0) {
+    swprintf_s(text, L"%d%%", whole);
+  } else {
+    swprintf_s(text, L"%d.%d%%", whole, tenth);
+  }
+  return text;
+}
+
 std::wstring StringById(std::int32_t id) {
   BString text{nullptr};
   kBStringFromId(&text, id);
@@ -219,9 +233,9 @@ std::wstring DamageIcon(std::uint8_t type) {
   return tag;
 }
 
-// The armor as the stock resists value: "0.20" and the icon of its damage type ([proto+1D3h]: 0 hand, 1 ranged,
-// 2 siege, icons [[game+920h]+1CCh/1D0h/1D4h]). With multiarmor (a proto with an armor per damage type), every armor
-// above 0, by damage type: "0.30 <hand>  0.20 <ranged>".
+// The armor as a percent ("20%", where the stock resists value writes "0.20") and the icon of its damage type
+// ([proto+1D3h]: 0 hand, 1 ranged, 2 siege, icons [[game+920h]+1CCh/1D0h/1D4h]). With multiarmor (a proto with an
+// armor per damage type), every armor above 0, by damage type: "30% <hand>  20% <ranged>".
 bool ArmorText(const char* unit, bool icon, std::wstring* out) {
   if (g_armorOther) {
     return false;
@@ -238,7 +252,7 @@ bool ArmorText(const char* unit, bool icon, std::wstring* out) {
     std::sort(armors.begin(), armors.end());  // hand, ranged, siege, then the mod's own
     out->clear();
     for (const auto& [type, armor] : armors) {
-      *out += (out->empty() ? L"" : L"  ") + Number(armor) + (icon ? DamageIcon(type) : L"");
+      *out += (out->empty() ? L"" : L"  ") + Percent(armor) + (icon ? DamageIcon(type) : L"");
     }
     return true;
   }
@@ -246,7 +260,7 @@ bool ArmorText(const char* unit, bool icon, std::wstring* out) {
   if (!(armor > 0.0f)) {
     return false;
   }
-  *out = Number(armor) + (icon ? DamageIcon(Field<std::uint8_t>(proto, 0x1D3)) : L"");
+  *out = Percent(armor) + (icon ? DamageIcon(Field<std::uint8_t>(proto, 0x1D3)) : L"");
   return true;
 }
 
@@ -717,7 +731,7 @@ bool ItemLifespan(const char* unit, std::wstring* out) {
     return false;
   }
   wchar_t text[32];
-  swprintf_s(text, L"%d s", static_cast<int>(left + 0.5f));
+  swprintf_s(text, L"%ds", static_cast<int>(left + 0.5f));
   *out = text;
   return true;
 }
@@ -1150,7 +1164,7 @@ struct BigPanel {
   bool unwrapIcons = true;
   // The attack rows' help text gets a line for the ROF and one for the projectiles ("%s": the number), each with
   // its icon, after the stock lines (damage, range and area, one per multiplier).
-  std::wstring rofTip = L"Attacks every %s s";
+  std::wstring rofTip = L"Rate of fire: %ss";
   std::wstring projectilesTip = L"%s projectiles";
 };
 
@@ -2390,16 +2404,22 @@ void ApplyStockPlan() {
 
 constexpr std::uint32_t kResistsValue = 0x2FC;  // the selection panel's unitResistsValue handle
 
-// With multiarmor, a proto can have an armor per damage type, and the minimized block writes only the stock one
-// ("%.2f %s", 0x698C41..): its resists value then lists them all, "0.30 <hand>  0.20 <ranged>".
+// The minimized block's resists value is the stock armor as "%.2f %s" (0x698C41..): "0.30 <ranged>". The key writes
+// it as the armor items do, a percent stuck to the value, and with multiarmor (a proto with an armor per damage type)
+// every armor above 0: "30% <hand>  20% <ranged>". Another DLL's armor text there (g_armorOther) is left as it is.
 void ApplyResists(const char* unit) {
   unsigned char types[8];
   float values[8];
   const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
-  const int n = proto == nullptr ? 0 : uhc::unitinfo::Armors(proto, types, values, 8);
   const std::int32_t handle = Field<std::int32_t>(g_panel.panel, kResistsValue);
-  if (n < 2 || !ValidHandle(handle) || !GadgetShown(handle)) {
+  if (g_armorOther || proto == nullptr || !ValidHandle(handle) || !GadgetShown(handle)) {
     return;
+  }
+  int n = uhc::unitinfo::Armors(proto, types, values, 8);
+  if (n == 0) {  // no multiarmor, or no armor above 0: the stock armor, as the game shows it
+    types[0] = Field<std::uint8_t>(proto, 0x1D3);
+    values[0] = Field<float>(proto, 0xC4);
+    n = 1;
   }
   std::vector<std::pair<unsigned char, float>> armors;
   for (int i = 0; i < n; ++i) {
@@ -2408,9 +2428,7 @@ void ApplyResists(const char* unit) {
   std::sort(armors.begin(), armors.end());  // by damage type: hand, ranged, siege, then the mod's own
   std::wstring text;
   for (const auto& [type, armor] : armors) {
-    wchar_t value[32];
-    swprintf_s(value, L"%.2f", static_cast<double>(armor));
-    text += (text.empty() ? L"" : L"  ") + std::wstring(value) + TypeIcon(type);
+    text += (text.empty() ? L"" : L"  ") + Percent(armor) + TypeIcon(type);
   }
   WriteLabel(handle, text, L"");
 }

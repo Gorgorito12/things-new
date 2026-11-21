@@ -5596,7 +5596,7 @@ lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterCo
 
 ![The Lifespan row in WoL](media/lifespanAfterConstruction-countdown-wol.gif)
 
-*In WoL (Ethiopians, an Apartment with a test Lifespan of 40 s):* the panel shows `40 s once built` on the foundation, then counts
+*In WoL (Ethiopians, an Apartment with a test Lifespan of 40 s):* the panel shows `40 s once built` (`40s once built` since 2026-11-21) on the foundation, then counts
 down. [Full video (MP4)](media/lifespanAfterConstruction-countdown-wol.mp4).
 
 ![The Lifespan row in WoL, key off](media/lifespanAfterConstruction-countdown-wol-control.gif)
@@ -6359,7 +6359,7 @@ researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
   <Effect type='Data' amount='2.00' subtype='ResearchGrantPoints' relativity='Absolute'>
       <Target type='ProtoUnit'>Market</Target></Effect>
   ```
-- **Unit panel:** a selected building with grants shows `Research grants` `2/3, next in 14 s`, `3/3 (full)` or
+- **Unit panel:** a selected building with grants shows `Research grants` `2/3, next in 14s`, `3/3 (full)` or
   `0/3 once built`.
 - **With `nextResearchFree`:** a research that key makes free spends no grant point.
 - **The AI** gets and spends points as players do: its researches go through the same payment.
@@ -7694,7 +7694,7 @@ which the minimized interface had no room for. [Full video (MP4)](media/minUISta
 
 ![minUIStats on a building in WoL](media/minUIStats-building-wol.gif)
 
-*In WoL, with `minUIStats` (a `Bunker`, Siege armor 0.3):* `Resists: 0.30` in the stock spot, `Garrison: 0 / 20` and LOS.
+*In WoL, with `minUIStats` (a `Bunker`, Siege armor 0.3):* `Resists: 0.30` (`30%` since version 7) in the stock spot, `Garrison: 0 / 20` and LOS.
 [Full video (MP4)](media/minUIStats-building-wol.mp4).
 
 ![minUIStats on a building in WoL, key off](media/minUIStats-building-wol-control.gif)
@@ -7803,7 +7803,7 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       as with WoL's DLL: the Escopetero's ranged row has three.
     - Tooltips: the attack rows keep the game's own tooltip (name; damage; range and area; one line per multiplier) and
       get two lines after the damage, `Attacks every 3.50 s (<stopwatch>)` and `4 projectiles before the reload
-      (<cylinder>)`. Their texts are `rofTip` and `projectilesTip` on `<bigPanelRows>` (`%s` the number;
+      (<cylinder>)` (version 7: `Rate of fire: 3.50s <stopwatch>` and `4 projectiles <cylinder>`). Their texts are `rofTip` and `projectilesTip` on `<bigPanelRows>` (`%s` the number;
       `[string:ID]` works; empty: no line). A row shown in short form (too long for its column, or the `+N more`
       gadget) has that full tooltip too, instead of its text without icons.
     - An original attack row too long for the panel (at 1024 x 768 the font is relatively wider) drops its last
@@ -7813,13 +7813,22 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   - **Version 6 (2026-11-20), after JTMaston's review of version 5:**
     - The projectiles line of the tooltip reads `4 projectiles` (`projectilesTip` defaults to `%s projectiles`): a unit
       such as the Chu Ko Nu does not fire them all at once.
-    - No parentheses around icons: the key's own lines end with the icon (`Attacks every 3.50 s <stopwatch>`), and in the
+    - No parentheses around icons: the key's own lines end with the icon (`Attacks every 3.50 s <stopwatch>`; version 7: `Rate of fire: 3.50s`), and in the
       game's lines the parentheses around an icon or around the name right after one go (`11 <icon> Ranged Damage`,
       `1.5X Bonus Damage against <icon> Maneuver Unit`; strings 42226, 42229, 42230, 42223). `tipParentheses="keep"` on
       `<bigPanelRows>` keeps them. The string tables are not changed.
     - The unit type icons of the multipliers stay WoL's own: a redrawn set (`make_stat_icon.py --types` in
       aoe3-blender-tools) was tried and not kept. WoL's `staticons\stat_icon_hand_cavalry.ddt` is an empty 24-byte file,
       so a multiplier against Hand Cavalry shows no icon.
+  - **Version 7 (2026-11-21), after JTMaston's review of version 6:**
+    - Seconds stuck to the number: the ROF line of the attack rows' tooltip is `Rate of fire: 3.50s <stopwatch>`
+      (`rofTip` defaults to `Rate of fire: %ss`), the `lifespan` item `40s`, `poison` `3 x 8s`, and the normal
+      interface's rows of [`lifespanAfterConstruction`](#lifespanafterconstruction) (`40s once built`) and
+      [`researchGrants`](#researchgrants) (`2/3, next in 14s`).
+    - The armor as a percent stuck to the value, to a tenth when it has one: `30%`, `12.5%`, each with its damage
+      type's icon after it (`30% <hand>  20% <ranged>` with `multiarmor`), in the `armor` and `armorValue` items and in
+      the original resists value of the minimized panel, which the key now rewrites for every unit (it was
+      `0.30`, the exe's `%.2f`). Beside another DLL that changed the resists armor test, that DLL's text stays.
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.
@@ -7890,7 +7899,7 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   | Selection | Minimized, key on | Big interface |
   |---|---|---|
   | `Musketeer` | 3 attacks (stock), LOS 16, Speed 4, Train Points 30 | the same 3 attacks, Speed 4 |
-  | `Bunker` (Siege armor 0.3) | `Resists: 0.30`, Garrison 0 / 20, LOS 32, its attack | no armor row (unchanged) |
+  | `Bunker` (Siege armor 0.3) | `Resists: 0.30` (version 7: `30%`), Garrison 0 / 20, LOS 32, its attack | no armor row (unchanged) |
   | `Explorer` (Menelik II) | 3 attacks + `Sharpshooter ATK`, `Crack Shot ATK`; Speed 4.50 | the same 5 attacks |
   | `Grenadier` | 3 attacks + `Hand ATK`, `Hand ATK` | the same 5 attacks |
   | `Dragoon` | 3 attacks + `Hand ATK`; Speed 7.25 | the same 4 attacks |
@@ -8025,10 +8034,10 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   bar shown): one `Musketeer`, a `Barracks`, a `Factory` (its trickle row), a `Bank`, 2, 5 and 9 unit types, Menelik II
   damaged (`Regen 1/s`; of its five ability attacks only Sharpshooter, which needs no tech), a `WoLPresidial`
   (Sharpshooter, its own ability; no Crack Shot), the Chief (`WOLcartographer`) before and after `HCSteelCrown`
-  (Anti-artillery Crackshot only after), the `Wachtmesteer` with three armors (`0.30 0.20 0.10`, by damage type), a
+  (Anti-artillery Crackshot only after), the `Wachtmesteer` with three armors (`0.30 0.20 0.10`, by damage type; `30% 20% 10%` since version 7), a
   `Grenadier` and a `Settler` with long attack rows (they end at x ~557 and ~568, before the second column at 583), a
   long name (Húsar de la Muerte), the overheal (`Overheal +50`, HP 150/100); a `Villero` whose ranged row runs on into
-  the second column (the second-column gadget of its line stays empty); a poisoned `Halberdier` (`Poison 3 x 8 s`, the
+  the second column (the second-column gadget of its line stays empty); a poisoned `Halberdier` (`Poison 3 x 8 s`, `3 x 8s` since version 7, the
   Aenna's arrows of `dot_testdata.py --wol`); a `WOLSawmill` and a tree in its `unitResourceAuras` aura (`Aura pays
   0.10/s`, `Aura -0.05/s`); in an AI skirmish a `Manor` going up (`Done in 0:12`) and its builder (`Builds 1.00/s`)
   under the AI's two-line name; ships on a water map (a `Caravel`, a `Frigate` with two armors, garrison 0 / 50);
