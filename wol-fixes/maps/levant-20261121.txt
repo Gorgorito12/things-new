@@ -1,0 +1,150 @@
+"NEW" Levant: what we found (2026-11-21)
+========================================
+
+Short answer
+------------
+We could not make Levant close the game. We did find one real fault in the map, and it is the best
+lead we have: with 6 or 8 players in two equal teams, Levant sometimes cannot place one player's
+Town Center. That player then starts with nothing at all (no Town Center, no settlers, no explorer).
+In our tests the game went on without crashing, but this is the kind of broken start that can end
+badly on other machines or in multiplayer, and it explains reports like "one player had nothing".
+A fixed RM4\NEWLevant.xs is in levant\RM4\ (the change is shown in levant\NEWLevant.diff), and a rule
+for future maps is at the end.
+
+Everything below was run with WoL's own uhc.dll (the one players have), WoL 1.0.15c, the AI files of
+the Steam install, English text, single player only. NEWLevant.xs is the same file in the Steam
+install and in every test copy.
+
+
+1. The fault: a player can start with nothing
+---------------------------------------------
+How often (the map generated 175 times in the scenario editor, 2 teams, seeds 1 to 25):
+
+  players    2    3    4    5    6    7    8
+  no start   0    0    0    0    4    0    3     (out of 25 each)
+
+  6 players: seeds 5 (player 3), 9 (player 5), 17 (player 3), 25 (player 6)
+  8 players: seeds 13 (player 3), 14 (player 7), 23 (player 4)
+
+The player gets only the home city water flag. In a skirmish we forced the same thing (see 3):
+an AI with no start stays in the game with nothing; a human with no start sees "You abandon your
+colony" at once.
+
+Why. The Town Center is placed in one try with four constraints at the same time (NEWLevant.xs,
+lines 536-555 and 635-647):
+  - within TCfloat metres of the player's spot (100 m with 6+ players, 70 m with 3-5, 15 m with 2);
+  - inside the circle playerEdgeConstraint (40 % of the map from the centre), while the team lines
+    of rmPlacePlayersLine start at the very edge of the map (0.50,1.00 and 0.00,0.50);
+  - 60 m from any other Town Center (avoidTownCenterFar, used when the teams are equal: 3v3, 4v4);
+  - 25 m from water or cliffs (longAvoidImpassableLand), with the bay in the north-west.
+On some seeds no point satisfies all four, and rmPlaceObjectDefAtLoc places nothing. Nothing checks
+it: the next line asks rmGetUnitPosition(rmGetUnitPlacedOfPlayer(TCID, i)) of a unit that does not
+exist, so the starting units, mine, trees, herds and nugget of that player are placed around an
+invalid point, and fail too.
+
+Checked on those 7 seeds: without the edge circle, every player got a Town Center; without the 60 m
+(28 m instead), too; without the 25 m from water, 6 of 7 (8 players, seed 23 still failed). So it is
+the combination, not one bad constraint. An unchanged copy of the map under another name fails on
+the same seeds, so these comparisons are fair.
+
+The fix (tested). After the normal try, if the player has no Town Center, try again with fewer
+constraints (150 m, 28 m from other Town Centers, 10 m from water), and as a last resort with none,
+so every player always gets a start. Then use the Town Center that was placed. Result over 100
+generations (2, 4, 6 and 8 players, seeds 1 to 25): every player had a Town Center in all 100,
+including the 7 seeds above. Maps where the first try works are unchanged, because the fallbacks
+only run when it fails. The same change applies as it is to our King of the Hill version of Levant
+(maps-koth\RM4\NEWLevant.xs).
+
+
+2. The sweep: no crash
+----------------------
+Skirmishes from the setup screen, the human player Dutch (idle), Moderate AIs, Classic rules (unless
+said), 10 minutes of game time each, a debugger attached to catch any crash:
+
+  players  mode          AIs (personality, civ)                                         result
+  8        4v4 teams     Otto (Germans), Victoria (British), Napoleon (French), Naser
+                         (Persians), Abdullah (Saudis), Dost (Afghans), Abdulmecid (Ottomans)  ok
+  8        free for all  Isabel (Spanish), Alexander (Russians), Theodoros (Greeks),
+                         Nasrullah (Uzbeks), Mutsuhito (Japanese), Myeongseong (Koreans),
+                         Mahpiya (Sioux)                                                 ok
+  8        4v4 teams     Naser, Abdullah, Dost, Nasrullah, Abdulmecid, Ali Pasha
+                         (Egyptians), Menelik (Ethiopians)                                ok
+  6        3v3 teams     Otto, Naser, Abdulmecid, Shaka (Zulu), Xingzhen (Chinese)       ok
+  6        free for all  Victoria, Nasrullah, Menelik, Bahadur (Indians), Norton (Iroquois) ok
+  4        2v2 teams     Otto, Victoria, Napoleon                                        ok
+  4        free for all  Abdullah, Dost, Mutsuhito                                       ok
+  4        2v2, King of the Hill   Otto, Naser, Abdulmecid                               ok (*)
+  4        2v2, saved at 5 min and loaded   Victoria, Abdullah, Xingzhen                 (**)
+  2        1v1           Otto                                                            ok
+  2        1v1           Naser                                                           ok
+  2        1v1           Te Rauparaha (Maori, its own AI script)                         ok
+
+  ok = 10 minutes with no crash, no freeze and no script error.
+  (*)  The released Levant places no hill, so this was King of the Hill rules on a map without a
+       hill. Our King of the Hill version (maps-koth\RM4\NEWLevant.xs) was not played in a skirmish.
+  (**) Saved at 5 minutes and loaded again with no crash; the loaded game came back paused (the
+       normal "Game Paused" dialog), and our test tool did not press Continue, so the second half
+       was not played. A second try was stopped before the save.
+
+Also 4 editor generations at 6 and 8 players played for 2 minutes each (ok), and 175 + 100
+generations for section 1.
+
+None of these games had a player without a start: the 6/8-player failures happen on some seeds only
+(about 1 game in 6 or 8), and these were 5 games at 6 or 8 players.
+
+
+3. Forced "no start" in a real skirmish
+---------------------------------------
+To see what such a game does, we used a copy of Levant where one player's Town Center is never
+placed (exactly what happens when the placement fails):
+  - 2v2, the AI teammate (player 2) with no start, 10 minutes of game time: no crash, no script
+    error. The AI stays in the game with no units.
+  - 2v2, the human (player 1) with no start, 3 minutes: "You abandon your colony" at the start; the
+    AIs play on; no crash.
+
+
+4. What was ruled out
+---------------------
+  - The map script itself: it compiles and runs with 2 to 8 players, teams and free for all, in the
+    editor and in skirmishes (no XS error).
+  - Long games: 10 minutes of game time per skirmish with 2 to 8 players.
+  - King of the Hill rules, and saving and loading a game (see 2).
+
+Not tested: a skirmish on one of the 7 failing seeds (we did not check that the setup screen keeps
+a given seed), playing on after a load, our King of the Hill version in a skirmish, games longer
+than 10 minutes, Hard or Expert AIs, AIs with accented names (the known trigger bug), a human civ
+other than Dutch, Spanish text, and multiplayer.
+  - European, Asian, African, Middle Eastern and native AIs, and the Maori AI (its own script).
+  - The cliff type "Levant", the sea "Maltese Coast", the lighting, the natives (Bhakti, Sufi):
+    all exist in the data and load.
+  - The accent bug: players with an accented name (Benito Juárez, Napoleón III ...) break the
+    map triggers on 193 maps, Levant too (see README.txt in this folder). That is not a crash.
+
+
+5. Questions for the team
+-------------------------
+  1. When it crashes: how many players, teams or free for all, and which civs and AIs?
+  2. At what moment: while the map loads, at the start, or after some minutes (which minute)?
+  3. Does the game close by itself, freeze, or show an error message? A screenshot of any message?
+  4. Single player, or multiplayer (LAN, Radmin, ESO)? If multiplayer: does it crash for everyone or
+     for one player, and does anyone go out of sync first?
+  5. Which WoL version (the launcher shows it) and which uhc.dll?
+  6. Please send My Games\Wars of Liberty\Age3Log.txt from right after a crash, and, if Windows wrote
+     one, the crash report: Event Viewer > Windows Logs > Application, the "Application Error" entry
+     for age3y.exe (it names the faulting module and offset). If you can, a dump file too
+     (%LOCALAPPDATA%\CrashDumps, when Windows keeps them).
+  7. Did the crashing games have a player who started with nothing? (That would confirm section 1.)
+
+
+6. A rule for future maps
+-------------------------
+Never use a placed object without checking that it was placed. For the Town Center (and anything
+else a player must have):
+  - after rmPlaceObjectDefAtLoc(TCID, i, ...), read id = rmGetUnitPlacedOfPlayer(TCID, i);
+  - if id < 0, place a second object definition with looser constraints (more distance, a shorter
+    distance to other Town Centers, less distance to water), and if that also fails, one with no
+    constraints at all;
+  - only then compute the starting position from the Town Center that exists.
+Also: a player spot at the edge of the map plus an edge constraint that keeps the Town Center 10 %
+of the map inside is a contradiction that only the max distance can solve; keep spots inside the
+allowed circle, or the max distance large enough for the bigger player counts.

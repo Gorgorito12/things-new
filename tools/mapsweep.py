@@ -16,6 +16,14 @@ Options:
                         AIs (see below); only one copy at a time, as the profile is shared
   --ai <personality>    skirmish: the AI personalities left in AI4 (one per AI: players - 1; an AI with
                         none starts without a civ and the game falls at 0x7C252C); default wolOtto
+  --teams | --ffa       skirmish: two teams (players 1..N/2 against the rest) or Free for All, set on
+                        the setup screen by posted clicks; without either, the setup shows the human
+                        in the profile's team and every AI as "Team ?"
+  --koth                skirmish: King of the Hill (the Game Rules list, by posted clicks)
+  --save-load           skirmish: at half the game time, save the game from the console, load it back
+                        and play the other half
+  --label <text>        added to the route column (skirmish:<text>), so runs of the same map, players
+                        and seed with other AIs or modes are kept apart in one CSV
   --shard K/N           only the maps whose index modulo N is K (from 0), for copies run in parallel
   --evidence <dir>      where crash reports, per-run logs and shots go (default: next to the CSV)
   --no-debugger         do not attach tools/re/debugger.py's crash watch; a crash then comes from the
@@ -264,16 +272,18 @@ def unit_counts(bed, keep=None):
 XS_LINE = r"xsErrorLog: (?!applied)|XS: "
 
 
-def run_one(game, bed, map_name, players, seed, seconds, route, evidence, ai):
-    row = {"map": map_name, "players": players, "seed": seed, "route": route, "bed": bed.name,
+def run_one(game, bed, map_name, players, seed, seconds, route, evidence, ai, opts=None):
+    opts = opts or {}
+    label = route + (f":{opts['label']}" if opts.get("label") else "")
+    row = {"map": map_name, "players": players, "seed": seed, "route": label, "bed": bed.name,
            "started": time.strftime("%Y-%m-%d %H:%M:%S")}
     t0 = time.time()
-    tag = re.sub(r"[^\w.-]+", "_", f"{map_name}-p{players}-s{seed}-{route}")
+    tag = re.sub(r"[^\w.-]+", "_", f"{map_name}-p{players}-s{seed}-{label}")
     log = T.log_path(bed)
     age3log = T.my_games(bed) / "Age3Log.txt"
     if route == "skirmish":
         game.close()
-        set_skirmish(bed, map_name, players, ai)
+        set_skirmish(bed, map_name, players, ai, opts, seed)
     wait_memory()
     if not game.running() and not game.start():
         row.update(result="launch-failed", seconds=round(time.time() - t0))
@@ -286,7 +296,7 @@ def run_one(game, bed, map_name, players, seed, seconds, route, evidence, ai):
     else:
         dmp = T.my_games(bed) / T.bed_profile(bed)["rm"] / f"Age3RM{map_name}.dmp.txt"
         dmp_before = dmp.stat().st_mtime if dmp.exists() else 0
-        rc, out = start_skirmish(bed, map_name, evidence / "shots" / f"{tag}.setup.png")
+        rc, out = start_skirmish(bed, map_name, evidence / "shots" / f"{tag}.setup.png", players, opts)
     step = route
     if rc == 0 and route == "skirmish" and not (dmp.exists() and dmp.stat().st_mtime > dmp_before):
         # The game writes Age3RM<file>.dmp.txt when it compiles a map: no new one = another map ran.
@@ -301,8 +311,15 @@ def run_one(game, bed, map_name, players, seed, seconds, route, evidence, ai):
             (evidence / "runs").mkdir(parents=True, exist_ok=True)
             shutil.copy2(trig, evidence / "runs" / f"{tag}.trigtemp.xs")
         row["units"] = unit_counts(bed, evidence / "units" / f"{tag}.txt")
-        rc, out = testbed(bed, "wait", str(seconds), "--hang", "60", timeout=int(seconds * 10 + 200))
-        step = "wait"
+        if opts.get("save_load"):
+            rc, out = save_and_load(bed, tag, seconds / 2, evidence)
+            step = "save-load"
+            if rc == 0:
+                rc, out = testbed(bed, "wait", str(seconds / 2), "--hang", "60", timeout=int(seconds * 5 + 200))
+                step = "wait"
+        else:
+            rc, out = testbed(bed, "wait", str(seconds), "--hang", "60", timeout=int(seconds * 10 + 200))
+            step = "wait"
     alive = T.bed_pid() == pid
     if rc == 0 and alive:
         row["result"] = "ok"
@@ -359,6 +376,53 @@ def run_one(game, bed, map_name, players, seed, seconds, route, evidence, ai):
     return row
 
 
+PAUSED_CONTINUE = (969, 537)  # the "Game Paused" dialog's Continue (client, 1920 x 1080)
+
+
+def save_and_load(bed, tag, first, evidence):
+    """Plays `first` seconds, saves the game from the console, loads that save and waits until its
+    clock runs again. Returns (exit code as testbed's, message). The save is deleted afterwards."""
+    rc, out = testbed(bed, "wait", str(first), "--hang", "60", timeout=int(first * 10 + 200))
+    if rc:
+        return rc, out
+    name = "uhc-sweep-" + re.sub(r"[^\w-]+", "", tag)[-40:]
+    save = T.my_games(bed) / "Savegame" / f"{name}.age3Ysav"
+    save.unlink(missing_ok=True)
+    proc = T.process()
+    try:
+        T.run_commands(bed, [f'saveGame("{name}")'])
+        T.wait_until(lambda: save.exists() and save.stat().st_size > 0, 120, 1, f"the save {save.name}")
+        size = -1
+        while save.stat().st_size != size:  # written in pieces: wait until it stops growing
+            size = save.stat().st_size
+            time.sleep(2)
+        saved_at = T.game_time(proc) or 0
+        world = T.D.world(proc)
+        T.run_commands(bed, [f'loadGame("{name}")'])
+        # The loaded game is a new world, and it comes back paused behind a "Game Paused" dialog.
+        T.wait_until(lambda: T.D.world(proc) and T.D.world(proc) != world, 240, 1, "the saved game to load")
+        time.sleep(10)
+        deadline, last, moving, still = time.time() + 180, None, 0, 0
+        while time.time() < deadline:
+            T.check_alive("the loaded game")
+            now = T.game_time(proc)
+            if now is not None and last is not None and now > last:
+                moving, still = moving + 1, 0
+                if moving >= 3:
+                    return 0, f"saved at {saved_at} ms ({size} bytes), loaded, clock running at {now} ms"
+            else:
+                moving, still = 0, still + 1
+                if still % 15 == 5:  # paused: the dialog's Continue, as a player would
+                    T.scaled_click(PAUSED_CONTINUE)
+            last = now
+            time.sleep(1)
+        return 2, f"save-load: the loaded game did not run (clock {last})"
+    except SystemExit as e:
+        return (e.code if isinstance(e.code, int) else 1), f"save-load: {e.code}"
+    finally:
+        save.unlink(missing_ok=True)
+
+
 # --- the skirmish route's profile ----------------------------------------------------------------
 
 # The setup screen's map list (client coordinates at 1920 x 1080): it opens at LIST_OPEN, shows 9 rows
@@ -375,7 +439,39 @@ def list_index(bed, map_name):
     return LIST_SETS + names.index(display_name(bed, map_name))
 
 
-def start_skirmish(bed, map_name, setup_shot):
+# The setup's team dropdowns and rules (client coordinates at 1920 x 1080, checked 2026-11-21 in WoL):
+# player k's team arrow is at TEAM_ARROW + (k - 1) * TEAM_ROW; its list opens below it (above it for
+# player 8) with Team 1, 2, 3, 4 and "Team ?" one TEAM_STEP apart. The setup restores the human's team from
+# the profile but shows every AI as "Team ?", so teams are picked by clicks. Free for All is a check
+# box; King of the Hill is the last Game Rules entry.
+TEAM_ARROW, TEAM_ROW, TEAM_ITEM0, TEAM_STEP = (1067, 141), 102.6, (887, 42), 38
+TEAM_LIST_H, TEAM_ABOVE = 225, 216  # the list's height below the arrow; its first item when it opens above
+FFA_BOX, RULES_ARROW, RULES_KOTH = (1451, 987), (1739, 535), (1467, 845)
+
+
+def setup_clicks(players, opts):
+    """Teams, Free for All and King of the Hill on the setup screen, by posted clicks."""
+    if opts.get("mode") == "teams":
+        for k in range(1, players + 1):
+            team = 0 if k <= (players + 1) // 2 else 1
+            y = round(TEAM_ARROW[1] + (k - 1) * TEAM_ROW)
+            T.scaled_click((TEAM_ARROW[0], y))
+            time.sleep(1.5)
+            # The list opens below its field, or above it where it would leave the screen (row 8).
+            first = y + TEAM_ITEM0[1] if y + TEAM_LIST_H <= 1080 else y - TEAM_ABOVE
+            T.scaled_click((TEAM_ITEM0[0], first + TEAM_STEP * team))
+            time.sleep(1.5)
+    elif opts.get("mode") == "ffa":
+        T.scaled_click(FFA_BOX)  # set_skirmish leaves it unticked in the profile
+        time.sleep(1.5)
+    if opts.get("koth"):
+        T.scaled_click(RULES_ARROW)
+        time.sleep(1.5)
+        T.scaled_click(RULES_KOTH)
+        time.sleep(1.5)
+
+
+def start_skirmish(bed, map_name, setup_shot, players=2, opts=None):
     """From the main menu to a running skirmish on the profile's setup, picking a quoted map in the
     list. Returns (exit code as testbed's, message)."""
     for handle in T._WATCHED.values():  # this process may have watched an earlier game
@@ -394,7 +490,13 @@ def start_skirmish(bed, map_name, setup_shot):
                 time.sleep(0.3)
             T.posted_click(LIST_ROW0[0], LIST_ROW0[1] + LIST_STEP * (index - scroll))
             time.sleep(4)
-        testbed(bed, "shot", str(setup_shot), "2", timeout=60)
+        setup_clicks(players, opts or {})
+        time.sleep(3)
+        for _ in range(6):  # a background copy's PrintWindow returns a black picture now and then
+            testbed(bed, "shot", str(setup_shot), "2", timeout=60)
+            if setup_shot.exists() and setup_shot.stat().st_size > 100_000:
+                break
+            time.sleep(4)
         proc = T.process()
         before = T.game_time(proc) or 0
         T.posted_click(*T.SKIRMISH_PLAY)
@@ -425,9 +527,15 @@ def profiles(bed):
     return sorted((T.my_games(bed) / "Users3").glob("*.xml"))
 
 
-def set_skirmish(bed, map_name, players, ai):
+def set_skirmish(bed, map_name, players, ai, opts=None, seed=None):
+    opts = opts or {}
     values = {"gamefilename": map_name, "gamemapname": display_name(bed, map_name),
               "gamenumplayers": str(players)}
+    if seed is not None:
+        values["gamerandomseed"] = str(seed)
+    if opts.get("mode"):  # the setup screen's clicks set the teams or tick Free for All (setup_clicks)
+        values["gamefreeforall"] = "false"
+        values["gameplayer1teamid"] = "0"
     for path in profiles(bed):
         text = path.read_bytes().decode("utf-16")
         b0 = text.find('<GameSettings Name="RandomMapGameSettings"')
@@ -504,9 +612,15 @@ def main(argv):
     seeds = [int(v) for v in arg(argv, "--seeds", "1").split(",")]
     seconds = float(arg(argv, "--seconds", "30"))
     ai = arg(argv, "--ai", "wolOtto").split(",")
+    opts = {"label": arg(argv, "--label"), "save_load": "--save-load" in argv,
+            "mode": "teams" if "--teams" in argv else "ffa" if "--ffa" in argv else None,
+            "koth": True if "--koth" in argv else None}
+    if route != "skirmish" and (opts["save_load"] or opts["mode"] or opts["koth"]):
+        sys.exit("mapsweep: --teams, --ffa, --koth and --save-load are skirmish options")
+    label = route + (f":{opts['label']}" if opts["label"] else "")
     maps = map_list(bed, argv)
     done = done_runs(out)
-    runs = [(m, p, s) for m in maps for p in players for s in seeds if (m, str(p), str(s), route) not in done]
+    runs = [(m, p, s) for m in maps for p in players for s in seeds if (m, str(p), str(s), label) not in done]
     print(f"mapsweep: {bed}, {len(maps)} maps, {len(runs)} runs left (route {route})", flush=True)
     if "--dry-run" in argv:
         for r in runs:
@@ -522,7 +636,7 @@ def main(argv):
         if state:
             state.__enter__()
         for i, (m, p, s) in enumerate(runs, 1):
-            row = run_one(game, bed, m, p, s, seconds, route, evidence, ai)
+            row = run_one(game, bed, m, p, s, seconds, route, evidence, ai, opts)
             append_row(out, row)
             say(f"[{i}/{len(runs)}] {m} p{p} s{s}: {row['result']} {row.get('code', '')} {row.get('eip', '')} "
                 f"{row.get('module', '')} ({row['seconds']} s) {row.get('units', '')}")

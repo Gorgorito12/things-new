@@ -24,6 +24,25 @@ Found in your data: <DeadReplacementLifespan> (on 289 protos) is not a tag the g
 Questions: a body removed by the trigger Destroy leaves no replacement (stock behaviour for every unit). Is that fine?
 Do you want <DeadReplacementLifespan> to work?
 
+Levant (#78): wol-fixes\maps\levant-20261121.txt, wol-fixes\maps\levant\
+-------------------------------------------------------------------------
+We could not make Levant close the game: 11 skirmishes of 10 minutes (2 to 8 players, teams and free for all, King of
+the Hill rules, European, Middle Eastern, Asian, African, native and Maori AIs) and a saved/loaded game, all with your own
+uhc.dll, all fine.
+We did find a real fault in the map, the best lead we have: with 6 or 8 players in two equal teams, Levant sometimes
+cannot place one player's Town Center (6 players: 4 seeds of 25; 8 players: 3 of 25). That player starts with nothing.
+The Town Center must satisfy four constraints at once (near a start spot on the map edge, inside a circle that keeps
+it off the edge, 60 m from other Town Centers, 25 m from water), and on some seeds no point does; nothing checks it, so
+the rest of that player's start is placed around a unit that does not exist. In our games this did not crash (an AI
+with nothing idles; a human gets "You abandon your colony"), but it may on other machines or in multiplayer.
+The fixed NEWLevant.xs (in the folder, with a diff) tries again with looser constraints, then with none: every player
+got a start in 100 of 100 generations. Maps where the first try works are unchanged. A rule for future maps is at the
+end of the note: never use a placed object without checking it was placed.
+Questions: how many players, teams or free for all, which civs and AIs? At what moment does it crash, and does it close,
+freeze or show a message? Single player or multiplayer, and for everyone? Which WoL version? Please send Age3Log.txt
+from right after a crash and the "Application Error" entry for age3y.exe from the Windows Event Viewer. Did a player
+start with nothing in those games?
+
 Middle East herdables (#79): wol-fixes\me-herdables\, key herdWalkAwayFix
 --------------------------------------------------------------------------
 The flag that already existed is the abstract type AbstractTypeHerdableMagnet. With the pack, the six nomads work as
