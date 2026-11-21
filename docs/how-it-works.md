@@ -1182,7 +1182,16 @@ entry's sound sets at the point.
 
 After the area damage, the key calls FUN_004CB11C with a zeroed record of 70h bytes that has only those fields: the
 action at `+10h`, the point at `+64h` (so the default direction) and `+28h` = 0 (the `particleSet`). The point is the
-unit's position, copied before the area damage. By default the action is the detonating one, so its own
+unit's position, copied before the area damage. **Since 2026-11-21 (#86)** a unit whose obstruction radius
+(`<ObstructionRadiusX>` `[proto+88h]`, handler 0x5F5972; `<ObstructionRadiusZ>` `[proto+8Ch]`, 0x5F59C8) is 1.5 m or more
+on either side gets one call per point of a grid over its footprint: `round(2r / 3)` points per side (at least 2, at most
+3), from −0.75 r to +0.75 r along its right vector `[unit+38h]` and its forward vector `[unit+20h]`, at the unit's
+height; a `TownCenter` (4.5 × 4.5) gets 3 × 3, a `House` (2 × 2) 2 × 2. Each call is the stock visual of a shot landing
+there, with its own visibility test. The victims: the area damage hands each one to TakeDamage 0x49B3D9 with the
+impact argument −2 (no impact effect) and the bool the stock caller takes from the action's flag bit 6, which TakeDamage
+reads only to skip the hit and pain sounds (0x484136 types 3 and 2, 0x49BC87). The key passes 1, so the victims only
+flinch (0x49C0D4, played either way) and the only effect and sound is the blast on the dying unit. The damage path does
+not read the bool (REA `ev_32be21bf…`, FUN_0049B3D9; `ev_71ba0bc4…`, FUN_004C9D89; `ev_22c85aa1…`, FUN_0049C0D4). By default the action is the detonating one, so its own
 `<impacteffect>` plays (nothing when it has none: `[action+70h]` < 0). `<DetonationImpactEffect>path</DetonationImpactEffect>`
 names another impact effect: its handler, during the proto load, passes the node's text field `[node+14h]` to
 FUN_0058F017 as the tactics handler does, which finds the file or loads it and returns its ID (< 0 on failure, logged

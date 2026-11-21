@@ -324,3 +324,7 @@ autoScout-back-wol 8 24 2
 autoScout-back-wol-control 8 24 2
 deadReplacementAtZeroInventory-wol 0 36 3
 deadReplacementAtZeroInventory-wol-control 5 36 3
+detonationDeath-onunit-wol 3 12 1
+detonationDeath-onunit-wol-control 3 12 1
+detonationDeath-building-wol 6 12 1
+detonationDeath-building-wol-control 6 12 1

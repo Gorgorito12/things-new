@@ -572,7 +572,10 @@ Code: [combat](porting-code/combat.md#detonationdeath). It needs `AddProtoTagHan
 - **The blast on screen:** no site is written. After the area damage the key calls the terrain impact `0x4CB11C`
   (`thiscall(projectile, point)`, `ret 4`) with a zeroed record of 70h bytes holding the action at `+10h` and the point
   at `+64h`; for `<DetonationImpactEffect>` it reads the effect with `0x58F017` (`thiscall([[0C66234h]+0BB8h], &text)`,
-  the node's text field `[node+14h]`) at the data load and passes a stand-in action whose `+70h` is that ID.
+  the node's text field `[node+14h]`) at the data load and passes a stand-in action whose `+70h` is that ID. A unit with
+  an obstruction radius (`[proto+88h]` or `[proto+8Ch]`) of 1.5 m or more gets one call per point of a grid over its
+  footprint (`round(2r / 3)` per side, 2 to 3, within ±0.75 r along `[unit+38h]` and `[unit+20h]`). The area damage's
+  ninth argument is 1, so its victims play no hit or pain sound; the damage does not read it.
 - **The delete calls:** `0x7CD0CF` (HP setter `0x4820A1`) and `0x7CD0DC` (kill queue `0x4B4DC2`) are `call`s to the
   asm hooks of `detonation_hooks.asm`: each pushes ECX (the unit), then EDI (the delete command) and ECX for the
   helper, pops ECX and `jmp`s to the stock callee. Bit 3 of the command's flag bits (`[[cmd+58h]] & 8`, size
