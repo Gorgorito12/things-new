@@ -328,3 +328,5 @@ detonationDeath-onunit-wol 3 12 1
 detonationDeath-onunit-wol-control 3 12 1
 detonationDeath-building-wol 6 12 1
 detonationDeath-building-wol-control 6 12 1
+overhealSources-canoverheal-wol 5 36 3
+overhealSources-canoverheal-wol-control 0 36 3

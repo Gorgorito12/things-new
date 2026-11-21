@@ -3149,18 +3149,29 @@ overheal (only the single-target heal action knows its healer).
 | Site | Stolen | Hook does | Continues at |
 |---|---|---|---|
 | 0x4823A3 | `push ecx / push esi / mov esi,ecx / cmp [esi+8],8` (8 B; ECX = unit, `[esp+4]` = amount) | `UhcOverhealAddHp(unit, &amount)`: a positive amount on a marked unit is lowered to reach at most the reference, unless `g_uhcOverhealAllow`; then the stolen bytes | 0x4823AB (`jbe`, on the stolen `cmp`) |
-| 0x9E0BBB | `call 480408h` (ECX = EDI = target, healer `[esi+10h]`) | `UhcOverhealTickLimit` in ST0: for a marked target, the reference with a healer of no source type, min(reference × cap %, max) with a capped source; else the stock max | 0x9E0BC0 |
-| 0x9E0CE9 | `call 4823A3h` (the tick's heal) | `g_uhcOverhealAllow` = 1 + the index of the healer's first source type (0: none), the stolen call, then 0 | 0x9E0CEE |
-| 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | `UhcOverhealSearchRatio` in ST0: for a marked candidate, HP / reference with a normal healer, HP / cap limit with a capped source (stock rules: 0 below 1e-6, 1.0 from the limit: no candidate); else the stock ratio | 0x9CD989 |
+| 0x9E0BBB | `call 480408h` (ECX = EDI = target, ESI = the unit's heal action: healer `[esi+10h]`, the player's copy of its tactics action `[esi+4]`) | `UhcOverhealTickLimit(target, action)` in ST0: for a marked target, the reference when the action does not overheal, min(reference × cap %, max) when it does with a cap; else the stock max | 0x9E0BC0 |
+| 0x9E0CE9 | `call 4823A3h` (the tick's heal; ESI the unit's action) | `g_uhcOverhealAllow` = 1 for an overhealing action (its cap in `g_uhcOverhealAllowCap`), the stolen call, then 0 | 0x9E0CEE |
+| 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | `UhcOverhealSearchRatio` in ST0: for a marked candidate, HP / reference when none of the healer's actions overheals, HP / the highest limit of those that do (stock rules: 0 below 1e-6, 1.0 from the limit: no candidate); else the stock ratio | 0x9CD989 |
 
-**`cap` and `rate`** (per source type, `g_options[i]`). In the add-HP hook, with `g_uhcOverhealAllow` = i + 1 (only
-the heal tick of a source healer sets it): with `rate`, the part of the amount above the reference becomes (HP +
-amount − max(HP, reference)) × rate / 100, the part below is kept; with `cap`, the amount is then lowered so that HP
-stops at reference × cap / 100. The tick's limit and the search's ratio above use the same limit, so the heal action
-ends when the unit reaches it (state 10) and a unit at its cap is no candidate, as a normal healer at the reference;
-without that a capped source would heal 0 HP forever. The C functions return a float in ST0 (x86 `__stdcall`), and
-change only EAX, ECX and EDX, as the stolen calls do. Without options every path calls what the hooks called before
-(`0x480408`, `UhcOverhealReferenceOf`, `0x45F295`, `UhcOverhealRatioOf`).
+**Which action overheals (2026-11-21, JTMaston's #85).** The heal tick's action ESI is the unit's action; `[esi+4]` is
+the player's copy of the tactics action, the same object whose `<rate>` entries the tick reads (`mov ecx,[esi+4]` /
+`call 487C45h` at 0x9E0CC3, REA `ev_d240f09a…`, `ev_5be39379…`: the rate list `[action+0Ch]`, count `[+10h]`, 0Ch-byte
+entries). `<CanOverheal>` and `<OverhealCap>` (percent, 100 to 1000) come through the shared action tag hook
+(`actiontags.h`), from a tactics `<action>` or a `<ProtoAction>`, and are kept by (proto ID `[proto+4]`, action name index
+`[action+4]`), which every player's copy keeps; a tactics file read for several protos gives each its own entry. A tag on
+an action whose name has no "heal" is logged and dropped (the heal tick would never read it). The Data subtypes
+`CanOverheal` and `OverhealCap` (`AddTechActionSubtype`, `action=`/`allactions=`) keep a value per copy of an action (its
+address, guarded by the same key) through the stock value function 0x7F892A, from the tag's value (or 0, none): `Assign`
+1 or 0 turns it on or off, `Absolute` adds. A value above 0.5 is on. Both maps are cleared at each database load; the
+techs apply again on a load. The search knows only the healer, so it takes the best of the healer's actions (its proto
+copy's action set `[proto+44h]`, `[set+1Ch]`, count `[set+20h]`): one without a cap wins, else the highest cap. A cfg
+type is an explicit opt-in: a healer of it overheals with every action, to its `cap=`. In the add-HP hook, with
+`g_uhcOverhealAllow` set (only the heal tick of an overhealing action sets it), the amount is lowered so that HP stops at
+reference × cap / 100; it is not scaled any more (the cfg's `rate=` is gone: above the reference the action heals at
+its own `<rate>`, as below it). The tick's limit and the search's ratio use the same limit, so the heal action ends when
+the unit reaches it (state 10) and a unit at its cap is no candidate; without that a capped healer would heal 0 HP
+forever. The C functions return a float in ST0 (x86 `__stdcall`), and change only EAX, ECX and EDX, as the stolen
+calls do.
 
 **Why it is safe.** The decisions read only protos and HP (the same on every machine) and the cap
 only lowers a positive amount; damage (negative amounts) and the setter's other callers are
@@ -3215,6 +3226,16 @@ forgets every unit, and so does a data reload); for each unit, the unit table lo
 gone, dead or unmarked units are forgotten. A unit at or below its reference is forgotten; one whose
 last gain is less than `delay` ago waits; otherwise HP = max(HP − rate × elapsed, reference)
 through the stock setter FUN_004820A1(unit, value, 0).
+
+**The rate and delay per proto (2026-11-21, JTMaston's #85).** `<OverhealDecay delay="S">R</OverhealDecay>` comes through
+the shared proto tag hook (`prototags.h`; the attribute through the XML attribute reader 0x598F37 and 0x402733) and is
+kept by proto ID `[proto+8]`: R % of the reference per second, S seconds. The Data subtypes `OverhealDecay` and
+`OverhealDecayDelay` (`AddTechSubtype`) keep a value per player's copy of a proto (its address, guarded by its ID), from
+the tag's (or the default's) through 0x7F892A; a target that names a unit type reaches every proto of the type, as the
+stock subtypes do. At each gain and each tick the unit's proto copy `[unit+5Ch]` gives the rate and delay: its tech value,
+else its tag, else the cfg line's values, else 2 % and 0 s. A rate of 0 does not note the unit, and stops a noted one.
+Both maps are cleared at each database load. The saved marker (stat 65h) still holds only the last gain; the rate is
+read again after a load.
 
 **`holdNear`.** For a unit past its delay, before the decay, each `holdNear` entry runs the world's spatial query
 FUN_004A1C55(world, &[unit+14h], metres, 1, list) (`noTrainNearEnemyTC`'s: the IDs of the units whose distance to the

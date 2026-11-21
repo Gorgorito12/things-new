@@ -1783,15 +1783,15 @@ END
 
 Contract: [overhealSources](../porting-to-another-dll.md#overhealsources).
 
-Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `IsA` `0x44D7FA` (105 B), `HealthRatio` `0x45F295` (72 B), `MaxHitpointsGetter` `0x480408` (38 B), `OverhealAddEntry` `0x4823A3` (10 B), `HealSearchRatio` `0x9CD982` (24 B), `HealTickMax` `0x9E0BA5` (41 B), `HealTickAdd` `0x9E0CCF` (38 B).
 
 ### src/features/overhealsources.cpp
 
 ```cpp
-// overhealSources [UnitType ...] [log]: only healers of the source types (default
-// AbstractOverhealer) heal marked units above their reference; every other heal stops there.
+// overhealSources [UnitType [cap=<percent>] ...] [log]: only heal actions with <CanOverheal>1</CanOverheal> heal
+// marked units above their reference; every other heal stops there.
 //
 // "Marked" and "reference" are overhealHitpointBars' (overheal.cpp, OverhealUsesInitial and
 // OverhealReference, called here through their public forms in overheal_hooks.asm): a unit whose
@@ -1799,42 +1799,49 @@ Sites: `IsA` `0x44D7FA` (105 B), `HealthRatio` `0x45F295` (72 B), `MaxHitpointsG
 // InitialHitpoints (or max x Initial / Max when a modifier changed its max). Without that key no
 // unit is marked, so this key needs it.
 //
+// Which heals overheal. The heal action itself says so, in its tactics <action> or its <ProtoAction>
+// (both read through the shared action tag hook, actiontags.h):
+// - <CanOverheal>1</CanOverheal> (default 0): this action heals a marked unit above its reference;
+// - <OverhealCap>percent</OverhealCap> (100 to 1000): at most that % of the reference (never above the max);
+//   without it, up to the max.
+// Above the reference the action heals at its own <Rate>, as below it. The Data tech subtypes CanOverheal
+// (1 on, 0 off) and OverhealCap, with action="<Name>" or allactions="1" (techsubtypes.h), change both on the
+// player's copy of the action, so a tech can give, take away or move the overheal in a game; the values are
+// kept by the copy's address and rebuilt when the techs are applied again (a load). Unit types named in the cfg
+// are an explicit opt-in that still works: a healer of such a type overheals with every heal action, to its
+// type's cap= (the cfg's old rate= is gone: the heal's own rate applies).
+//
 // Four hooks (hooks/overhealsources_hooks.asm):
 // - the add-HP function FUN_004823A3, through which every heal of a unit goes (the heal action,
 //   area heals, regeneration, dances, powers, self heals; damage too, as negative amounts): a
 //   positive amount on a marked unit is lowered so that HP stops at the reference, unless the
-//   heal comes from a source healer's heal tick (g_uhcOverhealAllow);
-// - the heal tick FUN_009E0B53's "HP < max" test (0x9E0BBB): for a normal healer on a marked
-//   target it uses the reference, so the heal action ends there (state 10) and the healer goes
-//   idle; a direct order on a unit at its reference ends the same way at once;
-// - the tick's add (0x9E0CE9): sets g_uhcOverhealAllow for a source healer;
-// - the automatic search FUN_009CD865's first ratio test (0x9CD984): for a normal healer a marked
-//   unit at its reference is no candidate.
-// A source healer heals to MaxHitpoints, as in stock. The decisions read only the units' protos
-// and HP, the same on every machine.
-//
-// Per source type, "cap=<percent>" (100..1000) and "rate=<percent>" (1..1000) follow its name:
-// - cap: such a healer heals a marked unit to at most cap % of its reference (never above the max).
-//   The tick's limit (0x9E0BBB) and the search's ratio (0x9CD984) use it as they use the reference
-//   for a normal healer, so the heal ends there and a unit at its cap is no candidate; the add-HP
-//   hook lowers the amount to it;
-// - rate: the part of each of its heals that lands above the reference is that percent of what
-//   stock adds (below the reference the heal is unchanged).
-// The tick add hook sets g_uhcOverhealAllow to 1 + the index of the healer's first source type, so
-// the add-HP hook knows which options apply.
+//   heal comes from an overhealing heal action's tick (g_uhcOverhealAllow), which stops at its cap;
+// - the heal tick FUN_009E0B53's "HP < max" test (0x9E0BBB): with the action that heals ([action+4], the
+//   player's copy of the tactics action, the one whose <Rate> entries the tick reads at 0x9E0CCF), the
+//   reference for a marked target and an action that does not overheal, its cap for one that does; the heal
+//   action ends there (state 10) and the healer goes idle;
+// - the tick's add (0x9E0CE9): sets g_uhcOverhealAllow (and the cap) for an overhealing action;
+// - the automatic search FUN_009CD865's first ratio test (0x9CD984), which knows the healer only: a marked unit
+//   is a candidate below the highest limit of the healer's heal actions (the reference when none overheals).
+// The decisions read only the units' protos, actions and HP, the same on every machine.
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <cwchar>
+#include <map>
 #include <set>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
+#include "../actiontags.h"
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../techsubtypes.h"
 #include "../unittypes.h"
 
 extern "C" {
@@ -1851,30 +1858,60 @@ extern void (*g_hpLoss)(const char* unit, float amount);             // set by d
 namespace {
 
 constexpr std::size_t kMaxTypes = 8;
+constexpr int kMaxLogLines = 200;
+constexpr std::int32_t kMinCap = 100;
+constexpr std::int32_t kMaxCap = 1000;
 
 using IsAFn = bool(__thiscall*)(const char* proto, std::int32_t type);
 using UnitFloatFn = float(__thiscall*)(const char* unit);
 const auto kIsA = reinterpret_cast<IsAFn>(0x0044D7FA);
 const auto kMaxHitpoints = reinterpret_cast<UnitFloatFn>(0x00480408);
 const auto kHealthRatio = reinterpret_cast<UnitFloatFn>(0x0045F295);
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
   return *reinterpret_cast<const T*>(base + offset);
 }
 
-// A source type's options: cap in % of the reference (0: none, the max), rate in % above it.
-struct SourceOptions {
-  std::int32_t cap = 0;
-  std::int32_t rate = 100;
+// An action of a proto: every player's copy keeps the proto ID [proto+4] and the action's name index [action+4].
+struct ActionKey {
+  std::int32_t proto;
+  std::int32_t name;
+  auto operator<=>(const ActionKey&) const = default;
 };
-SourceOptions g_options[kMaxTypes];
 
+// The tags of an action, from the data: -1 when absent.
+struct HealTag {
+  std::int32_t canOverheal = -1;
+  std::int32_t cap = -1;
+};
+std::map<ActionKey, HealTag> g_tags;  // filled while the data loads, cleared at each database load
+
+// The tech values of one player's copy of an action, by its address; `key` guards a reused address.
+struct TechHeal {
+  ActionKey key;
+  float canOverheal;
+  float cap;
+  bool hasCan = false;
+  bool hasCap = false;
+};
+std::unordered_map<const char*, TechHeal> g_techs;
+
+// What an action (or a healer) gives above the reference.
+struct Overheal {
+  bool on = false;
+  std::int32_t cap = 0;  // % of the reference; 0: up to the max
+};
+
+std::int32_t g_typeCaps[kMaxTypes] = {};  // the cfg types' cap=, 0 for none
 bool g_log = false;
-bool g_cap = false;      // overhealSources is on
+bool g_cap = false;  // overhealSources is on
 bool g_addHooked = false;
-std::set<std::string, std::less<>> g_loggedCaps;     // proto names, "log" only
-std::set<std::string, std::less<>> g_loggedSources;  // healer proto names, "log" only
+int g_logLines = 0;
+std::set<std::string, std::less<>> g_loggedCaps;        // proto names, "log" only
+std::set<std::string, std::less<>> g_loggedSources;     // healed proto names, "log" only
 std::set<std::string, std::less<>> g_loggedSourceCaps;  // proto names, "log" only
 
 const char* ProtoName(const char* unit) {
@@ -1891,67 +1928,267 @@ bool FirstLog(std::set<std::string, std::less<>>& logged, const char* name) {
   return true;
 }
 
+bool LogLine() {
+  if (!g_log || g_logLines >= kMaxLogLines) {
+    return false;
+  }
+  ++g_logLines;
+  return true;
+}
+
+// The name of an action's name index, from the database's list (the one being loaded while the data loads).
+const wchar_t* ActionName(std::int32_t index) {
+  const char* game = *reinterpret_cast<const char* const*>(0x00C66234);
+  const char* db = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  if (db == nullptr || index < 0 || index >= Field<std::int32_t>(db, 0x1FDC)) {
+    return nullptr;
+  }
+  return Field<const wchar_t* const*>(db, 0x1FD8)[index];
+}
+
+HealTag TagOf(const ActionKey& key) {
+  const auto found = g_tags.find(key);
+  return found == g_tags.end() ? HealTag{} : found->second;
+}
+
+// The 1 + index of the healer's first cfg type (cfg order), or 0.
+std::int32_t TypeIndex(const char* healer);
+
+// What one action of this healer gives: its tags, then its techs, then the healer's cfg type.
+Overheal OfAction(const char* healer, const char* action) {
+  Overheal out;
+  const char* proto = healer == nullptr ? nullptr : Field<const char*>(healer, 0x5C);
+  if (proto != nullptr && action != nullptr) {
+    const ActionKey key{Field<std::int32_t>(proto, 4), Field<std::int32_t>(action, 4)};
+    const HealTag tag = TagOf(key);
+    out.on = tag.canOverheal == 1;
+    out.cap = tag.cap > 0 ? tag.cap : 0;
+    if (!g_techs.empty()) {
+      const auto tech = g_techs.find(action);
+      if (tech != g_techs.end() && tech->second.key == key) {
+        if (tech->second.hasCan) {
+          out.on = tech->second.canOverheal > 0.5f;
+        }
+        if (tech->second.hasCap) {
+          const float cap = tech->second.cap;
+          out.cap = !(cap >= 1.0f) ? 0 : cap > static_cast<float>(kMaxCap) ? kMaxCap : static_cast<std::int32_t>(cap + 0.5f);
+        }
+      }
+    }
+  }
+  if (!out.on) {
+    const std::int32_t index = TypeIndex(healer);
+    if (index > 0) {
+      out.on = true;
+      out.cap = g_typeCaps[index - 1];
+    }
+  }
+  return out;
+}
+
+// The most any heal action of this healer gives (the search knows the healer only).
+Overheal OfHealer(const char* healer) {
+  Overheal best;
+  const char* proto = healer == nullptr ? nullptr : Field<const char*>(healer, 0x5C);
+  const char* set = proto == nullptr ? nullptr : Field<const char*>(proto, 0x44);
+  if (set != nullptr) {
+    char* const* actions = Field<char* const*>(set, 0x1C);
+    const std::int32_t count = Field<std::int32_t>(set, 0x20);
+    for (std::int32_t i = 0; actions != nullptr && i < count; ++i) {
+      const Overheal one = OfAction(healer, actions[i]);
+      if (one.on && (!best.on || one.cap == 0 || (best.cap != 0 && one.cap > best.cap))) {
+        best = one;
+      }
+    }
+  }
+  if (!best.on) {
+    best = OfAction(healer, nullptr);  // the cfg type alone
+  }
+  return best;
+}
+
+// The most HP this overheal gives the target: cap % of the reference (at most the max), else the max.
+float LimitOf(const char* target, const Overheal& overheal) {
+  const float max = kMaxHitpoints(target);
+  if (overheal.cap <= 0) {
+    return max;
+  }
+  const float limit = UhcOverhealReferenceOf(target) * (static_cast<float>(overheal.cap) * 0.01f);
+  return limit < max ? limit : max;
+}
+
+// --- the tags --------------------------------------------------------------------------------------------------
+
+bool ParseCap(const wchar_t* text, std::int32_t* out) {
+  if (text == nullptr) {
+    return false;
+  }
+  std::wstring value = text;
+  while (!value.empty() && (value.back() == L'%' || value.back() == L' ')) {
+    value.pop_back();
+  }
+  wchar_t* end = nullptr;
+  const double number = std::wcstod(value.c_str(), &end);
+  if (value.empty() || end != value.c_str() + value.size() || !(number >= kMinCap) || !(number <= kMaxCap)) {
+    return false;
+  }
+  *out = static_cast<std::int32_t>(number + 0.5);
+  return true;
+}
+
+void OnActionTag(const uhc::ActionTag& tag) {
+  const bool can = _wcsicmp(tag.name, L"CanOverheal") == 0;
+  if (!can && _wcsicmp(tag.name, L"OverhealCap") != 0) {
+    return;
+  }
+  const wchar_t* tagName = can ? L"CanOverheal" : L"OverhealCap";
+  const ActionKey key{Field<std::int32_t>(tag.proto, 4), Field<std::int32_t>(tag.action, 4)};
+  const char* protoName = Field<const char*>(tag.proto, 0x10);
+  const wchar_t* text = tag.text == nullptr ? L"" : tag.text;
+  const wchar_t* actionName = ActionName(key.name);
+  if (key.name < 0) {
+    uhc::Log(L"overhealSources: proto %hs: <%ls> before the action's <name>, ignored", protoName ? protoName : "?",
+             tagName);
+    return;
+  }
+  if (actionName != nullptr) {
+    std::wstring lower = actionName;
+    for (wchar_t& c : lower) {
+      c = static_cast<wchar_t>(towlower(c));
+    }
+    if (lower.find(L"heal") == std::wstring::npos) {
+      uhc::Log(L"overhealSources: proto %hs, action %ls: <%ls> is for heal actions only, ignored",
+               protoName ? protoName : "?", actionName, tagName);
+      return;
+    }
+  }
+  HealTag& value = g_tags[key];
+  if (can) {
+    if (_wcsicmp(text, L"1") == 0 || _wcsicmp(text, L"true") == 0) {
+      value.canOverheal = 1;
+    } else if (_wcsicmp(text, L"0") == 0 || _wcsicmp(text, L"false") == 0) {
+      value.canOverheal = 0;
+    } else {
+      uhc::Log(L"overhealSources: proto %hs, action %ls: <CanOverheal>%ls</CanOverheal> needs 1 or 0, ignored",
+               protoName ? protoName : "?", actionName ? actionName : L"?", text);
+      return;
+    }
+  } else if (!ParseCap(text, &value.cap)) {
+    uhc::Log(L"overhealSources: proto %hs, action %ls: <OverhealCap>%ls</OverhealCap> needs a percent from %d to %d, "
+             L"ignored",
+             protoName ? protoName : "?", actionName ? actionName : L"?", text, kMinCap, kMaxCap);
+    return;
+  }
+  if (g_log) {
+    uhc::Log(L"overhealSources: proto %hs, action %ls (%ls): <%ls> %ls", protoName ? protoName : "?",
+             actionName ? actionName : L"?", tag.source == uhc::ActionSource::kTactics ? L"tactics" : L"protoy", tagName,
+             text);
+  }
+}
+
+void Forget(char*) {
+  g_tags.clear();
+  g_techs.clear();
+}
+
+// --- the tech subtypes -----------------------------------------------------------------------------------------
+
+TechHeal& TechOf(char* action, const char* proto) {
+  const ActionKey key{Field<std::int32_t>(proto, 4), Field<std::int32_t>(action, 4)};
+  auto inserted = g_techs.emplace(action, TechHeal{key, 0.0f, 0.0f});
+  if (!(inserted.first->second.key == key)) {
+    inserted.first->second = TechHeal{key, 0.0f, 0.0f};  // the address was another action's copy before
+  }
+  TechHeal& tech = inserted.first->second;
+  const HealTag tag = TagOf(key);
+  if (!tech.hasCan) {
+    tech.canOverheal = tag.canOverheal == 1 ? 1.0f : 0.0f;
+  }
+  if (!tech.hasCap) {
+    tech.cap = tag.cap > 0 ? static_cast<float>(tag.cap) : 0.0f;
+  }
+  return tech;
+}
+
+void LogTech(const wchar_t* subtype, const TechHeal& tech, std::uint8_t relativity, float amount, bool unapply,
+             float before, float after) {
+  if (LogLine()) {
+    const wchar_t* name = ActionName(tech.key.name);
+    uhc::Log(L"overhealSources: proto %d, action %ls, tech subtype %ls, relativity %u, amount %g%ls: %g -> %g",
+             tech.key.proto, name ? name : L"?", subtype, relativity, static_cast<double>(amount),
+             unapply ? L" (removed)" : L"", static_cast<double>(before), static_cast<double>(after));
+  }
+}
+
+void ChangeCanOverheal(char* action, const char* baseAction, const char* proto, float amount, std::uint8_t relativity,
+                       bool unapply) {
+  TechHeal& tech = TechOf(action, proto);
+  const HealTag base = baseAction == nullptr ? HealTag{} : TagOf({Field<std::int32_t>(proto, 4), Field<std::int32_t>(baseAction, 4)});
+  const float before = tech.canOverheal;
+  kEffectValue(relativity, &tech.canOverheal, base.canOverheal == 1 ? 1.0f : 0.0f, amount, unapply);
+  tech.hasCan = true;
+  LogTech(L"CanOverheal", tech, relativity, amount, unapply, before, tech.canOverheal);
+}
+
+void ChangeOverhealCap(char* action, const char* baseAction, const char* proto, float amount, std::uint8_t relativity,
+                       bool unapply) {
+  TechHeal& tech = TechOf(action, proto);
+  const HealTag base = baseAction == nullptr ? HealTag{} : TagOf({Field<std::int32_t>(proto, 4), Field<std::int32_t>(baseAction, 4)});
+  const float before = tech.cap;
+  kEffectValue(relativity, &tech.cap, base.cap > 0 ? static_cast<float>(base.cap) : 0.0f, amount, unapply);
+  tech.hasCap = true;
+  LogTech(L"OverhealCap", tech, relativity, amount, unapply, before, tech.cap);
+}
+
 }  // namespace
 
 extern "C" {
 std::int32_t g_uhcOverhealSourceTypes[kMaxTypes] = {-1, -1, -1, -1, -1, -1, -1, -1};
 std::int32_t g_uhcOverhealSourceTypeCount = 0;
-std::int32_t g_uhcOverhealAllow = 0;  // set by the tick hook around a source healer's add
+std::int32_t g_uhcOverhealAllow = 0;  // set by the tick hook around an overhealing action's add
 std::int32_t g_uhcOverhealRegen = 0;  // set by overhealDecay's hooks around a regeneration's add
+std::int32_t g_uhcOverhealAllowCap = 0;  // that action's cap, % of the reference (0: the max)
 
 void UhcOverhealAddHook();
 void UhcOverhealTickMaxHook();
 void UhcOverhealTickAddHook();
 void UhcOverhealSearchRatioHook();
 
-// 1 + the index of the healer's first source type (cfg order), or 0 for a healer of none.
-std::int32_t __stdcall UhcOverhealSourceIndex(const char* healer) {
-  const char* proto = healer == nullptr ? nullptr : Field<const char*>(healer, 0x5C);
-  for (std::int32_t i = 0; proto != nullptr && i < g_uhcOverhealSourceTypeCount; ++i) {
-    if (g_uhcOverhealSourceTypes[i] >= 0 && kIsA(proto, g_uhcOverhealSourceTypes[i])) {
-      return i + 1;
-    }
-  }
-  return 0;
-}
-
-// The most HP this healer's heal action gives the target: the reference for a marked target and a
-// healer of no source type; cap % of the reference (at most the max) for a source type with a cap;
-// else the stock max. From the tick hook (0x9E0BBB), in ST0.
-float __stdcall UhcOverhealTickLimit(const char* target, const char* healer) {
+// The most HP this heal action ([action+4], its healer at [action+10h]) gives the target: the reference for a
+// marked target and an action that does not overheal, else its cap or the stock max. From the tick hook
+// (0x9E0BBB), in ST0.
+float __stdcall UhcOverhealTickLimit(const char* target, const char* unitAction) {
   const char* proto = Field<const char*>(target, 0x5C);
   if (proto == nullptr || UhcOverhealMarked(proto) == 0) {
     return kMaxHitpoints(target);
   }
-  const std::int32_t source = UhcOverhealSourceIndex(healer);
-  if (source == 0) {
-    return UhcOverhealReferenceOf(target);
-  }
-  const float max = kMaxHitpoints(target);
-  const std::int32_t cap = g_options[source - 1].cap;
-  if (cap <= 0) {
-    return max;
-  }
-  const float limit = UhcOverhealReferenceOf(target) * (static_cast<float>(cap) * 0.01f);
-  return limit < max ? limit : max;
+  const Overheal overheal = OfAction(Field<const char*>(unitAction, 0x10), Field<const char*>(unitAction, 4));
+  return overheal.on ? LimitOf(target, overheal) : UhcOverhealReferenceOf(target);
 }
 
-// The automatic search's ratio of a candidate for this healer (0x9CD984), in ST0: HP over the tick's
-// limit with the stock rules of 0x45F295 (0 below 1e-6, 1.0 from the limit on), so a unit at the
-// limit is no candidate; the stock ratio for an unmarked unit or a source without a cap.
+// Around the tick's add (0x9E0CE9): 1 for an overhealing action (its cap in g_uhcOverhealAllowCap), else 0.
+std::int32_t __stdcall UhcOverhealTickSource(const char* unitAction) {
+  const Overheal overheal = OfAction(Field<const char*>(unitAction, 0x10), Field<const char*>(unitAction, 4));
+  g_uhcOverhealAllowCap = overheal.cap;
+  return overheal.on ? 1 : 0;
+}
+
+// The automatic search's ratio of a candidate for this healer (0x9CD984), in ST0: HP over the limit of the
+// healer's best heal action with the stock rules of 0x45F295 (0 below 1e-6, 1.0 from the limit on), so a unit
+// at that limit is no candidate; the stock ratio for an unmarked unit or an overheal up to the max.
 float __stdcall UhcOverhealSearchRatio(const char* candidate, const char* healer) {
   const char* proto = Field<const char*>(candidate, 0x5C);
   if (proto == nullptr || UhcOverhealMarked(proto) == 0) {
     return kHealthRatio(candidate);
   }
-  const std::int32_t source = UhcOverhealSourceIndex(healer);
-  if (source == 0) {
+  const Overheal overheal = OfHealer(healer);
+  if (!overheal.on) {
     return UhcOverhealRatioOf(candidate);
   }
-  if (g_options[source - 1].cap <= 0) {
+  if (overheal.cap <= 0) {
     return kHealthRatio(candidate);
   }
-  const float limit = UhcOverhealTickLimit(candidate, healer);
+  const float limit = LimitOf(candidate, overheal);
   const float hp = Field<float>(candidate, 0x64);
   if (!(limit >= 1e-6f)) {
     return 0.0f;
@@ -1960,8 +2197,8 @@ float __stdcall UhcOverhealSearchRatio(const char* candidate, const char* healer
 }
 
 // From the add-HP hook, before every HP addition: with overhealSources a positive amount on a marked
-// unit is lowered so that HP does not pass the reference, unless a source healer's tick is adding
-// it; with overhealDecay a unit that still goes above its reference is noted.
+// unit is lowered so that HP does not pass the reference, unless an overhealing action's tick is adding
+// it (then its cap); with overhealDecay a unit that still goes above its reference is noted.
 void __stdcall UhcOverhealAddHp(const char* unit, float* amount) {
   if (!(*amount > 0.0f)) {
     if (*amount < 0.0f && uhc::g_hpLoss != nullptr) {
@@ -1975,39 +2212,27 @@ void __stdcall UhcOverhealAddHp(const char* unit, float* amount) {
   }
   const float reference = UhcOverhealReferenceOf(unit);
   const float hp = Field<float>(unit, 0x64);
-  if (g_cap && g_uhcOverhealAllow > 0 && g_uhcOverhealAllow <= g_uhcOverhealSourceTypeCount) {
-    // A source healer's tick: its type's rate above the reference, then its cap.
-    const SourceOptions& options = g_options[g_uhcOverhealAllow - 1];
-    if (options.rate != 100 && hp + *amount > reference) {
-      const float below = hp < reference ? reference - hp : 0.0f;
-      *amount = below + (*amount - below) * (static_cast<float>(options.rate) * 0.01f);
-    }
-    if (options.cap > 0) {
-      const float limit = reference * (static_cast<float>(options.cap) * 0.01f);
-      if (hp + *amount > limit) {
-        if (g_log && FirstLog(g_loggedSourceCaps, ProtoName(unit))) {
-          uhc::Log(L"overhealSources: a source heal of unit %d (%hs) stops at its cap %.1f, %d %% of its 100 %% %.1f "
-                   L"(HP %.1f + %.2f); logged once per proto",
-                   Field<std::int32_t>(unit, 0x10), ProtoName(unit), static_cast<double>(limit), options.cap,
-                   static_cast<double>(reference), static_cast<double>(hp), static_cast<double>(*amount));
-        }
-        *amount = limit > hp ? limit - hp : 0.0f;
+  if (g_cap && g_uhcOverhealAllow != 0 && g_uhcOverhealAllowCap > 0) {
+    const float limit = reference * (static_cast<float>(g_uhcOverhealAllowCap) * 0.01f);
+    if (hp + *amount > limit) {
+      if (g_log && FirstLog(g_loggedSourceCaps, ProtoName(unit))) {
+        uhc::Log(L"overhealSources: an overheal of unit %d (%hs) stops at its cap %.1f, %d %% of its 100 %% %.1f "
+                 L"(HP %.1f + %.2f); logged once per proto",
+                 Field<std::int32_t>(unit, 0x10), ProtoName(unit), static_cast<double>(limit), g_uhcOverhealAllowCap,
+                 static_cast<double>(reference), static_cast<double>(hp), static_cast<double>(*amount));
       }
+      *amount = limit > hp ? limit - hp : 0.0f;
     }
   }
   if (!g_cap || g_uhcOverhealAllow != 0) {
     if (uhc::g_overhealGain != nullptr && hp + *amount > reference) {
       uhc::g_overhealGain(unit, g_uhcOverhealRegen == 0);
     }
-    if (!g_cap) {
-      return;
-    }
-    if (g_log && hp + *amount > reference && FirstLog(g_loggedSources, ProtoName(unit))) {
-      const SourceOptions& options = g_options[(g_uhcOverhealAllow > 0 ? g_uhcOverhealAllow : 1) - 1];
-      uhc::Log(L"overhealSources: unit %d (%hs) is healed above its 100 %% %.1f by a source healer (HP %.1f + %.2f; "
-               L"rate %d %%); logged once per proto",
+    if (g_cap && g_log && hp + *amount > reference && FirstLog(g_loggedSources, ProtoName(unit))) {
+      uhc::Log(L"overhealSources: unit %d (%hs) is healed above its 100 %% %.1f by an overhealing heal (HP %.1f + "
+               L"%.2f); logged once per proto",
                Field<std::int32_t>(unit, 0x10), ProtoName(unit), static_cast<double>(reference),
-               static_cast<double>(hp), static_cast<double>(*amount), options.rate);
+               static_cast<double>(hp), static_cast<double>(*amount));
     }
     return;
   }
@@ -2017,13 +2242,27 @@ void __stdcall UhcOverhealAddHp(const char* unit, float* amount) {
   const float capped = reference > hp ? reference - hp : 0.0f;
   if (g_log && FirstLog(g_loggedCaps, ProtoName(unit))) {
     uhc::Log(L"overhealSources: a heal of unit %d (%hs) stops at its 100 %% %.1f (HP %.1f, +%.2f -> +%.2f; not "
-             L"from a source healer); logged once per proto",
+             L"from an overhealing heal); logged once per proto",
              Field<std::int32_t>(unit, 0x10), ProtoName(unit), static_cast<double>(reference),
              static_cast<double>(hp), static_cast<double>(*amount), static_cast<double>(capped));
   }
   *amount = capped;
 }
 }
+
+namespace {
+
+std::int32_t TypeIndex(const char* healer) {
+  const char* proto = healer == nullptr ? nullptr : Field<const char*>(healer, 0x5C);
+  for (std::int32_t i = 0; proto != nullptr && i < g_uhcOverhealSourceTypeCount; ++i) {
+    if (g_uhcOverhealSourceTypes[i] >= 0 && kIsA(proto, g_uhcOverhealSourceTypes[i])) {
+      return i + 1;
+    }
+  }
+  return 0;
+}
+
+}  // namespace
 
 namespace uhc {
 
@@ -2053,29 +2292,27 @@ Outcome ApplyOverhealSources(const Config& config) {
   std::vector<std::string> typeNames;
   for (const std::string& arg : *args) {
     const bool cap = _strnicmp(arg.c_str(), "cap=", 4) == 0;
-    const bool rate = _strnicmp(arg.c_str(), "rate=", 5) == 0;
     if (_stricmp(arg.c_str(), "log") == 0) {
       g_log = true;
-    } else if (cap || rate) {
-      std::string text = arg.substr(cap ? 4 : 5);
+    } else if (_strnicmp(arg.c_str(), "rate=", 5) == 0) {
+      Log(L"overhealSources: %hs: rate= is gone, an overhealing action heals at its own <Rate>; ignored", arg.c_str());
+    } else if (cap) {
+      std::string text = arg.substr(4);
       if (!text.empty() && text.back() == '%') {
         text.pop_back();
       }
       char* end = nullptr;
       const long value = std::strtol(text.c_str(), &end, 10);
-      const bool valid = !text.empty() && end == text.c_str() + text.size() && value <= 1000 && value >= (cap ? 100 : 1);
+      const bool valid = !text.empty() && end == text.c_str() + text.size() && value <= kMaxCap && value >= kMinCap;
       if (typeNames.empty() || !valid) {
-        Log(L"overhealSources: %hs: expected <UnitType> [cap=<percent>, 100 to 1000] [rate=<percent>, 1 to 1000] after "
-            L"each source type; feature not applied",
+        Log(L"overhealSources: %hs: expected <UnitType> [cap=<percent>, 100 to 1000] after each type; feature not "
+            L"applied",
             arg.c_str());
         return Outcome::kFailed;
       }
-      SourceOptions& options = g_options[typeNames.size() - 1];
-      (cap ? options.cap : options.rate) = static_cast<std::int32_t>(value);
+      g_typeCaps[typeNames.size() - 1] = static_cast<std::int32_t>(value);
     } else if (arg.find('=') != std::string::npos) {
-      Log(L"overhealSources: %hs: expected [<UnitType> [cap=<percent>] [rate=<percent>] ...] [log]; feature not "
-          L"applied",
-          arg.c_str());
+      Log(L"overhealSources: %hs: expected [<UnitType> [cap=<percent>] ...] [log]; feature not applied", arg.c_str());
       return Outcome::kFailed;
     } else if (typeNames.size() == kMaxTypes) {
       Log(L"overhealSources: more than %u unit types (expected: [UnitType ...] [log]); feature not applied",
@@ -2084,9 +2321,6 @@ Outcome ApplyOverhealSources(const Config& config) {
     } else {
       typeNames.push_back(arg);
     }
-  }
-  if (typeNames.empty()) {
-    typeNames.push_back("AbstractOverhealer");
   }
   if (!VerifyAll("overhealSources", {&sites::kOverhealAddEntry, &sites::kHealTickMax, &sites::kHealTickAdd,
                                      &sites::kHealSearchRatio, &sites::kMaxHitpointsGetter, &sites::kHealthRatio,
@@ -2100,30 +2334,25 @@ Outcome ApplyOverhealSources(const Config& config) {
   }
   g_uhcOverhealSourceTypeCount = static_cast<std::int32_t>(typeNames.size());
   g_cap = true;
-  if (!InstallOverhealAddHook() || !WriteJmp(0x009E0BBB, reinterpret_cast<const void*>(&UhcOverhealTickMaxHook), 5) ||
+  if (!AddActionTagHandler(&OnActionTag) || !AddTechActionSubtype("CanOverheal", &ChangeCanOverheal) ||
+      !AddTechActionSubtype("OverhealCap", &ChangeOverhealCap) || !OnDatabaseLoad(&Forget) || !InstallOverhealAddHook() ||
+      !WriteJmp(0x009E0BBB, reinterpret_cast<const void*>(&UhcOverhealTickMaxHook), 5) ||
       !WriteJmp(0x009E0CE9, reinterpret_cast<const void*>(&UhcOverhealTickAddHook), 5) ||
       !WriteJmp(0x009CD984, reinterpret_cast<const void*>(&UhcOverhealSearchRatioHook), 5)) {
     return Outcome::kFailed;
   }
   std::string names;
   for (std::size_t i = 0; i < typeNames.size(); ++i) {
-    names += i == 0 ? typeNames[i] : ", " + typeNames[i];
-    const SourceOptions& options = g_options[i];
-    if (options.cap > 0 || options.rate != 100) {
-      char text[64];
-      if (options.cap <= 0) {
-        std::snprintf(text, sizeof text, " (rate %d %% above 100 %%)", options.rate);
-      } else if (options.rate == 100) {
-        std::snprintf(text, sizeof text, " (up to %d %%)", options.cap);
-      } else {
-        std::snprintf(text, sizeof text, " (up to %d %%, rate %d %% above 100 %%)", options.cap, options.rate);
-      }
+    names += (i == 0 ? "; and every heal of a healer of unittype " : ", ") + typeNames[i];
+    if (g_typeCaps[i] > 0) {
+      char text[32];
+      std::snprintf(text, sizeof text, " (up to %d %%)", g_typeCaps[i]);
       names += text;
     }
   }
-  Log(L"overhealSources: only healers of unittype %hs heal marked units above their 100 %%; every other heal stops "
-      L"there%ls (multiplayer unverified)",
-      names.c_str(), g_log ? L", the first cap and source heal of each proto logged" : L"");
+  Log(L"overhealSources: only heal actions with <CanOverheal>1</CanOverheal> (Data subtypes CanOverheal and "
+      L"OverhealCap) heal marked units above their 100 %%%hs; every other heal stops there%ls (multiplayer unverified)",
+      names.c_str(), g_log ? L"; the tags, techs, first cap and overheal of each proto logged" : L"");
   return Outcome::kApplied;
 }
 
@@ -2142,13 +2371,13 @@ option casemap :none
 
 include common.inc
 
-EXTERNDEF g_uhcOverhealAllow:SDWORD   ; 1 + source type index while a source healer's heal tick adds HP
+EXTERNDEF g_uhcOverhealAllow:SDWORD   ; 1 while an overhealing heal action's tick adds HP
 EXTERNDEF g_uhcOverhealRegen:SDWORD   ; 1 while a regeneration adds HP (overhealDecay)
 
 UhcOverhealAddHp PROTO STDCALL unit:DWORD, amount:DWORD             ; may lower [amount]
-UhcOverhealTickLimit PROTO STDCALL target:DWORD, healer:DWORD       ; ST0: the tick's "HP < this"
+UhcOverhealTickLimit PROTO STDCALL target:DWORD, action:DWORD       ; ST0: the tick's "HP < this"
 UhcOverhealSearchRatio PROTO STDCALL candidate:DWORD, healer:DWORD  ; ST0: the search's ratio
-UhcOverhealSourceIndex PROTO STDCALL healer:DWORD                   ; EAX: 1 + source type index, 0 none
+UhcOverhealTickSource PROTO STDCALL action:DWORD                    ; EAX: 1 for an overhealing action, 0 none
 
 .data
 addHpNext       dd 004823ABh    ; jbe 4823FEh: the adder after its stolen cmp [esi+8],8
@@ -2182,28 +2411,29 @@ UhcOverhealAddHook PROC
 UhcOverhealAddHook ENDP
 
 ; Replaces call 480408h at 0x9E0BBB in the heal tick FUN_009E0B53 (ECX = EDI = target, ESI = the
-; heal action, healer at [esi+10h]): each tick heals only while HP < this value, and ends the
-; action (state 10) otherwise. UhcOverhealTickLimit returns it in ST0: for a marked target, the
-; reference with a healer that gives no overheal and the source's cap with a capped source, so the
-; action ends there; else the stock max (the stolen call's value). The FPU stack is empty at the
-; site; ECX and EDX are written again after 0x9E0BC0 before they are read, and EAX by fnstsw.
+; unit's heal action: healer at [esi+10h], the player's copy of its tactics action at [esi+4]): each
+; tick heals only while HP < this value, and ends the action (state 10) otherwise.
+; UhcOverhealTickLimit returns it in ST0: for a marked target, the reference with an action that
+; gives no overheal and its cap with one that does, so the action ends there; else the stock max
+; (the stolen call's value). The FPU stack is empty at the site; ECX and EDX are written again after
+; 0x9E0BC0 before they are read, and EAX by fnstsw.
 UhcOverhealTickMaxHook PROC
     TRACE_ONCE "overhealSources heal tick (0x9E0BBB)"
-    push dword ptr [esi+10h]        ; healer
+    push esi                        ; the unit's heal action
     push edi                        ; target
     call UhcOverhealTickLimit
     jmp tickMaxNext
 UhcOverhealTickMaxHook ENDP
 
 ; Replaces call 4823A3h at 0x9E0CE9, where the heal tick adds this tick's HP to the target (ECX =
-; EDI = target, the amount and 1 pushed, ESI = the action). A source healer's heal is let through
-; above the reference: g_uhcOverhealAllow is set for the call to 1 + the index of its source type
-; (whose cap and rate the add-HP hook applies), and cleared after it.
+; EDI = target, the amount and 1 pushed, ESI = the unit's heal action). An overhealing action's heal
+; is let through above the reference: g_uhcOverhealAllow is set to 1 for the call (and the action's
+; cap, which the add-HP hook applies, in g_uhcOverhealAllowCap), and cleared after it.
 UhcOverhealTickAddHook PROC
     TRACE_ONCE "overhealSources heal (0x9E0CE9)"
     push ecx
-    push dword ptr [esi+10h]        ; healer
-    call UhcOverhealSourceIndex
+    push esi                        ; the unit's heal action
+    call UhcOverhealTickSource
     pop ecx
     mov g_uhcOverhealAllow, eax
     call addHp                      ; stolen 0x9E0CE9
@@ -2252,15 +2482,23 @@ END
 
 Contract: [overhealDecay](../porting-to-another-dll.md#overhealdecay).
 
-Besides the core helpers, it needs: [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
 Sites: `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `MaxHitpointsGetter` `0x480408` (38 B), `HpSetter` `0x4820A1` (34 B), `OverhealAddEntry` `0x4823A3` (10 B), `RegenAddHp` `0x49087C` (18 B), `UnitsNearPoint` `0x4A1C55` (248 B), `DanceRegenAddHp` `0x67A036` (21 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/overhealdecay.cpp
 
 ```cpp
-// overhealDecay <rate>[%] [delay] [UnitType ...] [log]: the HP of marked units above their reference
+// overhealDecay [<rate>[%] [delay]] [UnitType ...] [log]: the HP of marked units above their reference
 // goes back down to it over time, Overwatch style.
+//
+// How fast, per unit: <OverhealDecay delay="S">R</OverhealDecay> in the proto (read through the shared proto
+// tag hook, prototags.h) loses R % of the reference per second, S seconds after the last gain; a marked proto
+// without the tag takes the cfg's rate and delay, or 2 % of the reference per second and no delay when the
+// line gives none. 0 keeps the overheal. The Data tech subtypes OverhealDecay and OverhealDecayDelay
+// (seconds) change them on the player's copy of the proto, or of every proto of a unit type that the effect
+// targets (techsubtypes.h); the values are kept by the copy's address and rebuilt when the techs are applied
+// again (a load).
 //
 // "Marked" and "reference" are overhealHitpointBars' (through the public helpers of
 // overheal_hooks.asm), so this key needs it. A unit is noted when a heal takes it above its
@@ -2285,19 +2523,24 @@ Sites: `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `MaxHitpointsGette
 // skipped, not saved up: the decay goes on at the same rate once no such unit is near.
 #include <cstdint>
 #include <cstdio>
+#include <cctype>
 #include <cstdlib>
 #include <cstring>
+#include <cwchar>
 #include <map>
 #include <set>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../prototags.h"
 #include "../savedmarkers.h"
+#include "../techsubtypes.h"
 #include "../unittypes.h"
 #include "../worldtick.h"
 
@@ -2341,15 +2584,36 @@ const auto kSetHp = reinterpret_cast<SetHpFn>(0x004820A1);
 const auto kIsA = reinterpret_cast<IsAFn>(0x0044D7FA);
 const auto kIsBuilt = reinterpret_cast<IsBuiltFn>(0x0044DDB4);
 const auto kUnitsNear = reinterpret_cast<UnitsNearFn>(0x004A1C55);
+using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+using XmlTextFn = const char*(__thiscall*)(const void* text);
+const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
+using EffectValueFn = void(__cdecl*)(std::uint8_t relativity, float* target, float base, float amount, bool unapply);
+const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
+
+bool ParseSeconds(const std::string& arg, std::uint32_t* ms);
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
   return *reinterpret_cast<const T*>(base + offset);
 }
 
-float g_rate = 0.0f;  // HP per second, or % of the reference per second
-bool g_percent = false;
-std::uint32_t g_delayMs = 0;
+// A decay: HP per second, or % of the reference per second, after a delay.
+struct Decay {
+  float rate = 2.0f;
+  bool percent = true;
+  std::uint32_t delayMs = 0;
+};
+Decay g_default;  // the cfg's, else 2 % per second and no delay
+std::unordered_map<std::int32_t, Decay> g_tags;  // <OverhealDecay>, by proto ID; cleared at each database load
+// The tech values of one player's copy of a proto, by its address; `id` guards a reused address.
+struct TechDecay {
+  std::int32_t id;
+  Decay decay;
+  float delaySeconds;
+};
+std::unordered_map<const char*, TechDecay> g_techs;
+int g_techLines = 0;
 std::int32_t g_types[kMaxTypes] = {-1, -1, -1, -1, -1, -1, -1, -1};
 std::int32_t g_typeCount = 0;
 bool g_log = false;
@@ -2422,20 +2686,38 @@ bool Decays(const char* proto) {
   return false;
 }
 
+// The decay of a unit's proto (the player's copy): its techs', else its tag's, else the default.
+Decay DecayOf(const char* proto) {
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  if (!g_techs.empty()) {
+    const auto tech = g_techs.find(proto);
+    if (tech != g_techs.end() && tech->second.id == id) {
+      return tech->second.decay;
+    }
+  }
+  const auto tag = g_tags.find(id);
+  return tag == g_tags.end() ? g_default : tag->second;
+}
+
 // From the add-HP hook: a gain takes this marked unit above its reference. A heal restarts the
 // delay; a regeneration (the unit's own, or the Regeneration dance) does not: it only notes a unit
 // that was not noted yet, as if its delay had passed, so regenerating every step cannot hold the
-// overheal.
+// overheal. A unit whose decay is 0 is not noted.
 void Note(const char* unit, bool restartDelay) {
   const char* world = World();
-  if (world == nullptr || !Decays(Field<const char*>(unit, 0x5C))) {
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (world == nullptr || !Decays(proto)) {
+    return;
+  }
+  const Decay decay = DecayOf(proto);
+  if (!(decay.rate > 0.0f)) {
     return;
   }
   const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
   const std::int32_t id = Field<std::int32_t>(unit, 0x10);
   if (restartDelay) {
     g_units[id] = now;
-  } else if (!g_units.emplace(id, now - g_delayMs).second) {
+  } else if (!g_units.emplace(id, now - decay.delayMs).second) {
     return;
   }
   if (g_changed.empty() || g_changed.back() != id) {
@@ -2447,6 +2729,89 @@ void Reset(char*) {
   g_units.clear();
   g_changed.clear();
   g_heldUnits.clear();
+  g_tags.clear();
+  g_techs.clear();
+}
+
+// <OverhealDecay delay="S">R</OverhealDecay>: R % of the reference per second (0 keeps the overheal), S seconds
+// after the last gain (default 0).
+bool __cdecl ReadOverhealDecay(void*, const char* node, char* proto) {
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  const char* protoName = Field<const char*>(proto, 0x10);
+  const wchar_t* text = Field<const wchar_t*>(node, 0x14);
+  std::wstring value = text == nullptr ? L"" : text;
+  while (!value.empty() && (value.back() == L'%' || value.back() == L' ')) {
+    value.pop_back();
+  }
+  wchar_t* end = nullptr;
+  const double rate = std::wcstod(value.c_str(), &end);
+  if (value.empty() || end != value.c_str() + value.size() || !(rate >= 0.0) || rate > 1000.0) {
+    uhc::Log(L"overhealDecay: proto %hs: <OverhealDecay> needs a percent of the reference per second from 0 to 1000, "
+             L"ignored",
+             protoName ? protoName : "?");
+    return true;
+  }
+  Decay decay{static_cast<float>(rate), true, 0};
+  const void* attribute = nullptr;
+  if (kXmlAttribute(node, "delay", &attribute) && attribute != nullptr) {
+    const char* delay = kXmlText(attribute);
+    if (delay == nullptr || !ParseSeconds(delay, &decay.delayMs)) {
+      uhc::Log(L"overhealDecay: proto %hs: <OverhealDecay delay=\"%hs\"> needs seconds from 0 to 3600, ignored",
+               protoName ? protoName : "?", delay ? delay : "");
+      return true;
+    }
+  }
+  g_tags[id] = decay;
+  if (g_log) {
+    uhc::Log(L"overhealDecay: proto %hs loses %.2f %% of its 100 %% per second, %.1f s after its last gain", protoName ? protoName : "?",
+             static_cast<double>(decay.rate), decay.delayMs / 1000.0);
+  }
+  return true;
+}
+
+TechDecay& TechOf(char* proto, const char* base) {
+  const std::int32_t id = Field<std::int32_t>(proto, 8);
+  const auto tag = g_tags.find(Field<std::int32_t>(base, 8));
+  const Decay start = tag == g_tags.end() ? g_default : tag->second;
+  auto inserted = g_techs.emplace(proto, TechDecay{id, start, start.delayMs / 1000.0f});
+  if (inserted.first->second.id != id) {
+    inserted.first->second = TechDecay{id, start, start.delayMs / 1000.0f};  // another proto's copy before
+  }
+  return inserted.first->second;
+}
+
+void LogTech(const char* proto, const wchar_t* subtype, std::uint8_t relativity, float amount, bool unapply,
+             float before, float after) {
+  if (g_log && g_techLines < 200) {
+    ++g_techLines;
+    const char* name = Field<const char*>(proto, 0x10);
+    uhc::Log(L"overhealDecay: proto %hs, tech subtype %ls, relativity %u, amount %g%ls: %g -> %g", name ? name : "?",
+             subtype, relativity, static_cast<double>(amount), unapply ? L" (removed)" : L"", static_cast<double>(before),
+             static_cast<double>(after));
+  }
+}
+
+void ChangeDecay(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  TechDecay& tech = TechOf(proto, base);
+  const auto tag = g_tags.find(Field<std::int32_t>(base, 8));
+  const float baseRate = (tag == g_tags.end() ? g_default : tag->second).rate;
+  const float before = tech.decay.rate;
+  kEffectValue(relativity, &tech.decay.rate, baseRate, amount, unapply);
+  if (!(tech.decay.rate >= 0.0f)) {
+    tech.decay.rate = 0.0f;
+  }
+  LogTech(proto, L"OverhealDecay", relativity, amount, unapply, before, tech.decay.rate);
+}
+
+void ChangeDecayDelay(char* proto, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  TechDecay& tech = TechOf(proto, base);
+  const auto tag = g_tags.find(Field<std::int32_t>(base, 8));
+  const float baseDelay = (tag == g_tags.end() ? g_default : tag->second).delayMs / 1000.0f;
+  const float before = tech.delaySeconds;
+  kEffectValue(relativity, &tech.delaySeconds, baseDelay, amount, unapply);
+  const float seconds = tech.delaySeconds < 0.0f ? 0.0f : tech.delaySeconds > 3600.0f ? 3600.0f : tech.delaySeconds;
+  tech.decay.delayMs = static_cast<std::uint32_t>(seconds * 1000.0f + 0.5f);
+  LogTech(proto, L"OverhealDecayDelay", relativity, amount, unapply, before, tech.delaySeconds);
 }
 
 // "holdNear": a unit of a hold type owned by the unit's player, alive and built, other than the
@@ -2593,7 +2958,8 @@ void DecayTick(char* world, std::int32_t) {
       it = g_units.erase(it);
       continue;
     }
-    if (now - it->second < g_delayMs) {
+    const Decay decay = DecayOf(Field<const char*>(unit, 0x5C));
+    if (now - it->second < decay.delayMs || !(decay.rate > 0.0f)) {
       ++it;
       continue;
     }
@@ -2607,7 +2973,7 @@ void DecayTick(char* world, std::int32_t) {
         continue;
       }
     }
-    const float perSecond = g_percent ? reference * g_rate * 0.01f : g_rate;
+    const float perSecond = decay.percent ? reference * decay.rate * 0.01f : decay.rate;
     float value = hp - perSecond * static_cast<float>(elapsed) * 0.001f;
     if (g_log && FirstLog(g_loggedStart, ProtoName(unit))) {
       uhc::Log(L"overhealDecay: unit %d (%hs) decays from %.1f toward its 100 %% %.1f at %.2f HP/s; logged once "
@@ -2664,13 +3030,21 @@ Outcome ApplyOverhealDecay(const Config& config) {
         L"max; feature not applied");
     return Outcome::kFailed;
   }
-  if (args->empty() || !ParseRate(args->front(), &g_rate, &g_percent)) {
-    Log(L"overhealDecay: expected <HP per second>[%%] [delay seconds] [UnitType ...] [log], e.g. overhealDecay 2 3; "
-        L"feature not applied");
-    return Outcome::kFailed;
+  // An optional default for the protos without <OverhealDecay>: a rate (HP, or % of the reference with %), then
+  // optionally its delay. A first argument that is a number but not a valid rate is an error, not a type.
+  std::size_t first = 0;
+  if (!args->empty() && !args->front().empty() &&
+      (std::isdigit(static_cast<unsigned char>(args->front()[0])) || args->front()[0] == '.' || args->front()[0] == '-')) {
+    if (!ParseRate(args->front(), &g_default.rate, &g_default.percent)) {
+      Log(L"overhealDecay: %hs: expected [<HP per second>[%%] [delay seconds]] [UnitType ...] [log], e.g. overhealDecay "
+          L"2%% 3; feature not applied",
+          args->front().c_str());
+      return Outcome::kFailed;
+    }
+    first = 1;
   }
   std::vector<std::string> typeNames;
-  for (std::size_t i = 1; i < args->size(); ++i) {
+  for (std::size_t i = first; i < args->size(); ++i) {
     const std::string& arg = (*args)[i];
     if (_stricmp(arg.c_str(), "log") == 0) {
       g_log = true;
@@ -2689,7 +3063,7 @@ Outcome ApplyOverhealDecay(const Config& config) {
       g_holds[g_holdCount].metres = static_cast<float>(value);
       ++g_holdCount;
       i += 2;
-    } else if (i == 1 && ParseSeconds(arg, &g_delayMs)) {
+    } else if (first == 1 && i == 1 && ParseSeconds(arg, &g_default.delayMs)) {
       // the delay
     } else if (typeNames.size() == kMaxTypes) {
       Log(L"overhealDecay: more than %u unit types; feature not applied", static_cast<unsigned>(kMaxTypes));
@@ -2702,7 +3076,8 @@ Outcome ApplyOverhealDecay(const Config& config) {
   if (!VerifyAll("overhealDecay", {addEntry, &sites::kHpSetter, &sites::kMaxHitpointsGetter, &sites::kUnitAliveSlot,
                                    &sites::kIsA, &sites::kRegenAddHp, &sites::kDanceRegenAddHp}) ||
       (g_holdCount > 0 && !VerifyAll("overhealDecay holdNear", {&sites::kUnitsNearPoint, &sites::kIsBuilt})) ||
-      !OnDatabaseLoad(&Reset)) {
+      !OnDatabaseLoad(&Reset) || !AddProtoTagHandler("OverhealDecay", &ReadOverhealDecay) ||
+      !AddTechSubtype("OverhealDecay", &ChangeDecay) || !AddTechSubtype("OverhealDecayDelay", &ChangeDecayDelay)) {
     return Outcome::kFailed;
   }
   for (std::size_t i = 0; i < typeNames.size(); ++i) {
@@ -2735,9 +3110,10 @@ Outcome ApplyOverhealDecay(const Config& config) {
     holds += (holds.empty() ? "; held while their player has a unit of " : ", or of ") + g_holds[i].name + " within" +
              text;
   }
-  Log(L"overhealDecay: marked units above their 100 %% lose %.2f %ls per second of game time, %.1f s after their "
-      L"last gain, down to it%hs%hs%ls (multiplayer unverified)",
-      static_cast<double>(g_rate), g_percent ? L"% of it" : L"HP", g_delayMs / 1000.0,
+  Log(L"overhealDecay: marked units above their 100 %% lose their <OverhealDecay> (%% of it per second, after its "
+      L"delay; Data subtypes OverhealDecay and OverhealDecayDelay), or %.2f %ls per second of game time %.1f s after "
+      L"their last gain, down to it%hs%hs%ls (multiplayer unverified)",
+      static_cast<double>(g_default.rate), g_default.percent ? L"% of it" : L"HP", g_default.delayMs / 1000.0,
       names.empty() ? "" : (" (units of" + names.substr(1) + " only)").c_str(), holds.c_str(),
       g_log ? L"; logged" : L"");
   return Outcome::kApplied;

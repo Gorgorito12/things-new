@@ -1980,19 +1980,26 @@ Code: [healing](porting-code/healing.md#overhealhitpointbars).
 Code: [healing](porting-code/healing.md#overhealsources).
 
 - **Needs** overhealHitpointBars' types and helpers (above); apply it after that key.
-- **Globals:** `g_uhcOverhealSourceTypes[8]`, `g_uhcOverhealSourceTypeCount`, `g_uhcOverhealAllow`.
+- **Globals:** `g_uhcOverhealSourceTypes[8]`, `g_uhcOverhealSourceTypeCount` (the cfg's opt-in types), `g_uhcOverhealAllow`,
+  `g_uhcOverhealAllowCap`.
+- **Which action overheals:** `<CanOverheal>` and `<OverhealCap>` through `AddActionTagHandler`, kept by (`[proto+4]`,
+  `[action+4]`); the Data subtypes `CanOverheal` and `OverhealCap` through `AddTechActionSubtype`, kept by the address
+  of the player's copy of the action (guarded by the same key) and computed with `0x7F892A`. Clear both at each
+  database load (`OnDatabaseLoad`).
 - **Add-HP hook** at `0x4823A3` (8 B: `push ecx; push esi; mov esi,ecx; cmp dword ptr [esi+8],8`),
   ECX = unit, `[esp+4]` = amount (float), `[esp+8]` = flag: pushad, `UhcOverhealAddHp(unit,
   &amount)` (may lower the amount in place), popad, redo the 8 bytes, → `0x4823AB` (`jbe` on the
   `cmp`). Lowering rule: amount > 0, the unit's proto marked, `g_uhcOverhealAllow` = 0 and
   HP + amount > reference → amount = max(reference − HP, 0).
-- **Tick max hook** at `0x9E0BBB` (5 B, `call 480408h`), ECX = EDI = target, ESI = the action
-  (healer `[esi+10h]`), FPU stack empty: ST0 = the reference for a marked target and a non-source
-  healer, else the stock max; → `0x9E0BC0`.
-- **Tick add hook** at `0x9E0CE9` (5 B, `call 4823A3h`): `g_uhcOverhealAllow` = the healer is a
-  source; the stolen call; `g_uhcOverhealAllow` = 0; → `0x9E0CEE`.
+- **Tick max hook** at `0x9E0BBB` (5 B, `call 480408h`), ECX = EDI = target, ESI = the unit's action
+  (healer `[esi+10h]`, the player's copy of its tactics action `[esi+4]`), FPU stack empty: ST0 = the reference for
+  a marked target and an action that does not overheal, min(reference × cap, max) for one that does; else the stock
+  max; → `0x9E0BC0`.
+- **Tick add hook** at `0x9E0CE9` (5 B, `call 4823A3h`): `g_uhcOverhealAllow` = the action overheals (and
+  `g_uhcOverhealAllowCap` its cap); the stolen call; `g_uhcOverhealAllow` = 0; → `0x9E0CEE`.
 - **Search hook** at `0x9CD984` (5 B, `call 45F295h`), ECX = ESI = candidate, healer `[ebp+4]`:
-  ST0 = HP / reference (stock rules) for a marked candidate and a non-source healer, else the stock
+  ST0 = HP / reference (stock rules) for a marked candidate when none of the healer's actions (`[proto+44h]`,
+  `[set+1Ch]`, `[set+20h]`) overheals, HP / the highest limit of those that do, else the stock
   ratio; → `0x9CD989`. Coexists with smartHealTargets and healNonIdle (other sites of the loop).
 - **The add-HP hook is shared** with overhealDecay: `InstallOverhealAddHook()` writes it once.
 
@@ -2015,6 +2022,10 @@ Code: [healing](porting-code/healing.md#overhealdecay).
   alive (`vtbl+A4h`), marked; at or below the reference → forget; inside the delay → skip; else
   `FUN_004820A1(unit, max(HP − rate × elapsed / 1000, reference), 0)` (rate in HP/s, or the
   reference × % / 100).
+- **Rate and delay per proto:** `<OverhealDecay delay="S">R</OverhealDecay>` through `AddProtoTagHandler` (the
+  attribute with `0x598F37` / `0x402733`), kept by `[proto+8]`; the Data subtypes `OverhealDecay` and
+  `OverhealDecayDelay` through `AddTechSubtype`, kept by the address of the player's copy of the proto. A unit takes its
+  proto copy's tech value, else its tag, else the cfg's, else 2 % and 0 s; a rate of 0 is not noted.
 - **Never** below the reference, never the real clock, never pointer order.
 
 ### Unit panel row (the minimized interface)
