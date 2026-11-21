@@ -3619,9 +3619,9 @@ Outcome ApplyAccuracyTechs(const Config& config) {
 
 Contract: [broadsideMuzzleLimit](../porting-to-another-dll.md#broadsidemuzzlelimit).
 
-Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `BroadsideInitHead` `0x50339A` (53 B), `BroadsideMuzzleCap` `0x5033CF` (17 B), `BroadsideMuzzleClampR` `0x503447` (12 B), `BroadsideMuzzleReload` `0x5034B3` (13 B), `BroadsideMuzzleClampL` `0x5034E2` (12 B), `BroadsideSingleUseCap` `0x6A8236` (17 B), `BroadsideClampCold` `0x6A8247` (22 B).
+Sites: `ArrayResize` `0x401113` (24 B), `BroadsideInitHead` `0x50339A` (53 B), `BroadsideMuzzleCap` `0x5033CF` (17 B), `BroadsideMuzzleClampR` `0x503447` (12 B), `BroadsideMuzzleReload` `0x5034B3` (13 B), `BroadsideMuzzleClampL` `0x5034E2` (12 B), `BroadsideSingleUseCap` `0x6A8236` (17 B), `BroadsideClampCold` `0x6A8247` (22 B), `BroadsideSetupSlot` `0xB962EC` (4 B).
 
 ### src/features/broadside.cpp
 
@@ -3639,11 +3639,25 @@ Sites: `BroadsideInitHead` `0x50339A` (53 B), `BroadsideMuzzleCap` `0x5033CF` (1
 // passed on as a byte) for ships whose proto has <UnitType> (a marker, a stock type or a proto
 // name), or for every ship when no type is given. The model still decides how many muzzles there
 // are, and <SingleUsePlayer> actions keep 1. The hooks are in hooks/broadside_hooks.asm.
+//
+// More projectiles than muzzles: a BroadsideAttack action with <NumberProjectiles>P</NumberProjectiles> (or
+// <NumberOfProjectiles>; a tag stock does not read) gets P firing slots per side when the model has fewer, the
+// muzzles taken in turn (slot i fires from muzzle i mod the side's count). This is how an ability (a power that
+// runs a BroadsideAttack, such as a long-range bombardment) fires more shots than its ship has cannons; a smaller P
+// changes nothing. The set-up FUN_0050339A is reached only through its vtable slot 0xB962EC (BroadsideAttack's
+// slot 1), which points at a wrapper: the stock set-up, then the slots are added with the arrays' own resize
+// (0x401113) to the muzzle array [+68h] and the fire-time array [+74h], and [+80h], the right side's count, grows.
+// The schedule 0x4CEE48 gives slot i and slot i + [+80h] the same time, so both sides get P.
 #include <charconv>
 #include <cstdint>
 #include <cstring>
+#include <cwchar>
+#include <map>
 #include <string>
+#include <utility>
+#include <vector>
 
+#include "../actiontags.h"
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
@@ -3657,6 +3671,18 @@ constexpr int kMaxLimit = 255;  // 0x4A98F8 reads the muzzle index of a slot as 
 constexpr int kMaxLogLines = 500;
 
 int g_logLines = 0;
+bool g_log = false;
+
+constexpr std::uint32_t kSetupSlot = 0x00B962EC;  // BroadsideAttack's vtable slot 1: the set-up FUN_0050339A
+using SetupFn = void(__thiscall*)(char* action, std::int32_t arg);
+const auto kSetup = reinterpret_cast<SetupFn>(0x0050339A);
+using ResizeFn = bool(__thiscall*)(char* array, std::int32_t count, std::uint8_t keep);
+const auto kResize = reinterpret_cast<ResizeFn>(0x00401113);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+
+// <NumberProjectiles> per {proto ID, action name index}, as numberOfShots keys its tags; filled while the data loads.
+std::map<std::pair<std::int32_t, std::int32_t>, std::int32_t> g_projectiles;
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -3677,6 +3703,104 @@ bool ParseLimit(const std::string& text, std::int32_t* limit) {
   }
   *limit = value;
   return true;
+}
+
+}  // namespace
+
+extern "C" {
+extern std::int32_t g_uhcBroadsideType;
+extern std::int32_t g_uhcBroadsideAll;
+}
+
+namespace {
+
+void ForgetProjectiles(char*) { g_projectiles.clear(); }
+
+void ReadProjectiles(const uhc::ActionTag& tag) {
+  if (_wcsicmp(tag.name, L"NumberProjectiles") != 0 && _wcsicmp(tag.name, L"NumberOfProjectiles") != 0) {
+    return;
+  }
+  const std::int32_t name = Field<std::int32_t>(tag.action, 0x04);
+  if (name < 0 || tag.text == nullptr) {
+    return;
+  }
+  wchar_t* end = nullptr;
+  const long value = std::wcstol(tag.text, &end, 10);
+  while (end != nullptr && (*end == L' ' || *end == L'\t' || *end == L'\r' || *end == L'\n')) {
+    ++end;
+  }
+  if (end == tag.text || end == nullptr || *end != L'\0' || value < 1 || value > kMaxLimit) {
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"broadsideMuzzleLimit: proto %d, action %d: <%ls>%ls</%ls> is not a whole number from 1 to %d; ignored",
+               Field<std::int32_t>(tag.proto, 0x04), name, tag.name, tag.text, tag.name, kMaxLimit);
+    }
+    return;
+  }
+  g_projectiles[{Field<std::int32_t>(tag.proto, 0x04), name}] = static_cast<std::int32_t>(value);
+}
+
+// The muzzle indices of one side's slots, taken in turn up to `want` slots.
+std::vector<std::int32_t> Side(const std::int32_t* muzzles, std::int32_t count, std::int32_t want) {
+  std::vector<std::int32_t> out;
+  for (std::int32_t i = 0; count > 0 && i < (want > count ? want : count); ++i) {
+    out.push_back(muzzles[i % count]);
+  }
+  return out;
+}
+
+// After the stock set-up: P slots per side for an action of a ship the limit applies to.
+void AddSlots(char* action) {
+  if (g_projectiles.empty()) {
+    return;
+  }
+  const char* protoAction = Field<const char*>(action, 0x04);
+  const char* unit = Field<const char*>(action, 0x10);
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  // The ships the limit applies to, as the limit hook decides (its g_uhcBroadsideAction is cleared by the log hook).
+  if (protoAction == nullptr || proto == nullptr ||
+      (g_uhcBroadsideAll == 0 && (g_uhcBroadsideType < 0 || !kProtoIsType(proto, g_uhcBroadsideType)))) {
+    return;
+  }
+  const auto found = g_projectiles.find({Field<std::int32_t>(proto, 0x04), Field<std::int32_t>(protoAction, 0x04)});
+  const std::int32_t total = Field<std::int32_t>(action, 0x6C);
+  const std::int32_t right = Field<std::int32_t>(action, 0x80);
+  const std::int32_t left = total - right;
+  if (found == g_projectiles.end() || right < 0 || left < 0 || Field<std::int32_t>(action, 0x78) != total ||
+      (found->second <= right && found->second <= left)) {
+    return;
+  }
+  const std::int32_t* muzzles = Field<const std::int32_t*>(action, 0x68);
+  const std::vector<std::int32_t> r = Side(muzzles, right, found->second);
+  const std::vector<std::int32_t> l = Side(muzzles + right, left, found->second);
+  // The schedule gives a left slot the time of the right slot with its index; a left side longer than the right
+  // would leave its last slots without a time (never fired), as stock never makes one.
+  const std::int32_t rightCount = static_cast<std::int32_t>(r.size());
+  const std::int32_t leftCount = static_cast<std::int32_t>(l.size() <= r.size() ? l.size() : r.size());
+  const std::int32_t newTotal = rightCount + leftCount;
+  if (!kResize(action + 0x68, newTotal, 0) || !kResize(action + 0x74, newTotal, 0)) {
+    return;
+  }
+  auto* slots = Field<std::int32_t*>(action, 0x68);
+  auto* times = Field<std::int32_t*>(action, 0x74);
+  for (std::int32_t i = 0; i < newTotal; ++i) {
+    slots[i] = i < rightCount ? r[i] : l[i - rightCount];
+    times[i] = 0;
+  }
+  *reinterpret_cast<std::int32_t*>(action + 0x80) = rightCount;
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"broadsideMuzzleLimit: unit %d (%hs), action %d: %d projectiles per side over %d right and %d left muzzles: "
+             L"%d and %d slots",
+             Field<std::int32_t>(unit, 0x10), ProtoName(unit), Field<std::int32_t>(protoAction, 0x04), found->second,
+             right, left, rightCount, leftCount);
+  }
+}
+
+// BroadsideAttack's set-up, thiscall(action, arg), through its vtable slot.
+void __fastcall SetupWrapper(char* action, void*, std::int32_t arg) {
+  kSetup(action, arg);
+  AddSlots(action);
 }
 
 }  // namespace
@@ -3734,6 +3858,7 @@ Outcome ApplyBroadsideMuzzleLimit(const Config& config) {
   for (std::size_t i = 1; i < args.size(); ++i) {
     if (_stricmp(args[i].c_str(), "log") == 0) {
       log = true;
+      g_log = true;
     } else if (typeName.empty()) {
       typeName = args[i];
     } else {
@@ -3746,7 +3871,7 @@ Outcome ApplyBroadsideMuzzleLimit(const Config& config) {
   if (!VerifyAll("broadsideMuzzleLimit",
                  {&sites::kBroadsideInitHead, &sites::kBroadsideMuzzleCap, &sites::kBroadsideMuzzleClampR,
                   &sites::kBroadsideMuzzleReload, &sites::kBroadsideMuzzleClampL, &sites::kBroadsideSingleUseCap,
-                  &sites::kBroadsideClampCold})) {
+                  &sites::kBroadsideClampCold, &sites::kBroadsideSetupSlot, &sites::kArrayResize})) {
     return Outcome::kFailed;
   }
 
@@ -3763,13 +3888,20 @@ Outcome ApplyBroadsideMuzzleLimit(const Config& config) {
   if (log && !WriteJmp(sites::kBroadsideMuzzleClampL.va, reinterpret_cast<const void*>(&UhcBroadsideLogHook), 6)) {
     return Outcome::kFailed;
   }
+  // <NumberProjectiles>: the tag, and the set-up's vtable slot.
+  if (!OnDatabaseLoad(&ForgetProjectiles) || !AddActionTagHandler(&ReadProjectiles) ||
+      !WriteDword(kSetupSlot, static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(&SetupWrapper)))) {
+    return Outcome::kFailed;
+  }
   if (typeName.empty()) {
     Log(L"broadsideMuzzleLimit: every ship uses up to %d muzzles per side in a broadside (stock 6; "
-        L"SingleUsePlayer attacks keep 1)%ls (multiplayer unverified)",
+        L"SingleUsePlayer attacks keep 1), and <NumberProjectiles> fires that many per side over its muzzles%ls "
+        L"(multiplayer unverified)",
         limit, log ? L", every set-up logged" : L"");
   } else {
     Log(L"broadsideMuzzleLimit: ships of unittype %hs use up to %d muzzles per side in a broadside (stock 6; "
-        L"SingleUsePlayer attacks keep 1)%ls (multiplayer unverified)",
+        L"SingleUsePlayer attacks keep 1), and <NumberProjectiles> fires that many per side over its muzzles%ls "
+        L"(multiplayer unverified)",
         typeName.c_str(), limit, log ? L", every set-up logged" : L"");
   }
   return Outcome::kApplied;

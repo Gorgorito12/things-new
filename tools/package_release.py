@@ -287,7 +287,8 @@ kothTimer [players|teams] N=s ...   King of the Hill time by the number of playe
 maintainWaitForPop [UnitType] [log]  marked buildings keep a finished auto-produced unit
                               (Maintain action) until there is population room
 transformUpdatesLOS [log]     units transformed by a tech or revolution get the new LOS
-broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6)
+broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6);
+                              <NumberProjectiles> P: P shots per side over the muzzles
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
 displayedRange [log]          a selected unit with <DisplayRange> shows a ring of <DisplayedRange> m
 steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit

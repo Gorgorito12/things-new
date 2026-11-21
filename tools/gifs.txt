@@ -12,6 +12,8 @@ betterfreedynamicunit-wol-control 2 22 2
 buildingRotation-wol 6 12 1
 broadsideMuzzleLimit-wol 18 24 2
 broadsideMuzzleLimit-wol-control 18 24 2
+broadsideMuzzleLimit-ability-wol 4 14 2
+broadsideMuzzleLimit-ability-wol-control 4 14 2
 buildingWorkRateAuras-wol 2 36 2
 buildingWorkRateAuras-wol-control 2 36 2
 civFirstTC-wol 2 16 2

@@ -31,7 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Saturday 2026-11-21 11:30 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
+| Saturday 2026-11-21 12:10 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
+| Saturday 2026-11-21 11:31 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -122,7 +123,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 13:58 | [`nativeCivs`](#nativecivs) | Filmed in WoL, with a control. WallMapu, Tupinamba and Tawantinsuyu count as native civs: fire pit, dances and council age-up. | Those civs' data. |
 | Wednesday 2026-11-04 13:58 | [`wonderCivUnitType`](#wondercivunittype) | Filmed in WoL, with a control. `Rangatira` may start the Maori age-up. | Nothing. |
 | Wednesday 2026-11-04 13:58 | [`multiarmor`](#multiarmor) | Filmed in WoL, with a control. A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | Several `<Armor>` lines on the protos. |
-| Wednesday 2026-11-04 13:58 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
 | Wednesday 2026-11-04 13:58 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Filmed in WoL, with a control. Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | Nothing. |
 | Wednesday 2026-11-04 13:58 | [`nowalkfarm`](#nowalkfarm) | Filmed in WoL, with a control. Gatherers on a farm keep the spot they take. | Nothing. |
 | Wednesday 2026-11-04 13:58 | [`marketUnits`](#marketunits) | Filmed in WoL, with a control. Owning a unit of a listed proto (`WOLMarketGreek`, `SoukCaravan`, …) counts as owning a Market. | Nothing. |
@@ -3683,7 +3683,7 @@ containedUnitsROF [log]
 
 *An attack can fire several quick shots before it reloads, and a shot can fire several projectiles, like a shotgun.*
 
-**Added:** Thursday 2026-11-12 18:11 · **Filmed in WoL:** Saturday 2026-11-21 11:30
+**Added:** Thursday 2026-11-12 18:11 · **Filmed in WoL:** Saturday 2026-11-21 11:31
 
 ![numberOfShots in WoL](media/numberOfShots-wol.gif)
 
@@ -3787,7 +3787,7 @@ numberOfShots [projectiles] [log]
 
 *Ships can fire their broadsides from more than 6 cannons per side.*
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Saturday 2026-11-21 12:10
 
 ![broadsideMuzzleLimit in WoL](media/broadsideMuzzleLimit-wol.gif)
 
@@ -3832,6 +3832,45 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
   - the right side drives both schedules: the left side fires at most as many shots as the right
     side has slots, and a model with no MuzzleR point never fires its broadside;
   - each slot waits a random 0.25 to 1.75 × `ROF` after the previous one (sync RNG).
+- **More shots than cannons (2026-11-21, JTMaston's #88):** a `BroadsideAttack` action of a matched ship with
+  `<NumberProjectiles>P</NumberProjectiles>` (WoL's tactics write it in lowercase, `<numberprojectiles>`; also
+  `<NumberOfProjectiles>`, 1 to 255) gets P slots per side when its side has fewer muzzles: the muzzles fire in turn
+  (slot 1 from muzzle 1, ..., slot 8 from muzzle 1 again on a 7-muzzle side). So an ability fires P shots from all its
+  cannons. A smaller P changes nothing (the muzzles, or N, decide), and so does the tag on any other attack type. For the
+  floating battery's long-range bombardment (`PowerLongRange`, the action `LongRangeAttack` of `Floating_Battery.tactics`):
+
+  ```xml
+  <action>
+      <name stringid="38122">LongRangeAttack</name>
+      <type>BroadsideAttack</type>
+      ...
+      <numberprojectiles>15</numberprojectiles>
+  </action>
+  ```
+
+  with `broadsideMuzzleLimit 7 FloatingBattery` (the model has 7 muzzle bones per side but 5 MuzzleR / MuzzleL attach
+  points, so 5 cannons per side fire, whatever N is). In WoL's data today only that action has a `numberprojectiles` above
+  1 on a broadside (5, equal to its 5 muzzles): nothing changes until a value above the muzzles is written. Each slot still
+  waits its random 0.25 to 1.75 × `ROF` after the one before, so 15 shots take about three times as long as 5.
+  `SingleUsePlayer` actions keep their 1 slot per side, so with P they fire P shots from their first muzzle.
+- **Tested in WoL (2026-11-21, the ability):** Ethiopians, a `FloatingBattery` and a Gaia `Galleon` 33 m away on a water
+  map, `numberprojectiles` 15 on `LongRangeAttack` and `PowerLongRange` aimed at ships (test data: WoL aims it at
+  buildings). The ability cast from its button: with the key the log gave `action 438: 15 projectiles per side over 5 right
+  and 5 left muzzles: 15 and 15 slots` and 15 `CannonballLoS` flew (their IDs counted while the volley lasted), the five
+  cannons of the side each firing three times; key off, 5 flew. The normal attack (`RangedAttack`, `numberprojectiles` 1)
+  kept its 5 slots per side. **Casting the ability needs real clicks:** a background copy's posted clicks reach the
+  command panel but not the world, so these two takes ran alone in front, with the real mouse. Not tested: multiplayer,
+  a `SingleUsePlayer` action with the tag, a saved game during the volley.
+
+![broadsideMuzzleLimit, the floating battery's bombardment in WoL](media/broadsideMuzzleLimit-ability-wol.gif)
+
+*In WoL, with `broadsideMuzzleLimit 7 FloatingBattery log` (Ethiopians; the battery's `LongRangeAttack` with
+`numberprojectiles` 15; a Gaia Galleon off the top right corner):* the bombardment fires 15 mortar shells from its five
+cannons, one after another, and the log shows the 15 slots per side. [Full video (MP4)](media/broadsideMuzzleLimit-ability-wol.mp4).
+
+![broadsideMuzzleLimit, the bombardment in WoL, key off](media/broadsideMuzzleLimit-ability-wol-control.gif)
+
+*In WoL, key off (the same data):* 5 shells, one per cannon. [Full video (MP4)](media/broadsideMuzzleLimit-ability-wol-control.mp4).
 - **When it takes effect:** an action gets its slots when it is set up, which is when it is
   created. A saved game keeps the slot count its actions were saved with.
 - **`log`:** one line per action set-up of a matched ship, with the slots it got, at most 500
@@ -3850,10 +3889,9 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
 - **Simulation:** yes: more projectiles, and one more sync-RNG draw per extra slot and volley. A
   new marker also adds a unit type.
 - **Status:** confirmed in single player, in WoL (2026-11-03) with `broadsideMuzzleLimit 11 ypTekkousen
-  log`: the Tekkousen got `10 right and 10 left muzzle slots` and fired from all of them. The
-  `PowerBroadside` ability and `SingleUsePlayer` attacks were not tested. WoL's ironclad long-range
-  attack has `SingleUsePlayer`, so it keeps 1. A projectile count set in the data, independent of the
-  model (`numberprojectiles`), is a different and larger change; it is not provided.
+  log`: the Tekkousen got `10 right and 10 left muzzle slots` and fired from all of them. WoL's ironclad long-range
+  attack has `SingleUsePlayer`, so it keeps 1. The projectile count of the data (`numberprojectiles`) was added on
+  2026-11-21 (above).
 
 #### cantBeSlowed
 

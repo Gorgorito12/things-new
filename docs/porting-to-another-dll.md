@@ -1140,6 +1140,11 @@ Code: [combat](porting-code/combat.md#broadsidemuzzlelimit).
 - **Log hook** (only with `log`) at `0x5034E2`: EAX = MuzzleL count, ESI = final limit, EDI = the
   action, `[edi+80h]` = MuzzleR slots. After logging, re-execute `cmp eax,esi; mov [esp+1Ch],eax`
   with ESP as on entry, and jump to `0x5034E8` (`jg`, which reads that compare).
+- **`<NumberProjectiles>` (2026-11-21):** the dword at `0xB962EC` (BroadsideAttack's vtable slot 1, `9A 33 50 00`, the only
+  reference to the set-up) points at a `thiscall(action, arg)` wrapper: call `0x50339A`, then, for an action the limit hook
+  matched whose side has fewer slots than the tag's P, grow both `{data, count, capacity}` arrays at `+68h` and `+74h` with
+  `0x401113(array, count, 0)` (`thiscall`, `ret 8`), write the muzzle indices in turn and zero times, and set `[+80h]` to P.
+  The tag through `AddActionTagHandler`, keyed by (proto ID, action name index).
 
 ### abilitySlots
 

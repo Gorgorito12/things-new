@@ -1941,10 +1941,25 @@ at `0x5034E2`. For the action the first hook matched, it calls the C++ logger wi
 MuzzleL count (EAX) and the limit (ESI) inside `pushad` / `popad`, then re-executes both
 instructions and jumps to the `jg` at `0x5034E8`, which reads the flags of that `cmp`.
 
+**More projectiles than muzzles (2026-11-21).** [O] An ability's volley (a power whose `<unitaction>` is a
+`BroadsideAttack`, such as a mod's long-range bombardment) is one pass of the fire step: FUN_004C1290 fires each due slot of the
+facing side once, and for an action whose launch object `[ua+94h]` has the power bit (byte `[[obj+2Ch]]` & 4, `[obj+30h]`
+≥ 3) it ends the action with setState(0Ah) instead of scheduling another volley (0x4CEE48), REA `ev_695172b8…`. The
+schedule gives each right slot a time `now` (+1000 ms for such an action) plus a sync-RNG step of 0.25 to 1.75 ×
+`[ua+84h]`, and slot i + n1 the same time (`ev_cb848273…`). So a volley has one projectile per slot, at most the model's
+muzzles per side; `<numberprojectiles>` is no tag of the exe. The key reads `<NumberProjectiles>` (and
+`<NumberOfProjectiles>`) through the shared action tag hook, per `{proto ID, action name index}`, cleared on every data
+load, and replaces BroadsideAttack's vtable slot 1 (0xB962EC, the only reference to 0x50339A) with a wrapper: the stock
+set-up, then, for an action of a ship the key applies to (every ship, or its type through 0x44D7FA, as the limit hook
+decides) whose side has fewer slots than P, it resizes
+both arrays with their own resize 0x401113 to P per side, writes the muzzle indices in turn (slot i of a side = the
+side's stock slot i mod its count) and zero times, and sets `[ua+80h]` to P. The left side is capped at the right
+side's count, which is what the schedule can time.
+
 **Why it is safe.**
 - The arrays have no other bound: save and load write each count and resize on load, the fire step
   walks the count, and the muzzle index is read as a byte, which caps N at 255. A larger N needs
-  no save-format change.
+  no save-format change. The extra slots name muzzles the model has, so the muzzle lookup 0x4A98C2 succeeds for each.
 - Nothing else reads the hardcoded 6.
 - The limit depends only on the cfg and the owner proto's unit types, decided once per action
   set-up. It adds projectiles (each with its accuracy roll) and sync-RNG draws, so every machine

@@ -441,6 +441,11 @@ SITES = [
     ("BroadsideSingleUseCap", 0x6A8236, 0x11),
     # broadsideMuzzleLimit: the two cold clamp blocks, count = limit, back to 0x503453 / 0x5034EE
     ("BroadsideClampCold", 0x6A8247, 0x16),
+    # broadsideMuzzleLimit, <NumberProjectiles>: BroadsideAttack's vtable slot 1 (vtable 0xB962E8), the set-up
+    # FUN_0050339A, its only reference (replaced by a wrapper); and the int array resize 0x401113,
+    # thiscall({data, count, capacity}*, count, byte), ret 8, which the set-up appends its slots with
+    ("BroadsideSetupSlot", 0xB962EC, 4),
+    ("ArrayResize", 0x401113, 0x18),
     # abilitySlots (FUN_0046188E, command panel refresh): the cold block that appends a page-11
     # (Abilities) command entry 5 more times, from mov ecx,[esp+40h] through mov edi,5 (the count,
     # 0x695BD2) and the do-while that ends in sub edi,1 / je 461C3Fh / jmp 695BD7h
