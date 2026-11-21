@@ -34,6 +34,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 15:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
 | Saturday 2026-11-21 15:25 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Saturday 2026-11-21 15:06 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
+| Saturday 2026-11-21 15:50 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
+| Saturday 2026-11-21 15:50 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
 | Saturday 2026-11-21 12:42 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Saturday 2026-11-21 12:11 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
 | Saturday 2026-11-21 12:07 | [`ageFiveShipments`](#agefiveshipments) | Added. Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | `<age>4</age>` on the cards that want it. |
@@ -44,13 +46,11 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 11:54 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
 | Saturday 2026-11-21 11:35 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | The tag on the civ in `civs.xml`. |
-| Saturday 2026-11-21 11:34 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Saturday 2026-11-21 11:31 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Saturday 2026-11-21 11:07 | [`deadReplacementAtZeroInventory`](bug-fixes.md#deadreplacementatzeroinventory) | Added. A hunt, a herdable or any unit that leaves a body to gather drops its `<DeadReplacement>` when the body is used up, not when it falls. | `<DeadReplacement>` on the protos that want one (none has it today). |
 | Saturday 2026-11-21 11:03 | [`auraStacking`](#aurastacking) | Filmed in WoL, with a control. `<ForbidUnitType>` on any aura: the aura leaves units of a type or proto alone; that an aura does not stack is the game's own `<ModifyExclusive>`. | The tags on the aura. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
-| Friday 2026-11-20 12:52 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
 | Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
 | Friday 2026-11-20 11:59 | [`researchOnTheMove`](#researchonthemove) | Added. A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. |
 | Friday 2026-11-20 11:50 | [`homeCityTechsInUnits`](#homecitytechsinunits) | Added. A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | The card's tech in the `<Tech>` rows, made obtainable for the civ. |
@@ -6823,10 +6823,18 @@ usable; Food Crates 2 (bottom) ends with the red line `Shipment techs: 3/3, the 
 
 ![shipTechLimit in WoL, key off](media/shipTechLimit-wol-control.gif)
 
-*In WoL, key off (the same scenario, tag and commands):* the fourth research is paid and queued like the others; no
-count on the buttons, no line in the rollover. [Full video (MP4)](media/shipTechLimit-wol-control.mp4).
+*In WoL, key off (an earlier take, 2026-11-20: player 1 Ethiopian in a scenario with a `MapucheWarchief`, Villagers 1
+and two crates queued, then a fourth council tech; not the setup or the commands of the video above):* the fourth
+research is paid and queued like the others; no count on the buttons, no line in the rollover.
+[Full video (MP4)](media/shipTechLimit-wol-control.mp4).
 
 ![The rollover at the limit](media/shipTechLimit-rollover.png)
+
+*At the limit (2026-11-21, `shipTechLimit log`; a skirmish on a test map, player 1 Portuguese with a limit of 3, a
+`MapucheWarchief`, `Age0Mapuche`, Age III and 10 Ships):* three council techs that are not repeatable were researched
+(Fowl, Food Crates 3 and Wood Crates 3: 1, 2 and 3 of 3 in the log). Every limited button shows `3/3`, the repeatable
+crates (purple frames) show nothing, and the rollover of Villagers 3 ends with the red line `Shipment techs: 3/3, the
+limit is reached`.
 
 ```
 shipTechLimit [notext] [log]
@@ -6885,7 +6893,8 @@ shipTechLimit [notext] [log]
   1), loaded with this build: `player 1's count from an older build (2) held repeatable techs: now 1`;
   beside WoL's own DLL (our `dinput8.dll`, its `uhc.dll`): the key applied, three council techs 1 to 3 of 3, Food Crates
   1 and Coin Crates 1 (repeatable) queued with no count, Coin Crates 2 refused; the key off is the control video above
-  (unchanged).
+  (unchanged). The rollover picture was retaken the same day in Age III (Fowl, Food Crates 3, Wood Crates 3: 1 to 3 of
+  3; a request for Coin Crates 3 then queued nothing and logged no count).
 
 #### homeCityTechsInUnits
 
@@ -7397,7 +7406,7 @@ kothTimer teams 2=900 3=600 4=480
 
 *Counts the home city cards each player has shipped of each age (the age that enables the card), once they arrive, so a card or tech can send one unit per card; the counts are kept in saved games.*
 
-**Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Saturday 2026-11-21 11:34
+**Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Saturday 2026-11-21 15:50
 
 ![shipmentCounts in WoL](media/shipmentCounts-wol.gif)
 
@@ -7410,9 +7419,12 @@ left is a test rule that prints `xsGetShipmentCount`. [Full video (MP4)](media/s
 
 ![shipmentCounts in WoL, a tech](media/shipmentCounts-reward-wol.gif)
 
-*In WoL, with the key (the same game, later):* a test tech with `FreeHomeCityUnitByShipmentCount` Hussar `age='1'`
-amount 1, and Cuirassier `age='2'` amount 2, is researched: two Hussars come to the Town Center, for the two Age I cards,
-and no Cuirassier, as no card was shipped in Age II. [Full video (MP4)](media/shipmentCounts-reward-wol.mp4).
+*In WoL, with `shipmentCounts log` (2026-11-21, the setup of the video above in a new game: the three Age II cards sent
+in Age III, the count `0, 3, 0, 0, 0`; then a test tech with `FreeHomeCityUnitByShipmentCount` Hussar `age='1'` amount
+1 and Cuirassier `age='2'` amount 2, set active by a trigger at 5:30 of game time; the Cuirassiers stay selected; 2x
+speed):* six Cuirassiers come to the Town Center, two for each of the three Age II cards, and no Hussar, as no Age I
+card was shipped; the two log lines at the bottom give each count. The unselected Hussars came with the cards.
+[Full video (MP4)](media/shipmentCounts-reward-wol.mp4).
 
 ![shipmentCounts in WoL, key off](media/shipmentCounts-wol-control.gif)
 
@@ -7421,7 +7433,8 @@ and the three Age II cards sent in Age III bring only their crates. [Full video 
 
 ![shipmentCounts in WoL, a tech, key off](media/shipmentCounts-reward-wol-control.gif)
 
-*In WoL, key off (the same game, two Age I cards shipped before):* the test tech is researched and nothing comes.
+*In WoL, key off (2026-11-21, the same data, map, cards and trigger as the tech above, in a new game; 2x speed):* the
+test tech becomes active at 5:30 and nothing comes; the three cards had brought only their crates.
 [Full video (MP4)](media/shipmentCounts-reward-wol-control.mp4).
 
 ```
@@ -7532,7 +7545,10 @@ int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge)  // cAge1..
     the old rule they would have counted in Age III); the next save had no old marker any more;
   - key off (control video): the three cards brought only their crates; beside WoL's own DLL (our `dinput8.dll`): the
     key is not applied, as before (`site FreeHomeCityUnitCase at 0x008D8C62 does not hold the stock bytes`, WoL's DLL
-    patches that case), and the game ran.
+    patches that case), and the game ran;
+  - the tech videos re-filmed with this rule (Portuguese, the three Age II cards sent in Age III, `0, 3, 0, 0, 0`): the
+    test tech brought `age 1: 0 shipment(s) x 1.00 = 0.00` Hussars and `age 2: 3 shipment(s) x 2.00 = 6.00` Cuirassiers
+    (6 in game); key off, nothing.
   - Stock, found on the way: a card with no `<age>` and a card with `<age>4</age>` are left out of the in-game deck
     (the card list is built per age 0 to 3, FUN_006301DE), so they cannot be sent at all; the rule for a card with no
     `<age>` (Age I) only matters to a mod that changes that.
@@ -8652,19 +8668,23 @@ playerIcon <avatarId>
 
 *A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off.*
 
-**Added:** Thursday 2026-11-19 14:11 · **Filmed in WoL:** Friday 2026-11-20 12:52
+**Added:** Thursday 2026-11-19 14:11 · **Filmed in WoL:** Saturday 2026-11-21 15:50
 
 ![autoScout in WoL](media/autoScout-wol.gif)
 
-*In WoL, with `autoScout log` and `wol-fixes/auto-scout` (Romanians against a German AI, Great Lakes, the camera on one
-of two ravens):* the selected raven flies straight to the nearest unexplored ground, then on to the next, and the
-minimap fills in: 63.7 % of the map explored at 3 minutes, all of it at 6. Each order is a `ordered` line in the log.
-[Full video (MP4)](media/autoScout-wol.mp4).
+*In WoL, with `autoScout log` and `wol-fixes/auto-scout` (2026-11-21, the default key: it keeps away from enemy
+buildings that shoot and backs off when hit; Romanians against a German AI, Great Lakes; the copy's `civs.xml` gives
+the Romanians two starting ravens, as WoL's did on 2026-11-19 (it now starts them with a cartographer); the camera on
+one of the two ravens, which stays selected; the GIF shows the view and the minimap, the MP4 the `ordered` lines of the
+log too):* the raven flies straight to the nearest unexplored ground, then on to the next, and the minimap fills in:
+64.6 % of the map explored at 3 minutes, 97.8 % at 6; what is left is the ground around the German Town Center, an
+enemy building that shoots (a second game: 66.0 % and 97.1 %). [Full video (MP4)](media/autoScout-wol.mp4).
 
 ![autoScout in WoL, key off](media/autoScout-wol-control.gif)
 
-*In WoL, key off and the pack not applied (the same map, civ and raven):* the stock raven circles the Town Center, and
-the minimap stays as it was at the start: 9.4 % explored at 3 minutes, 9.7 % at 6.
+*In WoL, key off and the pack not applied (2026-11-19, the same map, civ and ravens; the key off has not changed):*
+the stock raven circles the Town Center, and the minimap stays as it was at the start: 9.4 % explored at 3 minutes,
+9.7 % at 6.
 
 [Full video (MP4)](media/autoScout-wol-control.mp4).
 
@@ -8683,8 +8703,9 @@ status below. [Full video (MP4)](media/autoScout-back-wol-control.mp4).
 
 ![The minimap at 3 and 6 minutes](media/autoScout-minimaps.jpg)
 
-*The minimap of the two games at 3 and 6 minutes of game time: the share is the player's explored grid, read from
-the game (`testbed.py explored`).*
+*The minimap at 3 and 6 minutes of game time: key off (2026-11-19, top) and the default key (2026-11-21, the game of
+the video, bottom; the black patch at the top right is the ground around the German Town Center). The share is the
+player's explored grid, read from the game (`testbed.py explored`).*
 
 ```
 autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
@@ -8752,7 +8773,8 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
   cell (…), block 34: ordered`), `stopped … block 210 given up`, `got an order (command type 9): back to tactic 0`,
   and every 120 scans their cost.
 - **Status:** confirmed (2026-11-19, single player, WoL): the ravens 9.4 % → 63.7 % at 3 minutes and 9.7 % → 100 %
-  at 6 (two ravens, the rest of the player idle); the Dutch envoy alone 8.6 % → 50.1 % at 3 minutes and 71.1 % at 6
+  at 6 (two ravens, the rest of the player idle; the key of that day, today's `noAvoid noBack`; with the default key,
+  2026-11-21: 64.6 % / 97.8 % and 66.0 % / 97.1 % in two games, the ground around the enemy Town Center left out); the Dutch envoy alone 8.6 % → 50.1 % at 3 minutes and 71.1 % at 6
   (Great Lakes, scenario); a caravel given the tactic for the test scouted the lake on water only; the start and stop
   buttons (posted clicks, and their commands from the console), Stop and a trigger's move order switched it off, a
   save and load kept it scouting, a raven killed while scouting and one killed after: no error. A/B with

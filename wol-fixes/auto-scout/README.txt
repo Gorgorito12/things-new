@@ -35,8 +35,9 @@ Measured on Great Lakes, Romanians against a German AI, the rest of the player i
 explored:
                       3 minutes   6 minutes
   two stock ravens       9.4 %       9.7 %
-  two auto-scout ravens 63.7 %     100   %
-  the envoy alone       50.1 %      71.1 %   (scenario, same map)
+  two auto-scout ravens 64.6 %      97.8 %   (2026-11-21: the ground around the enemy Town Center is left out;
+                                              63.7 % and 100 % on 2026-11-19, before the scouts kept away from danger)
+  the envoy alone       50.1 %      71.1 %   (scenario, same map, 2026-11-19)
 
 Installing
 ----------

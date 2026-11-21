@@ -1328,7 +1328,7 @@ Code: [interface](porting-code/interface.md#autoscout). It needs `AddWorldTick`
 - **What it writes:** besides the move orders, a scout's leash anchor `[[unit+58h]+7Ch..84h]` (its position, every
   scan), so a unit that stops scouting does not walk back.
 - **Test:** a unit whose first tactic is `AutoScout`: it leaves at once, and `testbed.py explored` rises (two ravens on
-  Great Lakes: 63.7 % at 3 minutes against 9.4 % without); a Stop order puts it back in its other tactic.
+  Great Lakes: 64.6 % at 3 minutes against 9.4 % without); a Stop order puts it back in its other tactic.
 
 ### autoGatherFrom
 

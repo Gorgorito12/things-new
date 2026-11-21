@@ -4985,7 +4985,8 @@ bits, stances, units, hit points); the attacker search does not depend on the or
 
 <!-- private:begin -->
 **What was measured.** Two ravens of the Romanians on Great Lakes, the rest of the player idle: 9.4 % / 9.7 % of the
-map explored at 3 / 6 minutes without the key, 63.7 % / 100 % with it. The Dutch envoy alone on the same map: 50.1 % /
+map explored at 3 / 6 minutes without the key, 63.7 % / 100 % with it (2026-11-19, without the danger parts; with the
+default key on 2026-11-21: 64.6 % / 97.8 %, the ground around the enemy Town Center left out). The Dutch envoy alone on the same map: 50.1 % /
 71.1 %. A scan: about 50 µs with two scouts on 155 × 155 cells (with `log`, the order lines make the first scans cost
 milliseconds). Danger (2026-11-20, a 260 m map with four enemy outposts and seven Musketeers, an Explorer and an Envoy):
 61.5 % / 70.5 % at 3 / 6 minutes and the Envoy killed with `noAvoid noBack`; 68.7 % / 79.4 % and both alive with the
