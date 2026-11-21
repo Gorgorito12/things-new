@@ -37,6 +37,7 @@ Contents:
 - [Tech rollover](#tech-rollover)
 - [ROF reads](#rof-reads)
 - [Floating bars](#floating-bars)
+- [UI gadgets](#ui-gadgets)
 
 ## Site table
 
@@ -653,6 +654,12 @@ inline constexpr Site kBroadsideSingleUseCap{"BroadsideSingleUseCap", 0x006A8236
 inline constexpr std::uint8_t kBroadsideClampColdBytes[] = {0x89, 0x74, 0x24, 0x14, 0x8B, 0xC6, 0xE9, 0x01, 0xB2, 0xE5, 0xFF, 0x89, 0x74, 0x24, 0x1C, 0x8B, 0xC6, 0xE9, 0x91, 0xB2, 0xE5, 0xFF};
 inline constexpr Site kBroadsideClampCold{"BroadsideClampCold", 0x006A8247, kBroadsideClampColdBytes, sizeof(kBroadsideClampColdBytes)};
 
+inline constexpr std::uint8_t kBroadsideSetupSlotBytes[] = {0x9A, 0x33, 0x50, 0x00};
+inline constexpr Site kBroadsideSetupSlot{"BroadsideSetupSlot", 0x00B962EC, kBroadsideSetupSlotBytes, sizeof(kBroadsideSetupSlotBytes)};
+
+inline constexpr std::uint8_t kArrayResizeBytes[] = {0x53, 0x8A, 0x5C, 0x24, 0x0C, 0x56, 0x57, 0x8B, 0x7C, 0x24, 0x10, 0x8B, 0xF1, 0x3B, 0x7E, 0x08, 0x0F, 0x8F, 0xB8, 0x19, 0x00, 0x00, 0x84, 0xDB};
+inline constexpr Site kArrayResize{"ArrayResize", 0x00401113, kArrayResizeBytes, sizeof(kArrayResizeBytes)};
+
 inline constexpr std::uint8_t kAbilitySlotCopiesBytes[] = {0x8B, 0x4C, 0x24, 0x40, 0x83, 0xC8, 0xFF, 0x89, 0x8C, 0x24, 0xCC, 0x00, 0x00, 0x00, 0x89, 0x84, 0x24, 0xD4, 0x00, 0x00, 0x00, 0x89, 0x84, 0x24, 0xD8, 0x00, 0x00, 0x00, 0xBF, 0x05, 0x00, 0x00, 0x00, 0x8B, 0x13, 0x0F, 0xB6, 0x44, 0x32, 0x04, 0x8D, 0x8C, 0x24, 0xCC, 0x00, 0x00, 0x00, 0x51, 0xB9, 0xFC, 0x05, 0xCF, 0x00, 0x89, 0x84, 0x24, 0xD4, 0x00, 0x00, 0x00, 0xE8, 0x51, 0x04, 0xE3, 0xFF, 0x83, 0xEF, 0x01, 0x0F, 0x84, 0x3F, 0xC0, 0xDC, 0xFF, 0xEB, 0xD5};
 inline constexpr Site kAbilitySlotCopies{"AbilitySlotCopies", 0x00695BB6, kAbilitySlotCopiesBytes, sizeof(kAbilitySlotCopiesBytes)};
 
@@ -1235,6 +1242,21 @@ inline constexpr Site kTechLoadHead{"TechLoadHead", 0x0094DDEA, kTechLoadHeadByt
 inline constexpr std::uint8_t kIsEnemyHeadBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0};
 inline constexpr Site kIsEnemyHead{"IsEnemyHead", 0x00484D2D, kIsEnemyHeadBytes, sizeof(kIsEnemyHeadBytes)};
 
+inline constexpr std::uint8_t kDeadReplacementHeadBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x8B, 0x46, 0x68, 0x85, 0xC0, 0x0F, 0x85, 0xE2, 0x12, 0x03, 0x00};
+inline constexpr Site kDeadReplacementHead{"DeadReplacementHead", 0x004B4F2F, kDeadReplacementHeadBytes, sizeof(kDeadReplacementHeadBytes)};
+
+inline constexpr std::uint8_t kCorpseReplacementCallBytes[] = {0xE8, 0xAA, 0x38, 0xFC, 0xFF};
+inline constexpr Site kCorpseReplacementCall{"CorpseReplacementCall", 0x004F1680, kCorpseReplacementCallBytes, sizeof(kCorpseReplacementCallBytes)};
+
+inline constexpr std::uint8_t kRemovalNoticeHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x56, 0x57};
+inline constexpr Site kRemovalNoticeHead{"RemovalNoticeHead", 0x00495D6B, kRemovalNoticeHeadBytes, sizeof(kRemovalNoticeHeadBytes)};
+
+inline constexpr std::uint8_t kRemovalNoticeCall1Bytes[] = {0xE8, 0x78, 0xFF, 0xFF, 0xFF};
+inline constexpr Site kRemovalNoticeCall1{"RemovalNoticeCall1", 0x00495DEE, kRemovalNoticeCall1Bytes, sizeof(kRemovalNoticeCall1Bytes)};
+
+inline constexpr std::uint8_t kRemovalNoticeCall2Bytes[] = {0xE8, 0x76, 0x1D, 0xDF, 0xFF};
+inline constexpr Site kRemovalNoticeCall2{"RemovalNoticeCall2", 0x006A3FF0, kRemovalNoticeCall2Bytes, sizeof(kRemovalNoticeCall2Bytes)};
+
 inline constexpr std::uint8_t kDetonationKillCallBytes[] = {0xE8, 0xDC, 0x11, 0x02, 0x00};
 inline constexpr Site kDetonationKillCall{"DetonationKillCall", 0x00493D8F, kDetonationKillCallBytes, sizeof(kDetonationKillCallBytes)};
 
@@ -1265,6 +1287,15 @@ inline constexpr Site kImpactEffectByName{"ImpactEffectByName", 0x0058F017, kImp
 inline constexpr std::uint8_t kModelPathLookupBytes[] = {0x51, 0x53, 0x55, 0x56, 0x8B, 0xE9, 0x57, 0x8D, 0x4C, 0x24};
 inline constexpr Site kModelPathLookup{"ModelPathLookup", 0x0058F68F, kModelPathLookupBytes, sizeof(kModelPathLookupBytes)};
 
+inline constexpr std::uint8_t kAltQueryBytes[] = {0x8B, 0x15, 0x44, 0x62, 0xC6, 0x00, 0x8B, 0x42, 0x74, 0x8B, 0x48, 0x2C, 0x8B, 0x11, 0x6A, 0x02, 0x8B, 0x42, 0x34, 0xE8, 0x7F, 0x0F, 0x02, 0x00};
+inline constexpr Site kAltQuery{"AltQuery", 0x00452EA0, kAltQueryBytes, sizeof(kAltQueryBytes)};
+
+inline constexpr std::uint8_t kActionRangeByKeyBytes[] = {0x8B, 0x51, 0x1C, 0x53, 0x8B, 0x5C, 0x24, 0x08, 0x56, 0x33};
+inline constexpr Site kActionRangeByKey{"ActionRangeByKey", 0x004946D6, kActionRangeByKeyBytes, sizeof(kActionRangeByKeyBytes)};
+
+inline constexpr std::uint8_t kProtoFlagLastCompareBytes[] = {0x56, 0x68, 0xE0, 0xA0, 0xBC, 0x00, 0xE8, 0x40, 0xB6, 0xE0, 0xFF, 0x83, 0xC4, 0x08, 0x85, 0xC0, 0x0F, 0x84, 0x14, 0x63, 0x00, 0x00, 0x5E, 0xC2, 0x08, 0x00};
+inline constexpr Site kProtoFlagLastCompare{"ProtoFlagLastCompare", 0x005F7269, kProtoFlagLastCompareBytes, sizeof(kProtoFlagLastCompareBytes)};
+
 inline constexpr std::uint8_t kBoneNameLookupBytes[] = {0x53, 0x8B, 0xD9, 0x57, 0x8B, 0x7B, 0x08, 0x85, 0xFF, 0x0F};
 inline constexpr Site kBoneNameLookup{"BoneNameLookup", 0x0058E506, kBoneNameLookupBytes, sizeof(kBoneNameLookupBytes)};
 
@@ -1273,9 +1304,6 @@ inline constexpr Site kAuraFilterCall{"AuraFilterCall", 0x009D0633, kAuraFilterC
 
 inline constexpr std::uint8_t kAuraFilterBytes[] = {0x56, 0x8B, 0x74, 0x24, 0x08, 0x57};
 inline constexpr Site kAuraFilter{"AuraFilter", 0x009D0238, kAuraFilterBytes, sizeof(kAuraFilterBytes)};
-
-inline constexpr std::uint8_t kAuraAppliedNextBytes[] = {0x8B, 0xD8, 0x83, 0xFB, 0xFF};
-inline constexpr Site kAuraAppliedNext{"AuraAppliedNext", 0x009D0675, kAuraAppliedNextBytes, sizeof(kAuraAppliedNextBytes)};
 
 inline constexpr std::uint8_t kXsReportHeadBytes[] = {0x81, 0xEC, 0x04, 0x08, 0x00, 0x00};
 inline constexpr Site kXsReportHead{"XsReportHead", 0x0043A3A4, kXsReportHeadBytes, sizeof(kXsReportHeadBytes)};
@@ -1481,11 +1509,20 @@ inline constexpr Site kShipQueueCaller{"ShipQueueCaller", 0x0066AEA0, kShipQueue
 inline constexpr std::uint8_t kShipEntryArgBytes[] = {0x8B, 0x4C, 0x24, 0x24, 0x8B, 0x11, 0x8D, 0x44, 0x24, 0x24};
 inline constexpr Site kShipEntryArg{"ShipEntryArg", 0x0085856A, kShipEntryArgBytes, sizeof(kShipEntryArgBytes)};
 
-inline constexpr std::uint8_t kShipQueueAddHeadBytes[] = {0x56, 0x57, 0x8B, 0xF9, 0x8B, 0x77, 0x04};
-inline constexpr Site kShipQueueAddHead{"ShipQueueAddHead", 0x00857204, kShipQueueAddHeadBytes, sizeof(kShipQueueAddHeadBytes)};
+inline constexpr std::uint8_t kShipCardLookupBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x7C, 0x11, 0x3B, 0x41, 0x20, 0x7D, 0x0C, 0x8B, 0x49, 0x1C, 0x8D, 0x04, 0x80, 0x8D, 0x04, 0xC1, 0xC2, 0x04, 0x00, 0x33, 0xC0, 0xC2, 0x04, 0x00};
+inline constexpr Site kShipCardLookup{"ShipCardLookup", 0x0085FFCE, kShipCardLookupBytes, sizeof(kShipCardLookupBytes)};
 
-inline constexpr std::uint8_t kShipQueueRemoveHeadBytes[] = {0x80, 0x7C, 0x24, 0x08, 0x00, 0x56, 0x57, 0x8B, 0xF9, 0x74, 0x60};
-inline constexpr Site kShipQueueRemoveHead{"ShipQueueRemoveHead", 0x00857257, kShipQueueRemoveHeadBytes, sizeof(kShipQueueRemoveHeadBytes)};
+inline constexpr std::uint8_t kCardListAgePassesBytes[] = {0x83, 0xF8, 0x04, 0x89, 0x44, 0x24, 0x14};
+inline constexpr Site kCardListAgePasses{"CardListAgePasses", 0x0063022E, kCardListAgePassesBytes, sizeof(kCardListAgePassesBytes)};
+
+inline constexpr std::uint8_t kCardPanelAgeRowBytes[] = {0x8B, 0x46, 0x18, 0x3B, 0xC7, 0x0F, 0x8C, 0xDE, 0x07, 0x00, 0x00, 0x83, 0xF8, 0x03, 0x0F, 0x8F, 0xD5, 0x07, 0x00, 0x00};
+inline constexpr Site kCardPanelAgeRow{"CardPanelAgeRow", 0x009A5A22, kCardPanelAgeRowBytes, sizeof(kCardPanelAgeRowBytes)};
+
+inline constexpr std::uint8_t kDeckEditorAgeRowBytes[] = {0x8B, 0x46, 0x18, 0x3B, 0xD8, 0x7D, 0x0C, 0x89, 0x44, 0x24, 0x24, 0x89, 0x4C, 0x24, 0x1C, 0x8B, 0xD8, 0xEB, 0x0B, 0x83, 0x7C, 0x24, 0x1C, 0x0B, 0x0F, 0x8D, 0x97, 0x02, 0x00, 0x00, 0x83, 0xFB, 0x04, 0x0F, 0x8D, 0xA7, 0x02, 0x00, 0x00};
+inline constexpr Site kDeckEditorAgeRow{"DeckEditorAgeRow", 0x009A77BE, kDeckEditorAgeRowBytes, sizeof(kDeckEditorAgeRowBytes)};
+
+inline constexpr std::uint8_t kDeckBuilderAgeRowBytes[] = {0x8B, 0x46, 0x18, 0x3B, 0xF8, 0x7D, 0x0C, 0x89, 0x44, 0x24, 0x18, 0x89, 0x5C, 0x24, 0x14, 0x8B, 0xF8, 0xEB, 0x0B, 0x83, 0x7C, 0x24, 0x14, 0x0B, 0x0F, 0x8D, 0xC5, 0x02, 0x00, 0x00, 0x83, 0xFF, 0x04, 0x0F, 0x8D, 0xD5, 0x02, 0x00, 0x00};
+inline constexpr Site kDeckBuilderAgeRow{"DeckBuilderAgeRow", 0x009A0489, kDeckBuilderAgeRowBytes, sizeof(kDeckBuilderAgeRowBytes)};
 
 inline constexpr std::uint8_t kKothTotalTimeBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x90, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x81, 0x04, 0x01, 0x00, 0x00, 0x56, 0x8B, 0xB1, 0x08, 0x01, 0x00, 0x00, 0x85, 0xF6, 0x7E, 0x11, 0x85, 0xD2, 0x74, 0x26, 0x57, 0x8B, 0x7A, 0x5C, 0x83, 0xEF, 0x01, 0x0F, 0xAF, 0xFE, 0x03, 0xC7, 0x5F, 0x85, 0xD2, 0x74, 0x15, 0x8B, 0x92, 0x8C, 0x01, 0x00, 0x00, 0x2B, 0x91, 0x0C, 0x01, 0x00, 0x00, 0x0F, 0xAF, 0x91, 0x10, 0x01, 0x00, 0x00, 0x2B, 0xC2, 0x5E, 0xC3};
 inline constexpr Site kKothTotalTime{"KothTotalTime", 0x009F02DD, kKothTotalTimeBytes, sizeof(kKothTotalTimeBytes)};
@@ -1528,6 +1565,9 @@ inline constexpr Site kCivTagNextNode{"CivTagNextNode", 0x0052B43D, kCivTagNextN
 
 inline constexpr std::uint8_t kCivByIdBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x7C, 0x0E, 0x3B, 0x41, 0x28, 0x7D, 0x09, 0x8B, 0x49, 0x24, 0x8B, 0x04, 0x81, 0xC2, 0x04, 0x00, 0x33, 0xC0};
 inline constexpr Site kCivById{"CivById", 0x00405C2E, kCivByIdBytes, sizeof(kCivByIdBytes)};
+
+inline constexpr std::uint8_t kCivByNameBytes[] = {0x53, 0x8B, 0x5C, 0x24, 0x08, 0x85, 0xDB, 0x57, 0x8B, 0xF9, 0x0F, 0x84, 0xE3, 0xBA, 0x12, 0x00, 0x56, 0x33, 0xF6, 0x39, 0x77, 0x28, 0x0F, 0x8E, 0xDE, 0xBA, 0x12, 0x00};
+inline constexpr Site kCivByName{"CivByName", 0x0052D6FF, kCivByNameBytes, sizeof(kCivByNameBytes)};
 
 inline constexpr std::uint8_t kCivOfPlayerBytes[] = {0x83, 0x79, 0x24, 0x00, 0x0F, 0x8E, 0x22, 0x5B, 0x22, 0x00, 0x8B, 0x41, 0x20, 0x8B, 0x00, 0xC3};
 inline constexpr Site kCivOfPlayer{"CivOfPlayer", 0x004539D3, kCivOfPlayerBytes, sizeof(kCivOfPlayerBytes)};
@@ -1810,6 +1850,12 @@ inline constexpr Site kShotsLaunch{"ShotsLaunch", 0x00499422, kShotsLaunchBytes,
 
 inline constexpr std::uint8_t kShotsLaunchRetBytes[] = {0x81, 0xC4, 0xD4, 0x00, 0x00, 0x00, 0xC2, 0x14, 0x00};
 inline constexpr Site kShotsLaunchRet{"ShotsLaunchRet", 0x004999DA, kShotsLaunchRetBytes, sizeof(kShotsLaunchRetBytes)};
+
+inline constexpr std::uint8_t kShotsReloadAnimBytes[] = {0x83, 0xEC, 0x08, 0x56, 0x8B, 0xF1, 0x8B, 0x46, 0x10};
+inline constexpr Site kShotsReloadAnim{"ShotsReloadAnim", 0x004976CB, kShotsReloadAnimBytes, sizeof(kShotsReloadAnimBytes)};
+
+inline constexpr std::uint8_t kShotsAnimVariantBytes[] = {0x8B, 0x49, 0x60, 0x85, 0xC9, 0x0F, 0x84, 0xD8, 0xC8, 0x07, 0x00};
+inline constexpr Site kShotsAnimVariant{"ShotsAnimVariant", 0x00471D24, kShotsAnimVariantBytes, sizeof(kShotsAnimVariantBytes)};
 
 inline constexpr std::uint8_t kUnitResourceAuraEntryBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x10};
 inline constexpr Site kUnitResourceAuraEntry{"UnitResourceAuraEntry", 0x009D033E, kUnitResourceAuraEntryBytes, sizeof(kUnitResourceAuraEntryBytes)};
@@ -2540,6 +2586,105 @@ inline constexpr Site kLanBrowserJoinStart{"LanBrowserJoinStart", 0x008BB762, kL
 inline constexpr std::uint8_t kLanBrowserCountdownBytes[] = {0xE8, 0x80, 0x85, 0xB4, 0xFF, 0x8B, 0x8E, 0xB4, 0x01, 0x00, 0x00, 0x03, 0x8E, 0xB0, 0x01, 0x00, 0x00};
 inline constexpr Site kLanBrowserCountdown{"LanBrowserCountdown", 0x008BA87A, kLanBrowserCountdownBytes, sizeof(kLanBrowserCountdownBytes)};
 
+inline constexpr std::uint8_t kGatherWorkOrderBytes[] = {0xB8, 0x01, 0x00, 0x00, 0x00, 0x84, 0x05, 0x5C, 0xF7, 0xD6, 0x00, 0x56, 0x8B, 0xF1};
+inline constexpr Site kGatherWorkOrder{"GatherWorkOrder", 0x004EFCB2, kGatherWorkOrderBytes, sizeof(kGatherWorkOrderBytes)};
+
+inline constexpr std::uint8_t kHerdWalkAwayCallBytes[] = {0x6A, 0x00, 0x68, 0x00, 0x00, 0xC0, 0x40, 0x52, 0xE8, 0x96, 0xAD, 0xE3, 0xFF};
+inline constexpr Site kHerdWalkAwayCall{"HerdWalkAwayCall", 0x006A8C94, kHerdWalkAwayCallBytes, sizeof(kHerdWalkAwayCallBytes)};
+
+inline constexpr std::uint8_t kHerdFleeHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x54, 0x53, 0x8B, 0x5C, 0x24, 0x5C};
+inline constexpr Site kHerdFleeHead{"HerdFleeHead", 0x004E3A37, kHerdFleeHeadBytes, sizeof(kHerdFleeHeadBytes)};
+
+inline constexpr std::uint8_t kUiFindChildBytes[] = {0x83, 0xEC, 0x0C, 0x8B, 0x44, 0x24, 0x14, 0x53, 0x55, 0x56};
+inline constexpr Site kUiFindChild{"UiFindChild", 0x00433812, kUiFindChildBytes, sizeof(kUiFindChildBytes)};
+
+inline constexpr std::uint8_t kUiFieldEditBoxBytes[] = {0x8B, 0x18, 0x53, 0x89, 0x9F, 0x60, 0x01, 0x00, 0x00};
+inline constexpr Site kUiFieldEditBox{"UiFieldEditBox", 0x0062BDD2, kUiFieldEditBoxBytes, sizeof(kUiFieldEditBoxBytes)};
+
+inline constexpr std::uint8_t kUiEditBoxTextBytes[] = {0x8D, 0xB7, 0x70, 0x01, 0x00, 0x00};
+inline constexpr Site kUiEditBoxText{"UiEditBoxText", 0x005C2C54, kUiEditBoxTextBytes, sizeof(kUiEditBoxTextBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteAddProtoBytes[] = {0x8D, 0x54, 0x24, 0x58, 0x52, 0x8D, 0x44, 0x24, 0x14, 0x50, 0x8B, 0xCF, 0xE8, 0xD4, 0xAC, 0x2D, 0x00};
+inline constexpr Site kEditorPaletteAddProto{"EditorPaletteAddProto", 0x007F5371, kEditorPaletteAddProtoBytes, sizeof(kEditorPaletteAddProtoBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteAddBytes[] = {0x53, 0x55, 0x56, 0x8B, 0xD9, 0x8B, 0xB3, 0x4C, 0x01, 0x00, 0x00};
+inline constexpr Site kEditorPaletteAdd{"EditorPaletteAdd", 0x00AD0056, kEditorPaletteAddBytes, sizeof(kEditorPaletteAddBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteObjectsFillBytes[] = {0xC7, 0x86, 0x7C, 0x01, 0x00, 0x00, 0x1E, 0x50, 0x7F, 0x00};
+inline constexpr Site kEditorPaletteObjectsFill{"EditorPaletteObjectsFill", 0x007F5C51, kEditorPaletteObjectsFillBytes, sizeof(kEditorPaletteObjectsFillBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteVtableBytes[] = {0xC7, 0x06, 0x68, 0x27, 0xB9, 0x00};
+inline constexpr Site kEditorPaletteVtable{"EditorPaletteVtable", 0x00ACFBAA, kEditorPaletteVtableBytes, sizeof(kEditorPaletteVtableBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteRefillBytes[] = {0x8B, 0x81, 0x7C, 0x01, 0x00, 0x00, 0x85, 0xC0, 0x74, 0x04, 0x51, 0xFF, 0xD0, 0x59, 0xC3};
+inline constexpr Site kEditorPaletteRefill{"EditorPaletteRefill", 0x00ACE8DF, kEditorPaletteRefillBytes, sizeof(kEditorPaletteRefillBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteRefreshSlotBytes[] = {0xFD, 0x01, 0xAD, 0x00};
+inline constexpr Site kEditorPaletteRefreshSlot{"EditorPaletteRefreshSlot", 0x00B92788, kEditorPaletteRefreshSlotBytes, sizeof(kEditorPaletteRefreshSlotBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteRefreshBytes[] = {0x53, 0x56, 0x57, 0x8B, 0xF1, 0xE8, 0xCD, 0x3E, 0x98, 0xFF, 0x8B, 0xCE, 0xE8, 0x7B, 0xFF, 0xFF, 0xFF, 0x8B, 0x06, 0x8B, 0xCE, 0xFF, 0x90, 0xF0, 0x00, 0x00, 0x00};
+inline constexpr Site kEditorPaletteRefresh{"EditorPaletteRefresh", 0x00AD01FD, kEditorPaletteRefreshBytes, sizeof(kEditorPaletteRefreshBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteLayoutShowBytes[] = {0x8B, 0x96, 0x68, 0x01, 0x00, 0x00, 0x6A, 0x01, 0x52, 0x8B, 0xCE, 0xE8, 0x9C, 0xF5, 0xFF, 0xFF};
+inline constexpr Site kEditorPaletteLayoutShow{"EditorPaletteLayoutShow", 0x00AD0262, kEditorPaletteLayoutShowBytes, sizeof(kEditorPaletteLayoutShowBytes)};
+
+inline constexpr std::uint8_t kEditorForbidVtableBytes[] = {0xC7, 0x06, 0x90, 0xD6, 0xB8, 0x00};
+inline constexpr Site kEditorForbidVtable{"EditorForbidVtable", 0x009990CB, kEditorForbidVtableBytes, sizeof(kEditorForbidVtableBytes)};
+
+inline constexpr std::uint8_t kEditorForbidBindBytes[] = {0x89, 0x8E, 0x44, 0x01, 0x00, 0x00};
+inline constexpr Site kEditorForbidBind{"EditorForbidBind", 0x00999B1F, kEditorForbidBindBytes, sizeof(kEditorForbidBindBytes)};
+
+inline constexpr std::uint8_t kEditorForbidModeBytes[] = {0x8B, 0x83, 0x60, 0x01, 0x00, 0x00, 0x83, 0xE8, 0x00, 0x0F, 0x84, 0x93};
+inline constexpr Site kEditorForbidMode{"EditorForbidMode", 0x009996C6, kEditorForbidModeBytes, sizeof(kEditorForbidModeBytes)};
+
+inline constexpr std::uint8_t kEditorForbidUnitAddBytes[] = {0x8B, 0x4C, 0x24, 0x1C, 0x8D, 0x44, 0x24, 0x10, 0x50, 0xE8, 0x53, 0x00, 0x13, 0x00};
+inline constexpr Site kEditorForbidUnitAdd{"EditorForbidUnitAdd", 0x009991C7, kEditorForbidUnitAddBytes, sizeof(kEditorForbidUnitAddBytes)};
+
+inline constexpr std::uint8_t kEditorForbidTechAddBytes[] = {0x8D, 0x44, 0x24, 0x14, 0x50, 0x8B, 0xCD, 0xE8, 0xDC, 0xFC, 0x12, 0x00};
+inline constexpr Site kEditorForbidTechAdd{"EditorForbidTechAdd", 0x00999540, kEditorForbidTechAddBytes, sizeof(kEditorForbidTechAddBytes)};
+
+inline constexpr std::uint8_t kEditorListAddBytes[] = {0x56, 0x57, 0x8B, 0xF1, 0xE8, 0xC8, 0xA1, 0x97, 0xFF};
+inline constexpr Site kEditorListAdd{"EditorListAdd", 0x00AC9228, kEditorListAddBytes, sizeof(kEditorListAddBytes)};
+
+inline constexpr std::uint8_t kEditorFillAllowedUnitsBytes[] = {0x83, 0xEC, 0x08, 0x53, 0x8B, 0xD9, 0x8B, 0x4C, 0x24, 0x10, 0x55};
+inline constexpr Site kEditorFillAllowedUnits{"EditorFillAllowedUnits", 0x0099912F, kEditorFillAllowedUnitsBytes, sizeof(kEditorFillAllowedUnitsBytes)};
+
+inline constexpr std::uint8_t kEditorFillAllowedTechsBytes[] = {0x55, 0x8B, 0x6C, 0x24, 0x08, 0x57, 0x8B, 0xF9, 0x8B, 0xCD};
+inline constexpr Site kEditorFillAllowedTechs{"EditorFillAllowedTechs", 0x00999493, kEditorFillAllowedTechsBytes, sizeof(kEditorFillAllowedTechsBytes)};
+
+inline constexpr std::uint8_t kEditorForbidRelayoutBytes[] = {0x8B, 0x07, 0x8B, 0xCF, 0xFF, 0x90, 0x00, 0x01, 0x00, 0x00, 0x6A, 0x00, 0x8B, 0xCF, 0xE8, 0x68, 0xF2, 0x12, 0x00};
+inline constexpr Site kEditorForbidRelayout{"EditorForbidRelayout", 0x009997C8, kEditorForbidRelayoutBytes, sizeof(kEditorForbidRelayoutBytes)};
+
+inline constexpr std::uint8_t kEditorProtoDisplayNameBytes[] = {0x8B, 0x81, 0x44, 0x01, 0x00, 0x00, 0x83, 0xF8, 0xFF};
+inline constexpr Site kEditorProtoDisplayName{"EditorProtoDisplayName", 0x008F7A89, kEditorProtoDisplayNameBytes, sizeof(kEditorProtoDisplayNameBytes)};
+
+inline constexpr std::uint8_t kEditorTypeListSetBytes[] = {0x8D, 0x4C, 0x24, 0x20, 0x51, 0x8B, 0xCB, 0xE8, 0xFE, 0x93, 0xD9, 0xFF, 0x8D, 0x54, 0x24, 0x2C, 0x52, 0x8B, 0xCB, 0xE8, 0x21, 0xC1, 0x29, 0x00, 0x8B, 0xCF};
+inline constexpr Site kEditorTypeListSet{"EditorTypeListSet", 0x008258A0, kEditorTypeListSetBytes, sizeof(kEditorTypeListSetBytes)};
+
+inline constexpr std::uint8_t kEditorTypeFillHeadBytes[] = {0x83, 0xEC, 0x28, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x55, 0x8B, 0xA8, 0x7C, 0x09, 0x00, 0x00};
+inline constexpr Site kEditorTypeFillHead{"EditorTypeFillHead", 0x00825757, kEditorTypeFillHeadBytes, sizeof(kEditorTypeFillHeadBytes)};
+
+inline constexpr std::uint8_t kEditorTypeFillModeBytes[] = {0x89, 0xAE, 0xC0, 0x01, 0x00, 0x00, 0xE8, 0x5C, 0xF2, 0xFF, 0xFF};
+inline constexpr Site kEditorTypeFillMode{"EditorTypeFillMode", 0x008264F0, kEditorTypeFillModeBytes, sizeof(kEditorTypeFillModeBytes)};
+
+inline constexpr std::uint8_t kEditorParamTechListBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x91, 0x7C, 0x09, 0x00, 0x00, 0x83, 0xC2, 0x6C, 0x52, 0x8B, 0xCF, 0xE8, 0xD0, 0x62, 0xD9, 0xFF};
+inline constexpr Site kEditorParamTechList{"EditorParamTechList", 0x008289C3, kEditorParamTechListBytes, sizeof(kEditorParamTechListBytes)};
+
+inline constexpr std::uint8_t kEditorParamProtoListBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x7C, 0x09, 0x00, 0x00, 0x81, 0xC1, 0x84, 0x00, 0x00, 0x00, 0x51, 0x8B, 0xCF, 0xE8, 0x7E, 0x62, 0xD9, 0xFF};
+inline constexpr Site kEditorParamProtoList{"EditorParamProtoList", 0x00828A13, kEditorParamProtoListBytes, sizeof(kEditorParamProtoListBytes)};
+
+inline constexpr std::uint8_t kEditorParamUnitTypeListBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x7C, 0x09, 0x00, 0x00, 0x81, 0xC1, 0x90, 0x00, 0x00, 0x00, 0x51, 0x8B, 0xCF, 0xE8, 0x57, 0x62, 0xD9, 0xFF};
+inline constexpr Site kEditorParamUnitTypeList{"EditorParamUnitTypeList", 0x00828A3A, kEditorParamUnitTypeListBytes, sizeof(kEditorParamUnitTypeListBytes)};
+
+inline constexpr std::uint8_t kEditorSetListBytes[] = {0x55, 0x8B, 0xE9, 0x8B, 0x85, 0x64, 0x01, 0x00, 0x00, 0x3B, 0x05, 0xC0, 0x72, 0xC6, 0x00, 0x74, 0x4C};
+inline constexpr Site kEditorSetList{"EditorSetList", 0x005BECAA, kEditorSetListBytes, sizeof(kEditorSetListBytes)};
+
+inline constexpr std::uint8_t kEditorSetDataBytes[] = {0x55, 0x8B, 0xE9, 0x8B, 0x85, 0x64, 0x01, 0x00, 0x00, 0x3B, 0x05, 0xC0, 0x72, 0xC6, 0x00};
+inline constexpr Site kEditorSetData{"EditorSetData", 0x00AC19D9, kEditorSetDataBytes, sizeof(kEditorSetDataBytes)};
+
+inline constexpr std::uint8_t kEditorParamPickTextBytes[] = {0x8B, 0x8D, 0x3C, 0x01, 0x00, 0x00, 0xE8, 0xB3, 0x8E, 0x16, 0x00, 0x8B, 0xCE, 0xE8, 0xA4, 0x6E, 0x29, 0x00, 0x83, 0xF8, 0xFF, 0x0F, 0x84, 0xA7, 0x0D, 0x00, 0x00, 0x50, 0x8B, 0xCE, 0xE8, 0x62, 0x70, 0x29, 0x00, 0x50};
+inline constexpr Site kEditorParamPickText{"EditorParamPickText", 0x00829E65, kEditorParamPickTextBytes, sizeof(kEditorParamPickTextBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -2974,6 +3119,7 @@ Outcome ApplyKillSpawn(const Config& config);
 Outcome ApplyHcTargetTechs(const Config& config);
 Outcome ApplyDetonationDeath(const Config& config);
 Outcome ApplyAnnexFacing(const Config& config);
+Outcome ApplyDeadReplacementAtZeroInventory(const Config& config);
 Outcome ApplyAccuracyTechs(const Config& config);
 Outcome ApplyCratePriority(const Config& config);
 Outcome ApplySharedBuildLimit(const Config& config);
@@ -2993,6 +3139,8 @@ Outcome ApplyResourceBounty(const Config& config);
 Outcome ApplyCantBeSlowed(const Config& config);
 Outcome ApplyStealthTargeting(const Config& config);
 Outcome ApplyAutoScout(const Config& config);
+Outcome ApplyAutoGatherFrom(const Config& config);
+Outcome ApplyHerdWalkAwayFix(const Config& config);
 Outcome ApplyResearchOnTheMove(const Config& config);
 Outcome ApplyTransformChecks(const Config& config);
 Outcome ApplyCustomWalls(const Config& config);
@@ -3001,6 +3149,7 @@ Outcome ApplySnareValues(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyOrPrereqsQty(const Config& config);
 Outcome ApplyShipmentCounts(const Config& config);
+Outcome ApplyAgeFiveShipments(const Config& config);
 Outcome ApplyKothTimer(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -3041,6 +3190,7 @@ Outcome ApplyFastLastInLine(const Config& config);
 Outcome ApplyXsErrorLog(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyLanAutoStart(const Config& config);
+Outcome ApplyEditorSearch(const Config& config);
 Outcome ApplyPlayerIcon(const Config& config);
 Outcome ApplyPlugins(const Config& config);
 Outcome ApplyAsianCivs(const Config& config);
@@ -3118,6 +3268,7 @@ inline constexpr Feature kFeatures[] = {
     {"costEscalationTechs", ApplyCostEscalationTechs},
     {"randomCost", ApplyRandomCost},
     {"shipmentCounts", ApplyShipmentCounts},
+    {"ageFiveShipments", ApplyAgeFiveShipments},
     {"kothTimer", ApplyKothTimer},
     {"unitTypeTechs", ApplyUnitTypeTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
@@ -3159,6 +3310,9 @@ inline constexpr Feature kFeatures[] = {
     {"snareValues", ApplySnareValues},
     {"stealthTargeting", ApplyStealthTargeting},
     {"autoScout", ApplyAutoScout},
+    {"autoGatherFrom", ApplyAutoGatherFrom},
+    // No order constraint: the only key that writes 0x6A8C9C or verifies 0x4E3A37.
+    {"herdWalkAwayFix", ApplyHerdWalkAwayFix},
     // No order constraint: the only key that writes 0x487E1B or verifies 0x487D8B.
     {"researchOnTheMove", ApplyResearchOnTheMove},
     {"transformChecks", ApplyTransformChecks},
@@ -3217,6 +3371,7 @@ inline constexpr Feature kFeatures[] = {
     {"detonationDeath", ApplyDetonationDeath},
     // Shares the death observer (deathobservers.h) with detonationDeath; its observer runs after that one.
     {"annexFacing", ApplyAnnexFacing},
+    {"deadReplacementAtZeroInventory", ApplyDeadReplacementAtZeroInventory},
     {"steadyHitpointBars", ApplySteadyHitpointBars},
     // After overhealHitpointBars: both add bars through the shared floating bar hooks (floatingbars.h), the segment
     // first.
@@ -3250,6 +3405,8 @@ inline constexpr Feature kFeatures[] = {
     // After rendererOption: it observes the Present of whichever Direct3DCreate9 the game gets (d3d9hooks.h).
     {"lanAutoStart", ApplyLanAutoStart},
     {"playerIcon", ApplyPlayerIcon},
+    // After rendererOption: it reads its search fields from the Present of whichever Direct3DCreate9 the game gets.
+    {"editorSearch", ApplyEditorSearch},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
 };
@@ -3257,19 +3414,20 @@ inline constexpr Feature kFeatures[] = {
 // Lowercase cfg keys read by the features above; any other key is logged as not implemented.
 inline constexpr const char* kHandledKeys[] = {
     "customabstracttypes",
+    "agefiveshipments",
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "decimalpopulation",
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "herdwalkawayfix", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "lanautostart", "playericon", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
+    "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory",
 };
 
 }  // namespace uhc
@@ -3592,6 +3750,7 @@ struct ActionTag {
   const char* proto;    // the proto whose action set holds the action: [proto+4] ID, [proto+10h] name
   const char* action;   // the action: [action+4] name index, -1 until the action's <Name> is read
   ActionSource source;
+  const char* node;     // the child's XML node, for its attributes (0x598F37)
 };
 
 // Called for each such child while the data loads, in file order, by the handlers in the order the
@@ -3617,7 +3776,7 @@ bool AddActionTagHandler(ActionTagHandler handler);
 
 namespace {
 
-constexpr std::size_t kMaxHandlers = 12;
+constexpr std::size_t kMaxHandlers = 16;
 // Return address of the parser's call by the <ProtoAction> handler; the hook passes only that one
 // and 0x5FA623, the tactics <action> creator's (docs/engine-symbols.md, "Damage and poison").
 constexpr std::uint32_t kFromProtoAction = 0x005FA213;
@@ -3640,7 +3799,8 @@ void __stdcall UhcActionTag(const wchar_t* const* tag, const char* node, const c
   }
   const uhc::ActionTag child{*tag, *reinterpret_cast<const wchar_t* const*>(node + 0x14), proto, action,
                              returnAddress == kFromProtoAction ? uhc::ActionSource::kProtoAction
-                                                               : uhc::ActionSource::kTactics};
+                                                               : uhc::ActionSource::kTactics,
+                             node};
   for (std::size_t i = 0; i < g_handlerCount; ++i) {
     g_handlers[i](child);
   }
@@ -6382,7 +6542,7 @@ void RemoveUnitModel(char* unit, std::int32_t model) { kRemoveModel(unit, model)
 // Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay, 66h
 // researchGrants (two kinds, told apart by word 0), 67h shipmentCounts (per-player state on one carrier unit), 68h
 // randomCost (the game seed and the purchase counts, on one carrier unit), 69h shipTechLimit (a player's count, on
-// one of his units).
+// one of his units), 6Ah veterancyBonus (the rows a unit was given, when its rows name techs).
 #pragma once
 
 #include <cstdint>
@@ -7786,4 +7946,124 @@ done:
 UhcFloatingBarVertexHook ENDP
 
 END
+```
+
+## UI gadgets
+
+### src/uigadgets.h
+
+```cpp
+// UI gadgets: the engine's gadget calls, in one place for every key that reads or changes the interface. Handles
+// are the engine's: an int whose low 18 bits index the gadget manager's table, the rest a generation, so a stale
+// handle resolves to no gadget (0x40423C returns null), never to another gadget.
+//
+// The addresses are verified once by VerifyUiGadgets (each key that uses this module calls it from its apply
+// function and refuses to apply when it fails). Not thread-safe: the game's main thread only.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc::ui {
+
+// Gadget type masks for Gadget(): what 0x40423C asks the gadget's virtual +0CCh.
+enum GadgetType : std::int32_t {
+  kAnyGadget = 0,
+  kList = 0x07,       // type="list" (vtable 0xB92378)
+  kTextField = 0x0D,  // type="textField": an editable field with an optional dropdown (vtable 0xB91D60)
+  kPalette = 0x18,    // type="palette" (vtable 0xB92768)
+  kEditBox = 0x23,    // type="editBox", and the one a textField makes for its typed text (vtable 0xB91A38)
+};
+
+// True if the addresses below hold the stock code. `feature` names the caller in the log.
+bool VerifyUiGadgets(const char* feature);
+
+// The gadget manager [[0C66244h]+44h], or null before the UI exists.
+void* Manager();
+
+// The gadget of a handle when its type matches, else null (0 or a stale handle included). Takes no reference.
+void* Gadget(std::int32_t handle, std::int32_t type);
+
+// A gadget's own handle, [gadget+0Ch].
+std::int32_t HandleOf(const void* gadget);
+
+// The handle of a gadget named `name` among `parent`'s descendants (0x433812), or 0 if none.
+std::int32_t FindChild(void* parent, const char* name);
+
+// The text typed in a textField: the editBox it makes for it ([field+160h], 0x62BDD5) keeps it at [edit+170h], a
+// BString (its set-text slot 0x5C2C20 and typing write it there). Empty when it has none. The pointer lives until
+// the text changes; copy it.
+const wchar_t* FieldText(const void* field);
+
+}  // namespace uhc::ui
+```
+
+### src/uigadgets.cpp
+
+```cpp
+#include "uigadgets.h"
+
+#include "generated/sites.h"
+#include "patch.h"
+
+namespace uhc::ui {
+namespace {
+
+constexpr std::uint32_t kUiGlobal = 0x00C66244;  // [+44h] the gadget manager
+constexpr std::uint32_t kNoGadget = 0x00C672C0;  // [..] the handle of "no gadget"
+
+using LookupFn = void*(__fastcall*)(void* manager, void* edx, std::int32_t handle, std::int32_t type);
+using FindChildFn = std::int32_t*(__fastcall*)(void* parent, void* edx, std::int32_t* out, const char* name,
+                                               std::int32_t flag);
+
+const auto kLookup = reinterpret_cast<LookupFn>(0x0040423C);
+const auto kFindChild = reinterpret_cast<FindChildFn>(0x00433812);
+
+template <typename T>
+T Read(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+bool g_verified = false;
+
+}  // namespace
+
+bool VerifyUiGadgets(const char* feature) {
+  if (!g_verified) {
+    g_verified = VerifyAll(feature, {&sites::kGadgetLookup, &sites::kUiFindChild, &sites::kUiFieldEditBox,
+                                     &sites::kUiEditBoxText});
+  }
+  return g_verified;
+}
+
+void* Manager() {
+  const char* ui = *reinterpret_cast<const char* const*>(kUiGlobal);
+  return ui == nullptr ? nullptr : Read<void*>(ui, 0x44);
+}
+
+void* Gadget(std::int32_t handle, std::int32_t type) {
+  void* manager = Manager();
+  if (manager == nullptr || handle == 0 || handle == *reinterpret_cast<const std::int32_t*>(kNoGadget)) {
+    return nullptr;
+  }
+  return kLookup(manager, nullptr, handle, type);
+}
+
+std::int32_t HandleOf(const void* gadget) { return gadget == nullptr ? 0 : Read<std::int32_t>(gadget, 0x0C); }
+
+std::int32_t FindChild(void* parent, const char* name) {
+  if (parent == nullptr) {
+    return 0;
+  }
+  std::int32_t handle = 0;
+  kFindChild(parent, nullptr, &handle, name, 1);
+  return handle == *reinterpret_cast<const std::int32_t*>(kNoGadget) ? 0 : handle;
+}
+
+const wchar_t* FieldText(const void* field) {
+  const void* edit = field == nullptr ? nullptr : Gadget(Read<std::int32_t>(field, 0x160), kEditBox);
+  const wchar_t* text = edit == nullptr ? nullptr : Read<const wchar_t*>(edit, 0x170);
+  return text == nullptr ? L"" : text;
+}
+
+}  // namespace uhc::ui
 ```

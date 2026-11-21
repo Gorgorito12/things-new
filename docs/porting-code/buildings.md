@@ -4009,7 +4009,7 @@ bool __stdcall GrantRow(const char* panel, const char* unit) {
     swprintf_s(value, L"%d/%d (full)", points, cap);
   } else {
     const std::uint32_t left = progress < interval ? interval - progress : 0;
-    swprintf_s(value, L"%d/%d, next in %u s", points, cap, (left + 999) / 1000);
+    swprintf_s(value, L"%d/%d, next in %us", points, cap, (left + 999) / 1000);
   }
   return uhc::SetUnitPanelRow(panel, L"Research grants", value);
 }
@@ -4258,9 +4258,12 @@ Sites: `ResListGet` `0x44EFFF` (61 B), `TechEntryLookup` `0x94ADAA` (35 B), `Uni
 // 0, as a mod's council techs that cost one Ship: researched on a unit or a building, never a home city card (a card is
 // sent by the home city, not researched, and never reaches the research payment).
 //
+// A repeatable tech (the flag YPInfiniteTech, status bit 29) is outside the rule: it does not count, it is not
+// refused at the limit and its rollover has no line.
+//
 // The count of a player: the shipment techs whose research he paid, minus those cancelled with a refund. It counts
-// on payment, so a queued research counts, and a repeatable tech (YPInfiniteTech) counts each time. A research that
-// ends without a refund (its unit dies) keeps its count, as the ship it cost is not given back.
+// on payment, so a queued research counts. A research that ends without a refund (its unit dies) keeps its count, as
+// the ship it cost is not given back.
 // - Payment: the shared research payment (researchpay.h) reports every research once its action is set up (a payer
 //   that claims nothing): [action+64h] the player ID, [action+68h] the tech ID.
 // - Refund: the shared refund observer (0x8D7004 at 0x9E6167 and 0x9D56B5, the cancel of a Research and of a
@@ -4274,7 +4277,9 @@ Sites: `ResListGet` `0x44EFFF` (61 B), `TechEntryLookup` `0x94ADAA` (35 B), `Uni
 // Saved games: the counts are saved markers (savedmarkers.h, stat 69h) on one living unit of each player, written by
 // a world tick when they change and moved when that unit dies. A game that starts or loads reads them back (one walk
 // over the units); a player with none gets the activations of his shipment techs (the count byte [status+21h]) as
-// a fallback, for a game saved before the key was on.
+// a fallback, for a game saved before the key was on. Older builds counted the repeatable techs too, in a marker of
+// kind 1 (this build writes kind 2): on load such a count loses the activations of the player's repeatable shipment
+// techs and the marker becomes kind 2 (a repeatable research paid and still queued at the save stays counted).
 #include <windows.h>
 
 #include <cstdarg>
@@ -4303,8 +4308,11 @@ constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world
 constexpr int kPlayers = 16;
 constexpr std::int32_t kShips = 6;               // the resource index of Ships
 constexpr std::int32_t kStat = 0x69;             // savedmarkers.h
-constexpr std::uint32_t kTag = 0x53540000;       // 'ST' << 16 | player << 8 | 1
+constexpr std::uint32_t kTag = 0x53540000;       // 'ST' << 16 | player << 8 | kind
 constexpr std::uint32_t kTagMask = 0xFFFF0000;
+constexpr std::uint32_t kKindOld = 1;            // older builds: the count holds the repeatable techs
+constexpr std::uint32_t kKindNow = 2;            // the count without them
+constexpr std::uint32_t kInfiniteBit = 29;       // YPInfiniteTech
 constexpr int kMaxLines = 200;
 
 using ResGetFn = float(__thiscall*)(const void* list, std::int32_t r);
@@ -4377,7 +4385,12 @@ bool HasBit(const char* status, std::uint32_t bit) {
 }
 
 // The tech's cost for this player (the status's own list at +10h) has Ships.
-bool IsShipTech(const char* status) { return status != nullptr && kResGet(status + 0x10, kShips) > 0.0f; }
+bool CostsShips(const char* status) { return status != nullptr && kResGet(status + 0x10, kShips) > 0.0f; }
+
+bool IsInfinite(const char* status) { return HasBit(status, kInfiniteBit); }
+
+// A shipment tech under the rule: it costs Ships and is not repeatable.
+bool IsShipTech(const char* status) { return CostsShips(status) && !IsInfinite(status); }
 
 std::int32_t TechIdOf(const char* status) {
   const char* def = Field<const char*>(status, 0);
@@ -4411,7 +4424,9 @@ std::int32_t OwnerOf(const char* unit) {
   return owner == nullptr ? -1 : Field<std::int32_t>(owner, 0);
 }
 
-std::uint32_t MarkerWord(std::int32_t player) { return kTag | (static_cast<std::uint32_t>(player) << 8) | 1; }
+std::uint32_t MarkerWord(std::int32_t player, std::uint32_t kind = kKindNow) {
+  return kTag | (static_cast<std::uint32_t>(player) << 8) | kind;
+}
 
 bool Living(const char* unit) { return unit != nullptr && IsAlive(unit) && !IsDead(unit); }
 
@@ -4461,8 +4476,9 @@ bool WriteMarker(const char* world, std::int32_t player) {
   return true;
 }
 
-// The activations of the player's shipment techs: the fallback count of a game whose markers hold none.
-std::int32_t CountFromStatuses(const char* world, std::int32_t player) {
+// The activations of the player's shipment techs (repeatable ones: `infinite`): the fallback count of a game whose
+// markers hold none, and what an older build's count held of the repeatable ones.
+std::int32_t CountFromStatuses(const char* world, std::int32_t player, bool infinite = false) {
   const char* root = Field<const char*>(world, 0x7C);
   // The per-player tables are an array at the root (0x94ADAA: [root + 4 * player]).
   const char* table = root == nullptr ? nullptr : Field<const char*>(root, 4 * static_cast<std::uint32_t>(player));
@@ -4474,7 +4490,7 @@ std::int32_t CountFromStatuses(const char* world, std::int32_t player) {
   std::int32_t total = 0;
   for (std::int32_t i = 0; entries != nullptr && i < count; ++i) {
     const char* status = entries[i];
-    if (status != nullptr && IsShipTech(status)) {
+    if (status != nullptr && CostsShips(status) && IsInfinite(status) == infinite) {
       total += Field<std::uint8_t>(status, 0x21);
     }
   }
@@ -4484,6 +4500,7 @@ std::int32_t CountFromStatuses(const char* world, std::int32_t player) {
 // A game that just started or loaded: the counts its markers keep. One walk over the units.
 void Rebuild(const char* world) {
   bool found[kPlayers] = {};
+  bool corrected[kPlayers] = {};
   for (int p = 0; p < kPlayers; ++p) {
     g_count[p] = 0;
     g_dirty[p] = false;
@@ -4502,12 +4519,26 @@ void Rebuild(const char* world) {
         return true;
       }
       const int player = static_cast<int>((word0 >> 8) & 0xFF);
-      if (player >= kPlayers || found[player]) {
+      const std::uint32_t kind = word0 & 0xFF;
+      if (player >= kPlayers || found[player] || (kind != kKindNow && kind != kKindOld)) {
         uhc::markers::Free(marker);  // a second copy: keep the first
         return true;
       }
       found[player] = true;
       g_count[player] = static_cast<std::int32_t>(uhc::markers::Word(marker, 1));
+      if (kind == kKindOld) {
+        // An older build's count, with the repeatable techs: without their activations, kept as kind 2 at once.
+        const std::int32_t old = g_count[player];
+        g_count[player] -= CountFromStatuses(world, player, true);
+        if (g_count[player] < 0) {
+          g_count[player] = 0;
+        }
+        uhc::markers::Word(marker, 0) = MarkerWord(player);
+        uhc::markers::Word(marker, 1) = static_cast<std::uint32_t>(g_count[player]);
+        corrected[player] = old != g_count[player];
+        uhc::Log(L"shipTechLimit: player %d's count from an older build (%d) held repeatable techs: now %d", player,
+                 old, g_count[player]);
+      }
       g_carrier[player] = Field<std::int32_t>(unit, 0x10);
       return true;
     });
@@ -4522,7 +4553,8 @@ void Rebuild(const char* world) {
       g_dirty[p] = g_count[p] != 0;
     }
     Line(L"game start or load: player %d has %d of %d shipment techs%ls", p, g_count[p], LimitOf(player),
-         found[p] ? L"" : L" (no saved count: from the techs he has)");
+         !found[p] ? L" (no saved count: from the techs he has)"
+                   : (corrected[p] ? L" (an older build's count, without the repeatable techs)" : L""));
   }
 }
 
@@ -5828,7 +5860,7 @@ bool __stdcall UhcLifespanRow(const char* panel, const char* unit) {
     return false;
   }
   wchar_t value[32];
-  swprintf_s(value, kIsBuilt(unit) ? L"%.0f s" : L"%.0f s once built", static_cast<double>(left));
+  swprintf_s(value, kIsBuilt(unit) ? L"%.0fs" : L"%.0fs once built", static_cast<double>(left));
   return uhc::SetUnitPanelRow(panel, L"Lifespan", value);
 }
 

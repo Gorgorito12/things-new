@@ -12,6 +12,8 @@ betterfreedynamicunit-wol-control 2 22 2
 buildingRotation-wol 6 12 1
 broadsideMuzzleLimit-wol 18 24 2
 broadsideMuzzleLimit-wol-control 18 24 2
+broadsideMuzzleLimit-ability-wol 4 14 2
+broadsideMuzzleLimit-ability-wol-control 4 14 2
 buildingWorkRateAuras-wol 2 36 2
 buildingWorkRateAuras-wol-control 2 36 2
 civFirstTC-wol 2 16 2
@@ -123,8 +125,8 @@ unitResourceAuras-wol 2 36 3
 unitResourceAuras-wol-control 2 36 3
 veterancyBonus-wol 0 12 1
 veterancyBonus-wol-control 0 12 1
-veterancyBonus-icons-wol 11 24 2
-veterancyBonus-icons-wol-control 15 24 2
+veterancyBonus-icons-wol 17 24 2
+veterancyBonus-icons-wol-control 18 24 2
 killSpawn-wol 2 20 2
 killSpawn-wol-control 2 20 2
 workRateByAbstractType-wol 2 36 3
@@ -148,8 +150,6 @@ nextResearchFree-wol 2 30 3
 nextResearchFree-wol-control 2 30 3
 cantBeSlowed-wol 0 12 1
 cantBeSlowed-wol-control 0 12 1
-cantBeSlowed-cannotsnare-wol 3 12 1
-cantBeSlowed-cannotsnare-wol-control 3 12 1
 detonationDeath-threshold-wol 2 12 1
 detonationDeath-threshold-wol-control 2 12 1
 detonationDeath-command-wol 3 12 1
@@ -175,10 +175,10 @@ detonationDeath-knockout-off-wol 2 10 1
 detonationDeath-knockout-on-wol 2 10 1
 hcTargetTechs-wol 2 18 2
 hcTargetTechs-wol-control 2 18 2
-unitResourceAuras-torp-wol 12 12 1
-unitResourceAuras-torp-wol-control 12 12 1
-displayedRange-wol 0 12 1
-displayedRange-wol-control 0 12 1
+unitResourceAuras-torp-wol 4 12 1
+unitResourceAuras-torp-wol-control 4 12 1
+displayedRange-wol 5 33 3
+displayedRange-wol-control 5 33 3
 linkedResource-wol 2 12 1
 linkedResource-wol-control 2 12 1
 linkedResource-model-wol 4 84 7
@@ -194,8 +194,8 @@ lifespanAfterConstruction-countdown-wol 2 30 2
 lifespanAfterConstruction-countdown-wol-control 2 30 2
 hcShipmentPointFallback-lastresort-wol 4 20 2
 hcShipmentPointFallback-lastresort-wol-control 4 20 2
-auraStacking-wol 2 40 3
-auraStacking-wol-control 2 40 3
+auraStacking-wol 4 12 1
+auraStacking-wol-control 4 12 1
 danceBonusCivs-weight-wol 8 12 1
 danceBonusCivs-weight-wol-control 8 12 1
 snareValues-wol 0 9 1
@@ -265,8 +265,9 @@ directionalAttack-wol 3 22 2
 directionalAttack-wol-control 3 22 2
 inventoryBars-wol 8 32 3 480:320:280:230
 inventoryBars-wol-control 8 32 3 480:320:280:230
-numberOfShots-wol 8 12 1
-numberOfShots-wol-control 8 12 1
+numberOfShots-wol 4 12 1
+numberOfShots-wol-control 4 12 1
+numberOfShots-before-wol 4 12 1
 numberOfShots-projectiles-wol 9 12 1
 numberOfShots-projectiles-wol-control 9 12 1
 ageUpBuildings-wol 1 12 2
@@ -274,8 +275,8 @@ ageUpBuildings-wol-control 1 12 1
 useBigHugeButton-wol 3 12 1
 orPrereqsQty-wol 2 24 2
 orPrereqsQty-wol-control 0 24 2
-shipmentCounts-wol 21 24 2
-shipmentCounts-wol-control 21 24 2
+shipmentCounts-wol 30 90 8
+shipmentCounts-wol-control 30 90 8
 shipmentCounts-reward-wol 4 16 2
 shipmentCounts-reward-wol-control 4 16 2
 kothTimer-wol 4 24 2
@@ -310,15 +311,37 @@ researchOnTheMove-wol 0 20 2 800:80:0:0+800:480:700:200+800:80:1120:850
 researchOnTheMove-wol-control 0 20 2 800:80:0:0+800:480:700:200+800:80:1120:850
 truckAttackResourceFix-wol 0 24 2
 truckAttackResourceFix-wol-control 0 24 2
-paraguayanWorks-smoke-wol 4 36 3
+paraguayanWorks-smoke-wol 4 84 7
+paraguayanWorks-smoke-wol-steady 4 84 7
 paraguayanWorks-smoke-wol-control 4 36 3
 paraguayanWorks-damage-wol 32 24 2
 paraguayanWorks-damage-wol-control 32 24 2
 paraguayanWorks-collapse-wol 62 4 0.5
 paraguayanWorks-collapse-wol-control 67 4 0.5
-shipTechLimit-wol 3 30 3 800:70:0:280+800:240:480:320
+shipTechLimit-wol 2 36 3 800:70:0:375+800:240:480:480
 shipTechLimit-wol-control 3 30 3 800:240:480:320
-transformChecks-wol 3 12 1 800:700:380:60+800:230:1060:850
-transformChecks-wol-control 3 12 1 800:700:380:60+800:230:1060:850
+transformChecks-wol 4.5 12 1 800:640:560:290+800:175:1110:945
+transformChecks-wol-control 2 12 1 800:640:560:290+800:175:1110:945
 autoScout-back-wol 8 24 2
 autoScout-back-wol-control 8 24 2
+autoGatherFrom-wol 8 24 2
+autoGatherFrom-wol-control 8 24 2
+herdWalkAwayFix-wol 6 36 3
+herdWalkAwayFix-wol-control 6 36 3
+editorSearch-wol 3 12 1 800:70:240:30+800:240:0:100
+editorSearch-wol-control 3 12 1 800:70:240:30+800:240:0:100
+deadReplacementAtZeroInventory-wol 0 36 3
+deadReplacementAtZeroInventory-wol-control 5 36 3
+detonationDeath-onunit-wol 3 12 1
+detonationDeath-onunit-wol-control 3 12 1
+detonationDeath-building-wol 6 12 1
+detonationDeath-building-wol-control 6 12 1
+overhealSources-canoverheal-wol 5 36 3
+overhealSources-canoverheal-wol-control 0 36 3
+editorSearch-trigger-wol 6 18 2 800:40:0:478+800:430:200:190+800:36:0:790
+editorSearch-forbid-wol 1 16 2 800:920:0:0
+editorSearch-trigger-wol-control 6 18 2 800:40:0:478+800:430:200:190+800:36:0:790
+editorSearch-forbid-wol-control 1 16 2 800:920:0:0
+dismount-wol 0 24 2
+dismount-wol-control 0 24 2
+dismount-transitions-wol 0 20 1.6

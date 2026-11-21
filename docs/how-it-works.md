@@ -396,6 +396,42 @@ building, 0x44CAC4). Then it goes on at the damage, 0x9EC64D; otherwise it re-ex
 and ECX; 0x9EC64D loads ECX, and its branches load EAX and EDX); EBX, ESI, EDI and EBP are kept by the stdcall
 callee. The test reads only the target's proto, the same on every machine. Units are reset as in stock.
 
+### deadReplacementAtZeroInventory
+
+**The stock replacement.** `<DeadReplacement>` (handler 0x5FC33B) stores a proto ID at `[proto+F8h]`. The death
+replacement FUN_004B4F2F places it once per unit (state bit 29h) through 0x506F61 (the placement test, the creation
+0x498ACC). It has four callers: the kill handler 0x4B4F70 (0x4B527E; not for a `DeadReplacementWhenDestroyed` proto,
+flag 4Ah), the two removal paths of a flag-4Ah proto (0x4E6FC6 and 0x6A4013) and the state check FUN_00482152
+(0x4F1680). A unit with `DieAtZeroResources` (flag 0Eh) and `DoNotDieAtZeroHitpoints` (which clears the default flag
+0Dh) is never killed at 0 HP: the state check turns it into a body (state bit 12, owner gaia, the death sound) and
+calls the replacement at once, so a hunt or a herdable leaves it beside the body it has just become. When the body is
+used up, the same check asks the kill queue, but the unit update marks the body for removal (state bit 7) and the
+world removes it in the same update (0x495D61 → 0x4726B2), before the queue's drain: the kill handler never sees it.
+Observed with hardware breakpoints on a cow emptied by settlers: the inventory test 0x4B43B0 and the kill queue ask
+ran, then the removal, and no kill handler for it. The two updates that remove a unit marked so call the removal
+notice FUN_00495D6B first (0x495DEE in FUN_00482F16, 0x6A3FF0 in 0x5116xx), then place the replacement of a flag-4Ah
+proto.
+
+**The hooks** (`hooks/deadrepl_hooks.asm`).
+- The replacement's head 0x4B4F2F (7 bytes, `push ecx / push esi / mov esi,ecx / mov eax,[esi+68h]`, continuation
+  0x4B4F36): `UhcDeadReplacementSkip(unit, return address)` is true only for the return address 0x4F1685 and a proto
+  with flag 0Eh, without flag 0Dh, and a replacement; the hook then returns with nothing done (bit 29h stays clear).
+- The removal notice's head 0x495D6B (5 bytes, `mov eax,[0C66234h]`, continuation 0x495D70):
+  `UhcDeadReplacementOnRemove(unit)` calls FUN_004B4F2F for a body (state bit 12) of such a proto whose bit 29h is
+  clear. The call goes through the first hook with a return address in the DLL, so it is stock. The replacement then
+  comes at the moment and through the same code as for a `DeadReplacementWhenDestroyed` proto.
+
+A body killed by the kill handler (a trigger's `Kill`) gets the replacement there, as in stock; bit 29h keeps it to one
+either way. The trigger `Destroy` removes a unit without the notice, so a body destroyed that way leaves nothing, as a
+flag-4Ah proto does in stock.
+
+**Why it is safe.** At the head, EAX and EDX are not inputs (thiscall with no argument) and each caller reloads EAX
+before reading it; ECX is pushed and restored around the stdcall callee, which keeps EBX, ESI, EDI and EBP. A skipped
+call returns as the stock function does when bit 29h is set. At the notice, ECX is restored and EAX is written by the
+stolen instruction. The decisions read only the unit's proto and state bits, the same on every machine. Evidence:
+`rea/evidence/age3y-b1a1dab7/r1121-b-deadrepl-detonation-heal.json` (`ev_df5ab456…`, FUN_00482152), capstone over the
+exe for FUN_004B4F2F, its callers, 0x506F61, 0x495D6B and 0x4B4D80.
+
 ### nowalkfarm
 
 The gather action calls `0x9DDADE` (the spot picker that `farmingRadius` hooks) at `0x6A9067` each
@@ -1146,7 +1182,16 @@ entry's sound sets at the point.
 
 After the area damage, the key calls FUN_004CB11C with a zeroed record of 70h bytes that has only those fields: the
 action at `+10h`, the point at `+64h` (so the default direction) and `+28h` = 0 (the `particleSet`). The point is the
-unit's position, copied before the area damage. By default the action is the detonating one, so its own
+unit's position, copied before the area damage. **Since 2026-11-21 (#86)** a unit whose obstruction radius
+(`<ObstructionRadiusX>` `[proto+88h]`, handler 0x5F5972; `<ObstructionRadiusZ>` `[proto+8Ch]`, 0x5F59C8) is 1.5 m or more
+on either side gets one call per point of a grid over its footprint: `round(2r / 3)` points per side (at least 2, at most
+3), from −0.75 r to +0.75 r along its right vector `[unit+38h]` and its forward vector `[unit+20h]`, at the unit's
+height; a `TownCenter` (4.5 × 4.5) gets 3 × 3, a `House` (2 × 2) 2 × 2. Each call is the stock visual of a shot landing
+there, with its own visibility test. The victims: the area damage hands each one to TakeDamage 0x49B3D9 with the
+impact argument −2 (no impact effect) and the bool the stock caller takes from the action's flag bit 6, which TakeDamage
+reads only to skip the hit and pain sounds (0x484136 types 3 and 2, 0x49BC87). The key passes 1, so the victims only
+flinch (0x49C0D4, played either way) and the only effect and sound is the blast on the dying unit. The damage path does
+not read the bool (REA `ev_32be21bf…`, FUN_0049B3D9; `ev_71ba0bc4…`, FUN_004C9D89; `ev_22c85aa1…`, FUN_0049C0D4). By default the action is the detonating one, so its own
 `<impacteffect>` plays (nothing when it has none: `[action+70h]` < 0). `<DetonationImpactEffect>path</DetonationImpactEffect>`
 names another impact effect: its handler, during the proto load, passes the node's text field `[node+14h]` to
 FUN_0058F017 as the tactics handler does, which finds the file or loads it and returns its ID (< 0 on failure, logged
@@ -1734,41 +1779,40 @@ ecx,[esp+24h]` at 0x85856A; `ev_86fde4e0…`). The activation applies the tech's
 cards `[hc+260h]` through 0x444FD3, which adds an index only once: a card sent again is not listed twice, so the list
 is not a count of shipments.
 
-**The age of sending.** A card counts in the age it was sent in, but only once it ships, since a sent card can still be
-cancelled. Three hooks:
-- the head of FUN_00857204 (7 bytes, `push esi / push edi / mov edi,ecx / mov esi,[edi+4]`) jumps to
-  `UhcShipQueueAddHook`: `UhcShipQueued(queue, entry)` notes `{card index, tech ID, [player+50h]}` (the player is
-  `[hc+8]`, hc = queue − 288h); then the replaced instructions run and it jumps to `0x85720B`. doNotQueue's own call of
-  the add (at 0x85AD38) reaches this head too;
-- the head of FUN_00857257 (`cmp byte [esp+8],0`, 5 bytes) jumps to `UhcShipQueueRemoveHook`: `UhcShipUnqueued(queue,
-  index, shift)` forgets the noted card of that entry; then the `cmp` runs again (its flags feed the `jz` at 0x857260)
-  and it jumps to `0x85725C`;
-- the activation call (below) finds the send age of the entry being shipped.
-
-A noted card is found by its card index and tech ID and its rank among the entries with the same pair: the k-th such
-entry in the queue is the k-th noted one, since the queue is FIFO and doNotQueue moves a new card up only past cards of
-the other kind, never past its twin. A card whose send was not seen (a game saved without the key) takes the age at its
-arrival.
+**The age of the card.** A card counts in its own age, the `<age>` of the card in the home city file (the age that
+enables it), not the age it was sent or shipped in, and only once it ships, since a sent card can still be cancelled.
+The card is found as the send and the shipment find it: FUN_0085FFCE, `thiscall(list = hc+228h, index)`, `ret 4`,
+answers `[list+1Ch] + index × 28h` for an index from 0 to `[list+20h]` − 1, else 0 (capstone; its seven callers, REA
+`ev_ebf467d4…`: the queue update, 0x85650A, the shipment FUN_00858299 at 0x85830B, 0x859CFE, 0x85A24D, the send at
+0x85A853 and the cancel 0x85ADD9). The send compares the card's `[card+18h]` with `[player+50h]` (0x85A90A: a negative
+age, no `<age>`, passes; a higher one is refused with string 8FFCh), so `[card+18h]` has the scale of `kbGetAge`
+(cAge1 = 0). None of the four of those callers decompiled (REA `ev_784ac21f…`: 0x85650A, 0x859CFE, 0x85A24D,
+0x85ADD9) nor the send writes `[card+18h]`; a writer elsewhere was not searched for (inferred: only the home city's load
+sets it). A card with no `<age>` (−1) counts in Age I.
 
 **The count.** The key redirects the activation call to `UhcShipActivateHook`: `TRACE_ONCE`, `UhcShipBegin(entry,
-player, hc, queue entry)` notes the player ID and the send age of that queue entry and marks a shipment as in progress,
-then the stock activation runs with its five arguments as they were pushed, then `UhcShipEnd()` adds one to the count of
-that player and send age and clears the mark. The return address is kept in a global while the activation runs, and the
-hook leaves with `jmp` to it. The counts are a 16 × 5 table (an age past cAge5 counts in the last).
+player, hc, queue entry)` notes the player ID, reads the queue entry's card index (`+0`), finds the card with
+FUN_0085FFCE (verified as `ShipCardLookup`) and takes its age, and marks a shipment as in progress; then the stock
+activation runs with its five arguments as they were pushed, then `UhcShipEnd()` adds one to the count of that player
+and card age and clears the mark. The return address is kept in a global while the activation runs, and the hook leaves
+with `jmp` to it. The counts are a 16 × 5 table (an age past cAge5 counts in the last). The queue entry is checked to lie
+in the player's queue before its card index is read.
 
-**Saved games.** The counts and the noted cards live in the DLL, so they are written into the game as saved markers
-(`savedmarkers.h`, stat 67h): stat modifiers that no code reads, whose save and load copy four dwords. Per player with
-anything to keep, one marker holds the five counts (16 bits each, word 0 `'SC' << 16 | player << 8 | 1`), and one, while
-the player has queued cards, the send ages of its queue in queue order (3 bits per place, 32 places, `| 2`). All of them
-sit on one unit, the carrier: the first living unit of a player (then of anyone) that takes a marker. A world tick
-(`AddWorldTick`) rewrites them after a change and moves them when the carrier is gone, dead, or lost its markers (a
-transform in place ends a unit's modifiers); old markers are freed. So at a save, which happens between world updates,
-the markers are on a living unit.
+Until 2026-11-21 a card counted in the age it was sent in, which took two more hooks (the heads of the queue's add
+0x857204 and removal 0x857257) to note each queued card's send age; both are gone.
+
+**Saved games.** The counts live in the DLL, so they are written into the game as saved markers (`savedmarkers.h`, stat
+67h): stat modifiers that no code reads, whose save and load copy four dwords. Per player with anything to keep, one
+marker holds the five counts (16 bits each, word 0 `'SC' << 16 | player << 8 | 1`). All of them sit on one unit, the
+carrier: the first living unit of a player (then of anyone) that takes a marker. A world tick (`AddWorldTick`) rewrites
+them after a change and moves them when the carrier is gone, dead, or lost its markers (a transform in place ends a
+unit's modifiers); old markers are freed. So at a save, which happens between world updates, the markers are on a living
+unit. A save of an older build may also hold a marker `| 2` (the send ages of the queued cards): it is ignored, and the
+next write drops it.
 
 A game is told apart as `researchGrants` does: the world `[game+13Ch]`, its time `[world+108h]` not going back and its
 step `[world+F8h]` advancing by at most one. A new or loaded game (seen by the tick, or by a hook or a syscall that runs
-first) rebuilds the table in one walk over the units: the counts from the count markers, and the noted cards from the
-loaded queue `[hc+288h]` of each player with the send ages of their places.
+first) rebuilds the table in one walk over the units, from the count markers.
 
 **The tech subtype.** `FreeHomeCityUnitByShipmentCount` is a Data subtype on a Player target, which the shared tech
 subtype code did not have: stock applies a Player target through 0x7F874A, which pushes the effect's fields and calls the
@@ -1785,7 +1829,7 @@ a range `N-M` of them, and `includeself` true or 1. They are packed into the eff
 low 24 bits, the first age in bits 24-26, `includeself` in bit 28, the last age in bits 29-31. A bad one drops the effect
 (the lookup answers −1, as for a name nobody knows). When the effect applies, the handler adds the counts of those ages
 (or of every age), adds one when `includeself` is set and the effect runs inside the activation of a shipment of the
-same player whose send age is in the range, writes the proto ID into the field and `amount × count` into the amount,
+same player whose card's age is in the range, writes the proto ID into the field and `amount × count` into the amount,
 and answers 37h: the stock `FreeHomeCityUnit` case (0x8D8C62) then creates the units at the home city gather point
 through 0x857E77, with its checks. A count of zero answers done, and nothing is created.
 
@@ -1797,14 +1841,56 @@ int lastAge)` in the XS group (every script: the AI, triggers), through `AddSysc
 - The activation gets the same `this`, the same five arguments and the same return address; EAX, its result, is kept,
   and the code at 0x858504 reloads ECX from EDI, which the C code keeps. Only one card ships at a time, and the
   activation never ships another, so one global return address is enough.
-- The two head hooks keep EAX, ECX and EDX, run the replaced instructions themselves and jump to the verified next
-  instruction; the add's and the removal's work is untouched. `ShipEntryArg` verifies the frame the hook reads the
-  queue entry from.
+- `ShipEntryArg` verifies the frame the hook reads the queue entry from, and `ShipCardLookup` the bytes of the card
+  lookup the C code calls; the card is read, never written.
 - The player switch hook re-executes the stolen `ja` with the flags of the stock `cmp`, so every stock subtype runs as
   before; the success and failure exits are the stock ones, with the stack as the cases leave it.
-- The counts read only simulation events (sends, cancels, shipments, ages), the same on every machine; the table is
+- The counts read only simulation events (shipments) and data (the cards' ages), the same on every machine; the table is
   ordered by player ID and age, and the carrier is picked in unit order, so the markers are the same on every machine.
 - A marker is a modifier of a stat no code reads; a game loaded without the key ignores it.
+
+### ageFiveShipments
+
+`src/features/agefiveshipments.cpp`, `hooks/agefive_hooks.asm`.
+
+**Stock (#83, 2026-11-21).** A card's `<age>` is read by the home city card loader (FUN_0062E6C9; the `Age` tag,
+string 0xBA38C0, handled at 0x66B6FC) and kept as `[card+18h]`, from 0 (Age I) up; nothing caps it there. Three places
+stop at four ages (REA `ev_4c5c5b11…`, `ev_cb7f901b…`; capstone):
+- the game's card list of a player, `hc+228h` (the list FUN_0085FFCE indexes), is built from the chosen deck by
+  FUN_006301DE (callers 0x62FA64, 0x857BF1, 0x857C8E, 0x857D6E, 0x85A63E): one pass over the home city's cards per age,
+  keeping those of the deck, so the list is in age order; the passes end after age 3 (`cmp eax,4` at 0x63022E). A card
+  of age 4 (or with no `<age>`, −1) never reaches the game: in a test a deck of 25 with one such card played with 23
+  cards;
+- the in-game shipment panel, the gadget type `homeCityCardPanel` (`uihomecitycommandpanel.xml`), fills its buttons in
+  FUN_009A5658: a card of age below 0 or above 3 is skipped (0x9A5A25..0x9A5A30), the others go to row = age, column =
+  their rank in that age (at most 11, counted in `[panel+4D0h + 4 × age]`). Its buttons are named
+  `homeCityCardPanel-button<row><column>` and looked up once (FUN_009A4E50, rows below 4, columns below 11) into four
+  arrays of 44 slots at `+140h`, `+2A0h`, `+354h` and `+40Ch` of the gadget, packed one after another, with the per-age
+  counts at `+4D0h..+4DCh` and an init flag at `+4F4h`;
+- the deck builder of the home city screen ("Build a Deck", `uihcdeckbuilder.xml`, buttons `hcDeck-button<row><column>`)
+  fills its rows the same way at 0x9A0489 and stops at the first card whose age is 4 or more (0x9A04A7); in a test the
+  Age V card of a 25-card deck was missing from its Age IV row while the counter read 25/25;
+- the `homeCityDeck` dialog (`uihomecitydeck.xml`, loaded at 0x9A737B, FUN_009A7670) has the same fill (0x9A77BE,
+  stop at 0x9A77DC); it did not open in the tests (inferred: another deck dialog of the same screen).
+
+The panel greys a card whose age is above the player's (`[card+18h]` against `[player+50h]`, rollover string 8FA6h),
+and the send FUN_0085A724 refuses it (0x85A90A, string 8FFCh); neither stops at 3.
+
+**What the key does.** The immediate of `cmp eax,4` at 0x63022E becomes 5 (`CardListAgePasses`), so the game's list
+takes the cards of age 4 too, after those of age 3. The three fills get a 5-byte `jmp` over `mov eax,[esi+18h]` and the
+`cmp` after it (`CardPanelAgeRow` 0x9A5A22, `DeckBuilderAgeRow` 0x9A0489, `DeckEditorAgeRow` 0x9A77BE): the hook reads
+the card's age, turns 4 into 3, re-runs the `cmp` and jumps back (0x9A5A27, 0x9A048E, 0x9A77C3). So an Age V card sits in the Age IV row, after the Age IV cards,
+while `[card+18h]` stays 4: greyed with its reason until the Imperial Age, refused by the send before it, and counted in
+Age V by `shipmentCounts`.
+
+**Why not a fifth row.** The row index is the card's age, and each panel object holds exactly 4 × 11 buttons in arrays
+that touch each other (the deck builder's at `+178h`); the card inventory's "By Age" view has four tabs too; a fifth row would need a larger gadget object and every reader of those arrays (the fill, the
+click and rollover handlers, the refresh at 0x9A5205) moved to new storage, plus 11 more named buttons in the layout.
+That is a reimplementation of both gadgets, not a patch.
+
+**Why it is safe.** Only the row changes; the count per row keeps its cap of 11 (an Age IV row with 11 cards leaves the
+Age V cards out, as stock leaves a twelfth card out). The hooks keep every register but EAX, which the replaced `mov`
+loads anyway, and re-run the replaced `cmp` for the branch after it.
 
 ### maintainWaitForPop
 
@@ -1941,10 +2027,25 @@ at `0x5034E2`. For the action the first hook matched, it calls the C++ logger wi
 MuzzleL count (EAX) and the limit (ESI) inside `pushad` / `popad`, then re-executes both
 instructions and jumps to the `jg` at `0x5034E8`, which reads the flags of that `cmp`.
 
+**More projectiles than muzzles (2026-11-21).** [O] An ability's volley (a power whose `<unitaction>` is a
+`BroadsideAttack`, such as a mod's long-range bombardment) is one pass of the fire step: FUN_004C1290 fires each due slot of the
+facing side once, and for an action whose launch object `[ua+94h]` has the power bit (byte `[[obj+2Ch]]` & 4, `[obj+30h]`
+≥ 3) it ends the action with setState(0Ah) instead of scheduling another volley (0x4CEE48), REA `ev_695172b8…`. The
+schedule gives each right slot a time `now` (+1000 ms for such an action) plus a sync-RNG step of 0.25 to 1.75 ×
+`[ua+84h]`, and slot i + n1 the same time (`ev_cb848273…`). So a volley has one projectile per slot, at most the model's
+muzzles per side; `<numberprojectiles>` is no tag of the exe. The key reads `<NumberProjectiles>` (and
+`<NumberOfProjectiles>`) through the shared action tag hook, per `{proto ID, action name index}`, cleared on every data
+load, and replaces BroadsideAttack's vtable slot 1 (0xB962EC, the only reference to 0x50339A) with a wrapper: the stock
+set-up, then, for an action of a ship the key applies to (every ship, or its type through 0x44D7FA, as the limit hook
+decides) whose side has fewer slots than P, it resizes
+both arrays with their own resize 0x401113 to P per side, writes the muzzle indices in turn (slot i of a side = the
+side's stock slot i mod its count) and zero times, and sets `[ua+80h]` to P. The left side is capped at the right
+side's count, which is what the schedule can time.
+
 **Why it is safe.**
 - The arrays have no other bound: save and load write each count and resize on load, the fire step
   walks the count, and the muzzle index is read as a byte, which caps N at 255. A larger N needs
-  no save-format change.
+  no save-format change. The extra slots name muzzles the model has, so the muzzle lookup 0x4A98C2 succeeds for each.
 - Nothing else reads the hardcoded 6.
 - The limit depends only on the cfg and the owner proto's unit types, decided once per action
   set-up. It adds projectiles (each with its accuracy roll) and sync-RNG draws, so every machine
@@ -1993,11 +2094,27 @@ itself and jumps to `0x696C75`.
 
 The ring is a model of the table the tactics parser fills: 0x58F68F gives the ID of `effects\uhc_rings\range_<N>.xml`, as
 0x5FC91C does for `<ModelAttachment>`, and 0x58E506 the ID of the bone `bonethatdoesntexist`, as 0x5FC8EE does, which puts
-it at the unit's feet. A world tick, four times a second of game time, compares the selection of 0x453B28 with the units
-that hold a ring, and hangs or removes it through the functions of the stock aura update.
+it at the unit's feet. A world tick, ten times a second of game time, compares the selection of 0x453B28 and the Alt state
+with the units that hold rings, and hangs or removes them through the functions of the stock aura update.
 
-**Why it is safe.** Nothing here reaches the simulation: the selection is local and is only read, and a model is a visual
-of the unit. The tick walks the selection and its own map, never the world's units.
+**Alt** is the game's own query, the one the HP bar chunk makes at 0x452EA0..0x452EB3: `[[[0C66244h]+74h]+2Ch]`, its vtable
++34h with 2 (0 is Shift, 1 Ctrl). A posted `WM_KEYDOWN` of `VK_MENU` sets it, so a copy in the background can be tested.
+
+**The radii** come from the unit's current tactic, `[[unit+58h]+0A8h]`, an index into the tactics `[[proto+44h]+10h]` of the
+player's proto: its action entries are 12 bytes at `[tactic+44h]` (count `+48h`), `+4` the index of the action in
+`[[tactic]+1Ch]`, as the attack list 0x487EEE reads them. An action counts when bit 0 (active) and bit 0Ah (`<RangedLogic>`,
+set by its handler 0x5FAC6D) of `[action+64h]` are set; its range is 0x4946D6(action, −1), the entry the stat panel shows. The
+player's copy is read every tick, so a range tech shows at once. A tactic with no ranged attack (a cannon limbered to move)
+takes the ranged attacks of all the unit's tactics. Each radius goes to the nearest ring size; equal sizes share a ring;
+at most 4 rings a unit, the largest first, and 75 units with rings, the longest ranges first.
+
+**`<Flag>AlwaysDisplayRange</Flag>`.** The proto flag parser 0x5F640A (`stdcall(proto, name)`) compares the name with each
+flag it knows, through the string compare 0x4028B4, and returns with nothing for any other name. The key replaces the call of
+its last compare, 0x5F726F, with a hook that runs the compare and, when it does not match, hands the name to the key.
+
+**Why it is safe.** Nothing here reaches the simulation: the selection and the keyboard are local and only read, and a model is
+a visual of the unit. The tick walks the selection and its own map, never the world's units. The flag hook returns the
+compare's own result, so the parser goes on exactly as before.
 
 ### wonderPanelSkipAuras
 
@@ -2273,6 +2390,32 @@ a BString: by then the protos and every key's `<ModifyType>` names exist. A unit
 default whose type its player's copy has (0x44D7FA); no list per proto is kept, so a type a tech adds counts at once. The
 lookup runs on a kill, at a transform, in the one walk after a load and in the panel row of one selected unit. Names made of
 digits are string IDs, read with 0x58EA52 when shown; the panel row's colour is the string table's `<color=r, g, b>` markup.
+
+**Rows with a tech, blocks by civilization (2026-11-21).** A row's `tech` name is kept in a list of names and resolved
+with 0x600BE1 (tech by name, `thiscall(database, char*)`) at the same first lookup after a database load; an unknown name
+gets −3 and its rows never count. A row counts for a unit when it names no tech or when 0x94AF27(`[world+7Ch]`, player ID,
+tech) says the tech is active for the unit's player. `<Civilization name>` blocks are resolved with 0x52D6FF (civ by
+name, `thiscall(database, char*)`, null when none) and compared with the player's civ, 0x405C2E(database,
+`[[player+20h]]`) when `[player+24h]` > 0; the lookup tries the civ's blocks, then the global ones.
+
+Rows with a tech can be given out of kills order, so the rows given are no longer a function of the kills. They are kept
+on the unit in a saved marker (`savedmarkers.h`, stat 6Ah: word 0 the tag `VETG`, words 1 to 3 one bit per row of the
+unit's rows in kills order, 96 rows), written only when the unit's rows name a tech. A unit without the marker was given
+every row without a tech up to its kills (before the current kill), which is what the key always did, so old saves and
+protos without tech rows behave as before. Giving a row adds the modifier of its series' total after the row against
+before it: the total is that of the series' given row with the most kills. A world tick (every 500 ms of game time, only
+while some row names a tech) looks at each player's named techs (`[world+5Ch]` players) and, on one that became active
+(or on the first look of a game, which also covers a loaded game), walks the world's units once and gives each unit of
+that player with kills the rows it now reaches; giving is idempotent. A tech that goes inactive takes nothing back. The
+transform wrapper gives the new proto's rows afresh (the transform ended the marker).
+
+The proto rows' map is now cleared on each database load (`OnDatabaseLoad`, which runs at the end of the abstract
+types' registration, before the protos are read); before, a second data load in one run (a skirmish start) added every
+proto row again, and a row of the same kills applied twice.
+
+**`notext` (2026-11-21).** The option only skips the two calls of `floatingtext.*` at a new rank, for a mod whose own upgrades
+show their text there. The count, the rows, the mark and the panel row are the same; the string sites stay verified, as the
+rank names and the panel row read them too.
 
 - **Observed in game:** see the tests in the modding guide.
 
@@ -3104,18 +3247,29 @@ overheal (only the single-target heal action knows its healer).
 | Site | Stolen | Hook does | Continues at |
 |---|---|---|---|
 | 0x4823A3 | `push ecx / push esi / mov esi,ecx / cmp [esi+8],8` (8 B; ECX = unit, `[esp+4]` = amount) | `UhcOverhealAddHp(unit, &amount)`: a positive amount on a marked unit is lowered to reach at most the reference, unless `g_uhcOverhealAllow`; then the stolen bytes | 0x4823AB (`jbe`, on the stolen `cmp`) |
-| 0x9E0BBB | `call 480408h` (ECX = EDI = target, healer `[esi+10h]`) | `UhcOverhealTickLimit` in ST0: for a marked target, the reference with a healer of no source type, min(reference × cap %, max) with a capped source; else the stock max | 0x9E0BC0 |
-| 0x9E0CE9 | `call 4823A3h` (the tick's heal) | `g_uhcOverhealAllow` = 1 + the index of the healer's first source type (0: none), the stolen call, then 0 | 0x9E0CEE |
-| 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | `UhcOverhealSearchRatio` in ST0: for a marked candidate, HP / reference with a normal healer, HP / cap limit with a capped source (stock rules: 0 below 1e-6, 1.0 from the limit: no candidate); else the stock ratio | 0x9CD989 |
+| 0x9E0BBB | `call 480408h` (ECX = EDI = target, ESI = the unit's heal action: healer `[esi+10h]`, the player's copy of its tactics action `[esi+4]`) | `UhcOverhealTickLimit(target, action)` in ST0: for a marked target, the reference when the action does not overheal, min(reference × cap %, max) when it does with a cap; else the stock max | 0x9E0BC0 |
+| 0x9E0CE9 | `call 4823A3h` (the tick's heal; ESI the unit's action) | `g_uhcOverhealAllow` = 1 for an overhealing action (its cap in `g_uhcOverhealAllowCap`), the stolen call, then 0 | 0x9E0CEE |
+| 0x9CD984 | `call 45F295h` (ECX = ESI = candidate, healer `[ebp+4]`) | `UhcOverhealSearchRatio` in ST0: for a marked candidate, HP / reference when none of the healer's actions overheals, HP / the highest limit of those that do (stock rules: 0 below 1e-6, 1.0 from the limit: no candidate); else the stock ratio | 0x9CD989 |
 
-**`cap` and `rate`** (per source type, `g_options[i]`). In the add-HP hook, with `g_uhcOverhealAllow` = i + 1 (only
-the heal tick of a source healer sets it): with `rate`, the part of the amount above the reference becomes (HP +
-amount − max(HP, reference)) × rate / 100, the part below is kept; with `cap`, the amount is then lowered so that HP
-stops at reference × cap / 100. The tick's limit and the search's ratio above use the same limit, so the heal action
-ends when the unit reaches it (state 10) and a unit at its cap is no candidate, as a normal healer at the reference;
-without that a capped source would heal 0 HP forever. The C functions return a float in ST0 (x86 `__stdcall`), and
-change only EAX, ECX and EDX, as the stolen calls do. Without options every path calls what the hooks called before
-(`0x480408`, `UhcOverhealReferenceOf`, `0x45F295`, `UhcOverhealRatioOf`).
+**Which action overheals (2026-11-21, JTMaston's #85).** The heal tick's action ESI is the unit's action; `[esi+4]` is
+the player's copy of the tactics action, the same object whose `<rate>` entries the tick reads (`mov ecx,[esi+4]` /
+`call 487C45h` at 0x9E0CC3, REA `ev_d240f09a…`, `ev_5be39379…`: the rate list `[action+0Ch]`, count `[+10h]`, 0Ch-byte
+entries). `<CanOverheal>` and `<OverhealCap>` (percent, 100 to 1000) come through the shared action tag hook
+(`actiontags.h`), from a tactics `<action>` or a `<ProtoAction>`, and are kept by (proto ID `[proto+4]`, action name index
+`[action+4]`), which every player's copy keeps; a tactics file read for several protos gives each its own entry. A tag on
+an action whose name has no "heal" is logged and dropped (the heal tick would never read it). The Data subtypes
+`CanOverheal` and `OverhealCap` (`AddTechActionSubtype`, `action=`/`allactions=`) keep a value per copy of an action (its
+address, guarded by the same key) through the stock value function 0x7F892A, from the tag's value (or 0, none): `Assign`
+1 or 0 turns it on or off, `Absolute` adds. A value above 0.5 is on. Both maps are cleared at each database load; the
+techs apply again on a load. The search knows only the healer, so it takes the best of the healer's actions (its proto
+copy's action set `[proto+44h]`, `[set+1Ch]`, count `[set+20h]`): one without a cap wins, else the highest cap. A cfg
+type is an explicit opt-in: a healer of it overheals with every action, to its `cap=`. In the add-HP hook, with
+`g_uhcOverhealAllow` set (only the heal tick of an overhealing action sets it), the amount is lowered so that HP stops at
+reference × cap / 100; it is not scaled any more (the cfg's `rate=` is gone: above the reference the action heals at
+its own `<rate>`, as below it). The tick's limit and the search's ratio use the same limit, so the heal action ends when
+the unit reaches it (state 10) and a unit at its cap is no candidate; without that a capped healer would heal 0 HP
+forever. The C functions return a float in ST0 (x86 `__stdcall`), and change only EAX, ECX and EDX, as the stolen
+calls do.
 
 **Why it is safe.** The decisions read only protos and HP (the same on every machine) and the cap
 only lowers a positive amount; damage (negative amounts) and the setter's other callers are
@@ -3170,6 +3324,16 @@ forgets every unit, and so does a data reload); for each unit, the unit table lo
 gone, dead or unmarked units are forgotten. A unit at or below its reference is forgotten; one whose
 last gain is less than `delay` ago waits; otherwise HP = max(HP − rate × elapsed, reference)
 through the stock setter FUN_004820A1(unit, value, 0).
+
+**The rate and delay per proto (2026-11-21, JTMaston's #85).** `<OverhealDecay delay="S">R</OverhealDecay>` comes through
+the shared proto tag hook (`prototags.h`; the attribute through the XML attribute reader 0x598F37 and 0x402733) and is
+kept by proto ID `[proto+8]`: R % of the reference per second, S seconds. The Data subtypes `OverhealDecay` and
+`OverhealDecayDelay` (`AddTechSubtype`) keep a value per player's copy of a proto (its address, guarded by its ID), from
+the tag's (or the default's) through 0x7F892A; a target that names a unit type reaches every proto of the type, as the
+stock subtypes do. At each gain and each tick the unit's proto copy `[unit+5Ch]` gives the rate and delay: its tech value,
+else its tag, else the cfg line's values, else 2 % and 0 s. A rate of 0 does not note the unit, and stops a noted one.
+Both maps are cleared at each database load. The saved marker (stat 65h) still holds only the last gain; the rate is
+read again after a load.
 
 **`holdNear`.** For a unit past its delay, before the decay, each `holdNear` entry runs the world's spatial query
 FUN_004A1C55(world, &[unit+14h], metres, 1, list) (`noTrainNearEnemyTC`'s: the IDs of the units whose distance to the
@@ -3455,6 +3619,26 @@ that did not fire) keep the ROF. The count belongs to the unit action, and a new
 starts a new burst. A filter's result goes through the next one: after `containedUnitsROF` the burst's last shot waits the
 divided ROF, and the interval is not divided.
 
+**No reload between the burst's shots (2026-11-21).** [O] An attack with a `<reloadanim>` keeps two animations on its unit
+action: the attack animation `[ua+7Ch]` (its model index `[ua+80h]`) and the reload animation `[ua+84h]` / `[ua+88h]`,
+looked up from the tactics action's `[+58h]` and `[+5Ch]` (the parser's `Anim` and `ReloadAnim` cases, 0x5FB28D and
+0x5FB238) by FUN_00471CAC when a cycle begins. The cycle paces the attack animation so that both last the ROF (the rate
+`[unit+0B0h]` = (attack length + reload length) / ROF, 0x4A1197..0x4A1234). Once the attack animation has played,
+FUN_004976CB (thiscall(ua), AL 1 = started, 0 without a reload animation) starts the reload animation through 0x486E40,
+paced to end with the wait (`[[unit+58h]+0B8h] + [+0BCh]` − now). Its callers are setState(15h)'s case 0x497807 (on 0 it
+sets state 0Ch, the idle animation `[tactics action+60h]`, case 0x4A4EE6) and the update in state 19h (0x49A3E6, vtable slot
+0x48D519; on 0 it sets state 0Ah). So with a burst the quick shots still showed the reload, squeezed into the interval.
+The hook replaces the function's head (`sub esp,8 / push esi / mov esi,ecx`, 6 B at 0x4976CB). After a shot that does
+not end its burst (`[ua+68h]` mod N ≠ 0, the after-shot read's test) it swaps `[ua+84h]` / `[ua+88h]` for the idle
+animation and its model index (0x471D24 on the unit), runs the stock function on them, and puts the two words back: the
+unit holds its aiming pose instead of reloading, and the states, the waits and the next cycle are the stock ones, so the
+shot times do not move. Without an idle animation, or a model without it, the reload plays. The burst's last shot reloads.
+Tried first and dropped: returning 1 at once (a Falconet then waited for an animation that never played and stopped
+firing), returning 0 (the callers' state changes, not the stock path of an attack with a reload animation), and pacing the
+attack animation alone over the interval (it moved the quick shots later in their cycle: 0.52 s instead of 0.67 s between
+a Skirmisher's second and third shot). [O] A Falconet against Settlers starts a new burst after one or two shots with the
+reload fix and without it alike (a new target, a new unit action): that is the stock retargeting, not the hook.
+
 **The projectiles** (option `projectiles`): `hooks/shots_hooks.asm` replaces the attack step's `call 499422h` (5 B at
 0x48F88D, ECX = EBP = the unit action, the five arguments pushed) with a jmp. While some action has
 `<NumberProjectiles>` above 1 (`g_uhcShotsProjectiles`), `UhcShotsProjectiles(ua)` gives N, and the hook calls the
@@ -3541,19 +3725,27 @@ drifts sideways in perspective, so the sprite's centre is at the bar's own heigh
 aoe3-blender-tools' `tools/make_rings.py`) and the mark is drawn high inside the sprite, which moves it straight up on screen:
 it stays centred on the bar, its lowest point the same height over the bar for every rank, and the bar and the mark scale
 alike with the camera, so the gap holds at every zoom. The images are the team's approved soutache knots, traced from their
-sheet into smooth symmetric curves and rendered with its colours (private), then placed by `make_rings.py --rank-shapes`. **Why it is safe:** a model is a
+sheet into smooth symmetric curves and rendered with its colours and a dark border widened inward, so that it still reads at
+the 64-texel level the game samples at the default camera (private), then placed by `make_rings.py --rank-shapes`. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking
 
-The aura update FUN_009D033E sends each unit it does not hold through the filter 0x9D0238, at one call, 0x9D0633, which the key wraps.
-A modifier does not say which aura made it, so right after the apply, at 0x9D0675, the key writes the aura's mark in `[modifier+84h]`,
-a field stock saves and loads and does not read. `<NoStack>` refuses a target that holds that mark. A refused target stays out of the
-action's list, so every update of every carrier asks again, and a dead carrier's modifier goes with it. `unitResourceAuras` makes no
-modifier: its take asks `AuraClaim`.
+The aura update FUN_009D033E sends each unit it does not hold through the filter 0x9D0238, at one call, 0x9D0633, which the key wraps:
+`<ForbidUnitType>` (or `<ForbidAbstractType>`) refuses a target of that type. A refused target stays out of the action's list, so every
+update asks again.
 
-**Why it is safe.** The mark lives in game state, so every machine and a saved game see the same thing, and the filter runs only for
-targets the action does not hold yet.
+That several carriers of one aura do not multiply is stock: `<ModifyExclusive>` is action flag 21h, passed to the creator 0x4DD22D and
+kept as the modifier's state bit 16h, and the stat sum 0x4B3C7D stops after an exclusive modifier. Each carrier still gives each target
+its modifier, so when one carrier dies the others' modifiers are already there. Measured in game (2026-11-21): five carriers of a ×1.5
+Speed aura with the tag gave villagers 6.0 m/s from 4.0 (×1.5), five without it gave the Explorer 34.17 from 4.5 (×1.5⁵);
+`buildingWorkRateAuras` and `resourceGatherAuras` sum with 0x4B3C7D, so the tag holds there too (×2 against ×32). The key's first
+version had its own `<NoStack>`, with a mark in `[modifier+84h]` written by a hook at 0x9D0675; both are gone, and the tag is logged
+as retired. `unitResourceAuras` makes no modifier: its take asks `AuraClaim`, which gives each target one payer when the aura's action
+has flag 21h, with the key on or off.
+
+**Why it is safe.** The filter runs only for targets the action does not hold yet and reads only data and the target's proto, the
+same on every machine. `AuraClaim` decides by unit IDs and game time.
 
 ### snareValues
 
@@ -3717,7 +3909,9 @@ Value is `{3, BString}` with an empty BString (0x44A635).
   hook clears it and takes the stock path. Otherwise `UhcGatherPanelRow(unit, selection, row)`
   checks the stock gate (except Herdable and the AutoGather action), the optional unit type and the
   record. The record is valid when the unit's ID matches, `[[unit+58h]+24h]` (the current action) is
-  the recorded action, that action's state is 5 and its `[+10h]` is the unit, the resource is below
+  the recorded action (or, for a villager on a tree, an action of vtable 0xB979D8 in its state 5: there
+  the Gather action that ticks is not the current one; seen in game 2026-11-21, where the strict test
+  hid every wood rate), that action's state is 5 and its `[+10h]` is the unit, the resource is below
   `[db+80h]`, the rate is above 0, the record is at most max(2.5 s, 2 × elapsed) old in game time
   (capped at 60 s), the player's `[+338h]` is 0 and the target (if it still exists) is not an
   `AbstractShrine`. On success the hook sets the pending flag, EBX = the row, and jumps to the
@@ -4013,8 +4207,10 @@ the manager's hide (0x448F13), again after each fill of the panel (which shows t
 refresh skips. Without the key nothing hides them, and the panel reads as the mod's. The `hitpoints` item is the
 minimized block's `%d/%d` (0x698B63), or, with `overhealHitpointBars`, that key's max (its 100 % value, 0x698B35) and its
 colour above it (`unitinfo::HitpointsText`; the stock gadget prints the colour markup as text, the key's gadget draws
-it). The `armor` item is the stock armor with its damage type's icon, or with `multiarmor` every armor above 0 by damage
-type (`unitinfo::Armors`, multiarmor's own records), and nothing when another DLL changed the block's armor test
+it). The `armor` item is the stock armor as a percent stuck to the value, to a tenth (`30%`, `12.5%`), with its damage
+type's icon, or with `multiarmor` every armor above 0 by damage type (`unitinfo::Armors`, multiarmor's own records);
+the original resists value (the exe's `%.2f %s`, 0x698C41..) is rewritten the same way at each fill. Both answer
+nothing when another DLL changed the block's armor test
 (0x698BFC..): that DLL's own resists row then shows. `<stockLabel>` (an original label's text written over the game's
 while it shows) stays for layouts that want it. `[icon:path]` in the data file is the icon markup at the panel's size.
 `[string:ID]` in a text, label or tip is that string of the string table (0x58EA52), resolved when the row is shown,
@@ -4053,7 +4249,7 @@ from the same tail, after the fill placed the portraits.
 | Builder factor 0x9C4C0C (`BuilderFactor`), BuildInfo add 0x9C4BE3 / 0x7ADE95 (`BuildPointsAddCall`, `BuildPointsAdd`) | none | none | 0x9C4C0C reads the worker list and the civ records; for type-59h protos it calls 0x4EC7B4, which rebuilds its own static list 0xD6F6F8 (count reset to 0 on each call, read only inside it): scratch of that function, not state another step reads. Same thread as the tick, never nested in it |
 | BuildingWorkRate getter 0x9BFE33 | `liveBuildingWorkRate` (head), `buildingWorkRateAuras` (four calls), `noTrainNearEnemyTC` (the Train call) | — | Not read: it is the train and research rate, not the build rate |
 | Regeneration FUN_004905E1: head 0x4905E1 and the rate read 0x4907FF..0x49081D (`RegenPlayerHead`, `RegenRateRead`) | `overhealDecay` replaces the add's call 0x49087C (`RegenAddHp`), after the read; `danceBonusCivs` hooks the dance getter 0x49048B, another function | none | No shared byte. `overhealDecay` changes what the add does above max HP, not the rate. The dance's regeneration is a separate source, not shown |
-| `buildingWorkRateAuras`' `Factor`, `resourceGatherAuras`' `StatFactor` | `auraStacking` (`AuraClaim`) decides which modifiers a unit gets | — | They walk the unit's modifiers read-only (`modifiers.h`) and sum them with the stock 0x4B3C7D, as the keys' hooks do, so stacking is already in what they read. Their scratch vector is the key's own, used on the same thread, never during a walk |
+| `buildingWorkRateAuras`' `Factor`, `resourceGatherAuras`' `StatFactor` | `auraStacking`'s filter decides which modifiers a unit gets | — | They walk the unit's modifiers read-only (`modifiers.h`) and sum them with the stock 0x4B3C7D, as the keys' hooks do, so stacking is already in what they read. Their scratch vector is the key's own, used on the same thread, never during a walk |
 | `unitResourceAuras`' aura states | `AuraClaim` (asked before each take) | — | The update writes its takes after the claim; the panel only reads the map. The aura update and `AuraClaim` are never called from the panel |
 | Data refs `uhcBuildTime`, `uhcBuildProgress`, `uhcBuildRate`, `uhcRegen`, `uhcAuras` | `AddDataRef` has no other user | — | Appended after the 116 stock names, none of which starts with `uhc`; the five are new in the key's own list |
 | Stack portraits (2026-11-17): the fill's head 0x4C9458..0x4C9481, its Big0 choice 0x4C9587..0x4C95C7, the list append 0x4C979A..0x4C97B4, the layout call 0x4C7DB3..0x4C7DC0 and the layout 0x4C8F49..0x4C91EB (`StackFillReset`, `StackFillCurrent`, `StackFillAppend`, `StackLayoutCall`, `StackLayout`); the any-type gadget lookup 0x404296 (`GadgetLookupAny`, called, not hooked) | none of our sites is in these ranges; the shared tail hook 0x4C8281 (`AddUnitPanelTail`) and `overhealHitpointBars`' 0x4C83DF come after the layout in the same fill and only read | none: the other DLL's runtime patch list (287 ranges) and a second DLL's patches (0x761BF0, 0x661E15, 0x9AC7E8, 0x9B6655, 0x69920E..0x69922C) have no byte there | Read only, at the tail of the same fill that placed the buttons: the list `[panel+2CCh]`, `[panel+36Ch]`, `[panel+324h]` and the gadgets' rectangles and flags. Nothing is moved, shown or hidden but the key's own gadgets. A mismatch turns off only the portrait rule (logged); `<avoid>` keeps working |
@@ -4500,7 +4696,10 @@ That run's second research was paid by the Market (a tie), so it had no Time fac
   skipped). A player's civ is `[[player+20h]]` when `[player+24h]` > 0 (0x4539D3).
 - **A shipment tech:** the player's status entry of the tech has Ships (resource 6) above 0 in its cost list
   `[status+10h]` (0x44EFFF), the list the research pays and the rollover shows. The status of a research is found by
-  0x94ADAA(`[world+7Ch]`, player ID, tech ID).
+  0x94ADAA(`[world+7Ch]`, player ID, tech ID). A repeatable tech is not one (#91, 2026-11-21): the flag
+  `YPInfiniteTech` is bit 29 of the status's bitset (`[status+4]` bytes, `[status+8]` bit count; the bit index the flag
+  parser 0x622B7D gives it, read as stock's 0x44D863 reads a status bit), so the payment, the refund, the refusal, the
+  rollover line and the load fallback all skip it.
 - **Counting** (per player, 16): the shared payment (`AddResearchPayer`) with a claim that never claims: its `started`
   runs for every research once its action is set up, with `[action+64h]` the player and `[action+68h]` the tech; a
   shipment tech of a limited player adds 1. `AddResearchRefundObserver` (new in `researchpay.*`) redirects the two calls
@@ -4519,11 +4718,15 @@ That run's second research was paid by the Market (a tie), so it had no Time fac
 - **The display:** the shared tech rollover (the `call` of the builder 0x4C737C at 0x4622C5): a green or red line
   `Shipment techs: n/N` appended with 0x443960, and, at the limit, `n/N` in the button's empty overlay text (the panel's
   256-char buffer `[esp+2C0h]`).
-- **Saved games:** a saved marker per limited player (`savedmarkers.h`, stat 69h, word 0 `'ST' << 16 | player << 8 | 1`,
+- **Saved games:** a saved marker per limited player (`savedmarkers.h`, stat 69h, word 0 `'ST' << 16 | player << 8 | 2`,
   word 1 the count) on one of his living units; the world tick writes it when the count changes and moves it when that
   unit dies or loses it. A new game (another world, the time going back or the step count jumping, as in
   `shipmentCounts`) walks the unit table once and reads the markers; a limited player with none gets the sum of the
-  research count bytes `[status+21h]` (bumped by the activation 0x94CF27 at 0x94D02F) over his shipment techs.
+  research count bytes `[status+21h]` (bumped by the activation 0x94CF27 at 0x94D02F) over his shipment techs. A marker
+  of kind 1 comes from a build before #91, whose count held the repeatable techs: on load it loses the sum of the count
+  bytes of the player's repeatable techs that cost Ships, is rewritten in place as kind 2, and the change is logged. A
+  repeatable research paid but still queued at that save was not activated yet, so it stays in the count (a slot too
+  many, until the game ends).
 
 **Why it is safe.**
 - The head hook keeps ECX for the stock test and uses only EAX and EDX, which a `thiscall`'s caller does not expect kept;
@@ -4659,16 +4862,15 @@ which the subtype's own base (the cloned proto) cannot hold. A data load clears 
 
 0x4DD1DE, the `TargetSpeedBoost` path, tests that the target can move, and 0x4DD201 pushes the arguments of the
 modifier's creator 0x4DD22D. The hook replaces the first three pushes, and leaves through 0x48FA49, the path's exit, for a
-marked target or a marked attacker. The poison of `damageOverTime` calls the creator itself, so it asks the same two
-functions, with the unit whose hit attached the poison as the attacker (none once it is gone). The site is in the
+marked target. The poison of `damageOverTime` calls the creator itself, so it asks the same function. The site is in the
 ranges `damageOverTime` and `snareOnlyHitUnit` verify, so this key comes after them in `kFeatures`.
 
-**The attacker at 0x4DD201.** FUN_0048FA07 (`thiscall(unitAction, target)`) has one caller, 0x48F9F5 in FUN_004B7766,
-which keeps the attacker's unit action in EBP for its whole body (`[ebp+10h]` is used as `this` with no null test at
-0x48F0EF and 0x48EAE1, so it is the attacking unit; `[ebp+4]` its tactics action). FUN_0048FA07 and its cold chunk
-0x4DD1DE..0x4DD228 write ESI, EAX, ECX and EDX but never EBP, so at 0x4DD201 `[ebp+10h]` is still the attacker. The
-hook reads it after the target test, and a null there (never seen; a guard only) means no CannotSnare test. Observed
-in the listings (REA `ev_683538e5…`, `ev_dfeff76d…`, `ev_71e9bf8d…`, 2026-11-05).
+**No type on the attacker (since 2026-11-21).** From 2026-11-05 to 2026-11-20 the key also read a second type,
+`CannotSnare`, on the attacking unit (`[ebp+10h]` at 0x4DD201, `docs/engine-symbols.md`, "Snare attacker"), and the
+poison read it on the unit that attached it. It was retired: an attack that should not snare loses its
+`<TargetSpeedBoost>` in the attacker's tactics, which needs no code. The key no longer registers the name, so a proto
+that still lists `<UnitType>CannotSnare</UnitType>` loads as with any unknown type: the line is dropped (or, with
+`customAbstractTypes` naming it, it is a plain type that nothing reads).
 
 ### stealthTargeting
 
@@ -4790,6 +4992,64 @@ milliseconds). Danger (2026-11-20, a 260 m map with four enemy outposts and seve
 default; about 90 µs a scan.
 <!-- private:end -->
 
+### autoGatherFrom
+
+**The tag.** `<AutogatherFrom delay="s">Name</AutogatherFrom>` in an action is read by the shared action tag hook
+(`actiontags.*`, 0x5FA11E), keyed by the proto ID `[proto+4]` and the action's name index `[action+4]`; the `delay`
+attribute through the XML attribute reader 0x598F37 (the tag's node is passed to the handlers since this key). The name
+is looked up lazily in the unittype table `[db+190h]` (0x58E685, 0x40295B): a proto or an abstract type, tested later
+with the is-a test 0x44D7FA. The tables are emptied at each data load (`OnDatabaseLoad`).
+
+**The scan.** `AddWorldTick`, every 500 ms of game time `[world+108h]`. For each player from 1, its unit list
+`[player+F8h]` (count `+FCh`), sorted by ID; a unit whose proto (the player's copy) holds a tagged action, alive,
+built (0x44DDB4), not inside another unit (`[unit+6Ch]` = -1) and with an inventory `[[unit+B4h]+94h]` (the Gather
+start sends a gatherer without one to state 9, 0x50DE80..0x50DE90). Per proto pointer the key caches the sources and the
+action's range: the longest maximum `+8` of its 16-byte range entries `[action+18h]` (count `[action+1Ch]`), which hold
+`<maxrange>` and the `<typedmaxrange>` lines. A busy unit (0x44F1A7 false) only gets its leash anchor `[mgr+7Ch]` set to
+its position while its current action `[mgr+24h]` is a Gather (vtable 0xB97880). An idle one starts a timer; after the
+shortest `delay` of its sources the nearest unit within range + 12 m (0x4A1C55) that is alive, of a named type, owned
+by Gaia, the unit's player or a player that is not its enemy (0x484D2D), and within the source's range measured to its
+edge (the target's vtable `+B8h`, a distance from its obstruction to a point) is the target (the lower ID on a tie).
+
+**The order.** FUN_004EFCB2, `thiscall(mgr, targetId, 0, -1, 0)`, `ret 10h`: the action manager's work order, the one
+the stock idle-herdable search FUN_004C31EE gives a pen or a magnet within 10 m (the call at 0x4C31E4 passes the radius
+10.0 and -1), and the one the command execute's unit-order path calls (0x944D3F, 0x944E0D). It sets `[mgr+94h]` = -1,
+picks the action for the target and walks the unit there; the trigger `trUnitDoWorkOnUnit` reaches the same code
+through a network command (0x833681). The held amount of the unit's main resource (0x4DBEC1, 0x4E5979) is kept at the
+order: if the unit is idle again with no more than that, the target is refused until the amount changes.
+
+**What stock already does.** A Gather action's range (`<maxrange>`, `<typedmaxrange>`) is respected for every target
+kind tried: mine, Mill, Plantation, hunt (Hunting), a nomad. The Gather action follows a target that moves. A building
+ordered to gather gets a Gather action that never starts (state FFh with the target in range): the start code at
+0x50DE54.. that decides (`setState` 5 at 0x6A8ED5, 9 at 0x586D64) is in Ghidra chunks without a function, not read to
+the end.
+
+**Why it is safe.** Everything read is simulation state; units are walked by player and ID, the containers are keyed by
+ID, and the order is the simulation's own function, called in the world update on every machine; nothing goes to the
+network or reads the local player. The per-unit table (idle-since time, last target, held amount) is a cache: a loaded
+game rebuilds it and an idle unit waits `delay` again. The real clock of the `log` timing line only goes to the log.
+
+### herdWalkAwayFix
+
+**The walk-away.** In the gather tick's cold path, a herdable gathering into its own inventory that is full and whose
+target is the LivestockPen proto (`[db+6030h]`), the paddy (`[db+607Ch]`) or of the abstract type 5Bh
+(`AbstractTypeHerdableMagnet`, 0x44CAC4) is sent away: 0x6A8C8B..0x6A8C9C `push 0 / push 6.0f / push targetId / call
+4E3A37h`, the flee move (`thiscall(mgr, targetId, distance, flag)`, `ret 0Ch`, a point away from the unit with the
+synced RNG), then the tick returns; any other full herdable ends its action (state 0Ah, 0x6A8CAB).
+
+**The fault.** The flee leaves the action manager's anchor `[mgr+7Ch]` as it was, and the leash 0x489B15 walks an idle
+unit back to its anchor. A herdable drawn by the idle search 0x4C31EE keeps the anchor it had before (its spawn point),
+so with a magnet that moves, the fattened herdable walked back to where the herd had been (observed: two sheep 33 m
+back, anchors at their spawn points; ordered camels keep an anchor near their gather).
+
+**The fix.** The call at 0x6A8C9C is redirected (site `HerdWalkAwayCall`, 0x6A8C94..0x6A8CA0 verified) to a
+`__fastcall` wrapper with the same frame (ECX = the manager, three stack arguments popped). It makes the stock call,
+then writes the anchor: the herdable's position plus 6 m along the line from the target through it (its height kept).
+The return value is passed on (the caller ignores it).
+
+**Why it is safe.** One call site, no other caller changed; the anchor is simulation state that the game saves and
+the leash already uses; the point depends only on the two units' positions. The flee keeps its own random point.
+
 ### transformChecks
 
 **The stock transform.** `uiTransformSelectedUnit("Proto")` (UI command 0x7E7193) looks the proto up and sends a
@@ -4816,12 +5076,32 @@ runs the execute six times in a row, and each new unit is in the list at once, s
 state `[esp+24h]`, its click and shift-click commands `[esp+1C0h]` / `[esp+3C0h]` and its rollover BString
 `[esp+18h]`, filled by the command layout at 0x695D60..0x695D82) runs the key's filter. For a click command
 `uiTransformSelectedUnit("Name")` it asks, for the local selection (0x453B28; only when its player `[sel+0Ch]` is the
-local player): the cost once (0x480B1E, then 0x8D6BAE or 0x8D6C1B with shared resources, `[world+6912h]`), the limit
-(as above, counting the units already accepted in this selection), and PLACE for each selected unit with the same
-arguments as the command. No unit passes: state 1 (grey), both commands emptied, and a red line appended to the
-rollover (0x443960): the string of PLACE's reason, or 25528, 41543, 36198 (with the target's display name
-`[proto+140h]`, read in game). Some pass: a yellow "N / M:" line with the first reason. The answer is kept 250 ms of
-real time per target name and selection.
+local player), for each selected unit in the command's own order: PLACE with the same arguments as the command, the
+limit (as above, counting the units already accepted in this selection), then the cost of one more unit (0x480B1E,
+then 0x8D6BAE or 0x8D6C1B with shared resources, `[world+6912h]`). No unit passes: state 1 (grey), both commands
+emptied, and a red line appended to the rollover (0x443960): the string of PLACE's reason, or 25528 or 36198 (with the
+target's display name `[proto+140h]`, read in game). The exception is a refusal for the cost alone (every refused unit
+passed PLACE and the limit): the button keeps its state and its commands and gets only the red 41543 ("Not enough
+resources"), so the click reaches the execute, whose payment fails at 0x7D6610 and calls the stock "can't pay" message
+0x8D271A (string 42A8h = 17064, the missing resources, 2000 ms, and sound entry 4 when the message call returns true),
+the routine the train enqueue (0x9EB132) and the research (0x9E6824) call. A group of three youths gave one message.
+A button whose click is `commandResearch(ID, unit)` (a command with an `<associatedtech>`, the fireship) runs the
+command as a one-shot research of that unit, and a failed transform still took the button off that boat (seen in
+game), so in that case the click and shift-click are rewritten to `uiTransformSelectedUnit("Name")`, the command the
+record runs. Some pass: a yellow "N / M:" line with the
+first reason. The answer is kept 250 ms of real time per target name and selection.
+
+**What a transformed maturing shows (data, not the key).** The kraal maturings' anim files (`maturing2.xml` to
+`maturing4.xml`) pick their submodel with `<logic type="BuildingCompletion">`: the dancing youth (`lvl1`..`lvl6`,
+the youth model with the dance, the chant sound set and particles) from 1 % to 99 % built, and `finished` (only the
+soil decal) at 100 %. A placed maturing dances while the youth builds it; the transform creates the target already
+built (0x498ACC, then 0x6A1F82 when the old unit was built), so it shows `finished` from its first frame: no dancer.
+Their final unit comes from a single-use `Spawn` action in the tactics, which fires when the maturing unit is
+complete, so after a transform it comes out at once, and the maturing unit only lingers until its `<Lifespan>` ends
+(seen in game: the Askari next to the maturing ground within a second of the click, the ground gone 20 s later). The
+fix is in the data: give `finished` the `lvl6` dancer, without its Death anim (the maturing dies at the end of its
+lifespan, and a falling youth would show then); the youth then dances beside the new unit for that lifespan, and a
+placed maturing does the same after it is built.
 
 **Why it is safe.** The hook keeps every register but EAX, which neither continuation reads before loading it again
 (AL only fed the test it replaces); the frame (`[esp+14h]`, `[esp+30h]`) is the execute's own, checked by the site
@@ -5531,6 +5811,117 @@ most 64 characters; anything else is ignored and logged.
 - It does not change the simulation: it acts before any game exists, and a player without the key
   joins the same game through the normal menus.
 - It runs once per start; nothing is kept for a saved game or the next game.
+
+### editorSearch
+
+**Why it exists.** The scenario editor's Objects palette, the Allowed list of its Forbidden Units/Techs dialog and its
+trigger editor's lists (218 effect types, a unit parameter's 3,634 protos, a tech parameter's 10,542 techs in a big
+mod) list everything, sorted by name, with no way to find an entry but scrolling.
+
+**The lists** (`docs/engine-symbols.md`, "Scenario editor lists"):
+- The Objects palette is the `palette` gadget `EditorProtoPalette` (`uieditorpalettes.xml`; class vtable 0xB92768,
+  type mask 18h). The editor gives it the fill callback FUN_007F501E (`[palette+17Ch]`, 0x7F5C51), which adds one
+  entry per proto of the current player through `0xAD0056(palette, entry*, categories*)` at 0x7F537D, ESI = the proto.
+  The palette's refresh slot (vtable +20h, FUN_00AD01FD, what `refreshonreal` runs) empties the entries (0xAD0189),
+  calls the refill slot (+0F0h, which calls `[+17Ch]`), lays its button list out and shows the buttons of the current
+  category `[+168h]` through FUN_00ACF80E. The category dropdown only calls FUN_00ACF80E, over the same entries.
+- The Forbidden Units/Techs dialog (class vtable 0xB8D690, `uiforbiddenunitstechs.xml`) keeps its Allowed list's
+  handle at `[dlg+144h]` and its display mode at `[dlg+160h]` (0 units, 1 techs). FUN_0099912F (units) and FUN_00999493
+  (techs), `thiscall(dialog, list)`, empty the list and add each name through the list's `0xAC9228(list, BString*)`
+  (0x9991D0, ESI = the proto; 0x999547, ESI = the tech's index); after them the dialog's refresh calls the list's layout
+  slot (+100h) and selects the first item (0xAC8A43(0)).
+- A `textField` (gadfield.cpp, vtable 0xB91D60, type mask 0Dh) keeps its typed text in an `editBox` it makes for it:
+  the handle at `[field+160h]` (0x62BDD5), type mask 23h, the text a BString at `[edit+170h]` (its set-text slot
+  0x5C2C20). Typing changes that text and nothing else; no event reaches the dialog.
+- The trigger editor's condition/effect panel is filled by FUN_00825757 (thiscall(editor), what its Triggers /
+  Conditions / Effects buttons run after setting the mode `[editor+1C0h]`, 0x8264F0; 1 conditions, 2 effects). It
+  builds the type names and, in step, each entry's data (the type's index), and sets both on the `Type:` textField
+  `[editor+194h]` (0x5BECAA names, 0xAC19D9 data, at 0x8258A0); picking a type uses the entry's data. It then fills
+  the list of the trigger's conditions or effects and builds the selected one's parameters. Each parameter is a
+  textField (gadtrigparam.cpp, 0x82888A) given its list by 0x5BECAA from an array the trigger system keeps: units
+  `[[game+97Ch]+84h]` (0x828A27), unit types `+90h` (0x828A4E), techs `+6Ch` (0x8289D5). A pick gives the parameter
+  the entry's text (event 10: 0x829E29, 0x829F2F), not an index.
+
+**What it does.**
+- The three add calls of the palette and the dialog are redirected (`hooks/editorsearch_hooks.asm`). Each asks `UhcEditorPaletteKeep` or
+  `UhcEditorForbidKeep` whether the entry matches the current text; a match goes on to the stock add with a `jmp`
+  (the return address is the fill's own), anything else returns with the add's own stack cleanup (`ret 8` / `ret 4`).
+  The fills free their own strings either way. The palette or dialog that called last is remembered by its handle.
+- A Present observer (`d3d9hooks.*`) reads each field once a frame: the remembered owner through 0x40423C (null once
+  it is destroyed, since a handle carries a generation), its field by name among the owner's descendants (0x433812,
+  once per owner) and the field's text. When the words of the text change and the typing has paused for 250 ms, it
+  refills: the palette through its
+  refresh slot (checked: vtable 0xB92768 and fill callback 0x7F501E), the dialog through the fill of its display mode
+  plus the layout and selection its refresh does.
+- The trigger editor: the type list's two sets at 0x8258A0 are replaced (a `jmp` there; `pushad`, a C++ function that
+  sets the names and data, filtered together, `popad`, back at 0x8258B8), and the three parameter list sets are
+  redirected to a stub that hands 0x5BECAA a filtered copy of the array. A list where nothing matches keeps all its
+  entries, since one field serves every list of the panel; a parameter's current value (`[[param+13Ch]+8]`, entry 0,
+  as 0x992D36 reads it) stays in its list. A new text runs FUN_00825757 again, which rebuilds the type list and the
+  open condition's or effect's parameters through the same hooks.
+- The match: the text is split on spaces and lowered (`towlower`); every word must appear in the text the list shows,
+  or, for a proto, in its internal name (`[proto+10h]`) or its display name (the string ID `[proto+144h]`, read through
+  0x58EA52 only when a word is not found otherwise).
+
+**Why it is safe.**
+- UI only: the fills run in the editor, the entries are what the stock fill would add minus some, and nothing is
+  saved or sent. The DLL's state is three handles and the texts, cleared when the owner's handle goes stale.
+- The trigger lists keep the game's own mapping: a type's entry data is filtered with its name, and a parameter's
+  value is the text picked, so a value picked from a filtered list is the one the full list gives (saved and loaded
+  again: the same). The type list hook keeps every register (`pushad`/`popad`); the continuation 0x8258B8 reads no
+  flag, and no branch lands inside the 24 replaced bytes.
+- After each redirected call the fill reads no register the add sets (0x7F5382 reloads ECX; 0x9991D5 and 0x99954C
+  free the BString), and the hooks keep ECX for the jump.
+- The refills are the game's own: the refresh slot the palette runs when shown, and the fill and layout calls the
+  dialog's refresh makes, on the main thread (Present runs there), between frames.
+- A layout without a field leaves the list stock (found missing once per owner, logged with `log`). Every address is
+  verified (`UiFindChild`, `UiFieldEditBox`, `UiEditBoxText`, the `EditorPalette*`, `EditorForbid*` and `EditorList*`
+  sites, `EditorProtoDisplayName`).
+- Cost: nothing outside the editor (two null checks a frame); in the editor, two handle lookups and a string compare
+  a frame. A refill is the stock fill (see the table).
+
+**Tests** (2026-11-21, a mod's editor, 3,211 palette entries for player 1, 3,634 protos and 10,542 techs in the
+dialog; text typed with posted `WM_CHAR`, `testbed.py chars`, erased with posted Backspace, `testbed.py key back`):
+
+| Test | Result |
+|---|---|
+| Palette, "musk" | pass: 9 shown, 3,202 hidden; the buttons are the 9 |
+| Palette, "INF musk" (two words, display-name prefix) | pass: 4 shown |
+| Palette, "prowler" (display name only) | pass: 2 shown |
+| Palette, text erased | pass: 3,211 shown, the stock list |
+| Palette, category Nature with "musk" | pass: Musk Deer and Musk Ox |
+| Palette, an entry of a filtered list placed | pass: the unit is on the map |
+| Palette, editor left and opened again | pass: empty field, stock list |
+| Dialog, units, "musket" | pass: 7 shown |
+| Dialog, Add from the filtered list | pass: the unit moves to Forbidden |
+| Dialog, Display Techs with the text kept | pass: the matching techs |
+| Dialog, text erased | pass: the full list, without the forbidden unit |
+| Key on, layouts without the fields | pass: stock lists, `has no textField` logged |
+| Key off, layouts with the fields | pass: the fields take text, the lists stay stock |
+| Dialog, a filtered tech added, OK, dialog opened again | pass: the tech stays forbidden; the dialog object is kept, so the field still holds the text and the list is filtered |
+| Typed letters with posted key presses | pass: they go to the field (doubled with an extra `WM_CHAR`, as a real key makes its own); no editor command ran |
+| A word typed at once (`chars musk`) | pass: one refill, after the 250 ms pause |
+| Cost of a refill | palette 180–290 ms (the stock refresh: 188–227 ms with an empty text, the stock list), dialog units 10–26 ms, techs 15–146 ms |
+| Cost of the per-frame check in the editor | 1.1–2.2 µs a frame (5000 frames with no refill) |
+| Triggers, effect, "create" | pass: the Type list keeps 10 of 218 (Unit Create, Unit Create at Location…) |
+| Triggers, Unit Create picked from the filtered Type list | pass: its parameters show |
+| Triggers, "musket" with Unit Create | pass: no type matches, the Type list stays whole; ProtoName keeps 6 of 3,634 |
+| Triggers, Musketeer picked from the filtered ProtoName list | pass: the value is Musketeer |
+| Triggers, condition, "tech", then "guard musket" | pass: 3 of 61 condition types; the Tech list keeps 2 of 10,542 (GuardMusketeers, GuardMusketMarauders) |
+| Triggers, "create unittype", then "cavalry" | pass: 1 type (Unit Create at Unittype); Target Protounit keeps 25 of 3,884 unit types |
+| Triggers, a set value under a text it does not match (Musketeer, "cavalry") | pass: the value stays in the list and in the field (14 of 3,634) |
+| Triggers, values picked from filtered lists, scenario saved, editor left, scenario loaded | pass: Unit Create / CavalryArcher and Tech Status Equals / GuardMusketeers |
+| Triggers, key on, stock `uitriggereditor.xml` | pass: stock lists, `has no textField trEdit-CondEffPanel-search` logged |
+| Triggers, key off, the layout with the field | pass: the field takes text, every list stays full (filmed) |
+| Cost of a trigger refill | 0.1–13 ms (the type list and the parameters), 66 ms once with the tech list |
+
+The palette's refill is slow because the stock refresh is: it rebuilds every entry of the current player, and FUN_00ACF80E
+the buttons. That is why a refill waits for a pause in the typing. A/B with `perfprobe.py` (60 s, the editor with the
+palette open and the field empty, seven other games running on the machine): 279 fps key off, 181 fps key on, main
+thread 29 % against 19 %; the difference follows the other games' load (render time 3.8 against 5.3 ms), not this key,
+whose check measured 1–2 µs a frame.
+
+Not tested: a real keyboard (posted messages only), another resolution than 1920 × 1080, IME input.
 
 ### impactBoneFix
 

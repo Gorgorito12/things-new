@@ -228,6 +228,7 @@ gatherFix                     gather on a fixed interval (the data's rate)
 rofFix, stunMovingTargetFix   orders keep the attack timer; stuns survive a moving target
 noDamageOnUnbuiltFoundations  unbuilt foundations take no damage
 truckAttackResourceFix [log] a TruckAttack no longer empties the buildings it hits
+deadReplacementAtZeroInventory [log] a hunt or herdable leaves its DeadReplacement when its body is used up
 fallenHeroTacticsFix          knocked-out or stunned units keep their tactic
 impactBoneFix [all]           impact effects hung on scaled bones keep their size
 customImpactTypes <names>     impact types after the 15 stock ones (.dmg, ImpactType)
@@ -280,16 +281,19 @@ techPrereqRecheck [N] [log]   <TypeCount> tech prerequisites react when units ar
                               created or die, not only at the next house or age-up
 orPrereqsQty [log]            <Flag qty="N">OrPrereqs</Flag>: a tech needs N of its
                               prerequisites instead of one
-shipmentCounts [log]          cards sent per player and age, kept in saved games; Data
+ageFiveShipments              cards of <age>4</age> (Imperial Age) in the deck, in the Age IV row,
+                              sendable in the Imperial Age
+shipmentCounts [log]          cards shipped per player and card age, kept in saved games; Data
                               subtype FreeHomeCityUnitByShipmentCount, XS
                               xsGetShipmentCount and xsGetShipmentCountRange
 kothTimer [players|teams] N=s ...   King of the Hill time by the number of players or teams
 maintainWaitForPop [UnitType] [log]  marked buildings keep a finished auto-produced unit
                               (Maintain action) until there is population room
 transformUpdatesLOS [log]     units transformed by a tech or revolution get the new LOS
-broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6)
+broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6);
+                              <NumberProjectiles> P: P shots per side over the muzzles
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
-displayedRange [log]          a selected unit with <DisplayRange> shows a ring of <DisplayedRange> m
+displayedRange [log]          a selected unit shows a ring per ranged attack while Alt is held
 steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit
                               instead of jumping with its animations
 inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]   while Alt is held,
@@ -321,11 +325,11 @@ overhealHitpointBars [UnitType ...] [segment[=RRGGBB]] [bar=Texture] [stat[=Labe
                               of marked units use InitialHitpoints as 100 % (overheal up to
                               MaxHitpoints); segment: the HP above it in orange, Overwatch style
                               and on the portrait bar; stat: an Overheal row
-overhealSources [UnitType [cap=P] [rate=P] ...] [log]   only marked healers
-                              (AbstractOverhealer) heal overheal units above
-                              InitialHitpoints; per type a cap and a rate above it
-overhealDecay R[%] [D] [UnitType ...] [holdNear Type M] [log]   overheal above
-                              InitialHitpoints decays at R HP/s, D s after the last
+overhealSources [UnitType [cap=P] ...] [log]   only heal actions with <CanOverheal>1
+                              heal overheal units above InitialHitpoints, up to
+                              <OverhealCap> (Data subtypes CanOverheal, OverhealCap)
+overhealDecay [R[%] [D]] [UnitType ...] [holdNear Type M] [log]   overheal above
+                              InitialHitpoints decays at <OverhealDecay> % per s (default 2), D s after the last
                               heal (Overwatch style); not while an own unit of Type is
                               within M metres
 showGatherRate [UnitType] [log]   stat panel shows a gathering unit's rate (Food 0.84/s)
@@ -342,18 +346,19 @@ autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather act
 containedUnitsROF [log]       ScaleByContainedUnits target="ROF": an attack fires faster with
                               the units inside (ROF / count, at most DamageFactorCap)
 numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart before the
-                              reload; projectiles: <NumberProjectiles> per shot
+                              reload, aiming between them; projectiles: <NumberProjectiles> per shot
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
-auraStacking [log]            <NoStack> and <ForbidUnitType> on any aura
+auraStacking [log]            <ForbidUnitType> on any aura
 dataLint [log] [file]         while the data loads, says what it asks for and the game drops
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
 randomCost [log]              <RandomCost> rolls a unit's price in a range, a new one per purchase
 unitTypeTechs [log]           Data tech effects AddUnitType and RemoveUnitType, for one player's copy of a proto
-veterancyBonus [log] [file]   <VeterancyBonus> rows give a proto bonuses by its kills, with a rank mark;
-                              data\\uhc\\veterancy.xml: rows by unit type, rank names and colours
+veterancyBonus [notext] [log] [file]   <VeterancyBonus> rows give a proto bonuses by its kills, with a
+                              rank mark; tech="..." rows; data\\uhc\\veterancy.xml: rows by unit type and
+                              <Civilization> blocks, rank names and colours; notext: no floating text at a new rank
 killSpawn [log]               civs.xml <killSpawn>: enemies a civ kills become animals, by weight
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners
@@ -370,6 +375,7 @@ researchOnTheMove [log]       units of type ResearchOnTheMove take orders and wa
 nextResearchFree [log]        a Data tech effect makes a building's next research free
 researchGrants [log]          <ResearchGrantInterval> buildings gather points that make researches cheaper or free
 shipTechLimit [log]           <ShipTechLimit>N</ShipTechLimit> in a civ caps its techs that cost Ships per game
+                              (repeatable techs excepted)
 homeCityTechsInUnits [log]    a home city card listed in a proto's <Tech> rows is researched there like a tech
 killBountyTechs [log]         a Data tech effect may change a proto's Bounty
 resourceBounty [log]          <Bounty resourcetype> pays a resource at the kill
@@ -379,9 +385,14 @@ snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by te
 stealthTargeting [log]        large units in stealth hidden from enemies; no attack on an unseen stealthed unit
 autoScout [Tactic [Return]] [noAvoid] [noBack] [log]  units in that tactic explore the map on their own,
                               away from enemy towers, backing off when hit; an order switches it off
+autoGatherFrom [log]          a unit idle for a few seconds gathers from what its gather action's
+                              <AutogatherFrom> names, if one is within the action's range
+herdWalkAwayFix [log]         a fattened herdable that walks away from its pen or nomad stays there
 transformChecks [log]         transform buttons grey out with the reason; a transform respects BuildLimit
 lanAutoStart [host [rules=N] | join <address>]   from the main menu straight to hosting or joining
                               a LAN game; +uhcLanHost / uhcLanJoin="<address>" on the command line
+editorSearch [log]            search fields in the editor's Objects palette, Forbidden Units/Techs
+                              dialog and trigger editor (the fields come in the layouts)
 directionalAttack [log]       <DirectionalAttack>: a shot flies past its target and hits what it flies over
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed

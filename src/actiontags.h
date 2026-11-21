@@ -20,6 +20,7 @@ struct ActionTag {
   const char* proto;    // the proto whose action set holds the action: [proto+4] ID, [proto+10h] name
   const char* action;   // the action: [action+4] name index, -1 until the action's <Name> is read
   ActionSource source;
+  const char* node;     // the child's XML node, for its attributes (0x598F37)
 };
 
 // Called for each such child while the data loads, in file order, by the handlers in the order the

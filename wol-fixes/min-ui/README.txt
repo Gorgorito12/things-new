@@ -11,7 +11,7 @@ and more, in a symmetric layout that keeps the top band for the unit portraits o
 - right of the player's name, the mirror block: line of sight (an eye) and the live speed (a winged
   boot; with techs, snares and auras), then the train time (an hourglass) and the garrison (a door);
 - under the unit's name: what the unit is doing or what acts on it ("Done in 0:12", "Builds 1.00/s",
-  "Regen 1/s", "Overheal +50", "Poison 3 x 8 s", "Aura pays 0.10 (wood)/s");
+  "Regen 1/s", "Overheal +50", "Poison 3 x 8s", "Aura pays 0.10 (wood)/s");
 - hit points as the word ("Hitpoints: 100/100", the word from the string table, so it follows the
   player's language) and resists with a shield, in the original places;
 - every attack row gets its rate of fire right after its damage, with a stopwatch, then, when the attack
@@ -19,8 +19,8 @@ and more, in a symmetric layout that keeps the top band for the unit portraits o
   them), that number with a revolver's cylinder:
   "Ranged ATK:  11 (ranged) 3.50 (stopwatch) 4 (cylinder) 1 (area) 14 (range), 1.5x (...), 1.25x (...)";
   the multipliers without the zeros at their end (with the DLL's multiplierDecimals they have two decimals),
-  and the tooltip of each attack row: the game's own lines plus "Attacks every 3.50 s" and
-  "4 projectiles before the reload" (version 5);
+  and the tooltip of each attack row: the game's own lines plus "Rate of fire: 3.50s" and
+  "4 projectiles" (version 7);
 - the attack rows the minimized UI had no room for (the 4th attack on, Gatherers, Group Health), and the
   attacks the big UI itself has no room for (it stops at 9 rows);
 - only the attacks the unit can use: an ability's attack (Crack Shot, Sharpshooter, Swashbuckler, ...)
@@ -28,7 +28,7 @@ and more, in a symmetric layout that keeps the top band for the unit portraits o
   the player's). The big UI lists every attack of the tactics file, usable or not; the minimized one with
   the key does not;
 - the armor of buildings; with the DLL's multiarmor, every armor of the unit
-  ("0.30 (hand)  0.20 (ranged)  0.10 (siege)");
+  ("30% (hand)  20% (ranged)  10% (siege)"; the armor is a percent stuck to the value since version 7);
 - more you can switch on in minuirows.xml (commented rows): minimum range, area, build points and
   limit, bounty, lifespan left, what a mine or animal holds, the gather rate, the random price range,
   the cards sent per age, base speed, armor, veterancy rank;
@@ -117,10 +117,27 @@ minuirows.xml
     every item and option. No new DLL is needed to change any of it.
 
 art\ui\ingame\*.ddt
-    The six drawn icons (stopwatch, hourglass, shield, eye, winged boot, cylinder). The unit type icons of the
-    multipliers stay WoL's own. They go in
+    The six drawn icons (stopwatch, hourglass, shield, eye, winged boot, cylinder). They go in
     art\ui\ingame\ of the mod (version 4: stat_icon_hitpoints.ddt and stat_icon_pop.ddt are no longer used;
     delete them if version 3 put them there).
+
+art\ui\ingame\stat_icon_heavy_infantry.ddt, stat_icon_infantry.ddt, art\WoL\ui\ingame\staticons\
+stat_icon_standing_unit.ddt and stat_icon_ranged.ddt (version 7)
+    Three unit type icons of the multipliers, redrawn at WoL's request, at the paths the panels draw (they replace
+    WoL's files; no data changes): Line (AbstractHeavyInfantry), an infantryman in a shako with a blue coat;
+    Standing (AbstractInfantry), the same soldier with a red coat (in stat_icon_infantry.ddt, which the panels draw
+    for AbstractInfantry, and in the staticons file WoL's attackTypeIcons line names); Maneuver
+    (AbstractRangedCavalry), a winged arrow. 32x32 uncompressed BGRA, one level, soft edges and shading as WoL's
+    own icons, a thin dark outline; drawn by aoe3-blender-tools' make_type_icon.py (no pixel from another game).
+    The other unit type icons stay WoL's own.
+
+review\stat_icon_ranged-winged-bullet.ddt
+    The other Maneuver icon drawn in version 7, a winged bullet, not chosen (the arrow reads better at the
+    panel's size). To use it, copy it over art\WoL\ui\ingame\staticons\stat_icon_ranged.ddt.
+    icons-v7-review.png: the old and new icons side by side, x8 and at real size.
+
+apply_fix.py
+    Installs the pack in a WoL folder and keeps the files it replaces (see Install).
 
 note-for-drmaxy.txt
     What was decided and why (for information).
@@ -131,9 +148,14 @@ optional\uiunitstatpanel3.xml
 
 Install
 -------
+    python apply_fix.py <WoL folder>              steps 1 to 4 below; the files it replaces go to
+                                                  <WoL folder>\min-ui-backup\ first
+    python apply_fix.py <WoL folder> --restore    puts them back and deletes the files it added
+    python apply_fix.py <WoL folder> --check      says what is applied
+By hand:
 1. Copy proposed-uiunitselectionmin.xml to data\uiunitselectionmin.xml (keep a copy of yours).
 2. Copy minuirows.xml to data\uhc\minuirows.xml.
-3. Copy art\ui\ingame\*.ddt to art\ui\ingame\.
+3. Copy the art folder's files to the same paths under art\ (keep a copy of your three unit type icons).
 4. Add the line   minUIStats   to Startup\wol.cfg.
 5. Keep optionminimizedui on (WoL's profile has it on).
 

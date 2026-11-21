@@ -23,13 +23,13 @@
        attribute); 1, 1, 0 is the yellow of the panel's own labels ("Hitpoints:", "Resists:").
 
      Items:
-       hitpoints, speed (live: techs, snares, auras), baseSpeed, los, armor (with the damage type icon),
-       armorValue, garrison, trainPoints, buildPoints,
+       hitpoints, speed (live: techs, snares, auras), baseSpeed, los, armor (a percent, "30%", with the damage
+       type icon), armorValue, garrison, trainPoints, buildPoints,
        rof, range, minRange, area, projectiles (per attack, each with its damage type icon; projectiles: the
        projectiles fired before the reload, as the tactics write them, shown above 1: see projectilesIcon below),
        cost, population,
        bounty (the XP a kill gives), buildLimit, inventory (what a mine, bush or animal holds),
-       lifespan (seconds left), and what other keys know, shown only when that key is on:
+       lifespan (seconds left, "40s"), and what other keys know, shown only when that key is on:
        overheal (overhealHitpointBars), veterancy (veterancyBonus), poison (damageOverTime),
        randomCost (randomCost: the price range), shipments (shipmentCounts: the owner's cards per
        age), gatherRate (showGatherRate), auras (our aura keys acting on the unit: buildingWorkRateAuras,
@@ -56,8 +56,9 @@
                 NumberProjectiles only with its "projectiles" option (neither the game nor another DLL fires them)
        rofTip, projectilesTip  the attack rows' tooltip lines for the rate of fire and the projectiles, after the
                 game's own damage line; %s is the number, [string:ID] works, an empty text means no line.
-                Defaults: "Attacks every %s s" and "%s projectiles" (version 6: not "before the reload", since a unit
-                such as the Chu Ko Nu does not fire them all at once); each line ends with its icon, no parentheses
+                Defaults: "Rate of fire: %ss" (version 7; "3.50s", the unit stuck to the number) and "%s projectiles"
+                (version 6: not "before the reload", since a unit such as the Chu Ko Nu does not fire them all at
+                once); each line ends with its icon, no parentheses
        tipParentheses="keep"  keeps the parentheses of the game's own tooltip lines; by default they go from around
                 an icon and from around the name right after one: "11 (icon) Ranged Damage", "1.5X Bonus Damage
                 against (icon) Maneuver Unit" (strings 42226, 42229, 42230 and 42223 write them; the string tables are
@@ -109,7 +110,7 @@
   <!-- Every attack row: the three original ones, then uhcRow3, uhcRow4, uhcRow5, each with its ROF (a
        stopwatch) after the damage, then the projectiles before the reload when above 1 (a revolver's cylinder);
        attacks of abilities the unit cannot use are left out. -->
-  <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed" stockRows="take" rofIcon="ui\ingame\stat_icon_rof" projectilesIcon="ui\ingame\stat_icon_projectiles" rofTip="Attacks every %s s" projectilesTip="%s projectiles"/>
+  <bigPanelRows gadget="unitselectionpanel-uhcRow%d" first="3" skip="auto,speed" stockRows="take" rofIcon="ui\ingame\stat_icon_rof" projectilesIcon="ui\ingame\stat_icon_projectiles" rofTip="Rate of fire: %ss" projectilesTip="%s projectiles"/>
   <!-- uhcRow5 is on the line of the resource held and the AutoGather rate (a villager carrying food,
        a factory, a bank, a trickle): while either shows, uhcRow5 stays empty. -->
   <avoid gadget="unitselectionpanel-unitResourceValue"/>

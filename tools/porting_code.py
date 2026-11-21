@@ -48,6 +48,7 @@ PAGES = {
         "Tech rollover": ["src/techrollover.h", "src/techrollover.cpp", "src/hooks/techrollover_hooks.asm"],
         "ROF reads": ["src/rofreads.h", "src/rofreads.cpp", "src/hooks/rofreads_hooks.asm"],
         "Floating bars": ["src/floatingbars.h", "src/floatingbars.cpp", "src/hooks/floatingbars_hooks.asm"],
+        "UI gadgets": ["src/uigadgets.h", "src/uigadgets.cpp"],
     }),
     "game-files": ("Game files", {
         "bufferedFileReads": ["src/features/fileio.cpp"],
@@ -115,6 +116,9 @@ PAGES = {
         "resourceGatherAuras": ["src/features/gatherauras.cpp", "src/hooks/gatherauras_hooks.asm"],
         "resourceDebt": ["src/features/resourcedebt.cpp", "src/hooks/resourcedebt_hooks.asm"],
         "truckAttackResourceFix": ["src/features/truckattack.cpp", "src/hooks/truckattack_hooks.asm"],
+        "autoGatherFrom": ["src/features/autogatherfrom.cpp"],
+        "herdWalkAwayFix": ["src/features/herdwalkaway.cpp"],
+        "deadReplacementAtZeroInventory": ["src/features/deadreplacement.cpp", "src/hooks/deadrepl_hooks.asm"],
     }),
     "buildings": ("Buildings and training", {
         "liveBuildingWorkRate": ["src/features/workrate.cpp", "src/hooks/workrate_hooks.asm"],
@@ -143,6 +147,7 @@ PAGES = {
         "techPrereqRecheck": ["src/features/techprereq.cpp", "src/hooks/techprereq_hooks.asm"],
         "orPrereqsQty": ["src/features/orprereqs.cpp", "src/hooks/orprereqs_hooks.asm"],
         "shipmentCounts": ["src/features/shipmentcounts.cpp", "src/hooks/shipmentcount_hooks.asm"],
+        "ageFiveShipments": ["src/features/agefiveshipments.cpp", "src/hooks/agefive_hooks.asm"],
         "kothTimer": ["src/features/kothtimer.cpp", "src/hooks/kothtimer_hooks.asm"],
         "transformUpdatesLOS": ["src/features/transform.cpp", "src/hooks/transform_hooks.asm"],
         "transformSpan": ["src/features/transformspan.cpp"],
@@ -162,6 +167,7 @@ PAGES = {
         "autoScout": ["src/features/autoscout.cpp", "src/hooks/autoscout_hooks.asm"],
         "transformChecks": ["src/features/transformchecks.cpp", "src/hooks/transformchecks_hooks.asm",
                             "src/panelbuttons.cpp", "src/panelbuttons.h", "src/hooks/panelbuttons_hooks.asm"],
+        "editorSearch": ["src/features/editorsearch.cpp", "src/hooks/editorsearch_hooks.asm"],
     }),
 }
 

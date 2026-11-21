@@ -262,7 +262,10 @@ there:
   `…\RM3\Age3RM<name>.dmp.txt`.
 - **What a scenario's triggers can and cannot do** (checked 2026-10-29): Change Unit Type, Kill,
   Damage Unit, Unit Create, Set Tech Status, Grant Resources and Move From Area (`go<N>=`) work;
-  the unit-order effects `Unit Work` and `Unit Build Building` do nothing. Give such orders with
+  `Unit Build Building` does nothing. `Unit Work` and `Move To Point` do work with single units
+  (2026-11-21: `"at5=Unit Work;SrcObject=g0.0;DstObject=g6.0"` sent villagers to gather a mine, a Mill,
+  a Plantation and a deer, and herdables to a pen; a whole group `g1` as the source works too, one
+  effect per unit). Otherwise give orders with
   the real mouse: `exec 'uiLookAtAndSelectUnit(<id>)' 'uiLookAtUnit(<target id>)'`, then
   `rclick 1277 757 right` (the looked-at unit is at the centre of the view); to build, select the
   builder, `exec 'tis("<Proto>")'`, then `rclick <x> <y>`. The first real click after the window
@@ -290,6 +293,10 @@ there:
   `"at5=Set Tech Status;PlayerID=1;TechID=tech:YPDodge;Status=2"`, `Kill`, `Convert`,
   `Damage Unit`, `Unit Create`. `g<i>` stands for every unit of the i-th `p<N>=` group (counted
   from 0), `g<i>.<k>` for one of them, `tech:<Name>` for a tech's index, `pt:<x>,<z>` for a point.
+- **The editor's own UI** (2026-11-21, `editorSearch`): `exec 'startRandomGame(true)'` opens the editor,
+  `exec 'editMode("PlaceUnit")'` the Objects palette (spelt as `uieditormenu.xml` has it; one `placeunit` sent 15 s
+  after opening did nothing, not checked further), `exec 'gadgetReal("ForbiddenUnitsTechsDlg")'` the Forbidden Units/Techs dialog; `click` reaches every
+  editor gadget, and `chars` types in the field that has the focus.
 - **The scenario route**, found during the performance work (performance.md, §8):
   `startRandomGame(true)` opens the editor, `startRandomGame2("<map>", 2, seed, "", false, 2, 1,
   0, false)` generates the map in it (two teams, so the players are enemies),
@@ -398,7 +405,8 @@ there:
   | Crop the video | `record --crop` |
   | Click a button, open a tooltip | `click <x> <y>`; `hover <x> <y>` then `shot`; `record --hover` |
   | Unit orders and tech | triggers (`at<s>=...`) and `exec` |
-  | Hotkeys, typing, a box drag, the wheel | **Not in background:** `rkey`, `type`, `drag` and `wheel` are real input, which this copy ignores. Take `background` out of the cfg and run that test alone |
+  | Typing in a text field | `click` on the field, then `chars <text>` (posted `WM_CHAR`) and `key back` to erase (2026-11-21, the editor's `textField`s; a posted `key <letter>` types the letter too, since the game translates the key itself) |
+  | Hotkeys, a box drag, the wheel | **Not in background:** `rkey`, `type`, `drag` and `wheel` are real input, which this copy ignores. Take `background` out of the cfg and run that test alone |
 - **Edge scrolling moves the camera:** the game scrolls while the cursor sits at a screen edge
   (`ScrollSpeed`, `ScrollRateBase` and `ScrollMaxSpeed` at 0 do not stop it). `record` sets
   `cameraMovementLock`, which does, and `uiLookAtUnit` still works under it.

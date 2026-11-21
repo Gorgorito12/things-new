@@ -8,7 +8,7 @@
 
 namespace {
 
-constexpr std::size_t kMaxHandlers = 12;
+constexpr std::size_t kMaxHandlers = 16;
 // Return address of the parser's call by the <ProtoAction> handler; the hook passes only that one
 // and 0x5FA623, the tactics <action> creator's (docs/engine-symbols.md, "Damage and poison").
 constexpr std::uint32_t kFromProtoAction = 0x005FA213;
@@ -31,7 +31,8 @@ void __stdcall UhcActionTag(const wchar_t* const* tag, const char* node, const c
   }
   const uhc::ActionTag child{*tag, *reinterpret_cast<const wchar_t* const*>(node + 0x14), proto, action,
                              returnAddress == kFromProtoAction ? uhc::ActionSource::kProtoAction
-                                                               : uhc::ActionSource::kTactics};
+                                                               : uhc::ActionSource::kTactics,
+                             node};
   for (std::size_t i = 0; i < g_handlerCount; ++i) {
     g_handlers[i](child);
   }

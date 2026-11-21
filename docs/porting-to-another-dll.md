@@ -16,7 +16,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
+| Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `herdWalkAwayFix` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon`, `autoScout` | [interface](porting-code/interface.md) |
@@ -572,7 +572,10 @@ Code: [combat](porting-code/combat.md#detonationdeath). It needs `AddProtoTagHan
 - **The blast on screen:** no site is written. After the area damage the key calls the terrain impact `0x4CB11C`
   (`thiscall(projectile, point)`, `ret 4`) with a zeroed record of 70h bytes holding the action at `+10h` and the point
   at `+64h`; for `<DetonationImpactEffect>` it reads the effect with `0x58F017` (`thiscall([[0C66234h]+0BB8h], &text)`,
-  the node's text field `[node+14h]`) at the data load and passes a stand-in action whose `+70h` is that ID.
+  the node's text field `[node+14h]`) at the data load and passes a stand-in action whose `+70h` is that ID. A unit with
+  an obstruction radius (`[proto+88h]` or `[proto+8Ch]`) of 1.5 m or more gets one call per point of a grid over its
+  footprint (`round(2r / 3)` per side, 2 to 3, within ±0.75 r along `[unit+38h]` and `[unit+20h]`). The area damage's
+  ninth argument is 1, so its victims play no hit or pain sound; the damage does not read it.
 - **The delete calls:** `0x7CD0CF` (HP setter `0x4820A1`) and `0x7CD0DC` (kill queue `0x4B4DC2`) are `call`s to the
   asm hooks of `detonation_hooks.asm`: each pushes ECX (the unit), then EDI (the delete command) and ECX for the
   helper, pops ECX and `jmp`s to the stock callee. Bit 3 of the command's flag bits (`[[cmd+58h]] & 8`, size
@@ -748,6 +751,21 @@ Code: [combat](porting-code/combat.md#containedunitsrof).
 
 Check it in the game: put `<scalebycontainedunits target="ROF"></scalebycontainedunits>` on a Blockhouse's `RangedAttack`:
 empty, it does not fire; with 2 settlers inside it fires every 1.5 s instead of 3 s.
+
+### numberOfShots
+
+Code: [combat](porting-code/combat.md#numberofshots). It needs the ROF filters of `rofreads.*` (the five reads above) and
+`AddActionTagHandler`.
+
+- **Projectiles** (option `projectiles`): a 5-byte `jmp` over `call 499422h` at `0x48F88D`, continue at `0x48F892`.
+- **No reload between the burst's shots (2026-11-21):** a 6-byte `jmp` at `0x4976CB` (`83 EC 08 56 8B F1`: `sub esp,8 /
+  push esi / mov esi,ecx`, the head of the reload animation's start, `thiscall(unitAction)`, AL the result), continue at
+  `0x4976D1`. For a shot that does not end its burst, swap `[ua+84h]` / `[ua+88h]` for the idle animation
+  `[[ua+4]+60h]` and its index `0x471D24(unit [ua+10h], anim)` (`thiscall`, `ret 4`, −1 when the model lacks it), call the
+  function (its head re-executed, then `0x4976D1`), put the two words back and return its AL. Change no state: both callers
+  (0x497813, 0x49A3E6) go on as stock.
+- **Test:** Skirmishers with 3 shots: between the quick shots they hold the aiming pose; the third shot reloads; the shot
+  times are those of the key without this hook.
 
 ### bufferedFileReads
 
@@ -1008,22 +1026,16 @@ Code: [techs](porting-code/techs.md#kothtimer).
 Code: [techs](porting-code/techs.md#shipmentcounts). It needs the Player target of the shared tech subtypes
 (`AddTechPlayerSubtype`, in the [helpers](porting-code/helpers.md)) and `AddSyscall`.
 
-- **The send:** a 7-byte `jmp` at the head of the queue add FUN_00857204 (`56 57 8B F9 8B 77 04`: `push esi / push edi /
-  mov edi,ecx / mov esi,[edi+4]`), `thiscall(queue = [hc+288h], entry*)`, `ret 4`; the send FUN_0085A724 is its only
-  caller. Note the entry's card index `[entry+0]`, tech ID `[entry+4]` and the player's age `[[hc+8]+50h]` (hc = queue −
-  288h; cAge1 = 0), then run the five replaced bytes and `jmp 85720Bh`.
-- **The removal:** a 5-byte `jmp` at the head of FUN_00857257 (`80 7C 24 08 00`, `cmp byte [esp+8],0`), `thiscall(queue,
-  index, bool shift)`, `ret 8`, called when a card ships (0x4BF86F) or is cancelled (0x85ADD9). Forget the noted card of
-  entry `index`, then run the `cmp` and `jmp 85725Ch` (the `jz` there reads its flags). Match a noted card by card index,
-  tech ID and its rank among the entries with the same pair.
 - **The count:** a `call` at `0x8584FF` (`E8 23 4A 0F 00`, `call 94CF27h`) in the card shipment FUN_00858299. Entry:
   ECX = EDI = the card tech's status entry, ESI = the home city, `[esp+4]` the player, five arguments, `ret 14h`;
-  `[esp+3Ch]` is FUN_00858299's argument, the queue entry being shipped. Note the player ID and that entry's send age,
-  run the activation with the stack as it is (keep the return address aside), then add one to that player's count of
-  that age. The card's effects run inside the activation: `includeself` adds the card being shipped.
-- **Saved games:** keep the counts and the send ages of the queued cards on a living unit as saved markers (stat
-  modifiers no code reads, whose save copies four dwords; `savedmarkers.h`), rewritten from a world tick after a change
-  and moved when that unit dies; read them back when a new or loaded world appears.
+  `[esp+3Ch]` is FUN_00858299's argument, the queue entry being shipped. Note the player ID and the age of that entry's
+  card: `card = 0x85FFCE(hc + 228h, [entry+0])` (`thiscall(list, index)`, `ret 4`, 0 for a bad index), its `<age>` is
+  `[card+18h]` (cAge1 = 0, −1 for a card with no `<age>`: count it in Age I). Run the activation with the stack as it is
+  (keep the return address aside), then add one to that player's count of that age. The card's effects run inside the
+  activation: `includeself` adds the card being shipped.
+- **Saved games:** keep the counts on a living unit as saved markers (stat modifiers no code reads, whose save copies
+  four dwords; `savedmarkers.h`), rewritten from a world tick after a change and moved when that unit dies; read them
+  back when a new or loaded world appears.
 - **The subtype:** a 6-byte `jmp` over `ja 8D878Fh` at `0x8D843E` (`0F 87 4B 03 00 00`) in the player Data apply
   FUN_008D842B. Entry: EBP = subtype, EAX = subtype − 0Ah, the flags of `cmp eax,5Ah`, ESI = the player, the field
   `[esp+2Ch]` (the effect's `+10h`), the amount `[esp+34h]`. A stock ID continues at `0x8D8444`. For the new ID, write
@@ -1035,8 +1047,22 @@ Code: [techs](porting-code/techs.md#shipmentcounts). It needs the Player target 
 - **The syscalls:** `int xsGetShipmentCount(int playerID, int age)` and `int xsGetShipmentCountRange(int playerID, int
   firstAge, int lastAge)` in the XS group.
 - **Test:** a card with the effect and `includeself`: it brings one unit; a tech after two cards of Age I with
-  `age='1'`: two units; a card sent in Age II that arrives in Age III counts in Age II; save, load in a new process: the
-  same counts.
+  `age='1'`: two units; a card of Age II (`<age>1</age>`) sent in Age III counts in Age II; save, load in a new process:
+  the same counts.
+
+### ageFiveShipments
+
+Code: [techs](porting-code/techs.md#agefiveshipments). No shared hook.
+
+- **The deck:** at `0x63022E` (`83 F8 04`, `cmp eax,4` in FUN_006301DE, the build of the game's card list from the deck,
+  one pass per age) write 5 over the immediate: the cards of `<age>4</age>` join the game's deck, after those of age 3.
+- **The rows:** three 5-byte `jmp`s over `mov eax,[esi+18h]` and the `cmp` after it, each to code that loads the card's
+  age, turns 4 into 3, re-runs the `cmp` and jumps back: `0x9A5A22` (`8B 46 18 3B C7`, the in-game shipment panel,
+  back to `0x9A5A27`), `0x9A0489` (`8B 46 18 3B F8`, the home city's deck builder, back to `0x9A048E`) and `0x9A77BE`
+  (`8B 46 18 3B D8`, the `homeCityDeck` dialog, back to `0x9A77C3`). ESI is the card in all three. Leave
+  `[card+18h]` alone: the panel greys the card and the send refuses it until the player's age reaches 4.
+- **Test:** a card given `<age>4</age>` in its home city file: fourth in the Age IV row of both panels, greyed until the
+  Imperial Age, refused before, sent in it.
 
 ### orPrereqsQty
 
@@ -1125,6 +1151,11 @@ Code: [combat](porting-code/combat.md#broadsidemuzzlelimit).
 - **Log hook** (only with `log`) at `0x5034E2`: EAX = MuzzleL count, ESI = final limit, EDI = the
   action, `[edi+80h]` = MuzzleR slots. After logging, re-execute `cmp eax,esi; mov [esp+1Ch],eax`
   with ESP as on entry, and jump to `0x5034E8` (`jg`, which reads that compare).
+- **`<NumberProjectiles>` (2026-11-21):** the dword at `0xB962EC` (BroadsideAttack's vtable slot 1, `9A 33 50 00`, the only
+  reference to the set-up) points at a `thiscall(action, arg)` wrapper: call `0x50339A`, then, for an action the limit hook
+  matched whose side has fewer slots than the tag's P, grow both `{data, count, capacity}` arrays at `+68h` and `+74h` with
+  `0x401113(array, count, 0)` (`thiscall`, `ret 8`), write the muzzle indices in turn and zero times, and set `[+80h]` to P.
+  The tag through `AddActionTagHandler`, keyed by (proto ID, action name index).
 
 ### abilitySlots
 
@@ -1271,6 +1302,10 @@ Code: [combat](porting-code/combat.md#cantbeslowed).
 - **Site:** a 6-byte `jmp` at `0x4DD201` (`6A 01 6A FF 6A FF`), continue at `0x4DD207`, exit `0x48FA49`. Write it after
   anything that verifies the snare's bytes.
 - **Test:** a marked and an unmarked unit of the same speed under a `TargetSpeedBoost` attack.
+- **Since 2026-11-21** the hook reads only the target: the attacker's type `CannotSnare` was retired (an attack that
+  should not snare loses its `<TargetSpeedBoost>` in the tactics). A port that copied the older code drops the second
+  test and the `RequestAbstractUnitType("CannotSnare", …)`.
+
 ### stealthTargeting
 
 Code: [combat](porting-code/combat.md#stealthtargeting).
@@ -1295,6 +1330,50 @@ Code: [interface](porting-code/interface.md#autoscout). It needs `AddWorldTick`
 - **Test:** a unit whose first tactic is `AutoScout`: it leaves at once, and `testbed.py explored` rises (two ravens on
   Great Lakes: 63.7 % at 3 minutes against 9.4 % without); a Stop order puts it back in its other tactic.
 
+### autoGatherFrom
+
+Code: [gathering](porting-code/gathering.md#autogatherfrom). It needs `AddWorldTick`
+([world tick](porting-code/helpers.md#world-tick)) and `AddActionTagHandler` with the tag's XML node (the field
+`node` of `ActionTag`, for the `delay` attribute).
+
+- **Sites:** none written. Called functions, verify only: `0x4EFCB2` (the action manager's work order,
+  `B8 01 00 00 00 84 05 5C F7 D6 00 56 8B F1`), `0x44F1A7` (idle), `0x4A1C55` (units near a point), `0x44D7FA` (is-a),
+  `0x44DDB4` (built), `0x484D2D` (enemy), `0x4E5979` (held amount), `0x598F37` / `0x402733` (XML attribute).
+- **What it writes:** besides the orders, the leash anchor `[[unit+58h]+7Ch..84h]` of a tagged unit while it gathers.
+- **Test:** a villager with `<AutogatherFrom>AbstractMine</AutogatherFrom>` and `<maxrange>10</maxrange>` in its Gather,
+  left idle 6 m from a mine: it mines 3 s later; one without the tag stays idle.
+
+### herdWalkAwayFix
+
+Code: [gathering](porting-code/gathering.md#herdwalkawayfix).
+
+- **Sites:** the `call` at `0x6A8C9C` (in `6A 00 68 00 00 C0 40 52 E8 96 AD E3 FF` from `0x6A8C94`, the gather tick's
+  walk-away of a full herdable) is redirected to a wrapper; the flee `0x4E3A37` is verified only. Check that your DLL
+  does not hook either.
+- **What it writes:** the herdable's leash anchor `[mgr+7Ch..84h]`, after the stock flee.
+- **Test:** a nomad with `AbstractTypeHerdableMagnet` (`wol-fixes/me-herdables`) and sheep drawn to it: fattened
+  sheep walk away and stay there; without the key, the ones the game drew in walk back to where they stood first.
+### editorSearch
+
+Code: [interface](porting-code/interface.md#editorsearch). It needs the [UI gadgets](porting-code/helpers.md#ui-gadgets)
+helper and a callback after each D3D9 `Present` on the main thread (`AddD3D9Observer` here; a DLL with its own present
+hook calls `BeforePresent` from it).
+
+- **Sites:** three calls redirected, 5 bytes each (`E8 rel32`): `0x7F537D` (to `0xAD0056`, the Objects palette's add),
+  `0x9991D0` and `0x999547` (to `0xAC9228`, the Forbidden Units/Techs allowed list's add, units and techs). The hooks
+  jump to the stock callee when the entry matches. The trigger editor: three more calls redirected, `0x8289D5`,
+  `0x828A27`, `0x828A4E` (to `0x5BECAA`, the tech, unit and unit type parameter lists), and a 24-byte `jmp` at
+  `0x8258A0` (`8D 4C 24 20 51 8B CB E8 …`, the type list's names and data), continue at `0x8258B8`. Check them against
+  your DLL first: another key that filters those lists must share the call.
+- **Called, verify only:** the palette's refresh slot (vtable `0xB92768` +20h = `0xAD01FD`), the fills `0x99912F` and
+  `0x999493`, the list's select `0xAC8A43`, the trigger panel's fill `0x825757`, `0xAC19D9`, `0x58EA52` and `0x4010CA`
+  (a proto's display name), `0x40423C`, `0x433812`.
+- **Layouts:** a `textField` `EditorProtoPaletteSearch` inside `EditorProtoPalette` (`uieditorpalettes.xml`),
+  `ForbiddenUnitsTechs_Search` in `uiforbiddenunitstechs.xml` and `trEdit-CondEffPanel-search` in
+  `trEdit-CondEffPanel` (`uitriggereditor.xml`) (`wol-fixes/editor`).
+- **Test:** in the editor, Place Object, click the field and type (`testbed.py chars musk`): the palette keeps the
+  matching entries and the log says `Objects palette "musk": 9 shown, 3202 hidden`.
+
 ### directionalAttack
 
 Code: [combat](porting-code/combat.md#directionalattack). It needs `AddActionTagHandler`, `AddWorldTick` and
@@ -1314,6 +1393,9 @@ Code: [combat](porting-code/combat.md#veterancybonus). It needs `AddProtoTagHand
 - **Sites:** the kill observers' 6-byte `jmp` at `0x4D4F37` (`8B 0D 34 62 C6 00`), continue at `0x4D4F3D`; and the seven calls of `0x9C754C`:
   `0x7FBC79`, `0x7FBEF2`, `0x8C2D08`, `0x8EB78A`, `0x8F05F5`, `0x9BB6D5`, `0x9C7C16`. Check them against your DLL first:
   another key that wraps the transform must share them.
+- **Rows with a tech and civ blocks (2026-11-21):** no new site: tech by name `0x600BE1`, tech active `0x94AF27`, civ by
+  name `0x52D6FF`, civ by ID `0x405C2E`, a world tick (`AddWorldTick`) and a saved marker of stat 6Ah (`savedmarkers.h`):
+  check that your DLL uses no 6Ah modifier.
 - **Test:** the rows on a proto: the hits grow with the kills, and the log shows the ranks.
 
 ### killSpawn
@@ -1383,23 +1465,22 @@ Code: [combat](porting-code/combat.md#snarevalues). It needs `AddActionTagHandle
 
 ### auraStacking
 
-Code: [combat](porting-code/combat.md#aurastacking). It needs `AddActionTagHandler`, `OnDatabaseLoad` and the modifier walk
-`modifiers.h`, in the [helpers](porting-code/helpers.md).
+Code: [combat](porting-code/combat.md#aurastacking). It needs `AddActionTagHandler` and `OnDatabaseLoad`, in the
+[helpers](porting-code/helpers.md).
 
 - **Filter:** the `call` at `0x9D0633` (`E8 00 FC FF FF`, of the filter `0x9D0238`, `bool thiscall(action, target)`,
   `ret 4`), its only call in the aura update FUN_009D033E, goes to `UhcAuraFilterHook`. It calls the stock filter, then
-  refuses a target of a `<ForbidUnitType>` (or `<ForbidAbstractType>`) type and, for a `<NoStack>` aura, a target that
-  holds a modifier with this aura's mark. Verify only the filter's head (6 B).
-- **Mark:** a 5-byte `jmp` at `0x9D0675` (`8B D8 83 FB FF`: `mov ebx,eax / cmp ebx,-1`), right after the creator
-  `0x4DD22D`, with EAX = the new modifier's ID, EBX = the target, ESI = the action. For a `<NoStack>` aura it writes the
-  mark `((proto ID + 1) << 14) | action name index` in `[modifier+84h]`, a field stock saves and loads and nothing reads,
-  then re-executes both instructions and continues at `0x9D067A`.
+  refuses a target of a `<ForbidUnitType>` (or `<ForbidAbstractType>`) type. Verify only the filter's head (6 B).
+- **Not stacking is stock:** `<ModifyExclusive>1</ModifyExclusive>` sets action flag 21h; the aura passes it to the
+  creator `0x4DD22D`, the modifier keeps it as state bit 16h, and the stat sum `0x4B3C7D` stops after it, so five carriers
+  of a ×N aura give ×N. A `<NoStack>` tag (the key's first version) is only logged as retired.
 - **`AuraClaim`** (`aurastacking.h`): `unitResourceAuras` makes no modifier and its take does not reach the filter, so it
-  asks `AuraClaim(world, proto, name, owner, target, now)`, which holds one owner per target and aura while that owner
-  lives and comes back within 7 s. Without auraStacking, make it return true.
+  asks `AuraClaim(world, tactics action, proto, owner, target, now)`. For an aura whose action has flag 21h it holds one
+  owner per target and aura while that owner lives and comes back within 7 s; for any other aura it returns true. It
+  works with the key off too.
 - **Not covered:** the second applier FUN_009D7328, for actions with no range, has no filter.
-- **Test:** two carriers of the same `<NoStack>` aura around one unit: it holds one modifier, and the other carrier takes
-  it when the holder dies or the unit leaves its range.
+- **Test:** an aura with `<ForbidUnitType>Musketeer</ForbidUnitType>` around a Musketeer and a Pikeman: the Pikeman holds
+  its modifier, the Musketeer none. Two `UnitResource` auras with `<ModifyExclusive>` over one tree: one pays.
 
 ### techRenameEffect
 
@@ -1798,9 +1879,11 @@ It comes after `researchGrants`.
   `0x4C696D`; `bool thiscall(status, unit)`, `ret 4`. A refused tech returns 0 there.
 - **Tech rollover:** the `call` at `0x4622C5` of the builder `0x4C737C` (shared with `researchGrants`' price).
 - **Read only:** `0x44EFFF` (a cost entry: Ships is 6), `0x94ADAA` (a player's status of a tech), the alive slot of the
-  unit vtable.
+  unit vtable, and the status's bit 29 (`YPInfiniteTech`: the bitset `[status+4]`, its bit count `[status+8]`): a
+  repeatable tech is outside the rule everywhere (count, refusal, rollover).
 - **Test:** `<ShipTechLimit>3</ShipTechLimit>` on a civ, as in the [modding guide](modding-guide.md#shiptechlimit): the
-  fourth shipment tech is refused, a cancel gives the slot back, and a save keeps the count.
+  fourth shipment tech is refused, a cancel gives the slot back, and a save keeps the count; a repeatable crate tech
+  that costs a Ship neither counts nor is refused at the limit.
 
 ### homeCityTechsInUnits
 
@@ -1977,19 +2060,26 @@ Code: [healing](porting-code/healing.md#overhealhitpointbars).
 Code: [healing](porting-code/healing.md#overhealsources).
 
 - **Needs** overhealHitpointBars' types and helpers (above); apply it after that key.
-- **Globals:** `g_uhcOverhealSourceTypes[8]`, `g_uhcOverhealSourceTypeCount`, `g_uhcOverhealAllow`.
+- **Globals:** `g_uhcOverhealSourceTypes[8]`, `g_uhcOverhealSourceTypeCount` (the cfg's opt-in types), `g_uhcOverhealAllow`,
+  `g_uhcOverhealAllowCap`.
+- **Which action overheals:** `<CanOverheal>` and `<OverhealCap>` through `AddActionTagHandler`, kept by (`[proto+4]`,
+  `[action+4]`); the Data subtypes `CanOverheal` and `OverhealCap` through `AddTechActionSubtype`, kept by the address
+  of the player's copy of the action (guarded by the same key) and computed with `0x7F892A`. Clear both at each
+  database load (`OnDatabaseLoad`).
 - **Add-HP hook** at `0x4823A3` (8 B: `push ecx; push esi; mov esi,ecx; cmp dword ptr [esi+8],8`),
   ECX = unit, `[esp+4]` = amount (float), `[esp+8]` = flag: pushad, `UhcOverhealAddHp(unit,
   &amount)` (may lower the amount in place), popad, redo the 8 bytes, → `0x4823AB` (`jbe` on the
   `cmp`). Lowering rule: amount > 0, the unit's proto marked, `g_uhcOverhealAllow` = 0 and
   HP + amount > reference → amount = max(reference − HP, 0).
-- **Tick max hook** at `0x9E0BBB` (5 B, `call 480408h`), ECX = EDI = target, ESI = the action
-  (healer `[esi+10h]`), FPU stack empty: ST0 = the reference for a marked target and a non-source
-  healer, else the stock max; → `0x9E0BC0`.
-- **Tick add hook** at `0x9E0CE9` (5 B, `call 4823A3h`): `g_uhcOverhealAllow` = the healer is a
-  source; the stolen call; `g_uhcOverhealAllow` = 0; → `0x9E0CEE`.
+- **Tick max hook** at `0x9E0BBB` (5 B, `call 480408h`), ECX = EDI = target, ESI = the unit's action
+  (healer `[esi+10h]`, the player's copy of its tactics action `[esi+4]`), FPU stack empty: ST0 = the reference for
+  a marked target and an action that does not overheal, min(reference × cap, max) for one that does; else the stock
+  max; → `0x9E0BC0`.
+- **Tick add hook** at `0x9E0CE9` (5 B, `call 4823A3h`): `g_uhcOverhealAllow` = the action overheals (and
+  `g_uhcOverhealAllowCap` its cap); the stolen call; `g_uhcOverhealAllow` = 0; → `0x9E0CEE`.
 - **Search hook** at `0x9CD984` (5 B, `call 45F295h`), ECX = ESI = candidate, healer `[ebp+4]`:
-  ST0 = HP / reference (stock rules) for a marked candidate and a non-source healer, else the stock
+  ST0 = HP / reference (stock rules) for a marked candidate when none of the healer's actions (`[proto+44h]`,
+  `[set+1Ch]`, `[set+20h]`) overheals, HP / the highest limit of those that do, else the stock
   ratio; → `0x9CD989`. Coexists with smartHealTargets and healNonIdle (other sites of the loop).
 - **The add-HP hook is shared** with overhealDecay: `InstallOverhealAddHook()` writes it once.
 
@@ -2012,6 +2102,10 @@ Code: [healing](porting-code/healing.md#overhealdecay).
   alive (`vtbl+A4h`), marked; at or below the reference → forget; inside the delay → skip; else
   `FUN_004820A1(unit, max(HP − rate × elapsed / 1000, reference), 0)` (rate in HP/s, or the
   reference × % / 100).
+- **Rate and delay per proto:** `<OverhealDecay delay="S">R</OverhealDecay>` through `AddProtoTagHandler` (the
+  attribute with `0x598F37` / `0x402733`), kept by `[proto+8]`; the Data subtypes `OverhealDecay` and
+  `OverhealDecayDelay` through `AddTechSubtype`, kept by the address of the player's copy of the proto. A unit takes its
+  proto copy's tech value, else its tag, else the cfg's, else 2 % and 0 s; a rate of 0 is not noted.
 - **Never** below the reference, never the real clock, never pointer order.
 
 ### Unit panel row (the minimized interface)
@@ -2126,22 +2220,47 @@ Code: [gathering](porting-code/gathering.md#truckattackresourcefix).
 - **Test:** an enemy `MonsterTruckA` placed beside a Mill: with the key the Mill keeps its 999 food and villagers gather
   there; without it, the Mill is empty and villagers stand idle beside it.
 
+### deadReplacementAtZeroInventory
+
+Code: [gathering](porting-code/gathering.md#deadreplacementatzeroinventory).
+
+- **Sites:** a 7-byte `jmp` at `0x4B4F2F` (`51 56 8B F1 8B 46 68`, the head of the death replacement; continuation
+  `0x4B4F36`) and a 5-byte `jmp` at `0x495D6B` (`A1 34 62 C6 00`, `mov eax,[0C66234h]`, the head of the removal notice;
+  continuation `0x495D70`). Verify the calls `0x4F1680` (`E8 AA 38 FC FF`), `0x495DEE` and `0x6A3FF0` too: the first hook
+  recognises its caller by the return address `0x4F1685`. Neither DLL of WoL patches these bytes in the map of
+  [wol-uhc-map.md](wol-uhc-map.md). <!-- private -->
+- **Logic:** the head returns at once when called from `0x4F1685` for a unit whose proto has a `<DeadReplacement>`
+  (`[proto+F8h]` ≥ 0), proto flag `0Eh` (`DieAtZeroResources`) and not `0Dh` (cleared by `DoNotDieAtZeroHitpoints`). The
+  notice, for such a unit with state bit 12 (a body) and without state bit 29h (already replaced), calls `0x4B4F2F`.
+- **Test:** a `Cow` with `<DeadReplacement>Turkey</DeadReplacement>`, killed by a trigger: no turkey while the body lies
+  there; settlers gather it, and the turkey appears where the body was when it is used up.
+
 ### displayedRange
 
 Code: [gathering](porting-code/gathering.md#displayedrange). It needs `AddProtoTagHandler`, `AddWorldTick`,
 `OnDatabaseLoad` and the models on a unit, `unitmodels.*`, in the [helpers](porting-code/helpers.md).
 
-- **No site of its own.** The tags `<DisplayRange>` and `<DisplayedRange>` come through the shared proto tag hook
-  (`0x51DB0F`); a world tick does the rest. Verify only the selection `0x453B28` (`CurrentSelectionGroup`), the unit by ID
-  `0x44CC6D` and the model functions (`VerifyUnitModels`).
-- **The tick,** four times a second of game time, for the game's world only: it compares the local selection of
-  `0x453B28` (IDs `[group+10h]`, count `[group+14h]`) with the units that hold a ring. A selected unit whose proto has
-  both tags gets the model `effects\uhc_rings\range_<N>.xml`, N the radius nearest to `<DisplayedRange>` among 4, 6, 8,
-  10, 12, 14, 16, 20, 24 and 30, on the bone `bonethatdoesntexist` (at its feet); a unit that leaves the selection loses
-  it. A model that is not in the game is skipped.
-- **Changes:** only what the local player sees: the selection is only read, and a model is a visual of the unit.
-- **Test:** with the ring files in `art\effects\uhc_rings`, select a unit with both tags: the ring is at its feet, and
-  goes when the unit is deselected.
+- **Tags:** `<DisplayRange>`, `<AlwaysDisplayRange>` and `<DisplayedRange>` (repeatable) come through the shared proto tag
+  hook (`0x51DB0F`).
+- **`<Flag>AlwaysDisplayRange</Flag>`:** the `call 4028B4h` at `0x5F726F` (`E8 40 B6 E0 FF`), the last string compare of
+  the proto flag parser `0x5F640A` (`stdcall(proto, name)`, `ret 8`), goes to `UhcProtoFlagCompareHook`: it calls the
+  compare with the same two arguments and, when it returns non-zero, passes the proto (`[esp+14h]` at entry) and the name
+  (`[esp+8]`) to the key, then returns the compare's result. Verify `0x5F7269..0x5F7283` (`ProtoFlagLastCompare`): the
+  pushes, the call, `add esp,8 / test eax,eax / je`, and `pop esi / ret 8`.
+- **Verify only:** the selection `0x453B28` (`CurrentSelectionGroup`), the unit by ID `0x44CC6D`, the Alt query of the HP
+  bar chunk `0x452EA0` (`AltQuery`, 24 bytes), the range getter `0x4946D6` (`ActionRangeByKey`, `float
+  thiscall(action, key)`, `ret 4`) and the model functions (`VerifyUnitModels`).
+- **The tick,** ten times a second of game time, for the game's world only. Alt is `[[[0C66244h]+74h]+2Ch]`'s vtable `+34h`
+  called with 2. A selected unit whose proto has `<AlwaysDisplayRange>`, or `<DisplayRange>` while Alt is held, gets one
+  model `effects\uhc_rings\range_<N>.xml` per radius, N the ring size nearest to it (4 to 100 m, `kRadii`), on the bone
+  `bonethatdoesntexist` (at its feet). The radii are the `<DisplayedRange>` values, or the range `0x4946D6(action, -1)` of
+  each active action (bit 0 of `[action+64h]`) with bit 0Ah (`<RangedLogic>`) in the unit's current tactic
+  (`[[unit+58h]+0A8h]` into `[[proto+44h]+10h]`; entries of 12 bytes at `[tactic+44h]`, `+4` the index into
+  `[[tactic]+1Ch]`), or in all its tactics when the current one has none. At most 4 rings a unit and 60 in all, the
+  units with the longest ranges first. A unit that leaves the selection, or whose Alt is released, loses its rings.
+- **Changes:** only what the local player sees: the selection and the keyboard are only read, and a model is a visual.
+- **Test:** with the ring files in `art\effects\uhc_rings`, select a fort with `<DisplayRange>1`: no ring; hold Alt: a 40 m
+  and a 26 m ring; release Alt: none. A unit with `<AlwaysDisplayRange>1` shows its rings without Alt.
 
 ### showGatherRate
 

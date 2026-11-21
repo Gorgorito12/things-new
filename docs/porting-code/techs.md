@@ -11,6 +11,7 @@ Contents:
 - [techPrereqRecheck](#techprereqrecheck)
 - [orPrereqsQty](#orprereqsqty)
 - [shipmentCounts](#shipmentcounts)
+- [ageFiveShipments](#agefiveshipments)
 - [kothTimer](#kothtimer)
 - [transformUpdatesLOS](#transformupdateslos)
 - [transformSpan](#transformspan)
@@ -944,35 +945,33 @@ Contract: [shipmentCounts](../porting-to-another-dll.md#shipmentcounts).
 
 Besides the core helpers, it needs: [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `ShipQueueCaller` `0x66AEA0` (5 B), `ShipQueueAddHead` `0x857204` (7 B), `ShipQueueRemoveHead` `0x857257` (11 B), `ShipActivateCall` `0x8584E7` (36 B), `ShipEntryArg` `0x85856A` (10 B), `FreeHomeCityUnitCase` `0x8D8C62` (193 B).
+Sites: `ShipQueueCaller` `0x66AEA0` (5 B), `ShipActivateCall` `0x8584E7` (36 B), `ShipEntryArg` `0x85856A` (10 B), `ShipCardLookup` `0x85FFCE` (30 B), `FreeHomeCityUnitCase` `0x8D8C62` (193 B).
 
 ### src/features/shipmentcounts.cpp
 
 ```cpp
-// shipmentCounts: per-player counts of the home city shipments, by the age each card was sent in, for the Data
-// subtype FreeHomeCityUnitByShipmentCount (with `unittype`, `includeself` and this key's `age`, one age or a
-// range) and the XS syscalls xsGetShipmentCount and xsGetShipmentCountRange.
+// shipmentCounts: per-player counts of the home city shipments, by the age of each card (its <age>, the age that
+// enables it), for the Data subtype FreeHomeCityUnitByShipmentCount (with `unittype`, `includeself` and this key's
+// `age`, one age or a range) and the XS syscalls xsGetShipmentCount and xsGetShipmentCountRange.
 //
-// A card is sent by FUN_0085A724: it pays, then appends an entry {card index, tech ID, ...} to the home city's
-// shipment queue ([hc+288h], entries of 18h) with FUN_00857204, the queue's only add (doNotQueue may then move the
-// entry up). The card is shipped later by FUN_00858299 when its transit ends (the queue update 0x4BF86F): it
-// activates the card's tech with call 94CF27h at 0x8584FF, which applies the tech's effects there and then, and the
-// update removes the entry with FUN_00857257(0, 1). A queued card can also be cancelled, by the player or by a
-// Blockade (FUN_0085ADD9 -> FUN_00857257(index, 1)); a cancelled card never ships.
+// A card is sent by FUN_0085A724: it checks the card's age [card+18h] against the player's ([player+50h]), pays,
+// then appends an entry {card index, tech ID, ...} to the home city's shipment queue ([hc+288h], entries of 18h).
+// The card is shipped later by FUN_00858299 when its transit ends (the queue update 0x4BF86F): it activates the
+// card's tech with call 94CF27h at 0x8584FF, which applies the tech's effects there and then. A queued card can
+// also be cancelled, by the player or by a Blockade; a cancelled card never ships.
 //
-// So a card counts when it ships, in the age it was SENT in: the hook at the head of 0x857204 notes the player's
-// age ([player+50h], what kbGetAge returns: cAge1 = 0) with the entry's card and tech; the hook at the head of
-// 0x857257 forgets an entry that leaves the queue; the redirected activation call finds the shipping entry's send
-// age before the effects run, and counts the card in that age after them. While the card's own effects run the
-// counts do not hold it yet: `includeself` adds it. Entries with the same card and tech keep their order in the
-// queue (the queue is FIFO and doNotQueue moves a new card up only past cards of the other kind), so the k-th such
-// entry in the queue is the k-th one noted.
+// So a card counts when it ships, in the age of the card: the redirected activation call reads the shipping
+// entry's card index (+0), finds the card with FUN_0085FFCE(hc+228h, index), as the send and the shipment do, and
+// takes its age [card+18h] (the scale of [player+50h] and kbGetAge: Age I = 0; -1, a card with no <age>, counts in
+// Age I). The card's effects run with the shipment current, then it is counted. While the card's own effects run
+// the counts do not hold it yet: `includeself` adds it.
 //
-// Saved games: the counts and the send ages of the queued cards are kept on one unit of the world as saved
-// markers (savedmarkers.h, stat 67h): per player one marker with the five counts (16 bits each) and, while it
-// has queued cards, one with their send ages in queue order (3 bits each, 32 places). A world tick writes them
-// when they change and moves them to another unit when theirs dies, transforms or loses them, so the markers
-// are on a living unit at every save. A game that starts or loads reads them back (one walk over the units).
+// Saved games: the counts are kept on one unit of the world as saved markers (savedmarkers.h, stat 67h): per
+// player one marker with the five counts (16 bits each). A world tick writes them when they change and moves them
+// to another unit when theirs dies, transforms or loses them, so the markers are on a living unit at every save. A
+// game that starts or loads reads them back (one walk over the units). Older builds also kept a second marker kind
+// (2) with the send ages of the queued cards; a save that has one loads, the marker is ignored and dropped at the
+// next write.
 //
 // The subtype is a Player target (techsubtypes.h, AddTechPlayerSubtype). Its unittype, age range and includeself
 // are packed into the effect's field +10h when the techtree is read; when it applies it becomes the stock
@@ -986,7 +985,6 @@ Sites: `ShipQueueCaller` `0x66AEA0` (5 B), `ShipQueueAddHead` `0x857204` (7 B), 
 #include <cstring>
 #include <string>
 #include <utility>
-#include <vector>
 
 #include "../features.h"
 #include "../unitinfo.h"
@@ -1013,10 +1011,10 @@ constexpr std::size_t kTypeNames = 0x190;       // in the database: the unit typ
 constexpr std::size_t kFirstAbstract = 0x19B0;  // in the database: the first abstract type's ID
 constexpr int kMaxLines = 200;
 
-// The home city and its shipment queue.
-constexpr std::uint32_t kPlayerHc = 0x84;      // player -> home city
+// The home city, its cards and its shipment queue.
 constexpr std::uint32_t kPlayerAge = 0x50;     // the player's age, cAge1 = 0
-constexpr std::uint32_t kHcPlayer = 0x08;      // home city -> player
+constexpr std::uint32_t kHcCards = 0x228;      // the card list: FUN_0085FFCE(list, index) -> card, 28h each
+constexpr std::uint32_t kCardAge = 0x18;       // the card's <age>, cAge1 = 0, -1 with none
 constexpr std::uint32_t kHcQueue = 0x288;      // entries; +28Ch count
 constexpr std::uint32_t kQueueEntrySize = 0x18;  // +0 card index, +4 tech ID
 
@@ -1025,11 +1023,10 @@ constexpr std::int32_t kStat = 0x67;
 constexpr std::uint32_t kTag = 0x53430000;
 constexpr std::uint32_t kTagMask = 0xFFFF0000;
 constexpr std::uint32_t kKindCounts = 1;  // words 1..3: the counts of ages I..V, 16 bits each
-constexpr std::uint32_t kKindAges = 2;    // words 1..3: the send ages of the queued cards, 3 bits each
-constexpr int kAgeBits = 3;
-constexpr int kSavedPlaces = 32;          // 96 bits / 3
-constexpr std::uint32_t kUnknownAge = 7;
+constexpr std::uint32_t kKindOldAges = 2; // older builds: the send ages of the queued cards; ignored, dropped
 
+using CardOfFn = const char*(__thiscall*)(const void* list, std::int32_t index);
+const auto kCardOf = reinterpret_cast<CardOfFn>(0x0085FFCE);
 using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
 const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
 using XmlTextFn = const char*(__thiscall*)(const void* text);
@@ -1050,16 +1047,8 @@ const char* World() {
   return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
 }
 
-// A card in the shipment queue: its card index and tech, and the age it was sent in.
-struct Queued {
-  std::int32_t card;
-  std::int32_t tech;
-  std::int32_t age;
-};
-
 struct PlayerState {
   std::int32_t counts[kAges];
-  std::vector<Queued> queued;  // in the order they were sent
 };
 
 bool g_log = false;
@@ -1072,7 +1061,7 @@ bool g_dirty = false;                 // the markers need writing
 std::int32_t g_carrier = -1;          // the unit that holds the markers
 std::uint32_t g_carrierWord = 0;      // word 0 of one of its markers
 
-// The shipment being made: its player and send age while its tech activates.
+// The shipment being made: its player and its card's age while its tech activates.
 bool g_shipping = false;
 std::int32_t g_shipPlayer = -1;
 std::int32_t g_shipAge = 0;
@@ -1114,54 +1103,24 @@ std::int32_t OwnerOf(const char* unit) {
   return owner == nullptr ? -1 : Field<std::int32_t>(owner, 0);
 }
 
-// Players: [world+58h] array, [world+5Ch] count.
-const char* PlayerById(const char* world, std::int32_t id) {
-  if (world == nullptr || id < 0 || id >= Field<std::int32_t>(world, 0x5C)) {
-    return nullptr;
-  }
-  return Field<const char* const*>(world, 0x58)[id];
-}
-
-const char* HcOf(const char* player) { return player == nullptr ? nullptr : Field<const char*>(player, kPlayerHc); }
-
 std::int32_t QueueCount(const char* hc) { return Field<std::int32_t>(hc, kHcQueue + 4); }
 
-const char* QueueEntry(const char* hc, std::int32_t index) {
-  return Field<const char*>(hc, kHcQueue) + index * kQueueEntrySize;
-}
-
-// How many entries before `index` have the same card and tech as it.
-int TwinsBefore(const char* hc, std::int32_t index) {
-  const char* entry = QueueEntry(hc, index);
-  const std::int32_t card = Field<std::int32_t>(entry, 0);
-  const std::int32_t tech = Field<std::int32_t>(entry, 4);
-  int twins = 0;
-  for (std::int32_t i = 0; i < index; ++i) {
-    const char* other = QueueEntry(hc, i);
-    if (Field<std::int32_t>(other, 0) == card && Field<std::int32_t>(other, 4) == tech) {
-      ++twins;
-    }
+// The <age> of the card of a shipment queue entry of that home city (cAge1 = 0, -1 with none), or -2 if the entry
+// or its card is not found.
+std::int32_t CardAge(const char* hc, const char* shipment) {
+  if (hc == nullptr || shipment == nullptr) {
+    return -2;
   }
-  return twins;
-}
-
-// The k-th noted card with that card and tech, or the end.
-std::vector<Queued>::iterator FindQueued(PlayerState& state, std::int32_t card, std::int32_t tech, int k) {
-  for (auto it = state.queued.begin(); it != state.queued.end(); ++it) {
-    if (it->card == card && it->tech == tech && k-- == 0) {
-      return it;
-    }
+  const char* base = Field<const char*>(hc, kHcQueue);
+  if (base == nullptr || shipment < base) {
+    return -2;
   }
-  return state.queued.end();
-}
-
-// The send age of the queue's entry `index` of that player, or -1 if it was not noted.
-std::int32_t SendAge(std::int32_t player, const char* hc, std::int32_t index) {
-  const char* entry = QueueEntry(hc, index);
-  PlayerState& state = g_state[player];
-  const auto it = FindQueued(state, Field<std::int32_t>(entry, 0), Field<std::int32_t>(entry, 4),
-                             TwinsBefore(hc, index));
-  return it == state.queued.end() ? -1 : it->age;
+  const auto offset = static_cast<std::uint32_t>(shipment - base);
+  if (offset % kQueueEntrySize != 0 || static_cast<std::int32_t>(offset / kQueueEntrySize) >= QueueCount(hc)) {
+    return -2;
+  }
+  const char* card = kCardOf(hc + kHcCards, Field<std::int32_t>(shipment, 0));
+  return card == nullptr ? -2 : Field<std::int32_t>(card, kCardAge);
 }
 
 // --- Saved markers ------------------------------------------------------------------------------------------
@@ -1182,13 +1141,12 @@ void FreeOurs(char* unit) {
 }
 
 bool HasState(int player) {
-  const PlayerState& state = g_state[player];
-  for (const std::int32_t count : state.counts) {
+  for (const std::int32_t count : g_state[player].counts) {
     if (count != 0) {
       return true;
     }
   }
-  return !state.queued.empty();
+  return false;
 }
 
 bool CarrierValid(const char* world) {
@@ -1228,7 +1186,7 @@ bool WriteMarker(char* unit, std::uint32_t word0, const std::uint32_t (&words)[3
   return true;
 }
 
-// Writes every player's counts and queued send ages on the carrier, a new one if it is gone.
+// Writes every player's counts on the carrier, a new one if it is gone.
 void WriteMarkers(const char* world) {
   bool any = false;
   for (int p = 0; p < kPlayers; ++p) {
@@ -1253,7 +1211,7 @@ void WriteMarkers(const char* world) {
   std::uint32_t first = 0;
   bool ok = true;
   for (int p = 0; p < kPlayers && ok; ++p) {
-    PlayerState& state = g_state[p];
+    const PlayerState& state = g_state[p];
     if (!HasState(p)) {
       continue;
     }
@@ -1264,25 +1222,6 @@ void WriteMarkers(const char* world) {
     }
     ok = WriteMarker(unit, MarkerWord(p, kKindCounts), counts);
     first = first != 0 ? first : MarkerWord(p, kKindCounts);
-    const char* hc = HcOf(PlayerById(world, p));
-    const std::int32_t queued = hc == nullptr ? 0 : QueueCount(hc);
-    if (ok && queued > 0) {
-      std::uint32_t ages[3] = {};
-      for (std::int32_t i = 0; i < queued && i < kSavedPlaces; ++i) {
-        const std::int32_t age = SendAge(p, hc, i);
-        const std::uint64_t value = age < 0 ? kUnknownAge : static_cast<std::uint64_t>(age);
-        const int bit = i * kAgeBits;
-        // A place may straddle two words: write it as a 64-bit slice of the 96 bits.
-        std::uint64_t pair = static_cast<std::uint64_t>(ages[bit / 32]) |
-                             (bit / 32 + 1 < 3 ? static_cast<std::uint64_t>(ages[bit / 32 + 1]) << 32 : 0);
-        pair |= value << (bit % 32);
-        ages[bit / 32] = static_cast<std::uint32_t>(pair);
-        if (bit / 32 + 1 < 3) {
-          ages[bit / 32 + 1] = static_cast<std::uint32_t>(pair >> 32);
-        }
-      }
-      ok = WriteMarker(unit, MarkerWord(p, kKindAges), ages);
-    }
   }
   if (!ok) {
     FreeOurs(unit);
@@ -1297,25 +1236,16 @@ void WriteMarkers(const char* world) {
   g_dirty = false;
 }
 
-std::uint32_t PlaceAge(const std::uint32_t (&ages)[3], int place) {
-  const int bit = place * kAgeBits;
-  std::uint64_t pair = static_cast<std::uint64_t>(ages[bit / 32]) |
-                       (bit / 32 + 1 < 3 ? static_cast<std::uint64_t>(ages[bit / 32 + 1]) << 32 : 0);
-  return static_cast<std::uint32_t>((pair >> (bit % 32)) & ((1u << kAgeBits) - 1));
-}
-
-// A game that just started or loaded: the counts and send ages its markers keep. One walk.
+// A game that just started or loaded: the counts its markers keep. One walk.
 void Rebuild(const char* world) {
   for (PlayerState& state : g_state) {
     std::memset(state.counts, 0, sizeof(state.counts));
-    state.queued.clear();
   }
   g_shipping = false;
   g_carrier = -1;
   g_carrierWord = 0;
   g_dirty = false;
-  bool hasAges[kPlayers] = {};
-  std::uint32_t ages[kPlayers][3] = {};
+  bool oldAges = false;
   const std::int32_t count = Field<std::int32_t>(world, 0x10);
   char* const* table = Field<char* const*>(world, 0x0C);
   int carriers = 0;
@@ -1342,11 +1272,8 @@ void Rebuild(const char* world) {
               static_cast<std::int32_t>((uhc::markers::Word(marker, 1 + a / 2) >> (16 * (a % 2))) & 0xFFFF);
         }
         g_carrierWord = word0;
-      } else if (kind == kKindAges) {
-        hasAges[player] = true;
-        for (int w = 0; w < 3; ++w) {
-          ages[player][w] = uhc::markers::Word(marker, w + 1);
-        }
+      } else if (kind == kKindOldAges) {
+        oldAges = true;  // an older build's send ages: not used, dropped by the next write
       }
       return true;
     });
@@ -1355,20 +1282,10 @@ void Rebuild(const char* world) {
       g_carrier = Field<std::int32_t>(unit, 0x10);
     }
   }
-  // The queued cards, in queue order, with the send ages kept for their places.
-  for (int p = 0; p < kPlayers; ++p) {
-    const char* hc = HcOf(PlayerById(world, p));
-    const std::int32_t queued = hc == nullptr ? 0 : QueueCount(hc);
-    const char* player = PlayerById(world, p);
-    for (std::int32_t i = 0; i < queued; ++i) {
-      const char* entry = QueueEntry(hc, i);
-      std::uint32_t age = hasAges[p] && i < kSavedPlaces ? PlaceAge(ages[p], i) : kUnknownAge;
-      if (age >= static_cast<std::uint32_t>(kAges)) {
-        age = static_cast<std::uint32_t>(AgeIndex(Field<std::int32_t>(player, kPlayerAge)));
-      }
-      g_state[p].queued.push_back(
-          {Field<std::int32_t>(entry, 0), Field<std::int32_t>(entry, 4), static_cast<std::int32_t>(age)});
-    }
+  if (oldAges) {
+    g_dirty = true;
+    Line(L"shipmentCounts: loaded a save of an older build: the send ages it kept are not used, a card counts in "
+         L"the age of the card");
   }
   if (carriers > 1) {
     g_dirty = true;  // markers on two units: the next write keeps one set
@@ -1384,8 +1301,8 @@ void Rebuild(const char* world) {
         continue;
       }
       const PlayerState& s = g_state[p];
-      Line(L"shipmentCounts: loaded: player %d has shipped %d, %d, %d, %d, %d in ages I to V, %u card(s) queued", p,
-           s.counts[0], s.counts[1], s.counts[2], s.counts[3], s.counts[4], static_cast<unsigned>(s.queued.size()));
+      Line(L"shipmentCounts: loaded: player %d has shipped %d, %d, %d, %d, %d cards of ages I to V", p, s.counts[0],
+           s.counts[1], s.counts[2], s.counts[3], s.counts[4]);
     }
   }
 }
@@ -1562,64 +1479,14 @@ std::int32_t __cdecl XsGetShipmentCountRange(std::int32_t player, std::int32_t f
   return ValidAge(first) && ValidAge(last) && first <= last ? Count(player, first, last) : 0;
 }
 
-std::int32_t PlayerOfHc(const char* hc) {
-  const char* player = hc == nullptr ? nullptr : Field<const char*>(hc, kHcPlayer);
-  return player == nullptr ? -1 : Field<std::int32_t>(player, 0);
-}
-
 }  // namespace
 
 extern "C" {
 
-void UhcShipActivateHook();      // hooks/shipmentcount_hooks.asm
-void UhcShipQueueAddHook();
-void UhcShipQueueRemoveHook();
-
-// A card is sent: the queue add 0x857204 with queue = [hc+288h] and the new entry. Notes its send age.
-void __stdcall UhcShipQueued(const char* queue, const char* entry) {
-  if (queue == nullptr || entry == nullptr) {
-    return;
-  }
-  Sync();
-  const char* hc = queue - kHcQueue;
-  const char* player = Field<const char*>(hc, kHcPlayer);
-  const std::int32_t id = PlayerOfHc(hc);
-  if (player == nullptr || id < 0 || id >= kPlayers) {
-    return;
-  }
-  const Queued queued{Field<std::int32_t>(entry, 0), Field<std::int32_t>(entry, 4),
-                      AgeIndex(Field<std::int32_t>(player, kPlayerAge))};
-  g_state[id].queued.push_back(queued);
-  g_dirty = true;
-  if (g_log) {
-    Line(L"shipmentCounts: player %d sends tech %d (%ls) in age %d", id, queued.tech, TechName(queued.tech),
-         queued.age + 1);
-  }
-}
-
-// An entry leaves the queue (shipped or cancelled): FUN_00857257(index, shift) on queue = [hc+288h].
-void __stdcall UhcShipUnqueued(const char* queue, std::int32_t index, std::int32_t) {
-  if (queue == nullptr) {
-    return;
-  }
-  Sync();
-  const char* hc = queue - kHcQueue;
-  const std::int32_t id = PlayerOfHc(hc);
-  if (id < 0 || id >= kPlayers || index < 0 || index >= QueueCount(hc)) {
-    return;
-  }
-  const char* entry = QueueEntry(hc, index);
-  PlayerState& state = g_state[id];
-  const auto it = FindQueued(state, Field<std::int32_t>(entry, 0), Field<std::int32_t>(entry, 4),
-                             TwinsBefore(hc, index));
-  if (it != state.queued.end()) {
-    state.queued.erase(it);
-  }
-  g_dirty = true;
-}
+void UhcShipActivateHook();  // hooks/shipmentcount_hooks.asm
 
 // Before the card's tech activates: entry = its status entry, player = the shipping player, hc = its home city,
-// shipment = the queue entry being shipped.
+// shipment = the queue entry being shipped. The shipment counts in the age of its card.
 void __stdcall UhcShipBegin(const char* entry, const char* player, const char* hc, const char* shipment) {
   if (player == nullptr) {
     return;
@@ -1627,25 +1494,19 @@ void __stdcall UhcShipBegin(const char* entry, const char* player, const char* h
   Sync();
   g_shipping = true;
   g_shipPlayer = Field<std::int32_t>(player, 0x00);
-  const std::int32_t now = AgeIndex(Field<std::int32_t>(player, kPlayerAge));
-  std::int32_t sent = -1;
-  if (hc != nullptr && shipment != nullptr && g_shipPlayer >= 0 && g_shipPlayer < kPlayers) {
-    const char* base = Field<const char*>(hc, kHcQueue);
-    const std::int32_t index = static_cast<std::int32_t>((shipment - base) / static_cast<std::int32_t>(kQueueEntrySize));
-    if (shipment >= base && index < QueueCount(hc) && base + index * kQueueEntrySize == shipment) {
-      sent = SendAge(g_shipPlayer, hc, index);
-    }
-  }
-  g_shipAge = sent >= 0 ? sent : now;
+  const std::int32_t card = CardAge(hc, shipment);
+  g_shipAge = AgeIndex(card);  // -1 (no <age>) counts in Age I; -2 (not found) too, logged
   if (g_log) {
     const char* def = entry == nullptr ? nullptr : Field<const char*>(entry, 0x00);
     const std::int32_t tech = def == nullptr ? -1 : Field<std::int32_t>(def, 0x00);
-    Line(L"shipmentCounts: player %d ships tech %d (%ls), sent in age %d%ls, now age %d", g_shipPlayer, tech,
-         TechName(tech), g_shipAge + 1, sent >= 0 ? L"" : L" (its send was not seen)", now + 1);
+    const std::int32_t now = AgeIndex(Field<std::int32_t>(player, kPlayerAge));
+    Line(L"shipmentCounts: player %d ships tech %d (%ls), a card of age %d%ls, in age %d", g_shipPlayer, tech,
+         TechName(tech), g_shipAge + 1,
+         card == -1 ? L" (it has no <age>)" : (card < -1 ? L" (its card was not found)" : L""), now + 1);
   }
 }
 
-// After it: the shipment counts, in the age it was sent in.
+// After it: the shipment counts, in the age of its card.
 void __stdcall UhcShipEnd() {
   if (!g_shipping) {
     return;
@@ -1685,8 +1546,8 @@ Outcome ApplyShipmentCounts(const Config& config) {
     }
   }
   if (!VerifyAll("shipmentCounts", {&sites::kShipActivateCall, &sites::kShipQueueCaller,
-                                    &sites::kShipEntryArg, &sites::kShipQueueAddHead,
-                                    &sites::kShipQueueRemoveHead, &sites::kFreeHomeCityUnitCase})) {
+                                    &sites::kShipEntryArg, &sites::kShipCardLookup,
+                                    &sites::kFreeHomeCityUnitCase})) {
     return Outcome::kFailed;
   }
   g_log = log;
@@ -1706,8 +1567,9 @@ Outcome ApplyShipmentCounts(const Config& config) {
   def.retType = kSyscallInt;
   def.name = "xsGetShipmentCount";
   def.fn = reinterpret_cast<const void*>(&XsGetShipmentCount);
-  def.comment = "int xsGetShipmentCount(int playerID, int age): the home city shipments the player sent in that age "
-                "(cAge1..cAge5) and that arrived, or in every age with -1, in this game.";
+  def.comment = "int xsGetShipmentCount(int playerID, int age): the home city shipments of cards of that age "
+                "(cAge1..cAge5; a card with no age is cAge1) that arrived for the player, or of every age with -1, "
+                "in this game.";
   def.params = {player, age};
   def.source = "shipmentCounts";
   AddSyscall(std::move(def));
@@ -1717,22 +1579,19 @@ Outcome ApplyShipmentCounts(const Config& config) {
   range.retType = kSyscallInt;
   range.name = "xsGetShipmentCountRange";
   range.fn = reinterpret_cast<const void*>(&XsGetShipmentCountRange);
-  range.comment = "int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge): the home city shipments the "
-                  "player sent in ages firstAge to lastAge (cAge1..cAge5) and that arrived, in this game.";
+  range.comment = "int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge): the home city shipments of "
+                  "cards of ages firstAge to lastAge (cAge1..cAge5) that arrived for the player, in this game.";
   range.params = {player, age, age};
   range.source = "shipmentCounts";
   AddSyscall(std::move(range));
 
-  if (!WriteCall(kShipActivateCall, reinterpret_cast<const void*>(&UhcShipActivateHook)) ||
-      !WriteJmp(sites::kShipQueueAddHead.va, reinterpret_cast<const void*>(&UhcShipQueueAddHook),
-                sites::kShipQueueAddHead.size) ||
-      !WriteJmp(sites::kShipQueueRemoveHead.va, reinterpret_cast<const void*>(&UhcShipQueueRemoveHook), 5)) {
+  if (!WriteCall(kShipActivateCall, reinterpret_cast<const void*>(&UhcShipActivateHook))) {
     return Outcome::kFailed;
   }
-  Log(L"shipmentCounts: shipments are counted per player and the age they were sent in, and kept in saved games; "
-      L"the Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount and "
-      L"xsGetShipmentCountRange read them%ls (multiplayer unverified)",
-      log ? L"; each send, shipment and effect is logged" : L"");
+  Log(L"shipmentCounts: shipments are counted per player and the age of each card (its <age>; none: Age I), and "
+      L"kept in saved games; the Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount "
+      L"and xsGetShipmentCountRange read them%ls (multiplayer unverified)",
+      log ? L"; each shipment and effect is logged" : L"");
   g_unitInfoOn = true;
   return Outcome::kApplied;
 }
@@ -1763,9 +1622,8 @@ bool ShipmentCounts(const char* unit, std::wstring* out) {
 ### src/hooks/shipmentcount_hooks.asm
 
 ```asm
-; Hooks for shipmentCounts: the call of the tech activation in the shipment of a card, the head of the shipment
-; queue's add (a card is sent) and the head of its removal (a card shipped or cancelled). Each leaves through an
-; explicit jmp to its verified continuation.
+; Hook for shipmentCounts: the call of the tech activation in the shipment of a card. It leaves through an explicit
+; jmp to its verified continuation.
 .686
 .model flat, c
 option casemap :none
@@ -1774,23 +1632,19 @@ include common.inc
 
 UhcShipBegin PROTO STDCALL entry:DWORD, player:DWORD, hc:DWORD, shipment:DWORD
 UhcShipEnd PROTO STDCALL
-UhcShipQueued PROTO STDCALL queue:DWORD, entry:DWORD
-UhcShipUnqueued PROTO STDCALL queue:DWORD, index:DWORD, shift:DWORD
 
 .data
 activate        dd 0094CF27h    ; the tech activation, thiscall(entry, player, unit, 0, &ok, flags), ret 14h
 shipReturn      dd 0            ; 0x858504, the call's return address while the activation runs
-addContinue     dd 0085720Bh    ; the queue add after its replaced head
-removeContinue  dd 0085725Ch    ; the queue removal after its replaced compare
 
 .code
 
 ; Replaces call 94CF27h at 0x8584FF in FUN_00858299. ECX = EDI = the card tech's status entry, ESI = the home
 ; city, [esp+4] = the player (the first of the five arguments), [esp] = the return address 0x858504, and
 ; [esp+3Ch] = FUN_00858299's argument, the queue entry being shipped ([esp+24h] before the five pushes and the
-; return address). UhcShipBegin notes the player and the card's send age; the activation runs with the stock
-; arguments (it pops them, ret 14h) and its effects see the shipment as current; UhcShipEnd counts it. EAX, the
-; activation's result, is kept; ECX and EDX are free after the call, and the code at 0x858504 reloads ECX from
+; return address). UhcShipBegin notes the player and the age of the entry's card; the activation runs with the
+; stock arguments (it pops them, ret 14h) and its effects see the shipment as current; UhcShipEnd counts it. EAX,
+; the activation's result, is kept; ECX and EDX are free after the call, and the code at 0x858504 reloads ECX from
 ; EDI. One shipment at a time: the activation does not ship another card.
 UhcShipActivateHook PROC
     TRACE_ONCE "shipmentCounts (0x8584FF)"
@@ -1810,45 +1664,139 @@ UhcShipActivateHook PROC
     jmp shipReturn
 UhcShipActivateHook ENDP
 
-; Replaces the head of FUN_00857204 (thiscall(queue, entry*), ret 4), the shipment queue's add: ECX = the queue,
-; [esp+4] = the new entry. UhcShipQueued notes the card and its send age; then the replaced push esi / push edi /
-; mov edi,ecx / mov esi,[edi+4] run here and the add goes on at 0x85720B.
-UhcShipQueueAddHook PROC
-    TRACE_ONCE "shipmentCounts send (0x857204)"
-    push eax
-    push ecx
-    push edx
-    push dword ptr [esp+10h]        ; the entry, [esp+4] + three pushes
-    push ecx                        ; the queue
-    call UhcShipQueued
-    pop edx
-    pop ecx
-    pop eax
-    push esi
-    push edi
-    mov edi, ecx
-    mov esi, dword ptr [edi+4]
-    jmp addContinue
-UhcShipQueueAddHook ENDP
+END
+```
 
-; Replaces the head of FUN_00857257 (thiscall(queue, index, bool shift), ret 8), the shipment queue's removal:
-; ECX = the queue, [esp+4] = the index, [esp+8] = shift. UhcShipUnqueued forgets the entry; then the replaced
-; cmp byte ptr [esp+8],0 runs here (its flags feed the jz at 0x857260) and the removal goes on at 0x85725C.
-UhcShipQueueRemoveHook PROC
-    TRACE_ONCE "shipmentCounts queue removal (0x857257)"
-    push eax
-    push ecx
-    push edx
-    push dword ptr [esp+14h]        ; shift, [esp+8] + three pushes
-    push dword ptr [esp+14h]        ; index, [esp+4] + four pushes
-    push ecx                        ; the queue
-    call UhcShipUnqueued
-    pop edx
-    pop ecx
-    pop eax
-    cmp byte ptr [esp+8], 0
-    jmp removeContinue
-UhcShipQueueRemoveHook ENDP
+## ageFiveShipments
+
+Contract: [ageFiveShipments](../porting-to-another-dll.md#agefiveshipments).
+
+Sites: `CardListAgePasses` `0x63022E` (7 B), `DeckBuilderAgeRow` `0x9A0489` (39 B), `CardPanelAgeRow` `0x9A5A22` (20 B), `DeckEditorAgeRow` `0x9A77BE` (39 B).
+
+### src/features/agefiveshipments.cpp
+
+```cpp
+// ageFiveShipments: home city cards of the fifth age (<age>4</age>, the Imperial Age) can be in the game's deck and
+// be sent once the player is in that age.
+//
+// Stock leaves such a card out three times over:
+// - the game's card list of a player (hc+228h) is built from the chosen deck by FUN_006301DE, one pass per age, and
+//   the passes stop after age 3 (`cmp eax,4` at 0x63022E): a card of age 4 never gets into the game;
+// - the in-game shipment panel (the gadget homeCityCardPanel, FUN_009A5658) places each card in the row of its age
+//   and skips an age below 0 or above 3 (0x9A5A22..0x9A5A30); its rows are four arrays of 4 x 11 buttons;
+// - the deck builder of the home city screen (buttons hcDeck-button<row><column>) and the homeCityDeck dialog
+//   (FUN_009A7670) stop at the first card whose age is 4 or more (0x9A0489..0x9A04AA, 0x9A77BE..0x9A77DF).
+//
+// The key lets the list builder take five ages (the immediate 4 becomes 5) and shows a card of age 4 in the row of
+// age 3, after the age-3 cards (the list is in age order), in the three panels: the hooks at 0x9A5A22, 0x9A0489
+// and 0x9A77BE read the card's age as stock does and hand age 4 on as 3 for the row only. The card keeps its age: the panel
+// still greys it out until the player's age reaches it (FUN_009A5658 compares [card+18h] with the player's age),
+// and the send FUN_0085A724 refuses it before (0x85A90A). A fifth row needs room the panels' objects do not have
+// (their button arrays hold 4 x 11), so the cards share the Imperial row.
+#include <windows.h>
+
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+extern "C" {
+void UhcAgeFivePanelHook();  // hooks/agefive_hooks.asm
+void UhcAgeFiveDeckHook();
+void UhcAgeFiveBuilderHook();
+}
+
+namespace uhc {
+
+Outcome ApplyAgeFiveShipments(const Config& config) {
+  const Config::Args* args = config.First("ageFiveShipments");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  if (!args->empty()) {
+    Log(L"ageFiveShipments: unexpected argument %hs (it takes none); feature not applied", (*args)[0].c_str());
+    return Outcome::kFailed;
+  }
+  if (!VerifyAll("ageFiveShipments", {&sites::kCardListAgePasses, &sites::kCardPanelAgeRow,
+                                      &sites::kDeckEditorAgeRow, &sites::kDeckBuilderAgeRow})) {
+    return Outcome::kFailed;
+  }
+  const std::uint8_t five = 5;
+  // The immediate of `cmp eax,4` (83 F8 04) at 0x63022E.
+  if (!WriteBytes(sites::kCardListAgePasses.va + 2, &five, 1) ||
+      !WriteJmp(sites::kCardPanelAgeRow.va, reinterpret_cast<const void*>(&UhcAgeFivePanelHook), 5) ||
+      !WriteJmp(sites::kDeckEditorAgeRow.va, reinterpret_cast<const void*>(&UhcAgeFiveDeckHook), 5) ||
+      !WriteJmp(sites::kDeckBuilderAgeRow.va, reinterpret_cast<const void*>(&UhcAgeFiveBuilderHook), 5)) {
+    return Outcome::kFailed;
+  }
+  Log(L"ageFiveShipments: cards of the fifth age (<age>4</age>) are in the game's deck, shown in the fourth age's "
+      L"row of the shipment panel and the deck editor, and sendable in the fifth age (multiplayer unverified)");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/agefive_hooks.asm
+
+```asm
+; Hooks for ageFiveShipments: the row of a card in the in-game shipment panel and in the deck editor. A card of the
+; fifth age (age 4) takes the row of age 3; its own age [card+18h] is left alone. Each leaves through an explicit
+; jmp to its verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+.data
+panelContinue   dd 009A5A27h    ; FUN_009A5658: jl 9A620Bh, after the replaced mov / cmp
+deckContinue    dd 009A77C3h    ; FUN_009A7670: jge 9A77D1h, after the replaced mov / cmp
+builderContinue dd 009A048Eh    ; the deck builder's fill: jge 9A049Ch, after the replaced mov / cmp
+
+.code
+
+; Replaces mov eax,[esi+18h] / cmp eax,edi (5 bytes) at 0x9A5A22 in the panel fill FUN_009A5658: ESI = the card,
+; EDI = 0; EAX becomes the card's row (its age, 4 -> 3); the cmp is re-run for the jl at 0x9A5A27.
+UhcAgeFivePanelHook PROC
+    TRACE_ONCE "ageFiveShipments panel (0x9A5A22)"
+    mov eax, dword ptr [esi+18h]
+    cmp eax, 4
+    jne panelRow
+    mov eax, 3
+panelRow:
+    cmp eax, edi
+    jmp panelContinue
+UhcAgeFivePanelHook ENDP
+
+; Replaces mov eax,[esi+18h] / cmp ebx,eax (5 bytes) at 0x9A77BE in the deck editor fill FUN_009A7670: ESI = the
+; card, EBX = the current row; EAX becomes the card's row (4 -> 3); the cmp is re-run for the jge at 0x9A77C3.
+UhcAgeFiveDeckHook PROC
+    TRACE_ONCE "ageFiveShipments deck editor (0x9A77BE)"
+    mov eax, dword ptr [esi+18h]
+    cmp eax, 4
+    jne deckRow
+    mov eax, 3
+deckRow:
+    cmp ebx, eax
+    jmp deckContinue
+UhcAgeFiveDeckHook ENDP
+
+; Replaces mov eax,[esi+18h] / cmp edi,eax (5 bytes) at 0x9A0489 in the deck builder's fill (the home city screen's
+; "Build a Deck", uihcdeckbuilder.xml, buttons hcDeck-button<row><column>): ESI = the card, EDI = the current row;
+; EAX becomes the card's row (4 -> 3); the cmp is re-run for the jge at 0x9A048E.
+UhcAgeFiveBuilderHook PROC
+    TRACE_ONCE "ageFiveShipments deck builder (0x9A0489)"
+    mov eax, dword ptr [esi+18h]
+    cmp eax, 4
+    jne builderRow
+    mov eax, 3
+builderRow:
+    cmp edi, eax
+    jmp builderContinue
+UhcAgeFiveBuilderHook ENDP
 
 END
 ```

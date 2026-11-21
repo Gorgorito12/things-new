@@ -31,14 +31,27 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Saturday 2026-11-21 12:42 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
+| Saturday 2026-11-21 12:11 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
+| Saturday 2026-11-21 12:07 | [`ageFiveShipments`](#agefiveshipments) | Added. Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | `<age>4</age>` on the cards that want it. |
+| Saturday 2026-11-21 12:07 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
+| Saturday 2026-11-21 12:04 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
+| Saturday 2026-11-21 12:00 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only heal actions with `<CanOverheal>1</CanOverheal>` heal those units above `InitialHitpoints`, up to their `<OverhealCap>`, and techs can turn it on or off; every other heal stops there. | `overhealHitpointBars`, and the tags on the `Heal` actions that may overheal. |
+| Saturday 2026-11-21 11:55 | [`herdWalkAwayFix`](bug-fixes.md#herdwalkawayfix) | Added. A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in. | Nothing; for nomads, `wol-fixes/me-herdables`. |
+| Saturday 2026-11-21 11:54 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
+| Saturday 2026-11-21 11:54 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
+| Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
+| Saturday 2026-11-21 11:42 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
+| Saturday 2026-11-21 11:35 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | The tag on the civ in `civs.xml`. |
+| Saturday 2026-11-21 11:34 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
+| Saturday 2026-11-21 11:31 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
+| Saturday 2026-11-21 11:07 | [`deadReplacementAtZeroInventory`](bug-fixes.md#deadreplacementatzeroinventory) | Added. A hunt, a herdable or any unit that leaves a body to gather drops its `<DeadReplacement>` when the body is used up, not when it falls. | `<DeadReplacement>` on the protos that want one (none has it today). |
+| Saturday 2026-11-21 11:03 | [`auraStacking`](#aurastacking) | Filmed in WoL, with a control. `<ForbidUnitType>` on any aura: the aura leaves units of a type or proto alone; that an aura does not stack is the game's own `<ModifyExclusive>`. | The tags on the aura. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
-| Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Friday 2026-11-20 12:52 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
-| Friday 2026-11-20 12:00 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
 | Friday 2026-11-20 11:59 | [`researchOnTheMove`](#researchonthemove) | Added. A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. |
-| Friday 2026-11-20 11:50 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | The tag on the civ in `civs.xml`. |
 | Friday 2026-11-20 11:50 | [`homeCityTechsInUnits`](#homecitytechsinunits) | Added. A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | The card's tech in the `<Tech>` rows, made obtainable for the civ. |
 | Friday 2026-11-20 11:39 | [`truckAttackResourceFix`](bug-fixes.md#truckattackresourcefix) | Added. A `TruckAttack` (the mustard gas, the tornado, the fire power, the monster truck) no longer empties the Mills, plantations and other gather buildings it hits, so villagers can still gather there afterwards. | Nothing. |
 | Thursday 2026-11-19 15:22 | [`attackTypeIcons`](#attacktypeicons) | Filmed in WoL, with a control. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
@@ -49,13 +62,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-13 13:06 | [`impactBoneFix`](bug-fixes.md#impactbonefix) | Filmed in WoL, with a control. An impact effect that is a visual (the `<wood>` of `cannon.impacteffect`) shows on the building it hits, not over the whole screen, when the model's impact bones are scaled. | Nothing. |
 | Friday 2026-11-13 10:46 | [`randomCost`](#randomcost) | Added. `<RandomCost resourcetype="Gold" min="80" max="120"/>` in a proto gives each unit trained a price rolled in that range, a new one after each purchase, and the button shows the exact price. | The tag on the protos that want it. |
 | Friday 2026-11-13 10:03 | [`playerIcon`](#playericon) | Filmed in WoL, with a control. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. |
-| Friday 2026-11-13 09:24 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Friday 2026-11-13 09:01 | [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) | Added. The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. |
 | Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added. The King of the Hill time comes from a table by the number of players, or of teams. | Nothing. |
-| Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added. Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Friday 2026-11-13 07:37 | [`ageUpBuildings`](#ageupbuildings) | Added. The age-up button opens the politician dialog on the buildings you list too, not only on the Town Center, and each building offers only the politicians its own proto lists. | The politicians (techs with `AgeUpgrade`) in those buildings' `<Tech>` lists. |
 | Friday 2026-11-13 07:24 | [`orPrereqsQty`](#orprereqsqty) | Added. `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | The attribute on the techs that want it. |
-| Thursday 2026-11-12 18:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Thursday 2026-11-12 18:35 | [`inventoryBars`](#inventorybars) | Filmed in WoL, with a control. While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | Nothing. |
 | Thursday 2026-11-12 18:26 | [`directionalAttack`](#directionalattack) | Filmed in WoL, with a control. A shot that flies on past its target and hits every unit it flies over, before and after the target. | `<DirectionalAttack>` or `<DirectionalFiringRange>` on the attack. |
 | Thursday 2026-11-12 18:01 | [`customWalls`](#customwalls) | Added. A building with `<WallPiece>` tags is laid like a wall, from point A to point B, with its own posts and pieces instead of the civ's stone wall. | The tags and the `wallBuild` flag on the post, and `wallBuild` and `wall.xml` placement on the pieces. |
@@ -63,8 +73,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-11-12 15:52 | [`stealthTargeting`](bug-fixes.md#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
-| Thursday 2026-11-12 13:25 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | `overhealHitpointBars`, and the source unit type on the healers that may overheal. |
-| Thursday 2026-11-12 13:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | `overhealHitpointBars`. |
+| Thursday 2026-11-12 13:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
 | Thursday 2026-11-12 11:40 | [`menuOptions`](bug-fixes.md#menuoptions) | Added. Lets the player switch `bufferedFileReads` and `fastVertexFill` on or off in the options menu, from the next start. | A field per key in `data\options.xml`. |
 | Thursday 2026-11-12 08:17 | [`fastLastInLine`](bug-fixes.md#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
 | Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
@@ -86,19 +95,16 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-06 13:55 | [`danceBonusCivs`](#dancebonuscivs) | Filmed in WoL, with a control. Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which the exe applies only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`. | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. |
 | Friday 2026-11-06 13:55 | [`transformInventory`](bug-fixes.md#transforminventory) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. |
 | Friday 2026-11-06 13:50 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | Filmed in WoL, with a control. When the building holding the shipment point dies and none of the exe's 10 fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. |
-| Friday 2026-11-06 13:44 | [`auraStacking`](#aurastacking) | Added. `<NoStack>` and `<ForbidUnitType>` on any aura. | The tags on the aura. |
 | Friday 2026-11-06 13:36 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | Nothing; for the data ref, a `formatText` gadget. |
 | Friday 2026-11-06 13:02 | [`damageOverTime`](#damageovertime) | Filmed in WoL, with a control. Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. |
 | Friday 2026-11-06 12:56 | [`xsErrorLog`](#xserrorlog) | Added. Writes the XS compiler's messages to the log, with file and line. | Nothing. |
 | Friday 2026-11-06 12:52 | [`dataLint`](#datalint) | Added. While the data loads, lists what it asks for and the game drops. | Nothing. |
 | Friday 2026-11-06 12:40 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). |
-| Friday 2026-11-06 11:33 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Friday 2026-11-06 11:33 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
 | Friday 2026-11-06 11:33 | [`maintainWaitForPop`](bug-fixes.md#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. |
 | Friday 2026-11-06 10:47 | [`doNotQueue`](#donotqueue) | Filmed in WoL, with a control. `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | The tag on the protos that want it. |
 | Friday 2026-11-06 09:06 | [`linkedResource`](#linkedresource) | Filmed in WoL, with a control. A resource building gathers the stock of a mine beside it. | The tags on a resource building of your own. |
-| Friday 2026-11-06 07:32 | [`displayedRange`](#displayedrange) | Added. A selected unit shows a ring of the radius of `<DisplayedRange>`. | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. |
-| Thursday 2026-11-05 15:23 | [`cantBeSlowed`](#cantbeslowed) | Filmed in WoL, with a control. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | The type on the protos that want it. |
+| Thursday 2026-11-05 15:23 | [`cantBeSlowed`](#cantbeslowed) | Filmed in WoL, with a control. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | The type on the protos that want it. |
 | Thursday 2026-11-05 13:29 | [`pillageGold`](#pillagegold) | Added. A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | The type and the tag on the protos. |
 | Thursday 2026-11-05 10:29 | [`accuracyTechs`](#accuracytechs) | Filmed in WoL, with a control. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 10:29 | [`cratePriority`](#cratepriority) | Filmed in WoL, with a control. The order in which a civ's units gather crates, instead of the exe's hardcoded one. | One line per civ in `wol.cfg`. |
@@ -122,7 +128,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Wednesday 2026-11-04 13:58 | [`nativeCivs`](#nativecivs) | Filmed in WoL, with a control. WallMapu, Tupinamba and Tawantinsuyu count as native civs: fire pit, dances and council age-up. | Those civs' data. |
 | Wednesday 2026-11-04 13:58 | [`wonderCivUnitType`](#wondercivunittype) | Filmed in WoL, with a control. `Rangatira` may start the Maori age-up. | Nothing. |
 | Wednesday 2026-11-04 13:58 | [`multiarmor`](#multiarmor) | Filmed in WoL, with a control. A proto keeps one armor per damage type, and `Armor` tech effects change the one their `damagetype` names. | Several `<Armor>` lines on the protos. |
-| Wednesday 2026-11-04 13:58 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
 | Wednesday 2026-11-04 13:58 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Filmed in WoL, with a control. Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | Nothing. |
 | Wednesday 2026-11-04 13:58 | [`nowalkfarm`](#nowalkfarm) | Filmed in WoL, with a control. Gatherers on a farm keep the spot they take. | Nothing. |
 | Wednesday 2026-11-04 13:58 | [`marketUnits`](#marketunits) | Filmed in WoL, with a control. Owning a unit of a listed proto (`WOLMarketGreek`, `SoukCaravan`, …) counts as owning a Market. | Nothing. |
@@ -588,6 +593,7 @@ Caps that are fixed in the exe.
 | [`basePop`, `extraPop`](#basepop-and-extrapop) | Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | in WoL's DLL | Enough population buildings: 20 houses of 10 give 200 today. | confirmed |
 | [`decimalPopulation`](#decimalpopulation) | Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | **new** | The decimals in `protoy` and `techtreey`. | confirmed (single player, also a skirmish vs AI) |
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | in WoL's DLL | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). | confirmed above the level table; see the section |
+| [`ageFiveShipments`](#agefiveshipments) | Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | **new** | `<age>4</age>` on the cards that want it. | confirmed (single player) |
 | [`selectionLimit`](#selectionlimit) | A selection holds up to N units (50 in the exe). `wol.cfg` sets 75. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`noAILimit`](#noailimit) | Shows every `AI4\*.personality` file in game setup. WoL uses `noAILimitV2` instead. | in WoL's DLL | The personality files. | confirmed |
 | [`noAILimitV2`](#noailimitv2) | Shows WoL's 52 `AI4\*.personality` files in game setup. Without it, a random AI crashes the game. | **in `wol.cfg`** | The personality files. | confirmed |
@@ -770,6 +776,44 @@ deckCardCount <N>        N from 20 to 10000
     building a 40-card deck at a normal level has not been tried in game yet;
   - not filmed in WoL yet.
 
+#### ageFiveShipments
+
+*Home city cards of the Imperial Age (`<age>4</age>`) can be in a deck and be sent once the player reaches that age.*
+
+**Added:** Saturday 2026-11-21 12:07
+
+```
+ageFiveShipments
+```
+
+- **In WoL today:** no card has `<age>4</age>`. The exe leaves such a card out of the game: a deck of 25 with one plays
+  with 24 cards (the game builds its deck one age at a time, ages I to IV only), and both deck panels stop at four rows.
+  JTMaston's #83 (2026-11-21).
+- **What the key does:** a card of `<age>4</age>` is in the game's deck, after the Age IV cards. It is shown **in the
+  Age IV row**, after the Age IV cards, in the in-game shipment panel and in the home city's deck builder ("Build a
+  Deck"). Until the player reaches the Imperial Age it is greyed, and its rollover says, in red, *This Card cannot be
+  sent until Age 5* (the game's own line); a send before that is refused, as stock refuses a card of a later age. In
+  the Imperial Age it is sent like any other card. [`shipmentCounts`](#shipmentcounts) counts it in Age V.
+- **Not a fifth row:** each deck panel holds four rows of 11 buttons in the exe, and the row is the card's age. A fifth
+  row needs those panels rebuilt (`how-it-works.md`, ageFiveShipments); the Imperial cards share the Age IV row instead.
+  A row holds 11 cards: Age IV and Age V cards together beyond 11 are not shown, as stock leaves out a twelfth card.
+- **What a modder writes:** `<age>4</age>` in the card of the home city file (`data\homecityxxx.xml`), as for the
+  other ages (`0` is Age I). The card goes in a deck the usual way; the "By Age" view of the card inventory has four
+  tabs and does not list it (use "By Building").
+- **Off:** as stock: the card never reaches the game.
+- **Multiplayer:** every player needs the same setting (it changes which cards a deck holds in the game).
+- **Log:** `ageFiveShipments: cards of the fifth age (<age>4</age>) are in the game's deck, shown in the fourth age's
+  row of the shipment panel and the deck editor, and sendable in the fifth age`, `hook reached: ageFiveShipments panel
+  (0x9A5A22)`, `hook reached: ageFiveShipments deck builder (0x9A0489)`.
+- **Tested in WoL (2026-11-21, single player, `C:\AoE3-UHC-WoLReal11`, Dutch skirmish on a test map,
+  `HCShipCannons1` given `<age>4</age>` in the copy's `homecitydutch.xml`):** key off, the game's deck held 23 of the 25
+  cards (that card and a card with no `<age>` left out) and both panels showed three Age IV cards; key on, 24 (the Age V
+  card last), shown fourth in the Age IV row of the shipment panel and of "Build a Deck", greyed with *This Card cannot
+  be sent until Age 5* in Ages I to IV; a send in Age IV refused (nothing queued); in Age V sent, arrived, and counted
+  by `shipmentCounts` (`a card of age 5, in age 5`, `0, 0, 0, 0, 1`). Screenshots in `wol-fixes/age5-shipments`. Not
+  tested: the AI with an Age V card in its deck; the `homeCityDeck` dialog (its hook was not reached: no screen of
+  the tests opened it).
+
 #### selectionLimit
 
 *Changes how many units fit in one selection.*
@@ -900,7 +944,7 @@ New names the game's data and scripts can use.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`customAbstractTypes`](#customabstracttypes) | Turns every name in `data\uhc\customabstracttypes.xml` (47 today) into an abstract unit type that protos, techs, auras and XS scripts can use. | always on | The file. | confirmed |
-| [`auraStacking`](#aurastacking) | `<NoStack>` and `<ForbidUnitType>` on any aura. | **new** | The tags on the aura. | confirmed |
+| [`auraStacking`](#aurastacking) | `<ForbidUnitType>` on any aura: the aura leaves units of a type or proto alone; that an aura does not stack is the game's own `<ModifyExclusive>`. | **new** | The tags on the aura. | confirmed (single player) |
 | [`customProtoUnitCommands`](#customprotounitcommands) | Adds the command types (buttons) listed in `data\uhc\customprotounitcommands.xml` (55 today). | always on | The file, and the `<Command>` lines that use them. | confirmed |
 | [`customHotkeyContexts`](#customhotkeycontexts) | Makes keymap contexts named `<ProtoName>Accel` work, such as WoL's `WOLBarracksGreekAccel`. Today the exe drops them. | **new** | Those contexts in `data\DefaultKeyMapY.xml`; WoL's file already has three. | confirmed (single player) |
 | [`techRenameEffect`](#techrenameeffect) | The tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | **in `wol.cfg`**, but WoL's renames for all players | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in `stringtabley.xml`. | confirmed (single player) |
@@ -1315,18 +1359,20 @@ kbUnitSyscalls
 
 #### auraStacking
 
-*Several carriers of the same aura no longer multiply it, and an aura can skip chosen units.*
+*An aura can skip chosen units; that several carriers of one aura do not multiply is the game's own `<ModifyExclusive>`.*
 
-**Added:** Friday 2026-11-06 13:44 · **Filmed in WoL:** Friday 2026-11-06 13:44
+**Added:** Friday 2026-11-06 13:44 · **Filmed in WoL:** Saturday 2026-11-21 11:03
 
 ![auraStacking in WoL](media/auraStacking-wol.gif)
 
-*In WoL, with `auraStacking log` (Ethiopians, 5 `Pikeman` with a test aura `BuildingWorkRate` ×3 and `<NoStack>`, `ring_work.xml`):*
-the Town Centers in range work at ×3. [Full video (MP4)](media/auraStacking-wol.mp4).
+*In WoL, with `auraStacking log` (Danes; a Pikeman carries a test aura `Speed` ×1.5 on `AbstractInfantry`, 12 m, with
+`<ModifyExclusive>`, `<ForbidUnitType>Musketeer</ForbidUnitType>` and [`ring_speed.xml`](#aura-rings)):* the three Crossbowmen
+wear the blue ring and walk at 6.0, the three Musketeers have no ring and stay at 4.0; the log names each refusal.
+[Full video (MP4)](media/auraStacking-wol.mp4).
 
 ![auraStacking in WoL, key off](media/auraStacking-wol-control.gif)
 
-*In WoL, key off (the same data):* the game skips the tag, the auras multiply and they work at ×27.
+*In WoL, key off (the same data):* the game skips the tag, and the Musketeers wear the ring too.
 [Full video (MP4)](media/auraStacking-wol-control.mp4).
 
 ```
@@ -1337,28 +1383,39 @@ auraStacking [log]
 <action>
     <name>MyAura</name>
     <type>AutoRangedModify</type>
-    <nostack>1</nostack>
-    <forbidunittype>Hussar</forbidunittype>
+    <modifyexclusive>1</modifyexclusive>           <!-- stock: carriers of this aura do not multiply -->
+    <forbidunittype>Musketeer</forbidunittype>      <!-- this key -->
 </action>
 ```
 
-- **In WoL today:** every carrier of an aura multiplies: five of ×4 give ×1024.
-- **`<NoStack>`:** a target holds this aura from one carrier. When that one dies or it leaves its range, the next takes over,
-  0.6 s later in the test. Another aura still multiplies with it. For stock auras and those of `buildingWorkRateAuras`,
-  `resourceGatherAuras` and `unitResourceAuras`, where each target is paid by one carrier.
-- **`<ForbidUnitType>`** (or `<ForbidAbstractType>`, more than once): the aura leaves those units alone, on any aura.
-- **Same aura:** the same proto and action name. Two protos sharing a tactics file are two auras, and the first carrier stays: the
-  strongest does not win.
+- **`<ForbidUnitType>`** (or `<ForbidAbstractType>`, more than once, a unit type or a proto): the aura leaves those units alone,
+  on any aura. A name the game does not know is logged once and ignored.
+- **Stacking is stock:** `<ModifyExclusive>1</ModifyExclusive>` on the aura. Every carrier still gives each unit its
+  modifier, but the game's stat sum stops at the first exclusive one, so five carriers of a ×1.5 aura give ×1.5, not
+  ×1.5⁵, and when a carrier dies the others' modifiers are already there. It also stops the auras of the same stat that
+  come after it: a unit under two exclusive Speed auras, ×1.5 and ×1.2, walks at ×1.5. The same holds for the stats of
+  [`buildingWorkRateAuras`](#buildingworkrateauras) and [`resourceGatherAuras`](#resourcegatherauras), and for
+  [`unitResourceAuras`](#unitresourceauras), where each target then pays one carrier, with this key on or off.
+- **`<NoStack>` is retired** (JTMaston, 2026-11-21: `<ModifyExclusive>` already did it). Data that still has it loads:
+  the key logs `auraStacking: proto Pikeman: <NoStack> is retired, use <ModifyExclusive>1</ModifyExclusive>; ignored`
+  (20 lines at most) and [`dataLint`](#datalint) counts it as an unknown action tag. Put `<ModifyExclusive>1</ModifyExclusive>`
+  in its place.
 - **Changes the simulation:** every player needs the same setting and data.
-- **Saved games:** nothing to do: the mark is in the modifier, which the game saves.
-- **Log:** `auraStacking: applied`, `hook reached: auraStacking filter (0x9D0633)`, `auraStacking applied (0x9D0675)`, and with `log`
-  `auraStacking: unit 1 holds unit 6`, `unit 2 leaves unit 6 alone: it holds this aura`.
+- **Saved games:** nothing to keep: the modifiers are the game's, and the payer of a `UnitResource` target is chosen again
+  after a load.
+- **Log:** `auraStacking: applied`, `hook reached: auraStacking filter (0x9D0633)`, and with `log`
+  `unit 0 leaves unit 4 alone: a forbidden type (Musketeer)`, `unit 7 leaves unit 9 to unit 8: <ModifyExclusive>`.
 - **Not covered:** the applier of auras with no range, FUN_009D7328, and powers.
-- **Tested in WoL (2026-11-06):** a stock Speed ×4 aura, ×256 with 4 carriers and ×4 with the tag; `resourceGatherAuras` ×1024 against
-  ×4; `buildingWorkRateAuras` ×64 against ×4; two Sawmills on three trees, one payer each; two auras ×8; a Hussar forbidden from an
-  `AbstractCavalry` aura, 0 modifiers; a loaded game kept one modifier; beside WoL's DLL; an AI skirmish of 100 s with no XS error.
-  Performance could not be compared: other games were running, and the two runs do not carry the same modifiers. Not tested:
-  multiplayer, recorded games.
+- **Tested in WoL (2026-11-21, `<ModifyExclusive>`):** five Pikemen with six test auras, read in game memory and the keys'
+  logs: villagers under an exclusive Speed ×1.5 at 6.00 from 4.00, the Explorer under the same aura without the tag at
+  34.17 from 4.5 (×1.5⁵); `buildingWorkRateAuras` ×2 on the Town Center with the tag; `resourceGatherAuras` wood ×2 with
+  the tag against food ×32 without it, on the same villagers. Four carriers killed one after the other: the villagers
+  stayed at 6.00, the Explorer went down to 6.75. Two Sawmills over three trees with `<ModifyExclusive>`: each tree paid
+  one Sawmill.
+- **Tested in WoL (2026-11-21, the key without `<NoStack>`):** `<ForbidUnitType>Musketeer` and
+  `<ForbidAbstractType>AbstractGunpowderTrooper`: the Crossbowmen held both modifiers, the Musketeers none; a bad name
+  logged once; old `<NoStack>` data loaded and logged as retired; a game saved and loaded kept the modifiers, and the
+  Sawmills one payer per tree. Not tested: multiplayer, recorded games.
 
 ### Civs
 
@@ -2105,8 +2162,8 @@ Who heals, whom, and how far.
 | [`healNonIdle`](#healnonidle) | Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | **new** | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). | confirmed (automatic healing) |
 | [`smartHealTargets`](#smarthealtargets) | A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | **new** | Nothing (unit types or proto names are optional). | confirmed |
 | [`overhealHitpointBars`](#overhealhitpointbars) | The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | **new** | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. | confirmed (single player, UI) |
-| [`overhealSources`](#overhealsources) | Only source healers heal those units above `InitialHitpoints`, each type up to its own cap and at its own rate; every other heal stops there. | **new** | `overhealHitpointBars`, and the source unit type on the healers that may overheal. | confirmed |
-| [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time, except while an own unit of a chosen type is near. | **new** | `overhealHitpointBars`. | confirmed |
+| [`overhealSources`](#overhealsources) | Only heal actions with `<CanOverheal>1</CanOverheal>` heal those units above `InitialHitpoints`, up to their `<OverhealCap>`, and techs can turn it on or off; every other heal stops there. | **new** | `overhealHitpointBars`, and the tags on the `Heal` actions that may overheal. | confirmed (single player) |
+| [`overhealDecay`](#overhealdecay) | The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | **new** | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. | confirmed (single player) |
 
 #### healNonIdle
 
@@ -2486,7 +2543,24 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
 
 *Only chosen healers can heal a unit above its normal health.*
 
-**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Thursday 2026-11-12 13:25
+**Added:** Thursday 2026-10-29 13:37 · **Filmed in WoL:** Saturday 2026-11-21 12:00
+
+![overhealSources with CanOverheal in WoL](media/overhealSources-canoverheal-wol.gif)
+
+*In WoL, with `overhealSources log`, `overhealDecay log` and `overhealHitpointBars AbstractOverheal segment stat` (2026-11-21,
+a scenario; a `Pikeman` marked for the test, `MaxHitpoints` 156, and an `NAnurse` beside it, both selected; the techs
+`UHCOvhNurseOn` and `UHCOvhNurseOff` are test data: `Data` `CanOverheal` with `action="Heal"`, `Assign` 1 and 0):* hit at 8
+s, the nurse heals it to its 100 %, `122.2/148`, and stops: her `Heal` has no `<CanOverheal>`. At 22 s a trigger gives
+player 1 `UHCOvhNurseOn`, and she takes it to `148.2/148`, its max (`tech subtype CanOverheal, relativity 1, amount 1: 0
+-> 1`). At 42 s `UHCOvhNurseOff` (`1 -> 0`): she stops, and the overheal decays at the default 2 % a second (2.44 HP/s)
+back to `122.2` by 55 s. [Full video (MP4)](media/overhealSources-canoverheal-wol.mp4).
+
+![overhealSources with CanOverheal in WoL, key off](media/overhealSources-canoverheal-wol-control.gif)
+
+*In WoL, `overhealSources` and `overhealDecay` off (the same data and scene):* the nurse heals the Pikeman straight to
+`148.2`, before any tech, and it stays there. [Full video (MP4)](media/overhealSources-canoverheal-wol-control.mp4).
+
+*The videos below were filmed before 2026-11-21, when a healer's unit type made it a source (`AbstractOverhealer`, then the default); a type named in the cfg still works that way.*
 
 ![overhealSources in WoL](media/overhealSources-wol.gif)
 
@@ -2525,18 +2599,36 @@ healed at about 10 HP/s to 150, then at 5 HP/s, and stops at `165/150`, 110 %.
 back. [Full video (MP4)](media/overhealSources-cap-wol-control.mp4).
 
 ```
-overhealSources [<UnitType> [cap=<percent>] [rate=<percent>] ...] [log]   default AbstractOverhealer; up to 8 types
+overhealSources [<UnitType> [cap=<percent>] ...] [log]   no type by default; up to 8 types
 ```
 
-- **`cap=<percent>`** (100 to 1000) after a source type: its healers heal a marked unit to at most that percent of its
-  100 %, and never above `MaxHitpoints` (the default, as before). Their heal action ends there and their search skips a
-  unit at its cap, as for a normal healer at the 100 %. `cap=100` makes the type a normal healer for marked units.
-- **`rate=<percent>`** (1 to 1000, default 100) after a source type: the part of each of its heals that lands above the
-  100 % is that percent of the stock amount; below the 100 % the heal is unchanged.
-- **Per type:** the options belong to the type they follow, e.g. `overhealSources AbstractMonk cap=105 Surgeon cap=120
-  rate=50`. A healer of several listed types takes the options of the first one listed. `50%` works too.
-- **A bad option** stops the key: `overhealSources: cap=110: expected <UnitType> [cap=<percent>, 100 to 1000]
-  [rate=<percent>, 1 to 1000] after each source type; feature not applied` (also for an option before any type).
+```xml
+<action>
+    <name>Heal</name>
+    <type>Heal</type>
+    <rate type="LogicalTypeHealed">5.0</rate>
+    <CanOverheal>1</CanOverheal>      <!-- this heal may go above the 100 % (default 0) -->
+    <OverhealCap>110</OverhealCap>    <!-- up to 110 % of the 100 % (100 to 1000; default: up to MaxHitpoints) -->
+</action>
+```
+
+- **Which heals overheal (2026-11-21, JTMaston's #85):** the heal action says so itself. `<CanOverheal>1</CanOverheal>`
+  in a `Heal` action, in its `.tactics` file or in the proto's `<ProtoAction>`, lets that action heal a marked unit above
+  its 100 %; without it (the default) the action stops there. `<OverhealCap>percent</OverhealCap>` (100 to 1000) stops it
+  at that percent of the 100 % (never above `MaxHitpoints`); without it, up to `MaxHitpoints`. Above the 100 % the action
+  heals at its own `<rate>`, as below it: there is no separate overheal rate. A `.tactics` file shared by several protos
+  gives the tags to each of them; a `<ProtoAction>` to its proto only. The tags on an action whose name has no "Heal" are
+  logged and ignored, and so is a bad value (`<CanOverheal>` takes 1 or 0).
+- **Techs:** a `Data` effect of subtype `CanOverheal` or `OverhealCap`, with `action="Heal"` (or `allactions="1"`),
+  changes them for the player who gets the tech, as stock's `Damage` changes an action:
+  `<Effect type="Data" amount="1" subtype="CanOverheal" action="Heal" relativity="Assign"><Target type="ProtoUnit">NAnurse</Target></Effect>`
+  turns it on, `amount="0"` with `Assign` turns it off, `OverhealCap` with `Assign` sets the cap (`Absolute` adds, as for
+  any value). A saved game gets them back when its techs apply again on the load.
+- **`AbstractOverhealer` is no longer a source by default.** The cfg's unit types are an explicit opt-in that still works
+  (until the data moves to the tags): a healer of a listed type overheals with every heal action, to its type's
+  `cap=<percent>` (100 to 1000) or up to `MaxHitpoints`. `rate=` is gone: it is logged and ignored (`rate= is gone, an
+  overhealing action heals at its own <Rate>; ignored`). A bad `cap=` stops the key: `overhealSources: cap=110: expected
+  <UnitType> [cap=<percent>, 100 to 1000] after each type; feature not applied` (also for an option before any type).
 - **Measured in WoL (2026-11-11),** the scene above: 107.8 → 123.6 → 140.0 in steps of 1.6 s (about 10 HP/s), then
   152.7 → 160.4 in 1.55 s (5.0 HP/s), held at 165.0; without the options 159.0 → 174.8 in 1.57 s (10 HP/s) up to 180.
   At the start, a fresh Tomahawk (150) was taken to 165 by the source, 180 without the cap.
@@ -2546,32 +2638,46 @@ overhealSources [<UnitType> [cap=<percent>] [rate=<percent>] ...] [log]   defaul
   have overheal, and its 100 % (`InitialHitpoints`, scaled when an aura changes the max) is the
   limit here. Without that line the key is not applied.
 - **Effect,** for a marked unit:
-  - a healer whose proto is of a source type (default `AbstractOverhealer`, a new marker; an existing
-    type or a proto name works too) heals it up to `MaxHitpoints`;
-  - any other healer heals it only up to its 100 %: its automatic search does not pick a marked
+  - a heal action with `<CanOverheal>1</CanOverheal>` (or a healer of a type named in the cfg) heals it up to
+    its `<OverhealCap>` or `MaxHitpoints`;
+  - any other heal action heals it only up to its 100 %: its automatic search does not pick a marked
     unit at its 100 %, and its heal action ends when the unit gets there (the healer goes idle);
     a direct order on such a unit ends at once;
   - every other way of gaining HP stops at the 100 % too: regeneration, the Regeneration dance,
     area heals, self heals, powers and triggers that add HP. Only the single-target heal action of
-    a source healer overheals. Damage, and code that sets HP rather than adding it (creation,
+    an overhealing action overheals. Damage, and code that sets HP rather than adding it (creation,
     transforms, the aura rescale), are not touched.
 
   Unmarked units heal as before.
-- **WoL needs:** the source type on the healers that may overheal, e.g.
-  `<UnitType>AbstractOverhealer</UnitType>` on `xpMedicineMan` in `data\protoy.xml`, or name an existing
-  type: `overhealSources AbstractMonk`, or a proto: `overhealSources xpMedicineMan`.
-- **Log:** `overhealSources: only healers of unittype X heal marked units above their 100 %; every
-  other heal stops there (multiplayer unverified)`; when the data loads `unit types: X -> <ID> …`;
+- **WoL needs:** `<CanOverheal>1</CanOverheal>` (and `<OverhealCap>` where wanted) in the `Heal` actions that may
+  overheal, in their `.tactics` files or `<ProtoAction>`; until then, a cfg type keeps today's behaviour:
+  `overhealSources AbstractOverhealer cap=110`.
+- **Log:** `overhealSources: only heal actions with <CanOverheal>1</CanOverheal> (Data subtypes CanOverheal and
+  OverhealCap) heal marked units above their 100 %; every other heal stops there (multiplayer unverified)`; with `log`,
+  each tag as the data loads, `overhealSources: proto Surgeon, action Heal (protoy): <CanOverheal> 1`, each tech,
+  `overhealSources: proto 1682, action Heal, tech subtype CanOverheal, relativity 3, amount 0: 1 -> 0`; a tag on another
+  action, `proto Settler, action Build: <CanOverheal> is for heal actions only, ignored`, a bad value, `proto
+  ypMonkIndian, action Heal: <OverhealCap>abc</OverhealCap> needs a percent from 100 to 1000, ignored`;
   in a game `hook reached: overhealSources heal search (0x9CD984)`, `heal tick (0x9E0BBB)`, `heal
   (0x9E0CE9)` and `overheal add HP (0x4823A3)`. With `log`, the first of each proto: `overhealSources:
-  a heal of unit N (Tomahawk) stops at its 100 % 150.0 (…; not from a source healer)` and `…unit N
-  (Tomahawk) is healed above its 100 % 150.0 by a source healer (…; rate 50 %)`; with a cap, `overhealSources: a
-  source heal of unit N (xpTomahawk) stops at its cap 165.0, 110 % of its 100 % 150.0 (…)`. The startup line lists the
-  options after each type: `AbstractOverhealer (up to 110 %, rate 50 % above 100 %)`. Without
+  a heal of unit N (Pikeman) stops at its 100 % 122.2 (…; not from an overhealing heal)` and `…unit N
+  (Pikeman) is healed above its 100 % 122.2 by an overhealing heal (…)`; with a cap, `overhealSources: an
+  overheal of unit N (Longbowman) stops at its cap 132.0, 110 % of its 100 % 120.0 (…)`. With cfg types the startup
+  line adds `; and every heal of a healer of unittype AbstractOverhealer (up to 110 %)`. Without
   `overhealHitpointBars`: `overhealSources: needs overhealHitpointBars, …; feature not applied`.
 - **Simulation:** yes. Every machine needs the same line (and `overhealHitpointBars` with the same
   types). The source type is a new unit type, which changes the unit type count.
 - **Status:** confirmed in single player.
+  - **`<CanOverheal>`, `<OverhealCap>` and the techs (2026-11-21, WoL, scenarios; British `Longbowman` and `Pikeman` marked for
+    the test, 120 of 144 and 130 of 156):** a `Surgeon` with both tags in its `<ProtoAction>` (cap 110) held its Longbowman at
+    `132.0`, 110 % of 120; an `xpMedicineMan` with `<CanOverheal>1</CanOverheal>` in `healer.tactics` (no cap) took its
+    Longbowman to `144.0`, its max (the same file gave the tag to `Imam`, `NatMedicineMan` and `AboriginalElder` too); an
+    `NAnurse` without it stopped at the 100 %, 122.2, until `UHCOvhNurseOn` (`Assign` 1), then 148.2, and after
+    `UHCOvhNurseOff` (`Assign` 0) the overheal decayed to 122.2 in about 11 s; `UHCOvhNurseCap` (`Assign` 120) stopped her at
+    `146.6`. Player 2's nurse, without the techs, kept its Pikeman at 122.2 the whole time. A saved game loaded with
+    the techs active kept them (a Pikeman held at 148.2 with its decay set to 0 by a tech stayed there after the load).
+    `<CanOverheal>` on a Settler's `Build` and `<OverhealCap>abc</OverhealCap>` were logged and ignored. The keys applied
+    and worked beside WoL's own `uhc.dll` (our `dinput8.dll`), and an AI skirmish (Germans, `wolOtto`) played with them on (17 AI units at 159 s, no XS error). `perfprobe.py`, 60 s of 20 marked Longbowmen with 5 healers against 20 Pikemen with 3 overhealing nurses: keys on 526 fps, update 0.20 ms, main thread 65 %, no frame over 50 ms; keys off 578 fps, 0.24 ms, 77 %, none (other games ran beside it). Not tested: multiplayer.
   - **In WoL (2026-11-04):** a `NAnurse` healed a marked Tomahawk to `150/150` and stopped, and a source
     medicine man took it to `179/150`; without the key the nurse herself went past it. The Regeneration
     dance stopped at `150/150`, and went to `180/150` without the key.
@@ -2621,8 +2727,23 @@ then 2 HP/s back to 150 at 41.6 s. [Full video (MP4)](media/overhealDecay-holdne
 [Full video (MP4)](media/overhealDecay-holdnear-wol-control.mp4).
 
 ```
-overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [holdNear <UnitType> <metres> ...] [log]
+overhealDecay [<rate>[%] [<delay>]] [<UnitType> ...] [holdNear <UnitType> <metres> ...] [log]
 ```
+
+```xml
+<Unit name="Longbowman">
+    <OverhealDecay delay="2">5</OverhealDecay>   <!-- 5 % of its 100 % per second, 2 s after its last gain -->
+</Unit>
+```
+
+- **Per proto (2026-11-21, JTMaston's #85):** `<OverhealDecay delay="S">R</OverhealDecay>` in a marked unit's proto: it
+  loses R % of its 100 % per second, S seconds (default 0) after its last gain; 0 keeps its overheal. A marked proto
+  without the tag takes the cfg line's rate and delay, or **2 % per second and no delay** when the line has none: the
+  line `overhealDecay` alone is the switch. A bad value is logged and the tag ignored.
+- **Techs:** `Data` effects of subtype `OverhealDecay` (the percent) and `OverhealDecayDelay` (seconds) on a proto or a
+  unit type change them for the player who gets the tech:
+  `<Effect type="Data" amount="0" subtype="OverhealDecay" relativity="Assign"><Target type="ProtoUnit">AbstractInfantry</Target></Effect>`
+  stops the decay of that player's infantry. A saved game gets them back when its techs apply again on the load.
 
 - **`holdNear <UnitType> <metres>`** (up to 4; more than 0, at most 200 m): a unit due to decay keeps its HP while a
   unit of that type (or proto) **of the same player**, alive and built, other than itself, is within that distance
@@ -2638,12 +2759,12 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [holdNear <UnitType> <metres>
 
 - **Needs** [`overhealHitpointBars`](#overhealhitpointbars): its types mark the units and its
   100 % (`InitialHitpoints`, scaled when an aura changes the max) is where the decay stops.
-- **Effect:** a marked unit whose HP is above its 100 % loses `rate` HP per second (`2`), or
-  `rate` percent of its 100 % per second (`1%`), counted in game time (paused games and game speed
+- **Effect:** a marked unit whose HP is above its 100 % loses its proto's `<OverhealDecay>` percent of its 100 % per
+  second, or the line's `rate` HP per second (`2`) or percent (`2%`), 2 % by default, counted in game time (paused games and game speed
   follow), once `delay` seconds (default 0, decimals allowed) have passed since it last gained HP
   above its 100 %. It stops exactly at its 100 %: the decay never goes below it and never kills.
   With unit types (or proto names) listed, only marked units of those types decay. Works with or
-  without [`overhealSources`](#overhealsources): with it, only source healers create overheal to
+  without [`overhealSources`](#overhealsources): with it, only overhealing heal actions create overheal to
   decay; without it, any heal above the 100 % does.
 - **What counts as a gain:** any heal that takes the unit above its 100 % (healers, area heals,
   powers…) restarts the delay. Regeneration (the unit's own, and the Regeneration dance) does not:
@@ -2651,8 +2772,11 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [holdNear <UnitType> <metres>
   above its 100 % decays at once (the rate minus what it regenerates). With `overhealSources`,
   regeneration never passes the 100 % anyway. HP that a unit has above its 100 % without any gain
   (a transform into another marked proto, for instance) does not decay until its next gain.
-- **Log:** `overhealDecay: marked units above their 100 % lose R HP per second of game time, D s
-  after their last gain, down to it (multiplayer unverified)`; in a game `hook reached: overheal add
+- **Log:** `overhealDecay: marked units above their 100 % lose their <OverhealDecay> (% of it per second, after its
+  delay; Data subtypes OverhealDecay and OverhealDecayDelay), or 2.00 % of it per second of game time 0.0 s after their
+  last gain, down to it (multiplayer unverified)`; with `log`, each tag, `overhealDecay: proto Longbowman loses 5.00 % of
+  its 100 % per second, 2.0 s after its last gain`, and each tech, `overhealDecay: proto Pikeman, tech subtype
+  OverhealDecay, relativity 3, amount 0: 2 -> 0`; in a game `hook reached: overheal add
   HP (0x4823A3)`, `hook reached: world update (0x481A57)`, `hook reached: overhealDecay
   regeneration (0x490881)` and, with a Regeneration dance, `overhealDecay Regeneration dance
   (0x67A03B)`. With `log`, the first of each proto:
@@ -2669,6 +2793,12 @@ overhealDecay <rate>[%] [<delay>] [<UnitType> ...] [holdNear <UnitType> <metres>
   to 30.2 s in both runs (WoL, 2026-11-06). A unit transformed while it waits loses that until its next gain.
   `holdNear` keeps nothing of its own: it looks again on every tick.
 - **Status:** confirmed in single player.
+  - **`<OverhealDecay>` and the techs (2026-11-21, WoL, scenarios):** a Longbowman with `<OverhealDecay delay="2">5</OverhealDecay>`
+    went from 144 to 138 in a second, 2 s after its healer's last heal (5 % of 120 per second); a Pikeman without the tag
+    decayed at the default 2 % (2.44 HP/s of its 122.2) with the line `overhealDecay log` alone; `UHCOvhDecayInfantry`
+    (`Assign` 0 on `AbstractInfantry`) stopped player 2's Pikeman at 148.2, also after a save and a load, while player 1's,
+    without it, decayed. The tag's log line: `overhealDecay: proto Longbowman loses 5.00 % of its 100 % per second, 2.0 s
+    after its last gain`.
   - **In WoL (2026-11-12):** with `overhealDecay 3 1`, a marked Sepoy at `216/180` went down 3 HP a second from
     1 s after its healer was removed, to `180/180`, and the orange ends of both bars and the row went with it
     (`decays from 216.0 toward its 100 % 180.0 at 3.00 HP/s`, then `is back at its 100 % 180.0`); without the key
@@ -2704,19 +2834,45 @@ Attacks, armor, and what a hit does.
 | [`containedUnitsROF`](#containedunitsrof) | An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | **new** | The attribute on the attacks that want it (none has it today). | confirmed |
 | [`numberOfShots`](#numberofshots) | An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | **new** | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. | confirmed (single player) |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
-| [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | **new** | The type on the protos that want it. | confirmed |
+| [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | **new** | The type on the protos that want it. | confirmed |
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
 | [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
-| [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | **new** | The rows on the protos that want them. | confirmed |
+| [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | **new** | The rows on the protos that want them. | confirmed |
 | [`killSpawn`](#killspawn) | A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | **new** | The tags on the civ in `civs.xml`. | confirmed (single player) |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
 | [`customImpactTypes`](#customimpacttypes) | New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | **new** | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. | confirmed (single player, picture; sound not filmed) |
 
 #### detonationDeath
 
-*A unit can deal area damage around itself when it dies, and the blast shows where it hits.*
+*A unit can deal area damage around itself when it dies, and the blast shows on the unit that dies, over the whole of a building.*
 
-**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Friday 2026-11-13 09:24
+**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Saturday 2026-11-21 11:54
+
+![detonationDeath on a building in WoL](media/detonationDeath-building-wol.gif)
+
+*In WoL, with `detonationDeath log` (2026-11-21, a scenario; a `TownCenter` whose `CitadelBombardAttack` is its blast, 60
+Siege, `DamageArea` 10, `GAIAEnemy`, `<DetonationImpactEffect>effects\impacts\mortar</DetonationImpactEffect>`; eight Gaia
+`CoveredWagon` around it, their HP on screen):* a trigger destroys the Town Center at 55 s, and it blows up over its
+whole footprint, nine explosions on the building (`blast drawn at 9 points over its footprint`). The wagons show no
+explosion of their own and go from 250 to between 217.6 and 238.0 HP, the same as with the previous version of the key.
+[Full video (MP4)](media/detonationDeath-building-wol.mp4).
+
+![detonationDeath on a building in WoL, key off](media/detonationDeath-building-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* the Town Center collapses with its stock destruction only, and the wagons
+keep 250 HP. [Full video (MP4)](media/detonationDeath-building-wol-control.mp4).
+
+![detonationDeath on a unit in WoL](media/detonationDeath-onunit-wol.gif)
+
+*In WoL, with the key (the same scenario; a British `Grenadier` whose `BuildingAttack` is its blast, 40 Siege,
+`DamageArea` 6, the mortar effect; three Gaia `CoveredWagon` beside it):* a trigger kills the grenadier at 20 s: one
+mortar explosion where it stood (`blast drawn at 1 point`), none on the wagons, which go to 243.2, 233.9 and 235.2 HP.
+[Full video (MP4)](media/detonationDeath-onunit-wol.mp4).
+
+![detonationDeath on a unit in WoL, key off](media/detonationDeath-onunit-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* the grenadier falls, nothing explodes, and the wagons keep 250 HP.
+[Full video (MP4)](media/detonationDeath-onunit-wol-control.mp4).
 
 ![detonationDeath blast in WoL](media/detonationDeath-blast-wol.gif)
 
@@ -2829,6 +2985,12 @@ detonationDeath [log]
   effect stays. It is only drawn where the player can see, as a shot's landing is: a blast in the fog or the black
   map damages as usual and shows nothing. Over water the effect's water entry plays (`terrainwater`; for the mortar a
   water burst with its sound). Drawing and sound only: nothing in the simulation changes.
+- **The blast is on the unit that dies, not on what it hits (2026-11-21, JTMaston's #86):** a wide unit, a building or a
+  ship (`ObstructionRadiusX` or `ObstructionRadiusZ` from 1.5), bursts over its whole footprint: the effect plays at a grid
+  of points over it, about one every 3 m and at most 3 × 3 (a `House` 2 × 2, a `TownCenter` 3 × 3), so the building
+  itself blows up; a smaller unit gets the effect once, where it stood. The units hit show no effect of their own (the
+  game's area damage draws none: they only flinch) and, since this change, play no hit or pain sound: the only explosion
+  seen and heard is the one on the unit that dies. The damage is the same as before.
 - **A unit with `KnockoutDeath`** (WoL's `Engineer`, explorers, heroes) is knocked out, not killed, so it does not
   detonate (since 2026-11-13). `<DetonationOnKnockout>1</DetonationOnKnockout>` on the proto makes it detonate at each
   knockout: once per knockout, as damage while it lies knocked out does nothing, and again at the next knockout after
@@ -2860,7 +3022,7 @@ detonationDeath [log]
 - **Log:** `detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold, DetonationHitpointDecay, DetonationImpactEffect and DetonationOnKnockout are on`, in game `knocked out (KnockoutDeath), no blast` and a blast line ending in `(a trigger's Kill)`, with `log` `detonationDeath: proto 298 detonates when knocked out`, with `log` `detonationDeath: proto 714: its blast plays the impact effect effects\impacts\mortar (11)` / `its blast plays no impact effect`, and without `log` `<DetonationImpactEffect> X is not an impact effect, ignored`; with `log` `detonationDeath: proto 296 detonates on its command Detonate (a delete)` / `detonates at 25 % of its hit points` / `loses 100.00 hit points a second under its threshold`, and in game `detonationDeath: unit 0, proto 323: HP 79.5 of 165.0 (48 %) under the threshold 50 %: kill queued`, `… loses 100.00 HP a second from here`, `unit 0 decayed to 0: kill queued`, a blast line ending in `(a delete)`, or `deleted without a DetonationCommand, no blast`, and with `log`: `detonationDeath: proto 294 fires Build` and
 - **Performance:** every loss of hit points asks the tag table once (a map lookup by proto ID), and the decay walks only
   the decaying units each world update. Measured with `perfprobe.py` (60 s, 30 Pikemen against 30, no tag on them): key on 1467 fps, main thread 79 %, longest frame 2.5 s (the load) and no frame over 50 ms after it; key off 1444 fps, 81 %, 3.7 s. With 30 Musketeers of 4000 HP against 30 that carry a threshold and a decay of 100 HP/s the game ran at 640 fps against 1461 and the render time tripled: that is the decaying units themselves (the HP setter's damage visuals on 30 units every update), not the hook, which runs on untagged units at no measurable cost.
-  `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0`. Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
+  `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0; blast drawn at 1 point` (a building: `blast drawn at 9 points over its footprint`). Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
 ![detonationDeath threshold and decay in WoL](media/detonationDeath-threshold-wol.gif)
 
 *In WoL, with the key (a Musketeer of 4000 HP, threshold 0.25, decay 100, a trigger that takes 76 % of its HP):* from
@@ -2880,6 +3042,13 @@ detonationDeath [log]
 *In WoL, key off (the same data):* the Delete key removes it with no line.
 [Full video (MP4)](media/detonationDeath-command-wol-control.mp4).
 
+- **Tested in WoL (2026-11-21, the blast on the unit that dies, JTMaston's #86):** the two videos above. The damage is
+  the same as before the change: with the build of 2026-11-20 and the same data and scene, the eleven wagons ended at the
+  same HP to the tenth (217.6 to 243.2). The area damage was read in REA: it draws nothing on the units it hits (they
+  flinch; the impact argument of TakeDamage is −2), so the only change for them is that they no longer play a hit sound.
+  A chain of three Gaia grenadiers (one killed, the two beside it at 5 HP): three blasts, one per grenadier, each `blast
+  drawn at 1 point`. Beside WoL's own `uhc.dll` (our `dinput8.dll`): applied, and a grenadier's blast as above. An AI
+  skirmish (Germans, `wolOtto`) with the key and the test data on: 17 AI units at 159 s, no XS error.
 - **Tested in WoL (2026-11-13, the blast on screen):** the scene of the first two videos (Ethiopians against an enemy
   of six `WOLScytheman`): four blasts, `unit 3, proto 714, at 41.9, 45.1` and `unit 2 … at 43.8, 45.2` (the archers,
   mortar effect) and `unit 1, proto 1482, at 38.5, 45.9` and `unit 0 … at 36.9, 46.6` (the Engineers, dynamite), each
@@ -3683,18 +3852,24 @@ containedUnitsROF [log]
 
 *An attack can fire several quick shots before it reloads, and a shot can fire several projectiles, like a shotgun.*
 
-**Added:** Thursday 2026-11-12 18:11 · **Filmed in WoL:** Thursday 2026-11-12 18:35
+**Added:** Thursday 2026-11-12 18:11 · **Filmed in WoL:** Saturday 2026-11-21 11:31
 
 ![numberOfShots in WoL](media/numberOfShots-wol.gif)
 
-*In WoL, with `numberOfShots log` (3 `Skirmisher`s, selected, whose ranged attacks have
-`<NumberOfShots>3</NumberOfShots><ShotInterval>0.4</ShotInterval>` in `protoy.xml`, test data; 5 enemy `Settler`s; the
-log at the bottom):* each Skirmisher fires three shots 0.4 s apart, then waits its 3 s ROF. The settlers' HP is at the top:
-after two bursts one has fallen and two are hurt; all five are down by 49 s. [Full video (MP4)](media/numberOfShots-wol.mp4).
+*In WoL, with `numberOfShots projectiles log` and `containedUnitsROF` (3 `Skirmisher`s, selected, whose ranged attacks have
+`<NumberOfShots>3</NumberOfShots><ShotInterval>0.4</ShotInterval>` in `protoy.xml`, test data; 6 enemy `Settler`s created
+in range at 16 s; the log at the bottom; filmed again on 2026-11-21):* each Skirmisher fires three shots 0.4 s apart,
+holding its aim between them, then reloads during its 3 s ROF. All six settlers are down by 41 s.
+[Full video (MP4)](media/numberOfShots-wol.mp4).
+
+![numberOfShots in WoL, before 2026-11-21](media/numberOfShots-before-wol.gif)
+
+*In WoL, the key as it was before 2026-11-21 (the same scene):* the same shot times, but between the quick shots each
+Skirmisher runs its whole reload animation in a fraction of a second. [Full video (MP4)](media/numberOfShots-before-wol.mp4).
 
 ![numberOfShots in WoL, key off](media/numberOfShots-wol-control.gif)
 
-*In WoL, key off (the same scene and data):* one shot every 3 s; at 50 s two settlers have fallen.
+*In WoL, key off (the same scene and data):* one shot every 3 s; at 41 s one settler has fallen and one is hurt.
 [Full video (MP4)](media/numberOfShots-wol-control.mp4).
 
 ![numberOfShots projectiles in WoL](media/numberOfShots-projectiles-wol.gif)
@@ -3722,6 +3897,12 @@ numberOfShots [projectiles] [log]
   ROF's pace, so it comes a little later (the aim of the stock animation: 0.67 s after the one before for a 3 s
   Skirmisher), and waits the ROF: the reload. So a burst takes about (N − 1) × interval + ROF. Each shot is a full stock shot:
   its own accuracy roll, damage and projectile. Melee attacks take it too (N hits). A new target starts a new burst.
+- **No reload between the shots of a burst (2026-11-21, JTMaston's #87):** an attack whose tactics action has a
+  `<reloadanim>` plays it only after the burst's last shot. After a quick shot the unit holds the action's `<idleanim>` (its
+  aiming pose) until the next shot, instead of running the whole reload in a fraction of a second. The shot times do not
+  change (in the test 0.40 and 0.67 s between the shots and a 3.80 s burst, with and without it). An action with no
+  `<idleanim>` (or a model without that animation) still shows the reload; an attack with no `<reloadanim>` (melee, or an
+  animation that holds its own reload) plays its attack animation for each shot as before.
 
   ```xml
   <action>
@@ -3747,9 +3928,10 @@ numberOfShots [projectiles] [log]
   ROF). An ROF that something other than the tactics sets (an ability's own) gets no burst.
 - **With other keys:** [`containedUnitsROF`](#containedunitsrof) shares the ROF hooks; with both, the reload is the divided
   ROF and the interval is not divided. `spreadAnyAccuracy` scatters each projectile.
-- **Log:** `numberOfShots: applied`, `hook reached: ROF read: attack start (0x4A1189)`, `ROF read: after a shot (0x48F8B5)`
-  and, with `projectiles`, `numberOfShots projectiles (0x48F88D)`. With `log`: each tag read (at most 200), and the first
-  shots of each action: `numberOfShots: 29731 ms, unit 0 (Skirmisher/VolleyRangedAttack) shot 1 of its burst of 3 (shots so
+- **Log:** `numberOfShots: applied`, `hook reached: ROF read: attack start (0x4A1189)`, `ROF read: after a shot (0x48F8B5)`,
+  `numberOfShots reload (0x4976CB)` and, with `projectiles`, `numberOfShots projectiles (0x48F88D)`. With `log`: each tag read
+  (at most 200), the first six quick shots that skip the reload (`numberOfShots: unit 1 (Skirmisher) shot 1 of its burst of
+  3: the idle animation, no reload`), and the first shots of each action: `numberOfShots: 29731 ms, unit 0 (Skirmisher/VolleyRangedAttack) shot 1 of its burst of 3 (shots so
   far 1): wait 400 ms (the interval)`, `... shot 3 of its burst of 3 ...: wait 3000 ms (the ROF: reload)`, `unit 2
   (Skirmisher/VolleyRangedAttack) launches 4 projectiles for one shot`.
 - **Simulation:** changes combat: every player needs the same line and data.
@@ -3762,12 +3944,22 @@ numberOfShots [projectiles] [log]
   logged and ignored; `numberOfShots bogus`: logged, not applied. A 100 s skirmish against `wolOtto` (Germans) with
   `projectiles` (so WoL's own `numberprojectiles` read): no XS error, the AI had 10 settlers and a Manor. Performance (`perfprobe.py`, 60 s each, 30 `Skirmisher`s against 30 `Crossbowman`s beside a forest, a mine and deer): with the key and `projectiles` but no tag in the data, 978 fps, update 0.133 ms, render 0.89 ms a frame; key off 988 fps, 0.136 ms, 0.88 ms; no frame over 50 ms in any run (the longest 4 ms). With the Skirmishers' 3-shot bursts and 2 projectiles a shot, the update stays 0.13 ms and the render rises to 1.0–1.3 ms: six times the tracers on screen, the data's cost. Not tested:
   multiplayer, beside WoL's DLL (`dinput8.dll`).
+- **Tested in WoL (2026-11-21, no reload between the shots):** the videos above (Skirmishers, 3 shots 0.4 s apart, with
+  `projectiles` and `containedUnitsROF` on): shots at 17.22, 17.61 and 18.29 s and the next burst at 21.02 s with the change;
+  17.98, 18.38, 19.04 and 21.78 s without it: the same 0.40 / 0.67 / 2.73 s steps. Frames between the quick shots show the
+  aiming pose instead of the ramrod. A `Falconet` with 3 shots 0.6 s apart (`Bombard_reload`) logged the idle animation
+  after its quick shots and kept firing; against Settlers it starts a new burst after one or two shots, with the change and
+  without it alike (a new target). Two `Pikeman`s with 3 hits 0.3 s apart (no reload animation): bursts of 3 hits as before.
+  Performance (`perfprobe.py`, 60 s, 30 Skirmishers with 3-shot bursts against 30 Crossbowmen): with the key 792 fps, update
+  0.1 ms, render 1.2 ms, main thread 84 %; key off 790 fps, 0.2 ms, 1.2 ms, 84 %; no frame over 50 ms in either. An AI
+  skirmish of 100 s (`wolOtto`, Germans) with the key on: no XS error, the AI built a Manor and gathered. The hook's site is
+  in none of the 287 ranges WoL's DLL patches (`wol-memdiff.txt`). Not tested: multiplayer, a game beside WoL's DLL.
 
 #### broadsideMuzzleLimit
 
 *Ships can fire their broadsides from more than 6 cannons per side.*
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Wednesday 2026-11-04 13:58
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Saturday 2026-11-21 12:11
 
 ![broadsideMuzzleLimit in WoL](media/broadsideMuzzleLimit-wol.gif)
 
@@ -3812,6 +4004,45 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
   - the right side drives both schedules: the left side fires at most as many shots as the right
     side has slots, and a model with no MuzzleR point never fires its broadside;
   - each slot waits a random 0.25 to 1.75 × `ROF` after the previous one (sync RNG).
+- **More shots than cannons (2026-11-21, JTMaston's #88):** a `BroadsideAttack` action of a matched ship with
+  `<NumberProjectiles>P</NumberProjectiles>` (WoL's tactics write it in lowercase, `<numberprojectiles>`; also
+  `<NumberOfProjectiles>`, 1 to 255) gets P slots per side when its side has fewer muzzles: the muzzles fire in turn
+  (slot 1 from muzzle 1, ..., slot 8 from muzzle 1 again on a 7-muzzle side). So an ability fires P shots from all its
+  cannons. A smaller P changes nothing (the muzzles, or N, decide), and so does the tag on any other attack type. For the
+  floating battery's long-range bombardment (`PowerLongRange`, the action `LongRangeAttack` of `Floating_Battery.tactics`):
+
+  ```xml
+  <action>
+      <name stringid="38122">LongRangeAttack</name>
+      <type>BroadsideAttack</type>
+      ...
+      <numberprojectiles>15</numberprojectiles>
+  </action>
+  ```
+
+  with `broadsideMuzzleLimit 7 FloatingBattery` (the model has 7 muzzle bones per side but 5 MuzzleR / MuzzleL attach
+  points, so 5 cannons per side fire, whatever N is). In WoL's data today only that action has a `numberprojectiles` above
+  1 on a broadside (5, equal to its 5 muzzles): nothing changes until a value above the muzzles is written. Each slot still
+  waits its random 0.25 to 1.75 × `ROF` after the one before, so 15 shots take about three times as long as 5.
+  `SingleUsePlayer` actions keep their 1 slot per side, so with P they fire P shots from their first muzzle.
+- **Tested in WoL (2026-11-21, the ability):** Ethiopians, a `FloatingBattery` and a Gaia `Galleon` 33 m away on a water
+  map, `numberprojectiles` 15 on `LongRangeAttack` and `PowerLongRange` aimed at ships (test data: WoL aims it at
+  buildings). The ability cast from its button: with the key the log gave `action 438: 15 projectiles per side over 5 right
+  and 5 left muzzles: 15 and 15 slots` and 15 `CannonballLoS` flew (their IDs counted while the volley lasted), the five
+  cannons of the side each firing three times; key off, 5 flew. The normal attack (`RangedAttack`, `numberprojectiles` 1)
+  kept its 5 slots per side. **Casting the ability needs real clicks:** a background copy's posted clicks reach the
+  command panel but not the world, so these two takes ran alone in front, with the real mouse. Not tested: multiplayer,
+  a `SingleUsePlayer` action with the tag, a saved game during the volley.
+
+![broadsideMuzzleLimit, the floating battery's bombardment in WoL](media/broadsideMuzzleLimit-ability-wol.gif)
+
+*In WoL, with `broadsideMuzzleLimit 7 FloatingBattery log` (Ethiopians; the battery's `LongRangeAttack` with
+`numberprojectiles` 15; a Gaia Galleon off the top right corner):* the bombardment fires 15 mortar shells from its five
+cannons, one after another, and the log shows the 15 slots per side. [Full video (MP4)](media/broadsideMuzzleLimit-ability-wol.mp4).
+
+![broadsideMuzzleLimit, the bombardment in WoL, key off](media/broadsideMuzzleLimit-ability-wol-control.gif)
+
+*In WoL, key off (the same data):* 5 shells, one per cannon. [Full video (MP4)](media/broadsideMuzzleLimit-ability-wol-control.mp4).
 - **When it takes effect:** an action gets its slots when it is set up, which is when it is
   created. A saved game keeps the slot count its actions were saved with.
 - **`log`:** one line per action set-up of a matched ship, with the slots it got, at most 500
@@ -3830,14 +4061,13 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
 - **Simulation:** yes: more projectiles, and one more sync-RNG draw per extra slot and volley. A
   new marker also adds a unit type.
 - **Status:** confirmed in single player, in WoL (2026-11-03) with `broadsideMuzzleLimit 11 ypTekkousen
-  log`: the Tekkousen got `10 right and 10 left muzzle slots` and fired from all of them. The
-  `PowerBroadside` ability and `SingleUsePlayer` attacks were not tested. WoL's ironclad long-range
-  attack has `SingleUsePlayer`, so it keeps 1. A projectile count set in the data, independent of the
-  model (`numberprojectiles`), is a different and larger change; it is not provided.
+  log`: the Tekkousen got `10 right and 10 left muzzle slots` and fired from all of them. WoL's ironclad long-range
+  attack has `SingleUsePlayer`, so it keeps 1. The projectile count of the data (`numberprojectiles`) was added on
+  2026-11-21 (above).
 
 #### cantBeSlowed
 
-*Chosen units can't be slowed by attacks, and chosen attackers can't slow others.*
+*Chosen units can't be slowed by attacks.*
 
 **Added:** Thursday 2026-11-05 09:39 · **Filmed in WoL:** Thursday 2026-11-05 15:23
 
@@ -3850,17 +4080,6 @@ on each):* the Halberdier walks away and the Skirmisher falls behind. [Full vide
 
 *In WoL, key off (the same data):* both are snared and walk level. [Full video (MP4)](media/cantBeSlowed-wol-control.mp4).
 
-![CannotSnare in WoL](media/cantBeSlowed-cannotsnare-wol.gif)
-
-*In WoL, with `cantBeSlowed` and `CannotSnare` on the Uhlan (Ethiopians; two Settlers of 4000 HP walking the same way, two
-Uhlans on the upper one and two Hussars on the lower one):* the Settler under the Uhlans is not snared and pulls ahead.
-[Full video (MP4)](media/cantBeSlowed-cannotsnare-wol.mp4).
-
-![CannotSnare in WoL, key off](media/cantBeSlowed-cannotsnare-wol-control.gif)
-
-*In WoL, key off (the same data):* both Settlers are snared and walk level.
-[Full video (MP4)](media/cantBeSlowed-cannotsnare-wol-control.mp4).
-
 ```
 cantBeSlowed [log]
 ```
@@ -3869,36 +4088,34 @@ cantBeSlowed [log]
 <Unit name="Halberdier">
     <UnitType>CantBeSlowed</UnitType>
 </Unit>
-<Unit name="Uhlan">
-    <UnitType>CannotSnare</UnitType>
-</Unit>
 ```
 
 - **In WoL today:** every `TargetSpeedBoost` attack slows its target to 0.65 of its speed for 3 s. JTMaston's #38.
 - **Effect:** a unit whose proto has the type `CantBeSlowed` is not snared. The hit still does its damage. A
-  `damageOverTime` poison with `<AttachSnare>` does not slow it either. A unit whose proto has the type `CannotSnare`
-  (DE's flag of that name) does not snare with its own `TargetSpeedBoost` attacks, nor with a poison it attaches; its
-  hits still do their damage. Both types are DE's names, so DE data works unchanged.
-- **What it does not cover:** a speed aura or tech, which are not snares. A poison whose attacker is gone (dead or
-  deleted) snares as stock on its later ticks: the attacker's type cannot be read any more.
+  `damageOverTime` poison with `<AttachSnare>` does not slow it either. The type is DE's name, so DE data works unchanged.
+- **`CannotSnare` retired (2026-11-21):** the type on the attacker (DE's flag of that name, from 2026-11-05) is gone, at
+  JTMaston's request: an attacker that should not snare has the snare taken out of that attack in its tactics file
+  (no `<TargetSpeedBoost>` in the action), which needs no key. A proto that still lists `<UnitType>CannotSnare</UnitType>`
+  loads with no error and snares as stock.
+- **What it does not cover:** a speed aura or tech, which are not snares.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data.
-- **Log:** `cantBeSlowed: the abstract types CantBeSlowed (on the target) and CannotSnare (on the attacker) are on`,
-  `hook reached: cantBeSlowed (0x4DD201)`, and with `log` `cantBeSlowed: proto 316 ignores a snare` or
-  `cantBeSlowed: proto 171 does not snare (CannotSnare)`.
+- **Log:** `cantBeSlowed: the abstract type CantBeSlowed (on the target) is on`,
+  `hook reached: cantBeSlowed (0x4DD201)`, and with `log` `cantBeSlowed: proto 316 ignores a snare`.
 - **Tested in WoL (2026-11-05):** a Halberdier and a Skirmisher of speed 4 with 4000 HP, 58 m apart, walking off with two
   Uhlans on each. With the key the Halberdier was 19.5 m ahead at the first reading, and the log shows 16 snares ignored.
   With the key off it was 4.5 m ahead, and no line. A marked Halberdier under three archers with `<AttachSnare>` logged
   19 snares ignored in 20 s. Not tested: multiplayer.
-- **`CannotSnare` tested in WoL (2026-11-05):** two Settlers of 4000 HP, speed 4, walking 44 m, one under two Uhlans
-  with the type and one under two stock Hussars. With the key the first was 10 m ahead after 10 s of walking (63.8
-  against 53.6 on the x axis) and the log counted 35 snares not applied; with the key off both walked level and the log
-  had no line. The hook was reached in the first fight (`hook reached: cantBeSlowed (0x4DD201)`). Not tested: a poison's
-  `AttachSnare` from a `CannotSnare` unit, multiplayer.
+- **Retirement tested in WoL (2026-11-21):** `xpAenna` and `Uhlan` with `<UnitType>CannotSnare</UnitType>` left in
+  `protoy.xml`, the Aenna's arrows with a `damageOverTime` poison and `<AttachSnare>0.5</AttachSnare>`, and a Halberdier
+  with `CantBeSlowed`. The data loaded with no message and the name was not registered (no `unit types: CannotSnare`
+  line). The poisoned Skirmisher and Musketeer walked at half speed (`speed 2.00` and `2.60` in the tick lines), so an
+  attacker with the old type snares like any other; the Halberdier logged `ignores a snare` on each hit. `cantBeSlowed`,
+  `snareOnlyHitUnit`, `snareValues` and `damageOverTime` were applied and reached their hooks.
 #### veterancyBonus
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 15:39
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Saturday 2026-11-21 11:42
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
@@ -3915,11 +4132,13 @@ with 504 and 346 hit points, and the log shows the ranks.
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
 
 *In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (2 `Hussar` against 10 `Crossbowman`, both taking
-the defaults of their type):* each rank shows its mark centred over the unit's HP bar: the soutache knots the WoL team
-approved, a copper loop at rank 1, a silver knot at rank 2, gold knots at ranks 3 to 5; a Crossbowman that kills shows the
-copper loop. The floating text gives the rank's name in its colour. A Hussar reaches rank 5. The five marks enlarged:
+the defaults of their type; `veterancyBonus notext`, WoL's line, and the darker border of 2026-11-21):* each rank
+shows its mark centred over the unit's HP bar: the soutache knots the WoL team approved, a copper loop at rank 1, a silver
+knot at rank 2, gold knots at ranks 3 to 5; a Crossbowman that kills shows the copper loop. With `notext` no name rises
+over the unit. A Hussar reaches rank 5. The five marks enlarged:
 [veterancyBonus-marks-x4.png](media/veterancyBonus-marks-x4.png); in the game at the default camera, on a Hussar and on a
-Crossbowman: [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png).
+Crossbowman, ranks 1 to 5, each mark measured 0.0 px from its bar's centre (to half a pixel, 2026-11-21):
+[veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png).
 [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
 
 ![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
@@ -3928,8 +4147,10 @@ Crossbowman: [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame
 Hussars die. [Full video (MP4)](media/veterancyBonus-icons-wol-control.mp4).
 
 ```
-veterancyBonus [log] [file.xml]
+veterancyBonus [notext] [log] [file.xml]
 ```
+
+WoL's line: `veterancyBonus notext` (no floating text at a new rank; the marks and the panel row stay).
 
 ```xml
 <Unit name="Hussar">
@@ -3966,7 +4187,7 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
 - **In WoL today:** no unit changes with its kills. The stock flag `ExperienceUnit` has no reader in the exe. JTMaston's #42.
 - **Effect:** each row says that from that many kills on, the stat is multiplied by that value **in all**: above, damage is
   ×1.5 from the first kill and ×2.0, not ×3.0, from the third. `modifytype` takes every `<ModifyType>` name. A rank is each
-  distinct `kills` value, and reaching one shows `Rank N` over the unit, or the rank's name.
+  distinct `kills` value, and reaching one shows `Rank N` over the unit, or the rank's name (nothing with `notext`).
 - **Default rows (2026-11-11):** a `<VeterancyDefault unittype="...">` of `veterancy.xml` gives its rows to every proto of
   that unit type (an abstract type or a proto name) that has **no** `<VeterancyBonus>` of its own: a proto's own rows replace
   the defaults entirely, they are not added to them. A proto of two listed types takes the first block of the file that it
@@ -3983,9 +4204,61 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   a Hussar's hit on a Settler 26.4 (base) → 39.6 → 52.8 → 70.4, that is ×2.667 = `(1.5 + 0.5) × 2.0/1.5`; the panel's hand
   attack read 49 at rank 2 and 88 at rank 5 (×1.5 and ×2.667 of 33). `MaxHP` +100 then +200 took the max from 352 to 452 and 552, and the current hit points rise in
   proportion, as with ×.
+- **Rows with a tech (2026-11-21):** `tech="TechName"` on a `<VeterancyBonus>` row, in a proto or in `veterancy.xml`, makes
+  the row count only for a player who has that tech active:
+
+  ```xml
+  <VeterancyBonus kills="2" modifytype="MaxHP" tech="HuntingDogs">1.5</VeterancyBonus>
+  ```
+
+  The row is given at a kill that reaches it while the tech is active, and, when the tech becomes active later, to every
+  unit of that player that already has the kills (a look at the named techs every half second of game time). What a row
+  gave **stays** when the tech goes inactive again (JTMaston, 2026-11-21), as ranks already granted always stay. A row of a
+  series counts "in all" as any other: of a series' rows given, the one of most kills sets the total. The ranks shown are
+  the distinct `kills` values of the rows given. An unknown tech name is logged once per data load
+  (`veterancyBonus: no tech named X; the rows that name it never count`) and its rows never count; an empty `tech=""` is
+  logged and the row ignored. The rows a unit was given are kept on the unit (a saved modifier), so a saved game keeps
+  them; a unit whose rows name no tech carries nothing new. A `TransformUnit` gives the new proto's rows afresh: a row whose
+  tech is inactive then is not given until it becomes active.
+- **Blocks by civilization (2026-11-21):** in `veterancy.xml`, `<Civilization name="Spanish">` wraps `<VeterancyDefault>`
+  blocks that apply only to that civ's players:
+
+  ```xml
+  <Veterancy>
+      <Civilization name="Spanish">
+          <VeterancyDefault unittype="Pikeman">
+              <VeterancyBonus kills="1" modifytype="Damage">2.0</VeterancyBonus>
+          </VeterancyDefault>
+      </Civilization>
+      <VeterancyDefault unittype="Pikeman">
+          <VeterancyBonus kills="1" modifytype="Damage">1.1</VeterancyBonus>
+      </VeterancyDefault>
+  </Veterancy>
+  ```
+
+  A unit takes its proto's own rows if it has any; else the first block of its player's civ whose type it has; else the
+  first global block (outside any `<Civilization>`). The name is the civ's `<name>` in `civs.xml`; an unknown one is logged
+  when the game first needs the rows (`unknown civilization X; its default rows for Pikeman are ignored`) and its blocks are
+  skipped. `<VeterancyRank>` stays global.
+- **Proto rows read once per data load (fix, 2026-11-21):** loading a saved game (or starting a skirmish) reads the protos
+  again, and before this date every proto row was then added a second time, so a rank reached after a load could give
+  its bonus twice. The rows are now cleared before each read.
+- **Tested in WoL (2026-11-21, techs and civilizations):** player 1 Ethiopians, scenario route. `veterancy.xml` with a
+  `<Civilization name="Ethiopians">` block (Pikeman ×2 at 1 kill), an `Atlantis` block and a global block (Pikeman ×1.1,
+  and a row with `tech="NoSuchTechUHC"`); the Hussar's own rows ×1.5 damage at 1 kill, ×1.5 hit points at 2 with
+  `tech="HuntingDogs"`, ×2 damage at 3, and ×5 damage at 2 with `tech="NoSuchTechUHC2"`. The Ethiopian Pikeman logged
+  `rank 1, x2`, player 2's Pikeman `rank 1, x1.1`; `unknown civilization Atlantis` and both `no tech named` lines came
+  once per data load, and those rows never counted. With `HuntingDogs` inactive the Hussars passed 2 kills with no row and
+  took ×2.0/1.5 at 3 (`rank 2, x1.33333`); when a trigger made it active at 45 s the log said `player 1 has tech
+  HuntingDogs (297) active` and `unit 0 (5 kills) gets the rows of its player's tech: rank 2 -> 3`, and its hit points
+  read 483 at full health (1.5 × 322; the proto has 320). In a second scene the tech came at 20 s to a Hussar of 2 kills (`rank 1 -> 2`) and was set back
+  to unobtainable at 32 s: the Hussar kept its rank and bonus and reached 10 kills. A game saved after the tech and loaded
+  again: the same 483 hit points, `player 1 has tech HuntingDogs (297) active` and no row given twice. `killSpawn` was on
+  (no civ tags), and the AI of a 100 s skirmish compiled (below). Not tested: a `TransformUnit` with tech rows, the rank
+  marks with these rows (no `uhc_rings` in the test copy), the unit panel's row, multiplayer.
 - **Rank names and colours (2026-11-11):** `<VeterancyRank rank="N" name="..." color="RRGGBB"/>` names a rank and gives it a
   colour (a leading `#` is accepted). A `name` made of digits is a string ID of the string table (`32485` showed `Hero`).
-  The floating text over the unit shows the name in that colour, and the unit panel's row shows it too, coloured with the
+  The floating text over the unit shows the name in that colour (not with `notext`), and the unit panel's row shows it too, coloured with the
   string table's `<color=r, g, b>` markup (`Legend` in light blue, `6 kills`). A rank with no `<VeterancyRank>` stays
   `Rank N`, in gold. The names are display only.
 - **The file:** missing, it is no error (no defaults, no names); named on the cfg line and missing, or not well-formed XML,
@@ -4001,13 +4274,19 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   its rank, the marks the WoL team approved (JTMaston's #74, 2026-11-20), traced from their sheet: rank 1 a copper loop like
   a cursive "l", its tails sweeping out left and right; rank 2 a silver knot, a round top loop on a stem with two
   eye-shaped side loops over a tail bar; rank 3 the same in gold with a pointed top loop; rank 4 gold, a round top loop and
-  two tiers of side loops; rank 5 gold, a pointed top loop and two tiers. A rank above the fifth keeps rank 5's mark. With no
+  two tiers of side loops; rank 5 gold, a pointed top loop and two tiers. A rank above the fifth keeps rank 5's mark.
+  Since 2026-11-21 their dark border is a little wider than on the team's sheet, inward only (the metal narrows; the
+  outline and the loop holes stay), so that it shows more at the game's size: at the default camera the game samples the
+  texture's 64-texel level, where the sheet's border was under a texel. The repository owner chose it from four widths
+  (`wol-fixes/veterancy-marks/border-review.png`). With no
   such folder the log says so once and the bonuses work as before. Display only: it changes nothing in the simulation. In the
   minimized interface the unit panel's row shows `Rank 3` and `3 kills`. DE's rank icons are images in its selection panel.
 - **Centred on the HP bar:** every mark is horizontally centred on its unit's HP bar, and all five end at the same height
   above it. The mark's sprite has its centre at the bar's own height (2.9 m for infantry, 4.1 m for cavalry, 5.1 m for WoL's
   `AbstractElephant`), so it does not drift sideways in perspective. Measured at the default camera, the unit at the
-  screen's centre: a Hussar 0 px from the bar's centre at every rank, a Crossbowman within 1 px
+  screen's centre: a Hussar 0 px from the bar's centre at every rank, a Crossbowman within 1 px; again with the darker
+  border (2026-11-21, `wol-fixes/veterancy-marks/ingame_sheet.py`: the mark's axis of symmetry against the bar's middle,
+  to half a pixel): 0.0 px for both at ranks 1 to 5
   ([veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png)). An elephant's bar sits toward its head and
   turns with it, while the mark hangs at the unit's position, so an elephant's mark can be up to about 13 px off its bar at a
   close camera. Bar and mark scale alike with the camera, so the gap holds at any zoom; units packed together can put a mark
@@ -4031,13 +4310,23 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   `VeterancyEnable` 0 player 1's logged no rank. A tech cannot add or change the rows themselves. A tech that
   changes a stat works with the rows as with any modifier.
 - **Interface:** the rank marks above, the floating text when a rank is reached and the unit panel's row; DE's rank icons in
-  the selection panel are not there. Damage and hit points in the panel are the game's, with the modifiers.
+  the selection panel are not there.
+- **`notext` (2026-11-21):** no floating text when a unit reaches a rank, for a mod whose own upgrades show text over the unit
+  (JTMaston: the rank text clashes with WoL's general upgrade system). The rows, the count, the rank marks and the unit
+  panel's row are unchanged, and the log's first line ends `; no rank text (notext)`. Tested in WoL (2026-11-21, 2
+  `Hussar` against 10 `Crossbowman`, the defaults above, the marks of `tools/rings`): with `notext` the Hussars went
+  through ranks 1 to 5 with their marks (copper, silver, gold) and no name over them; without it, `Veteran`, `Elite` and
+  `Champion` rose over them as before. Both runs `veterancyBonus: applied`, no `FAILED`. The blue `+8` in both is the game's
+  own text, not the key's. Damage and hit points in the panel are the game's, with the modifiers.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data. `Rank N` is local.
 - **Log:** `veterancyBonus: the proto tag VeterancyBonus is on`, `hook reached: killing blows (0x4D4F37)` (the hook it shares with `killSpawn`), and with `log`:
   `veterancyBonus: proto 318: from 1 kills, stat 2 x1.5`, `veterancyBonus: unit 0, proto 318: 3 kills, a new rank, rank 3`,
   `veterancyBonus: unit 0 keeps 4 kills as proto 324`; an add row logs `+0.5` where a multiply row logs `x1.5`, and the first
   kill of a game logs `veterancyBonus: 5 default rows for unit type AbstractCavalry (3654)`. A row without `kills`,
-  `modifytype` or a value is logged and ignored.
+  `modifytype` or a value is logged and ignored. Rows with a tech log `veterancyBonus: proto 318: from 2 kills, stat 1 x1.5,
+  with tech HuntingDogs`, a civ block `... default rows for unit type Pikeman (295), civilization Ethiopians`, and a tech
+  that becomes active `veterancyBonus: player 1 has tech HuntingDogs (297) active` and `unit 0 (5 kills) gets the rows of its
+  player's tech: rank 2 -> 3`.
 - **Tested in WoL (2026-11-11, default rows, `op="add"`, names, ranks 4 and 5):** the data above, with `steadyHitpointBars`.
   The hits and the panel as given above; a saved game at rank 5 and 6 kills loaded with its mark, `Legend`, `6 kills`,
   370/552 hit points and 88 hand attack; an AI skirmish of 100 s (`wolOtto`, Germans) with the defaults on its cavalry and
@@ -4548,6 +4837,7 @@ Resources, gatherers, and what pays for them.
 
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
+| [`autoGatherFrom`](#autogatherfrom) | A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | **new** | `<AutogatherFrom>` in the gather action of the units that want it. | confirmed (single player) |
 | [`linkedResource`](#linkedresource) | A resource building gathers the stock of a mine beside it. | **new** | The tags on a resource building of your own. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget. | confirmed (single player, UI) |
 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
@@ -4558,6 +4848,84 @@ Resources, gatherers, and what pays for them.
 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`nowalkfarm`](#nowalkfarm) | Gatherers on a farm keep the spot they take. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`marketUnits`](#marketunits) | Owning a unit of a listed proto (`WOLMarketGreek`, `SoukCaravan`, …) counts as owning a Market. | **in `wol.cfg`** | Nothing. | confirmed |
+
+#### autoGatherFrom
+
+*A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range.*
+
+**Added:** Saturday 2026-11-21 11:52 · **Filmed in WoL:** Saturday 2026-11-21 11:52
+
+![autoGatherFrom in WoL](media/autoGatherFrom-wol.gif)
+
+*In WoL, with `autoGatherFrom log` (a scenario, player 1 Ethiopian; three Chinese villagers, `ypSettlerAsian`, whose
+`settler.tactics` Gather action has `<maxrange>10</maxrange>` and `<AutogatherFrom delay="3">AbstractMine</AutogatherFrom>`,
+and a Japanese villager, whose `settlerJapanese.tactics` has no tag):* a trigger walks the four of them to about 6 m
+from a silver mine at 30 s. Three seconds after they stop, the three Chinese villagers start mining from where they
+stand, 10 m from the mine's centre (`ordered` lines at the bottom); the Japanese villager stays idle.
+[Full video (MP4)](media/autoGatherFrom-wol.mp4).
+
+![autoGatherFrom in WoL, key off](media/autoGatherFrom-wol-control.gif)
+
+*The same scenario with the key off:* the four villagers stop beside the mine and stay idle.
+[Full video (MP4)](media/autoGatherFrom-wol-control.mp4).
+
+```
+autoGatherFrom [log]
+```
+
+- **What a modder writes:** in a gather action of the unit's tactics file (or a `<ProtoAction>`), one line per
+  source, a proto or a unit type, with an optional `delay` in seconds (3 when absent, 0 to 3600):
+
+  ```xml
+  <action>
+      <name stringid="42178">Gather</name>
+      <type>Gather</type>
+      <maxrange>10</maxrange>
+      <rate type="AbstractMine">1.0</rate>
+      <AutogatherFrom delay="3">AbstractMine</AutogatherFrom>
+      <AutogatherFrom delay="6">Mill</AutogatherFrom>
+  </action>
+  ```
+
+  The search range is the longest of the action's ranges (`<maxrange>` and its `<typedmaxrange>` lines), measured to
+  the edge of the target.
+- **Ranged gathering needs no key:** the game already respects `<maxrange>` and `<typedmaxrange>` in a Gather or
+  Hunting action. Measured in WoL with the villagers' Gather at `<maxrange>10</maxrange>`: a Settler mined at 13.8 m
+  from a Mine's centre, worked a Mill from 7.7 m and a Plantation from 9.3 m; the Hunting action's
+  `<typedmaxrange type="Huntable">10</typedmaxrange>` (WoL's own) gathers a deer from 11.4 m. Trees are the exception
+  in WoL's data: they have hit points, and the villager must cut one down first with `ChopAttack` (`<maxrange>2</maxrange>`);
+  with the Hunting action's `<typedmaxrange type="Tree">` raised to 10, the villager stopped 13.8 m away and never
+  cut the tree. Raise `ChopAttack`'s range too, or keep trees close.
+- **Buildings do not gather:** a building ordered to gather (a Mill with a Gather action, by a trigger or by this
+  key) gets a Gather action that never starts: it stayed in its waiting state with the target in range (2026-11-21),
+  with or without a `<CarryCapacity>`. That would take a key of its own.
+- **Effect:** every 500 ms of game time, each unit of a proto with the tag that has been idle for `delay` seconds gets
+  the order the game itself gives an idle herdable near a pen: work on the nearest unit of a named type within the
+  range, owned by its player, an ally or Gaia. The game then picks the action and walks the unit as a right-click
+  would. Any order of the player, a fight or a gather in progress is left alone: the key waits until the unit is idle
+  again. A unit that gained nothing from its last order to a target (a fattened herdable, a full gatherer) is not
+  sent there again until what it holds changes. Units inside a building or a ship, and units without an inventory,
+  are skipped.
+- **Moving targets:** the game's Gather action follows a target that moves (a nomad, a Llanero): see
+  [`herdWalkAwayFix`](bug-fixes.md#herdwalkawayfix) and the pack `wol-fixes/me-herdables`. While a tagged unit
+  gathers, its leash anchor follows it, so it does not walk back to where it stood before when it stops.
+- **Simulation:** yes. Everyone needs the key and the data. Everything it reads is game state, the order is the game's
+  own, and no network command is sent. Not tested in multiplayer.
+- **Saved games:** nothing of its own is saved: after a load, a unit idle then waits `delay` again (tested).
+- **Bad values:** a name that is neither a proto nor a unit type is logged once per data load and ignored; a `delay`
+  that is not a number from 0 to 3600 is logged and taken as 3 s; an empty tag is ignored.
+- **Cost:** a scan takes 263 µs on average with 120 tagged villagers idle and out of range (each one searching every
+  scan, the worst case), 5 to 70 µs with none. A/B with `perfprobe.py` (60 s, the same scenario, other games running
+  on the machine): update 0.3 ms with and without the key, one frame over 50 ms in each run.
+- **Log:** `autoGatherFrom: units with an <AutogatherFrom> action tag gather on their own once idle`; with `log`, a line
+  per order (`unit 0 (player 1, proto 935) idle 3.0 s -> unit 4, 6.7 m: ordered`) and every 240 scans their cost.
+- **Status:** confirmed (2026-11-21, single player, WoL, scenario route): a Settler 6 m from a mine's edge ordered
+  after 3.0 s, a Settler beside a Mill after 6.0 s (`delay="6"`), a Settler 21 m away and an untagged Japanese villager
+  left idle; a Settler moved away by a trigger right after its order stayed where it was put; a game saved and loaded
+  before a trigger's move: the native Settler moved there was ordered 3.0 s later. A skirmish as Persians against a
+  German AI (`wolOtto`) with the tag on `settler.tactics`: the AI went from 12 to 18 units in 2.5 minutes, built a
+  Manor, no XS error. Beside the other gathering keys of the test copy (`gatherFix`, `showGatherRate`,
+  `resourceGatherAuras`, `nowalkfarm`, `farmingRadius`): 43 applied, 0 failed.
 
 #### showGatherRate
 
@@ -4663,6 +5031,14 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
   interface: the row in the unit panel, gone when the villager stops and with two villagers selected,
   and the data ref. In the normal interface, on the stock game (2026-10-29): the row under the HP row.
   Other targets, whole-number rates, a `<UnitType>` and `DoNotShowAutoGatherRate` were not tested.
+- **Fixed (2026-11-21): wood.** A villager on a tree showed no row: while it chops and gathers, its current action is
+  not the Gather action that ticks (that one has vtable 0xB97880; the current one 0xB979D8, in its state 5), and
+  the record test wanted them equal. The test now also takes that current action, with the record's own action,
+  state, owner and age as before. Tested in WoL with every UI key of the minimized panel (`minUIStats`,
+  `multiplierDecimals`, `resourceGatherAuras`, `resourceDebt`; 40 applied, 0 failed), both interfaces, the same
+  value in each: berries 0.67/s, a `Mine` 0.60/s, a `Mill` 0.50/s, `TreeGreatLakes` 0.50/s, crates 8/s
+  (pictures `wol-fixes/min-ui/final/minUIStats-v7-allkeys-gather-*` and `-bigui-*`). Beside WoL's own `uhc.dll`
+  (our `dinput8.dll`): see the minUIStats version 7 notes.
 
 #### autoGatherScaleByContained
 
@@ -4717,7 +5093,7 @@ autoGatherScaleByContained
 
 *An aura earns resources from the units in its range, such as nearby trees.*
 
-**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Friday 2026-11-06 11:33
+**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Saturday 2026-11-21 12:42
 
 ![unitResourceAuras in WoL](media/unitResourceAuras-wol.gif)
 
@@ -4743,14 +5119,16 @@ unitResourceAuras [log]
 
 ![unitResourceAuras with the Torp's tags in WoL](media/unitResourceAuras-torp-wol.gif)
 
-*In WoL, the Torp's tags on `WOLSawmill` (Ethiopians, test data, marker `aura_<colour>.xml`):* a coin over the Mine, a drumstick
-over the bush and the two carcasses, and no mark on the live Deer or the Plantation.
+*In WoL, the Torp's tags on `WOLSawmill` (Portuguese, a skirmish; test data: seven `UnitResource` auras on the Sawmill,
+each with its [marker](#the-marker-of-a-gathered-resource)):* a pickaxe over the Mine, a bow over the killed Deer, berries
+over the bush, an ear of wheat over the Mill, a leg of meat over the Sheep, an axe over each tree, and the fish marker
+over a Cow (only to show the icon: fish need water).
 [Full video (MP4)](media/unitResourceAuras-torp-wol.mp4).
 
 ![unitResourceAuras with the Torp's tags in WoL, key off](media/unitResourceAuras-torp-wol-control.gif)
 
-*In WoL, key off (the same data, the marker there):* stock hangs the model on every unit of the type, a live Sheep and the
-Plantation too, and nothing is gathered. [Full video (MP4)](media/unitResourceAuras-torp-wol-control.mp4).
+*In WoL, key off (the same data, the markers there):* stock hangs the model only on the player's own units of the type
+(the Sheep, the Cow, the Mill), none on Gaia's trees, mine, bush or deer, and nothing is gathered. [Full video (MP4)](media/unitResourceAuras-torp-wol-control.mp4).
 
 - **The ring:** a `UnitResource` aura does not run the stock update, so the key hangs the [aura's ring](#aura-rings) itself: on
   the units that gave resources in that update, and it takes it off when they stop, when the aura's owner dies, or at the limit
@@ -4805,7 +5183,7 @@ Plantation too, and nothing is gathered. [Full video (MP4)](media/unitResourceAu
   resource, the icon and the auras' take per second plus the building's AutoGather, in the order of the resources.
   Two resources fit: in WoL's layout at 1920×1080 a third shows its icon with no number. It shows while an aura pays.
   **Pending:** the stat panel of the normal interface.
-- **Not covered:** other players' units are never targets. Stock has no `SquareAura`; `NoStack` comes with [`auraStacking`](#aurastacking).
+- **Not covered:** other players' units are never targets. Stock has no `SquareAura`. With `<ModifyExclusive>1</ModifyExclusive>` on the aura, each target pays one Sawmill (`AuraClaim`), with or without [`auraStacking`](#aurastacking).
 - **Log:** `unitResourceAuras: applied`, `hook reached: unitResourceAuras (0x9D033E)`, and while the data loads
   `hook reached: ModifyType names (0x5FE6D7)`. With `log`, the first 200 takes: `unit 0 (WOLSawmill) took 0.142 of
   resource 1 from unit 2 (TreeNewEngland), 299.1 left`.
@@ -5240,7 +5618,7 @@ How buildings train, spawn, live and get replaced.
 | [`researchOnTheMove`](#researchonthemove) | A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | **new** | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. | confirmed (single player) |
 | [`nextResearchFree`](#nextresearchfree) | A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`researchGrants`](#researchgrants) | A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | **new** | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. | confirmed (single player, also a skirmish vs AI) |
-| [`shipTechLimit`](#shiptechlimit) | `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | **new** | The tag on the civ in `civs.xml`. | confirmed (single player, scenario route) |
+| [`shipTechLimit`](#shiptechlimit) | `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | **new** | The tag on the civ in `civs.xml`. | confirmed (single player, scenario route) |
 | [`homeCityTechsInUnits`](#homecitytechsinunits) | A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | **new** | The card's tech in the `<Tech>` rows, made obtainable for the civ. | confirmed (single player, scenario route; the deck card not tested) |
 | [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
 | [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
@@ -5596,7 +5974,7 @@ lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterCo
 
 ![The Lifespan row in WoL](media/lifespanAfterConstruction-countdown-wol.gif)
 
-*In WoL (Ethiopians, an Apartment with a test Lifespan of 40 s):* the panel shows `40 s once built` on the foundation, then counts
+*In WoL (Ethiopians, an Apartment with a test Lifespan of 40 s):* the panel shows `40 s once built` (`40s once built` since 2026-11-21) on the foundation, then counts
 down. [Full video (MP4)](media/lifespanAfterConstruction-countdown-wol.mp4).
 
 ![The Lifespan row in WoL, key off](media/lifespanAfterConstruction-countdown-wol-control.gif)
@@ -6359,7 +6737,7 @@ researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
   <Effect type='Data' amount='2.00' subtype='ResearchGrantPoints' relativity='Absolute'>
       <Target type='ProtoUnit'>Market</Target></Effect>
   ```
-- **Unit panel:** a selected building with grants shows `Research grants` `2/3, next in 14 s`, `3/3 (full)` or
+- **Unit panel:** a selected building with grants shows `Research grants` `2/3, next in 14s`, `3/3 (full)` or
   `0/3 once built`.
 - **With `nextResearchFree`:** a research that key makes free spends no grant point.
 - **The AI** gets and spends points as players do: its researches go through the same payment.
@@ -6430,17 +6808,22 @@ researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
 
 *A civ can research only so many "shipment techs" (techs that cost Ships) per game, as WoL's Mapuche council techs.*
 
-**Added:** Friday 2026-11-20 11:50 · **Filmed in WoL:** Friday 2026-11-20 11:50
+**Added:** Friday 2026-11-20 11:50 · **Filmed in WoL:** Saturday 2026-11-21 11:35
 
 ![shipTechLimit in WoL](media/shipTechLimit-wol.gif)
 
-*In WoL, with `shipTechLimit log` (scenario route: player 1 is Ethiopian with `<ShipTechLimit>3</ShipTechLimit>` in the
-copy's `civs.xml`, a `MapucheWarchief` and `Age0Mapuche`, 20 Ships granted; the Warchief stays selected and the pointer
-rests on the Coin Crates button):* three shipment techs are queued (Villagers, Food Crates, Wood Crates: 1, 2 and 3 of
-3 in the log), then the Coin Crates research is refused: it does not start and the Ships stay. Every shipment tech
-button shows `3/3`, and the rollover ends with the red line `Shipment techs: 3/3, the limit is reached`. A click on the
-second queued research cancels it: the Ship comes back, the log says 2 of 3, and the Coin Crates research then goes
-through (3 of 3). [Full video (MP4)](media/shipTechLimit-wol.mp4).
+*In WoL, with `shipTechLimit log` (2026-11-21, after #91; a skirmish on a test map, player 1 Portuguese with
+`<ShipTechLimit>3</ShipTechLimit>` in the copy's `civs.xml`, a `MapucheWarchief` and `Age0Mapuche`, 10 Ships granted;
+the Warchief stays selected; the GIF shows the log and the command panel):* three council techs that are not
+repeatable are queued (Fowl, Food Crates 2, Wood Crates 2: 1, 2 and 3 of 3 in the log) and their buttons show `3/3`;
+then the repeatable Food Crates 1 (`YPInfiniteTech`) is queued at the limit, with no log line, and Coin Crates 2 is
+refused (no fifth entry in the queue). The repeatable crate buttons (purple frames) never get the `3/3` mark.
+[Full video (MP4)](media/shipTechLimit-wol.mp4).
+
+![The rollovers of a repeatable and a limited tech at the limit](media/shipTechLimit-infinite-rollover.png)
+
+*At the limit (Dutch, the same test):* the repeatable Food Crates 1 (top) has no `Shipment techs` line and stays
+usable; Food Crates 2 (bottom) ends with the red line `Shipment techs: 3/3, the limit is reached`.
 
 ![shipTechLimit in WoL, key off](media/shipTechLimit-wol-control.gif)
 
@@ -6471,26 +6854,42 @@ shipTechLimit [notext] [log]
 - **What counts:** a research, on a unit or a building, of a tech whose cost has `Ships` (any amount above 0). Home
   city cards sent from the deck never count: they are not researched. A HomeCity tech that a unit researches with
   [`homeCityTechsInUnits`](#homecitytechsinunits) does count.
+- **Repeatable techs are outside the limit** (`<Flag>YPInfiniteTech</Flag>`, as the crates; JTMaston's #91, 2026-11-21):
+  they never count, they are never refused at the limit, and their rollover has no `Shipment techs` line.
 - **When:** a research counts when it is paid, which is when it is queued; a cancel that refunds it gives the slot back.
-  A repeatable tech (`YPInfiniteTech`, the crates) counts each time. A research that ends without a refund (its unit
-  dies) keeps its count, as the Ship is not given back either.
+  A research that ends without a refund (its unit dies) keeps its count, as the Ship is not given back either.
 - **At the limit:** every other shipment tech of that player is refused for his units: the research does not start on
   any machine and nothing is paid. The button stays, marked `n/N`, and its rollover ends with the red line `Shipment
   techs: n/N, the limit is reached` (below the limit, a green `Shipment techs: n/N`). In WoL's interface a refused tech
   button is drawn as bright as the others, like a tech of a later age: the mark and the line say why.
 - **Saved games:** the counts are saved (on one unit of each player) and come back on load. A game saved without the
-  key starts from the shipment techs the player has researched (repeatable ones by their count).
+  key starts from the shipment techs the player has researched. A game saved by a build before 2026-11-21 (whose count
+  held the repeatable techs) loads with them taken out, logged as `player 1's count from an older build (5) held
+  repeatable techs: now 3`; a repeatable research still queued at that save stays counted.
 - **Log:** `shipTechLimit: civ 48 (WallMapu): at most 12 shipment techs per game`, `shipTechLimit: player 1 paid shipment
-  tech 3934: 1 of 3 (game time 15246 ms)`, `... cancelled shipment tech 3937: 2 of 3`, `game start or load: player 1
-  has 3 of 3 shipment techs`; `hook reached: can-research test (0x4C6968)`, `hook reached: tech rollover (0x4622C5)`.
+  tech 3934: 1 of 3 (game time 15246 ms)`, `... cancelled shipment tech 3946: 2 of 3`, `game start or load: player 1
+  has 3 of 3 shipment techs`, after loading an older build's save `player 1's count from an older build (2) held
+  repeatable techs: now 1`; `hook reached: can-research test (0x4C6968)`, `hook reached: tech rollover (0x4622C5)`.
 - **The AI:** it is refused the same way; an AI plan that keeps asking for a refused tech gets nothing.
 - **Tested in WoL (2026-11-20, single player, scenario route, `C:\AoE3-UHC-WoLReal7`):** limit 3 with four requests
   (the fourth refused, Ships 20 to 17); a refused click on the button; a cancel (Ships back, count 2, the button usable
-  again); a repeatable tech twice (Food Crates: 2 then 3 of 5); a HomeCity tech researched by a council member counted;
+  again); a repeatable tech twice (Food Crates: 2 then 3 of 5, the rule before #91); a HomeCity tech researched by a council member counted;
   a save at 3 of 3 and its load (`game start or load: player 1 has 3 of 3`, a fourth still refused); a player of a civ
   without the tag (Egyptians) researched five; the key off (control video); a skirmish against a German AI with the key
   on (the AI played, no `XS: Error`); beside WoL's own DLL (our `dinput8.dll`, `C:\WoL-Test`'s `uhc.dll`: both keys
-  applied, the fourth research refused); `researchGrants` on the shared rollover with both keys on: its `Free` word and green line as before ([picture](media/shipTechLimit-researchGrants-regression.png)). Not tested: a WallMapu skirmish with its home city, multiplayer.
+  applied, the fourth research refused); `researchGrants` on the shared rollover with both keys on: its `Free` word and green line as before ([picture](media/shipTechLimit-researchGrants-regression.png)). Not tested: a WallMapu skirmish with its home city.
+- **Tested in WoL (2026-11-21, #91, single player, skirmishes on a test map in `C:\AoE3-UHC-WoLReal11`, Dutch and
+  Portuguese with a limit of 3 and a `MapucheWarchief`):** a repeatable tech (Food Crates 1) queued below the limit and
+  at it: paid, queued and researched, no count and no log line; three other council techs counted 1, 2, 3 of 3; at the
+  limit Wood Crates 2 was refused (`... is not ready to research`, the Ships stayed) while Coin Crates 1 and Food Crates
+  1 (repeatable) were accepted; their buttons had no `3/3` mark and their rollover no line (picture above); a queued
+  repeatable research cancelled from the queue: the Ship came back, the count stayed 3 of 3, no log line; saved at 3 of 3
+  and loaded: `game start or load: player 1 has 3 of 3 shipment techs`, Food Crates 1 still accepted and a limited
+  tech still refused; a save of the build before #91 holding a count of 2 (Villagers 1 and the repeatable Food Crates
+  1), loaded with this build: `player 1's count from an older build (2) held repeatable techs: now 1`;
+  beside WoL's own DLL (our `dinput8.dll`, its `uhc.dll`): the key applied, three council techs 1 to 3 of 3, Food Crates
+  1 and Coin Crates 1 (repeatable) queued with no count, Coin Crates 2 refused; the key off is the control video above
+  (unchanged).
 
 #### homeCityTechsInUnits
 
@@ -6831,7 +7230,7 @@ What happens when a tech activates or a unit changes proto.
 | [`unitTypeTechs`](#unittypetechs) | Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | **new** | The effects in your techs. | confirmed |
 | [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
 | [`orPrereqsQty`](#orprereqsqty) | `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | **new** | The attribute on the techs that want it. | confirmed (single player) |
-| [`shipmentCounts`](#shipmentcounts) | Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | **new** | The effect in the cards or techs that want it. | confirmed (single player) |
+| [`shipmentCounts`](#shipmentcounts) | Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | **new** | The effect in the cards or techs that want it. | confirmed (single player) |
 | [`kothTimer`](#kothtimer) | The King of the Hill time comes from a table by the number of players, or of teams. | **new** | Nothing. | confirmed (single player) |
 | [`transformChecks`](#transformchecks) | A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | **new** | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. | confirmed (single player) |
 
@@ -7000,16 +7399,17 @@ kothTimer teams 2=900 3=600 4=480
 
 #### shipmentCounts
 
-*Counts the home city cards each player has sent in each age, once they arrive, so a card or tech can send one unit per card; the counts are kept in saved games.*
+*Counts the home city cards each player has shipped of each age (the age that enables the card), once they arrive, so a card or tech can send one unit per card; the counts are kept in saved games.*
 
-**Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Friday 2026-11-13 07:54
+**Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Saturday 2026-11-21 11:34
 
 ![shipmentCounts in WoL](media/shipmentCounts-wol.gif)
 
-*In WoL, with `shipmentCounts log` (a skirmish, Dutch against a Belgian AI; two cards shipped in Age I, then the test
-moved to Age III; `HCShipWoodCrates2` given `FreeHomeCityUnitByShipmentCount` Hussar, `age='3'`, `includeself='true'`,
-and `HCShipWoodCrates3` the same without `includeself`):* the first card arrives with its crates and one Hussar (`1
-shipment(s) (this one included)`), the second with one more (`1 shipment(s)`: the first one). The AI's chat at the
+*In WoL, with `shipmentCounts log` (a skirmish on a test map, Portuguese against a German AI, already in Age III;
+`HCShipWoodCrates2`, `HCShipWoodCrates3` and `HCShipCoinCrates3`, three cards of Age II (`<age>1</age>`), each given
+`FreeHomeCityUnitByShipmentCount` Hussar `age='2'` `includeself='true'`, all three sent in Age III; the video runs at 8x
+speed):* each card counts in Age II, its own age, though it is sent and arrives in Age III (`a card of age 2, in age
+3`): the first brings 1 Hussar, the second 2, the third 3, and the count reads `0, 3, 0, 0, 0`. The AI's chat at the
 left is a test rule that prints `xsGetShipmentCount`. [Full video (MP4)](media/shipmentCounts-wol.mp4).
 
 ![shipmentCounts in WoL, a tech](media/shipmentCounts-reward-wol.gif)
@@ -7020,8 +7420,8 @@ and no Cuirassier, as no card was shipped in Age II. [Full video (MP4)](media/sh
 
 ![shipmentCounts in WoL, key off](media/shipmentCounts-wol-control.gif)
 
-*In WoL, key off (the same data and cards, in a new game):* the game drops the effect it does not know, and the two Age
-III cards bring only their crates. [Full video (MP4)](media/shipmentCounts-wol-control.mp4).
+*In WoL, key off (the same data, map and cards, in a new game; 8x speed):* the game drops the effect it does not know,
+and the three Age II cards sent in Age III bring only their crates. [Full video (MP4)](media/shipmentCounts-wol-control.mp4).
 
 ![shipmentCounts in WoL, a tech, key off](media/shipmentCounts-reward-wol-control.gif)
 
@@ -7053,43 +7453,46 @@ int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge)  // cAge1..
 - **Effect:**
   - `unittype`: a proto, delivered as the stock `FreeHomeCityUnit` delivers: at the home city gather point, with its checks
     (no gather point, no units);
-  - `amount` × the count: the count is the cards of the player sent in `age`, one age from 1 to 5 (Age I to Age V) or a
-    range such as `age='2-4'` (Age II to Age IV), or in every age without `age`. A fraction is cut, as `FreeHomeCityUnit`
-    cuts it; a count of 0 sends nothing;
-  - `includeself='true'` (or `1`): when the effect is on a card, that card counts too, if it was sent in that age (or in
-    the range).
+  - `amount` × the count: the count is the player's cards of `age`, one age from 1 to 5 (Age I to Age V) or a range such
+    as `age='2-4'` (Age II to Age IV), or of every age without `age`. A fraction is cut, as `FreeHomeCityUnit` cuts it; a
+    count of 0 sends nothing;
+  - `includeself='true'` (or `1`): when the effect is on a card, that card counts too, if it is a card of that age (or
+    of the range).
   - Target: `<Target type='Player'/>`, as `FreeHomeCityUnit`.
-- **What counts, and in which age:** a card counts in the age it was **sent** in (the player's decision), and only once
-  it has **arrived** (its transit ended and its tech activated: the effects of a card run at that moment). So a card sent
-  in Age II that arrives in Age III counts in Age II, and a card on its way counts nowhere yet. A card cancelled from the
-  queue, by the player or by a Blockade, never counts: that is why the count waits for the arrival. Every card counts, a
-  card sent again too. Cards of other players never count.
+- **What counts, and in which age:** a card counts in **its own age**, the `<age>` of the card in the home city file
+  (the age that enables it: `<age>0</age>` is Age I, `<age>1</age>` Age II, ... `<age>4</age>` Age V), whenever it is
+  sent (JTMaston's #76, 2026-11-21: 9 cards of Age II, 4 of them sent in Age IV, add 4 to Age II). A card with no
+  `<age>` counts in Age I. It counts only once it has **arrived** (its transit ended and its tech activated: the effects
+  of a card run at that moment), so a card on its way counts nowhere yet. A card cancelled from the queue, by the player
+  or by a Blockade, never counts: that is why the count waits for the arrival. Every card counts, a card sent again too.
+  Cards of other players never count. Until 2026-11-21 a card counted in the age it was sent in.
 - **The syscalls:** in AI scripts and triggers, with XS ages (`cAge1` = 0 … `cAge5` = 4): `xsGetShipmentCount(playerID,
   age)`, `-1` for every age; `xsGetShipmentCountRange(playerID, firstAge, lastAge)` for a range (0 for a bad range). Note
   that the effect's `age` is 1 to 5 (Age I to V), and the syscalls' are `cAge1`..`cAge5`.
 - **Bad data:** a `unittype` that is no proto, or an `age` that is not 1..5 or a range of them (`'4-2'`, `'7'`), drops the
   effect, with a log line; `dataLint` then lists it among the effects the game deletes.
-- **Saved games:** the counts are kept, and so is the age each card on its way was sent in: a loaded game goes on with the
-  counts it had when it was saved, and a card in transit at the save counts in the age it was sent in when it arrives
-  after the load. They are kept on one living unit of the game (a hidden marker that nothing reads); when that unit dies
-  they move to another one. A new game starts at zero. A game saved without the key loads with every count at zero.
+- **Saved games:** the counts are kept: a loaded game goes on with the counts it had when it was saved, and a card in
+  transit at the save counts in its own age when it arrives after the load. They are kept on one living unit of the
+  game (a hidden marker that nothing reads); when that unit dies they move to another one. A new game starts at zero. A
+  game saved without the key loads with every count at zero. A game saved by a build before 2026-11-21 loads with its
+  counts (made by the old rule) and a line in the log; what it also kept for the cards on their way is no longer used.
 - **Off:** the game deletes an effect with this subtype and the syscalls do not exist: a script that calls them does not
   compile. Test it with the key on.
 - **Multiplayer:** it changes the simulation: every player needs the same setting.
-- **Performance:** one count per send and per shipment, one per effect; per frame only a check that the unit holding the
+- **Performance:** one count per shipment (and one card lookup), one per effect; per frame only a check that the unit holding the
   counts is alive. A/B in WoL (2026-11-13, `perfprobe.py`, 90 s of a skirmish from 2:20, no other game open, the AI's
   card already counted): the game's update 0.40 ms per frame with and without the key, 1 frame over 50 ms in each, main
   thread 94 % and 93 %; the frame rate (375 and 449 fps, uncapped) differed by render time (2.3 and 1.8 ms), which the
   key does not touch.
-- **Log:** `shipmentCounts: shipments are counted per player and the age they were sent in, and kept in saved games; the
-  Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount and xsGetShipmentCountRange read
-  them`, `hook reached: shipmentCounts send (0x857204)`, `hook reached: shipmentCounts (0x8584FF)`, `hook reached:
-  shipmentCounts queue removal (0x857257)`, `hook reached: tech subtype on a player (0x8D843E)`. With `log`:
-  `shipmentCounts: player 1 sends tech 715 (HCShipWoodCrates2) in age 2`, `shipmentCounts: player 1 ships tech 715
-  (HCShipWoodCrates2), sent in age 2, now age 3`, `shipmentCounts: player 1 has shipped 1, 2, 0, 0, 0 in ages I to V`,
+- **Log:** `shipmentCounts: shipments are counted per player and the age of each card (its <age>; none: Age I), and kept
+  in saved games; the Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount and
+  xsGetShipmentCountRange read them`, `hook reached: shipmentCounts (0x8584FF)`, `hook reached: tech subtype on a player
+  (0x8D843E)`. With `log`: `shipmentCounts: player 1 ships tech 715 (HCShipWoodCrates2), a card of age 2, in age 3`
+  (`(it has no <age>)` for a card without one), `shipmentCounts: player 1 has shipped 1, 2, 0, 0, 0 in ages I to V`,
   `shipmentCounts: player 1, FreeHomeCityUnitByShipmentCount proto 318, age 2: 2 shipment(s) (this one included) x 1.00 =
   2.00 unit(s)`, `shipmentCounts: the counts are kept on unit 8`, after a load `shipmentCounts: loaded: player 1 has
-  shipped 1, 0, 0, 0, 0 in ages I to V, 2 card(s) queued`. Errors: `a FreeHomeCityUnitByShipmentCount effect names
+  shipped 1, 0, 0, 0, 0 cards of ages I to V`; a save of an older build: `shipmentCounts: loaded a save of an older
+  build: the send ages it kept are not used, a card counts in the age of the card`. Errors: `a FreeHomeCityUnitByShipmentCount effect names
   NoSuchProto, which is not a proto; effect dropped`, `age="4-2" is not an age 1 to 5 (Age I to V) or a range such as 2-4;
   effect dropped`.
 - **Tested in WoL (2026-11-13),** a skirmish, Dutch (player 1) against a Belgian AI; cards sent from the console with
@@ -7115,9 +7518,28 @@ int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge)  // cAge1..
   - the Town Center holding the counts deleted by an AI rule: `the counts are kept on unit 8` (the Explorer); saved,
     loaded in a new process: `1, 0, 0, 0, 0`, and the AI's card that was on its way at the save counted in its Age I;
   - `age='4-2'`: dropped and logged.
-  - Not tested: a cancelled card (the queue removal it goes through was reached by every shipment), multiplayer, a
-    `Data2` effect. The video above is the first test: what it shows has not changed (its cards were sent in the age they
-    arrived in).
+  - Not tested: a cancelled card (it never reaches the activation the count hooks), a `Data2` effect.
+- **Tested in WoL (2026-11-21), the age of the card (#76),** skirmishes on a test map in `C:\AoE3-UHC-WoLReal11`,
+  Dutch (then Portuguese) against a German AI; Ships and the ages set by test techs (`SetAge`), cards sent with
+  `homeCityTrain2(1, <index>)` (the index in the player's in-game card list); `HCShipWoodCrates2`, `WoodCrates3` and
+  `CoinCrates3` (`<age>1</age>`) given Hussar `age='2'` `includeself='true'`, a test tech with Hussar `age='2'`,
+  Cuirassier `age='1'` and Grenadier `age='5'`, and an AI rule that prints both syscalls:
+  - an Age I card sent in Age I: `a card of age 1, in age 1`, counted `1, 0, 0, 0, 0`;
+  - two Age II cards sent in Age III: `a card of age 2, in age 3`, both counted in Age II (1 then 2 Hussars); three
+    more Age II cards sent in Age IV counted in Age II too (`1, 5, 0, 0, 0`; `CoinCrates3` brought 3 Hussars);
+  - the test tech in Age V: 5 Hussars, 1 Cuirassier, no Grenadier; the AI read `all 6, I 1, II 5, III 0, IV 0, V 0,
+    II-V 5`, 0 for the range 3-2;
+  - saved with two Age II cards on their way in Age IV, loaded in a new process: `loaded: player 1 has shipped 1, 3, 0,
+    0, 0`, and both arrived counted in Age II (`1, 5`);
+  - a save of the build before this change (two Age II cards sent in Age III, still on their way), loaded with this
+    build: `loaded a save of an older build ...`, the counts `1, 0, 0, 0, 0`, and the two cards counted in Age II (under
+    the old rule they would have counted in Age III); the next save had no old marker any more;
+  - key off (control video): the three cards brought only their crates; beside WoL's own DLL (our `dinput8.dll`): the
+    key is not applied, as before (`site FreeHomeCityUnitCase at 0x008D8C62 does not hold the stock bytes`, WoL's DLL
+    patches that case), and the game ran.
+  - Stock, found on the way: a card with no `<age>` and a card with `<age>4</age>` are left out of the in-game deck
+    (the card list is built per age 0 to 3, FUN_006301DE), so they cannot be sent at all; the rule for a card with no
+    `<age>` (Age I) only matters to a mod that changes that.
 - **Note for tests:** `uiDeleteSelectedUnit()` from the console, in a copy with `multipleInstances background`, crashed
   the game in the interface code (a null UI context at 0x7E51C8, not in the key's code); an AI rule deleting the unit did
   not.
@@ -7240,20 +7662,21 @@ unitTypeTechs [log]
 
 *A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit.*
 
-**Added:** Friday 2026-11-20 11:52 · **Filmed in WoL:** Friday 2026-11-20 12:00
+**Added:** Friday 2026-11-20 11:52 · **Filmed in WoL:** Saturday 2026-11-21 11:54
 
 ![transformChecks in WoL](media/transformChecks-wol.gif)
 
-*In WoL, with `transformChecks log` and `wol-fixes/special-transforms` (a scenario, Zulu youths in the Fortress age, a
-Gunpowder Kraal in the middle):* three youths are selected, two near the kraal and one 28 m away. The Askari button's
-tooltip says `2 / 3` and why the third cannot; a click turns the two near ones into Askari maturing units (the cost is
-paid twice) and their Askaris come out; the far youth stays, and with it alone the button is grey with the kraal rule
-in red. [Full video (MP4)](media/transformChecks-wol.mp4).
+*In WoL, with `transformChecks log` and `wol-fixes/special-transforms` (a scenario, a youth 10 m from a Gunpowder
+Kraal, no resources until 22 s):* the Askari button stays enabled, its tooltip ends with "Not enough resources" in
+red, and a click shows the game's own message, "55 food, 70 gold required to build another Askari.", as a Train
+button does. Once the resources come, the same click turns the youth into an Askari maturing unit: the Askari comes
+out at once, and the youth dances on the maturing ground (the pack's anim files) until the maturing ends.
+[Full video (MP4)](media/transformChecks-wol.mp4).
 
 ![transformChecks in WoL, key off](media/transformChecks-wol-control.gif)
 
-*In WoL, key off, the pack applied (the same scene):* the button is the pack's, so the click transforms the same two
-youths: the kraal rule is the game's. The far youth stays too, but nothing says why, and the button stays enabled.
+*In WoL, key off, the pack applied (the same scene):* the click without resources shows the same message (it is the
+game's), but the tooltip says nothing; the transform and the dance are the same, since both are the pack's data.
 [Full video (MP4)](media/transformChecks-wol-control.mp4).
 
 ```
@@ -7267,12 +7690,14 @@ transformChecks [log]
   kraal rule `distanceatmostfromtype ... AFRICANgunpowderkraal` of `maturinggunpowder.xml` applies to a button
   too), charges the target's cost, and puts the target, built, where the unit stood.
 - **What the key adds:**
-  - **the button:** for each of your selected units the panel asks the same checks (the cost, the build limit, the
-    placement). With none that passes, the button is grey, a click does nothing, and the tooltip ends with the
-    reason in red: the placement rule's own `errorstringid` text ("This unit must be matured near a Gunpowder
-    Kraal."), "Not enough resources" or "You are at the build limit for the …". With some that pass, the tooltip
-    says how many ("2 / 3: …") and the click transforms those. Without the key the button is always enabled and a
-    refused unit does nothing, silently;
+  - **the button:** for each of your selected units the panel asks the same checks, in the game's order (the
+    placement, the build limit, the cost). With none that passes, the button is grey, a click does nothing, and the
+    tooltip ends with the reason in red: the placement rule's own `errorstringid` text ("This unit must be matured
+    near a Gunpowder Kraal.") or "You are at the build limit for the …". When the cost is the only reason, the
+    button stays enabled with "Not enough resources" in red, and a click shows the game's own message and sound
+    ("55 food, 70 gold required to build another Askari.", the routine a Train button uses), once for a group. With
+    some that pass, the tooltip says how many ("2 / 3: …") and the click transforms those. Without the key the button
+    is always enabled and a refused unit does nothing, silently (the cost message excepted: it is the game's);
   - **the build limit:** a target whose `<BuildLimit>` the player's living units of that proto reach is refused, unit
     by unit, before the payment. Without the key six fishing boats pressed together made six `PyrpolikoMaturing`
     with a limit of 5.
@@ -7296,9 +7721,17 @@ transformChecks [log]
   `Age0Greeks` had no fireship button (the pack's `<associatedtech>`), and with the console command still transformed
   (the game does not check that the target is enabled); beside WoL's DLL (`dinput8.dll`) both
   hooks were reached and the same group gave `2 / 3` and two transforms; `nativePreview` still applied with the shared
-  hook. Not tested: multiplayer, an AI game with the pack (WoL's AI builds these maturing protos with build plans, which
-  do not need the `<Train>` rows the pack removes: an inference), the reload of a game saved during a maturing (the
-  console `loadGame` did not visibly reload).
+  hook. Again on 2026-11-21 (JTMaston's feedback; screenshots 9 to 17 there), Zulu youths with no resources: one
+  youth 10 m from the kraal, button enabled with the red line, the click gave "55 food, 70 gold required to build
+  another Askari."; three youths, one message; a youth 30 m away, grey with the kraal rule; a fishing boat with no
+  wood, "150 wood required to build another Pyrpoliko." and the button kept (before the click rewrite the failed
+  `commandResearch` took it off that boat), and with wood the same boat transformed; seven boats, five transforms and
+  the two others grey with the build limit. A skirmish with the pack and a German AI played with no XS error. With the
+  pack, a trigger's build order no longer made the youth place the four kraal maturings (it did with the `<Train>`
+  rows kept): WoL's AI, which builds them with build plans, probably cannot either (the pack's `--keep-train`; a
+  question for the WoL team). The transform makes the maturing unit complete, so its single-use `Spawn` gives the unit
+  at once; the pack's anim files make the youth dance beside it until the maturing unit's lifespan ends. Not tested:
+  multiplayer, the reload of a game saved during a maturing (the console `loadGame` did not visibly reload).
 
 ### Interface
 
@@ -7307,7 +7740,7 @@ What the panels and the fog of war show.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`abilitySlots`](#abilityslots) | Lets the command panel show up to N abilities per unit instead of 6. | **new** | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. | confirmed (single player, UI) |
-| [`displayedRange`](#displayedrange) | A selected unit shows a ring of the radius of `<DisplayedRange>`. | **new** | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. | confirmed |
+| [`displayedRange`](#displayedrange) | A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | **new** | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. | confirmed (single player) |
 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | **new** | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. | confirmed (single player, UI) |
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
@@ -7316,6 +7749,7 @@ What the panels and the fog of war show.
 | [`minUIStats`](#minuistats) | The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | **new** | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. | confirmed (single player, UI) |
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
 | [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. | confirmed (single player) |
+| [`editorSearch`](#editorsearch) | The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | **new** | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. | confirmed (editor, UI) |
 
 #### nativePreview
 
@@ -7379,43 +7813,86 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 #### displayedRange
 
-*A selected unit shows a ring on the ground marking its range.*
+*A selected unit shows its range on the ground while Alt is held: one ring per ranged attack.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Friday 2026-11-06 07:32
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Saturday 2026-11-21 12:04
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
-*In WoL, with `displayedRange log` (Ethiopians, test data, a Sawmill with 14 and a Town Center with 20):* the ring shows
-while the building is selected and goes when it is not. [Full video (MP4)](media/displayedRange-wol.mp4).
+*In WoL, with `displayedRange log` (Swedes, a skirmish; test data: `<DisplayRange>1</DisplayRange>` on the Fort, the Falconet and the
+Crossbowman, `<Flag>AlwaysDisplayRange</Flag>` on the Outpost):* the Fort is selected and shows nothing; Alt held, its 40 m anti-ship and 26 m cannon rings; Alt released, none; the Outpost, selected, shows its 40 and 24 m at once, with no Alt; two Crossbowmen with Alt show 16 and 6 m each. The log names each ring. [Full video (MP4)](media/displayedRange-wol.mp4).
 
 ![displayedRange in WoL, key off](media/displayedRange-wol-control.gif)
 
-*In WoL, key off (the same data):* no ring. [Full video (MP4)](media/displayedRange-wol-control.mp4).
+*In WoL, key off (the same data and the same Alt):* no ring; Alt only shows the HP bars, as in stock.
+[Full video (MP4)](media/displayedRange-wol-control.mp4).
 
 ```
 displayedRange [log]
 ```
 
 ```xml
+<Unit name="FortFrontier">
+    <DisplayRange>1</DisplayRange>              <!-- rings while selected and Alt is held -->
+</Unit>
+<Unit name="Outpost">
+    <Flag>AlwaysDisplayRange</Flag>             <!-- or <AlwaysDisplayRange>1</AlwaysDisplayRange>: rings while selected -->
+</Unit>
 <Unit name="WOLSawmill">
     <DisplayRange>1</DisplayRange>
-    <DisplayedRange>14</DisplayedRange>
+    <DisplayedRange>14</DisplayedRange>         <!-- a fixed radius instead of the attacks'; more than one is fine -->
 </Unit>
 ```
 
-- **In WoL today:** nothing shows how far a building's aura reaches.
-- **Effect:** a selected unit with both tags shows a thin white ring on the ground, centred on it, of the radius of
-  `<DisplayedRange>`: the nearest of 4, 6, 8, 10, 12, 14, 16, 20, 24 and 30 m, the sizes in `tools/rings`.
+- **In WoL today:** nothing shows how far a unit shoots or an aura reaches.
+- **When:** a unit with `<DisplayRange>1</DisplayRange>` shows its rings while it is selected and Alt is held (JTMaston,
+  2026-11-21), the key that already shows every HP bar; they go when Alt is released or the unit is deselected.
+  `<AlwaysDisplayRange>1</AlwaysDisplayRange>`, or `<Flag>AlwaysDisplayRange</Flag>`, shows them whenever the unit is
+  selected, Alt or not (the stock flag parser drops a name it does not know; the key catches it).
+- **Which rings:** one per ranged attack (`<RangedLogic>1</RangedLogic>`) of the unit's current tactic, at that attack's
+  `MaxRange` as the player has it now: a tech that adds range moves the ring at once (`Revetment`: the Fort's 26 m ring
+  became 32 m). A Fort shows its 40 m anti-ship attack and its 26 m cannon, an Outpost 40 and 24, a Crossbowman 16 and the
+  6 of its building attack. Two attacks on the same ring size share one ring. A cannon limbered to move has no attack in
+  that tactic, so it shows the attacks of all its tactics (the Falconet's 26). With `<DisplayedRange>` the rings are those
+  values instead.
+- **Sizes:** each radius goes to the nearest ring of `tools/rings`: 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
+  32, 36, 40, 45, 50, 60, 70, 80 and 100 m (aoe3-blender-tools' `make_rings.py`, `RANGES`; the line widens a little on
+  the large ones so it stays visible).
 - **Files:** `range_<metres>.xml`, its particle and its texture, in `art/effects/uhc_rings` for everyone who should see it.
 - **How far an aura reaches:** its `<MaxRange>` goes from the centre of its unit to the edge of the target: a 6.2 m aura
   took trees at 6.0, 6.3 and 7.2 m, and not at 8.9 m. So a small range can stay under a big building's model.
-- **Several units:** each selected unit with the tags shows its own, as long as it is selected.
-- **Multiplayer:** display only: the selection is this machine's and a model is a visual. Every player can have it or not.
-- **Log:** `displayedRange: the proto tags DisplayRange and DisplayedRange are on`, and with `log`
-  `displayedRange: ring of 14.0 m on unit 1 (WOLSawmill)` and `ring off unit 1`.
-- **Performance:** a tick four times a second over the selected units only. Not measured with `perfprobe.py`.
-- **Tested in WoL (2026-11-06):** selecting a Sawmill and a Town Center by console, 14 m and 20 m, on and off in the log and on
-  screen. Not tested: 24 and 30 m, a saved game, multiplayer.
+- **Cost, and the caps:** measured with `perfprobe.py` (2026-11-21, 45 s a case, 50 selected units on screen, the
+  render time of a frame, other games running on the PC):
+
+  | 50 selected units | Rings each | Rings on screen | Render a frame, key on | Key off |
+  |---|---|---|---|---|
+  | Hussar (no tag) | 0 | 0 | 4.45, 3.71, 4.85 ms (three runs) | 3.91 ms |
+  | Rodelero | 1 (12 m) | 50 | 4.35, 4.83 ms | — |
+  | Doppelsoldner | 2 (12, 20 m) | 100, no cap | 6.63 ms | 5.99 ms |
+  | Halberdier | 4 (8 to 20 m) | 200, no cap | 7.98 ms | 7.59 ms |
+  | Doppelsoldner | 2 | 60, the cap | 5.31 ms | 5.99 ms |
+  | Halberdier | 4 | 60, the cap | 6.88 ms | 7.59 ms |
+
+  The differences stay inside the noise between runs of one case (0.6 to 1.1 ms; seven other games ran on the PC); the
+  Halberdiers cost more than the Hussars with the key off too, so it is their models, not the rings. With 1 and 20 units
+  the numbers were the same with 0, 1, 2 and 4 rings. No frame over 100 ms in any capped run.
+
+  So the rings cost nothing measurable. A selection still shows at most 4 rings a unit and 60 in all, the units
+  with the longest ranges first, so that a big selection stays readable.
+- **Multiplayer:** display only: the selection and the keyboard are this machine's, and a model is a visual. Every player
+  can have it or not.
+- **Log:** `displayedRange: applied`, `hook reached: displayedRange: proto flag parser's last compare (0x5F726F)`, and
+  with `log` `proto Outpost: <Flag>AlwaysDisplayRange</Flag>`, `Alt held`, `ring of 40 m on unit 206 (FortFrontier), Alt
+  held`, `Alt released`, `rings off unit 206`.
+- **Tested in WoL (2026-11-21):** a scenario (Ethiopians) and a skirmish (Swedes), Alt posted to the window as
+  `WM_KEYDOWN` / `WM_KEYUP` of `VK_MENU` (the game reads it from its messages, so no real keyboard was needed):
+  the Fort selected, no ring; Alt, 40 and 26 m; released, none; after `Revetment` the 26 m ring became 32 m; the
+  Outpost (`<Flag>`) 40 and 24 m without Alt; the Falconet (`<AlwaysDisplayRange>1`, limbered) 26 m without Alt;
+  the Musketeer's two `<DisplayedRange>` (12 and 6) only with Alt; a Pikeman with no tag, none; a Frigate 30 m
+  (its ranged and broadside attacks share the ring) and a Caravel 20 m on a water map; 50 selected units with 1, 2
+  and 4 rings each (the table); a game saved and loaded: the Outpost's and the Fort's rings came back; key off: no
+  ring, Alt shows the HP bars only. Not tested: multiplayer, a selection of a building with units (the console
+  route selects one kind at a time).
 
 #### abilitySlots
 
@@ -7694,7 +8171,7 @@ which the minimized interface had no room for. [Full video (MP4)](media/minUISta
 
 ![minUIStats on a building in WoL](media/minUIStats-building-wol.gif)
 
-*In WoL, with `minUIStats` (a `Bunker`, Siege armor 0.3):* `Resists: 0.30` in the stock spot, `Garrison: 0 / 20` and LOS.
+*In WoL, with `minUIStats` (a `Bunker`, Siege armor 0.3):* `Resists: 0.30` (`30%` since version 7) in the stock spot, `Garrison: 0 / 20` and LOS.
 [Full video (MP4)](media/minUIStats-building-wol.mp4).
 
 ![minUIStats on a building in WoL, key off](media/minUIStats-building-wol-control.gif)
@@ -7803,7 +8280,7 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       as with WoL's DLL: the Escopetero's ranged row has three.
     - Tooltips: the attack rows keep the game's own tooltip (name; damage; range and area; one line per multiplier) and
       get two lines after the damage, `Attacks every 3.50 s (<stopwatch>)` and `4 projectiles before the reload
-      (<cylinder>)`. Their texts are `rofTip` and `projectilesTip` on `<bigPanelRows>` (`%s` the number;
+      (<cylinder>)` (version 7: `Rate of fire: 3.50s <stopwatch>` and `4 projectiles <cylinder>`). Their texts are `rofTip` and `projectilesTip` on `<bigPanelRows>` (`%s` the number;
       `[string:ID]` works; empty: no line). A row shown in short form (too long for its column, or the `+N more`
       gadget) has that full tooltip too, instead of its text without icons.
     - An original attack row too long for the panel (at 1024 x 768 the font is relatively wider) drops its last
@@ -7813,13 +8290,52 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   - **Version 6 (2026-11-20), after JTMaston's review of version 5:**
     - The projectiles line of the tooltip reads `4 projectiles` (`projectilesTip` defaults to `%s projectiles`): a unit
       such as the Chu Ko Nu does not fire them all at once.
-    - No parentheses around icons: the key's own lines end with the icon (`Attacks every 3.50 s <stopwatch>`), and in the
+    - No parentheses around icons: the key's own lines end with the icon (`Attacks every 3.50 s <stopwatch>`; version 7: `Rate of fire: 3.50s`), and in the
       game's lines the parentheses around an icon or around the name right after one go (`11 <icon> Ranged Damage`,
       `1.5X Bonus Damage against <icon> Maneuver Unit`; strings 42226, 42229, 42230, 42223). `tipParentheses="keep"` on
       `<bigPanelRows>` keeps them. The string tables are not changed.
     - The unit type icons of the multipliers stay WoL's own: a redrawn set (`make_stat_icon.py --types` in
-      aoe3-blender-tools) was tried and not kept. WoL's `staticons\stat_icon_hand_cavalry.ddt` is an empty 24-byte file,
+      aoe3-blender-tools) was tried and not kept (version 7 redraws three of them in another style). WoL's `staticons\stat_icon_hand_cavalry.ddt` is an empty 24-byte file,
       so a multiplier against Hand Cavalry shows no icon.
+  - **Version 7 (2026-11-21), after JTMaston's review of version 6:**
+    - Seconds stuck to the number: the ROF line of the attack rows' tooltip is `Rate of fire: 3.50s <stopwatch>`
+      (`rofTip` defaults to `Rate of fire: %ss`), the `lifespan` item `40s`, `poison` `3 x 8s`, and the normal
+      interface's rows of [`lifespanAfterConstruction`](#lifespanafterconstruction) (`40s once built`) and
+      [`researchGrants`](#researchgrants) (`2/3, next in 14s`).
+    - The armor as a percent stuck to the value, to a tenth when it has one: `30%`, `12.5%`, each with its damage
+      type's icon after it (`30% <hand>  20% <ranged>` with `multiarmor`), in the `armor` and `armorValue` items and in
+      the original resists value of the minimized panel, which the key now rewrites for every unit (it was
+      `0.30`, the exe's `%.2f`). Beside another DLL that changed the resists armor test, that DLL's text stays.
+    - The `inventory` item (`Holds: ...`) leaves out a proto with an infinite resource (proto flag 24h: a `Mill`,
+      where it read `999/100`; the stock row says `Infinite`), writes the amount alone when the unit has no initial
+      amount (a placed `Mine` read `1928/0`), rounds up as the stock row does (`1929`), and its icon is the panel's
+      size (`(10)`, it was `(16)`).
+    - `speed` and the tactic's `<speedmodifier>` (JTMaston's question): the item is the unit's live maximum speed,
+      the same function the big interface's Speed row reads, so it includes the current tactic's speed modifier.
+      WoL's `Falconet` (`MaxVelocity` 4, `falconet.tactics`: Limber 1.0, Bombard 0.4): `4` in Limber and `1.60` in
+      Bombard after `unitSetTactic("Bombard")`, within the panel's next refresh, in both interfaces. Moved by a
+      trigger's `Move To Point` while in Bombard, it went back to Limber and moved at 4.0 m/s (44.1 m in 11.0 s; the
+      one left in Limber 3.99 m/s): the game limbers artillery to move, so 1.60 is never a speed it moves at, and the
+      panel showed 4 again after the move. Pictures `wol-fixes/min-ui/final/minUIStats-v7-falconet-*` and
+      `-bigui-falconet-*`.
+    - Tested in WoL (2026-11-21, single player, Ethiopians, our `UHC.dll` with `minUIStats`, `multiplierDecimals`,
+      `showGatherRate`, WoL's `wol.cfg` lines with `attackTypeIcons`, the pack's layout and rows, 1920 x 1080): the
+      resists `20%` / `75%`, the tooltip `Rate of fire: 3.50s` and `3s`; gatherers in both interfaces with the same
+      value (berries 0.67/s, a Mine 0.60/s, the Mill 0.50/s, trees 0.50/s after the
+      [`showGatherRate`](#showgatherrate) fix below); with `resourceGatherAuras` and `resourceDebt` on too, 40
+      applied, 0 failed, the same rows. The shipped file's commented `Gathers: {gatherRate}` row was tried in a gadget
+      at `uhcRow2`'s place: `Gathers: Wood 0.50/s`, the same value as the stock rate row.
+    - Three unit type icons redrawn at the team's request, approved in review: Line (`AbstractHeavyInfantry`, an
+      infantryman in a shako with a blue coat), Standing (`AbstractInfantry`, the same in a red coat) and Maneuver
+      (`AbstractRangedCavalry`, a winged arrow; a winged bullet was the alternative, kept in the pack's `review`
+      folder). They replace WoL's files at the paths the panels draw (`ui\ingame\stat_icon_heavy_infantry`,
+      `WoL\ui\ingame\staticons\stat_icon_ranged`; for Standing `ui\ingame\stat_icon_infantry`, the stock icon of
+      `AbstractInfantry`, which wins over the `WoL\...\stat_icon_standing_unit` of `attackTypeIcons`, so both get it),
+      32x32 BGRA, soft edges and shading like WoL's own, drawn by aoe3-blender-tools' `make_type_icon.py`. The pack
+      now has an `apply_fix.py` (install, `--restore`, `--check`). Checked in WoL (1920 x 1080, installed and removed
+      with it, files byte for byte back): the Escopetero's rows and tooltips show the arrow and the blue soldier, the
+      Falconet's Bombard row the red soldier, in both interfaces, rows as long as with WoL's icons
+      (`wol-fixes/min-ui/final/minUIStats-v7-icons-*`).
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.
@@ -7890,7 +8406,7 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   | Selection | Minimized, key on | Big interface |
   |---|---|---|
   | `Musketeer` | 3 attacks (stock), LOS 16, Speed 4, Train Points 30 | the same 3 attacks, Speed 4 |
-  | `Bunker` (Siege armor 0.3) | `Resists: 0.30`, Garrison 0 / 20, LOS 32, its attack | no armor row (unchanged) |
+  | `Bunker` (Siege armor 0.3) | `Resists: 0.30` (version 7: `30%`), Garrison 0 / 20, LOS 32, its attack | no armor row (unchanged) |
   | `Explorer` (Menelik II) | 3 attacks + `Sharpshooter ATK`, `Crack Shot ATK`; Speed 4.50 | the same 5 attacks |
   | `Grenadier` | 3 attacks + `Hand ATK`, `Hand ATK` | the same 5 attacks |
   | `Dragoon` | 3 attacks + `Hand ATK`; Speed 7.25 | the same 4 attacks |
@@ -8025,10 +8541,10 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   bar shown): one `Musketeer`, a `Barracks`, a `Factory` (its trickle row), a `Bank`, 2, 5 and 9 unit types, Menelik II
   damaged (`Regen 1/s`; of its five ability attacks only Sharpshooter, which needs no tech), a `WoLPresidial`
   (Sharpshooter, its own ability; no Crack Shot), the Chief (`WOLcartographer`) before and after `HCSteelCrown`
-  (Anti-artillery Crackshot only after), the `Wachtmesteer` with three armors (`0.30 0.20 0.10`, by damage type), a
+  (Anti-artillery Crackshot only after), the `Wachtmesteer` with three armors (`0.30 0.20 0.10`, by damage type; `30% 20% 10%` since version 7), a
   `Grenadier` and a `Settler` with long attack rows (they end at x ~557 and ~568, before the second column at 583), a
   long name (Húsar de la Muerte), the overheal (`Overheal +50`, HP 150/100); a `Villero` whose ranged row runs on into
-  the second column (the second-column gadget of its line stays empty); a poisoned `Halberdier` (`Poison 3 x 8 s`, the
+  the second column (the second-column gadget of its line stays empty); a poisoned `Halberdier` (`Poison 3 x 8 s`, `3 x 8s` since version 7, the
   Aenna's arrows of `dot_testdata.py --wol`); a `WOLSawmill` and a tree in its `unitResourceAuras` aura (`Aura pays
   0.10/s`, `Aura -0.05/s`); in an AI skirmish a `Manor` going up (`Done in 0:12`) and its builder (`Builds 1.00/s`)
   under the AI's two-line name; ships on a water map (a `Caravel`, a `Frigate` with two armors, garrison 0 / 50);
@@ -8279,6 +8795,84 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
   map, other games running on the machine): 1263 fps against 1278, update 0.134 ms against 0.140, main thread 79 %
   against 75 %, one 67 ms frame with the key's danger parts on and none off.
 
+#### editorSearch
+
+*In the scenario editor, a search field above the list of objects, in the Forbidden Units/Techs dialog and in the trigger editor: type part of a name and the list shows only what matches.*
+
+**Added:** Saturday 2026-11-21 11:23 · **Filmed in WoL:** Saturday 2026-11-21 12:07
+
+![editorSearch in WoL](media/editorSearch-wol.gif)
+
+*In WoL, with `editorSearch log` and `wol-fixes/editor` (the editor's Objects palette, player 1):* "musk" keeps 9 of
+the 3,211 entries, " ox" narrows them to the Musk Ox, the erased field brings the full list back, and "prowler" finds
+the two Prowlers by the names the palette shows; the log lines at the bottom count each search.
+[Full video (MP4)](media/editorSearch-wol.mp4).
+
+![editorSearch in WoL, key off](media/editorSearch-wol-control.gif)
+
+*In WoL, key off and the same layouts (the same typing):* the field takes the text, and the palette keeps all its
+entries. [Full video (MP4)](media/editorSearch-wol-control.mp4).
+
+![editorSearch in the Forbidden Units/Techs dialog](media/editorSearch-forbid-wol.gif)
+
+*The Forbidden Units/Techs dialog, the same key and pack:* "musket" keeps 7 of the 3,634 units, Display Techs shows
+the techs with "musket" in their name, and the erased field brings back all 10,542.
+[Full video (MP4)](media/editorSearch-forbid-wol.mp4).
+
+![editorSearch in the Forbidden Units/Techs dialog, key off](media/editorSearch-forbid-wol-control.gif)
+
+*Key off, the same typing:* the lists stay full. [Full video (MP4)](media/editorSearch-forbid-wol-control.mp4).
+
+![editorSearch in the trigger editor](media/editorSearch-trigger-wol.gif)
+
+*The trigger editor, an effect Unit Create:* "create" leaves 10 of the 218 effect types in the Type list (Unit Create,
+Unit Create at Location, …); "cavalry" matches no type, so the Type list stays whole, and the unit list of ProtoName
+keeps the 13 cavalry units, plus CavalryArcher, the value already set. [Full video (MP4)](media/editorSearch-trigger-wol.mp4).
+
+![editorSearch in the trigger editor, key off](media/editorSearch-trigger-wol-control.gif)
+
+*Key off, the same typing:* every list stays full. [Full video (MP4)](media/editorSearch-trigger-wol-control.mp4).
+
+```
+editorSearch [log]
+```
+
+- **What it needs:** a `textField` with a given name in each layout. The pack `wol-fixes/editor` has the three files:
+  the game's own layouts (WoL ships none of them) with the field and a `Search:` label:
+  - `EditorProtoPaletteSearch` inside the `EditorProtoPalette` gadget of `uieditorpalettes.xml`, to the right of the
+    palette's category list;
+  - `ForbiddenUnitsTechs_Search` in `uiforbiddenunitstechs.xml`, under the Allowed list;
+  - `trEdit-CondEffPanel-search` in `trEdit-CondEffPanel` of `uitriggereditor.xml`, on the row of "Type:".
+
+  Any of them can be left out: a list without its field stays as it is.
+- **Effect:** while the field holds text, the list keeps only the entries in which every word of it appears, upper
+  or lower case alike. A unit matches by the name the list shows, its internal name or its display name ("INF musk"
+  finds `INF R-LU Musketeer`; "prowler" finds the Forest Prowler, `xpMusketWarrior`), a tech by its internal name
+  (what the dialog shows). The list follows the text once the typing pauses for a quarter of a second (refilling
+  the palette takes the game about 0.2 s, so a word typed at speed refills it once); empty, it is the stock list.
+- **The trigger editor:** one field for the open condition or effect. It filters the Type list (condition or effect
+  types, by the names the list shows) and the parameter lists of units (ProtoName, …), unit types (Target Protounit,
+  …) and techs. **A list where nothing matches keeps all its entries**, so a word meant for one list does not empty
+  the others: "create" narrows the Type list and leaves the unit list whole; "musket" narrows the unit list and leaves
+  the Type list whole. A parameter's current value stays in its list, so its field keeps showing it. A value is the
+  name picked, so a value picked from a short list is the same as from the full one (saved and loaded again: the
+  same). The other parameter lists (players, resources, areas…) are left as they are.
+- **With the rest of the lists:** the palette's category list still applies (Nature with "musk": the Musk Deer and
+  the Musk Ox); an entry picked from a filtered palette is placed as usual; in the dialog, Add and Remove work on the
+  filtered list, Display Units / Display Techs keep the search, and the dialog's own refresh (a new player, Cancel)
+  keeps it too. Leaving the editor empties the fields.
+- **Typing:** the field is the game's own `textField`: click it, type, Backspace erases. Keys typed there go to the
+  field, as in the trigger editor's name field.
+- **Simulation:** none. It runs in the editor's lists only: nothing is saved in the scenario but the values you pick,
+  and nothing reaches a game.
+- **Log:** `editorSearch: the Objects palette, the Forbidden Units/Techs dialog and the trigger editor filter by their
+  search fields (EditorProtoPaletteSearch, ForbiddenUnitsTechs_Search, trEdit-CondEffPanel-search)`; with `log`,
+  `Objects palette search field found` (or `has no textField …; its list stays stock`), each search
+  (`Objects palette "musk": 9 shown, 3202 hidden (181.5 ms)`, `trigger editor "create": 10 shown, 208 hidden (6.7 ms)`,
+  `trigger parameter list "cavalry": 13 of 3634`) and every 5000 frames the cost of the per-frame check.
+- **Status:** confirmed (2026-11-21, WoL, the editor, single player): see the pass/fail table in
+  [how-it-works.md](how-it-works.md#editorsearch) and the screenshots in `wol-fixes/editor/media`.
+
 ## 6. Editing the game data
 
 Work on a copy of the WoL folder.
@@ -8344,6 +8938,54 @@ matters:
   fixing a file.
 - **Extra action tags:** with [`spreadAnyAccuracy`](#spreadanyaccuracy), an `<action>` also reads
   `<maxspread>` and `<spreadfactor>`. Keep its `<name>` as the first child, as WoL's files do.
+
+### A stance on foot for a cavalry unit
+
+*A ranged horseman gets off and fights on foot beside his horse, and mounts again, with data only.*
+
+The pack `wol-fixes/dismount` (`apply_fix.py <WoL folder>`, `--restore` to undo; README in English and Spanish)
+does it for the Chasseur a Cheval, as request #84 asked: a tactic `Dismounted` with its own actions, speed and
+animations, `<transition>`s both ways as the artillery's Limber/Bombard, two buttons
+(`unitSetTactic("Dismounted")`, `unitSetTactic("Stagger")`) and the rider's animations on foot and getting off and
+on, made by aoe3-blender-tools' `tools/make_dismount.py` from the game's infantry animations.
+
+![Dismount in WoL](media/dismount-wol.gif)
+
+*In WoL, with `wol-fixes/dismount` (French against a German AI, four Chasseurs a Cheval, crossbowmen coming; the
+stance set by console, the command the buttons send):* the riders get off on the horses' left side and stand
+beside them, then walk and fire on foot with the horses beside them; read from the game, their tactic stays
+`Dismounted` through the fight. Filmed before the last tuning of the transitions (2 s, a higher leg): the
+close video below shows the final ones. [Full video (MP4)](media/dismount-wol.mp4).
+
+![Without the pack](media/dismount-wol-control.gif)
+
+*The same map with the pack not applied:* the stock chasseurs have no stance on foot and stay in the saddle.
+[Full video (MP4)](media/dismount-wol-control.mp4).
+
+![Dismount and mount, close](media/dismount-transitions-wol.gif)
+
+*A test scenario (its player is not French), the camera close on one chasseur:* the dismount (the right leg over
+the croup, down the side) and, seconds later, the mount back. [Full video (MP4)](media/dismount-transitions-wol.mp4).
+
+No DLL key: what the
+engine does with tactics was read with REA and checked in game ([engine-symbols.md](engine-symbols.md), "Transition
+tags", "Tactic for an action", "Squad mode of a unit"):
+
+- **A transition plays** when it has `<exit>1</exit>` (what a tactic change by command looks for) and, as every stock
+  one, `<action>Limber</action>`; its `<length>` is in seconds.
+- **The stance holds in a fight:** the engine leaves a tactic on its own only through a transition marked
+  `<automatic>` (or `<commandautomatic>` for a command). Measured: four dismounted chasseurs stayed in `Dismounted`
+  (tactic index 3, read from the game every 0.25 s) through a skirmish fight until they were told to mount.
+- **A rider hung on a horse** plays each animation name in both anim files (the horse's carries the tags); the new
+  rider animations must keep their tracks sorted by name, as the stock files do, or only some bones move.
+- **Tested further:** the two buttons clicked (posted clicks on the command row) dismount and mount the selected
+  unit; a game saved while dismounted loads with the stance and the rider on foot (tactic index 3 kept); with the
+  pack applied the AI scripts compile (6 compiles, 0 errors, XS tracer on this copy's game).
+- **What a stance cannot change:** unit types, armour, hit points, obstruction, `<PhysicsInfo>`. On foot the unit
+  still counts as cavalry; if it must count as infantry, the alternative is a transform (`uiTransformSelectedUnit`,
+  [`transformChecks`](#transformchecks)).
+- **Do not add the new animation names to `data\animtypes.xml`:** tried, the unit then played its mounted attack
+  while on foot.
 
 ### Aura rings
 
@@ -8436,11 +9078,40 @@ More about the tools: [tools/README.md](../tools/README.md).
 
 ### The marker of a gathered resource
 
-`aura_wood.xml`, `aura_food.xml` and `aura_gold.xml` in `tools/rings` are a ring plus a floating icon of that resource, the
-same idea as DE's marker on what a Torp works, with our own art: name one in a `UnitResource` aura's
-`<modelattachment>`. The icon is a sprite that faces the camera, at a height by kind of unit in `ICON_HEIGHTS` of
-`tools/make_rings.py` (aoe3-blender-tools). Plain rings stay as they were. Legacy shows only one of two particle systems in a logic branch,
-so the icon is a second `<attachment>`, not a second `<assetreference>`.
+A marker is a ring plus a floating icon of what is gathered, the same idea as DE's marker on what a Torp works, with our own
+art: name one in a `UnitResource` aura's `<modelattachment>`. The icons are cartoons of the gathering tool or of the food
+(JTMaston, 2026-11-21: "a more cartoonish version of the gathering cursor icons", one for each kind of food), drawn from
+scratch by `tools/cartoon_icons.py` of aoe3-blender-tools: flat colours, one light tone per part and a thick dark outline, so
+they read at the few dozen pixels they take over a unit.
+
+![The marker icons](media/marker-icons.png)
+
+| Marker | Icon | Ring | For |
+|---|---|---|---|
+| `effects\uhc_rings\aura_gold.xml` | a pickaxe over a gold nugget | gold | coin: mines, plantations |
+| `effects\uhc_rings\aura_wood.xml` | an axe | wood | trees |
+| `effects\uhc_rings\aura_food.xml` | a leg of meat | food | food in general, livestock |
+| `effects\uhc_rings\aura_hunt.xml` | a bow and arrow | food | hunts |
+| `effects\uhc_rings\aura_berry.xml` | a bunch of berries | food | bushes |
+| `effects\uhc_rings\aura_farm.xml` | an ear of wheat | food | farms, Mills |
+| `effects\uhc_rings\aura_fish.xml` | a fish | food | fish |
+| `effects\uhc_rings\aura_work.xml` | a gear | work | work, unchanged |
+
+The first three keep their names, so data that already uses them gets the new icons with no edit. The icon is a sprite that
+faces the camera, 2.5 m wide (`CARTOON_SIDE`), uncompressed (128 texels, with its smaller levels), at a height by kind of unit in
+`ICON_HEIGHTS` of `tools/make_rings.py`. Plain rings stay as they were. Legacy shows only one of two particle systems in a
+logic branch, so the icon is a second `<attachment>`, not a second `<assetreference>`.
+
+- **Tested in WoL (2026-11-21, Portuguese, a skirmish):** each of the seven markers over its target, from the normal
+  camera (the [`unitResourceAuras`](#unitresourceauras) video): the pickaxe over a Mine, the bow over a killed Deer,
+  the berries over a bush, the wheat over a Mill (at a building's height, 11 m), the meat over a Sheep, the fish
+  over a Cow (test data). Grass only; not tried on snow.
+- **Over trees** the icon floats at 13 m, above the canopy of the common trees (test markers at 10 to 18 m on the same
+  trees: Great Lakes birch and pine, ponderosa, New England and palms clear at 12 to 13 m). A redwood is about as tall,
+  so its axe sits at its top:
+
+  ![Great Lakes birch](media/marker-tree-greatlakes.png) ![Ponderosa pine](media/marker-tree-ponderosa.png)
+  ![New England](media/marker-tree-newengland.png) ![Redwood](media/marker-tree-redwood.png)
 
 ### Rotating a building while placing it
 

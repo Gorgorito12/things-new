@@ -43,6 +43,7 @@ set(UHC_SOURCES
   src/menuoptions.cpp
   src/rofreads.cpp
   src/floatingbars.cpp
+  src/uigadgets.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
   src/features/accuracy.cpp
@@ -62,6 +63,8 @@ set(UHC_SOURCES
   src/features/cantslow.cpp
   src/features/stealthtarget.cpp
   src/features/autoscout.cpp
+  src/features/autogatherfrom.cpp
+  src/features/herdwalkaway.cpp
   src/features/researchmove.cpp
   src/features/transformchecks.cpp
   src/features/customwalls.cpp
@@ -84,6 +87,7 @@ set(UHC_SOURCES
   src/features/decimalpop.cpp
   src/features/dodge.cpp
   src/features/dopples.cpp
+  src/features/deadreplacement.cpp
   src/features/fame.cpp
   src/features/farms.cpp
   src/features/fileio.cpp
@@ -92,6 +96,7 @@ set(UHC_SOURCES
   src/features/hotkeys.cpp
   src/features/instances.cpp
   src/features/lanautostart.cpp
+  src/features/editorsearch.cpp
   src/features/playericon.cpp
   src/features/lifespan.cpp
   src/features/limits.cpp
@@ -119,6 +124,7 @@ set(UHC_SOURCES
   src/features/techprereq.cpp
   src/features/orprereqs.cpp
   src/features/shipmentcounts.cpp
+  src/features/agefiveshipments.cpp
   src/features/shiptechlimit.cpp
   src/features/hctechsinunits.cpp
   src/features/kothtimer.cpp
@@ -185,6 +191,7 @@ set(UHC_SOURCES
   src/hooks/decimalpop_hooks.asm
   src/hooks/dodge_hooks.asm
   src/hooks/dopple_hooks.asm
+  src/hooks/deadrepl_hooks.asm
   src/hooks/dot_hooks.asm
   src/hooks/fame_hooks.asm
   src/hooks/gatherrate_hooks.asm
@@ -208,6 +215,7 @@ set(UHC_SOURCES
   src/hooks/techprereq_hooks.asm
   src/hooks/orprereqs_hooks.asm
   src/hooks/shipmentcount_hooks.asm
+  src/hooks/agefive_hooks.asm
   src/hooks/kothtimer_hooks.asm
   src/hooks/techrename_hooks.asm
   src/hooks/transform_hooks.asm
@@ -247,6 +255,7 @@ set(UHC_SOURCES
   src/hooks/sharedlimit_hooks.asm
   src/hooks/pillage_hooks.asm
   src/hooks/aurastacking_hooks.asm
+  src/hooks/displayrange_hooks.asm
   src/hooks/trainbatch_hooks.asm
   src/hooks/killobservers_hooks.asm
   src/hooks/researchpay_hooks.asm
@@ -258,6 +267,7 @@ set(UHC_SOURCES
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm
   src/hooks/datarefs_hooks.asm
+  src/hooks/editorsearch_hooks.asm
   src/hooks/minuistats_hooks.asm
   src/hooks/attacktypeicons_hooks.asm
   src/version.rc

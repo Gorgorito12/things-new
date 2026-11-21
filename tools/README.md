@@ -26,6 +26,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
 | [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
 | [`mapsweep.py`](#mapsweeppy) | Plays every random map of a test copy for 30 s of game time and writes a CSV row per run: ok, crash (code, EIP, module), hang, XS error or timeout. Resumable; shards for parallel copies. |
+| [`mapstarts.py`](#mapstartspy) | Generates one random map many times in the editor (players × seeds, about 10 s a run) and lists the players the map left with no Town Center and no units. |
 | [`mapfacts.py`](#mapfactspy) | Reads every random map script of a copy (read only) and writes a table of its facts for the map descriptions: trade route, natives, hunt, herd, mines, berries, fish, whales, outlaws, region, King of the Hill; `--check` compares them with the units `mapsweep.py` saw. |
 | [`kothcheck.py`](#kothcheckpy) | Generates random maps in a test copy's editor in a real King of the Hill game (it writes the GameKOTH setting in memory) and writes a CSV row per map: the hill, its distance to every Town Center by team, a minimap crop with the hill marked; also the normal map unchanged and whether every player's units reach the hill. |
 | `campaigncheck.py` | `<game folder> [--campaign <xml>] [--scn <file>] [--all]`, read-only: checks a campaign definition and its scenarios against the folder's data (civ table, players' civs, placed protos, saved names, trigger parameters); `--inventory --scn <file>` (or `--units`) lists instead each player's civ, flag, culture, home city, placed units and trigger units (editor and in-game IDs), what the triggers give it, the objectives and the trigger texts; see its docstring and [docs/wol-campaign.md](../docs/wol-campaign.md). |
@@ -211,8 +212,9 @@ python -I tools/testbed.py [--bed <folder>] <command> ...
 
 Drives the game of a test copy (default `C:\AoE3-UHC-Test`, or the `UHC_TESTBED` variable) with
 no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wait`, `state`,
-`units`, `explored`, `shot`, `record`, `click`/`rclick`, `hover`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `log`, `safety`; the
-docstring lists their arguments.
+`units`, `explored`, `shot`, `record`, `click`/`rclick`, `hover`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `chars`, `log`, `safety`; the
+docstring lists their arguments. `chars <text>` posts `WM_CHAR`s to the window, so the text field that has the
+game's focus (click it first) takes them with no keyboard and no focus, in a `background` copy too; `key back` erases.
 
 A command that waits on the game ends with exit code 3 when the game dies meanwhile (the message gives
 the process's exit code, `0xc0000005` for an access violation), and 4 when it hangs: the window does
@@ -328,6 +330,7 @@ With several games running, set `UHC_GAME_DIR` to the copy's folder.
 ```
 python -I tools/mapsweep.py --bed <copy> --csv <out.csv> [--maps A,B | --list FILE | --match RE]
        [--players 2,4,8] [--seeds 1,2,3] [--seconds 30] [--route scenario|skirmish] [--ai wolOtto]
+       [--teams | --ffa] [--koth] [--save-load] [--label TEXT]
        [--shard K/N] [--evidence DIR] [--no-debugger] [--dry-run]
 ```
 
@@ -354,6 +357,29 @@ scenario names (`uhc-<map>`) differ because each map belongs to one shard. The s
 edits the shared profile, so it runs alone: it backs up the profile, the home cities and the AI
 memory files and restores them byte for byte at the end, and leaves `--ai` personalities in the
 copy (`ai_personality.py`, restored at the end).
+
+Skirmish options (2026-11-21, the Levant crash hunt): the setup screen restores the human's team from
+the profile but shows every AI as "Team ?", so `--teams` picks the teams by posted clicks (players 1
+to N/2 against the rest), `--ffa` ticks Free for All and `--koth` picks King of the Hill in the Game
+Rules list; the setup shot in `<evidence>/shots/` shows what was set. The seed goes to
+`gamerandomseed` (whether the setup keeps it was not checked), and `--save-load` plays half the time, saves from the console
+(`saveGame`), loads that save (`loadGame`) and plays the other half. `--label` names the
+configuration in the route column (`skirmish:<label>`), so one CSV can hold the same map, players and
+seed with other AIs or modes. Isolated profiles (`testbed.py profile isolate`) make the skirmish
+route safe beside other copies.
+
+## mapstarts.py
+
+```
+python -I tools/mapstarts.py --bed <copy> --map <file> [--players 2,4,6,8] [--seeds 1-25] [--teams 2]
+       [--csv out.csv]
+```
+
+Generates one random map many times in the scenario editor of a copy at the main menu
+(`startRandomGame2`, no save and load, about 10 s a run) and writes a CSV row per player count and
+seed: the Town Centers (or covered wagons) and units of every player, and the players left with no
+start (no Town Center and fewer than 3 units). Made for "NEW" Levant, whose Town Center placement can
+fail for one player (`wol-fixes/maps/levant-20261121.txt`).
 
 ## mapfacts.py
 

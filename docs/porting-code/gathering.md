@@ -17,6 +17,9 @@ Contents:
 - [resourceGatherAuras](#resourcegatherauras)
 - [resourceDebt](#resourcedebt)
 - [truckAttackResourceFix](#truckattackresourcefix)
+- [autoGatherFrom](#autogatherfrom)
+- [herdWalkAwayFix](#herdwalkawayfix)
+- [deadReplacementAtZeroInventory](#deadreplacementatzeroinventory)
 
 ## showGatherRate
 
@@ -115,6 +118,7 @@ constexpr std::uint32_t kGameGlobal = 0x00C66234;        // game; +13Ch world, +
 constexpr std::uint32_t kUiGlobal = 0x00C67310;          // [[+920h]+13Ch]: the data refs' current unit ID
 
 constexpr std::uint8_t kGatheringState = 5;          // [action+61h] while the tick runs (0x4ECC8E)
+constexpr std::uint32_t kTreeGatherVtable = 0x00B979D8;  // the current action of a villager on a tree
 constexpr std::int32_t kMaxResources = 16;
 constexpr std::int32_t kShowAutoGatherRate = 0x9B;   // proto flag; <Flag>DoNotShowAutoGatherRate clears it
 constexpr std::int32_t kAbstractShrine = 0x58;       // abstract index: the tick adds nothing (0x4ED14B)
@@ -209,11 +213,11 @@ struct Rate {
 };
 
 // The unit's current gather rate from its record, or false. Valid while the unit's current
-// action ([[unit+58h]+24h]) is the recorded Gather action, that action is in its gathering state
-// and still belongs to the unit (actions come from a pool), and the record is younger than two
-// of its animation loops (2.5 s at least) in game time. Two cases where the tick adds nothing
-// although it computed a rate are left out: a target of type AbstractShrine (0x4ED14B) and a
-// player with [player+338h] set (0x4ED1AB).
+// action ([[unit+58h]+24h]) is the recorded Gather action (or, on a tree, the action over it),
+// that action is in its gathering state and still belongs to the unit (actions come from a pool),
+// and the record is younger than two of its animation loops (2.5 s at least) in game time. Two
+// cases where the tick adds nothing although it computed a rate are left out: a target of type
+// AbstractShrine (0x4ED14B) and a player with [player+338h] set (0x4ED1AB).
 bool CurrentRate(const char* world, const char* database, const char* unit, Rate* rate) {
   if (world == nullptr || database == nullptr || unit == nullptr) {
     return false;
@@ -224,9 +228,17 @@ bool CurrentRate(const char* world, const char* database, const char* unit, Rate
   }
   const UhcGatherRecord& record = g_uhcGatherRecords[static_cast<std::size_t>(id) & (kRecordCount - 1)];
   const char* manager = Field<const char*>(unit, 0x58);
-  if (record.unit != id || record.action == nullptr || manager == nullptr ||
-      Field<const char*>(manager, 0x24) != record.action ||
+  const char* current = manager == nullptr ? nullptr : Field<const char*>(manager, 0x24);
+  if (record.unit != id || record.action == nullptr || current == nullptr ||
       Field<std::uint8_t>(record.action, 0x61) != kGatheringState || Field<const char*>(record.action, 0x10) != unit) {
+    return false;
+  }
+  // A villager on a tree: its current action is not the Gather action that ticks but another one (vtable 0xB979D8,
+  // in its state 5 while the wood comes in; seen in game, 2026-11-21: the record written each loop, the current
+  // action that one). The record's own action, state and owner, and its age, then decide.
+  if (current != record.action &&
+      (Field<std::uint32_t>(current, 0) != kTreeGatherVtable ||
+       Field<std::uint8_t>(current, 0x61) != kGatheringState)) {
     return false;
   }
   if (record.resource < 0 || record.resource >= Field<std::int32_t>(database, 0x80) || !(record.rate > 0.0f)) {
@@ -723,26 +735,42 @@ Contract: [displayedRange](../porting-to-another-dll.md#displayedrange).
 
 Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `UnitById` `0x44CC6D` (58 B), `CurrentSelectionGroup` `0x453B28` (33 B).
+Sites: `UnitById` `0x44CC6D` (58 B), `AltQuery` `0x452EA0` (24 B), `CurrentSelectionGroup` `0x453B28` (33 B), `ActionRangeByKey` `0x4946D6` (10 B), `ProtoFlagLastCompare` `0x5F7269` (26 B).
 
 ### src/features/displayrange.cpp
 
 ```cpp
-// displayedRange: a selected unit with <DisplayRange>1</DisplayRange> shows a ring of the radius of
-// <DisplayedRange>N</DisplayedRange> on the ground, the ring of tools/rings nearest to N.
+// displayedRange: a selected unit shows its range on the ground while Alt is held, one ring per ranged attack.
 //
-// The ring is a model of the table the tactics parser uses: 0x58F68F gives the ID of a path (0x5FC91C) and
-// 0x58E506 the ID of a bone name (0x5FC8EE), and the model goes on the unit as the stock aura update does
-// (0x9D054A..0x9D059C). A world tick compares the local selection (0x453B28: IDs [group+10h], count
-// [group+14h]) with the units that hold a ring. Display only: a model is a visual of the unit, the selection
-// is this machine's, and nothing here reaches the simulation.
+// Proto data:
+//   <DisplayRange>1</DisplayRange>              the unit shows its rings when it is selected and Alt is held;
+//   <AlwaysDisplayRange>1</AlwaysDisplayRange>  (or <Flag>AlwaysDisplayRange</Flag>) it shows them whenever it is
+//                                               selected, without Alt;
+//   <DisplayedRange>N</DisplayedRange>          a fixed radius instead of the attacks', repeatable.
+// With no <DisplayedRange>, the radii are the MaxRange (0x4946D6 with key -1, as the stat panel reads it) of each
+// active action of the unit's current tactic with the ranged flag 0Ah (<RangedLogic>), read from the player's copy,
+// so range techs show at once. Each radius is drawn as the ring of tools/rings nearest to it; two attacks on one
+// ring share it.
+//
+// Alt is the game's own query, the one the HP bar chunk makes (0x452EA0..0x452EB3: [[[0C66244h]+74h]+2Ch], vtable
+// +34h with 2). The ring is a model of the table the tactics parser uses (0x58F68F, 0x58E506), hung on the unit as
+// the stock aura update does. A world tick every 100 ms compares the local selection (0x453B28: IDs [group+10h],
+// count [group+14h]) and the Alt state with the rings the units hold. Display only: a model is a visual of the unit,
+// the selection and the keyboard are this machine's, and nothing here reaches the simulation.
+//
+// <Flag>: the proto flag parser 0x5F640A (stdcall(proto, name)) compares the name with each flag it knows and
+// returns with nothing for any other name. Its last compare, the call 0x5F726F of the string compare 0x4028B4, is
+// redirected: the compare runs, and a name it does not match is offered to this key.
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <cwchar>
 #include <map>
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "../features.h"
 #include "../generated/sites.h"
@@ -753,41 +781,75 @@ Sites: `UnitById` `0x44CC6D` (58 B), `CurrentSelectionGroup` `0x453B28` (33 B).
 #include "../unittypes.h"
 #include "../worldtick.h"
 
+extern "C" {
+void UhcProtoFlagCompareHook();
+std::uint32_t g_uhcStringCompare = 0x004028B4;
+}
+
 namespace {
 
 constexpr std::uint32_t kGameGlobal = 0x00C66234;
-constexpr std::uint32_t kTickMs = 250;
-constexpr std::int32_t kRadii[] = {4, 6, 8, 10, 12, 14, 16, 20, 24, 30};  // the sizes aoe3-blender-tools' make_rings.py writes
+constexpr std::uint32_t kInputGlobal = 0x00C66244;  // [[+74h]+2Ch]: the object the Alt query asks
+constexpr std::uint32_t kTickMs = 100;
+constexpr std::uint32_t kRangedFlag = 0x0A;  // <RangedLogic> (0x5FAC6D), the bit the stat panel tests for a range
+// Measured (perfprobe, 2026-11-21, 50 selected units on screen, render time a frame): 100 rings 6.6 ms against 6.0
+// with the key off, 200 rings 8.0 against 7.6, inside the noise of the runs (0.6 ms). The caps keep a big selection
+// readable: at most 4 rings a unit and 60 in all, the units with the longest ranges first.
+constexpr std::size_t kMaxRingsPerUnit = 4;
+constexpr std::size_t kMaxRings = 60;
+// The sizes aoe3-blender-tools' make_rings.py writes (RANGES).
+constexpr std::int32_t kRadii[] = {4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 45, 50, 60, 70, 80, 100};
 
 using SelectionFn = const char*(__cdecl*)();
 using UnitByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
+using RangeFn = float(__thiscall*)(const char* action, std::int32_t key);
+using KeyQueryFn = bool(__thiscall*)(void* input, std::int32_t key);
 
 const auto kSelection = reinterpret_cast<SelectionFn>(0x00453B28);
 const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
+const auto kRange = reinterpret_cast<RangeFn>(0x004946D6);
 
 struct Range {
-  bool show = false;
-  float metres = 0.0f;
+  bool show = false;    // <DisplayRange>
+  bool always = false;  // <AlwaysDisplayRange>
+  std::vector<float> fixed;  // <DisplayedRange>, each
 };
 
 std::unordered_map<std::int32_t, Range> g_protos;  // by proto ID; the load fills it
 std::map<std::int32_t, std::int32_t> g_models;     // by radius; -1: not in the game
-std::map<std::int32_t, std::int32_t> g_hung;       // by unit ID: the model on it
+std::map<std::int32_t, std::vector<std::int32_t>> g_hung;  // by unit ID: the models on it
 std::int32_t g_bone = -2;
 const char* g_world = nullptr;
 std::uint32_t g_nextTick = 0;
+bool g_lastAlt = false;
 bool g_log = false;
+int g_logLines = 0;
+constexpr int kMaxLogLines = 200;
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
   return *reinterpret_cast<const T*>(base + offset);
 }
 
+bool Bit(const char* object, std::uint32_t offset, std::uint32_t bit) {
+  if (Field<std::uint32_t>(object, offset + 4) <= bit) {
+    return false;
+  }
+  const auto* bytes = Field<const std::uint8_t*>(object, offset);
+  return bytes != nullptr && (bytes[bit >> 3] & (1u << (bit & 7))) != 0;
+}
+
 const wchar_t* NodeText(const char* node) { return *reinterpret_cast<const wchar_t* const*>(node + 0x14); }
 
+bool On(const wchar_t* text) { return text == nullptr || text[0] == L'\0' || _wtoi(text) != 0; }
+
 bool __cdecl ReadShow(void*, const char* node, char* proto) {
-  const wchar_t* text = NodeText(node);
-  g_protos[Field<std::int32_t>(proto, 0x04)].show = text == nullptr || text[0] == L'\0' || _wtoi(text) != 0;
+  g_protos[Field<std::int32_t>(proto, 0x04)].show = On(NodeText(node));
+  return true;
+}
+
+bool __cdecl ReadAlways(void*, const char* node, char* proto) {
+  g_protos[Field<std::int32_t>(proto, 0x04)].always = On(NodeText(node));
   return true;
 }
 
@@ -795,7 +857,7 @@ bool __cdecl ReadMetres(void*, const char* node, char* proto) {
   const wchar_t* text = NodeText(node);
   const float metres = text == nullptr ? 0.0f : std::wcstof(text, nullptr);
   if (metres > 0.0f) {
-    g_protos[Field<std::int32_t>(proto, 0x04)].metres = metres;
+    g_protos[Field<std::int32_t>(proto, 0x04)].fixed.push_back(metres);
   } else {
     uhc::Log(L"displayedRange: proto %d: <DisplayedRange> needs a number above 0, ignored", Field<std::int32_t>(proto, 0x04));
   }
@@ -807,15 +869,31 @@ void NewDatabase(char*) {
   g_models.clear();
   g_hung.clear();
   g_bone = -2;
+  g_logLines = 0;
 }
 
-std::int32_t ModelFor(float metres) {
+bool AltHeld() {
+  const char* root = *reinterpret_cast<const char* const*>(kInputGlobal);
+  const char* inner = root == nullptr ? nullptr : Field<const char*>(root, 0x74);
+  char* input = inner == nullptr ? nullptr : Field<char*>(inner, 0x2C);
+  if (input == nullptr || Field<const void*>(input, 0) == nullptr) {
+    return false;
+  }
+  const auto query = Field<KeyQueryFn>(Field<const char*>(input, 0), 0x34);
+  return query(input, 2);
+}
+
+std::int32_t RingRadius(float metres) {
   std::int32_t radius = kRadii[0];
   for (const std::int32_t candidate : kRadii) {
     if (std::abs(static_cast<float>(candidate) - metres) < std::abs(static_cast<float>(radius) - metres)) {
       radius = candidate;
     }
   }
+  return radius;
+}
+
+std::int32_t ModelFor(std::int32_t radius) {
   const auto found = g_models.find(radius);
   if (found != g_models.end()) {
     return found->second;
@@ -830,14 +908,87 @@ std::int32_t ModelFor(float metres) {
   return model;
 }
 
-void Release(const char* world, std::int32_t id, std::int32_t model) {
-  if (char* unit = const_cast<char*>(kUnitById(world, id))) {
-    uhc::RemoveUnitModel(unit, model);
-  }
-  if (g_log) {
-    uhc::Log(L"displayedRange: ring off unit %d", id);
+// The ranged attacks of one tactic, as the attack list 0x487EEE reads them: 12-byte entries at [tactic+44h] (count
+// +48h), +4 the index of the action in the set [tactic+0] (actions [set+1Ch], count +20h); an action counts when it is
+// active (bit 0 of [action+64h]), has the ranged flag and a range entry.
+void TacticRadii(const char* tactic, std::vector<std::int32_t>& radii) {
+  const char* owner = Field<const char*>(tactic, 0x00);
+  const char* entries = Field<const char*>(tactic, 0x44);
+  const std::int32_t count = Field<std::int32_t>(tactic, 0x48);
+  const auto* actions = owner == nullptr ? nullptr : Field<const char* const*>(owner, 0x1C);
+  const std::int32_t actionCount = owner == nullptr ? 0 : Field<std::int32_t>(owner, 0x20);
+  for (std::int32_t i = 0; i < count && entries != nullptr && actions != nullptr; ++i) {
+    const std::int32_t which = Field<std::int32_t>(entries, 12 * i + 4);
+    if (which < 0 || which >= actionCount) {
+      continue;
+    }
+    const char* action = actions[which];
+    if (action == nullptr || !Bit(action, 0x64, 0) || !Bit(action, 0x64, kRangedFlag) ||
+        Field<std::int32_t>(action, 0x1C) <= 0) {
+      continue;
+    }
+    const float metres = kRange(action, -1);
+    if (metres > 0.5f) {
+      radii.push_back(RingRadius(metres));
+    }
   }
 }
+
+// The rings the unit wants, largest first, at most kMaxRingsPerUnit: the fixed <DisplayedRange> values, or the ranged
+// attacks of its current tactic ([mgr+0A8h], an index into the player's proto's tactics [[proto+44h]+10h], count
+// +14h); a tactic with none (an artillery piece limbered to move) takes those of all its tactics, the attacks it
+// unlimbers to.
+std::vector<std::int32_t> WantedRadii(const char* unit, const Range& range) {
+  std::vector<std::int32_t> radii;
+  if (!range.fixed.empty()) {
+    for (const float metres : range.fixed) {
+      radii.push_back(RingRadius(metres));
+    }
+  } else {
+    const char* proto = Field<const char*>(unit, 0x5C);
+    const char* manager = Field<const char*>(unit, 0x58);
+    const char* set = proto == nullptr ? nullptr : Field<const char*>(proto, 0x44);
+    const auto* tactics = set == nullptr ? nullptr : Field<const char* const*>(set, 0x10);
+    const std::int32_t count = set == nullptr ? 0 : Field<std::int32_t>(set, 0x14);
+    if (manager != nullptr && tactics != nullptr) {
+      const std::int32_t index = Field<std::int32_t>(manager, 0xA8);
+      if (index >= 0 && index < count && tactics[index] != nullptr) {
+        TacticRadii(tactics[index], radii);
+      }
+      for (std::int32_t i = 0; radii.empty() && i < count; ++i) {
+        if (tactics[i] != nullptr) {
+          TacticRadii(tactics[i], radii);
+        }
+      }
+    }
+  }
+  std::sort(radii.begin(), radii.end(), [](std::int32_t a, std::int32_t b) { return a > b; });
+  radii.erase(std::unique(radii.begin(), radii.end()), radii.end());
+  if (radii.size() > kMaxRingsPerUnit) {
+    radii.resize(kMaxRingsPerUnit);
+  }
+  return radii;
+}
+
+void Release(const char* world, std::int32_t id, const std::vector<std::int32_t>& models) {
+  if (char* unit = const_cast<char*>(kUnitById(world, id))) {
+    for (const std::int32_t model : models) {
+      uhc::RemoveUnitModel(unit, model);
+    }
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"displayedRange: rings off unit %d", id);
+  }
+}
+
+struct Want {
+  std::int32_t id;
+  char* unit;
+  std::vector<std::int32_t> models;
+  std::vector<std::int32_t> radii;  // each model's
+  std::int32_t largest;
+};
 
 void Tick(char* world, std::int32_t) {
   const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
@@ -854,54 +1005,113 @@ void Tick(char* world, std::int32_t) {
     return;
   }
   g_nextTick = now + kTickMs;
+  const bool alt = AltHeld();
+  if (g_log && alt != g_lastAlt && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"displayedRange: Alt %ls", alt ? L"held" : L"released");
+  }
+  g_lastAlt = alt;
 
-  std::set<std::int32_t> wanted;
+  std::vector<Want> wants;
   const char* selection = kSelection();
   const std::int32_t count = selection == nullptr ? 0 : Field<std::int32_t>(selection, 0x14);
   const auto* ids = selection == nullptr ? nullptr : Field<const std::int32_t*>(selection, 0x10);
   for (std::int32_t i = 0; i < count && ids != nullptr; ++i) {
-    wanted.insert(ids[i]);
-  }
-  for (auto it = g_hung.begin(); it != g_hung.end();) {
-    if (wanted.count(it->first) != 0) {
-      ++it;
-      continue;
-    }
-    Release(world, it->first, it->second);
-    it = g_hung.erase(it);
-  }
-  for (const std::int32_t id : wanted) {
-    if (g_hung.count(id) != 0) {
-      continue;
-    }
-    char* unit = const_cast<char*>(kUnitById(world, id));
+    char* unit = const_cast<char*>(kUnitById(world, ids[i]));
     const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
     if (proto == nullptr) {
       continue;
     }
     const auto found = g_protos.find(Field<std::int32_t>(proto, 0x04));
-    if (found == g_protos.end() || !found->second.show || found->second.metres <= 0.0f) {
+    if (found == g_protos.end() || !(found->second.always || (found->second.show && alt))) {
       continue;
     }
-    const std::int32_t model = ModelFor(found->second.metres);
-    if (model == -1) {
+    Want want{ids[i], unit, {}, {}, 0};
+    for (const std::int32_t radius : WantedRadii(unit, found->second)) {
+      const std::int32_t model = ModelFor(radius);
+      if (model != -1) {
+        want.models.push_back(model);
+        want.radii.push_back(radius);
+        want.largest = std::max(want.largest, radius);
+      }
+    }
+    if (!want.models.empty()) {
+      wants.push_back(std::move(want));
+    }
+  }
+  std::stable_sort(wants.begin(), wants.end(), [](const Want& a, const Want& b) { return a.largest > b.largest; });
+  std::size_t budget = kMaxRings;
+  for (Want& want : wants) {  // each unit's rings are largest first
+    const std::size_t keep = std::min(budget, want.models.size());
+    want.models.resize(keep);
+    want.radii.resize(keep);
+    budget -= keep;
+  }
+  std::erase_if(wants, [](const Want& want) { return want.models.empty(); });
+
+  std::map<std::int32_t, const Want*> byId;
+  for (const Want& want : wants) {
+    byId[want.id] = &want;
+  }
+  for (auto it = g_hung.begin(); it != g_hung.end();) {
+    const auto wanted = byId.find(it->first);
+    if (wanted == byId.end()) {
+      Release(world, it->first, it->second);
+      it = g_hung.erase(it);
       continue;
     }
-    if (g_bone == -2) {
-      g_bone = uhc::NoBone();
+    // Rings the unit no longer wants (a tactic or a tech changed its attacks).
+    std::vector<std::int32_t> keep;
+    char* unit = wanted->second->unit;
+    for (const std::int32_t model : it->second) {
+      if (std::find(wanted->second->models.begin(), wanted->second->models.end(), model) !=
+          wanted->second->models.end()) {
+        keep.push_back(model);
+      } else {
+        uhc::RemoveUnitModel(unit, model);
+      }
     }
-    const uhc::ModelHang hang = uhc::HangUnitModel(unit, model, g_bone);
-    if (hang == uhc::ModelHang::kHung || hang == uhc::ModelHang::kNotInGame) {
-      g_hung[id] = model;
-      if (g_log) {
-        uhc::Log(L"displayedRange: ring of %.1f m on unit %d (%hs)", static_cast<double>(found->second.metres), id,
-                 Field<const char*>(proto, 0x10));
+    it->second = std::move(keep);
+    ++it;
+  }
+  if (g_bone == -2 && !wants.empty()) {
+    g_bone = uhc::NoBone();
+  }
+  for (const Want& want : wants) {
+    std::vector<std::int32_t>& hung = g_hung[want.id];
+    for (std::size_t k = 0; k < want.models.size(); ++k) {
+      const std::int32_t model = want.models[k];
+      if (std::find(hung.begin(), hung.end(), model) != hung.end()) {
+        continue;
+      }
+      const uhc::ModelHang hang = uhc::HangUnitModel(want.unit, model, g_bone);
+      if (hang == uhc::ModelHang::kHung || hang == uhc::ModelHang::kNotInGame) {
+        hung.push_back(model);
+        if (g_log && g_logLines < kMaxLogLines) {
+          ++g_logLines;
+          uhc::Log(L"displayedRange: ring of %d m on unit %d (%hs)%ls", want.radii[k], want.id,
+                   Field<const char*>(Field<const char*>(want.unit, 0x5C), 0x10), alt ? L", Alt held" : L"");
+        }
       }
     }
   }
 }
 
 }  // namespace
+
+extern "C" {
+
+// From the flag parser's last compare: a name no stock flag matched.
+void __stdcall UhcUnknownProtoFlag(const char* proto, const char* name) {
+  if (proto == nullptr || name == nullptr || _stricmp(name, "AlwaysDisplayRange") != 0) {
+    return;
+  }
+  g_protos[Field<std::int32_t>(proto, 0x04)].always = true;
+  if (g_log) {
+    uhc::Log(L"displayedRange: proto %hs: <Flag>AlwaysDisplayRange</Flag>", Field<const char*>(proto, 0x10));
+  }
+}
+}
 
 namespace uhc {
 
@@ -917,13 +1127,16 @@ Outcome ApplyDisplayedRange(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("displayedRange", {&sites::kCurrentSelectionGroup, &sites::kUnitById}) ||
-      !VerifyUnitModels("displayedRange") ||
-      !AddProtoTagHandler("DisplayRange", &ReadShow) || !AddProtoTagHandler("DisplayedRange", &ReadMetres) ||
-      !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick)) {
+  if (!VerifyAll("displayedRange", {&sites::kCurrentSelectionGroup, &sites::kUnitById, &sites::kAltQuery,
+                                    &sites::kActionRangeByKey, &sites::kProtoFlagLastCompare}) ||
+      !VerifyUnitModels("displayedRange") || !AddProtoTagHandler("DisplayRange", &ReadShow) ||
+      !AddProtoTagHandler("DisplayedRange", &ReadMetres) || !AddProtoTagHandler("AlwaysDisplayRange", &ReadAlways) ||
+      !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick) ||
+      !WriteCall(sites::kProtoFlagLastCompare.va + 6, reinterpret_cast<const void*>(&UhcProtoFlagCompareHook))) {
     return Outcome::kFailed;
   }
-  Log(L"displayedRange: the proto tags DisplayRange and DisplayedRange are on");
+  Log(L"displayedRange: rings while Alt is held (<DisplayRange>) or always (<AlwaysDisplayRange>), one per ranged "
+      L"attack or <DisplayedRange>");
   return Outcome::kApplied;
 }
 
@@ -2157,7 +2370,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
     if (have <= kMinAmount) {
       continue;
     }
-    if (!uhc::AuraClaim(world, Field<std::int32_t>(ownerProto, 0x04), auraKey.name, auraKey.owner,
+    if (!uhc::AuraClaim(world, tactics, Field<std::int32_t>(ownerProto, 0x04), auraKey.owner,
                         Field<std::int32_t>(target, 0x10), now)) {
       continue;
     }
@@ -3661,6 +3874,871 @@ UhcTruckInventoryHook PROC
 keep:
     jmp truckDamage
 UhcTruckInventoryHook ENDP
+
+END
+```
+
+## autoGatherFrom
+
+Contract: [autoGatherFrom](../porting-to-another-dll.md#autogatherfrom).
+
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+
+Sites: `XmlText` `0x402733` (9 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `AutoScoutIdle` `0x44F1A7` (8 B), `PlayerIsEnemy` `0x484D2D` (32 B), `UnitsNearPoint` `0x4A1C55` (248 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `GatherWorkOrder` `0x4EFCB2` (14 B), `XmlAttribute` `0x598F37` (16 B), `UnitAliveSlot` `0xB9355C` (4 B).
+
+### src/features/autogatherfrom.cpp
+
+```cpp
+// autoGatherFrom [log]: a unit idle for a few seconds gathers on its own from a unit of a type named in its action.
+//
+//   <action> <type>Gather</type> <maxrange>6</maxrange> ...
+//     <AutogatherFrom delay="3">AbstractTypeHerdableMagnet</AutogatherFrom>   (a proto or a unit type; delay in
+//   </action>                                                                    seconds, 3 when absent)
+//
+// The tag goes in any action of a .tactics file or a protoy.xml <ProtoAction> (the shared action tag hook,
+// actiontags.h); an action may hold several. Its range is the longest of the action's ranges (maxrange and its
+// typedmaxrange entries: [action+18h], 16-byte entries, count [action+1Ch], +8 the maximum).
+//
+// After each world update (worldtick.h), every 500 ms of game time, for every unit of every player (the player's unit
+// list [player+F8h], in ID order) whose proto has a tagged action:
+// - a unit that is busy (its current action [[unit+58h]+24h] is not null, 0x44F1A7) is left alone: a player's order,
+//   a fight or a gather in progress always wins; while it gathers (Gather action, vtable 0xB97880) its leash anchor
+//   [mgr+7Ch] follows it, so that a unit that followed a moving target does not walk back to where it started;
+// - a unit idle for `delay` seconds of game time gets a work order (0x4EFCB2, the order the stock herdable search
+//   0x4C31EE gives: thiscall(mgr, targetId, 0, -1, 0)) on the nearest unit of a tagged type within the action's range
+//   (0x4A1C55; distance to the target's edge, its vtable +B8h), owned by the unit's player, an ally or Gaia, alive;
+//   the stock order code then picks the action and walks the unit as a right-click would;
+// - a unit that gained nothing (its held amount 0x4E5979 did not rise) from the last order to the same target is
+//   not sent there again until its amount changes: a fattened herdable, for one, is refused by the gather tick.
+// Inside a building or a transport ([unit+6Ch] != -1), not built (0x44DDB4), or without an inventory
+// ([[unit+B4h]+94h], which the gather start requires of the gatherer, 0x50DE89), a unit is skipped.
+//
+// Everything read is simulation state (no local player, no clock but the game time [world+108h]); the per-unit table
+// is only a cache (idle-since time, last target, held amount): a loaded game rebuilds it, and a unit idle at the load
+// waits `delay` again.
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstdarg>
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <cwctype>
+#include <map>
+#include <set>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+#include "../actiontags.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+#include "../worldtick.h"
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr std::uint32_t kScanMs = 500;
+constexpr std::uint32_t kGatherVtable = 0x00B97880;
+constexpr std::int32_t kDefaultDelayMs = 3000;
+constexpr float kSearchSlack = 12.0f;  // metres added to the search radius: the largest target's half size
+constexpr int kMaxLogLines = 300;
+
+struct IdList {
+  std::int32_t* data;
+  std::int32_t count;
+  std::int32_t capacity;
+};
+
+using UnitsNearFn = std::int32_t(__thiscall*)(const char* world, const float* point, float radius, char precise, IdList* out);
+using IdleFn = bool(__thiscall*)(const char* mgr);
+using UnitTestFn = bool(__thiscall*)(const char* unit);
+using IsEnemyFn = bool(__thiscall*)(const char* player, std::int32_t otherId);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using HeldAmountFn = float(__thiscall*)(const char* unit, std::int32_t resource);
+using MainResourceFn = std::int32_t(__thiscall*)(const char* unit);
+using DistanceFn = float(__thiscall*)(const char* unit, const float* point);
+using WorkOrderFn = bool(__thiscall*)(char* mgr, std::int32_t target, std::int32_t a2, std::int32_t a3, std::int32_t a4);
+using NameBucketFn = std::int32_t(__thiscall*)(const char* table, const char* name);
+using NameFindFn = bool(__thiscall*)(const char* table, const char* name, std::int32_t bucket, std::int32_t* id);
+using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
+using XmlTextFn = const char*(__thiscall*)(const void* text);
+
+const auto kUnitsNear = reinterpret_cast<UnitsNearFn>(0x004A1C55);
+const auto kIdle = reinterpret_cast<IdleFn>(0x0044F1A7);
+const auto kIsBuilt = reinterpret_cast<UnitTestFn>(0x0044DDB4);
+const auto kIsEnemy = reinterpret_cast<IsEnemyFn>(0x00484D2D);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+const auto kHeldAmount = reinterpret_cast<HeldAmountFn>(0x004E5979);
+const auto kMainResource = reinterpret_cast<MainResourceFn>(0x004DBEC1);
+const auto kWorkOrder = reinterpret_cast<WorkOrderFn>(0x004EFCB2);
+const auto kNameBucket = reinterpret_cast<NameBucketFn>(0x0058E685);
+const auto kNameFind = reinterpret_cast<NameFindFn>(0x0040295B);
+const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
+const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
+
+template <typename T>
+T Field(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+// One <AutogatherFrom> tag.
+struct Source {
+  std::string name;
+  std::int32_t type = -2;  // unittype ID (proto or abstract type); -2 not looked up yet, -1 unknown
+  std::int32_t delayMs = kDefaultDelayMs;
+};
+
+struct ActionKey {
+  std::int32_t proto;  // [proto+4]
+  std::int32_t name;   // [action+4]
+  auto operator<=>(const ActionKey&) const = default;
+};
+
+std::map<ActionKey, std::vector<Source>> g_tags;
+std::map<std::int32_t, std::vector<ActionKey>> g_byProto;  // proto ID -> its tagged actions
+
+// What a unit's proto (the player's copy) gathers from: the sources of its tagged actions, each with that action's
+// range. A cache by proto pointer, emptied with the data.
+struct Want {
+  const Source* source;
+  float range;
+};
+std::unordered_map<const char*, std::vector<Want>> g_wants;
+
+struct Unit {
+  std::uint32_t idleSince = 0;  // game time, 0 while busy
+  std::int32_t lastTarget = -1;
+  float heldAtOrder = -1.0f;    // the held amount when it was last ordered to lastTarget
+  bool refused = false;         // that order gained nothing: not again until the amount changes
+};
+std::map<std::int32_t, Unit> g_units;
+
+bool g_log = false;
+int g_logLines = 0;
+std::set<std::string> g_badNames;  // bad values already logged since the data load
+std::uint32_t g_lastScan = 0;
+std::uint32_t g_lastTime = 0;
+const char* g_lastWorld = nullptr;
+IdList g_found = {nullptr, 0, 0};
+
+const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
+
+const char* World() {
+  const char* game = Game();
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+}
+
+const char* Database() {
+  const char* game = Game();
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+}
+
+char* UnitById(const char* world, std::int32_t id) {
+  if (id < 0 || (id & 0x3FFFF) >= Field<std::int32_t>(world, 0x10)) {
+    return nullptr;
+  }
+  char* unit = Field<char* const*>(world, 0x0C)[id & 0x3FFFF];
+  return unit != nullptr && Field<std::int32_t>(unit, 0x10) == id ? unit : nullptr;
+}
+
+bool Alive(const char* unit) { return Field<UnitTestFn const*>(unit, 0)[0xA4 / 4](unit); }
+
+std::int32_t OwnerId(const char* unit) {
+  const char* player = Field<const char*>(unit, 0x44);
+  return player == nullptr ? -1 : Field<std::int32_t>(player, 0);
+}
+
+const char* PlayerAt(const char* world, std::int32_t id) {
+  return id < 0 || id >= Field<std::int32_t>(world, 0x5C) ? nullptr : Field<const char* const*>(world, 0x58)[id];
+}
+
+void Note(const wchar_t* format, ...) {
+  if (!g_log || g_logLines >= kMaxLogLines) {
+    return;
+  }
+  ++g_logLines;
+  wchar_t text[512];
+  va_list args;
+  va_start(args, format);
+  _vsnwprintf_s(text, _TRUNCATE, format, args);
+  va_end(args);
+  uhc::Log(L"%ls", text);
+}
+
+// ---- the tag ---------------------------------------------------------------------------------------------------
+
+std::int32_t DelayOf(const char* node) {
+  for (const char* name : {"delay", "Delay", "DELAY"}) {
+    const void* text = nullptr;
+    if (node != nullptr && kXmlAttribute(node, name, &text) && text != nullptr) {
+      const char* value = kXmlText(text);
+      char* end = nullptr;
+      const double seconds = value == nullptr ? -1.0 : std::strtod(value, &end);
+      if (value == nullptr || end == value || !(seconds >= 0.0) || seconds > 3600.0) {
+        const std::string bad = value == nullptr ? "" : value;
+        if (g_badNames.insert("delay=" + bad).second) {  // once per load: every proto of a tactics file reads it
+          uhc::Log(L"autoGatherFrom: delay=\"%hs\" is not a number of seconds from 0 to 3600; 3 s", bad.c_str());
+        }
+        return kDefaultDelayMs;
+      }
+      return static_cast<std::int32_t>(seconds * 1000.0 + 0.5);
+    }
+  }
+  return kDefaultDelayMs;
+}
+
+void ActionTagRead(const uhc::ActionTag& tag) {
+  if (_wcsicmp(tag.name, L"AutogatherFrom") != 0) {
+    return;
+  }
+  Source source;
+  for (const wchar_t* c = tag.text; c != nullptr && *c != 0; ++c) {
+    if (!std::iswspace(*c)) {
+      source.name.push_back(static_cast<char>(*c));
+    }
+  }
+  const ActionKey key{Field<std::int32_t>(tag.proto, 0x04), Field<std::int32_t>(tag.action, 0x04)};
+  if (source.name.empty()) {
+    uhc::Log(L"autoGatherFrom: proto %d: an empty <AutogatherFrom> is ignored", key.proto);
+    return;
+  }
+  source.delayMs = DelayOf(tag.node);
+  auto& list = g_tags[key];
+  if (list.empty()) {
+    g_byProto[key.proto].push_back(key);
+  }
+  list.push_back(source);
+}
+
+void NewDatabase(char*) {
+  g_tags.clear();
+  g_byProto.clear();
+  g_wants.clear();
+  g_units.clear();
+  g_badNames.clear();
+  g_logLines = 0;
+}
+
+std::int32_t TypeOf(Source& source) {
+  if (source.type != -2) {
+    return source.type;
+  }
+  source.type = -1;
+  const char* database = Database();
+  if (database == nullptr) {
+    return -1;
+  }
+  const char* table = database + 0x190;
+  std::int32_t id = -1;
+  const std::int32_t bucket = kNameBucket(table, source.name.c_str());
+  if (kNameFind(table, source.name.c_str(), bucket, &id)) {
+    source.type = id;
+  } else {
+    if (g_badNames.insert(source.name).second) {
+      uhc::Log(L"autoGatherFrom: <AutogatherFrom>%hs names no proto or unit type; ignored", source.name.c_str());
+    }
+  }
+  return source.type;
+}
+
+// The longest range of an action: its range entries [action+18h] (16 bytes each, count [action+1Ch], +8 the maximum).
+float RangeOf(const char* action) {
+  const char* ranges = Field<const char*>(action, 0x18);
+  const std::int32_t count = Field<std::int32_t>(action, 0x1C);
+  float longest = 0.0f;
+  for (std::int32_t i = 0; ranges != nullptr && i < count && i < 64; ++i) {
+    longest = std::max(longest, Field<float>(ranges, 16u * i + 8));
+  }
+  return longest;
+}
+
+const std::vector<Want>& WantsOf(const char* proto) {
+  const auto found = g_wants.find(proto);
+  if (found != g_wants.end()) {
+    return found->second;
+  }
+  std::vector<Want>& wants = g_wants[proto];
+  const auto tagged = g_byProto.find(Field<std::int32_t>(proto, 0x04));
+  const char* set = Field<const char*>(proto, 0x44);
+  if (tagged == g_byProto.end() || set == nullptr) {
+    return wants;
+  }
+  const char* const* actions = Field<const char* const*>(set, 0x1C);
+  const std::int32_t count = Field<std::int32_t>(set, 0x20);
+  for (const ActionKey& key : tagged->second) {
+    for (std::int32_t i = 0; actions != nullptr && i < count; ++i) {
+      const char* action = actions[i];
+      if (action == nullptr || Field<std::int32_t>(action, 0x04) != key.name) {
+        continue;
+      }
+      const float range = RangeOf(action);
+      for (Source& source : g_tags[key]) {
+        if (TypeOf(source) >= 0) {
+          wants.push_back({&source, range});
+        }
+      }
+      break;
+    }
+  }
+  return wants;
+}
+
+// ---- the scan --------------------------------------------------------------------------------------------------
+
+float Held(const char* unit) {
+  const std::int32_t resource = kMainResource(unit);
+  return resource < 0 ? 0.0f : kHeldAmount(unit, resource);
+}
+
+void SetAnchor(char* unit) {
+  char* mgr = Field<char*>(unit, 0x58);
+  for (std::uint32_t i = 0; i < 3; ++i) {
+    *reinterpret_cast<float*>(mgr + 0x7C + 4 * i) = Field<float>(unit, 0x14 + 4 * i);
+  }
+}
+
+// The nearest unit of a wanted type within its action's range, that the unit's player may gather from.
+std::int32_t PickTarget(const char* world, const char* unit, std::int32_t player, const std::vector<Want>& wants,
+                        const Unit& state, float* outDistance, std::int32_t* outDelay) {
+  const float* position = reinterpret_cast<const float*>(unit + 0x14);
+  float radius = 0.0f;
+  for (const Want& want : wants) {
+    radius = std::max(radius, want.range);
+  }
+  g_found.count = 0;
+  kUnitsNear(world, position, radius + kSearchSlack, 1, &g_found);
+  const char* me = PlayerAt(world, player);
+  const std::int32_t selfId = Field<std::int32_t>(unit, 0x10);
+  std::int32_t best = -1;
+  float bestDistance = 0.0f;
+  for (std::int32_t i = 0; g_found.data != nullptr && i < g_found.count; ++i) {
+    const std::int32_t id = g_found.data[i];
+    const char* other = id == selfId ? nullptr : UnitById(world, id);
+    const char* proto = other == nullptr ? nullptr : Field<const char*>(other, 0x5C);
+    if (proto == nullptr || !Alive(other) || (state.refused && id == state.lastTarget)) {
+      continue;
+    }
+    const std::int32_t owner = OwnerId(other);
+    if (owner != 0 && owner != player && (me == nullptr || kIsEnemy(me, owner))) {
+      continue;
+    }
+    const float distance = Field<DistanceFn const*>(other, 0)[0xB8 / 4](other, position);
+    for (const Want& want : wants) {
+      if (distance <= want.range && kProtoIsType(proto, want.source->type) &&
+          (best < 0 || distance < bestDistance || (distance == bestDistance && id < best))) {
+        best = id;
+        bestDistance = distance;
+        *outDelay = want.source->delayMs;
+      }
+    }
+  }
+  *outDistance = bestDistance;
+  return best;
+}
+
+std::int32_t DelayFor(const std::vector<Want>& wants) {
+  std::int32_t delay = wants.empty() ? kDefaultDelayMs : wants.front().source->delayMs;
+  for (const Want& want : wants) {
+    delay = std::min(delay, want.source->delayMs);
+  }
+  return delay;
+}
+
+void Scan(char* world, std::uint32_t now) {
+  if (g_byProto.empty()) {
+    return;
+  }
+  const std::int32_t players = Field<std::int32_t>(world, 0x5C);
+  std::map<std::int32_t, Unit> seen;
+  for (std::int32_t p = 1; p < players; ++p) {
+    const char* player = PlayerAt(world, p);
+    if (player == nullptr) {
+      continue;
+    }
+    const std::int32_t* ids = Field<const std::int32_t*>(player, 0xF8);
+    const std::int32_t count = Field<std::int32_t>(player, 0xFC);
+    std::vector<std::int32_t> sorted(ids == nullptr ? 0 : count);
+    for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+      sorted[i] = ids[i];
+    }
+    std::sort(sorted.begin(), sorted.end());
+    for (const std::int32_t id : sorted) {
+      char* unit = UnitById(world, id);
+      const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+      if (proto == nullptr || OwnerId(unit) != p || Field<std::int32_t>(unit, 0x6C) != -1 ||
+          Field<const char*>(unit, 0x58) == nullptr) {
+        continue;
+      }
+      const std::vector<Want>& wants = WantsOf(proto);
+      if (wants.empty() || !Alive(unit) || !kIsBuilt(unit)) {
+        continue;
+      }
+      const char* record = Field<const char*>(unit, 0xB4);
+      if (record == nullptr || Field<const char*>(record, 0x94) == nullptr) {
+        continue;  // no inventory: the gather start refuses such a gatherer (0x50DE89, setState 9)
+      }
+      auto old = g_units.find(id);
+      Unit state = old == g_units.end() ? Unit{} : old->second;
+      char* mgr = Field<char*>(unit, 0x58);
+      const float held = Held(unit);
+      if (state.refused && held != state.heldAtOrder) {
+        state.refused = false;  // its amount changed: it may be sent there again
+      }
+      if (!kIdle(mgr)) {
+        state.idleSince = 0;
+        const char* action = Field<const char*>(mgr, 0x24);
+        if (action != nullptr && Field<std::uint32_t>(action, 0) == kGatherVtable) {
+          SetAnchor(unit);
+        }
+        seen[id] = state;
+        continue;
+      }
+      if (state.idleSince == 0) {
+        state.idleSince = now;
+        if (state.lastTarget >= 0 && state.heldAtOrder >= 0.0f && held <= state.heldAtOrder) {
+          state.refused = true;  // the last order gained nothing
+          state.heldAtOrder = held;
+        }
+      }
+      if (now - state.idleSince < static_cast<std::uint32_t>(DelayFor(wants))) {
+        seen[id] = state;
+        continue;
+      }
+      float distance = 0.0f;
+      std::int32_t delay = kDefaultDelayMs;
+      const std::int32_t target = PickTarget(world, unit, p, wants, state, &distance, &delay);
+      if (target >= 0 && now - state.idleSince >= static_cast<std::uint32_t>(delay)) {
+        const bool ok = kWorkOrder(mgr, target, 0, -1, 0);
+        Note(L"autoGatherFrom: unit %d (player %d, proto %d) idle %.1f s -> unit %d, %.1f m: %ls", id, p,
+             Field<std::int32_t>(proto, 0x04), (now - state.idleSince) / 1000.0, target, static_cast<double>(distance),
+             ok ? L"ordered" : L"refused");
+        if (target != state.lastTarget) {
+          state.refused = false;
+        }
+        state.lastTarget = target;
+        state.heldAtOrder = held;
+        state.idleSince = ok ? 0 : now;  // refused: try again after the delay
+      }
+      seen[id] = state;
+    }
+  }
+  g_units.swap(seen);  // units gone or no longer tagged are forgotten
+}
+
+void Tick(char* world, std::int32_t) {
+  if (world != World()) {
+    return;
+  }
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  if (world != g_lastWorld || now < g_lastTime) {
+    g_units.clear();
+    g_lastScan = 0;
+    g_lastWorld = world;
+  }
+  g_lastTime = now;
+  if (g_lastScan != 0 && now - g_lastScan < kScanMs) {
+    return;
+  }
+  g_lastScan = now == 0 ? 1 : now;
+  if (!g_log) {
+    Scan(world, now);
+    return;
+  }
+  // With log: the cost of the scans, every 240 of them (a real clock, for the log only: it feeds nothing back).
+  static int scans = 0;
+  static double total = 0.0, longest = 0.0;
+  const auto start = std::chrono::steady_clock::now();
+  Scan(world, now);
+  const double us = std::chrono::duration<double, std::micro>(std::chrono::steady_clock::now() - start).count();
+  total += us;
+  longest = std::max(longest, us);
+  if (++scans == 240) {
+    uhc::Log(L"autoGatherFrom: 240 scans, %.0f us on average, %.0f us the longest, %zu tagged unit(s)", total / scans,
+             longest, g_units.size());
+    scans = 0;
+    total = longest = 0.0;
+  }
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyAutoGatherFrom(const Config& config) {
+  const Config::Args* args = config.First("autoGatherFrom");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+      continue;
+    }
+    Log(L"autoGatherFrom: bad argument %hs (expected [log]); feature not applied", arg.c_str());
+    return Outcome::kFailed;
+  }
+  if (!VerifyAll("autoGatherFrom", {&sites::kGatherWorkOrder, &sites::kAutoScoutIdle, &sites::kUnitsNearPoint,
+                                    &sites::kUnitById, &sites::kIsA, &sites::kIsBuilt, &sites::kPlayerIsEnemy,
+                                    &sites::kHeldAmount, &sites::kMainResource, &sites::kUnitAliveSlot,
+                                    &sites::kXmlAttribute, &sites::kXmlText}) ||
+      !AddActionTagHandler(&ActionTagRead) || !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick)) {
+    return Outcome::kFailed;
+  }
+  Log(L"autoGatherFrom: units with an <AutogatherFrom> action tag gather on their own once idle (multiplayer unverified)");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+## herdWalkAwayFix
+
+Contract: [herdWalkAwayFix](../porting-to-another-dll.md#herdwalkawayfix).
+
+Sites: `HerdFleeHead` `0x4E3A37` (13 B), `HerdWalkAwayCall` `0x6A8C94` (13 B).
+
+### src/features/herdwalkaway.cpp
+
+```cpp
+// herdWalkAwayFix: a herdable that walks away from its pen or magnet once fattened stays where it walked to.
+//
+// When a herdable that gathers into its own inventory is full and its target is a LivestockPen, the paddy or a unit
+// of the abstract type AbstractTypeHerdableMagnet, the gather tick's cold path (0x6A8C47..0x6A8CA8) moves it away from
+// the target: 0x4E3A37(mgr, targetId, 6.0f, 0), the flee move, called at 0x6A8C9C. Its action manager's leash anchor
+// [mgr+7Ch] (x, y, z) is not touched there, and the manager's leash (0x489B15) walks an idle unit back to it. The
+// anchor of a herdable the stock search pulled in (0x4C31EE) is where it stood before, so with a target that moves (a
+// nomad), a fattened herdable walks back across the map to where the herd once was.
+//
+// The call at 0x6A8C9C is redirected to a wrapper that makes the stock call, then puts the anchor on the line from the
+// target through the herdable, 6 m further out than the herdable stands: about where the flee takes it (its point
+// carries a synced random part, so not exactly). Simulation state only; the same on every machine.
+#include <cmath>
+#include <cstdint>
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr float kWalkAway = 6.0f;
+
+using FleeFn = bool(__thiscall*)(char* mgr, std::int32_t target, float distance, std::int32_t flag);
+const auto kFlee = reinterpret_cast<FleeFn>(0x004E3A37);
+
+bool g_log = false;
+int g_logLines = 0;
+
+template <typename T>
+T Field(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+const char* UnitById(std::int32_t id) {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  if (world == nullptr || id < 0 || (id & 0x3FFFF) >= Field<std::int32_t>(world, 0x10)) {
+    return nullptr;
+  }
+  const char* unit = Field<const char* const*>(world, 0x0C)[id & 0x3FFFF];
+  return unit != nullptr && Field<std::int32_t>(unit, 0x10) == id ? unit : nullptr;
+}
+
+// thiscall(mgr, target, distance, flag), ret 0Ch: __fastcall with an unused EDX has the same frame.
+bool __fastcall WalkAway(char* mgr, void* /*edx*/, std::int32_t target, float distance, std::int32_t flag) {
+  const bool moved = kFlee(mgr, target, distance, flag);
+  const char* unit = mgr == nullptr ? nullptr : Field<const char*>(mgr, 0x04);
+  const char* from = UnitById(target);
+  if (unit == nullptr || from == nullptr) {
+    return moved;
+  }
+  const float ux = Field<float>(unit, 0x14), uz = Field<float>(unit, 0x1C);
+  const float tx = Field<float>(from, 0x14), tz = Field<float>(from, 0x1C);
+  const float dx = ux - tx, dz = uz - tz;
+  const float length = std::sqrt(dx * dx + dz * dz);
+  float* anchor = reinterpret_cast<float*>(mgr + 0x7C);
+  if (length > 0.01f) {
+    anchor[0] = ux + dx / length * kWalkAway;
+    anchor[2] = uz + dz / length * kWalkAway;
+  } else {
+    anchor[0] = ux;
+    anchor[2] = uz;
+  }
+  anchor[1] = Field<float>(unit, 0x18);
+  if (g_log && g_logLines < 200) {
+    ++g_logLines;
+    uhc::Log(L"herdWalkAwayFix: unit %d walks away from unit %d at (%.1f, %.1f): anchor (%.1f, %.1f)",
+             Field<std::int32_t>(unit, 0x10), target, static_cast<double>(ux), static_cast<double>(uz),
+             static_cast<double>(anchor[0]), static_cast<double>(anchor[2]));
+  }
+  return moved;
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyHerdWalkAwayFix(const Config& config) {
+  const Config::Args* args = config.First("herdWalkAwayFix");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+      continue;
+    }
+    Log(L"herdWalkAwayFix: bad argument %hs (expected [log]); feature not applied", arg.c_str());
+    return Outcome::kFailed;
+  }
+  if (!VerifyAll("herdWalkAwayFix", {&sites::kHerdWalkAwayCall, &sites::kHerdFleeHead}) ||
+      !WriteCall(sites::kHerdWalkAwayCall.va + 8, reinterpret_cast<const void*>(&WalkAway))) {
+    return Outcome::kFailed;
+  }
+  Log(L"herdWalkAwayFix: a herdable walked away from its pen or magnet keeps its leash anchor there");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+## deadReplacementAtZeroInventory
+
+Contract: [deadReplacementAtZeroInventory](../porting-to-another-dll.md#deadreplacementatzeroinventory).
+
+Sites: `RemovalNoticeHead` `0x495D6B` (7 B), `RemovalNoticeCall1` `0x495DEE` (5 B), `DeadReplacementHead` `0x4B4F2F` (15 B), `CorpseReplacementCall` `0x4F1680` (5 B), `RemovalNoticeCall2` `0x6A3FF0` (5 B).
+
+### src/features/deadreplacement.cpp
+
+```cpp
+// deadReplacementAtZeroInventory [log]: a unit with DoNotDieAtZeroHitpoints and DieAtZeroResources (a hunt,
+// a herdable, any unit that turns into a body to gather) leaves its <DeadReplacement> when its body is used
+// up, not when it falls.
+//
+// The death replacement FUN_004B4F2F places the proto [proto+F8h] (<DeadReplacement>, handler 0x5FC33B) at the
+// unit, once: it sets state bit 29h, and does nothing when that bit is set. It has four callers: the kill
+// handler 0x4B4F70 (0x4B527E, skipped for a DeadReplacementWhenDestroyed proto, flag 4Ah), the two removal
+// paths of such a proto (0x4E6FC6, 0x6A4013), and the state check FUN_00482152 at 0x4F1680. That last one runs
+// when a unit with DieAtZeroResources (flag 0Eh) and without the default DieAtZeroHitpoints (flag 0Dh, cleared
+// by DoNotDieAtZeroHitpoints) reaches 0 HP while in the world: the unit becomes a body (state bit 12, owner
+// gaia), plays its death sound, and the replacement is placed at once, beside the body that is still there.
+// When the body's inventory reaches 0, the state check asks the kill queue (0x4720BF), but the unit update
+// FUN_00482F16 marks the body for removal (state bit 7) and the world removes it (0x4726B2 at 0x495D61) in the
+// same update, before the queue's drain: the kill handler never runs for it. The two updates that remove a
+// unit marked so (0x483155 → 0x495DEC, and 0x5116C2 → 0x6A3FEE) call the removal notice FUN_00495D6B first,
+// then place the replacement of a DeadReplacementWhenDestroyed proto (flag 4Ah) only.
+//
+// Two hooks (hooks/deadrepl_hooks.asm):
+// - the replacement's head returns at once when it is called from 0x4F1680 for a unit with those two flags and
+//   a replacement, without setting bit 29h, so nothing is placed when the unit falls;
+// - the removal notice's head (its only two callers are those removal paths) places the replacement of such a
+//   body (state bit 12) through the stock function, at the moment and place a DeadReplacementWhenDestroyed
+//   proto gets its own. A body killed by the kill handler (a trigger's Kill) gets it there, as stock does;
+//   bit 29h keeps it to one.
+// Every other unit is stock. Simulation only, on data the same on every machine.
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+namespace {
+
+constexpr std::uint32_t kCorpseCallReturn = 0x004F1685;  // after call 4B4F2Fh at 0x4F1680
+constexpr std::uint32_t kGameGlobal = 0x00C66234;         // game; +140h database
+constexpr std::int32_t kFlagDieAtZeroHitpoints = 0x0D;
+constexpr std::int32_t kFlagDieAtZeroResources = 0x0E;
+constexpr std::int32_t kStateBody = 12;
+constexpr std::int32_t kStateReplaced = 0x29;
+constexpr unsigned kMaxLogLines = 300;
+
+using ProtoByIdFn = const char*(__thiscall*)(const char* database, std::int32_t id);
+const auto kProtoById = reinterpret_cast<ProtoByIdFn>(0x0045316E);
+using ReplaceFn = void(__thiscall*)(char* unit);
+const auto kReplace = reinterpret_cast<ReplaceFn>(0x004B4F2F);
+
+bool g_log = false;
+unsigned g_logLines = 0;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+// A bit of a bitset (pointer at +0, bit count at +4), as the stock tests read it.
+bool Bit(const char* set, std::int32_t bit) {
+  const auto* bits = Field<const std::uint8_t*>(set, 0);
+  return bits != nullptr && bit < Field<std::int32_t>(set, 4) && (bits[bit >> 3] & (1u << (bit & 7))) != 0;
+}
+
+const char* NameOf(const char* proto) {
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name == nullptr ? "?" : name;
+}
+
+const char* ReplacementName(std::int32_t id) {
+  const char* game = *reinterpret_cast<char* const*>(kGameGlobal);
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  return database == nullptr ? "?" : NameOf(kProtoById(database, id));
+}
+
+// The proto keeps its body at 0 HP, dies when its inventory is empty, and has a replacement.
+bool BodyWithReplacement(const char* proto) {
+  return proto != nullptr && Field<std::int32_t>(proto, 0xF8) >= 0 && !Bit(proto + 0x50, kFlagDieAtZeroHitpoints) &&
+         Bit(proto + 0x50, kFlagDieAtZeroResources);
+}
+
+void LogLine(const char* unit, const char* proto, const wchar_t* what) {
+  if (!g_log || g_logLines >= kMaxLogLines) {
+    return;
+  }
+  ++g_logLines;
+  const std::int32_t replacement = Field<std::int32_t>(proto, 0xF8);
+  const auto* position = reinterpret_cast<const float*>(unit + 0x14);
+  uhc::Log(L"deadReplacementAtZeroInventory: unit %d (%hs, at %.1f, %.1f) %ls: DeadReplacement %hs (%d)",
+           Field<std::int32_t>(unit, 0x10), NameOf(proto), static_cast<double>(position[0]),
+           static_cast<double>(position[2]), what, ReplacementName(replacement), replacement);
+  if (g_logLines == kMaxLogLines) {
+    uhc::Log(L"deadReplacementAtZeroInventory: %u lines logged; no more", kMaxLogLines);
+  }
+}
+
+}  // namespace
+
+extern "C" {
+
+void UhcDeadReplacementHook();
+void UhcDeadReplacementRemoveHook();
+
+// From the replacement's head, with the caller's return address: 1 skips the call.
+std::int32_t __stdcall UhcDeadReplacementSkip(const char* unit, std::uint32_t caller) {
+  if (caller != kCorpseCallReturn || unit == nullptr) {
+    return 0;
+  }
+  const char* proto = Field<const char*>(unit, 0x5C);
+  if (!BodyWithReplacement(proto)) {
+    return 0;
+  }
+  LogLine(unit, proto, L"fell and keeps its body; its replacement waits until the body is used up");
+  return 1;
+}
+
+// From the removal notice's head: a body whose replacement waited gets it now.
+void __stdcall UhcDeadReplacementOnRemove(char* unit) {
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  if (!BodyWithReplacement(proto) || !Bit(unit + 4, kStateBody) || Bit(unit + 4, kStateReplaced)) {
+    return;
+  }
+  LogLine(unit, proto, L"is removed (its body used up): the replacement is placed now");
+  kReplace(unit);
+}
+
+}  // extern "C"
+
+namespace uhc {
+
+Outcome ApplyDeadReplacementAtZeroInventory(const Config& config) {
+  const Config::Args* args = config.First("deadReplacementAtZeroInventory");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") != 0) {
+      Log(L"deadReplacementAtZeroInventory: unknown option %hs (expected: [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+    g_log = true;
+  }
+  if (!VerifyAll("deadReplacementAtZeroInventory",
+                 {&sites::kDeadReplacementHead, &sites::kCorpseReplacementCall, &sites::kRemovalNoticeHead,
+                  &sites::kRemovalNoticeCall1, &sites::kRemovalNoticeCall2}) ||
+      !WriteJmp(sites::kDeadReplacementHead.va, reinterpret_cast<const void*>(&UhcDeadReplacementHook), 7) ||
+      !WriteJmp(sites::kRemovalNoticeHead.va, reinterpret_cast<const void*>(&UhcDeadReplacementRemoveHook), 5)) {
+    return Outcome::kFailed;
+  }
+  Log(L"deadReplacementAtZeroInventory: a unit with DoNotDieAtZeroHitpoints and DieAtZeroResources leaves its "
+      L"DeadReplacement when its body is used up, not when it falls%ls (multiplayer unverified)",
+      g_log ? L"; each case logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/deadrepl_hooks.asm
+
+```asm
+; Hook for deadReplacementAtZeroInventory. Entered through a jmp written over the head of the death
+; replacement FUN_004B4F2F; leaves through an explicit jmp to its verified continuation, or returns
+; for it (docs/engine-symbols.md, "Death replacement").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+; EAX: 1 to skip this replacement, 0 for stock. `caller` is the return address.
+UhcDeadReplacementSkip PROTO STDCALL unit:DWORD, caller:DWORD
+UhcDeadReplacementOnRemove PROTO STDCALL unit:DWORD     ; places a body's waiting replacement
+
+.data
+headNext        dd 004B4F36h    ; test eax,eax / jne 4E6220h: the replacement after its stolen head
+removeNext      dd 00495D70h    ; push esi / push edi: the removal notice after its stolen head
+
+.code
+
+; Replaces push ecx / push esi / mov esi,ecx / mov eax,[esi+68h] (7 bytes) at 0x4B4F2F, the head of
+; the death replacement (thiscall(unit), plain ret; ECX = unit). Its four callers: the kill handler
+; 0x4B527E, the two removal paths of a DeadReplacementWhenDestroyed proto 0x4E6FC6 and 0x6A4013, and
+; 0x4F1680, where the state check 0x482152 has just turned a unit with DieAtZeroResources at 0 HP
+; into a corpse (state bit 12, owner gaia). UhcDeadReplacementSkip, given the return address, says
+; whether to leave the replacement for later (EAX = 1: return to the caller with nothing done, no
+; state bit 29h set, no unit placed); it only says so for the corpse caller. Each caller reloads EAX
+; before reading it, and EDX is not live across the call (thiscall, no arguments). Otherwise the
+; stolen instructions run and the stock body follows.
+UhcDeadReplacementHook PROC
+    TRACE_ONCE "deadReplacementAtZeroInventory (0x4B4F2F)"
+    push ecx
+    push dword ptr [esp+4]          ; the caller's return address
+    push ecx                        ; unit
+    call UhcDeadReplacementSkip
+    pop ecx
+    test eax, eax
+    je stock
+    ret
+stock:
+    push ecx                        ; stolen 0x4B4F2F
+    push esi                        ; stolen 0x4B4F30
+    mov esi, ecx                    ; stolen 0x4B4F31
+    mov eax, dword ptr [esi+68h]    ; stolen 0x4B4F33
+    jmp headNext
+UhcDeadReplacementHook ENDP
+
+; Replaces mov eax,[0C66234h] (5 bytes) at 0x495D6B, the head of the removal notice (thiscall(unit),
+; plain ret; ECX = unit), which the two updates call for a unit marked for removal (state bit 7) just
+; before they remove it: 0x495DEE in the unit update 0x482F16, 0x6A3FF0 in 0x5116xx. Both then place
+; the replacement only for a DeadReplacementWhenDestroyed proto. UhcDeadReplacementOnRemove places it
+; for a body whose replacement waited (through the head above, which is then stock: the return
+; address is ours). It keeps ECX; EAX is written by the stolen instruction, EDX is not an argument.
+UhcDeadReplacementRemoveHook PROC
+    TRACE_ONCE "deadReplacementAtZeroInventory removal (0x495D6B)"
+    push ecx
+    push ecx                        ; unit
+    call UhcDeadReplacementOnRemove
+    pop ecx
+    mov eax, dword ptr ds:[0C66234h]   ; stolen 0x495D6B
+    jmp removeNext
+UhcDeadReplacementRemoveHook ENDP
 
 END
 ```

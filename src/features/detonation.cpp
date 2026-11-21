@@ -46,6 +46,14 @@
 // default). By default the action's own <impacteffect>; <DetonationImpactEffect>path</DetonationImpactEffect>
 // names another, loaded at the data load as the tactics parser does (FUN_0058F017), and none plays nothing.
 // The stock function draws only what the local player sees, and only drawing and sound follow from it.
+// A wide unit (obstruction radius [proto+88h] or [proto+8Ch] from 1.5 m: a building, a ship) gets the effect
+// at a grid of points over its footprint, about one every 3 m and at most 3 x 3, so the whole building
+// bursts; a smaller unit gets it once, at its position.
+//
+// The victims. The area damage draws nothing on them: each one goes through TakeDamage 0x49B3D9 with no
+// impact (its last argument -2), which plays their flinch and, unless the flag argument is set, their hit
+// and pain sounds. The key sets that flag, so the only explosion seen and heard is the one on the unit
+// that dies; the damage does not read the flag.
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -80,11 +88,16 @@ constexpr std::size_t kProtoId = 8;
 constexpr std::size_t kProtoActions = 0x44;  // the action set
 constexpr std::size_t kActionList = 0x1C;    // in the set: the array of actions, its count at +20h
 constexpr std::size_t kActionId = 4;
-constexpr std::size_t kActionFlags = 0x64;   // bit array; +68h its size in bits
 constexpr std::size_t kActionNames = 0x1FD8; // in the database: the names by action ID, the count at +1FDCh
 constexpr std::uint32_t kDeadBit = 11;       // the kill handler returns at once when it is set
-constexpr std::uint32_t kAreaFlagBit = 6;    // what the stock caller reads and passes on
 constexpr std::uint32_t kZeroVector = 0x00CF0618;
+constexpr std::size_t kUnitForward = 0x20;        // the unit's forward vector; +2Ch up, +38h right
+constexpr std::size_t kUnitRight = 0x38;
+constexpr std::size_t kProtoObstructionX = 0x88;  // <ObstructionRadiusX> (handler 0x5F5972), half the width
+constexpr std::size_t kProtoObstructionZ = 0x8C;  // <ObstructionRadiusZ> (handler 0x5F59C8)
+constexpr float kBlastWideRadius = 1.5f;          // from this obstruction radius on, the blast covers the footprint
+constexpr float kBlastSpacing = 3.0f;             // metres between two of its points, about one impact effect
+constexpr int kBlastMaxPerSide = 3;
 constexpr int kMaxLogLines = 200;
 
 using AreaFn = void(__thiscall*)(const char* world, std::int32_t unit, char* action, const void* point, float multiplier,
@@ -317,8 +330,47 @@ bool __cdecl ReadDecay(void*, const char* node, char* proto) {
   return true;
 }
 
-// The blast on screen, as a shot landing on the ground there (FUN_004CB11C).
-void ShowBlast(const char* action, std::int32_t effect, const float* point) {
+// The points the blast is drawn at: the unit's position, or for a wide unit (a building, a ship) a grid over its
+// obstruction, one point every kBlastSpacing metres or so along each side, at most kBlastMaxPerSide per side.
+struct BlastPoints {
+  float points[kBlastMaxPerSide * kBlastMaxPerSide][3];
+  int count = 0;
+};
+
+int PerSide(float radius) {
+  if (!(radius >= kBlastWideRadius)) {
+    return 1;
+  }
+  const int n = static_cast<int>(2.0f * radius / kBlastSpacing + 0.5f);
+  return n < 2 ? 2 : n > kBlastMaxPerSide ? kBlastMaxPerSide : n;
+}
+
+BlastPoints BlastPointsOf(const char* unit, const float* centre) {
+  BlastPoints out;
+  const char* proto = *reinterpret_cast<const char* const*>(unit + kUnitProto);
+  const float rx = *reinterpret_cast<const float*>(proto + kProtoObstructionX);
+  const float rz = *reinterpret_cast<const float*>(proto + kProtoObstructionZ);
+  const int nx = rx >= kBlastWideRadius || rz >= kBlastWideRadius ? PerSide(rx) : 1;
+  const int nz = rx >= kBlastWideRadius || rz >= kBlastWideRadius ? PerSide(rz) : 1;
+  const auto* forward = reinterpret_cast<const float*>(unit + kUnitForward);
+  const auto* right = reinterpret_cast<const float*>(unit + kUnitRight);
+  for (int i = 0; i < nx; ++i) {
+    // From -0.75 to +0.75 of the half side: inside the footprint, clear of its edge.
+    const float ox = nx == 1 ? 0.0f : (2.0f * (static_cast<float>(i) + 0.5f) / static_cast<float>(nx) - 1.0f) * rx * 0.75f;
+    for (int k = 0; k < nz; ++k) {
+      const float oz = nz == 1 ? 0.0f : (2.0f * (static_cast<float>(k) + 0.5f) / static_cast<float>(nz) - 1.0f) * rz * 0.75f;
+      float* p = out.points[out.count++];
+      for (int c = 0; c < 3; ++c) {
+        p[c] = centre[c] + right[c] * ox + forward[c] * oz;
+      }
+      p[1] = centre[1];
+    }
+  }
+  return out;
+}
+
+// The blast on screen, as a shot landing on the ground at each point (FUN_004CB11C).
+void ShowBlast(const char* action, std::int32_t effect, const BlastPoints& blast) {
   if (effect == -1) {
     return;
   }
@@ -329,10 +381,12 @@ void ShowBlast(const char* action, std::int32_t effect, const float* point) {
   } else if (*reinterpret_cast<const std::int32_t*>(action + kActionImpactEffect) < 0) {
     return;  // the action has no <impacteffect>
   }
-  alignas(4) char projectile[0x70] = {};
-  *reinterpret_cast<const char**>(projectile + 0x10) = action;
-  std::memcpy(projectile + 0x64, point, 3 * sizeof(float));
-  kTerrainImpact(projectile, point);
+  for (int i = 0; i < blast.count; ++i) {
+    alignas(4) char projectile[0x70] = {};
+    *reinterpret_cast<const char**>(projectile + 0x10) = action;
+    std::memcpy(projectile + 0x64, blast.points[i], 3 * sizeof(float));
+    kTerrainImpact(projectile, blast.points[i]);
+  }
 }
 
 void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c, Cause cause) {
@@ -373,15 +427,21 @@ void Detonate(char* unit, std::uint32_t a, std::uint32_t b, std::uint32_t c, Cau
   }
   const auto* position = reinterpret_cast<const float*>(unit + kUnitPosition);
   const float point[3] = {position[0], position[1], position[2]};  // the unit may move or go in the blast
+  const BlastPoints blast = BlastPointsOf(unit, point);
   std::int32_t hit = 0;
-  kArea(world, *reinterpret_cast<const std::int32_t*>(unit + kUnitId), action, point, 1.0f, 0, 0, -1, &hit,
-        Bit(action, kActionFlags, kAreaFlagBit) ? 1 : 0, reinterpret_cast<const void*>(kZeroVector));
-  ShowBlast(action, found->second.effect, point);
+  // The flag argument goes to each victim's TakeDamage (0x49B3D9), whose only use of it is to skip the hit and
+  // pain sounds of the sound manager [world+950h] (0x484136 with 3 and 2, 0x49BC87): set, the victims stay
+  // silent and only the blast on the dying unit is heard. The damage does not read it.
+  kArea(world, *reinterpret_cast<const std::int32_t*>(unit + kUnitId), action, point, 1.0f, 0, 0, -1, &hit, 1,
+        reinterpret_cast<const void*>(kZeroVector));
+  ShowBlast(action, found->second.effect, blast);
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
-    uhc::Log(L"detonationDeath: unit %d, proto %d, at %.1f, %.1f, kill flags %u %u %u%ls", *reinterpret_cast<std::int32_t*>(unit + kUnitId),
-             protoId, static_cast<double>(position[0]), static_cast<double>(position[2]), a & 0xFF, b & 0xFF, c & 0xFF,
-             deleted ? L" (a delete)" : cause == Cause::kTriggerKill ? L" (a trigger's Kill)" : L"");
+    uhc::Log(L"detonationDeath: unit %d, proto %d, at %.1f, %.1f, kill flags %u %u %u%ls; blast drawn at %d point%ls",
+             *reinterpret_cast<std::int32_t*>(unit + kUnitId), protoId, static_cast<double>(position[0]),
+             static_cast<double>(position[2]), a & 0xFF, b & 0xFF, c & 0xFF,
+             deleted ? L" (a delete)" : cause == Cause::kTriggerKill ? L" (a trigger's Kill)" : L"", blast.count,
+             blast.count == 1 ? L"" : L"s over its footprint");
   }
 }
 

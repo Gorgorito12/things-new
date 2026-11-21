@@ -1,0 +1,198 @@
+Reply to JTMaston, 2026-11-21 (threads #76 to #94)
+====================================================
+
+Everything below was tested in single player in copies of WoL, with our UHC.dll, and most of it also beside your own
+uhc.dll (with our dinput8.dll). Nothing was tested in multiplayer. Each key has its section in the modding guide, with
+a video and a control filmed with the key off; each folder in wol-fixes\ has its own README in English.
+Where a thread left something open, we applied the default written below; the questions are at the end of each section.
+
+shipmentCounts revision (#76)
+-----------------------------
+Done as you asked: a card now counts for the age that enables it (its <age>), not the age it was sent in. Your example
+works: Age II cards sent in Age III and Age IV all count in Age II. Saves made with the old build still load; the
+cards in transit count by the new rule.
+Question: a card with no <age> counts in Age I (our default). Note that the game itself leaves such a card out of the
+deck, so this only matters if you rely on cards without <age>. Is Age I right?
+
+Deadreplacements (#77): key deadReplacementAtZeroInventory (bug fix)
+--------------------------------------------------------------------
+Cause: when a hunt or herdable falls (HP 0, DoNotDieAtZeroHitpoints + DieAtZeroResources), the game places its
+<DeadReplacement> at that moment; when the body is used up it is removed without going through the kill code, so
+nothing is placed then. With the key, the replacement appears when the body is used up. Every other unit is unchanged.
+Found in your data: <DeadReplacementLifespan> (on 289 protos) is not a tag the game reads; the rubble uses its own
+<Lifespan>.
+Questions: a body removed by the trigger Destroy leaves no replacement (stock behaviour for every unit). Is that fine?
+Do you want <DeadReplacementLifespan> to work?
+
+Levant (#78): wol-fixes\maps\levant-20261121.txt, wol-fixes\maps\levant\
+-------------------------------------------------------------------------
+We could not make Levant close the game: 11 skirmishes of 10 minutes (2 to 8 players, teams and free for all, King of
+the Hill rules, European, Middle Eastern, Asian, African, native and Maori AIs) and a saved/loaded game, all with your own
+uhc.dll, all fine.
+We did find a real fault in the map, the best lead we have: with 6 or 8 players in two equal teams, Levant sometimes
+cannot place one player's Town Center (6 players: 4 seeds of 25; 8 players: 3 of 25). That player starts with nothing.
+The Town Center must satisfy four constraints at once (near a start spot on the map edge, inside a circle that keeps
+it off the edge, 60 m from other Town Centers, 25 m from water), and on some seeds no point does; nothing checks it, so
+the rest of that player's start is placed around a unit that does not exist. In our games this did not crash (an AI
+with nothing idles; a human gets "You abandon your colony"), but it may on other machines or in multiplayer.
+The fixed NEWLevant.xs (in the folder, with a diff) tries again with looser constraints, then with none: every player
+got a start in 100 of 100 generations. Maps where the first try works are unchanged. A rule for future maps is at the
+end of the note: never use a placed object without checking it was placed.
+Questions: how many players, teams or free for all, which civs and AIs? At what moment does it crash, and does it close,
+freeze or show a message? Single player or multiplayer, and for everyone? Which WoL version? Please send Age3Log.txt
+from right after a crash and the "Application Error" entry for age3y.exe from the Windows Event Viewer. Did a player
+start with nothing in those games?
+
+Middle East herdables (#79): wol-fixes\me-herdables\, key herdWalkAwayFix
+--------------------------------------------------------------------------
+The flag that already existed is the abstract type AbstractTypeHerdableMagnet. With the pack, the six nomads work as
+moving livestock pens: herdables gather from the nomad at about 3 m and fatten, idle herdables within 10 m are drawn to
+it, the herd follows a walking nomad, and fattened ones walk 6-10 m away. The pack gives the nomads that type,
+Resource, UnlimitedSupply, GathererLimit 10 and 999 food, and adds a gather rate and a 3 m range per nomad in
+herd.tactics and herdcoin.tactics.
+herdWalkAwayFix (bug fix): a herdable the game drew in kept its old "leash" point and, after walking away fat, walked
+back there (33 m in our test). The key moves that point to where it walked.
+Questions: should the nomads keep CattleFatteningAura (kept for now; with both, a herdable fattens from the gather
+and from the aura)? Is 3 m the distance you want? Should fattened herdables follow the nomad when it walks on (now
+they stay where they walked away to, as at a pen)?
+
+Ranged gathering (#80): key autoGatherFrom
+-------------------------------------------
+- <MaxRange>: the game already respects <maxrange> and <typedmaxrange> in Gather and Hunting actions (a mine at
+  13.8 m, a Mill at 7.7 m, a deer at 11.4 m). Trees must first be cut down by ChopAttack, which reaches 2 m: raise its
+  range too if villagers should work trees from afar.
+- Buildings: they cannot gather. A Mill with a Gather action gets the order and never starts. It needs its own key.
+- <AutogatherFrom delay="3">ProtoOrType</AutogatherFrom> in an action: an idle unit gathers on its own from the
+  nearest unit of that proto or type within the action's range, after delay seconds (3 by default). A player's
+  order, a fight or a gather in progress always wins.
+Questions: do you need buildings that gather? Should trees stay close-range?
+
+Observer UI (#81): wol-fixes\observer\ (diagnosis)
+--------------------------------------------------
+"Doesn't work with all maps": the observer panel is trigger code inside the maps. 36 of the 213 RM4 maps have it (30
+ESOC_*, NEWMagdalena and 5 vividly*), as your lobby tooltip says ("Only functionable with ESOC UI2.2 maps").
+"Broke many versions ago", two causes:
+1. In all 36 maps the switch reads if (false == true), so the observer part never runs.
+2. With the switch on, the trigger script no longer compiles: the maps define their own kbGetTechID, and wolai.upl now
+   registers a function with the same name (trigtemp.xs Error 0034). All triggers are lost, StartInsertion included,
+   which is what your uhc.dll looks for.
+With the switch on and the map's helper renamed, the panel runs again (tested in a LAN game hosted alone, with an AI as
+the observer), but it was made for the old UI: the resources are one row off (no oil), it is drawn over your own
+resource panel, some flags are wrong, villagers count as military, and the big UI breaks it. test_patch.py in the folder
+writes the two map edits for the 36 maps into a separate folder; the README has the screenshots.
+Not tested: a real human observer (it needs a second player joining), other resolutions.
+Two ways forward (we have not built either yet):
+(a) fix ESOC's panel with your DLL: the two map edits first, then the panel code for WoL's resources, civs and units,
+    then the observer UI files rebuilt from your current UI in its 7 resolutions. It stays limited to these maps.
+(b) our own observer key, for any map and resolution with your current UI. Every player needs the same DLL, and the
+    observer still takes a slot.
+Questions: which observer do your players use today, ESOC's panel or only the replay viewer? Is this the panel that
+broke? Should the two map edits go into the 36 maps now? (a) or (b)? Which resolutions do your players use? Does an
+observer ever use the big UI?
+
+Scenario Editor (#82): key editorSearch, wol-fixes\editor\
+-----------------------------------------------------------
+Search fields in the Objects palette, in the Forbidden Units/Techs dialog (units and techs) and in the trigger editor
+(the condition/effect Type list and the unit, unit type and tech lists of the open condition or effect). Type part of a
+name: the list keeps the entries that contain every word, upper or lower case alike, on the shown, internal and display
+names. Empty = the normal list. In the trigger editor one field serves every list, a list where nothing matches stays
+whole, and the current value always stays in its list. The fields come from the three layouts in the folder.
+Owner change and the players panel: designed, for the next round.
+Questions: are the fields where you expected them? One field for the trigger editor, or one per list? Which panel is
+the "show players" one (a screenshot would help)? For the owner: a "Set owner of selection" button beside "Place As"?
+
+Age 5 shipments (#83): key ageFiveShipments, wol-fixes\age5-shipments\
+-----------------------------------------------------------------------
+The game drops cards with <age>4</age> from the deck, and both deck panels (in game and Build a Deck) have exactly
+four rows of 11 buttons in the exe. The key puts Imperial Age cards in the deck and shows them at the end of the Age IV
+row, greyed with the game's own "This Card cannot be sent until Age 5" until the Imperial Age, then sent normally.
+shipmentCounts counts them in Age V.
+Questions: is the Age IV row acceptable, or do you need a separate fifth row? That means rebuilding both deck panels in
+the DLL, a much larger job. Will the AI decks have Imperial Age cards (not tested yet)?
+
+Dismount animation (#84): wol-fixes\dismount\
+---------------------------------------------
+The Chasseur a Cheval has a stance on foot, with data and new animations only: two command buttons (Dismount, Mount),
+2.5 s transitions both ways, and on foot the rider stands, walks and fires beside his horse. Tech upgrades reach the
+attacks on foot. The animations were made from the game's own infantry animations with our art tools; the README has
+the recipe for other units.
+Defaults applied: on foot only the look, the attacks and the speed (x0.67) change; types, HP and armour stay cavalry;
+the horse stays beside the rider.
+Questions: should the dismounted unit count as infantry? A stance cannot change types, armour or obstruction; that
+would need a transform to a second unit (every upgrade twice, and the horse would disappear). Should the attacks on
+foot have their own range and accuracy (they copy the mounted Defend attack now)?
+
+Overheal (#85): keys overhealSources and overhealDecay
+------------------------------------------------------
+Done with your answers: <CanOverheal>1</CanOverheal> (default 0) and <OverhealCap> (percent) on the Heal action, in a
+tactics action or a <ProtoAction>, with the Data subtypes CanOverheal and OverhealCap (action="Heal") to switch them by
+tech; above 100 % it heals at the action's own <rate>. AbstractOverhealer is no longer a source. The decay is
+<OverhealDecay delay="S">R</OverhealDecay> on the unit, 2 % per second and delay 0 by default, with the Data subtypes
+OverhealDecay and OverhealDecayDelay on a proto or a unit type.
+Important: your Heal actions need <CanOverheal>1</CanOverheal> before they overheal again. Until then, the cfg line
+"overhealSources AbstractOverhealer" keeps the old behaviour.
+Note: in techs, CanOverheal uses the stock relativities: Assign 1 or 0 switches it; Absolute adds.
+
+Detonation death (#86): key detonationDeath
+-------------------------------------------
+In our build the area damage draws no effect on the units it hits (the game passes "no impact effect" for each
+victim), so the only explosion was already on the dying unit. Now the units hit are also silent, and a building or ship
+bursts at up to 3x3 points over its footprint (9 on a Town Center). The damage is unchanged.
+Question: which scene showed explosions on the nearby units? If it was a chain of detonating units or the building's
+own destruction effects, could you send that data? Do you prefer one big effect per building, named with
+<DetonationImpactEffect>?
+
+numberOfShots (#87)
+-------------------
+Between the quick shots of a burst the unit now holds its <idleanim> (the aiming pose); only the last shot reloads. The
+timing of the shots is unchanged. Question: is the aiming pose right, or should it repeat the fire pose?
+
+broadsideMuzzleLimit (#88)
+--------------------------
+Your test showed a real limit: in an ability, the game fires one projectile per muzzle and never reads
+numberprojectiles. Now <NumberProjectiles>P on a broadside action gives P shots per side, the muzzles firing in turn:
+the floating battery's PowerLongRange with 15 fired 15 shells per side (5 without the key). Your data today is
+unchanged by it.
+Found: the floating battery's model has 7 muzzle bones per side but only 5 attach points, so 5 cannons fire.
+Questions: P counts per side, not in total; is that right? Should the model get 7 attach points?
+
+CannotSnare (#89)
+-----------------
+Retired. A proto that still has the type loads and is snared as normal. CantBeSlowed (on the unit hit) stays.
+
+veterancy.xml (#90): key veterancyBonus
+---------------------------------------
+tech="TechName" on a <VeterancyBonus> row (in a proto or in veterancy.xml): the row counts only for a player with that
+tech active. A unit that already has the kills gets it when the tech activates; what was given stays when it goes
+inactive, as you said. <Civilization name="Civ"> blocks in veterancy.xml come before the global rows; a proto's own rows
+still come first. Also fixed: rows were added again after every load, so a rank could give its bonus twice.
+Question: the rank shown counts the kill steps a unit was given, so a unit can gain a rank when a tech activates. Is
+that right?
+
+shipTechLimit (#91)
+-------------------
+Done as you confirmed: repeatable (infinite) techs neither count nor are blocked at the limit, and show no n/N.
+
+displayedRange (#92)
+--------------------
+Rings show only while the unit is selected and Alt is held; <AlwaysDisplayRange>1</AlwaysDisplayRange> or
+<Flag>AlwaysDisplayRange</Flag> shows them without Alt. One ring per ranged attack at the player's real range (a range
+tech shows at once): a fort shows 40 m and 26 m. <DisplayedRange> still gives fixed values. Rings go from 4 to 100 m.
+The cost was within measurement noise even with 200 rings on screen; we still capped it at 4 rings per unit and 60 in
+total, longest first.
+Questions: should a unit's building attack (the Crossbowman's 6 m) get its own ring? Are the caps fine?
+
+The marker of a gathered resource (#93)
+---------------------------------------
+New cartoon icons, drawn from scratch: pickaxe (gold), axe (wood), meat (food), and one per food cursor: bow (hunt),
+berries, wheat (farm), fish. The axe floats higher over trees so it clears their tops. aura_hunt.xml, aura_berry.xml,
+aura_farm.xml and aura_fish.xml are new; the old file names still work.
+Question: is this the style and size you want?
+
+auraStacking (#94)
+------------------
+<NoStack> is retired as you asked (logged and ignored); <ModifyExclusive> does the same job, checked with our aura keys
+too. <ForbidUnitType> and <ForbidAbstractType> stay. unitResourceAuras' one payer per target now follows
+<ModifyExclusive>.
+Note: an exclusive modifier also stops other auras on the same stat (a unit under exclusive x1.5 and x1.2 Speed walks
+at x1.5).

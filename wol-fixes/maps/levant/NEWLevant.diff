@@ -1,0 +1,50 @@
+--- /c/AoE3-UHC-WoLReal12/RM4/NEWLevant.xs	2026-08-26 10:43:01.162279300 -0600
++++ wol-fixes/maps/levant/RM4/NEWLevant.xs	2026-11-21 11:08:08.259358200 -0600
+@@ -554,6 +554,27 @@
+ 	rmAddObjectDefConstraint(TCID, playerEdgeConstraint);
+ 	rmAddObjectDefConstraint(TCID, longAvoidImpassableLand);
+ 
++	// Fallbacks: a Town Center that cannot be placed with the constraints above is placed with
++	// fewer (and, last, none), so no player starts without one.
++	int TCbackupID = rmCreateObjectDef("player TC backup");
++	int TClastID = rmCreateObjectDef("player TC last resort");
++	if (rmGetNomadStart())
++	{
++		rmAddObjectDefItem(TCbackupID, "CoveredWagon", 1, 0.0);
++		rmAddObjectDefItem(TClastID, "CoveredWagon", 1, 0.0);
++	}
++	else
++	{
++		rmAddObjectDefItem(TCbackupID, "TownCenter", 1, 0.0);
++		rmAddObjectDefItem(TClastID, "TownCenter", 1, 0.0);
++	}
++	rmSetObjectDefMinDistance(TCbackupID, 0.0);
++	rmSetObjectDefMaxDistance(TCbackupID, 150.0);
++	rmAddObjectDefConstraint(TCbackupID, avoidTownCenter);
++	rmAddObjectDefConstraint(TCbackupID, avoidImpassableLand);
++	rmSetObjectDefMinDistance(TClastID, 0.0);
++	rmSetObjectDefMaxDistance(TClastID, 30.0);
++
+ 	//WATER HC ARRIVAL POINT
+ 
+ 	int waterFlagID=rmCreateObjectDef("HC water flag");
+@@ -635,7 +656,18 @@
+ 	for(i=1; <cNumberPlayers)
+    {
+ 	rmPlaceObjectDefAtLoc(TCID, i, rmPlayerLocXFraction(i), rmPlayerLocZFraction(i));
+-	vector TCLoc = rmGetUnitPosition(rmGetUnitPlacedOfPlayer(TCID, i));
++	int TCunit = rmGetUnitPlacedOfPlayer(TCID, i);
++	if (TCunit < 0)
++	{
++		rmPlaceObjectDefAtLoc(TCbackupID, i, rmPlayerLocXFraction(i), rmPlayerLocZFraction(i));
++		TCunit = rmGetUnitPlacedOfPlayer(TCbackupID, i);
++	}
++	if (TCunit < 0)
++	{
++		rmPlaceObjectDefAtLoc(TClastID, i, rmPlayerLocXFraction(i), rmPlayerLocZFraction(i));
++		TCunit = rmGetUnitPlacedOfPlayer(TClastID, i);
++	}
++	vector TCLoc = rmGetUnitPosition(TCunit);
+ 	rmPlaceObjectDefAtLoc(waterFlagID, i, 0.2, 0.8);
+ 	rmPlaceObjectDefAtLoc(startingUnits, i, rmXMetersToFraction(xsVectorGetX(TCLoc)), rmZMetersToFraction(xsVectorGetZ(TCLoc)));
+ 	rmPlaceObjectDefAtLoc(playergoldID, 0, rmXMetersToFraction(xsVectorGetX(TCLoc)), rmZMetersToFraction(xsVectorGetZ(TCLoc)));

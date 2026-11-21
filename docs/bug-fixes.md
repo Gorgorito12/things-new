@@ -337,6 +337,8 @@ impactBoneFix [all] [log]
 | [`workRateByAbstractType`](#workratebyabstracttype) | A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | **new** | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. | confirmed |
 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Dynamic free units grow smoothly with game time, not in 2-minute steps. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`truckAttackResourceFix`](#truckattackresourcefix) | A `TruckAttack` (the mustard gas, the tornado, the fire power, the monster truck) no longer empties the Mills, plantations and other gather buildings it hits, so villagers can still gather there afterwards. | **new** | Nothing. | confirmed (single player) |
+| [`herdWalkAwayFix`](#herdwalkawayfix) | A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in. | **new** | Nothing; for nomads, `wol-fixes/me-herdables`. | confirmed (single player) |
+| [`deadReplacementAtZeroInventory`](#deadreplacementatzeroinventory) | A hunt, a herdable or any unit that leaves a body to gather drops its `<DeadReplacement>` when the body is used up, not when it falls. | **new** | `<DeadReplacement>` on the protos that want one (none has it today). | confirmed (single player) |
 
 #### gatherFix
 
@@ -514,6 +516,88 @@ truckAttackResourceFix [log]
   took two new settlers; key off, all four were left with 0 and took none, and an emptied Mill was still refused 6
   minutes later. The damage did not change: a `Target` under five gas clouds lost 352 HP per second with the key and
   357 without (29 s each). An own gas did not empty its own Mill in either case (the action skips its own player).
+
+#### herdWalkAwayFix
+
+*A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in.*
+
+**Added:** Saturday 2026-11-21 11:55 · **Filmed in WoL:** Saturday 2026-11-21 11:55
+
+![herdWalkAwayFix in WoL](media/herdWalkAwayFix-wol.gif)
+
+*In WoL, with `herdWalkAwayFix log` and the nomads of `wol-fixes/me-herdables`, the herd's range left at the stock
+0.5 m (a scenario: a Nomad, three camels ordered to it, three sheep it drew in, two more camels; the Nomad walked 32 m
+north at 50 s and the herd followed):* the sheep reach 300 food, walk a few metres away from the Nomad (a log line each)
+and stay there. [Full video (MP4)](media/herdWalkAwayFix-wol.mp4).
+
+![herdWalkAwayFix in WoL, key off](media/herdWalkAwayFix-wol-control.gif)
+
+*The same scenario, key off:* two of the three fattened sheep walk out of the picture, 33 m back south to where they
+stood at the start, and stand there idle. [Full video (MP4)](media/herdWalkAwayFix-wol-control.mp4).
+
+```
+herdWalkAwayFix [log]
+```
+
+- **The bug (found for WoL request #79):** a full herdable whose target is a Livestock Pen, a rice paddy or a unit of the
+  type `AbstractTypeHerdableMagnet` walks a few metres away from it, but the game leaves its "leash" point (where the
+  game walks an idle unit back to) as it was. A herdable that the game drew in on its own (idle herdables within 10 m
+  of a pen or magnet go to it) keeps the leash point it had before: where it was born or last ordered. When its
+  walk-away ends, it walks back there. With a pen that is a few metres; with a nomad that has walked on, it is where
+  the herd started. Herdables the player ordered to the target keep a leash point near it.
+- **Effect:** the walk-away also moves the herdable's leash point 6 m beyond where it stands, away from the target,
+  about where the walk-away takes it. Nothing else changes: the same herdables walk away, at the same time.
+- **When it shows:** in the tests, with the herd's stock 0.5 m range two fattened sheep of three walked back 33 m (in
+  two runs); with the 3 m typed range of `wol-fixes/me-herdables`, the fattened sheep stayed in their walk-away state by
+  the nomad even without the key (two runs). The key is cheap; keep it on with nomads.
+- **Log:** `herdWalkAwayFix: a herdable walked away from its pen or magnet keeps its leash anchor there`; with `log`, each
+  walk-away: `unit 2 walks away from unit 0 at (64.7, 75.8): anchor (60.1, 72.0)`.
+- **Simulation:** yes: every player needs the same line. The point depends only on the two units' positions.
+- **Performance:** a few float operations per walk-away of a full herdable; nothing runs otherwise.
+- **Status:** confirmed (2026-11-21, single player, WoL, scenarios): with the key, the three fattened sheep stayed 8 to 10 m
+  from the nomad; without it, two walked back to their start points (anchors read from memory at their spawn points).
+  Beside the other keys of the test copy: 43 applied, 0 failed.
+#### deadReplacementAtZeroInventory
+
+*A hunted or slaughtered animal leaves what its `<DeadReplacement>` names when its body is eaten up, not when it falls.*
+
+**Added:** Saturday 2026-11-21 11:07 · **Filmed in WoL:** Saturday 2026-11-21 11:07
+
+![deadReplacementAtZeroInventory in WoL](media/deadReplacementAtZeroInventory-wol.gif)
+
+*In WoL, with `deadReplacementAtZeroInventory log` (a scenario; a `Cow` and a `Deer` with `<DeadReplacement>Turkey</DeadReplacement>`
+as test data):* a trigger kills the cow at 20 s and the deer at 21 s. Both bodies stay with no turkey beside them
+(`fell and keeps its body; its replacement waits until the body is used up`). Three settlers (selected) gather the cow,
+and when its 50 food are gone the turkey appears where it lay (`is removed (its body used up): the replacement is
+placed now`). The deer's body, not gathered, still has none. [Full video (MP4)](media/deadReplacementAtZeroInventory-wol.mp4).
+
+![deadReplacementAtZeroInventory in WoL, key off](media/deadReplacementAtZeroInventory-wol-control.gif)
+
+*In WoL, key off (the same data and scene):* the turkey appears at once, beside the cow's body, while the settlers walk to it, and a second one beside the deer's body. [Full video (MP4)](media/deadReplacementAtZeroInventory-wol-control.mp4).
+
+```
+deadReplacementAtZeroInventory [log]
+```
+
+- **The bug (WoL request #77):** a unit with `DoNotDieAtZeroHitpoints` and `DieAtZeroResources` (every hunt and
+  herdable) is not killed at 0 HP: it becomes a body that villagers gather. The game places its `<DeadReplacement>`
+  at that moment, beside the body, instead of when the body is used up and disappears. So a carcass, bones or a tree
+  stump meant to stay where an animal was eaten shows up while the animal still lies there. No WoL proto has both today,
+  because of this.
+- **Effect:** for a proto with both flags and a `<DeadReplacement>`, nothing is placed when it falls; the replacement
+  is placed when the body is used up and the game removes it, at the same place and through the same code as stock. A
+  body killed by the trigger `Kill` gets it then too. Every other unit is stock: a building leaves its rubble when it
+  falls, and a unit that dies at 0 HP (no `DoNotDieAtZeroHitpoints`) leaves its replacement at once. A body removed by
+  the trigger `Destroy` leaves nothing, as `Destroy` does for any unit.
+- **`<DeadReplacementLifespan>`, `DeadReplaceOnlyOnTimeout`, `DeadReplacementWhenDestroyed`:** unchanged; they act on
+  the replacement when it is placed.
+- **Log:** `deadReplacementAtZeroInventory: a unit with DoNotDieAtZeroHitpoints and DieAtZeroResources leaves its
+  DeadReplacement when its body is used up, not when it falls`; with `log`, each case: `unit 3 (Cow, at 47.0, 45.0)
+  fell and keeps its body; its replacement waits until the body is used up: DeadReplacement Turkey (448)` and `unit 3
+  (Cow, at 47.0, 45.0) is removed (its body used up): the replacement is placed now: DeadReplacement Turkey (448)`.
+- **Simulation:** yes (the replacement is a unit): every player needs the same line.
+- **Performance:** two proto tests when a body appears and when a unit is removed; nothing per tick. While filming, key on: 621 fps on average, one frame over 50 ms; key off: 408 fps, 13 frames over 50 ms (other games ran beside it; neither number is the key's).
+- **Status:** confirmed (2026-11-21, single player, WoL, scenarios): the two videos (`units` after them: key on, one `Turkey` at 47.0, 45.0 where the cow was and none at the deer's body; key off, two, at the cow's and at the deer's body); two cows gathered one after the other, each replaced when used up; a saved game with a body waiting (saved and loaded at 21 s), gathered after the load: the turkey came when the body was used up; a `House` destroyed beside them left its `BuildingRubble2x2` from the kill handler as before (hardware breakpoints on the placement 0x506F61: the cow from the removal notice, the house from 0x4B527E). Not tested: an AI game (the shared profile's copy was in use), multiplayer.
 
 ### Buildings and training
 

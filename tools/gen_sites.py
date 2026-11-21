@@ -441,6 +441,11 @@ SITES = [
     ("BroadsideSingleUseCap", 0x6A8236, 0x11),
     # broadsideMuzzleLimit: the two cold clamp blocks, count = limit, back to 0x503453 / 0x5034EE
     ("BroadsideClampCold", 0x6A8247, 0x16),
+    # broadsideMuzzleLimit, <NumberProjectiles>: BroadsideAttack's vtable slot 1 (vtable 0xB962E8), the set-up
+    # FUN_0050339A, its only reference (replaced by a wrapper); and the int array resize 0x401113,
+    # thiscall({data, count, capacity}*, count, byte), ret 8, which the set-up appends its slots with
+    ("BroadsideSetupSlot", 0xB962EC, 4),
+    ("ArrayResize", 0x401113, 0x18),
     # abilitySlots (FUN_0046188E, command panel refresh): the cold block that appends a page-11
     # (Abilities) command entry 5 more times, from mov ecx,[esp+40h] through mov edi,5 (the count,
     # 0x695BD2) and the do-while that ends in sub edi,1 / je 461C3Fh / jmp 695BD7h
@@ -981,6 +986,17 @@ SITES = [
     ("TechRemoveHead", 0x94DCB2, 6),
     ("TechLoadHead", 0x94DDEA, 7),
     ("IsEnemyHead", 0x484D2D, 6),
+    # deadReplacementAtZeroInventory: the head of the death replacement FUN_004B4F2F (push ecx / push esi /
+    # mov esi,ecx / mov eax,[esi+68h], then test eax,eax / jne 4E6220h, the continuation at 0x4B4F36); its
+    # call at 0x4F1680 in the state check's body path (a DieAtZeroResources unit at 0 HP becomes a body)
+    # (verify only: the hook asks the caller's return address, 0x4F1685). The head of the removal notice
+    # FUN_00495D6B (mov eax,[0C66234h], then push esi / push edi at 0x495D70) and its only two calls, in the
+    # paths that remove a unit marked for removal (state bit 7) and then test DeadReplacementWhenDestroyed
+    ("DeadReplacementHead", 0x4B4F2F, 0x0F),
+    ("CorpseReplacementCall", 0x4F1680, 5),
+    ("RemovalNoticeHead", 0x495D6B, 7),
+    ("RemovalNoticeCall1", 0x495DEE, 5),
+    ("RemovalNoticeCall2", 0x6A3FF0, 5),
     # detonationDeath: the only call of the kill handler, in the kill queue's drain 0x493D46; the head of
     # the area damage, verify only
     ("DetonationKillCall", 0x493D8F, 5),
@@ -1005,12 +1021,17 @@ SITES = [
     # displayedRange: the ID of a model path, thiscall(table [0xC66240], path, 1, 0, 0), called at 0x5FC94C; the ID
     # of a bone name, thiscall(0xD6F478, name), called at 0x5FC8FC; both verify only
     ("ModelPathLookup", 0x58F68F, 10),
+    # displayedRange: the Alt query of the HP bar chunk, mov edx,[0C66244h] .. call 473E37h (verify only: the key
+    # makes the same call); the range getter 0x4946D6, float thiscall(action, key), verify only; and the proto flag
+    # parser's last compare, push esi / push 0BCA0E0h / call 4028B4h / add esp,8 / test eax,eax / je, whose call
+    # (at +6) goes to the key, then pop esi / ret 8, the return for a name no flag matched
+    ("AltQuery", 0x452EA0, 0x18),
+    ("ActionRangeByKey", 0x4946D6, 10),
+    ("ProtoFlagLastCompare", 0x5F7269, 0x1A),
     ("BoneNameLookup", 0x58E506, 10),
-    # auraStacking: the one call of the filter in the aura update, the filter's head, and mov ebx,eax /
-    # cmp ebx,-1 after the apply
+    # auraStacking: the one call of the filter in the aura update, and the filter's head
     ("AuraFilterCall", 0x9D0633, 5),
     ("AuraFilter", 0x9D0238, 6),
-    ("AuraAppliedNext", 0x9D0675, 5),
     # xsErrorLog: sub esp,804h at the head of each XS reporter, and the formatter they call
     ("XsReportHead", 0x43A3A4, 6),
     ("XsMessageHead", 0xA5667F, 6),
@@ -1131,15 +1152,22 @@ SITES = [
     # with the pushes before it and the use of EDI after it
     ("ShipActivateCall", 0x8584E7, 0x24),
     ("ShipQueueCaller", 0x66AEA0, 5),
-    # shipmentCounts, the send age: FUN_00858299's read of its argument, the queue entry being shipped, at
+    # shipmentCounts, the card's age: FUN_00858299's read of its argument, the queue entry being shipped, at
     # [esp+24h] in the frame of the activation call (mov ecx,[esp+24h] / mov edx,[ecx] / lea eax,[esp+24h]);
-    # the head of the queue's add FUN_00857204 (thiscall(queue = [hc+288h], entry*), ret 4: push esi / push edi /
-    # mov edi,ecx / mov esi,[edi+4], replaced, 7 bytes), whose only caller is the send FUN_0085A724; the head of
-    # its removal FUN_00857257 (thiscall(queue, index, bool shift), ret 8: cmp byte [esp+8],0 (replaced, 5 bytes)
-    # / push esi / push edi / mov edi,ecx / jz), called by the queue update 0x4BF86F and the cancel 0x85ADD9
+    # the card lookup FUN_0085FFCE (thiscall(list = hc+228h, index), ret 4: [list+1Ch] + index*28h, bounds 0 and
+    # [list+20h], else 0), called as is with the entry's card index (+0); the card's <age> is [card+18h]
     ("ShipEntryArg", 0x85856A, 0x0A),
-    ("ShipQueueAddHead", 0x857204, 7),
-    ("ShipQueueRemoveHead", 0x857257, 0x0B),
+    ("ShipCardLookup", 0x85FFCE, 0x1E),
+    # ageFiveShipments: the game's card list builder FUN_006301DE, one pass per age: cmp eax,4 (its immediate becomes
+    # 5) / mov [esp+14h],eax; the in-game shipment panel's fill FUN_009A5658: mov eax,[esi+18h] / cmp eax,edi
+    # (replaced, 5 bytes) / jl / cmp eax,3 / jg / mov edx,[esp+14h], the card's age and its row; the deck editor's
+    # fill FUN_009A7670: mov eax,[esi+18h] / cmp ebx,eax (replaced, 5 bytes) / jge ... / cmp ebx,4 / jge
+    ("CardListAgePasses", 0x63022E, 7),
+    ("CardPanelAgeRow", 0x9A5A22, 0x14),
+    ("DeckEditorAgeRow", 0x9A77BE, 0x27),
+    # and the deck builder's fill (the home city screen's "Build a Deck", buttons hcDeck-button<row><column>):
+    # mov eax,[esi+18h] / cmp edi,eax (replaced, 5 bytes) / jge ... / cmp edi,4 / jge
+    ("DeckBuilderAgeRow", 0x9A0489, 0x27),
     # kothTimer: FUN_009F02DD, the King of the Hill time in seconds on the victory settings (DefaultVP.xml, ECX):
     # mov eax,[0C66234h] (replaced, 5 bytes) / mov edx,[eax+13Ch] / ... / KOTHVictoryTime +104h, PerPlayer +108h,
     # [world+5Ch], [world+18Ch], AdjustKOTHTotalTimeByTeams +10Ch, its Factor +110h / ret; its only call, at
@@ -1180,6 +1208,9 @@ SITES = [
     # civFirstTC: the civ by ID 0x405C2E, thiscall(database, id) = [[db+24h]+4*id] (count
     # [db+28h]), ret 4; a civ's ID is [civ+8] and its name [civ+4] (char*)
     ("CivById", 0x405C2E, 0x18),
+    # veterancyBonus, verify only: the civ by name 0x52D6FF, thiscall(database, char* name), ret 4: a walk of
+    # [db+24h] (count [db+28h]) comparing names; null when none (the nativeCivs loader hook calls it too)
+    ("CivByName", 0x52D6FF, 0x1C),
     # civFirstTC: a player's civ ID 0x4539D3, [[player+20h]] when [player+24h] > 0, else -1
     ("CivOfPlayer", 0x4539D3, 0x10),
     # civFirstTC: proto by name 0x5A2346, thiscall(database, const char*), ret 4: a
@@ -1381,6 +1412,11 @@ SITES = [
     ("ShotsLaunchCall", 0x48F838, 0x5D),
     ("ShotsLaunch", 0x499422, 0x1D),
     ("ShotsLaunchRet", 0x4999DA, 9),
+    # numberOfShots, no reload between a burst's shots: the head of the reload animation's start FUN_004976CB,
+    # sub esp,8 / push esi / mov esi,ecx (replaced, 6 B) / mov eax,[esi+10h], its continuation (no branch lands
+    # inside); and the model index lookup 0x471D24 (mov ecx,[ecx+60h] / test ecx,ecx / je), which the hook calls.
+    ("ShotsReloadAnim", 0x4976CB, 9),
+    ("ShotsAnimVariant", 0x471D24, 0xB),
     # unitResourceAuras: the aura update's mov eax,[0C66234h] and the sub esp,10h it continues at
     ("UnitResourceAuraEntry", 0x9D033E, 8),
     # unitResourceAuras, verify only: the aura's scan (thiscall(action, IdList*)), inventory add
@@ -1961,6 +1997,82 @@ SITES = [
     ("LanBrowserJoinRequest", 0x8BB749, 0x0E),
     ("LanBrowserJoinStart", 0x8BB762, 6),
     ("LanBrowserCountdown", 0x8BA87A, 0x11),
+    # autoGatherFrom, verify only: the work order of the action manager FUN_004EFCB2, thiscall(mgr, targetId, 0, -1, 0),
+    # ret 10h (mov eax,1 / test [0D6F75Ch],al / push esi / mov esi,ecx), the call the stock idle-herdable search
+    # 0x4C31EE gives to a pen or magnet within 10 m, and the command execute's unit-order path (0x944D3F, 0x944E0D).
+    ("GatherWorkOrder", 0x4EFCB2, 0x0E),
+    # herdWalkAwayFix: the gather tick's walk-away of a full herdable from a pen, the paddy or an
+    # AbstractTypeHerdableMagnet target: push 0 / push 40C00000h (6.0f) / push edx (the target's ID) / call 4E3A37h
+    # (the flee move, thiscall(mgr, targetId, distance, flag), ret 0Ch). The call at +8 is redirected; the flee's head
+    # (mov eax,[0C66234h] / sub esp,54h / push ebx / mov ebx,[esp+5Ch]) is verified only.
+    ("HerdWalkAwayCall", 0x6A8C94, 0x0D),
+    ("HerdFleeHead", 0x4E3A37, 0x0D),
+    # uigadgets (shared): a gadget among a parent's descendants by name, 0x433812 (int* thiscall(parent, int* out,
+    # const char* name, int 1), ret 0Ch; out = [0C672C0h] when none). A textField (gadfield.cpp) makes an editBox
+    # child for its typed text and keeps its handle, mov [edi+160h],ebx (0x62BDD5, after the child's factory
+    # 0x62C0CF); 0x4420BA looks that child up with type mask 23h. The editBox's set-text slot (vtable 0xB91A38 +80h
+    # = 0x5C2C20) keeps the text at lea esi,[edi+170h] (0x5C2C54), where typing puts it too (seen in game).
+    ("UiFindChild", 0x433812, 0x0A),
+    ("UiFieldEditBox", 0x62BDD2, 0x09),
+    ("UiEditBoxText", 0x5C2C54, 0x06),
+    # editorSearch: the Objects palette fill FUN_007F501E (the fill callback [palette+17Ch] that 0x7F5C51 gives
+    # EditorProtoPalette) adds each proto with lea edx,[esp+58h] / push edx / lea eax,[esp+14h] / push eax /
+    # mov ecx,edi / call 0AD0056h (0x7F537D, ESI = the player's proto), the add thiscall(palette, entry*,
+    # categories*), ret 8. The palette class (ctor 0xACFBA0, mov [esi],0B92768h) refills through its vtable +0F0h,
+    # 0xACE8DF: mov eax,[ecx+17Ch] / test / je / push ecx / call eax.
+    ("EditorPaletteAddProto", 0x7F5371, 0x11),
+    ("EditorPaletteAdd", 0xAD0056, 0x0B),
+    ("EditorPaletteObjectsFill", 0x7F5C51, 0x0A),
+    ("EditorPaletteVtable", 0xACFBAA, 6),
+    ("EditorPaletteRefill", 0xACE8DF, 0x0F),
+    # editorSearch: the palette's refresh slot (vtable +20h = 0xAD01FD, what refreshonreal runs): the base refresh
+    # 0x4540D4, the entries emptied (call 0AD0189h), the refill (call [eax+0F0h]), the button list laid out, then the
+    # buttons of the current category [esi+168h] through FUN_00ACF80E (thiscall(palette, category, bool force),
+    # ret 8): mov edx,[esi+168h] / push 1 / push edx / mov ecx,esi / call 0ACF80Eh (0xAD0262).
+    ("EditorPaletteRefreshSlot", 0xB92788, 4),
+    ("EditorPaletteRefresh", 0xAD01FD, 0x1B),
+    ("EditorPaletteLayoutShow", 0xAD0262, 0x10),
+    # editorSearch: the Forbidden Units/Techs dialog (uiforbiddenunitstechs.xml; ctor 0x9990BE, mov [esi],0B8D690h)
+    # binds ForbiddenUnitsTechs_AllowedList to [esi+144h] (0x999B1F); its refresh 0x99960A switches on the display
+    # mode [ebx+160h] (0x9996C6: 0 units, 1 techs). The allowed units fill FUN_0099912F adds each proto's name with
+    # mov ecx,[esp+1Ch] / lea eax,[esp+10h] / push eax / call 0AC9228h (0x9991D0, ESI = the proto, EBX = the
+    # dialog), the techs fill FUN_00999493 with lea eax,[esp+14h] / push eax / mov ecx,ebp / call 0AC9228h
+    # (0x999547, ESI = the tech index, EDI = the dialog); 0xAC9228 is the list's add item thiscall(list, BString*),
+    # ret 4. Both fills are thiscall(dialog, list), ret 4, and empty the list first.
+    ("EditorForbidVtable", 0x9990CB, 6),
+    ("EditorForbidBind", 0x999B1F, 6),
+    ("EditorForbidMode", 0x9996C6, 0x0C),
+    ("EditorForbidUnitAdd", 0x9991C7, 0x0E),
+    ("EditorForbidTechAdd", 0x999540, 0x0C),
+    ("EditorListAdd", 0xAC9228, 9),
+    ("EditorFillAllowedUnits", 0x99912F, 0x0B),
+    ("EditorFillAllowedTechs", 0x999493, 0x0A),
+    # editorSearch: after the fills the refresh lays the allowed list out and selects its first item: mov eax,[edi] /
+    # mov ecx,edi / call [eax+100h] / push 0 / mov ecx,edi / call 0AC8A43h (0x9997C8; 0xAC8A43 thiscall(list, index),
+    # ret 4)
+    ("EditorForbidRelayout", 0x9997C8, 0x13),
+    # editorSearch: a proto's display name string ID [proto+144h], as FUN_008F7A89 reads it (mov eax,[ecx+144h] /
+    # cmp eax,-1)
+    ("EditorProtoDisplayName", 0x8F7A89, 9),
+    # editorSearch, trigger editor: the condition/effect panel's fill FUN_00825757 (thiscall(editor), plain ret; its
+    # head sub esp,28h / mov eax,[0C66234h] / push ebp / mov ebp,[eax+97Ch]), run by the Triggers / Conditions /
+    # Effects buttons after mov [esi+1C0h],ebp (0x8264F0). It sets the "Type:" textField's names and entry data
+    # (each type's index) with lea ecx,[esp+20h] / push ecx / mov ecx,ebx / call 5BECAAh / lea edx,[esp+2Ch] /
+    # push edx / mov ecx,ebx / call 0AC19D9h (0x8258A0, replaced up to the continuation mov ecx,edi at 0x8258B8).
+    ("EditorTypeListSet", 0x8258A0, 0x1A),
+    ("EditorTypeFillHead", 0x825757, 0x0F),
+    ("EditorTypeFillMode", 0x8264F0, 0x0B),
+    # editorSearch: the trigger parameter builder (gadtrigparam.cpp) gives a parameter's textField its list with
+    # mov ecx,edi / call 5BECAAh: techs [[game+97Ch]+6Ch] (0x8289D5), units +84h (0x828A27), unit types +90h
+    # (0x828A4E). 0x5BECAA thiscall(field, array*) copies the names ([array], count [array+4]); 0xAC19D9 the entry data.
+    ("EditorParamTechList", 0x8289C3, 0x17),
+    ("EditorParamProtoList", 0x828A13, 0x19),
+    ("EditorParamUnitTypeList", 0x828A3A, 0x19),
+    ("EditorSetList", 0x5BECAA, 0x11),
+    ("EditorSetData", 0xAC19D9, 0x0F),
+    # editorSearch: a parameter's change (event 10, 0x829E29): the field's current index 0xAC0D1B, its entry's text
+    # 0xAC0EEA, given to the parameter (0x82AC1C): the value is the text picked, not an index into the stock list.
+    ("EditorParamPickText", 0x829E65, 0x24),
 ]
 
 

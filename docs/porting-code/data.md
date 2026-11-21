@@ -109,7 +109,6 @@ struct KnownTag {
 };
 
 constexpr KnownTag kKnownTags[] = {
-    {L"NoStack", "auraStacking"},
     {L"NativePreview", "nativePreview"},
     {L"SnareFactor", "snareValues"},
     {L"SnareDuration", "snareValues"},
@@ -136,6 +135,7 @@ constexpr KnownTag kKnownTags[] = {
     {L"ShowUnitResourceActionRates", "unitResourceAuras"},
     {L"PillageAmount", "pillageGold"},
     {L"GatherLinkedResource", "linkedResource"},
+    {L"AutogatherFrom", "autoGatherFrom"},
     {L"LinkedResourceType", "linkedResource"},
     {L"LinkedResourceRange", "linkedResource"},
     {L"DetonationProtoAction", "detonationDeath"},
@@ -148,6 +148,7 @@ constexpr KnownTag kKnownTags[] = {
     {L"DetonationOnKnockout", "detonationDeath"},
     {L"DisplayRange", "displayedRange"},
     {L"DisplayedRange", "displayedRange"},
+    {L"AlwaysDisplayRange", "displayedRange"},
     {L"CanDodgeAttacks", "dodgeAnyUnit"},
     {L"DodgeChance", "dodgeAnyUnit"},
     {L"DoNotQueue", "doNotQueue"},
@@ -172,6 +173,9 @@ constexpr KnownTag kKnownTags[] = {
     {L"WallPiece", "customWalls"},
     {L"RandomCost", "randomCost"},
     {L"PoliticianEnablesTech", "politicianEnablesTech"},
+    {L"CanOverheal", "overhealSources"},
+    {L"OverhealCap", "overhealSources"},
+    {L"OverhealDecay", "overhealDecay"},
 };
 
 std::map<std::wstring, Seen> g_seen[kKinds];

@@ -1,5 +1,30 @@
-Minimized unit panel (minUIStats): version 6, for review
+Minimized unit panel (minUIStats): version 7, for review
 =======================================================
+
+Version 7 (2026-11-21), after JTMaston's review of version 6: ..\note-for-team-v7.txt
+-------------------------------------------------------------------------------------
+- Seconds stuck to the number ("Rate of fire: 3.50s", "40s", "3 x 8s"); the tooltip line reads "Rate of fire".
+- The armor as a percent stuck to the value ("20%", "75%"), in our row and in the panel's original resists value.
+- The speed follows the tactic: the Falconet shows 4 in Limber and 1.60 in Bombard (4 x 0.4), in both UIs.
+- showGatherRate: wood rates now show (they did not); the optional "Holds:" item fixed for the Mill and placed mines.
+- New unit type icons in the pack: Line (blue coat), Standing (red coat), Maneuver (a winged arrow; the winged bullet
+  is in ..\review). apply_fix.py installs the pack and --restore puts WoL's files back.
+
+    Check (2026-11-21, our UHC.dll unless said; minUIStats, multiplierDecimals,     Picture (minUIStats-v7-...)      Result
+    showGatherRate, WoL's wol.cfg lines; scenario players, 1920x1080)
+    Tooltip "Rate of fire: 3.50s" / "3s", resists "20%"                         tip-escopetero-ranged, -siege    pass
+    Falconet: Limber 4, Bombard 1.60, both UIs; after a move order: Limber, 4     falconet-limber, -bombard,       pass
+                                                                                   -after-move, bigui-falconet-*
+    Gather rate, minimized vs big UI: berries 0.67, Mine 0.60, Mill 0.50          gather-food, -gold,              pass (same
+                                                                                   -mill-settler, mill, bigui-*     values)
+    The same with resourceGatherAuras and resourceDebt on (40 applied, 0          allkeys-gather-*                 pass
+      failed), trees 0.50 after the fix, the optional Gathers/Holds rows on
+    WoL's uhc.dll + our dinput8.dll: 5 applied, 0 failed, the same rates;         woluhcdll-*                      pass (armor
+      resists in that DLL's text                                                                                   as WoL's)
+    New unit type icons: Escopetero (arrow 1.5x, blue soldier 1.25x), Falconet    icons-min-*, icons-big-*       pass (rows
+      Bombard (red soldier 3x), rows and tooltips, both UIs                                                        as long)
+
+Version 6 follows.
 
 Version 6 (2026-11-20), after JTMaston's review of version 5: ..\note-for-team-v6.txt
 -------------------------------------------------------------------------------------

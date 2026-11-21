@@ -19,6 +19,7 @@ Contents:
 - [playerIcon](#playericon)
 - [autoScout](#autoscout)
 - [transformChecks](#transformchecks)
+- [editorSearch](#editorsearch)
 
 ## abilitySlots
 
@@ -2362,7 +2363,7 @@ Contract: [minUIStats](../porting-to-another-dll.md#minuistats).
 
 Besides the core helpers, it needs: [`datarefs.h`](helpers.md#data-refs), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetLookupAny` `0x404296` (49 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `ResListGet` `0x44EFFF` (61 B), `HoldsResource` `0x45EE8B` (20 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `RateLookupHead` `0x487C45` (16 B), `AttackListFill` `0x487EEE` (24 B), `RegenPlayerHead` `0x4905E1` (16 B), `RegenRateRead` `0x4907FF` (31 B), `UnitCarryCapacity` `0x494503` (16 B), `ActionRangeEntry` `0x4946D6` (55 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `StackLayoutCall` `0x4C7DB3` (14 B), `MinBlockChoice` `0x4C8276` (11 B), `StackLayout` `0x4C8F49` (675 B), `StackFillReset` `0x4C9458` (42 B), `StackFillCurrent` `0x4C9587` (65 B), `StackFillAppend` `0x4C979A` (27 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `StatFillRowCap` `0x4D7944` (28 B), `AttackRowName` `0x4D7A2E` (116 B), `AttackRowDamage` `0x4D7AC8` (273 B), `AttackRowTypeIcon` `0x4D7BD9` (126 B), `AttackRowRange` `0x4D7D2A` (120 B), `AttackRowSiege` `0x4D8265` (79 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `BStringFromId` `0x58EA52` (25 B), `PowerUnitActionStore` `0x5F22CA` (54 B), `ActionRawName` `0x5F8FC3` (24 B), `MinResistsUnitGate` `0x698BE2` (26 B), `MinResistsArmorTest` `0x698BFC` (26 B), `AttackRowCold` `0x69B617` (128 B), `AttackRowModifier` `0x69FDDC` (28 B), `AttackRowTyped` `0x69FE1F` (25 B), `AbilityAvailableTest` `0x6EE68C` (118 B), `CurrentUnitRef` `0x6F49B1` (65 B), `ResourceIconText` `0x706EFB` (16 B), `BuildPointsAdd` `0x7ADE95` (16 B), `BuildPointsAddCall` `0x9C4BE3` (30 B), `BuilderFactor` `0x9C4C0C` (26 B), `BuildTickRateHead` `0x9D3D6B` (16 B), `BuildTickScale` `0x9D3D80` (71 B), `BuildTickAdd` `0x9D3DE9` (12 B), `GadgetByName` `0xAB7C2F` (38 B), `PowerUnitActionVtable` `0xB855F4` (4 B).
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetLookupAny` `0x404296` (49 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `ResListGet` `0x44EFFF` (61 B), `ProtoFlag` `0x45EE02` (53 B), `HoldsResource` `0x45EE8B` (20 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `RateLookupHead` `0x487C45` (16 B), `AttackListFill` `0x487EEE` (24 B), `RegenPlayerHead` `0x4905E1` (16 B), `RegenRateRead` `0x4907FF` (31 B), `UnitCarryCapacity` `0x494503` (16 B), `ActionRangeEntry` `0x4946D6` (55 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `StackLayoutCall` `0x4C7DB3` (14 B), `MinBlockChoice` `0x4C8276` (11 B), `StackLayout` `0x4C8F49` (675 B), `StackFillReset` `0x4C9458` (42 B), `StackFillCurrent` `0x4C9587` (65 B), `StackFillAppend` `0x4C979A` (27 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `StatFillRowCap` `0x4D7944` (28 B), `AttackRowName` `0x4D7A2E` (116 B), `AttackRowDamage` `0x4D7AC8` (273 B), `AttackRowTypeIcon` `0x4D7BD9` (126 B), `AttackRowRange` `0x4D7D2A` (120 B), `AttackRowSiege` `0x4D8265` (79 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `BStringFromId` `0x58EA52` (25 B), `PowerUnitActionStore` `0x5F22CA` (54 B), `ActionRawName` `0x5F8FC3` (24 B), `MinResistsUnitGate` `0x698BE2` (26 B), `MinResistsArmorTest` `0x698BFC` (26 B), `AttackRowCold` `0x69B617` (128 B), `AttackRowModifier` `0x69FDDC` (28 B), `AttackRowTyped` `0x69FE1F` (25 B), `AbilityAvailableTest` `0x6EE68C` (118 B), `CurrentUnitRef` `0x6F49B1` (65 B), `ResourceIconText` `0x706EFB` (16 B), `BuildPointsAdd` `0x7ADE95` (16 B), `BuildPointsAddCall` `0x9C4BE3` (30 B), `BuilderFactor` `0x9C4C0C` (26 B), `BuildTickRateHead` `0x9D3D6B` (16 B), `BuildTickScale` `0x9D3D80` (71 B), `BuildTickAdd` `0x9D3DE9` (12 B), `GadgetByName` `0xAB7C2F` (38 B), `PowerUnitActionVtable` `0xB855F4` (4 B).
 
 ### src/features/minuistats.cpp
 
@@ -2524,6 +2525,20 @@ std::wstring Number(float value) {
   return text;
 }
 
+// An armor as a percent stuck to its value, to a tenth: 0.30 is "30%", 0.125 "12.5%".
+std::wstring Percent(float value) {
+  wchar_t text[32];
+  const float tenths = std::floor(value * 1000.0f + 0.5f);
+  const int whole = static_cast<int>(tenths) / 10;
+  const int tenth = static_cast<int>(tenths) % 10;
+  if (tenth == 0) {
+    swprintf_s(text, L"%d%%", whole);
+  } else {
+    swprintf_s(text, L"%d.%d%%", whole, tenth);
+  }
+  return text;
+}
+
 std::wstring StringById(std::int32_t id) {
   BString text{nullptr};
   kBStringFromId(&text, id);
@@ -2588,9 +2603,9 @@ std::wstring DamageIcon(std::uint8_t type) {
   return tag;
 }
 
-// The armor as the stock resists value: "0.20" and the icon of its damage type ([proto+1D3h]: 0 hand, 1 ranged,
-// 2 siege, icons [[game+920h]+1CCh/1D0h/1D4h]). With multiarmor (a proto with an armor per damage type), every armor
-// above 0, by damage type: "0.30 <hand>  0.20 <ranged>".
+// The armor as a percent ("20%", where the stock resists value writes "0.20") and the icon of its damage type
+// ([proto+1D3h]: 0 hand, 1 ranged, 2 siege, icons [[game+920h]+1CCh/1D0h/1D4h]). With multiarmor (a proto with an
+// armor per damage type), every armor above 0, by damage type: "30% <hand>  20% <ranged>".
 bool ArmorText(const char* unit, bool icon, std::wstring* out) {
   if (g_armorOther) {
     return false;
@@ -2607,7 +2622,7 @@ bool ArmorText(const char* unit, bool icon, std::wstring* out) {
     std::sort(armors.begin(), armors.end());  // hand, ranged, siege, then the mod's own
     out->clear();
     for (const auto& [type, armor] : armors) {
-      *out += (out->empty() ? L"" : L"  ") + Number(armor) + (icon ? DamageIcon(type) : L"");
+      *out += (out->empty() ? L"" : L"  ") + Percent(armor) + (icon ? DamageIcon(type) : L"");
     }
     return true;
   }
@@ -2615,7 +2630,7 @@ bool ArmorText(const char* unit, bool icon, std::wstring* out) {
   if (!(armor > 0.0f)) {
     return false;
   }
-  *out = Number(armor) + (icon ? DamageIcon(Field<std::uint8_t>(proto, 0x1D3)) : L"");
+  *out = Percent(armor) + (icon ? DamageIcon(Field<std::uint8_t>(proto, 0x1D3)) : L"");
   return true;
 }
 
@@ -2668,6 +2683,9 @@ const auto kAttackListFill = reinterpret_cast<AttackListFn>(0x00487EEE);
 const auto kResListGet = reinterpret_cast<ResListGetFn>(0x0044EFFF);
 const auto kResourceIcon = reinterpret_cast<ResourceIconFn>(0x00706EFB);
 const auto kHoldsResource = reinterpret_cast<UnitTestFn>(0x0045EE8B);
+using ProtoFlagFn = bool(__thiscall*)(const char* proto, std::int32_t flag);
+const auto kProtoFlag = reinterpret_cast<ProtoFlagFn>(0x0045EE02);
+constexpr std::int32_t kInfiniteFlag = 0x24;  // the stock resource row writes "Infinite" for it
 const auto kHeldResource = reinterpret_cast<UnitResourceFn>(0x004DBEC1);
 const auto kHeldAmount = reinterpret_cast<UnitAmountFn>(0x004E5979);
 const auto kHeldInitial = reinterpret_cast<UnitAmountFn>(0x00494503);
@@ -3057,19 +3075,28 @@ bool ItemBounty(const char* unit, std::wstring* out) {  // <Bounty>, float [prot
   return true;
 }
 
-// What a mine, bush, carcass or herd animal holds, as the stock "resource held" row reads it.
+// What a mine, bush, carcass or herd animal holds, as the stock "resource held" row reads it. A proto with an
+// infinite resource (flag 24h, a Mill or a Plantation: the stock row writes "Infinite") answers nothing: its amount
+// is a placeholder (a Mill read 999/100).
 bool ItemInventory(const char* unit, std::wstring* out) {
   const char* database = Database();
-  if (database == nullptr || !kHoldsResource(unit)) {
+  if (database == nullptr || !kHoldsResource(unit) || kProtoFlag(Field<const char*>(unit, 0x5C), kInfiniteFlag)) {
     return false;
   }
   const std::int32_t resource = kHeldResource(unit);
   if (resource < 0) {
     return false;
   }
+  // Rounded up as the stock row writes it (a Silver Mine with 1928.x: 1929, a tree 268.x: 269); the initial amount
+  // only when the unit has one (a placed Mine has 0: the stock row writes the amount alone).
+  const int amount = static_cast<int>(std::ceil(kHeldAmount(unit, resource)));
+  const int initial = static_cast<int>(kHeldInitial(unit, resource) + 0.5f);
   wchar_t text[96];
-  swprintf_s(text, L"%d/%d <icon=\"(16)(%hs)\">", static_cast<int>(kHeldAmount(unit, resource)),
-             static_cast<int>(kHeldInitial(unit, resource)), kResourceIcon(database, resource));
+  if (initial > 0) {
+    swprintf_s(text, L"%d/%d <icon=\"(%d)(%hs)\">", amount, initial, kIconSize, kResourceIcon(database, resource));
+  } else {
+    swprintf_s(text, L"%d <icon=\"(%d)(%hs)\">", amount, kIconSize, kResourceIcon(database, resource));
+  }
   *out = text;
   return true;
 }
@@ -3086,7 +3113,7 @@ bool ItemLifespan(const char* unit, std::wstring* out) {
     return false;
   }
   wchar_t text[32];
-  swprintf_s(text, L"%d s", static_cast<int>(left + 0.5f));
+  swprintf_s(text, L"%ds", static_cast<int>(left + 0.5f));
   *out = text;
   return true;
 }
@@ -3519,7 +3546,7 @@ struct BigPanel {
   bool unwrapIcons = true;
   // The attack rows' help text gets a line for the ROF and one for the projectiles ("%s": the number), each with
   // its icon, after the stock lines (damage, range and area, one per multiplier).
-  std::wstring rofTip = L"Attacks every %s s";
+  std::wstring rofTip = L"Rate of fire: %ss";
   std::wstring projectilesTip = L"%s projectiles";
 };
 
@@ -4759,16 +4786,22 @@ void ApplyStockPlan() {
 
 constexpr std::uint32_t kResistsValue = 0x2FC;  // the selection panel's unitResistsValue handle
 
-// With multiarmor, a proto can have an armor per damage type, and the minimized block writes only the stock one
-// ("%.2f %s", 0x698C41..): its resists value then lists them all, "0.30 <hand>  0.20 <ranged>".
+// The minimized block's resists value is the stock armor as "%.2f %s" (0x698C41..): "0.30 <ranged>". The key writes
+// it as the armor items do, a percent stuck to the value, and with multiarmor (a proto with an armor per damage type)
+// every armor above 0: "30% <hand>  20% <ranged>". Another DLL's armor text there (g_armorOther) is left as it is.
 void ApplyResists(const char* unit) {
   unsigned char types[8];
   float values[8];
   const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
-  const int n = proto == nullptr ? 0 : uhc::unitinfo::Armors(proto, types, values, 8);
   const std::int32_t handle = Field<std::int32_t>(g_panel.panel, kResistsValue);
-  if (n < 2 || !ValidHandle(handle) || !GadgetShown(handle)) {
+  if (g_armorOther || proto == nullptr || !ValidHandle(handle) || !GadgetShown(handle)) {
     return;
+  }
+  int n = uhc::unitinfo::Armors(proto, types, values, 8);
+  if (n == 0) {  // no multiarmor, or no armor above 0: the stock armor, as the game shows it
+    types[0] = Field<std::uint8_t>(proto, 0x1D3);
+    values[0] = Field<float>(proto, 0xC4);
+    n = 1;
   }
   std::vector<std::pair<unsigned char, float>> armors;
   for (int i = 0; i < n; ++i) {
@@ -4777,9 +4810,7 @@ void ApplyResists(const char* unit) {
   std::sort(armors.begin(), armors.end());  // by damage type: hand, ranged, siege, then the mod's own
   std::wstring text;
   for (const auto& [type, armor] : armors) {
-    wchar_t value[32];
-    swprintf_s(value, L"%.2f", static_cast<double>(armor));
-    text += (text.empty() ? L"" : L"  ") + std::wstring(value) + TypeIcon(type);
+    text += (text.empty() ? L"" : L"  ") + Percent(armor) + TypeIcon(type);
   }
   WriteLabel(handle, text, L"");
 }
@@ -5219,7 +5250,7 @@ Outcome ApplyMinUiStats(const Config& config) {
                   &sites::kBStringAssign, &sites::kBStringFree, &sites::kCurrentUnitRef, &sites::kMaxHitpointsGetter,
                   &sites::kLosGetterHead, &sites::kMaxContained, &sites::kIsA, &sites::kAttackListFill,
                   &sites::kResListGet, &sites::kResourceIconText, &sites::kHoldsResource, &sites::kMainResource,
-                  &sites::kHeldAmount, &sites::kUnitCarryCapacity})) {
+                  &sites::kHeldAmount, &sites::kUnitCarryCapacity, &sites::kProtoFlag})) {
     return Outcome::kFailed;
   }
   // The build and regeneration items mirror stock code they never write to; they are checked apart, so another DLL
@@ -6853,12 +6884,16 @@ Sites: `BStringAppend` `0x443960` (16 B), `CostListCtor` `0x44717F` (9 B), `Cost
 // - in the command panel (the shared button hook, panelbuttons.h): a button whose command is
 //   uiTransformSelectedUnit("Proto") (its click, or the record's command for a click commandResearch(ID, unit), the
 //   form a command with an <associatedtech> takes) asks, for each of the local player's selected units, the checks
-//   the command makes (the cost of that many units and its affordability 0x8D6BAE / 0x8D6C1B, the build limit,
-//   PLACE with the same arguments). With no
-//   unit that passes, the button is disabled, its click and shift-click emptied, and its rollover gets the reason in
-//   red: the failing placement rule's error string when PLACE gives one, else "Other objects prevent you..." (25528),
-//   "Not enough resources" (41543) or the build limit (36198). With some that pass, the rollover says how many. The
-//   answer is kept 250 ms per button (real time): the panel is interface only, so nothing here reaches the game.
+//   the command makes, in its order (PLACE with the same arguments, the build limit, the cost of that many units and
+//   its affordability 0x8D6BAE / 0x8D6C1B). With no unit that passes, the button is disabled, its click and
+//   shift-click emptied, and its rollover gets the reason in red: the failing placement rule's error string when PLACE
+//   gives one, else "Other objects prevent you..." (25528) or the build limit (36198). When the cost is the only
+//   reason (every refused unit passed PLACE and the limit), the button stays enabled with its click, and only the red
+//   line "Not enough resources" (41543) is added: the click reaches the command, whose payment shows the stock
+//   "can't pay" message and sound (0x8D271A, string 17064), as a Train button does (a commandResearch click is made the
+//   transform command itself, so that a failed one does not use up the unit's one-shot command). With some that
+//   pass, the rollover says how many. The answer is kept 250 ms per button (real time): the panel is interface only,
+//   so nothing here reaches the game.
 #include <windows.h>
 
 #include <cstdarg>
@@ -6990,6 +7025,7 @@ struct Verdict {
   std::int32_t total = 0;  // the local player's selected units
   std::int32_t pass = 0;   // those that would transform
   std::wstring reason;     // why the first refused one is refused
+  bool costOnly = true;    // every refused unit passed PLACE and the limit, and only its cost failed
 };
 
 struct Cached {
@@ -7055,19 +7091,21 @@ Verdict Judge(const std::string& name) {
       continue;
     }
     ++verdict.total;
+    // The order of the command's own checks: PLACE, the build limit (the hook at 0x7D65E3), then the payment.
     std::int32_t reasonId = -1;
-    if (!affordable(verdict.pass + 1)) {
-      reasonId = kStringResources;
+    std::int32_t placeReason = -1;
+    const auto place = reinterpret_cast<PlaceFn>(Field<const void* const*>(world, 0)[0x14 / 4]);
+    if (!place(world, protoId, local, reinterpret_cast<const float*>(unit + 0x14),
+               reinterpret_cast<const float*>(unit + 0x20), reinterpret_cast<const float*>(unit + 0x38), 0, 2,
+               &placeReason, 0, 0, 0)) {
+      reasonId = placeReason > 0 ? placeReason : kStringObjects;
     } else if (left == 0) {
       reasonId = kStringBuildLimit;
-    } else {
-      std::int32_t placeReason = -1;
-      const auto place = reinterpret_cast<PlaceFn>(Field<const void* const*>(world, 0)[0x14 / 4]);
-      if (!place(world, protoId, local, reinterpret_cast<const float*>(unit + 0x14),
-                 reinterpret_cast<const float*>(unit + 0x20), reinterpret_cast<const float*>(unit + 0x38), 0, 2,
-                 &placeReason, 0, 0, 0)) {
-        reasonId = placeReason > 0 ? placeReason : kStringObjects;
-      }
+    } else if (!affordable(verdict.pass + 1)) {
+      reasonId = kStringResources;
+    }
+    if (reasonId >= 0 && reasonId != kStringResources) {
+      verdict.costOnly = false;
     }
     if (reasonId < 0) {
       ++verdict.pass;
@@ -7155,7 +7193,17 @@ void TransformButton(const uhc::PanelButton& button) {
     return;
   }
   std::wstring line;
-  if (verdict.pass == 0) {
+  if (verdict.pass == 0 && verdict.costOnly) {
+    // Only the cost stops them: the click goes through, and the command's own payment shows the stock "not enough
+    // resources" message and sound (0x8D271A), as a Train button does. A click commandResearch(...) (a command with
+    // an <associatedtech>) would run the command as a one-shot research of that unit, which removes the button from
+    // it even when the transform then fails: it becomes the transform itself, the command it runs.
+    if (_strnicmp(button.Click(), "commandResearch(", 16) == 0) {
+      sprintf_s(button.Click(), 256, "uiTransformSelectedUnit(\"%s\")", name.c_str());
+      sprintf_s(button.ShiftClick(), 256, "uiTransformSelectedUnit(\"%s\")", name.c_str());
+    }
+    line = L"\n<color=1, 0.35, 0.35>" + verdict.reason + L"</color>";
+  } else if (verdict.pass == 0) {
     button.State() = 1;
     button.Click()[0] = 0;
     button.ShiftClick()[0] = 0;
@@ -7403,6 +7451,676 @@ UhcPanelButtonHook PROC
     cmp ebx, 6
     jmp buttonNext
 UhcPanelButtonHook ENDP
+
+END
+```
+
+## editorSearch
+
+Contract: [editorSearch](../porting-to-another-dll.md#editorsearch).
+
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringFromId` `0x58EA52` (25 B), `EditorSetList` `0x5BECAA` (17 B), `EditorPaletteAddProto` `0x7F5371` (17 B), `EditorPaletteObjectsFill` `0x7F5C51` (10 B), `EditorTypeFillHead` `0x825757` (15 B), `EditorTypeListSet` `0x8258A0` (26 B), `EditorTypeFillMode` `0x8264F0` (11 B), `EditorParamTechList` `0x8289C3` (23 B), `EditorParamProtoList` `0x828A13` (25 B), `EditorParamUnitTypeList` `0x828A3A` (25 B), `EditorParamPickText` `0x829E65` (36 B), `EditorProtoDisplayName` `0x8F7A89` (9 B), `EditorForbidVtable` `0x9990CB` (6 B), `EditorFillAllowedUnits` `0x99912F` (11 B), `EditorForbidUnitAdd` `0x9991C7` (14 B), `EditorFillAllowedTechs` `0x999493` (10 B), `EditorForbidTechAdd` `0x999540` (12 B), `EditorForbidMode` `0x9996C6` (12 B), `EditorForbidRelayout` `0x9997C8` (19 B), `EditorForbidBind` `0x999B1F` (6 B), `EditorSetData` `0xAC19D9` (15 B), `EditorListAdd` `0xAC9228` (9 B), `EditorPaletteRefill` `0xACE8DF` (15 B), `EditorPaletteVtable` `0xACFBAA` (6 B), `EditorPaletteAdd` `0xAD0056` (11 B), `EditorPaletteRefresh` `0xAD01FD` (27 B), `EditorPaletteLayoutShow` `0xAD0262` (16 B), `EditorPaletteRefreshSlot` `0xB92788` (4 B).
+
+### src/features/editorsearch.cpp
+
+```cpp
+// editorSearch: search fields in the scenario editor. A textField that the layout adds filters a stock list as
+// the player types: the Objects palette (uieditorpalettes.xml, EditorProtoPalette, field EditorProtoPaletteSearch)
+// the allowed list of the Forbidden Units/Techs dialog (uiforbiddenunitstechs.xml, field ForbiddenUnitsTechs_Search),
+// and the trigger editor's Type list and its unit, unit type and tech parameter lists (uitriggereditor.xml, field
+// trEdit-CondEffPanel-search in trEdit-CondEffPanel; there a list where nothing matches keeps all its entries, since
+// one field serves them all). The match is case-insensitive; every word of the text must appear in the text the
+// list shows, or in a proto's internal or display name (techs: their internal name, which the list shows). An
+// empty field is the stock list. A layout without the field is the stock dialog.
+//
+//   editorSearch [log]
+//
+// How: the fills of both lists add one entry per proto or tech through one call; that call is redirected
+// (hooks/editorsearch_hooks.asm) and asks this file whether the entry matches. A typed character changes the text of
+// the field's editBox and nothing else, so the text is read once a frame (the Direct3D Present observer: a string
+// compare, nothing more unless the text changed) and a change, once the typing pauses for 250 ms, refills the
+// list with the stock code: the palette's refresh slot (vtable +20h: it empties the entries, runs the fill
+// FUN_007F501E and shows the buttons), and the dialog's fill of its display mode (FUN_0099912F units, FUN_00999493
+// techs) followed by the list's layout, as the dialog's own refresh does. The trigger editor's lists are set from
+// arrays (0x5BECAA, and 0xAC19D9 for the type list's entry data): those calls get filtered copies, and a change runs
+// the panel's own fill FUN_00825757 again. The editor only: no simulation, nothing saved but the values picked,
+// nothing sent.
+#include <windows.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <cwctype>
+#include <string>
+#include <vector>
+
+#include "../d3d9hooks.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../uigadgets.h"
+
+extern "C" void UhcEditorPaletteAddHook();
+extern "C" void UhcEditorForbidUnitHook();
+extern "C" void UhcEditorForbidTechHook();
+extern "C" void UhcEditorTypeFillHook();
+extern "C" void UhcEditorParamListHook();
+
+namespace uhc {
+namespace {
+
+constexpr std::uint32_t kPaletteVtable = 0x00B92768;
+constexpr std::uint32_t kPaletteObjectsFill = 0x007F501E;  // [palette+17Ch] of EditorProtoPalette (0x7F5C51)
+constexpr std::uint32_t kForbidVtable = 0x00B8D690;       // the Forbidden Units/Techs dialog (ctor 0x9990BE)
+
+struct BString {
+  wchar_t* text;
+};
+
+using RefreshFn = void(__fastcall*)(void* palette, void* edx);
+using FillListFn = bool(__fastcall*)(void* dialog, void* edx, void* list);
+using ListLayoutFn = void(__fastcall*)(void* list, void* edx);
+using ListSelectFn = void(__fastcall*)(void* list, void* edx, std::int32_t index);
+
+using BStringFromIdFn = BString*(__fastcall*)(BString* self, void* edx, std::int32_t id);
+using BStringFreeFn = void(__fastcall*)(BString* self, void* edx);
+
+const auto kListSelect = reinterpret_cast<ListSelectFn>(0x00AC8A43);
+
+const auto kFillAllowedUnits = reinterpret_cast<FillListFn>(0x0099912F);
+const auto kFillAllowedTechs = reinterpret_cast<FillListFn>(0x00999493);
+const auto kBStringFromId = reinterpret_cast<BStringFromIdFn>(0x0058EA52);
+const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+
+template <typename T>
+T Read(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+// One search field and the list it filters.
+struct Search {
+  const char* what;       // for the log
+  const char* fieldName;  // the textField the layout adds
+  std::int32_t owner = 0;     // handle of the palette or the dialog, as the fill last saw it
+  std::int32_t field = 0;     // handle of the field, 0 until found
+  bool fieldMissing = false;  // looked for once for this owner and not there
+  std::wstring raw;           // the field's text as last read
+  std::vector<std::wstring> words;  // lower case: what the fills match
+  std::vector<std::wstring> next;   // the words of the text typed, waiting for a pause in the typing
+  bool pending = false;
+  ULONGLONG changedAt = 0;
+  int kept = 0, dropped = 0;  // the last fill
+};
+
+Search g_palette{"Objects palette", "EditorProtoPaletteSearch"};
+Search g_forbid{"Forbidden Units/Techs", "ForbiddenUnitsTechs_Search"};
+bool g_log = false;
+
+std::vector<std::wstring> Words(const std::wstring& text) {
+  std::vector<std::wstring> words;
+  std::wstring word;
+  for (wchar_t c : text) {
+    if (std::iswspace(c)) {
+      if (!word.empty()) {
+        words.push_back(word);
+        word.clear();
+      }
+    } else {
+      word += static_cast<wchar_t>(std::towlower(c));
+    }
+  }
+  if (!word.empty()) {
+    words.push_back(word);
+  }
+  return words;
+}
+
+// Case-insensitive: `word` is lower case already.
+template <typename Char>
+bool Contains(const Char* text, const std::wstring& word) {
+  if (text == nullptr) {
+    return false;
+  }
+  for (const Char* start = text; *start != 0; ++start) {
+    std::size_t i = 0;
+    while (i < word.size() && start[i] != 0 &&
+           static_cast<wchar_t>(std::towlower(static_cast<wchar_t>(static_cast<std::make_unsigned_t<Char>>(start[i])))) ==
+               word[i]) {
+      ++i;
+    }
+    if (i == word.size()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+// A proto's display name ([proto+144h], the string ID FUN_008F7A89 reads), or empty.
+std::wstring DisplayName(const char* proto) {
+  const std::int32_t id = Read<std::int32_t>(proto, 0x144);
+  if (id < 0) {
+    return {};
+  }
+  BString text{nullptr};
+  kBStringFromId(&text, nullptr, id);
+  std::wstring name = text.text == nullptr ? L"" : text.text;
+  kBStringFree(&text, nullptr);
+  return name;
+}
+
+// Every word in one of the texts; a proto's display name is looked up only when a word is not found otherwise.
+bool Matches(const std::vector<std::wstring>& words, const wchar_t* shown, const char* proto) {
+  std::wstring display;
+  bool displayRead = false;
+  for (const std::wstring& word : words) {
+    if (Contains(shown, word)) {
+      continue;
+    }
+    if (proto != nullptr) {
+      if (Contains(Read<const char*>(proto, 0x10), word)) {
+        continue;
+      }
+      if (!displayRead) {
+        display = DisplayName(proto);
+        displayRead = true;
+      }
+      if (Contains(display.c_str(), word)) {
+        continue;
+      }
+    }
+    return false;
+  }
+  return true;
+}
+
+// The fill saw this owner: a new one (the editor or the dialog made again) starts with no field and no text.
+void Seen(Search& search, std::int32_t owner) {
+  if (owner != search.owner) {
+    search.owner = owner;
+    search.field = 0;
+    search.fieldMissing = false;
+    search.raw.clear();
+    search.words.clear();
+    search.next.clear();
+    search.pending = false;
+  }
+}
+
+void Count(Search& search, bool keep) { ++(keep ? search.kept : search.dropped); }
+
+}  // namespace
+}  // namespace uhc
+
+// The Objects palette fill: one call per proto it would add.
+extern "C" bool UhcEditorPaletteKeep(void* palette, const char* proto) {
+  using namespace uhc;
+  Seen(g_palette, ui::HandleOf(palette));
+  const bool keep = g_palette.words.empty() || proto == nullptr || Matches(g_palette.words, nullptr, proto);
+  Count(g_palette, keep);
+  return keep;
+}
+
+// The allowed list fill of the Forbidden Units/Techs dialog: one call per proto (isTech 0, entry = the proto) or tech
+// (isTech 1, entry = its index; its name is the shown text).
+extern "C" bool UhcEditorForbidKeep(void* dialog, const uhc::BString* text, std::int32_t entry, std::int32_t isTech) {
+  using namespace uhc;
+  Seen(g_forbid, ui::HandleOf(dialog));
+  const wchar_t* shown = text == nullptr ? nullptr : text->text;
+  const char* proto = isTech != 0 ? nullptr : reinterpret_cast<const char*>(entry);
+  const bool keep = g_forbid.words.empty() || Matches(g_forbid.words, shown, proto);
+  Count(g_forbid, keep);
+  return keep;
+}
+
+namespace uhc {
+namespace {
+
+// The trigger editor's lists: an array the game builds, {data, count, ...}, read by 0x5BECAA (BString entries) and
+// 0xAC19D9 (int entry data).
+struct GameArray {
+  void* data;
+  std::int32_t count;
+  std::int32_t capacity;
+};
+
+using SetListFn = void(__fastcall*)(void* field, void* edx, const GameArray* names);
+using SetDataFn = void(__fastcall*)(void* field, void* edx, const GameArray* data);
+const auto kSetList = reinterpret_cast<SetListFn>(0x005BECAA);
+const auto kSetData = reinterpret_cast<SetDataFn>(0x00AC19D9);
+
+Search g_trigger{"trigger editor", "trEdit-CondEffPanel-search"};
+std::uint32_t g_triggerVtable = 0;  // the editor object's, as its type fill saw it
+
+// The indices of the names that hold every word; none when the text is empty or nothing matches, in which case the
+// list keeps all its entries: one field serves the type list and the parameter lists, and a word meant for one of
+// them must not empty the others.
+std::vector<std::int32_t> Matching(const GameArray* names) {
+  std::vector<std::int32_t> kept;
+  if (g_trigger.words.empty() || names == nullptr || names->data == nullptr) {
+    return kept;
+  }
+  const auto* entries = static_cast<wchar_t* const*>(names->data);
+  for (std::int32_t i = 0; i < names->count; ++i) {
+    if (Matches(g_trigger.words, entries[i], nullptr)) {
+      kept.push_back(i);
+    }
+  }
+  return kept;
+}
+
+}  // namespace
+}  // namespace uhc
+
+// The condition/effect type list (FUN_00825757, at 0x8258A0): the names and their entry data (the type's index), set
+// together, filtered together.
+extern "C" void UhcEditorTypeFill(void* editor, void* field, const uhc::GameArray* names,
+                                  const uhc::GameArray* data) {
+  using namespace uhc;
+  Seen(g_trigger, ui::HandleOf(editor));
+  g_triggerVtable = Read<std::uint32_t>(editor, 0);
+  const std::vector<std::int32_t> kept =
+      data != nullptr && names != nullptr && data->count == names->count ? Matching(names) : std::vector<std::int32_t>{};
+  if (kept.empty()) {
+    kSetList(field, nullptr, names);
+    kSetData(field, nullptr, data);
+    g_trigger.kept = names == nullptr ? 0 : names->count;
+    g_trigger.dropped = 0;
+    return;
+  }
+  std::vector<void*> keptNames;
+  std::vector<std::int32_t> keptData;
+  for (std::int32_t i : kept) {
+    keptNames.push_back(static_cast<void* const*>(names->data)[i]);
+    keptData.push_back(static_cast<const std::int32_t*>(data->data)[i]);
+  }
+  const auto n = static_cast<std::int32_t>(kept.size());
+  const GameArray filteredNames{keptNames.data(), n, n};
+  const GameArray filteredData{keptData.data(), n, n};
+  kSetList(field, nullptr, &filteredNames);
+  kSetData(field, nullptr, &filteredData);
+  g_trigger.kept = n;
+  g_trigger.dropped = names->count - n;
+}
+
+// A unit, unit type or tech parameter list (0x828A27, 0x828A4E, 0x8289D5): the array 0x5BECAA gets. The parameter
+// takes the text of the entry picked (0x829E29, 0x829F2F), so a shorter list picks the same values. The entry of the
+// parameter's current value stays in the list (its first value, [[def+8]], def = [param+13Ch], as 0x992D36(0) reads
+// it), so the field keeps showing it.
+extern "C" const uhc::GameArray* UhcEditorParamList(void* field, const uhc::GameArray* names, const char* param) {
+  using namespace uhc;
+  (void)field;
+  static std::vector<void*> keptNames;
+  static GameArray filtered{};
+  std::vector<std::int32_t> kept = Matching(names);
+  if (kept.empty()) {
+    return names;
+  }
+  const char* def = param == nullptr ? nullptr : Read<const char*>(param, 0x13C);
+  const wchar_t* value = nullptr;
+  if (def != nullptr && Read<std::int32_t>(def, 0x0C) > 0 && Read<const wchar_t* const*>(def, 0x08) != nullptr) {
+    value = Read<const wchar_t* const*>(def, 0x08)[0];
+  }
+  const auto* entries = static_cast<wchar_t* const*>(names->data);
+  if (value != nullptr && value[0] != 0) {
+    for (std::int32_t i = 0; i < names->count; ++i) {
+      if (entries[i] != nullptr && _wcsicmp(entries[i], value) == 0) {
+        if (std::find(kept.begin(), kept.end(), i) == kept.end()) {
+          kept.insert(std::upper_bound(kept.begin(), kept.end(), i), i);
+        }
+        break;
+      }
+    }
+  }
+  keptNames.clear();
+  for (std::int32_t i : kept) {
+    keptNames.push_back(entries[i]);
+  }
+  filtered = GameArray{keptNames.data(), static_cast<std::int32_t>(keptNames.size()),
+                       static_cast<std::int32_t>(keptNames.size())};
+  if (g_log) {
+    Log(L"editorSearch: trigger parameter list \"%ls\": %d of %d", g_trigger.raw.c_str(), filtered.count, names->count);
+  }
+  return &filtered;
+}
+
+namespace uhc {
+namespace {
+
+// Reads the field: a new text sets the words that wait for the next refill.
+void ReadField(Search& search, void* owner) {
+  void* field = ui::Gadget(search.field, ui::kTextField);
+  if (field == nullptr) {
+    if (search.fieldMissing) {
+      return;
+    }
+    search.field = ui::FindChild(owner, search.fieldName);
+    field = ui::Gadget(search.field, ui::kTextField);
+    if (field == nullptr) {
+      search.fieldMissing = true;
+      if (g_log) {
+        Log(L"editorSearch: the %hs has no textField %hs; its list stays stock", search.what, search.fieldName);
+      }
+      return;
+    }
+    if (g_log) {
+      Log(L"editorSearch: %hs search field found", search.what);
+    }
+  }
+  const wchar_t* text = ui::FieldText(field);
+  if (search.raw == text) {
+    return;
+  }
+  search.raw = text;
+  search.next = Words(search.raw);
+  search.pending = search.next != search.words;  // not when only spaces changed
+  search.changedAt = GetTickCount64();
+}
+
+// A refill of the palette takes about 0.2 s (the stock fill of some 3,000 protos), so it waits for a pause of
+// kSettleMs in the typing: a word typed at speed refills once.
+constexpr ULONGLONG kSettleMs = 250;
+
+// Reads the field; true when its words changed and the typing has paused since.
+bool ReadyToRefill(Search& search, void* owner) {
+  ReadField(search, owner);
+  if (!search.pending || GetTickCount64() - search.changedAt < kSettleMs) {
+    return false;
+  }
+  search.pending = false;
+  search.words = search.next;
+  return true;
+}
+
+double Ms(const LARGE_INTEGER& start) {
+  LARGE_INTEGER now, frequency;
+  QueryPerformanceCounter(&now);
+  QueryPerformanceFrequency(&frequency);
+  return 1000.0 * static_cast<double>(now.QuadPart - start.QuadPart) / static_cast<double>(frequency.QuadPart);
+}
+
+void LogFill(Search& search, const LARGE_INTEGER& start) {
+  if (g_log) {
+    Log(L"editorSearch: %hs \"%ls\": %d shown, %d hidden (%.1f ms)", search.what, search.raw.c_str(), search.kept,
+        search.dropped, Ms(start));
+  }
+}
+
+void PollPalette() {
+  if (g_palette.owner == 0) {
+    return;
+  }
+  void* palette = ui::Gadget(g_palette.owner, ui::kPalette);
+  if (palette == nullptr) {
+    Seen(g_palette, 0);  // the editor closed
+    return;
+  }
+  if (!ReadyToRefill(g_palette, palette)) {
+    return;
+  }
+  if (Read<std::uint32_t>(palette, 0) != kPaletteVtable || Read<std::uint32_t>(palette, 0x17C) != kPaletteObjectsFill) {
+    return;
+  }
+  g_palette.kept = g_palette.dropped = 0;
+  LARGE_INTEGER start;
+  QueryPerformanceCounter(&start);
+  // The palette's refresh slot (vtable +20h, FUN_00AD01FD, what "refreshonreal" runs when it is shown): it empties
+  // the entries (0xAD0189), refills them (vtable +0F0h: the fill FUN_007F501E, through the redirected add), lays the
+  // button list out and shows the buttons of the current category [+168h] (FUN_00ACF80E).
+  const auto refresh = reinterpret_cast<RefreshFn>(Read<const std::uint32_t*>(palette, 0)[0x20 / 4]);
+  refresh(palette, nullptr);
+  LogFill(g_palette, start);
+}
+
+void PollForbid() {
+  if (g_forbid.owner == 0) {
+    return;
+  }
+  void* dialog = ui::Gadget(g_forbid.owner, ui::kAnyGadget);
+  if (dialog == nullptr || Read<std::uint32_t>(dialog, 0) != kForbidVtable) {
+    Seen(g_forbid, 0);
+    return;
+  }
+  if (!ReadyToRefill(g_forbid, dialog)) {
+    return;
+  }
+  void* list = ui::Gadget(Read<std::int32_t>(dialog, 0x144), ui::kList);
+  if (list == nullptr) {
+    return;
+  }
+  g_forbid.kept = g_forbid.dropped = 0;
+  LARGE_INTEGER start;
+  QueryPerformanceCounter(&start);
+  // [dialog+160h]: the display mode the radio buttons set, 0 units, 1 techs (0x9996C6).
+  (Read<std::int32_t>(dialog, 0x160) == 0 ? kFillAllowedUnits : kFillAllowedTechs)(dialog, nullptr, list);
+  // Then what the dialog's refresh does after a fill (0x9997C8): the list's layout slot (vtable +100h), which shows
+  // the new items, and the first item selected (0xAC8A43(0)).
+  reinterpret_cast<ListLayoutFn>(Read<const std::uint32_t*>(list, 0)[0x100 / 4])(list, nullptr);
+  kListSelect(list, nullptr, 0);
+  LogFill(g_forbid, start);
+}
+
+using TypeFillFn = void(__fastcall*)(void* editor, void* edx);
+const auto kTypeFill = reinterpret_cast<TypeFillFn>(0x00825757);
+
+// The trigger editor: a new text runs its own fill of the condition/effect panel again (FUN_00825757, what the
+// Triggers / Conditions / Effects buttons run after setting [editor+1C0h]): the type list through the hook above, then
+// the list of the trigger's conditions or effects and the selected one's parameters (0x825D8F, or 0x824BDB and
+// 0x824E04), whose unit, unit type and tech lists go through the parameter hook.
+void PollTrigger() {
+  if (g_trigger.owner == 0) {
+    return;
+  }
+  void* editor = ui::Gadget(g_trigger.owner, ui::kAnyGadget);
+  if (editor == nullptr || Read<std::uint32_t>(editor, 0) != g_triggerVtable) {
+    Seen(g_trigger, 0);
+    return;
+  }
+  if (!ReadyToRefill(g_trigger, editor)) {
+    return;
+  }
+  const std::int32_t mode = Read<std::int32_t>(editor, 0x1C0);  // 1 conditions, 2 effects, 0 triggers
+  if (mode != 1 && mode != 2) {
+    return;
+  }
+  LARGE_INTEGER start;
+  QueryPerformanceCounter(&start);
+  kTypeFill(editor, nullptr);
+  LogFill(g_trigger, start);
+}
+
+// With `log`, the cost of the per-frame check while the editor's lists exist, every 5000 such frames (refills
+// included).
+int g_polls = 0;
+double g_pollMs = 0;
+
+void BeforePresent() {
+  if (!g_log || (g_palette.owner == 0 && g_forbid.owner == 0 && g_trigger.owner == 0)) {
+    PollPalette();
+    PollForbid();
+    PollTrigger();
+    return;
+  }
+  LARGE_INTEGER start;
+  QueryPerformanceCounter(&start);
+  PollPalette();
+  PollForbid();
+  PollTrigger();
+  g_pollMs += Ms(start);
+  if (++g_polls == 5000) {
+    Log(L"editorSearch: the search fields' check took %.2f us a frame (5000 frames, refills included)",
+        1000.0 * g_pollMs / g_polls);
+    g_polls = 0;
+    g_pollMs = 0;
+  }
+}
+
+}  // namespace
+
+Outcome ApplyEditorSearch(const Config& config) {
+  const auto* args = config.First("editorSearch");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& word : *args) {
+    if (_stricmp(word.c_str(), "log") == 0) {
+      g_log = true;
+    } else {
+      Log(L"editorSearch: unknown argument \"%hs\" ignored (expected log)", word.c_str());
+    }
+  }
+  if (!ui::VerifyUiGadgets("editorSearch") ||
+      !VerifyAll("editorSearch",
+                 {&sites::kEditorPaletteAddProto, &sites::kEditorPaletteAdd, &sites::kEditorPaletteObjectsFill,
+                  &sites::kEditorPaletteVtable, &sites::kEditorPaletteRefreshSlot, &sites::kEditorPaletteRefresh, &sites::kEditorPaletteRefill,
+                  &sites::kEditorPaletteLayoutShow,
+                  &sites::kEditorForbidVtable, &sites::kEditorForbidBind, &sites::kEditorForbidMode, &sites::kEditorForbidRelayout,
+                  &sites::kEditorForbidUnitAdd, &sites::kEditorForbidTechAdd, &sites::kEditorListAdd,
+                  &sites::kEditorFillAllowedUnits, &sites::kEditorFillAllowedTechs, &sites::kEditorProtoDisplayName,
+                  &sites::kBStringFromId, &sites::kBStringFree, &sites::kEditorTypeListSet,
+                  &sites::kEditorTypeFillHead, &sites::kEditorTypeFillMode, &sites::kEditorParamTechList,
+                  &sites::kEditorParamProtoList, &sites::kEditorParamUnitTypeList, &sites::kEditorSetList,
+                  &sites::kEditorSetData, &sites::kEditorParamPickText})) {
+    return Outcome::kFailed;
+  }
+  if (!AddD3D9Observer({nullptr, nullptr, &BeforePresent, nullptr}, "editorSearch")) {
+    return Outcome::kFailed;
+  }
+  if (!WriteCall(0x007F537D, reinterpret_cast<const void*>(&UhcEditorPaletteAddHook)) ||
+      !WriteCall(0x009991D0, reinterpret_cast<const void*>(&UhcEditorForbidUnitHook)) ||
+      !WriteCall(0x00999547, reinterpret_cast<const void*>(&UhcEditorForbidTechHook)) ||
+      !WriteJmp(0x008258A0, reinterpret_cast<const void*>(&UhcEditorTypeFillHook), 0x18) ||
+      !WriteCall(0x008289D5, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
+      !WriteCall(0x00828A27, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
+      !WriteCall(0x00828A4E, reinterpret_cast<const void*>(&UhcEditorParamListHook))) {
+    return Outcome::kFailed;
+  }
+  Log(L"editorSearch: the Objects palette, the Forbidden Units/Techs dialog and the trigger editor filter by their "
+      L"search fields (%hs, %hs, %hs)%ls",
+      g_palette.fieldName, g_forbid.fieldName, g_trigger.fieldName, g_log ? L"; log on" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/editorsearch_hooks.asm
+
+```asm
+; editorSearch (editorsearch.cpp): three redirected calls of the scenario editor's list fills. Each asks the key
+; whether the entry matches the search text and either goes on to the stock add (a jmp, so the stock routine returns
+; to the fill as the original call did) or drops the entry with the add's own stack cleanup.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcEditorPaletteKeep PROTO C pal:DWORD, unitProto:DWORD
+UhcEditorForbidKeep PROTO C dlg:DWORD, entryText:DWORD, entry:DWORD, isTech:DWORD
+
+UhcEditorTypeFill PROTO C editor:DWORD, typeField:DWORD, names:DWORD, entryData:DWORD
+UhcEditorParamList PROTO C paramField:DWORD, names:DWORD, param:DWORD
+
+.data
+paletteAdd      dd 00AD0056h    ; the palette's add entry, thiscall(palette, entry*, categories*), ret 8
+listAdd         dd 00AC9228h    ; the list's add item, thiscall(list, BString* text), ret 4
+typeFillNext    dd 008258B8h    ; mov ecx,edi / call 8246E8h: after the type list's two sets
+setList         dd 005BECAAh    ; a textField's dropdown names, thiscall(field, array*), ret 4
+
+.code
+
+; Replaces call 0AD0056h at 0x7F537D in the Objects palette fill FUN_007F501E. ECX = the palette, ESI = the
+; player's proto of the entry, [esp+4] the entry, [esp+8] its category bits. After the call the fill reloads every
+; register it reads (0x7F5382: mov ecx,[0C66234h]); EAX and EDX are not read.
+UhcEditorPaletteAddHook PROC
+    TRACE_ONCE "editorSearch: Objects palette entry (0x7F537D)"
+    push ecx
+    push esi
+    push ecx
+    call UhcEditorPaletteKeep
+    add esp, 8
+    pop ecx
+    test al, al
+    jz drop
+    jmp dword ptr [paletteAdd]
+drop:
+    ret 8
+UhcEditorPaletteAddHook ENDP
+
+; Replaces call 0AC9228h at 0x9991D0 in the Forbidden Units/Techs dialog's allowed units fill FUN_0099912F.
+; ECX = the allowed list, EBX = the dialog, ESI = the proto, [esp+4] the BString of the entry's text. After the call
+; the fill frees that BString (0x9991D5) and reads no register the add sets.
+UhcEditorForbidUnitHook PROC
+    TRACE_ONCE "editorSearch: allowed units entry (0x9991D0)"
+    push ecx
+    push 0
+    push esi
+    push dword ptr [esp+10h]
+    push ebx
+    call UhcEditorForbidKeep
+    add esp, 10h
+    pop ecx
+    test al, al
+    jz drop
+    jmp dword ptr [listAdd]
+drop:
+    ret 4
+UhcEditorForbidUnitHook ENDP
+
+; Replaces call 0AC9228h at 0x999547 in the allowed techs fill FUN_00999493. ECX = EBP = the allowed list, EDI = the
+; dialog, ESI = the tech's index, [esp+4] the BString of its name. After the call: lea ecx,[esp+14h] / call free.
+UhcEditorForbidTechHook PROC
+    TRACE_ONCE "editorSearch: allowed techs entry (0x999547)"
+    push ecx
+    push 1
+    push esi
+    push dword ptr [esp+10h]
+    push edi
+    call UhcEditorForbidKeep
+    add esp, 10h
+    pop ecx
+    test al, al
+    jz drop
+    jmp dword ptr [listAdd]
+drop:
+    ret 4
+UhcEditorForbidTechHook ENDP
+
+; Replaces 0x8258A0..0x8258B7 in the trigger editor's type fill FUN_00825757: lea ecx,[esp+20h] / push ecx /
+; mov ecx,ebx / call 5BECAAh (the names) and lea edx,[esp+2Ch] / push edx / mov ecx,ebx / call 0AC19D9h (each entry's
+; type index). EBX = the "Type:" textField, EDI = the editor object, [esp+20h] and [esp+2Ch] the two arrays. Every
+; register is kept; the continuation 0x8258B8 (mov ecx,edi) reads no flag. Nothing branches into the replaced bytes.
+UhcEditorTypeFillHook PROC
+    TRACE_ONCE "editorSearch: trigger type list (0x8258A0)"
+    lea eax, [esp+20h]
+    lea edx, [esp+2Ch]
+    pushad
+    push edx
+    push eax
+    push ebx
+    push edi
+    call UhcEditorTypeFill
+    add esp, 10h
+    popad
+    jmp dword ptr [typeFillNext]
+UhcEditorTypeFillHook ENDP
+
+; Replaces call 5BECAAh at 0x8289D5 (tech), 0x828A27 (unit) and 0x828A4E (unit type) in the trigger parameter builder.
+; ECX = the parameter's textField, ESI = the parameter (its definition at [esi+13Ch]), [esp+4] the array of names. The array to set comes back in EAX (the same one, or a
+; filtered copy the key keeps); the stock setter then runs with the return address of the builder's call. After the
+; call the builder jumps to 0x828B61 (or reads EDI, kept) and reads no register the setter sets.
+UhcEditorParamListHook PROC
+    TRACE_ONCE "editorSearch: trigger parameter list (0x828A27)"
+    push ecx
+    push esi
+    push dword ptr [esp+0Ch]
+    push ecx
+    call UhcEditorParamList
+    add esp, 0Ch
+    pop ecx
+    mov dword ptr [esp+4], eax
+    jmp dword ptr [setList]
+UhcEditorParamListHook ENDP
 
 END
 ```
