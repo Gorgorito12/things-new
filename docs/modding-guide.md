@@ -31,10 +31,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Saturday 2026-11-21 12:10 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
+| Saturday 2026-11-21 12:11 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
 | Saturday 2026-11-21 11:31 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
-| Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
+| Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Friday 2026-11-20 12:52 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
 | Friday 2026-11-20 12:00 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
@@ -2707,7 +2707,7 @@ Attacks, armor, and what a hit does.
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | **new** | The type on the protos that want it. | confirmed |
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
 | [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
-| [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | **new** | The rows on the protos that want them. | confirmed |
+| [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | **new** | The rows on the protos that want them. | confirmed |
 | [`killSpawn`](#killspawn) | A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | **new** | The tags on the civ in `civs.xml`. | confirmed (single player) |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
 | [`customImpactTypes`](#customimpacttypes) | New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | **new** | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. | confirmed (single player, picture; sound not filmed) |
@@ -3787,7 +3787,7 @@ numberOfShots [projectiles] [log]
 
 *Ships can fire their broadsides from more than 6 cannons per side.*
 
-**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Saturday 2026-11-21 12:10
+**Added:** Thursday 2026-10-29 06:39 · **Filmed in WoL:** Saturday 2026-11-21 12:11
 
 ![broadsideMuzzleLimit in WoL](media/broadsideMuzzleLimit-wol.gif)
 
@@ -4028,6 +4028,58 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   a Hussar's hit on a Settler 26.4 (base) → 39.6 → 52.8 → 70.4, that is ×2.667 = `(1.5 + 0.5) × 2.0/1.5`; the panel's hand
   attack read 49 at rank 2 and 88 at rank 5 (×1.5 and ×2.667 of 33). `MaxHP` +100 then +200 took the max from 352 to 452 and 552, and the current hit points rise in
   proportion, as with ×.
+- **Rows with a tech (2026-11-21):** `tech="TechName"` on a `<VeterancyBonus>` row, in a proto or in `veterancy.xml`, makes
+  the row count only for a player who has that tech active:
+
+  ```xml
+  <VeterancyBonus kills="2" modifytype="MaxHP" tech="HuntingDogs">1.5</VeterancyBonus>
+  ```
+
+  The row is given at a kill that reaches it while the tech is active, and, when the tech becomes active later, to every
+  unit of that player that already has the kills (a look at the named techs every half second of game time). What a row
+  gave **stays** when the tech goes inactive again (JTMaston, 2026-11-21), as ranks already granted always stay. A row of a
+  series counts "in all" as any other: of a series' rows given, the one of most kills sets the total. The ranks shown are
+  the distinct `kills` values of the rows given. An unknown tech name is logged once per data load
+  (`veterancyBonus: no tech named X; the rows that name it never count`) and its rows never count; an empty `tech=""` is
+  logged and the row ignored. The rows a unit was given are kept on the unit (a saved modifier), so a saved game keeps
+  them; a unit whose rows name no tech carries nothing new. A `TransformUnit` gives the new proto's rows afresh: a row whose
+  tech is inactive then is not given until it becomes active.
+- **Blocks by civilization (2026-11-21):** in `veterancy.xml`, `<Civilization name="Spanish">` wraps `<VeterancyDefault>`
+  blocks that apply only to that civ's players:
+
+  ```xml
+  <Veterancy>
+      <Civilization name="Spanish">
+          <VeterancyDefault unittype="Pikeman">
+              <VeterancyBonus kills="1" modifytype="Damage">2.0</VeterancyBonus>
+          </VeterancyDefault>
+      </Civilization>
+      <VeterancyDefault unittype="Pikeman">
+          <VeterancyBonus kills="1" modifytype="Damage">1.1</VeterancyBonus>
+      </VeterancyDefault>
+  </Veterancy>
+  ```
+
+  A unit takes its proto's own rows if it has any; else the first block of its player's civ whose type it has; else the
+  first global block (outside any `<Civilization>`). The name is the civ's `<name>` in `civs.xml`; an unknown one is logged
+  when the game first needs the rows (`unknown civilization X; its default rows for Pikeman are ignored`) and its blocks are
+  skipped. `<VeterancyRank>` stays global.
+- **Proto rows read once per data load (fix, 2026-11-21):** loading a saved game (or starting a skirmish) reads the protos
+  again, and before this date every proto row was then added a second time, so a rank reached after a load could give
+  its bonus twice. The rows are now cleared before each read.
+- **Tested in WoL (2026-11-21, techs and civilizations):** player 1 Ethiopians, scenario route. `veterancy.xml` with a
+  `<Civilization name="Ethiopians">` block (Pikeman ×2 at 1 kill), an `Atlantis` block and a global block (Pikeman ×1.1,
+  and a row with `tech="NoSuchTechUHC"`); the Hussar's own rows ×1.5 damage at 1 kill, ×1.5 hit points at 2 with
+  `tech="HuntingDogs"`, ×2 damage at 3, and ×5 damage at 2 with `tech="NoSuchTechUHC2"`. The Ethiopian Pikeman logged
+  `rank 1, x2`, player 2's Pikeman `rank 1, x1.1`; `unknown civilization Atlantis` and both `no tech named` lines came
+  once per data load, and those rows never counted. With `HuntingDogs` inactive the Hussars passed 2 kills with no row and
+  took ×2.0/1.5 at 3 (`rank 2, x1.33333`); when a trigger made it active at 45 s the log said `player 1 has tech
+  HuntingDogs (297) active` and `unit 0 (5 kills) gets the rows of its player's tech: rank 2 -> 3`, and its hit points
+  read 483 at full health (1.5 × 322; the proto has 320). In a second scene the tech came at 20 s to a Hussar of 2 kills (`rank 1 -> 2`) and was set back
+  to unobtainable at 32 s: the Hussar kept its rank and bonus and reached 10 kills. A game saved after the tech and loaded
+  again: the same 483 hit points, `player 1 has tech HuntingDogs (297) active` and no row given twice. `killSpawn` was on
+  (no civ tags), and the AI of a 100 s skirmish compiled (below). Not tested: a `TransformUnit` with tech rows, the rank
+  marks with these rows (no `uhc_rings` in the test copy), the unit panel's row, multiplayer.
 - **Rank names and colours (2026-11-11):** `<VeterancyRank rank="N" name="..." color="RRGGBB"/>` names a rank and gives it a
   colour (a leading `#` is accepted). A `name` made of digits is a string ID of the string table (`32485` showed `Hero`).
   The floating text over the unit shows the name in that colour, and the unit panel's row shows it too, coloured with the
@@ -4082,7 +4134,10 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   `veterancyBonus: proto 318: from 1 kills, stat 2 x1.5`, `veterancyBonus: unit 0, proto 318: 3 kills, a new rank, rank 3`,
   `veterancyBonus: unit 0 keeps 4 kills as proto 324`; an add row logs `+0.5` where a multiply row logs `x1.5`, and the first
   kill of a game logs `veterancyBonus: 5 default rows for unit type AbstractCavalry (3654)`. A row without `kills`,
-  `modifytype` or a value is logged and ignored.
+  `modifytype` or a value is logged and ignored. Rows with a tech log `veterancyBonus: proto 318: from 2 kills, stat 1 x1.5,
+  with tech HuntingDogs`, a civ block `... default rows for unit type Pikeman (295), civilization Ethiopians`, and a tech
+  that becomes active `veterancyBonus: player 1 has tech HuntingDogs (297) active` and `unit 0 (5 kills) gets the rows of its
+  player's tech: rank 2 -> 3`.
 - **Tested in WoL (2026-11-11, default rows, `op="add"`, names, ranks 4 and 5):** the data above, with `steadyHitpointBars`.
   The hits and the panel as given above; a saved game at rank 5 and 6 kills loaded with its mark, `Legend`, `6 kills`,
   370/552 hit points and 88 hand attack; an AI skirmish of 100 s (`wolOtto`, Germans) with the defaults on its cavalry and

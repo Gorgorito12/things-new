@@ -1338,6 +1338,9 @@ Code: [combat](porting-code/combat.md#veterancybonus). It needs `AddProtoTagHand
 - **Sites:** the kill observers' 6-byte `jmp` at `0x4D4F37` (`8B 0D 34 62 C6 00`), continue at `0x4D4F3D`; and the seven calls of `0x9C754C`:
   `0x7FBC79`, `0x7FBEF2`, `0x8C2D08`, `0x8EB78A`, `0x8F05F5`, `0x9BB6D5`, `0x9C7C16`. Check them against your DLL first:
   another key that wraps the transform must share them.
+- **Rows with a tech and civ blocks (2026-11-21):** no new site: tech by name `0x600BE1`, tech active `0x94AF27`, civ by
+  name `0x52D6FF`, civ by ID `0x405C2E`, a world tick (`AddWorldTick`) and a saved marker of stat 6Ah (`savedmarkers.h`):
+  check that your DLL uses no 6Ah modifier.
 - **Test:** the rows on a proto: the hits grow with the kills, and the log shows the ranks.
 
 ### killSpawn

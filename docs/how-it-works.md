@@ -2289,6 +2289,28 @@ default whose type its player's copy has (0x44D7FA); no list per proto is kept, 
 lookup runs on a kill, at a transform, in the one walk after a load and in the panel row of one selected unit. Names made of
 digits are string IDs, read with 0x58EA52 when shown; the panel row's colour is the string table's `<color=r, g, b>` markup.
 
+**Rows with a tech, blocks by civilization (2026-11-21).** A row's `tech` name is kept in a list of names and resolved
+with 0x600BE1 (tech by name, `thiscall(database, char*)`) at the same first lookup after a database load; an unknown name
+gets −3 and its rows never count. A row counts for a unit when it names no tech or when 0x94AF27(`[world+7Ch]`, player ID,
+tech) says the tech is active for the unit's player. `<Civilization name>` blocks are resolved with 0x52D6FF (civ by
+name, `thiscall(database, char*)`, null when none) and compared with the player's civ, 0x405C2E(database,
+`[[player+20h]]`) when `[player+24h]` > 0; the lookup tries the civ's blocks, then the global ones.
+
+Rows with a tech can be given out of kills order, so the rows given are no longer a function of the kills. They are kept
+on the unit in a saved marker (`savedmarkers.h`, stat 6Ah: word 0 the tag `VETG`, words 1 to 3 one bit per row of the
+unit's rows in kills order, 96 rows), written only when the unit's rows name a tech. A unit without the marker was given
+every row without a tech up to its kills (before the current kill), which is what the key always did, so old saves and
+protos without tech rows behave as before. Giving a row adds the modifier of its series' total after the row against
+before it: the total is that of the series' given row with the most kills. A world tick (every 500 ms of game time, only
+while some row names a tech) looks at each player's named techs (`[world+5Ch]` players) and, on one that became active
+(or on the first look of a game, which also covers a loaded game), walks the world's units once and gives each unit of
+that player with kills the rows it now reaches; giving is idempotent. A tech that goes inactive takes nothing back. The
+transform wrapper gives the new proto's rows afresh (the transform ended the marker).
+
+The proto rows' map is now cleared on each database load (`OnDatabaseLoad`, which runs at the end of the abstract
+types' registration, before the protos are read); before, a second data load in one run (a skirmish start) added every
+proto row again, and a row of the same kills applied twice.
+
 - **Observed in game:** see the tests in the modding guide.
 
 ### snareOnlyHitUnit

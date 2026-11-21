@@ -1185,6 +1185,9 @@ SITES = [
     # civFirstTC: the civ by ID 0x405C2E, thiscall(database, id) = [[db+24h]+4*id] (count
     # [db+28h]), ret 4; a civ's ID is [civ+8] and its name [civ+4] (char*)
     ("CivById", 0x405C2E, 0x18),
+    # veterancyBonus, verify only: the civ by name 0x52D6FF, thiscall(database, char* name), ret 4: a walk of
+    # [db+24h] (count [db+28h]) comparing names; null when none (the nativeCivs loader hook calls it too)
+    ("CivByName", 0x52D6FF, 0x1C),
     # civFirstTC: a player's civ ID 0x4539D3, [[player+20h]] when [player+24h] > 0, else -1
     ("CivOfPlayer", 0x4539D3, 0x10),
     # civFirstTC: proto by name 0x5A2346, thiscall(database, const char*), ret 4: a
