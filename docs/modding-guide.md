@@ -32,6 +32,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
 | Saturday 2026-11-21 15:06 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
+| Saturday 2026-11-21 15:24 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
+| Saturday 2026-11-21 15:24 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Saturday 2026-11-21 12:42 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Saturday 2026-11-21 12:11 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
 | Saturday 2026-11-21 12:07 | [`ageFiveShipments`](#agefiveshipments) | Added. Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | `<age>4</age>` on the cards that want it. |
@@ -40,7 +42,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 12:00 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only heal actions with `<CanOverheal>1</CanOverheal>` heal those units above `InitialHitpoints`, up to their `<OverhealCap>`, and techs can turn it on or off; every other heal stops there. | `overhealHitpointBars`, and the tags on the `Heal` actions that may overheal. |
 | Saturday 2026-11-21 11:55 | [`herdWalkAwayFix`](bug-fixes.md#herdwalkawayfix) | Added. A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in. | Nothing; for nomads, `wol-fixes/me-herdables`. |
 | Saturday 2026-11-21 11:54 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
-| Saturday 2026-11-21 11:54 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
 | Saturday 2026-11-21 11:35 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | The tag on the civ in `civs.xml`. |
 | Saturday 2026-11-21 11:34 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
@@ -73,7 +74,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-11-12 15:52 | [`stealthTargeting`](bug-fixes.md#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
-| Thursday 2026-11-12 13:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
 | Thursday 2026-11-12 11:40 | [`menuOptions`](bug-fixes.md#menuoptions) | Added. Lets the player switch `bufferedFileReads` and `fastVertexFill` on or off in the options menu, from the next start. | A field per key in `data\options.xml`. |
 | Thursday 2026-11-12 08:17 | [`fastLastInLine`](bug-fixes.md#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
 | Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
@@ -2668,7 +2668,7 @@ overhealSources [<UnitType> [cap=<percent>] ...] [log]   no type by default; up 
 
 *Extra health above a unit's normal maximum slowly wears off.*
 
-**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Thursday 2026-11-12 13:25
+**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Saturday 2026-11-21 15:24
 
 ![overhealDecay in WoL](media/overhealDecay-wol.gif)
 
@@ -2688,15 +2688,18 @@ and the Sepoy keeps `216/180`, `Overheal: 36/36` and both orange ends to the end
 
 ![overhealDecay holdNear in WoL](media/overhealDecay-holdnear-wol.gif)
 
-*In WoL, with `overhealDecay 2 1 holdNear xpAenna 12 holdNear xpMedicineMan 12 log` (and `overhealSources
-AbstractOverhealer cap=110 rate=50`; the Tomahawk and the Aenna beside it selected):* the source medicine man takes the
-Tomahawk to `165/150` and is removed at 20 s; the Aenna, 2 m away, holds the overheal at 165 until it is removed at 34 s;
-then 2 HP/s back to 150 at 41.6 s. [Full video (MP4)](media/overhealDecay-holdnear-wol.mp4).
+*In WoL, with `overhealDecay 2 1 holdNear xpMedicineMan 12 log` (2026-11-21, a scenario; `overhealSources log`, with
+`<CanOverheal>1</CanOverheal>` and `<OverhealCap>110</OverhealCap>` on the `xpMedicineMan`'s Heal, and `overhealHitpointBars
+xpTomahawk segment stat`; test data: an `xpTomahawk` with `MaxHitpoints` 180 over its 150; both units selected):* the
+medicine man walks up at 40 s and heals the Tomahawk to `165/150`, its 110 %, by 50 s; while he stands 4 m away it stays
+at 165.0 with no more heals; he walks off at 62 s, and once he is 12 m away, at 64 s, it goes down 2 HP a second, to 150 at
+71.6 s. [Full video (MP4)](media/overhealDecay-holdnear-wol.mp4).
 
 ![overhealDecay without holdNear in WoL](media/overhealDecay-holdnear-wol-control.gif)
 
-*In WoL, `overhealDecay 2 1 log` without `holdNear` (the same scene; `overhealSources` with no cap, so it starts at
-180):* the decay starts when the medicine man goes at 20 s, with the Aenna still there: 180 to 150 by 34.9 s.
+*In WoL, `overhealDecay 2 1 log` without `holdNear` (the same scene, data and `overhealSources` line):* the overheal
+starts to go 1 s after each heal, so the medicine man keeps healing it back: between 164.4 and 165 while he stands
+there; he walks off at 62 s and it goes down at once, to 150 by 70.8 s.
 [Full video (MP4)](media/overhealDecay-holdnear-wol-control.mp4).
 
 ```
@@ -2726,7 +2729,8 @@ overhealDecay [<rate>[%] [<delay>]] [<UnitType> ...] [holdNear <UnitType> <metre
   12`, so the overheal lasts while a source healer stays with the unit, and the "re-heal it" micro goes.
 - **A bad `holdNear`** stops the key: `overhealDecay: expected holdNear <UnitType> <metres> (more than 0, at most 200;
   up to 4); feature not applied`.
-- **Measured in WoL (2026-11-11),** the scene above: held at 165.0 from 20 to 34 s, then 163.1, 159.6, 156.0, 152.7 and
+- **Measured in WoL (2026-11-11),** in the scene filmed then (`holdNear xpAenna 12`; the medicine man removed at 20 s, an
+  Aenna 2 m from the Tomahawk until 34 s): held at 165.0 from 20 to 34 s, then 163.1, 159.6, 156.0, 152.7 and
   150.0 at 41.5 s; the same after loading a game saved at 26 s (165 until 34 s, 150.0 at 41.6 s). Without `holdNear`,
   179.8 at 19.9 s down to 150.0 at 34.9 s.
 
@@ -2783,7 +2787,9 @@ overhealDecay [<rate>[%] [<delay>]] [<UnitType> ...] [holdNear <UnitType> <metre
     down to 150, and naming another proto left that unit alone; other players' units decay too; poison
     (`damageOverTime`) ticked normally; a skirmish against the AI played normally. Only the game world
     decays: the world update also runs for the home city's world, which the key ignores.
-  - **`holdNear` (2026-11-11, WoL):** the numbers above, a saved game, an AI skirmish of 100 s with every heal and
+  - **`holdNear` (2026-11-21, WoL):** the two videos above, with the overheal from the `<CanOverheal>` and `<OverhealCap>`
+    tags.
+  - **`holdNear` (2026-11-11, WoL):** the numbers measured then (above), a saved game, an AI skirmish of 100 s with every heal and
     overheal key on and no XS error.
   - **Not tested:** multiplayer; `holdNear` with a unit of another player beside the unit (the Gaia unit tried for it
     attacked the Tomahawk).
@@ -2819,7 +2825,7 @@ Attacks, armor, and what a hit does.
 
 *A unit can deal area damage around itself when it dies, and the blast shows on the unit that dies, over the whole of a building.*
 
-**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Saturday 2026-11-21 11:54
+**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Saturday 2026-11-21 15:24
 
 ![detonationDeath on a building in WoL](media/detonationDeath-building-wol.gif)
 
@@ -2882,9 +2888,12 @@ DetonationCommand, no blast`. The wagon then goes into the fog: the archer was t
 
 ![detonationDeath over water in WoL](media/detonationDeath-water-wol.gif)
 
-*In WoL, with the key (a `Caravel` with `SHIPmelee` as its blast, 200 Siege, `DamageArea` 8, and the mortar effect;
-three Gaia `FishingBoat` beside it; a trigger deals it 5000 damage):* a mortar explosion on the water as it sinks, and
-the boats go from 200 to 46.0, 54.3 and 54.3 HP. [Full video (MP4)](media/detonationDeath-water-wol.mp4).
+*In WoL, with `detonationDeath log` (2026-11-21, a scenario on a water map; a `Caravel` with `SHIPmelee` as its blast,
+200 Siege, `DamageArea` 8, `GAIAEnemy`, and `<DetonationImpactEffect>effects\impacts\mortar</DetonationImpactEffect>`; three
+Gaia `FishingBoat` beside it; a trigger deals it 5000 damage at 35 s):* the ship bursts over its footprint, four mortar
+explosions on the water (`blast drawn at 4 points over its footprint`), and sinks. The boats show no explosion of their
+own and go from 200 to 54.3, 46.0 and 46.0 HP, then into the fog: the Caravel was the only one who saw them.
+[Full video (MP4)](media/detonationDeath-water-wol.mp4).
 
 ![detonationDeath over water in WoL, key off](media/detonationDeath-water-wol-control.gif)
 
@@ -2998,21 +3007,27 @@ detonationDeath [log]
   `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0; blast drawn at 1 point` (a building: `blast drawn at 9 points over its footprint`). Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
 ![detonationDeath threshold and decay in WoL](media/detonationDeath-threshold-wol.gif)
 
-*Filmed on 2026-11-05, before the blast was drawn on screen.* *In WoL, with the key (a Musketeer of 4000 HP, threshold 0.25, decay 100, a trigger that takes 76 % of its HP):* from
-960 HP it loses 100 a second and detonates at 0. [Full video (MP4)](media/detonationDeath-threshold-wol.mp4).
+*In WoL, with `detonationDeath log` (2026-11-21, a scenario; a Musketeer of 4000 HP, threshold 0.25, decay 100,
+`VolleyRangedAttack` as its blast with `<DetonationImpactEffect>effects\impacts\mortar</DetonationImpactEffect>`, since that
+attack's own `effects\impacts\gun` is a small puff of dust; a trigger takes 76 % of its HP at 35 s):* from 960 HP it loses
+100 a second and detonates at 0, at 45 s: one mortar explosion where it stood (`blast drawn at 1 point`).
+[Full video (MP4)](media/detonationDeath-threshold-wol.mp4).
 
 ![detonationDeath threshold and decay in WoL, key off](media/detonationDeath-threshold-wol-control.gif)
 
-*In WoL, key off (the same data):* it stays at 960 HP. [Full video (MP4)](media/detonationDeath-threshold-wol-control.mp4).
+*In WoL, key off (filmed on 2026-11-05, the same Musketeer without `<DetonationImpactEffect>`, which the key off ignores
+anyway):* it stays at 960 HP. [Full video (MP4)](media/detonationDeath-threshold-wol-control.mp4).
 
 ![detonationDeath command in WoL](media/detonationDeath-command-wol.gif)
 
-*Filmed on 2026-11-05, before the blast was drawn on screen.* *In WoL, with the key (the same Musketeer, `<DetonationCommand>`, the Delete key):* the blast line, `kill flags 1 0 0
-(a delete)`. [Full video (MP4)](media/detonationDeath-command-wol.mp4).
+*In WoL, with the key (2026-11-21; the same Musketeer, at its full 4000 HP, with `<DetonationCommand>Detonate</DetonationCommand>`,
+deleted with its Delete button at 33.5 s):* the mortar explosion where it stood and the line `kill flags 1 0 0 (a delete);
+blast drawn at 1 point`. [Full video (MP4)](media/detonationDeath-command-wol.mp4).
 
 ![detonationDeath command in WoL, key off](media/detonationDeath-command-wol-control.gif)
 
-*In WoL, key off (the same data):* the Delete key removes it with no line.
+*In WoL, key off (filmed on 2026-11-05, the same Musketeer without `<DetonationImpactEffect>`):* the Delete key removes it
+with no line.
 [Full video (MP4)](media/detonationDeath-command-wol-control.mp4).
 
 - **Tested in WoL (2026-11-21, the blast on the unit that dies, JTMaston's #86):** the two videos above. The damage is
@@ -3022,6 +3037,9 @@ detonationDeath [log]
   A chain of three Gaia grenadiers (one killed, the two beside it at 5 HP): three blasts, one per grenadier, each `blast
   drawn at 1 point`. Beside WoL's own `uhc.dll` (our `dinput8.dll`): applied, and a grenadier's blast as above. An AI
   skirmish (Germans, `wolOtto`) with the key and the test data on: 17 AI units at 159 s, no XS error.
+  Refilmed the same day with this build: the Caravel over water (4 points, the boats at 54.3, 46.0 and 46.0 HP; on
+  2026-11-13, 46.0, 54.3 and 54.3), and the Musketeer's threshold and delete (1 point each). Its delete went through the Delete button: the
+  console's `uiDeleteSelectedUnit` crashed this background copy at 0x7E51C8 again (below).
 - **Tested in WoL (2026-11-13, the blast on screen):** the scene of the first two videos (Ethiopians against an enemy
   of six `WOLScytheman`): four blasts, `unit 3, proto 714, at 41.9, 45.1` and `unit 2 … at 43.8, 45.2` (the archers,
   mortar effect) and `unit 1, proto 1482, at 38.5, 45.9` and `unit 0 … at 36.9, 46.6` (the Engineers, dynamite), each
