@@ -441,6 +441,11 @@ SITES = [
     ("BroadsideSingleUseCap", 0x6A8236, 0x11),
     # broadsideMuzzleLimit: the two cold clamp blocks, count = limit, back to 0x503453 / 0x5034EE
     ("BroadsideClampCold", 0x6A8247, 0x16),
+    # broadsideMuzzleLimit, <NumberProjectiles>: BroadsideAttack's vtable slot 1 (vtable 0xB962E8), the set-up
+    # FUN_0050339A, its only reference (replaced by a wrapper); and the int array resize 0x401113,
+    # thiscall({data, count, capacity}*, count, byte), ret 8, which the set-up appends its slots with
+    ("BroadsideSetupSlot", 0xB962EC, 4),
+    ("ArrayResize", 0x401113, 0x18),
     # abilitySlots (FUN_0046188E, command panel refresh): the cold block that appends a page-11
     # (Abilities) command entry 5 more times, from mov ecx,[esp+40h] through mov edi,5 (the count,
     # 0x695BD2) and the do-while that ends in sub edi,1 / je 461C3Fh / jmp 695BD7h
@@ -1198,6 +1203,9 @@ SITES = [
     # civFirstTC: the civ by ID 0x405C2E, thiscall(database, id) = [[db+24h]+4*id] (count
     # [db+28h]), ret 4; a civ's ID is [civ+8] and its name [civ+4] (char*)
     ("CivById", 0x405C2E, 0x18),
+    # veterancyBonus, verify only: the civ by name 0x52D6FF, thiscall(database, char* name), ret 4: a walk of
+    # [db+24h] (count [db+28h]) comparing names; null when none (the nativeCivs loader hook calls it too)
+    ("CivByName", 0x52D6FF, 0x1C),
     # civFirstTC: a player's civ ID 0x4539D3, [[player+20h]] when [player+24h] > 0, else -1
     ("CivOfPlayer", 0x4539D3, 0x10),
     # civFirstTC: proto by name 0x5A2346, thiscall(database, const char*), ret 4: a
@@ -1399,6 +1407,11 @@ SITES = [
     ("ShotsLaunchCall", 0x48F838, 0x5D),
     ("ShotsLaunch", 0x499422, 0x1D),
     ("ShotsLaunchRet", 0x4999DA, 9),
+    # numberOfShots, no reload between a burst's shots: the head of the reload animation's start FUN_004976CB,
+    # sub esp,8 / push esi / mov esi,ecx (replaced, 6 B) / mov eax,[esi+10h], its continuation (no branch lands
+    # inside); and the model index lookup 0x471D24 (mov ecx,[ecx+60h] / test ecx,ecx / je), which the hook calls.
+    ("ShotsReloadAnim", 0x4976CB, 9),
+    ("ShotsAnimVariant", 0x471D24, 0xB),
     # unitResourceAuras: the aura update's mov eax,[0C66234h] and the sub esp,10h it continues at
     ("UnitResourceAuraEntry", 0x9D033E, 8),
     # unitResourceAuras, verify only: the aura's scan (thiscall(action, IdList*)), inventory add

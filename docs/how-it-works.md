@@ -2027,10 +2027,25 @@ at `0x5034E2`. For the action the first hook matched, it calls the C++ logger wi
 MuzzleL count (EAX) and the limit (ESI) inside `pushad` / `popad`, then re-executes both
 instructions and jumps to the `jg` at `0x5034E8`, which reads the flags of that `cmp`.
 
+**More projectiles than muzzles (2026-11-21).** [O] An ability's volley (a power whose `<unitaction>` is a
+`BroadsideAttack`, such as a mod's long-range bombardment) is one pass of the fire step: FUN_004C1290 fires each due slot of the
+facing side once, and for an action whose launch object `[ua+94h]` has the power bit (byte `[[obj+2Ch]]` & 4, `[obj+30h]`
+≥ 3) it ends the action with setState(0Ah) instead of scheduling another volley (0x4CEE48), REA `ev_695172b8…`. The
+schedule gives each right slot a time `now` (+1000 ms for such an action) plus a sync-RNG step of 0.25 to 1.75 ×
+`[ua+84h]`, and slot i + n1 the same time (`ev_cb848273…`). So a volley has one projectile per slot, at most the model's
+muzzles per side; `<numberprojectiles>` is no tag of the exe. The key reads `<NumberProjectiles>` (and
+`<NumberOfProjectiles>`) through the shared action tag hook, per `{proto ID, action name index}`, cleared on every data
+load, and replaces BroadsideAttack's vtable slot 1 (0xB962EC, the only reference to 0x50339A) with a wrapper: the stock
+set-up, then, for an action of a ship the key applies to (every ship, or its type through 0x44D7FA, as the limit hook
+decides) whose side has fewer slots than P, it resizes
+both arrays with their own resize 0x401113 to P per side, writes the muzzle indices in turn (slot i of a side = the
+side's stock slot i mod its count) and zero times, and sets `[ua+80h]` to P. The left side is capped at the right
+side's count, which is what the schedule can time.
+
 **Why it is safe.**
 - The arrays have no other bound: save and load write each count and resize on load, the fire step
   walks the count, and the muzzle index is read as a byte, which caps N at 255. A larger N needs
-  no save-format change.
+  no save-format change. The extra slots name muzzles the model has, so the muzzle lookup 0x4A98C2 succeeds for each.
 - Nothing else reads the hardcoded 6.
 - The limit depends only on the cfg and the owner proto's unit types, decided once per action
   set-up. It adds projectiles (each with its accuracy roll) and sync-RNG draws, so every machine
@@ -2359,6 +2374,28 @@ a BString: by then the protos and every key's `<ModifyType>` names exist. A unit
 default whose type its player's copy has (0x44D7FA); no list per proto is kept, so a type a tech adds counts at once. The
 lookup runs on a kill, at a transform, in the one walk after a load and in the panel row of one selected unit. Names made of
 digits are string IDs, read with 0x58EA52 when shown; the panel row's colour is the string table's `<color=r, g, b>` markup.
+
+**Rows with a tech, blocks by civilization (2026-11-21).** A row's `tech` name is kept in a list of names and resolved
+with 0x600BE1 (tech by name, `thiscall(database, char*)`) at the same first lookup after a database load; an unknown name
+gets −3 and its rows never count. A row counts for a unit when it names no tech or when 0x94AF27(`[world+7Ch]`, player ID,
+tech) says the tech is active for the unit's player. `<Civilization name>` blocks are resolved with 0x52D6FF (civ by
+name, `thiscall(database, char*)`, null when none) and compared with the player's civ, 0x405C2E(database,
+`[[player+20h]]`) when `[player+24h]` > 0; the lookup tries the civ's blocks, then the global ones.
+
+Rows with a tech can be given out of kills order, so the rows given are no longer a function of the kills. They are kept
+on the unit in a saved marker (`savedmarkers.h`, stat 6Ah: word 0 the tag `VETG`, words 1 to 3 one bit per row of the
+unit's rows in kills order, 96 rows), written only when the unit's rows name a tech. A unit without the marker was given
+every row without a tech up to its kills (before the current kill), which is what the key always did, so old saves and
+protos without tech rows behave as before. Giving a row adds the modifier of its series' total after the row against
+before it: the total is that of the series' given row with the most kills. A world tick (every 500 ms of game time, only
+while some row names a tech) looks at each player's named techs (`[world+5Ch]` players) and, on one that became active
+(or on the first look of a game, which also covers a loaded game), walks the world's units once and gives each unit of
+that player with kills the rows it now reaches; giving is idempotent. A tech that goes inactive takes nothing back. The
+transform wrapper gives the new proto's rows afresh (the transform ended the marker).
+
+The proto rows' map is now cleared on each database load (`OnDatabaseLoad`, which runs at the end of the abstract
+types' registration, before the protos are read); before, a second data load in one run (a skirmish start) added every
+proto row again, and a row of the same kills applied twice.
 
 - **Observed in game:** see the tests in the modding guide.
 
@@ -3561,6 +3598,26 @@ plays it at the ROF's pace and waits the ROF minus that cycle's time, the reload
 that did not fire) keep the ROF. The count belongs to the unit action, and a new target is a new unit action, so it
 starts a new burst. A filter's result goes through the next one: after `containedUnitsROF` the burst's last shot waits the
 divided ROF, and the interval is not divided.
+
+**No reload between the burst's shots (2026-11-21).** [O] An attack with a `<reloadanim>` keeps two animations on its unit
+action: the attack animation `[ua+7Ch]` (its model index `[ua+80h]`) and the reload animation `[ua+84h]` / `[ua+88h]`,
+looked up from the tactics action's `[+58h]` and `[+5Ch]` (the parser's `Anim` and `ReloadAnim` cases, 0x5FB28D and
+0x5FB238) by FUN_00471CAC when a cycle begins. The cycle paces the attack animation so that both last the ROF (the rate
+`[unit+0B0h]` = (attack length + reload length) / ROF, 0x4A1197..0x4A1234). Once the attack animation has played,
+FUN_004976CB (thiscall(ua), AL 1 = started, 0 without a reload animation) starts the reload animation through 0x486E40,
+paced to end with the wait (`[[unit+58h]+0B8h] + [+0BCh]` − now). Its callers are setState(15h)'s case 0x497807 (on 0 it
+sets state 0Ch, the idle animation `[tactics action+60h]`, case 0x4A4EE6) and the update in state 19h (0x49A3E6, vtable slot
+0x48D519; on 0 it sets state 0Ah). So with a burst the quick shots still showed the reload, squeezed into the interval.
+The hook replaces the function's head (`sub esp,8 / push esi / mov esi,ecx`, 6 B at 0x4976CB). After a shot that does
+not end its burst (`[ua+68h]` mod N ≠ 0, the after-shot read's test) it swaps `[ua+84h]` / `[ua+88h]` for the idle
+animation and its model index (0x471D24 on the unit), runs the stock function on them, and puts the two words back: the
+unit holds its aiming pose instead of reloading, and the states, the waits and the next cycle are the stock ones, so the
+shot times do not move. Without an idle animation, or a model without it, the reload plays. The burst's last shot reloads.
+Tried first and dropped: returning 1 at once (a Falconet then waited for an animation that never played and stopped
+firing), returning 0 (the callers' state changes, not the stock path of an attack with a reload animation), and pacing the
+attack animation alone over the interval (it moved the quick shots later in their cycle: 0.52 s instead of 0.67 s between
+a Skirmisher's second and third shot). [O] A Falconet against Settlers starts a new burst after one or two shots with the
+reload fix and without it alike (a new target, a new unit action): that is the stock retargeting, not the hook.
 
 **The projectiles** (option `projectiles`): `hooks/shots_hooks.asm` replaces the attack step's `call 499422h` (5 B at
 0x48F88D, ECX = EBP = the unit action, the five arguments pushed) with a jmp. While some action has
@@ -4773,16 +4830,15 @@ which the subtype's own base (the cloned proto) cannot hold. A data load clears 
 
 0x4DD1DE, the `TargetSpeedBoost` path, tests that the target can move, and 0x4DD201 pushes the arguments of the
 modifier's creator 0x4DD22D. The hook replaces the first three pushes, and leaves through 0x48FA49, the path's exit, for a
-marked target or a marked attacker. The poison of `damageOverTime` calls the creator itself, so it asks the same two
-functions, with the unit whose hit attached the poison as the attacker (none once it is gone). The site is in the
+marked target. The poison of `damageOverTime` calls the creator itself, so it asks the same function. The site is in the
 ranges `damageOverTime` and `snareOnlyHitUnit` verify, so this key comes after them in `kFeatures`.
 
-**The attacker at 0x4DD201.** FUN_0048FA07 (`thiscall(unitAction, target)`) has one caller, 0x48F9F5 in FUN_004B7766,
-which keeps the attacker's unit action in EBP for its whole body (`[ebp+10h]` is used as `this` with no null test at
-0x48F0EF and 0x48EAE1, so it is the attacking unit; `[ebp+4]` its tactics action). FUN_0048FA07 and its cold chunk
-0x4DD1DE..0x4DD228 write ESI, EAX, ECX and EDX but never EBP, so at 0x4DD201 `[ebp+10h]` is still the attacker. The
-hook reads it after the target test, and a null there (never seen; a guard only) means no CannotSnare test. Observed
-in the listings (REA `ev_683538e5…`, `ev_dfeff76d…`, `ev_71e9bf8d…`, 2026-11-05).
+**No type on the attacker (since 2026-11-21).** From 2026-11-05 to 2026-11-20 the key also read a second type,
+`CannotSnare`, on the attacking unit (`[ebp+10h]` at 0x4DD201, `docs/engine-symbols.md`, "Snare attacker"), and the
+poison read it on the unit that attached it. It was retired: an attack that should not snare loses its
+`<TargetSpeedBoost>` in the attacker's tactics, which needs no code. The key no longer registers the name, so a proto
+that still lists `<UnitType>CannotSnare</UnitType>` loads as with any unknown type: the line is dropped (or, with
+`customAbstractTypes` naming it, it is a plain type that nothing reads).
 
 ### stealthTargeting
 

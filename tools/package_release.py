@@ -290,7 +290,8 @@ kothTimer [players|teams] N=s ...   King of the Hill time by the number of playe
 maintainWaitForPop [UnitType] [log]  marked buildings keep a finished auto-produced unit
                               (Maintain action) until there is population room
 transformUpdatesLOS [log]     units transformed by a tech or revolution get the new LOS
-broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6)
+broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6);
+                              <NumberProjectiles> P: P shots per side over the muzzles
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
 displayedRange [log]          a selected unit with <DisplayRange> shows a ring of <DisplayedRange> m
 steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit
@@ -345,7 +346,7 @@ autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather act
 containedUnitsROF [log]       ScaleByContainedUnits target="ROF": an attack fires faster with
                               the units inside (ROF / count, at most DamageFactorCap)
 numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart before the
-                              reload; projectiles: <NumberProjectiles> per shot
+                              reload, aiming between them; projectiles: <NumberProjectiles> per shot
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
 auraStacking [log]            <NoStack> and <ForbidUnitType> on any aura
@@ -356,7 +357,8 @@ costEscalationTechs [log]     a Data tech effect may change CostEscalation
 randomCost [log]              <RandomCost> rolls a unit's price in a range, a new one per purchase
 unitTypeTechs [log]           Data tech effects AddUnitType and RemoveUnitType, for one player's copy of a proto
 veterancyBonus [log] [file]   <VeterancyBonus> rows give a proto bonuses by its kills, with a rank mark;
-                              data\\uhc\\veterancy.xml: rows by unit type, rank names and colours
+                              tech="..." rows; data\\uhc\\veterancy.xml: rows by unit type and
+                              <Civilization> blocks, rank names and colours
 killSpawn [log]               civs.xml <killSpawn>: enemies a civ kills become animals, by weight
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners

@@ -13,6 +13,12 @@
 // animation and waits the ROF: N - 1 quick shots, then a normal one and its reload. The count belongs to the unit
 // action, which a new target replaces, so a new target starts a new burst.
 //
+// No reload between the burst's shots: an attack with a <reloadanim> plays its attack animation, then the reload
+// animation (started by FUN_004976CB once the attack animation has played), the two together paced to last the cycle
+// (0x4A11C2..0x4A120A adds the reload's length). After a shot that does not end its burst the reload hook
+// (hooks/shots_hooks.asm, 0x4976CB) runs that function on the action's idle animation instead, the aiming pose, so the
+// unit aims until its next shot; the states and the timing stay the stock ones. Only the burst's last shot reloads.
+//
 // The projectiles: a jmp over the launch call at 0x48F88D (hooks/shots_hooks.asm) calls the launch N times with
 // the same four arguments; each projectile rolls its own accuracy and spread and deals the action's damage.
 //
@@ -40,8 +46,11 @@
 
 extern "C" {
 void UhcShotsLaunchHook();  // hooks/shots_hooks.asm
+void UhcShotsReloadHook();
 // Above 0 while some action has more than one projectile: the launch hook asks UhcShotsProjectiles only then.
 std::int32_t g_uhcShotsProjectiles = 0;
+// Above 0 while some action has a burst: the reload hook asks UhcShotsSkipReload only then.
+std::int32_t g_uhcShotsBurst = 0;
 }
 
 namespace {
@@ -104,6 +113,8 @@ bool g_log = false;
 unsigned g_tagLines = 0;
 unsigned g_invalidLines = 0;
 unsigned g_shotLines = 0;
+unsigned g_reloadLines = 0;
+constexpr unsigned kMaxReloadLines = 6;
 
 std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::RofRead read);
 
@@ -120,6 +131,7 @@ void SyncGates() {
     projectiles = projectiles || entry.projectiles > 1;
   }
   uhc::SetRofGate(&ShotsRof, burst);
+  g_uhcShotsBurst = burst ? 1 : 0;
   g_uhcShotsProjectiles = g_projectiles && projectiles ? 1 : 0;
 }
 
@@ -129,6 +141,7 @@ void ResetForDataLoad(char*) {
   g_tagLines = 0;
   g_invalidLines = 0;
   g_shotLines = 0;
+  g_reloadLines = 0;
 }
 
 const Entry* Find(const char* unitAction, const char** unitOut) {
@@ -293,6 +306,26 @@ bool EnsureReader() {
 
 extern "C" {
 
+// From the reload hook (0x4976CB), while some action has a burst: true after a shot that does not end its burst
+// (the same test as the after-shot ROF read): the idle animation plays instead of the reload.
+bool __stdcall UhcShotsSkipReload(const char* unitAction) {
+  const char* unit = nullptr;
+  const Entry* entry = unitAction == nullptr ? nullptr : Find(unitAction, &unit);
+  if (entry == nullptr || entry->shots <= 1) {
+    return false;
+  }
+  const std::int32_t count = Field<std::int32_t>(unitAction, 0x68);
+  if ((count < 0 ? 0 : count % entry->shots) == 0) {
+    return false;
+  }
+  if (g_log && g_reloadLines < kMaxReloadLines) {
+    ++g_reloadLines;  // its own budget, so the shots' lines still show whole bursts
+    uhc::Log(L"numberOfShots: unit %d (%hs) shot %d of its burst of %d: the idle animation, no reload",
+             Field<std::int32_t>(unit, 0x10), ProtoName(Field<const char*>(unit, 0x5C)), count % entry->shots, entry->shots);
+  }
+  return true;
+}
+
 // From the launch hook (0x48F88D), while some action has projectiles: how many times to call the launch for this
 // shot (at least 1).
 std::int32_t __stdcall UhcShotsProjectiles(const char* unitAction) {
@@ -354,8 +387,13 @@ Outcome ApplyNumberOfShots(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  if (!VerifyAll("numberOfShots", {&sites::kShotsLaunchCall, &sites::kShotsLaunch, &sites::kShotsLaunchRet}) ||
+  if (!VerifyAll("numberOfShots", {&sites::kShotsLaunchCall, &sites::kShotsLaunch, &sites::kShotsLaunchRet,
+                                     &sites::kShotsReloadAnim, &sites::kShotsAnimVariant}) ||
       !EnsureReader() || !AddRofFilter(&ShotsRof, "numberOfShots")) {
+    return Outcome::kFailed;
+  }
+  // sub esp,8 / push esi / mov esi,ecx (6 B) at the head of the reload animation's start 0x4976CB.
+  if (!WriteJmp(sites::kShotsReloadAnim.va, reinterpret_cast<const void*>(&UhcShotsReloadHook), 6)) {
     return Outcome::kFailed;
   }
   // call 499422h (5 B) at 0x48F88D, the launch of the attack step's shot.
@@ -363,8 +401,8 @@ Outcome ApplyNumberOfShots(const Config& config) {
     return Outcome::kFailed;
   }
   g_combat = true;  // before the data loads, which runs after every key is applied
-  Log(L"numberOfShots: attacks read <NumberOfShots> and <ShotInterval> (default %.2f s)%ls%ls (multiplayer "
-      L"unverified)",
+  Log(L"numberOfShots: attacks read <NumberOfShots> and <ShotInterval> (default %.2f s), no reload animation between "
+      L"a burst's shots%ls%ls (multiplayer unverified)",
       kDefaultIntervalMs / 1000.0,
       g_projectiles ? L", and <NumberProjectiles> projectiles per shot" : L"",
       g_log ? L"; tags and the first shots logged" : L"");

@@ -94,7 +94,7 @@ Sizes, following the Design rule in wol-requests.md:
 | 35 | `TeamKillBounty` | Flag on the victim: its bounty goes to the killer's whole team (used by no DE unit) | Absent, but the stock payment already has a "whole team" mode | **S** |
 | 36 | Cards that hit enemies / all | No tech flag. `CreatePower` → a timed power of type `EnemyEffect` / `TeamEffect` | Absent (`GeneralEffect` exists) | L |
 | 37 | `NextResearchIsFree` | Flag on a building proto, set by subtype `SetNextResearchFree` | Absent; a research is paid at one site when it is queued | M |
-| 38 | `CantBeSlowed` | Flags `CantBeSlowed` (immune to snares) and `CannotSnare` (its attacks do not snare) | Absent; the snare site is mapped, with both units in registers | **S**; both built as types (`cantBeSlowed`, 2026-11-05) |
+| 38 | `CantBeSlowed` | Flags `CantBeSlowed` (immune to snares) and `CannotSnare` (its attacks do not snare) | Absent; the snare site is mapped, with both units in registers | **S**; built as types (`cantBeSlowed`, 2026-11-05); `CannotSnare` retired on 2026-11-21 (the tactics do it) |
 | 39 | `DetonationDeath` | Flag + `DetonationProtoAction`, `DetonationCommand`, `DetonationHitpointThreshold`, `DetonationHitpointDecay` | Absent | L ; the flag's four tags built in `detonationDeath` (2026-11-05) |
 | 40 | Train ahead of the queue | Proto flag `DoNotQueue` (builders and wagons); nothing for shipments | `DoNotQueue` is a tech flag, read by the Research action; legacy has a shipment queue `[hc+288h]`, whose flag `YPRecalcHCTrainQueuePointsWhenShipped` (bit 39h) is read at 0x858508. DE's shipments not checked | S–M |
 | 41 | Reversible timed transform | Power `SwapUnit` with `<reversible/>` and `<activetime>` | Has `SwapUnit`, which never swaps back; `reversible` absent | M |
@@ -313,7 +313,9 @@ The legacy sites are in "What legacy does today" below and in engine-symbols.md,
 - [O] Legacy creates the snare at one known site: 0x4DD1DE → 0x4DD22D (engine-symbols.md, "Snare and
   group movement").
 - [I] Both flags are markers, with one test at that site. This is the cheapest item.
-- Built as [`cantBeSlowed`](modding-guide.md#cantbeslowed) (2026-11-05), both flags as unit types.
+- Built as [`cantBeSlowed`](modding-guide.md#cantbeslowed) (2026-11-05), both flags as unit types. `CannotSnare` was
+  retired on 2026-11-21: an attack that should not snare loses its
+  `<TargetSpeedBoost>` in the tactics, so only `CantBeSlowed` remains.
 
 ### #39 `DetonationDeath`
 

@@ -752,6 +752,21 @@ Code: [combat](porting-code/combat.md#containedunitsrof).
 Check it in the game: put `<scalebycontainedunits target="ROF"></scalebycontainedunits>` on a Blockhouse's `RangedAttack`:
 empty, it does not fire; with 2 settlers inside it fires every 1.5 s instead of 3 s.
 
+### numberOfShots
+
+Code: [combat](porting-code/combat.md#numberofshots). It needs the ROF filters of `rofreads.*` (the five reads above) and
+`AddActionTagHandler`.
+
+- **Projectiles** (option `projectiles`): a 5-byte `jmp` over `call 499422h` at `0x48F88D`, continue at `0x48F892`.
+- **No reload between the burst's shots (2026-11-21):** a 6-byte `jmp` at `0x4976CB` (`83 EC 08 56 8B F1`: `sub esp,8 /
+  push esi / mov esi,ecx`, the head of the reload animation's start, `thiscall(unitAction)`, AL the result), continue at
+  `0x4976D1`. For a shot that does not end its burst, swap `[ua+84h]` / `[ua+88h]` for the idle animation
+  `[[ua+4]+60h]` and its index `0x471D24(unit [ua+10h], anim)` (`thiscall`, `ret 4`, −1 when the model lacks it), call the
+  function (its head re-executed, then `0x4976D1`), put the two words back and return its AL. Change no state: both callers
+  (0x497813, 0x49A3E6) go on as stock.
+- **Test:** Skirmishers with 3 shots: between the quick shots they hold the aiming pose; the third shot reloads; the shot
+  times are those of the key without this hook.
+
 ### bufferedFileReads
 
 Code: [game-files](porting-code/game-files.md#bufferedfilereads).
@@ -1136,6 +1151,11 @@ Code: [combat](porting-code/combat.md#broadsidemuzzlelimit).
 - **Log hook** (only with `log`) at `0x5034E2`: EAX = MuzzleL count, ESI = final limit, EDI = the
   action, `[edi+80h]` = MuzzleR slots. After logging, re-execute `cmp eax,esi; mov [esp+1Ch],eax`
   with ESP as on entry, and jump to `0x5034E8` (`jg`, which reads that compare).
+- **`<NumberProjectiles>` (2026-11-21):** the dword at `0xB962EC` (BroadsideAttack's vtable slot 1, `9A 33 50 00`, the only
+  reference to the set-up) points at a `thiscall(action, arg)` wrapper: call `0x50339A`, then, for an action the limit hook
+  matched whose side has fewer slots than the tag's P, grow both `{data, count, capacity}` arrays at `+68h` and `+74h` with
+  `0x401113(array, count, 0)` (`thiscall`, `ret 8`), write the muzzle indices in turn and zero times, and set `[+80h]` to P.
+  The tag through `AddActionTagHandler`, keyed by (proto ID, action name index).
 
 ### abilitySlots
 
@@ -1282,6 +1302,10 @@ Code: [combat](porting-code/combat.md#cantbeslowed).
 - **Site:** a 6-byte `jmp` at `0x4DD201` (`6A 01 6A FF 6A FF`), continue at `0x4DD207`, exit `0x48FA49`. Write it after
   anything that verifies the snare's bytes.
 - **Test:** a marked and an unmarked unit of the same speed under a `TargetSpeedBoost` attack.
+- **Since 2026-11-21** the hook reads only the target: the attacker's type `CannotSnare` was retired (an attack that
+  should not snare loses its `<TargetSpeedBoost>` in the tactics). A port that copied the older code drops the second
+  test and the `RequestAbstractUnitType("CannotSnare", …)`.
+
 ### stealthTargeting
 
 Code: [combat](porting-code/combat.md#stealthtargeting).
@@ -1369,6 +1393,9 @@ Code: [combat](porting-code/combat.md#veterancybonus). It needs `AddProtoTagHand
 - **Sites:** the kill observers' 6-byte `jmp` at `0x4D4F37` (`8B 0D 34 62 C6 00`), continue at `0x4D4F3D`; and the seven calls of `0x9C754C`:
   `0x7FBC79`, `0x7FBEF2`, `0x8C2D08`, `0x8EB78A`, `0x8F05F5`, `0x9BB6D5`, `0x9C7C16`. Check them against your DLL first:
   another key that wraps the transform must share them.
+- **Rows with a tech and civ blocks (2026-11-21):** no new site: tech by name `0x600BE1`, tech active `0x94AF27`, civ by
+  name `0x52D6FF`, civ by ID `0x405C2E`, a world tick (`AddWorldTick`) and a saved marker of stat 6Ah (`savedmarkers.h`):
+  check that your DLL uses no 6Ah modifier.
 - **Test:** the rows on a proto: the hits grow with the kills, and the log shows the ranks.
 
 ### killSpawn

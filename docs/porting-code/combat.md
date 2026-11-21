@@ -791,8 +791,7 @@ Sites: `DotTakeDamageEntry` `0x49B3D9` (14 B), `SnareTargetCheck` `0x4DD1DE` (35
 #include "../unittypes.h"
 #include "../worldtick.h"
 
-extern "C" bool __stdcall UhcCantBeSlowed(const char* unit);     // cantslow.cpp; false when that key is off
-extern "C" bool __stdcall UhcCannotSnare(const char* attacker);  // cantslow.cpp; the attacking unit, or null
+extern "C" bool __stdcall UhcCantBeSlowed(const char* unit);  // cantslow.cpp; false when that key is off
 
 namespace {
 
@@ -1063,13 +1062,10 @@ std::uint32_t TickInterval(const char* attaching) {
 }
 
 // The stock snare's modifier (snareOnlyHitUnit in how-it-works.md): stat 0 (velocity), operation 2
-// (multiply), timed, exclusive, with the data's factor instead of 0.65 and the given duration. The
-// attacker is the unit whose hit attached the poison, or -1 once it is gone (then nothing stops the snare
-// on its side, as cantBeSlowed's CannotSnare needs the unit).
-void Snare(char* unit, std::int32_t attacker, float factor, std::uint32_t ms) {
-  const char* world = MainWorld();
-  const char* attackerUnit = world == nullptr || attacker < 0 ? nullptr : UnitById(world, attacker);
-  if (factor >= 0.0f && CanMove(unit) && !UhcCantBeSlowed(unit) && !UhcCannotSnare(attackerUnit)) {
+// (multiply), timed, exclusive, with the data's factor instead of 0.65 and the given duration. A target
+// with cantBeSlowed's CantBeSlowed is not snared.
+void Snare(char* unit, float factor, std::uint32_t ms) {
+  if (factor >= 0.0f && CanMove(unit) && !UhcCantBeSlowed(unit)) {
     kSnare(unit, 0, factor, -1.0f, -1.0f, 0, 2, static_cast<std::int32_t>(ms), -1, -1, 1);
   }
 }
@@ -1367,7 +1363,7 @@ void Attach(char* target, std::int32_t player, std::int32_t attacker, const Acti
   dot.stacks.insert(std::upper_bound(dot.stacks.begin(), dot.stacks.end(), stackEnd, before), stackEnd);
   dot.end = dot.stacks.back();
   if (added) {
-    Snare(target, attacker, dot.snare, TickInterval(attaching) + kSnareSlackMs);
+    Snare(target, dot.snare, TickInterval(attaching) + kSnareSlackMs);
   }
   SaveDot(target, key, dot);
   if (!g_loggedFirstPoison || g_logEvery) {
@@ -1435,7 +1431,7 @@ void Tick(char* world, std::uint32_t now) {
       alive = IsAlive(target);
       ShowTick(target, dealt, dot.tickColour);
       if (alive && Reached(dot.end, dot.nextTick)) {
-        Snare(target, dot.attacker, dot.snare, TickInterval(attaching) + kSnareSlackMs);
+        Snare(target, dot.snare, TickInterval(attaching) + kSnareSlackMs);
       }
     }
     if (!alive || Reached(now, dot.end)) {
@@ -2994,7 +2990,7 @@ Contract: [numberOfShots](../porting-to-another-dll.md#numberofshots).
 
 Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`rofreads.h`](helpers.md#rof-reads), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `ShotsLaunchCall` `0x48F838` (93 B), `ShotsLaunch` `0x499422` (29 B), `ShotsLaunchRet` `0x4999DA` (9 B).
+Sites: `ShotsAnimVariant` `0x471D24` (11 B), `ShotsLaunchCall` `0x48F838` (93 B), `ShotsReloadAnim` `0x4976CB` (9 B), `ShotsLaunch` `0x499422` (29 B), `ShotsLaunchRet` `0x4999DA` (9 B).
 
 ### src/features/shots.cpp
 
@@ -3013,6 +3009,12 @@ Sites: `ShotsLaunchCall` `0x48F838` (93 B), `ShotsLaunch` `0x499422` (29 B), `Sh
 // shot that does not end the burst (count mod N != 0) the wait is the interval. The last shot plays the stock
 // animation and waits the ROF: N - 1 quick shots, then a normal one and its reload. The count belongs to the unit
 // action, which a new target replaces, so a new target starts a new burst.
+//
+// No reload between the burst's shots: an attack with a <reloadanim> plays its attack animation, then the reload
+// animation (started by FUN_004976CB once the attack animation has played), the two together paced to last the cycle
+// (0x4A11C2..0x4A120A adds the reload's length). After a shot that does not end its burst the reload hook
+// (hooks/shots_hooks.asm, 0x4976CB) runs that function on the action's idle animation instead, the aiming pose, so the
+// unit aims until its next shot; the states and the timing stay the stock ones. Only the burst's last shot reloads.
 //
 // The projectiles: a jmp over the launch call at 0x48F88D (hooks/shots_hooks.asm) calls the launch N times with
 // the same four arguments; each projectile rolls its own accuracy and spread and deals the action's damage.
@@ -3041,8 +3043,11 @@ Sites: `ShotsLaunchCall` `0x48F838` (93 B), `ShotsLaunch` `0x499422` (29 B), `Sh
 
 extern "C" {
 void UhcShotsLaunchHook();  // hooks/shots_hooks.asm
+void UhcShotsReloadHook();
 // Above 0 while some action has more than one projectile: the launch hook asks UhcShotsProjectiles only then.
 std::int32_t g_uhcShotsProjectiles = 0;
+// Above 0 while some action has a burst: the reload hook asks UhcShotsSkipReload only then.
+std::int32_t g_uhcShotsBurst = 0;
 }
 
 namespace {
@@ -3105,6 +3110,8 @@ bool g_log = false;
 unsigned g_tagLines = 0;
 unsigned g_invalidLines = 0;
 unsigned g_shotLines = 0;
+unsigned g_reloadLines = 0;
+constexpr unsigned kMaxReloadLines = 6;
 
 std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::RofRead read);
 
@@ -3121,6 +3128,7 @@ void SyncGates() {
     projectiles = projectiles || entry.projectiles > 1;
   }
   uhc::SetRofGate(&ShotsRof, burst);
+  g_uhcShotsBurst = burst ? 1 : 0;
   g_uhcShotsProjectiles = g_projectiles && projectiles ? 1 : 0;
 }
 
@@ -3130,6 +3138,7 @@ void ResetForDataLoad(char*) {
   g_tagLines = 0;
   g_invalidLines = 0;
   g_shotLines = 0;
+  g_reloadLines = 0;
 }
 
 const Entry* Find(const char* unitAction, const char** unitOut) {
@@ -3294,6 +3303,26 @@ bool EnsureReader() {
 
 extern "C" {
 
+// From the reload hook (0x4976CB), while some action has a burst: true after a shot that does not end its burst
+// (the same test as the after-shot ROF read): the idle animation plays instead of the reload.
+bool __stdcall UhcShotsSkipReload(const char* unitAction) {
+  const char* unit = nullptr;
+  const Entry* entry = unitAction == nullptr ? nullptr : Find(unitAction, &unit);
+  if (entry == nullptr || entry->shots <= 1) {
+    return false;
+  }
+  const std::int32_t count = Field<std::int32_t>(unitAction, 0x68);
+  if ((count < 0 ? 0 : count % entry->shots) == 0) {
+    return false;
+  }
+  if (g_log && g_reloadLines < kMaxReloadLines) {
+    ++g_reloadLines;  // its own budget, so the shots' lines still show whole bursts
+    uhc::Log(L"numberOfShots: unit %d (%hs) shot %d of its burst of %d: the idle animation, no reload",
+             Field<std::int32_t>(unit, 0x10), ProtoName(Field<const char*>(unit, 0x5C)), count % entry->shots, entry->shots);
+  }
+  return true;
+}
+
 // From the launch hook (0x48F88D), while some action has projectiles: how many times to call the launch for this
 // shot (at least 1).
 std::int32_t __stdcall UhcShotsProjectiles(const char* unitAction) {
@@ -3355,8 +3384,13 @@ Outcome ApplyNumberOfShots(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  if (!VerifyAll("numberOfShots", {&sites::kShotsLaunchCall, &sites::kShotsLaunch, &sites::kShotsLaunchRet}) ||
+  if (!VerifyAll("numberOfShots", {&sites::kShotsLaunchCall, &sites::kShotsLaunch, &sites::kShotsLaunchRet,
+                                     &sites::kShotsReloadAnim, &sites::kShotsAnimVariant}) ||
       !EnsureReader() || !AddRofFilter(&ShotsRof, "numberOfShots")) {
+    return Outcome::kFailed;
+  }
+  // sub esp,8 / push esi / mov esi,ecx (6 B) at the head of the reload animation's start 0x4976CB.
+  if (!WriteJmp(sites::kShotsReloadAnim.va, reinterpret_cast<const void*>(&UhcShotsReloadHook), 6)) {
     return Outcome::kFailed;
   }
   // call 499422h (5 B) at 0x48F88D, the launch of the attack step's shot.
@@ -3364,8 +3398,8 @@ Outcome ApplyNumberOfShots(const Config& config) {
     return Outcome::kFailed;
   }
   g_combat = true;  // before the data loads, which runs after every key is applied
-  Log(L"numberOfShots: attacks read <NumberOfShots> and <ShotInterval> (default %.2f s)%ls%ls (multiplayer "
-      L"unverified)",
+  Log(L"numberOfShots: attacks read <NumberOfShots> and <ShotInterval> (default %.2f s), no reload animation between "
+      L"a burst's shots%ls%ls (multiplayer unverified)",
       kDefaultIntervalMs / 1000.0,
       g_projectiles ? L", and <NumberProjectiles> projectiles per shot" : L"",
       g_log ? L"; tags and the first shots logged" : L"");
@@ -3378,8 +3412,9 @@ Outcome ApplyNumberOfShots(const Config& config) {
 ### src/hooks/shots_hooks.asm
 
 ```asm
-; The launch hook of numberOfShots "projectiles" (features/shots.cpp), entered through a jmp written over the
-; stock call and left through an explicit jmp to its verified continuation (docs/engine-symbols.md, "Rate of fire").
+; The hooks of numberOfShots (features/shots.cpp): the launch hook of "projectiles", entered through a jmp written over
+; the stock call and left through an explicit jmp to its verified continuation (docs/engine-symbols.md, "Rate of
+; fire"), and the reload hook, at the head of the reload animation's start.
 .686
 .model flat, c
 option casemap :none
@@ -3387,12 +3422,16 @@ option casemap :none
 include common.inc
 
 UhcShotsProjectiles PROTO STDCALL :DWORD
+UhcShotsSkipReload PROTO STDCALL :DWORD
 
 EXTERNDEF g_uhcShotsProjectiles:DWORD      ; above 0 while some action has more than one projectile
+EXTERNDEF g_uhcShotsBurst:DWORD            ; above 0 while some action has a burst (the reload hook asks only then)
 
 .data
 stockLaunch     dd 00499422h    ; thiscall(unitAction, unit, target, [[frame+2CCh]+28h], byte, [ua+6Ch]), ret 14h
 launchNext      dd 0048F892h    ; mov eax,[ebp+6Ch]: after the launch, ranged and melee join
+reloadBody      dd 004976D1h    ; mov eax,[esi+10h]: the body of the reload animation's start
+animVariant     dd 00471D24h    ; thiscall(unit, anim ID): the unit's model's index of that animation, below 0 if none
 
 .code
 
@@ -3429,6 +3468,75 @@ single:
     call stockLaunch                    ; the stock call, on the stock arguments
     jmp launchNext
 UhcShotsLaunchHook ENDP
+
+; Replaces sub esp,8 / push esi / mov esi,ecx (6 bytes) at 0x4976CB, the head of FUN_004976CB, thiscall(unitAction):
+; once the attack animation of a shot has played it starts the reload animation ([ua+84h], its model index [ua+88h]),
+; paced to end with the wait before the next cycle, and returns AL 1 (0 without a reload animation). Called from
+; setState(15h)'s case (0x497813) and from the update in state 19h (0x49A3E6); both go on as stock with either result.
+; After a shot that does not end its burst (UhcShotsSkipReload) the function runs on the action's idle animation
+; ([tactics action+60h], the aiming pose) instead: [ua+84h] and [ua+88h] are swapped for the call and put back, so the
+; action's states, its timing and the cycle that follows are the stock ones, and the unit aims instead of reloading.
+; Without an idle animation, or when the model lacks it, the reload plays as stock.
+UhcShotsReloadHook PROC
+    TRACE_ONCE "numberOfShots reload (0x4976CB)"
+    cmp g_uhcShotsBurst, 0
+    je stockReload
+    push ecx
+    push ecx
+    call UhcShotsSkipReload             ; true: the burst goes on
+    pop ecx
+    test al, al
+    je stockReload
+    mov eax, [ecx+4]                    ; the tactics action
+    test eax, eax
+    je stockReload
+    mov eax, [eax+60h]                  ; its idle animation
+    test eax, eax
+    jl stockReload
+    push ebx
+    push esi
+    push edi
+    mov esi, ecx
+    mov ebx, eax
+    mov ecx, [esi+10h]                  ; the unit
+    test ecx, ecx
+    je giveUp
+    push ebx
+    call animVariant
+    test eax, eax
+    jl giveUp
+    mov edi, eax
+    push dword ptr [esi+88h]
+    push dword ptr [esi+84h]
+    mov [esi+84h], ebx
+    mov [esi+88h], edi
+    mov ecx, esi
+    call reloadStart                    ; the stock function on the idle animation; AL its result
+    pop dword ptr [esi+84h]
+    pop dword ptr [esi+88h]
+    pop edi
+    pop esi
+    pop ebx
+    ret
+giveUp:
+    mov ecx, esi
+    pop edi
+    pop esi
+    pop ebx
+stockReload:
+    sub esp, 8
+    push esi
+    mov esi, ecx
+    jmp reloadBody
+UhcShotsReloadHook ENDP
+
+; The stock function, called from the hook: its head re-executed, then its body; it returns to the caller.
+reloadStart PROC
+    sub esp, 8
+    push esi
+    mov esi, ecx
+    jmp reloadBody
+reloadStart ENDP
 
 END
 ```
@@ -3511,9 +3619,9 @@ Outcome ApplyAccuracyTechs(const Config& config) {
 
 Contract: [broadsideMuzzleLimit](../porting-to-another-dll.md#broadsidemuzzlelimit).
 
-Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `BroadsideInitHead` `0x50339A` (53 B), `BroadsideMuzzleCap` `0x5033CF` (17 B), `BroadsideMuzzleClampR` `0x503447` (12 B), `BroadsideMuzzleReload` `0x5034B3` (13 B), `BroadsideMuzzleClampL` `0x5034E2` (12 B), `BroadsideSingleUseCap` `0x6A8236` (17 B), `BroadsideClampCold` `0x6A8247` (22 B).
+Sites: `ArrayResize` `0x401113` (24 B), `BroadsideInitHead` `0x50339A` (53 B), `BroadsideMuzzleCap` `0x5033CF` (17 B), `BroadsideMuzzleClampR` `0x503447` (12 B), `BroadsideMuzzleReload` `0x5034B3` (13 B), `BroadsideMuzzleClampL` `0x5034E2` (12 B), `BroadsideSingleUseCap` `0x6A8236` (17 B), `BroadsideClampCold` `0x6A8247` (22 B), `BroadsideSetupSlot` `0xB962EC` (4 B).
 
 ### src/features/broadside.cpp
 
@@ -3531,11 +3639,25 @@ Sites: `BroadsideInitHead` `0x50339A` (53 B), `BroadsideMuzzleCap` `0x5033CF` (1
 // passed on as a byte) for ships whose proto has <UnitType> (a marker, a stock type or a proto
 // name), or for every ship when no type is given. The model still decides how many muzzles there
 // are, and <SingleUsePlayer> actions keep 1. The hooks are in hooks/broadside_hooks.asm.
+//
+// More projectiles than muzzles: a BroadsideAttack action with <NumberProjectiles>P</NumberProjectiles> (or
+// <NumberOfProjectiles>; a tag stock does not read) gets P firing slots per side when the model has fewer, the
+// muzzles taken in turn (slot i fires from muzzle i mod the side's count). This is how an ability (a power that
+// runs a BroadsideAttack, such as a long-range bombardment) fires more shots than its ship has cannons; a smaller P
+// changes nothing. The set-up FUN_0050339A is reached only through its vtable slot 0xB962EC (BroadsideAttack's
+// slot 1), which points at a wrapper: the stock set-up, then the slots are added with the arrays' own resize
+// (0x401113) to the muzzle array [+68h] and the fire-time array [+74h], and [+80h], the right side's count, grows.
+// The schedule 0x4CEE48 gives slot i and slot i + [+80h] the same time, so both sides get P.
 #include <charconv>
 #include <cstdint>
 #include <cstring>
+#include <cwchar>
+#include <map>
 #include <string>
+#include <utility>
+#include <vector>
 
+#include "../actiontags.h"
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
@@ -3549,6 +3671,18 @@ constexpr int kMaxLimit = 255;  // 0x4A98F8 reads the muzzle index of a slot as 
 constexpr int kMaxLogLines = 500;
 
 int g_logLines = 0;
+bool g_log = false;
+
+constexpr std::uint32_t kSetupSlot = 0x00B962EC;  // BroadsideAttack's vtable slot 1: the set-up FUN_0050339A
+using SetupFn = void(__thiscall*)(char* action, std::int32_t arg);
+const auto kSetup = reinterpret_cast<SetupFn>(0x0050339A);
+using ResizeFn = bool(__thiscall*)(char* array, std::int32_t count, std::uint8_t keep);
+const auto kResize = reinterpret_cast<ResizeFn>(0x00401113);
+using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
+
+// <NumberProjectiles> per {proto ID, action name index}, as numberOfShots keys its tags; filled while the data loads.
+std::map<std::pair<std::int32_t, std::int32_t>, std::int32_t> g_projectiles;
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -3569,6 +3703,104 @@ bool ParseLimit(const std::string& text, std::int32_t* limit) {
   }
   *limit = value;
   return true;
+}
+
+}  // namespace
+
+extern "C" {
+extern std::int32_t g_uhcBroadsideType;
+extern std::int32_t g_uhcBroadsideAll;
+}
+
+namespace {
+
+void ForgetProjectiles(char*) { g_projectiles.clear(); }
+
+void ReadProjectiles(const uhc::ActionTag& tag) {
+  if (_wcsicmp(tag.name, L"NumberProjectiles") != 0 && _wcsicmp(tag.name, L"NumberOfProjectiles") != 0) {
+    return;
+  }
+  const std::int32_t name = Field<std::int32_t>(tag.action, 0x04);
+  if (name < 0 || tag.text == nullptr) {
+    return;
+  }
+  wchar_t* end = nullptr;
+  const long value = std::wcstol(tag.text, &end, 10);
+  while (end != nullptr && (*end == L' ' || *end == L'\t' || *end == L'\r' || *end == L'\n')) {
+    ++end;
+  }
+  if (end == tag.text || end == nullptr || *end != L'\0' || value < 1 || value > kMaxLimit) {
+    if (g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"broadsideMuzzleLimit: proto %d, action %d: <%ls>%ls</%ls> is not a whole number from 1 to %d; ignored",
+               Field<std::int32_t>(tag.proto, 0x04), name, tag.name, tag.text, tag.name, kMaxLimit);
+    }
+    return;
+  }
+  g_projectiles[{Field<std::int32_t>(tag.proto, 0x04), name}] = static_cast<std::int32_t>(value);
+}
+
+// The muzzle indices of one side's slots, taken in turn up to `want` slots.
+std::vector<std::int32_t> Side(const std::int32_t* muzzles, std::int32_t count, std::int32_t want) {
+  std::vector<std::int32_t> out;
+  for (std::int32_t i = 0; count > 0 && i < (want > count ? want : count); ++i) {
+    out.push_back(muzzles[i % count]);
+  }
+  return out;
+}
+
+// After the stock set-up: P slots per side for an action of a ship the limit applies to.
+void AddSlots(char* action) {
+  if (g_projectiles.empty()) {
+    return;
+  }
+  const char* protoAction = Field<const char*>(action, 0x04);
+  const char* unit = Field<const char*>(action, 0x10);
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  // The ships the limit applies to, as the limit hook decides (its g_uhcBroadsideAction is cleared by the log hook).
+  if (protoAction == nullptr || proto == nullptr ||
+      (g_uhcBroadsideAll == 0 && (g_uhcBroadsideType < 0 || !kProtoIsType(proto, g_uhcBroadsideType)))) {
+    return;
+  }
+  const auto found = g_projectiles.find({Field<std::int32_t>(proto, 0x04), Field<std::int32_t>(protoAction, 0x04)});
+  const std::int32_t total = Field<std::int32_t>(action, 0x6C);
+  const std::int32_t right = Field<std::int32_t>(action, 0x80);
+  const std::int32_t left = total - right;
+  if (found == g_projectiles.end() || right < 0 || left < 0 || Field<std::int32_t>(action, 0x78) != total ||
+      (found->second <= right && found->second <= left)) {
+    return;
+  }
+  const std::int32_t* muzzles = Field<const std::int32_t*>(action, 0x68);
+  const std::vector<std::int32_t> r = Side(muzzles, right, found->second);
+  const std::vector<std::int32_t> l = Side(muzzles + right, left, found->second);
+  // The schedule gives a left slot the time of the right slot with its index; a left side longer than the right
+  // would leave its last slots without a time (never fired), as stock never makes one.
+  const std::int32_t rightCount = static_cast<std::int32_t>(r.size());
+  const std::int32_t leftCount = static_cast<std::int32_t>(l.size() <= r.size() ? l.size() : r.size());
+  const std::int32_t newTotal = rightCount + leftCount;
+  if (!kResize(action + 0x68, newTotal, 0) || !kResize(action + 0x74, newTotal, 0)) {
+    return;
+  }
+  auto* slots = Field<std::int32_t*>(action, 0x68);
+  auto* times = Field<std::int32_t*>(action, 0x74);
+  for (std::int32_t i = 0; i < newTotal; ++i) {
+    slots[i] = i < rightCount ? r[i] : l[i - rightCount];
+    times[i] = 0;
+  }
+  *reinterpret_cast<std::int32_t*>(action + 0x80) = rightCount;
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"broadsideMuzzleLimit: unit %d (%hs), action %d: %d projectiles per side over %d right and %d left muzzles: "
+             L"%d and %d slots",
+             Field<std::int32_t>(unit, 0x10), ProtoName(unit), Field<std::int32_t>(protoAction, 0x04), found->second,
+             right, left, rightCount, leftCount);
+  }
+}
+
+// BroadsideAttack's set-up, thiscall(action, arg), through its vtable slot.
+void __fastcall SetupWrapper(char* action, void*, std::int32_t arg) {
+  kSetup(action, arg);
+  AddSlots(action);
 }
 
 }  // namespace
@@ -3626,6 +3858,7 @@ Outcome ApplyBroadsideMuzzleLimit(const Config& config) {
   for (std::size_t i = 1; i < args.size(); ++i) {
     if (_stricmp(args[i].c_str(), "log") == 0) {
       log = true;
+      g_log = true;
     } else if (typeName.empty()) {
       typeName = args[i];
     } else {
@@ -3638,7 +3871,7 @@ Outcome ApplyBroadsideMuzzleLimit(const Config& config) {
   if (!VerifyAll("broadsideMuzzleLimit",
                  {&sites::kBroadsideInitHead, &sites::kBroadsideMuzzleCap, &sites::kBroadsideMuzzleClampR,
                   &sites::kBroadsideMuzzleReload, &sites::kBroadsideMuzzleClampL, &sites::kBroadsideSingleUseCap,
-                  &sites::kBroadsideClampCold})) {
+                  &sites::kBroadsideClampCold, &sites::kBroadsideSetupSlot, &sites::kArrayResize})) {
     return Outcome::kFailed;
   }
 
@@ -3655,13 +3888,20 @@ Outcome ApplyBroadsideMuzzleLimit(const Config& config) {
   if (log && !WriteJmp(sites::kBroadsideMuzzleClampL.va, reinterpret_cast<const void*>(&UhcBroadsideLogHook), 6)) {
     return Outcome::kFailed;
   }
+  // <NumberProjectiles>: the tag, and the set-up's vtable slot.
+  if (!OnDatabaseLoad(&ForgetProjectiles) || !AddActionTagHandler(&ReadProjectiles) ||
+      !WriteDword(kSetupSlot, static_cast<std::uint32_t>(reinterpret_cast<std::uintptr_t>(&SetupWrapper)))) {
+    return Outcome::kFailed;
+  }
   if (typeName.empty()) {
     Log(L"broadsideMuzzleLimit: every ship uses up to %d muzzles per side in a broadside (stock 6; "
-        L"SingleUsePlayer attacks keep 1)%ls (multiplayer unverified)",
+        L"SingleUsePlayer attacks keep 1), and <NumberProjectiles> fires that many per side over its muzzles%ls "
+        L"(multiplayer unverified)",
         limit, log ? L", every set-up logged" : L"");
   } else {
     Log(L"broadsideMuzzleLimit: ships of unittype %hs use up to %d muzzles per side in a broadside (stock 6; "
-        L"SingleUsePlayer attacks keep 1)%ls (multiplayer unverified)",
+        L"SingleUsePlayer attacks keep 1), and <NumberProjectiles> fires that many per side over its muzzles%ls "
+        L"(multiplayer unverified)",
         typeName.c_str(), limit, log ? L", every set-up logged" : L"");
   }
   return Outcome::kApplied;
@@ -4187,14 +4427,13 @@ Sites: `SnareCreate` `0x4DD201` (44 B).
 ### src/features/cantslow.cpp
 
 ```cpp
-// cantBeSlowed: a unit whose proto has the abstract type CantBeSlowed ignores <TargetSpeedBoost>, and a
-// unit whose proto has CannotSnare does not snare with its own attacks.
+// cantBeSlowed: a unit whose proto has the abstract type CantBeSlowed ignores <TargetSpeedBoost>.
+// (An attacker that should not snare has the snare removed from that attack in its tactics; the key does
+// not read a type on the attacker.)
 //
 // Stock snares a target at one place: 0x4DD1DE tests that it can move, and 0x4DD201 pushes the arguments
-// of the modifier's creator 0x4DD22D. There EBP is still the attacker's unit action, whose unit is at
-// [ebp+10h] (the one caller, 0x48F9F5 in FUN_004B7766, keeps it in EBP and FUN_0048FA07 never writes it).
-// The hook leaves through the snare's exit for a marked target or a marked attacker. damageOverTime's
-// snare asks UhcCantBeSlowed and UhcCannotSnare too. The hook is in hooks/cantslow_hooks.asm.
+// of the modifier's creator 0x4DD22D. The hook leaves through the snare's exit for a marked target.
+// damageOverTime's snare asks UhcCantBeSlowed too. The hook is in hooks/cantslow_hooks.asm.
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -4217,7 +4456,6 @@ const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 bool g_log = false;
 int g_logLines = 0;
 std::int32_t g_type = -1;
-std::int32_t g_attackerType = -1;
 
 bool HasType(const char* unit, std::int32_t type) {
   if (unit == nullptr || type < 0) {
@@ -4245,19 +4483,6 @@ extern "C" bool __stdcall UhcCantBeSlowed(const char* unit) {
   return true;
 }
 
-// From the hook and from damageOverTime, with the attacking unit (null when it is gone: then the snare
-// is as stock). True: no snare.
-extern "C" bool __stdcall UhcCannotSnare(const char* attacker) {
-  if (!HasType(attacker, g_attackerType)) {
-    return false;
-  }
-  if (g_log && g_logLines < kMaxLogLines) {
-    ++g_logLines;
-    uhc::Log(L"cantBeSlowed: proto %d does not snare (CannotSnare)", ProtoId(attacker));
-  }
-  return true;
-}
-
 namespace uhc {
 
 Outcome ApplyCantBeSlowed(const Config& config) {
@@ -4273,11 +4498,10 @@ Outcome ApplyCantBeSlowed(const Config& config) {
     g_log = true;
   }
   if (!VerifyAll("cantBeSlowed", {&sites::kSnareCreate}) || !RequestAbstractUnitType("CantBeSlowed", &g_type) ||
-      !RequestAbstractUnitType("CannotSnare", &g_attackerType) ||
       !WriteJmp(sites::kSnareCreate.va, reinterpret_cast<const void*>(&UhcCantBeSlowedHook), 6)) {
     return Outcome::kFailed;
   }
-  Log(L"cantBeSlowed: the abstract types CantBeSlowed (on the target) and CannotSnare (on the attacker) are on");
+  Log(L"cantBeSlowed: the abstract type CantBeSlowed (on the target) is on");
   return Outcome::kApplied;
 }
 
@@ -4296,7 +4520,6 @@ option casemap :none
 include common.inc
 
 UhcCantBeSlowed PROTO STDCALL unit:DWORD
-UhcCannotSnare PROTO STDCALL attacker:DWORD
 
 .data
 snareNext       dd 004DD207h    ; push 0BB8h: the rest of the creator's arguments
@@ -4305,15 +4528,10 @@ snareExit       dd 0048FA49h    ; pop esi / pop ecx ..., where the snare ends
 .code
 
 ; Replaces 0x4DD201..0x4DD206 (push 1 / push -1 / push -1), the creator's last arguments, re-executed
-; here. ESI = the target; EBP = the attacker's unit action, [ebp+10h] its unit (FUN_004B7766 keeps it in
-; EBP, and FUN_0048FA07 does not write it). The code after it sets ECX itself and reads neither EAX nor EDX.
+; here. ESI = the target. The code after it sets ECX itself and reads neither EAX nor EDX.
 UhcCantBeSlowedHook PROC
     TRACE_ONCE "cantBeSlowed (0x4DD201)"
     invoke UhcCantBeSlowed, esi
-    test al, al
-    jne skip
-    mov eax, [ebp+10h]
-    invoke UhcCannotSnare, eax
     test al, al
     jne skip
     push 1
@@ -6409,9 +6627,9 @@ END
 
 Contract: [veterancyBonus](../porting-to-another-dll.md#veterancybonus).
 
-Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`killobservers.h`](helpers.md#kill-observers), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`transformcalls.h`](helpers.md#transform-calls), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`floatingtext.h`](helpers.md#floating-text), [`killobservers.h`](helpers.md#kill-observers), [`modifiers.h`](helpers.md#modifier-walk), [`prototags.h`](helpers.md#proto-tags), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`techsubtypes.h`](helpers.md#tech-subtypes), [`transformcalls.h`](helpers.md#transform-calls), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareApply` `0x4DD22D` (130 B).
+Sites: `CivById` `0x405C2E` (24 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareApply` `0x4DD22D` (130 B), `CivByName` `0x52D6FF` (28 B), `TechByName` `0x600BE1` (16 B), `TechActive` `0x94AF27` (51 B).
 
 ### src/features/veterancy.cpp
 
@@ -6425,14 +6643,24 @@ Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareApply` `0x4
 // (1.15 then 1.30 is ×1.30 at the second row, not 1.15 × 1.30; +2 then +3 is +3). modifytype takes every
 // <ModifyType> name. Multiply and add rows of one stat are two separate series.
 //
+//   <VeterancyBonus kills="2" modifytype="Damage" tech="SomeTech">1.25</VeterancyBonus>
+// A row with tech="..." counts only for a player who has that tech active: at a kill, and when the tech becomes
+// active (a world tick looks at the named techs of each player), for units that already have the kills. What a
+// row gave stays when its tech goes inactive. An unknown tech name is logged and its rows never count.
+//
 // The data file veterancy.xml (the build's data folder, hostfiles.h) holds what is not per proto:
 //   <Veterancy>
+//     <Civilization name="British">
+//       <VeterancyDefault unittype="AbstractInfantry"> <VeterancyBonus .../> ... </VeterancyDefault>
+//     </Civilization>
 //     <VeterancyDefault unittype="AbstractInfantry"> <VeterancyBonus .../> ... </VeterancyDefault>
 //     <VeterancyRank rank="1" name="Veteran" color="DA8228"/>
 //   </Veterancy>
-// A default's rows go to every proto of that unit type with no rows of its own (the first default in the file
-// whose type the player's proto has); a proto's own rows replace the defaults entirely. A rank's name (a text,
-// or a string ID) and colour (RRGGBB) are shown by the floating text and the unit panel's row; "Rank N" otherwise.
+// A default's rows go to every proto of that unit type with no rows of its own: the first default of the player's
+// civ (a <Civilization> block) whose type the player's proto has, else the first global one (outside any block);
+// a proto's own rows replace the defaults entirely. An unknown civ name is logged and its block ignored. A rank's
+// name (a text, or a string ID) and colour (RRGGBB) are shown by the floating text and the unit panel's row; "Rank N"
+// otherwise.
 //
 // Stock's flag ExperienceUnit has no reader in the exe, so nothing counts a unit's kills. The key observes
 // TakeDamage's kill path (killobservers.h, shared with killSpawn), where the attacker unit is known. The count and the bonuses are all stat
@@ -6445,8 +6673,13 @@ Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareApply` `0x4
 //   an add is in their units; every other stock stat starts from 1.0, so an add of 0.25 is +25% of the base.
 // A transform in place (0x9C754C: TransformUnit, revolutions) ends the unit's modifiers, so its seven
 // calls go through a wrapper that puts the count back, and the bonuses of the kills reached that the
-// new proto's rows give. The rows are read once, by proto ID, and are the same for every player. The hook is in
-// hooks/killobservers_hooks.asm.
+// new proto's rows give. The rows are read once, by proto ID; which of them count depends on the player's civ and
+// techs. The hook is in hooks/killobservers_hooks.asm.
+//
+// Rows given: rows with a tech can be given out of kills order, so the rows a unit was given are kept on the unit, in
+// a saved marker (savedmarkers.h, stat 6Ah: a tag and 96 bits, one per row of its rows in kills order). A unit
+// without the marker was given every row without a tech up to its kills (as before techs), so protos whose rows name
+// no tech never get one. A series' total is that of its given row with the most kills.
 //
 // Two tech effects of type="Data" act on one player's copy of the proto: subtype="VeterancyEnable" (0 turns the
 // rows off for that player, anything else on; base 1) and subtype="VeterancyBonus" (a factor on what every row
@@ -6476,6 +6709,7 @@ Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `SnareApply` `0x4
 #include "../modifiers.h"
 #include "../patch.h"
 #include "../prototags.h"
+#include "../savedmarkers.h"
 #include "../techsubtypes.h"
 #include "../transformcalls.h"
 #include "../unitmodels.h"
@@ -6496,6 +6730,10 @@ constexpr std::uint32_t kGameGlobal = 0x00C66234;
 constexpr std::uint32_t kMarkTickMs = 250;
 constexpr std::uint32_t kTimeJumpMs = 2000;  // more than a world update: a game was loaded
 constexpr std::int32_t kMarkRanks = 5;       // tools/rings has this many; a higher rank keeps the last
+constexpr std::int32_t kStatGiven = 0x6A;     // savedmarkers.h: the rows a unit was given
+constexpr std::uint32_t kGivenTag = 0x47544556;  // "VETG", word 0 of that marker
+constexpr std::size_t kTrackedRows = 96;          // words 1 to 3 of it
+constexpr std::uint32_t kTechTickMs = 500;
 
 using XmlAttributeFn = bool(__thiscall*)(const void* node, const char* name, const void** out);
 using XmlTextFn = const char*(__thiscall*)(const void* text);
@@ -6518,6 +6756,14 @@ using NameBucketFn = std::int32_t(__thiscall*)(const char* table, const char* na
 using NameFindFn = bool(__thiscall*)(const char* table, const char* name, std::int32_t bucket, std::int32_t* id);
 const auto kNameBucket = reinterpret_cast<NameBucketFn>(0x0058E685);
 const auto kNameFind = reinterpret_cast<NameFindFn>(0x0040295B);
+using TechByNameFn = std::int32_t(__thiscall*)(const char* database, const char* name);
+using TechActiveFn = bool(__thiscall*)(const char* techStatus, std::int32_t playerId, std::int32_t techId);
+const auto kTechByName = reinterpret_cast<TechByNameFn>(0x00600BE1);
+const auto kTechActive = reinterpret_cast<TechActiveFn>(0x0094AF27);
+using CivByNameFn = const char*(__thiscall*)(const char* database, const char* name);
+using CivByIdFn = const char*(__thiscall*)(const char* database, std::int32_t id);
+const auto kCivByName = reinterpret_cast<CivByNameFn>(0x0052D6FF);
+const auto kCivById = reinterpret_cast<CivByIdFn>(0x00405C2E);
 
 // The engine's string: one pointer to a wide, reference-counted buffer.
 struct BString {
@@ -6534,10 +6780,28 @@ struct Row {
   std::int32_t kills;
   std::int32_t stat;
   float total;
-  bool add;  // op="add": total is what is added in all; else a multiplier in all
+  bool add;               // op="add": total is what is added in all; else a multiplier in all
+  std::int32_t tech = -1;  // tech="...": an index of g_techs; -1 none
 };
 
 std::unordered_map<std::int32_t, std::vector<Row>> g_rows;  // by proto ID; the load fills it
+
+// The tech names rows give, resolved to tech IDs once per database load (-2 not yet, -3 unknown).
+struct TechRef {
+  std::string name;
+  std::int32_t id = -2;
+};
+std::vector<TechRef> g_techs;
+
+std::int32_t TechIndex(const std::string& name) {
+  for (std::size_t i = 0; i < g_techs.size(); ++i) {
+    if (_stricmp(g_techs[i].name.c_str(), name.c_str()) == 0) {
+      return static_cast<std::int32_t>(i);
+    }
+  }
+  g_techs.push_back({name, -2});
+  return static_cast<std::int32_t>(g_techs.size() - 1);
+}
 
 // A row of veterancy.xml, before its modifytype is resolved at the first use in a game.
 struct DefaultRow {
@@ -6545,12 +6809,15 @@ struct DefaultRow {
   std::wstring stat;
   float total;
   bool add;
+  std::int32_t tech;
 };
 struct Default {
   std::string type;
   std::vector<DefaultRow> source;
   std::int32_t typeId = -1;
   std::vector<Row> rows;  // resolved, sorted by kills
+  std::string civ;        // the <Civilization> block's name; empty: global
+  const char* civObject = nullptr;  // resolved; null with a civ name: unknown, the block is ignored
 };
 std::vector<Default> g_defaults;  // in file order
 bool g_resolved = false;          // the defaults' names are resolved against this database load
@@ -6570,6 +6837,10 @@ struct TechOverride {
 };
 std::unordered_map<const char*, TechOverride> g_tech;  // by the player's copy of the proto
 bool g_log = false;
+bool g_anyTechRows = false;  // some row names a tech: the tech tick has work
+std::map<std::pair<std::int32_t, std::int32_t>, bool> g_techSeen;  // (player, tech ID): active at the last look
+const char* g_techWorld = nullptr;
+std::uint32_t g_nextTechLook = 0;
 int g_logLines = 0;
 
 bool g_marks = false;                     // the sites of the marks are stock
@@ -6643,6 +6914,12 @@ void ChangeFactor(char* proto, const char*, float amount, std::uint8_t relativit
 void ForgetOnDataLoad(char*) {
   g_resolved = false;
   g_tech.clear();
+  g_rows.clear();  // the protos are read again after this
+  for (TechRef& tech : g_techs) {
+    tech.id = -2;
+  }
+  g_techSeen.clear();
+  g_techWorld = nullptr;
   g_marked.clear();
   g_pending.clear();
   std::fill(std::begin(g_rankModels), std::end(g_rankModels), -2);
@@ -6684,10 +6961,26 @@ void ResolveDefaults() {
     return;
   }
   g_resolved = true;
+  for (TechRef& tech : g_techs) {
+    tech.id = kTechByName(database, tech.name.c_str());
+    if (tech.id < 0) {
+      tech.id = -3;
+      uhc::Log(L"veterancyBonus: no tech named %hs; the rows that name it never count", tech.name.c_str());
+    }
+  }
   const char* table = database + 0x190;
   for (Default& entry : g_defaults) {
     entry.typeId = -1;
     entry.rows.clear();
+    entry.civObject = nullptr;
+    if (!entry.civ.empty()) {
+      entry.civObject = kCivByName(database, entry.civ.c_str());
+      if (entry.civObject == nullptr) {
+        uhc::Log(L"veterancyBonus: %ls: unknown civilization %hs; its default rows for %hs are ignored", g_file.c_str(),
+                 entry.civ.c_str(), entry.type.c_str());
+        continue;
+      }
+    }
     std::int32_t id = -1;
     if (!kNameFind(table, entry.type.c_str(), kNameBucket(table, entry.type.c_str()), &id)) {
       uhc::Log(L"veterancyBonus: %ls: unknown unit type %hs; its default rows are ignored", g_file.c_str(),
@@ -6705,18 +6998,29 @@ void ResolveDefaults() {
                  g_file.c_str(), entry.type.c_str(), row.kills, row.stat.c_str(), static_cast<double>(row.total));
         continue;
       }
-      entry.rows.push_back({row.kills, stat, row.total, row.add});
+      entry.rows.push_back({row.kills, stat, row.total, row.add, row.tech});
     }
     SortRows(entry.rows);
     if (g_log) {
-      uhc::Log(L"veterancyBonus: %u default rows for unit type %hs (%d)", static_cast<unsigned>(entry.rows.size()),
-               entry.type.c_str(), entry.typeId);
+      uhc::Log(L"veterancyBonus: %u default rows for unit type %hs (%d)%ls%hs", static_cast<unsigned>(entry.rows.size()),
+               entry.type.c_str(), entry.typeId, entry.civ.empty() ? L"" : L", civilization ", entry.civ.c_str());
     }
   }
 }
 
-// The rows of a player's copy of a proto: its own, else the first default whose unit type it has; null if none.
-const std::vector<Row>* RowsFor(const char* proto) {
+// A player's civ object, or null.
+const char* CivOf(const char* player) {
+  const char* database = Database();
+  if (database == nullptr || player == nullptr || Field<std::int32_t>(player, 0x24) <= 0) {
+    return nullptr;
+  }
+  return kCivById(database, *Field<const std::int32_t*>(player, 0x20));
+}
+
+// The rows of a unit (its player's copy of its proto): the proto's own, else the first default of the player's civ
+// whose unit type it has, else the first global one; null if none.
+const std::vector<Row>* RowsFor(const char* unit) {
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
   if (proto == nullptr) {
     return nullptr;
   }
@@ -6728,12 +7032,45 @@ const std::vector<Row>* RowsFor(const char* proto) {
     return nullptr;
   }
   ResolveDefaults();
-  for (const Default& entry : g_defaults) {
-    if (entry.typeId >= 0 && !entry.rows.empty() && kProtoIsType(proto, entry.typeId)) {
-      return &entry.rows;
+  const char* civ = nullptr;
+  bool civLooked = false;
+  for (int pass = 0; pass < 2; ++pass) {
+    for (const Default& entry : g_defaults) {
+      if (entry.civ.empty() != (pass == 1) || entry.typeId < 0 || entry.rows.empty()) {
+        continue;
+      }
+      if (pass == 0) {
+        if (!civLooked) {
+          civ = CivOf(Field<const char*>(unit, 0x44));
+          civLooked = true;
+        }
+        if (civ == nullptr || entry.civObject != civ) {
+          continue;
+        }
+      }
+      if (kProtoIsType(proto, entry.typeId)) {
+        return &entry.rows;
+      }
     }
   }
   return nullptr;
+}
+
+// A row counts for this player: it names no tech, or a known tech the player has active.
+bool RowActive(const Row& row, const char* player) {
+  if (row.tech < 0) {
+    return true;
+  }
+  ResolveDefaults();
+  const std::int32_t id = row.tech < static_cast<std::int32_t>(g_techs.size()) ? g_techs[row.tech].id : -3;
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const char* status = world == nullptr ? nullptr : Field<const char*>(world, 0x7C);
+  return id >= 0 && status != nullptr && player != nullptr && kTechActive(status, Field<std::int32_t>(player, 0), id);
+}
+
+bool AnyTech(const std::vector<Row>& rows) {
+  return std::any_of(rows.begin(), rows.end(), [](const Row& row) { return row.tech >= 0; });
 }
 
 bool AnyRows() { return !g_rows.empty() || !g_defaults.empty(); }
@@ -6763,6 +7100,8 @@ std::uint32_t RankColour(std::int32_t rank) {
   return found != g_styles.end() ? found->second.colour : kRankColour;
 }
 
+std::string Trim(const std::string& text);
+
 bool __cdecl ReadVeterancyBonus(void*, const char* node, char* proto) {
   const std::int32_t id = Field<std::int32_t>(proto, 8);
   const void* killsText = nullptr;
@@ -6789,12 +7128,22 @@ bool __cdecl ReadVeterancyBonus(void*, const char* node, char* proto) {
              amount);
     return true;
   }
+  const void* techText = nullptr;
+  const char* techName = kXmlAttribute(node, "tech", &techText) && techText != nullptr ? kXmlText(techText) : nullptr;
+  const std::string tech = techName != nullptr ? Trim(techName) : std::string();
+  if (techName != nullptr && tech.empty()) {
+    uhc::Log(L"veterancyBonus: proto %d: a row with an empty tech=\"\" is ignored", id);
+    return true;
+  }
   std::vector<Row>& rows = g_rows[id];
-  rows.push_back({kills, stat, total, add});
+  rows.push_back({kills, stat, total, add, tech.empty() ? -1 : TechIndex(tech)});
   SortRows(rows);
+  if (!tech.empty()) {
+    g_anyTechRows = true;
+  }
   if (g_log) {
-    uhc::Log(L"veterancyBonus: proto %d: from %d kills, stat %d %ls%g", id, kills, stat, add ? L"+" : L"x",
-             static_cast<double>(total));
+    uhc::Log(L"veterancyBonus: proto %d: from %d kills, stat %d %ls%g%ls%hs", id, kills, stat, add ? L"+" : L"x",
+             static_cast<double>(total), tech.empty() ? L"" : L", with tech ", tech.c_str());
   }
   return true;
 }
@@ -6822,25 +7171,66 @@ float KillsOf(const char* unit) {
   return count != nullptr ? Field<float>(count, 0x68) : 0.0f;
 }
 
-// Each distinct kills value is a rank.
-std::int32_t RankOf(const std::vector<Row>& rows, float kills) {
+// The rows a unit was given, one bit per row of its rows (in kills order).
+struct Given {
+  std::uint32_t bits[3] = {0, 0, 0};
+  bool Has(std::size_t i) const { return i < kTrackedRows && (bits[i / 32] >> (i % 32) & 1) != 0; }
+  void Set(std::size_t i) {
+    if (i < kTrackedRows) {
+      bits[i / 32] |= 1u << (i % 32);
+    }
+  }
+};
+
+// From the unit's marker; without one, every row without a tech up to `upTo` kills (what a unit was given before
+// rows had techs, and all a unit gets while its rows name none).
+Given GivenOf(const char* unit, const std::vector<Row>& rows, float upTo) {
+  Given given;
+  if (char* marker = uhc::markers::Find(unit, kStatGiven, kGivenTag)) {
+    for (int w = 0; w < 3; ++w) {
+      given.bits[w] = uhc::markers::Word(marker, w + 1);
+    }
+    return given;
+  }
+  for (std::size_t i = 0; i < rows.size(); ++i) {
+    if (rows[i].tech < 0 && static_cast<float>(rows[i].kills) <= upTo) {
+      given.Set(i);
+    }
+  }
+  return given;
+}
+
+void SaveGiven(char* unit, const Given& given) {
+  char* marker = uhc::markers::Find(unit, kStatGiven, kGivenTag);
+  if (marker == nullptr) {
+    marker = uhc::markers::Take(unit, kStatGiven);
+  }
+  if (marker == nullptr) {
+    return;
+  }
+  uhc::markers::Word(marker, 0) = kGivenTag;
+  for (int w = 0; w < 3; ++w) {
+    uhc::markers::Word(marker, w + 1) = given.bits[w];
+  }
+}
+
+// Each distinct kills value among the rows given is a rank.
+std::int32_t RankOf(const std::vector<Row>& rows, const Given& given) {
   std::int32_t rank = 0;
   std::int32_t last = 0;
-  for (const Row& row : rows) {
-    if (static_cast<float>(row.kills) > kills) {
-      break;
+  for (std::size_t i = 0; i < rows.size(); ++i) {
+    if (!given.Has(i) || rows[i].kills == last) {
+      continue;
     }
-    if (row.kills != last) {
-      ++rank;
-      last = row.kills;
-    }
+    ++rank;
+    last = rows[i].kills;
   }
   return rank;
 }
 
 std::int32_t RankOfUnit(const char* unit) {
-  const std::vector<Row>* rows = RowsFor(Field<const char*>(unit, 0x5C));
-  return rows == nullptr ? 0 : RankOf(*rows, KillsOf(unit));
+  const std::vector<Row>* rows = RowsFor(unit);
+  return rows == nullptr ? 0 : RankOf(*rows, GivenOf(unit, *rows, KillsOf(unit)));
 }
 
 std::int32_t RankModel(std::int32_t rank) {
@@ -6900,7 +7290,7 @@ void ScanWorld(const char* world) {
   for (std::int32_t i = 0; table != nullptr && i < count; ++i) {
     const char* unit = table[i];
     const char* proto = unit != nullptr ? Field<const char*>(unit, 0x5C) : nullptr;
-    if (proto != nullptr && RowsFor(proto) != nullptr && FindCount(unit) != nullptr) {
+    if (proto != nullptr && RowsFor(unit) != nullptr && FindCount(unit) != nullptr) {
       g_pending.push_back(Field<std::int32_t>(unit, 0x10));
     }
   }
@@ -6952,17 +7342,27 @@ void Tick(char* world, std::int32_t) {
   }
 }
 
-// The modifier of one row: what its total adds to the row before it of the same stat and operation, so the
-// total from that rank on is the row's. Returns the value given.
-float ApplyRow(char* unit, const char* proto, const std::vector<Row>& rows, const Row& row) {
-  float before = row.add ? 0.0f : 1.0f;
-  for (const Row& earlier : rows) {
-    if (earlier.kills < row.kills && earlier.stat == row.stat && earlier.add == row.add) {
-      before = earlier.total;
+// A series' total: that of its given row with the most kills (the later one of equal kills); none: 1, or 0 to add.
+float SeriesTotal(const std::vector<Row>& rows, const Given& given, std::int32_t stat, bool add) {
+  float total = add ? 0.0f : 1.0f;
+  for (std::size_t i = 0; i < rows.size(); ++i) {
+    if (given.Has(i) && rows[i].stat == stat && rows[i].add == add) {
+      total = rows[i].total;
     }
   }
+  return total;
+}
+
+// Gives row i: the modifier of what its series' total becomes against what it was, so the total from that rank on
+// is the row's (a row given out of kills order changes nothing when its series already has a row of more kills).
+// Returns the value given (1, or 0 to add, when nothing changed).
+float GiveRow(char* unit, const char* proto, const std::vector<Row>& rows, Given* given, std::size_t i) {
+  const Row& row = rows[i];
+  const float before = SeriesTotal(rows, *given, row.stat, row.add);
+  given->Set(i);
+  const float after = SeriesTotal(rows, *given, row.stat, row.add);
   if (row.add) {
-    const float amount = TotalFor(proto, row.total, true) - TotalFor(proto, before, true);
+    const float amount = TotalFor(proto, after, true) - TotalFor(proto, before, true);
     if (amount != 0.0f) {
       kModifier(unit, row.stat, amount, -1.0f, -1.0f, 0, kOperationAdd, 0, -1, -1, 0);
     }
@@ -6972,9 +7372,57 @@ float ApplyRow(char* unit, const char* proto, const std::vector<Row>& rows, cons
   if (from <= 0.0f) {
     return 1.0f;  // a factor took the row before to 0: nothing to scale
   }
-  const float ratio = TotalFor(proto, row.total, false) / from;
-  kModifier(unit, row.stat, ratio, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
+  const float ratio = TotalFor(proto, after, false) / from;
+  if (ratio != 1.0f) {
+    kModifier(unit, row.stat, ratio, -1.0f, -1.0f, 0, kOperationMultiply, 0, -1, -1, 0);
+  }
   return ratio;
+}
+
+// Gives every row the unit's kills reach that counts for its player and was not given yet, in kills order. `upTo`:
+// the kills whose rows without a tech a unit with no marker already has. Returns the rank before and after.
+struct Synced {
+  std::int32_t before = 0;
+  std::int32_t after = 0;
+  float applied = 1.0f;  // the last value given, for the log
+  bool add = false;
+  bool changed = false;
+};
+Synced GiveReached(char* unit, const std::vector<Row>& rows, float kills, float upTo) {
+  Synced out;
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* player = Field<const char*>(unit, 0x44);
+  Given given = GivenOf(unit, rows, upTo);
+  out.before = RankOf(rows, given);
+  for (std::size_t i = 0; i < rows.size(); ++i) {
+    if (static_cast<float>(rows[i].kills) > kills) {
+      break;
+    }
+    if (given.Has(i) || (i >= kTrackedRows && static_cast<float>(rows[i].kills) <= upTo) || !RowActive(rows[i], player)) {
+      continue;
+    }
+    out.applied = GiveRow(unit, proto, rows, &given, i);
+    out.add = rows[i].add;
+    out.changed = true;
+  }
+  if (out.changed && AnyTech(rows)) {
+    SaveGiven(unit, given);  // rows with a tech: the rows given are no longer a function of the kills
+  }
+  out.after = RankOf(rows, given);
+  return out;
+}
+
+// The floating text of a new rank, and its mark.
+void ShowRank(char* unit, std::int32_t rank) {
+  const auto style = g_styles.find(rank);
+  if (style != g_styles.end() && style->second.stringId >= 0) {
+    uhc::ShowUnitText(unit, nullptr, style->second.stringId, style->second.colour);
+  } else {
+    uhc::ShowUnitText(unit, RankName(rank).c_str(), -1, RankColour(rank));
+  }
+  if (g_marks) {
+    g_pending.push_back(Field<std::int32_t>(unit, 0x10));
+  }
 }
 
 // Around the transform in place, which ends the unit's modifiers.
@@ -6982,6 +7430,8 @@ float KillsBeforeTransform(const char* unit) {
   const char* count = AnyRows() ? FindCount(unit) : nullptr;
   return count != nullptr ? Field<float>(count, 0x68) : 0.0f;
 }
+
+void ShowRank(char* unit, std::int32_t rank);
 
 void RestoreAfterTransform(char* unit, float kills) {
   if (kills < 1.0f || FindCount(unit) != nullptr) {
@@ -6992,18 +7442,14 @@ void RestoreAfterTransform(char* unit, float kills) {
   }
   kModifier(unit, kStatKills, kills, -1.0f, -1.0f, 0, kOperationSet, 0, -1, -1, 0);
   const char* now = Field<const char*>(unit, 0x5C);
-  const std::vector<Row>* rows = RowsFor(now);
+  const std::vector<Row>* rows = RowsFor(unit);
   if (rows == nullptr) {
     return;
   }
   // The same modifiers, in the same order, as the kills made them: the stat sum applies them one after the
-  // other (0x4B3C7D), so a multiply and an add of one stat give another result in another order.
-  for (const Row& row : *rows) {
-    if (static_cast<float>(row.kills) > kills) {
-      break;
-    }
-    ApplyRow(unit, now, *rows, row);
-  }
+  // other (0x4B3C7D), so a multiply and an add of one stat give another result in another order. The transform
+  // ended the marker of the rows given: the new proto's rows are given afresh, those with a tech if it is active.
+  GiveReached(unit, *rows, kills, 0.0f);
   if (g_log) {
     uhc::Log(L"veterancyBonus: unit %d keeps %g kills as proto %d", Field<std::int32_t>(unit, 0x10),
              static_cast<double>(kills), Field<std::int32_t>(now, 8));
@@ -7203,10 +7649,21 @@ bool LoadDataFile(const std::string& arg) {
     uhc::Log(L"veterancyBonus: %ls is not well-formed XML; feature not applied", path.c_str());
     return false;
   }
-  std::map<int, size_t> defaults;  // element index -> g_defaults index
+  std::map<int, size_t> defaults;      // element index -> g_defaults index
+  std::map<int, std::string> civs;      // element index of a <Civilization> -> its name
   for (size_t index = 0; index < elements.size(); ++index) {
     const XmlElement& element = elements[index];
     if (element.tag == "veterancy") {
+      continue;
+    }
+    if (element.tag == "civilization") {
+      const std::string* name = Attribute(element, "name");
+      if (name == nullptr || Trim(*name).empty() || element.parent < 0 || elements[element.parent].tag != "veterancy") {
+        uhc::Log(L"veterancyBonus: %ls: a Civilization needs a name and sits in <Veterancy>; its rows are ignored",
+                 path.c_str());
+        continue;
+      }
+      civs[static_cast<int>(index)] = Trim(*name);
       continue;
     }
     if (element.tag == "veterancydefault") {
@@ -7215,8 +7672,23 @@ bool LoadDataFile(const std::string& arg) {
         uhc::Log(L"veterancyBonus: %ls: a VeterancyDefault without unittype is ignored", path.c_str());
         continue;
       }
+      std::string civ;
+      if (element.parent >= 0 && elements[element.parent].tag == "civilization") {
+        const auto owner = civs.find(element.parent);
+        if (owner == civs.end()) {
+          continue;  // its Civilization was rejected (logged)
+        }
+        civ = owner->second;
+      } else if (element.parent >= 0 && elements[element.parent].tag != "veterancy") {
+        uhc::Log(L"veterancyBonus: %ls: a VeterancyDefault inside <%hs> is ignored", path.c_str(),
+                 elements[element.parent].tag.c_str());
+        continue;
+      }
       defaults[static_cast<int>(index)] = g_defaults.size();
-      g_defaults.push_back({Trim(*type), {}, -1, {}});
+      Default entry;
+      entry.type = Trim(*type);
+      entry.civ = civ;
+      g_defaults.push_back(std::move(entry));
       continue;
     }
     if (element.tag == "veterancybonus") {
@@ -7229,14 +7701,20 @@ bool LoadDataFile(const std::string& arg) {
       const std::string* kills = Attribute(element, "kills");
       const std::string* stat = Attribute(element, "modifytype");
       const std::string* op = Attribute(element, "op");
+      const std::string* tech = Attribute(element, "tech");
       const std::string value = Trim(element.text);
       bool add = false;
-      if (kills == nullptr || stat == nullptr || value.empty() || !ParseOp(op == nullptr ? nullptr : op->c_str(), &add)) {
-        uhc::Log(L"veterancyBonus: %ls: %hs: a row needs kills, modifytype, a value and op mul or add; ignored",
+      if (kills == nullptr || stat == nullptr || value.empty() || !ParseOp(op == nullptr ? nullptr : op->c_str(), &add) ||
+          (tech != nullptr && Trim(*tech).empty())) {
+        uhc::Log(L"veterancyBonus: %ls: %hs: a row needs kills, modifytype, a value, op mul or add, and a tech name if "
+                 L"it has tech=; ignored",
                  path.c_str(), entry.type.c_str());
         continue;
       }
-      entry.source.push_back({std::atoi(kills->c_str()), Wide(Trim(*stat)), static_cast<float>(std::atof(value.c_str())), add});
+      const std::int32_t techIndex = tech == nullptr ? -1 : TechIndex(Trim(*tech));
+      g_anyTechRows = g_anyTechRows || techIndex >= 0;
+      entry.source.push_back({std::atoi(kills->c_str()), Wide(Trim(*stat)), static_cast<float>(std::atof(value.c_str())),
+                              add, techIndex});
       continue;
     }
     if (element.tag == "veterancyrank") {
@@ -7285,7 +7763,7 @@ static void VeterancyKill(char* attacker, char*, std::int32_t, char* victim) {
     return;
   }
   const char* proto = Field<const char*>(attacker, 0x5C);
-  const std::vector<Row>* rows = RowsFor(proto);
+  const std::vector<Row>* rows = RowsFor(attacker);
   if (rows == nullptr || !EnabledFor(proto)) {
     return;
   }
@@ -7305,53 +7783,107 @@ static void VeterancyKill(char* attacker, char*, std::int32_t, char* victim) {
   } else if (kModifier(attacker, kStatKills, 1.0f, -1.0f, -1.0f, 0, kOperationSet, 0, -1, -1, 0) == -1) {
     return;  // no action manager
   }
-  std::int32_t rank = 0;
-  std::int32_t last = 0;
-  bool reached = false;
-  float applied = 1.0f;  // the last multiplier or amount given, for the log
-  bool appliedAdd = false;
-  for (const Row& row : *rows) {
-    if (row.kills > kills) {
-      break;
-    }
-    if (row.kills != last) {
-      ++rank;
-      last = row.kills;
-    }
-    if (row.kills != kills) {
-      continue;
-    }
-    reached = true;
-    appliedAdd = row.add;
-    applied = ApplyRow(attacker, proto, *rows, row);
-  }
+  const Synced synced = GiveReached(attacker, *rows, static_cast<float>(kills), static_cast<float>(kills - 1));
+  const bool reached = synced.after > synced.before;
   if (reached) {
-    const auto style = g_styles.find(rank);
-    if (style != g_styles.end() && style->second.stringId >= 0) {
-      uhc::ShowUnitText(attacker, nullptr, style->second.stringId, style->second.colour);
-    } else {
-      uhc::ShowUnitText(attacker, RankName(rank).c_str(), -1, RankColour(rank));
-    }
-    if (g_marks) {
-      g_pending.push_back(Field<std::int32_t>(attacker, 0x10));
-    }
+    ShowRank(attacker, synced.after);
   }
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
     if (reached) {
       uhc::Log(L"veterancyBonus: unit %d, proto %d: %d kills, a new rank, rank %d, %ls%g",
-               Field<std::int32_t>(attacker, 0x10), Field<std::int32_t>(proto, 8), kills, rank, appliedAdd ? L"+" : L"x",
-               static_cast<double>(applied));
+               Field<std::int32_t>(attacker, 0x10), Field<std::int32_t>(proto, 8), kills, synced.after,
+               synced.add ? L"+" : L"x", static_cast<double>(synced.applied));
     } else {
       uhc::Log(L"veterancyBonus: unit %d, proto %d: %d kills, rank %d", Field<std::int32_t>(attacker, 0x10),
-               Field<std::int32_t>(proto, 8), kills, rank);
+               Field<std::int32_t>(proto, 8), kills, synced.after);
+    }
+  }
+}
+
+// Every 500 ms of game time, while some row names a tech: each player's named techs. When one has become active, that
+// player's units with kills get the rows it opens (what they had stays when a tech goes inactive). A loaded game
+// looks again at everything, and giving is idempotent.
+static void VeterancyTechTick(char* world, std::int32_t) {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  if (!g_anyTechRows || game == nullptr || world != Field<const char*>(game, 0x13C)) {
+    return;
+  }
+  const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
+  if (world != g_techWorld || now + kTimeJumpMs < g_nextTechLook || now > g_nextTechLook + kTimeJumpMs) {
+    g_techSeen.clear();  // another game, or a loaded one
+    g_techWorld = world;
+    g_nextTechLook = 0;
+  }
+  if (now < g_nextTechLook) {
+    return;
+  }
+  g_nextTechLook = now + kTechTickMs;
+  ResolveDefaults();
+  const char* status = Field<const char*>(world, 0x7C);
+  const std::int32_t players = Field<std::int32_t>(world, 0x5C);
+  if (status == nullptr) {
+    return;
+  }
+  std::vector<bool> opened(static_cast<std::size_t>(players > 0 ? players : 0), false);
+  bool any = false;
+  for (std::int32_t player = 1; player < players; ++player) {
+    for (const TechRef& tech : g_techs) {
+      if (tech.id < 0) {
+        continue;
+      }
+      const bool active = kTechActive(status, player, tech.id);
+      const auto key = std::make_pair(player, tech.id);
+      const auto seen = g_techSeen.find(key);
+      if (active && (seen == g_techSeen.end() || !seen->second)) {
+        opened[player] = true;
+        any = true;
+        if (g_log && g_logLines < kMaxLogLines) {
+          ++g_logLines;
+          uhc::Log(L"veterancyBonus: player %d has tech %hs (%d) active", player, tech.name.c_str(), tech.id);
+        }
+      }
+      g_techSeen[key] = active;
+    }
+  }
+  if (!any) {
+    return;
+  }
+  const auto* table = Field<char* const*>(world, 0x0C);
+  const std::int32_t count = Field<std::int32_t>(world, 0x10);
+  for (std::int32_t i = 0; table != nullptr && i < count; ++i) {
+    char* unit = table[i];
+    const char* player = unit != nullptr ? Field<const char*>(unit, 0x44) : nullptr;
+    if (player == nullptr) {
+      continue;
+    }
+    const std::int32_t owner = Field<std::int32_t>(player, 0);
+    if (owner <= 0 || owner >= players || !opened[owner]) {
+      continue;
+    }
+    const std::vector<Row>* rows = RowsFor(unit);
+    if (rows == nullptr || !AnyTech(*rows) || !EnabledFor(Field<const char*>(unit, 0x5C))) {
+      continue;
+    }
+    const float kills = KillsOf(unit);
+    if (kills < 1.0f) {
+      continue;
+    }
+    const Synced synced = GiveReached(unit, *rows, kills, kills);
+    if (synced.after > synced.before) {
+      ShowRank(unit, synced.after);
+    }
+    if (synced.changed && g_log && g_logLines < kMaxLogLines) {
+      ++g_logLines;
+      uhc::Log(L"veterancyBonus: unit %d (%g kills) gets the rows of its player's tech: rank %d -> %d",
+               Field<std::int32_t>(unit, 0x10), static_cast<double>(kills), synced.before, synced.after);
     }
   }
 }
 
 // The unit panel's row, for a unit with kills.
 bool __stdcall UhcVeterancyRow(const char* panel, const char* unit) {
-  const std::vector<Row>* rows = RowsFor(Field<const char*>(unit, 0x5C));
+  const std::vector<Row>* rows = RowsFor(unit);
   if (rows == nullptr) {
     return false;
   }
@@ -7359,7 +7891,7 @@ bool __stdcall UhcVeterancyRow(const char* panel, const char* unit) {
   if (kills < 1.0f) {
     return false;
   }
-  const std::int32_t rank = RankOf(*rows, kills);
+  const std::int32_t rank = RankOf(*rows, GivenOf(unit, *rows, kills));
   std::wstring label = RankName(rank);
   if (g_styles.count(rank) != 0) {
     // The panel's text reads the markup of the string table: <color=r, g, b>...</color>.
@@ -7396,12 +7928,13 @@ Outcome ApplyVeterancyBonus(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  if (!VerifyAll("veterancyBonus", {&sites::kSnareApply, &sites::kIsA}) ||
+  if (!VerifyAll("veterancyBonus", {&sites::kSnareApply, &sites::kIsA, &sites::kTechActive, &sites::kTechByName,
+                                     &sites::kCivById, &sites::kCivByName}) ||
       !LoadDataFile(file) ||
       !AddTransformObserver({&KillsBeforeTransform, &RestoreAfterTransform}) ||
       !VerifyFloatingText("veterancyBonus") || !AddProtoTagHandler("VeterancyBonus", &ReadVeterancyBonus) ||
       !AddTechSubtype("VeterancyEnable", &ChangeEnable) || !AddTechSubtype("VeterancyBonus", &ChangeFactor) ||
-      !OnDatabaseLoad(&ForgetOnDataLoad) || !AddKillObserver(&VeterancyKill)) {
+      !OnDatabaseLoad(&ForgetOnDataLoad) || !AddKillObserver(&VeterancyKill) || !AddWorldTick(&VeterancyTechTick)) {
     return Outcome::kFailed;
   }
   std::fill(std::begin(g_rankModels), std::end(g_rankModels), -2);
@@ -7410,13 +7943,16 @@ Outcome ApplyVeterancyBonus(const Config& config) {
   if (!AddUnitPanelRow(&UhcVeterancyRow)) {
     Log(L"veterancyBonus: no rank row in the unit panel");
   }
-  Log(L"veterancyBonus: the proto tag VeterancyBonus is on, and the Data subtypes VeterancyEnable and VeterancyBonus%ls",
+  Log(L"veterancyBonus: the proto tag VeterancyBonus is on (tech= rows too), and the Data subtypes VeterancyEnable and "
+      L"VeterancyBonus%ls",
       g_marks ? L"; rank marks on" : L"; no rank marks");
   if (g_defaults.empty() && g_styles.empty()) {
     Log(L"veterancyBonus: no default rows and no rank names (%ls)", g_file.c_str());
   } else {
-    Log(L"veterancyBonus: %u unit types with default rows and %u rank names from %ls",
-        static_cast<unsigned>(g_defaults.size()), static_cast<unsigned>(g_styles.size()), g_file.c_str());
+    const auto civBlocks = std::count_if(g_defaults.begin(), g_defaults.end(), [](const Default& d) { return !d.civ.empty(); });
+    Log(L"veterancyBonus: %u unit types with default rows (%u of them in Civilization blocks) and %u rank names from %ls",
+        static_cast<unsigned>(g_defaults.size()), static_cast<unsigned>(civBlocks), static_cast<unsigned>(g_styles.size()),
+        g_file.c_str());
   }
   g_unitInfoOn = true;
   return Outcome::kApplied;
