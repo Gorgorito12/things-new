@@ -7317,7 +7317,7 @@ What the panels and the fog of war show.
 | [`minUIStats`](#minuistats) | The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | **new** | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. | confirmed (single player, UI) |
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
 | [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. | confirmed (single player) |
-| [`editorSearch`](#editorsearch) | The scenario editor's Objects palette and its Forbidden Units/Techs dialog get a search field: typing part of a name keeps only the entries that match. | **new** | The search fields in `uieditorpalettes.xml` and `uiforbiddenunitstechs.xml`: `wol-fixes/editor` has both. | confirmed (editor, UI) |
+| [`editorSearch`](#editorsearch) | The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | **new** | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. | confirmed (editor, UI) |
 
 #### nativePreview
 
@@ -8283,7 +8283,7 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
 
 #### editorSearch
 
-*In the scenario editor, a search field above the list of objects and in the Forbidden Units/Techs dialog: type part of a name and the list shows only what matches.*
+*In the scenario editor, a search field above the list of objects, in the Forbidden Units/Techs dialog and in the trigger editor: type part of a name and the list shows only what matches.*
 
 **Added:** Saturday 2026-11-21 11:23 · **Filmed in WoL:** Saturday 2026-11-21 11:23
 
@@ -8299,41 +8299,63 @@ the two Prowlers by the names the palette shows; the log lines at the bottom cou
 *In WoL, key off and the same layouts (the same typing):* the field takes the text, and the palette keeps all its
 entries. [Full video (MP4)](media/editorSearch-wol-control.mp4).
 
-![editorSearch: the Objects palette, "musk"](media/editorSearch-palette-wol.png)
+![editorSearch in the Forbidden Units/Techs dialog](media/editorSearch-forbid-wol.gif)
 
-*The same palette, "musk" typed:* the musketeers, the musket riders, the Musk Deer and the Musk Ox.
+*The Forbidden Units/Techs dialog, the same key and pack:* "musket" keeps 7 of the 3,634 units, Display Techs shows
+the techs with "musket" in their name, and the erased field brings back all 10,542.
+[Full video (MP4)](media/editorSearch-forbid-wol.mp4).
 
-![editorSearch: Forbidden Units/Techs, "musket"](media/editorSearch-forbid-wol.png)
+![editorSearch in the Forbidden Units/Techs dialog, key off](media/editorSearch-forbid-wol-control.gif)
 
-*The same in the Forbidden Units/Techs dialog, "Display Techs":* the allowed techs whose name has "musket".
+*Key off, the same typing:* the lists stay full. [Full video (MP4)](media/editorSearch-forbid-wol-control.mp4).
+
+![editorSearch in the trigger editor](media/editorSearch-trigger-wol.gif)
+
+*The trigger editor, an effect Unit Create:* "create" leaves 10 of the 218 effect types in the Type list (Unit Create,
+Unit Create at Location, …); "cavalry" matches no type, so the Type list stays whole, and the unit list of ProtoName
+keeps the 13 cavalry units, plus CavalryArcher, the value already set. [Full video (MP4)](media/editorSearch-trigger-wol.mp4).
+
+![editorSearch in the trigger editor, key off](media/editorSearch-trigger-wol-control.gif)
+
+*Key off, the same typing:* every list stays full. [Full video (MP4)](media/editorSearch-trigger-wol-control.mp4).
 
 ```
 editorSearch [log]
 ```
 
-- **What it needs:** a `textField` named `EditorProtoPaletteSearch` inside the `EditorProtoPalette` gadget of
-  `uieditorpalettes.xml`, and one named `ForbiddenUnitsTechs_Search` in `uiforbiddenunitstechs.xml`. The pack
-  `wol-fixes/editor` has both files: the game's own layouts (WoL ships none of its own) with the field and a
-  `Search:` label, to the right of the palette's category list and under the dialog's Allowed list. Either can be
-  left out: a list without its field stays as it is.
+- **What it needs:** a `textField` with a given name in each layout. The pack `wol-fixes/editor` has the three files:
+  the game's own layouts (WoL ships none of them) with the field and a `Search:` label:
+  - `EditorProtoPaletteSearch` inside the `EditorProtoPalette` gadget of `uieditorpalettes.xml`, to the right of the
+    palette's category list;
+  - `ForbiddenUnitsTechs_Search` in `uiforbiddenunitstechs.xml`, under the Allowed list;
+  - `trEdit-CondEffPanel-search` in `trEdit-CondEffPanel` of `uitriggereditor.xml`, on the row of "Type:".
+
+  Any of them can be left out: a list without its field stays as it is.
 - **Effect:** while the field holds text, the list keeps only the entries in which every word of it appears, upper
   or lower case alike. A unit matches by the name the list shows, its internal name or its display name ("INF musk"
   finds `INF R-LU Musketeer`; "prowler" finds the Forest Prowler, `xpMusketWarrior`), a tech by its internal name
   (what the dialog shows). The list follows the text once the typing pauses for a quarter of a second (refilling
   the palette takes the game about 0.2 s, so a word typed at speed refills it once); empty, it is the stock list.
+- **The trigger editor:** one field for the open condition or effect. It filters the Type list (condition or effect
+  types, by the names the list shows) and the parameter lists of units (ProtoName, …), unit types (Target Protounit,
+  …) and techs. **A list where nothing matches keeps all its entries**, so a word meant for one list does not empty
+  the others: "create" narrows the Type list and leaves the unit list whole; "musket" narrows the unit list and leaves
+  the Type list whole. A parameter's current value stays in its list, so its field keeps showing it. A value is the
+  name picked, so a value picked from a short list is the same as from the full one (saved and loaded again: the
+  same). The other parameter lists (players, resources, areas…) are left as they are.
 - **With the rest of the lists:** the palette's category list still applies (Nature with "musk": the Musk Deer and
   the Musk Ox); an entry picked from a filtered palette is placed as usual; in the dialog, Add and Remove work on the
   filtered list, Display Units / Display Techs keep the search, and the dialog's own refresh (a new player, Cancel)
   keeps it too. Leaving the editor empties the fields.
 - **Typing:** the field is the game's own `textField`: click it, type, Backspace erases. Keys typed there go to the
   field, as in the trigger editor's name field.
-- **Not covered yet:** the trigger editor (the condition and effect types and the unit and tech lists of their
-  parameters), the next step of the request.
-- **Simulation:** none. It runs in the editor's lists only: nothing is saved in the scenario, nothing reaches a game.
-- **Log:** `editorSearch: the Objects palette and the Forbidden Units/Techs dialog filter by their search fields
-  (EditorProtoPaletteSearch, ForbiddenUnitsTechs_Search)`; with `log`, `Objects palette search field found` (or
-  `has no textField …; its list stays stock`), each search (`Objects palette "musk": 9 shown, 3202 hidden (181.5 ms)`)
-  and every 5000 frames the cost of the per-frame check.
+- **Simulation:** none. It runs in the editor's lists only: nothing is saved in the scenario but the values you pick,
+  and nothing reaches a game.
+- **Log:** `editorSearch: the Objects palette, the Forbidden Units/Techs dialog and the trigger editor filter by their
+  search fields (EditorProtoPaletteSearch, ForbiddenUnitsTechs_Search, trEdit-CondEffPanel-search)`; with `log`,
+  `Objects palette search field found` (or `has no textField …; its list stays stock`), each search
+  (`Objects palette "musk": 9 shown, 3202 hidden (181.5 ms)`, `trigger editor "create": 10 shown, 208 hidden (6.7 ms)`,
+  `trigger parameter list "cavalry": 13 of 3634`) and every 5000 frames the cost of the per-frame check.
 - **Status:** confirmed (2026-11-21, WoL, the editor, single player): see the pass/fail table in
   [how-it-works.md](how-it-works.md#editorsearch) and the screenshots in `wol-fixes/editor/media`.
 

@@ -324,3 +324,7 @@ autoScout-back-wol 8 24 2
 autoScout-back-wol-control 8 24 2
 editorSearch-wol 3 12 1 800:70:240:30+800:240:0:100
 editorSearch-wol-control 3 12 1 800:70:240:30+800:240:0:100
+editorSearch-trigger-wol 6 18 2 800:40:0:478+800:430:200:190+800:36:0:790
+editorSearch-forbid-wol 1 16 2 800:920:0:0
+editorSearch-trigger-wol-control 6 18 2 800:40:0:478+800:430:200:190+800:36:0:790
+editorSearch-forbid-wol-control 1 16 2 800:920:0:0

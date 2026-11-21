@@ -1,7 +1,9 @@
 // editorSearch: search fields in the scenario editor. A textField that the layout adds filters a stock list as
 // the player types: the Objects palette (uieditorpalettes.xml, EditorProtoPalette, field EditorProtoPaletteSearch)
-// and the allowed list of the Forbidden Units/Techs dialog (uiforbiddenunitstechs.xml, field
-// ForbiddenUnitsTechs_Search). The match is case-insensitive; every word of the text must appear in the text the
+// the allowed list of the Forbidden Units/Techs dialog (uiforbiddenunitstechs.xml, field ForbiddenUnitsTechs_Search),
+// and the trigger editor's Type list and its unit, unit type and tech parameter lists (uitriggereditor.xml, field
+// trEdit-CondEffPanel-search in trEdit-CondEffPanel; there a list where nothing matches keeps all its entries, since
+// one field serves them all). The match is case-insensitive; every word of the text must appear in the text the
 // list shows, or in a proto's internal or display name (techs: their internal name, which the list shows). An
 // empty field is the stock list. A layout without the field is the stock dialog.
 //
@@ -13,9 +15,13 @@
 // compare, nothing more unless the text changed) and a change, once the typing pauses for 250 ms, refills the
 // list with the stock code: the palette's refresh slot (vtable +20h: it empties the entries, runs the fill
 // FUN_007F501E and shows the buttons), and the dialog's fill of its display mode (FUN_0099912F units, FUN_00999493
-// techs) followed by the list's layout, as the dialog's own refresh does. The editor only: no simulation, nothing saved, nothing sent.
+// techs) followed by the list's layout, as the dialog's own refresh does. The trigger editor's lists are set from
+// arrays (0x5BECAA, and 0xAC19D9 for the type list's entry data): those calls get filtered copies, and a change runs
+// the panel's own fill FUN_00825757 again. The editor only: no simulation, nothing saved but the values picked,
+// nothing sent.
 #include <windows.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <cwctype>
 #include <string>
@@ -31,6 +37,8 @@
 extern "C" void UhcEditorPaletteAddHook();
 extern "C" void UhcEditorForbidUnitHook();
 extern "C" void UhcEditorForbidTechHook();
+extern "C" void UhcEditorTypeFillHook();
+extern "C" void UhcEditorParamListHook();
 
 namespace uhc {
 namespace {
@@ -201,6 +209,117 @@ extern "C" bool UhcEditorForbidKeep(void* dialog, const uhc::BString* text, std:
 namespace uhc {
 namespace {
 
+// The trigger editor's lists: an array the game builds, {data, count, ...}, read by 0x5BECAA (BString entries) and
+// 0xAC19D9 (int entry data).
+struct GameArray {
+  void* data;
+  std::int32_t count;
+  std::int32_t capacity;
+};
+
+using SetListFn = void(__fastcall*)(void* field, void* edx, const GameArray* names);
+using SetDataFn = void(__fastcall*)(void* field, void* edx, const GameArray* data);
+const auto kSetList = reinterpret_cast<SetListFn>(0x005BECAA);
+const auto kSetData = reinterpret_cast<SetDataFn>(0x00AC19D9);
+
+Search g_trigger{"trigger editor", "trEdit-CondEffPanel-search"};
+std::uint32_t g_triggerVtable = 0;  // the editor object's, as its type fill saw it
+
+// The indices of the names that hold every word; none when the text is empty or nothing matches, in which case the
+// list keeps all its entries: one field serves the type list and the parameter lists, and a word meant for one of
+// them must not empty the others.
+std::vector<std::int32_t> Matching(const GameArray* names) {
+  std::vector<std::int32_t> kept;
+  if (g_trigger.words.empty() || names == nullptr || names->data == nullptr) {
+    return kept;
+  }
+  const auto* entries = static_cast<wchar_t* const*>(names->data);
+  for (std::int32_t i = 0; i < names->count; ++i) {
+    if (Matches(g_trigger.words, entries[i], nullptr)) {
+      kept.push_back(i);
+    }
+  }
+  return kept;
+}
+
+}  // namespace
+}  // namespace uhc
+
+// The condition/effect type list (FUN_00825757, at 0x8258A0): the names and their entry data (the type's index), set
+// together, filtered together.
+extern "C" void UhcEditorTypeFill(void* editor, void* field, const uhc::GameArray* names,
+                                  const uhc::GameArray* data) {
+  using namespace uhc;
+  Seen(g_trigger, ui::HandleOf(editor));
+  g_triggerVtable = Read<std::uint32_t>(editor, 0);
+  const std::vector<std::int32_t> kept =
+      data != nullptr && names != nullptr && data->count == names->count ? Matching(names) : std::vector<std::int32_t>{};
+  if (kept.empty()) {
+    kSetList(field, nullptr, names);
+    kSetData(field, nullptr, data);
+    g_trigger.kept = names == nullptr ? 0 : names->count;
+    g_trigger.dropped = 0;
+    return;
+  }
+  std::vector<void*> keptNames;
+  std::vector<std::int32_t> keptData;
+  for (std::int32_t i : kept) {
+    keptNames.push_back(static_cast<void* const*>(names->data)[i]);
+    keptData.push_back(static_cast<const std::int32_t*>(data->data)[i]);
+  }
+  const auto n = static_cast<std::int32_t>(kept.size());
+  const GameArray filteredNames{keptNames.data(), n, n};
+  const GameArray filteredData{keptData.data(), n, n};
+  kSetList(field, nullptr, &filteredNames);
+  kSetData(field, nullptr, &filteredData);
+  g_trigger.kept = n;
+  g_trigger.dropped = names->count - n;
+}
+
+// A unit, unit type or tech parameter list (0x828A27, 0x828A4E, 0x8289D5): the array 0x5BECAA gets. The parameter
+// takes the text of the entry picked (0x829E29, 0x829F2F), so a shorter list picks the same values. The entry of the
+// parameter's current value stays in the list (its first value, [[def+8]], def = [param+13Ch], as 0x992D36(0) reads
+// it), so the field keeps showing it.
+extern "C" const uhc::GameArray* UhcEditorParamList(void* field, const uhc::GameArray* names, const char* param) {
+  using namespace uhc;
+  (void)field;
+  static std::vector<void*> keptNames;
+  static GameArray filtered{};
+  std::vector<std::int32_t> kept = Matching(names);
+  if (kept.empty()) {
+    return names;
+  }
+  const char* def = param == nullptr ? nullptr : Read<const char*>(param, 0x13C);
+  const wchar_t* value = nullptr;
+  if (def != nullptr && Read<std::int32_t>(def, 0x0C) > 0 && Read<const wchar_t* const*>(def, 0x08) != nullptr) {
+    value = Read<const wchar_t* const*>(def, 0x08)[0];
+  }
+  const auto* entries = static_cast<wchar_t* const*>(names->data);
+  if (value != nullptr && value[0] != 0) {
+    for (std::int32_t i = 0; i < names->count; ++i) {
+      if (entries[i] != nullptr && _wcsicmp(entries[i], value) == 0) {
+        if (std::find(kept.begin(), kept.end(), i) == kept.end()) {
+          kept.insert(std::upper_bound(kept.begin(), kept.end(), i), i);
+        }
+        break;
+      }
+    }
+  }
+  keptNames.clear();
+  for (std::int32_t i : kept) {
+    keptNames.push_back(entries[i]);
+  }
+  filtered = GameArray{keptNames.data(), static_cast<std::int32_t>(keptNames.size()),
+                       static_cast<std::int32_t>(keptNames.size())};
+  if (g_log) {
+    Log(L"editorSearch: trigger parameter list \"%ls\": %d of %d", g_trigger.raw.c_str(), filtered.count, names->count);
+  }
+  return &filtered;
+}
+
+namespace uhc {
+namespace {
+
 // Reads the field: a new text sets the words that wait for the next refill.
 void ReadField(Search& search, void* owner) {
   void* field = ui::Gadget(search.field, ui::kTextField);
@@ -314,21 +433,52 @@ void PollForbid() {
   LogFill(g_forbid, start);
 }
 
+using TypeFillFn = void(__fastcall*)(void* editor, void* edx);
+const auto kTypeFill = reinterpret_cast<TypeFillFn>(0x00825757);
+
+// The trigger editor: a new text runs its own fill of the condition/effect panel again (FUN_00825757, what the
+// Triggers / Conditions / Effects buttons run after setting [editor+1C0h]): the type list through the hook above, then
+// the list of the trigger's conditions or effects and the selected one's parameters (0x825D8F, or 0x824BDB and
+// 0x824E04), whose unit, unit type and tech lists go through the parameter hook.
+void PollTrigger() {
+  if (g_trigger.owner == 0) {
+    return;
+  }
+  void* editor = ui::Gadget(g_trigger.owner, ui::kAnyGadget);
+  if (editor == nullptr || Read<std::uint32_t>(editor, 0) != g_triggerVtable) {
+    Seen(g_trigger, 0);
+    return;
+  }
+  if (!ReadyToRefill(g_trigger, editor)) {
+    return;
+  }
+  const std::int32_t mode = Read<std::int32_t>(editor, 0x1C0);  // 1 conditions, 2 effects, 0 triggers
+  if (mode != 1 && mode != 2) {
+    return;
+  }
+  LARGE_INTEGER start;
+  QueryPerformanceCounter(&start);
+  kTypeFill(editor, nullptr);
+  LogFill(g_trigger, start);
+}
+
 // With `log`, the cost of the per-frame check while the editor's lists exist, every 5000 such frames (refills
 // included).
 int g_polls = 0;
 double g_pollMs = 0;
 
 void BeforePresent() {
-  if (!g_log || (g_palette.owner == 0 && g_forbid.owner == 0)) {
+  if (!g_log || (g_palette.owner == 0 && g_forbid.owner == 0 && g_trigger.owner == 0)) {
     PollPalette();
     PollForbid();
+    PollTrigger();
     return;
   }
   LARGE_INTEGER start;
   QueryPerformanceCounter(&start);
   PollPalette();
   PollForbid();
+  PollTrigger();
   g_pollMs += Ms(start);
   if (++g_polls == 5000) {
     Log(L"editorSearch: the search fields' check took %.2f us a frame (5000 frames, refills included)",
@@ -360,7 +510,10 @@ Outcome ApplyEditorSearch(const Config& config) {
                   &sites::kEditorForbidVtable, &sites::kEditorForbidBind, &sites::kEditorForbidMode, &sites::kEditorForbidRelayout,
                   &sites::kEditorForbidUnitAdd, &sites::kEditorForbidTechAdd, &sites::kEditorListAdd,
                   &sites::kEditorFillAllowedUnits, &sites::kEditorFillAllowedTechs, &sites::kEditorProtoDisplayName,
-                  &sites::kBStringFromId, &sites::kBStringFree})) {
+                  &sites::kBStringFromId, &sites::kBStringFree, &sites::kEditorTypeListSet,
+                  &sites::kEditorTypeFillHead, &sites::kEditorTypeFillMode, &sites::kEditorParamTechList,
+                  &sites::kEditorParamProtoList, &sites::kEditorParamUnitTypeList, &sites::kEditorSetList,
+                  &sites::kEditorSetData, &sites::kEditorParamPickText})) {
     return Outcome::kFailed;
   }
   if (!AddD3D9Observer({nullptr, nullptr, &BeforePresent, nullptr}, "editorSearch")) {
@@ -368,12 +521,16 @@ Outcome ApplyEditorSearch(const Config& config) {
   }
   if (!WriteCall(0x007F537D, reinterpret_cast<const void*>(&UhcEditorPaletteAddHook)) ||
       !WriteCall(0x009991D0, reinterpret_cast<const void*>(&UhcEditorForbidUnitHook)) ||
-      !WriteCall(0x00999547, reinterpret_cast<const void*>(&UhcEditorForbidTechHook))) {
+      !WriteCall(0x00999547, reinterpret_cast<const void*>(&UhcEditorForbidTechHook)) ||
+      !WriteJmp(0x008258A0, reinterpret_cast<const void*>(&UhcEditorTypeFillHook), 0x18) ||
+      !WriteCall(0x008289D5, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
+      !WriteCall(0x00828A27, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
+      !WriteCall(0x00828A4E, reinterpret_cast<const void*>(&UhcEditorParamListHook))) {
     return Outcome::kFailed;
   }
-  Log(L"editorSearch: the Objects palette and the Forbidden Units/Techs dialog filter by their search fields "
-      L"(%hs, %hs)%ls",
-      g_palette.fieldName, g_forbid.fieldName, g_log ? L"; log on" : L"");
+  Log(L"editorSearch: the Objects palette, the Forbidden Units/Techs dialog and the trigger editor filter by their "
+      L"search fields (%hs, %hs, %hs)%ls",
+      g_palette.fieldName, g_forbid.fieldName, g_trigger.fieldName, g_log ? L"; log on" : L"");
   return Outcome::kApplied;
 }
 

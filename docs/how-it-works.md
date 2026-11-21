@@ -5534,8 +5534,9 @@ most 64 characters; anything else is ignored and logged.
 
 ### editorSearch
 
-**Why it exists.** The scenario editor's Objects palette and the Allowed list of its Forbidden Units/Techs dialog
-list every proto (thousands in a big mod) and every tech, sorted by name, with no way to find one but scrolling.
+**Why it exists.** The scenario editor's Objects palette, the Allowed list of its Forbidden Units/Techs dialog and its
+trigger editor's lists (218 effect types, a unit parameter's 3,634 protos, a tech parameter's 10,542 techs in a big
+mod) list everything, sorted by name, with no way to find an entry but scrolling.
 
 **The lists** (`docs/engine-symbols.md`, "Scenario editor lists"):
 - The Objects palette is the `palette` gadget `EditorProtoPalette` (`uieditorpalettes.xml`; class vtable 0xB92768,
@@ -5552,9 +5553,17 @@ list every proto (thousands in a big mod) and every tech, sorted by name, with n
 - A `textField` (gadfield.cpp, vtable 0xB91D60, type mask 0Dh) keeps its typed text in an `editBox` it makes for it:
   the handle at `[field+160h]` (0x62BDD5), type mask 23h, the text a BString at `[edit+170h]` (its set-text slot
   0x5C2C20). Typing changes that text and nothing else; no event reaches the dialog.
+- The trigger editor's condition/effect panel is filled by FUN_00825757 (thiscall(editor), what its Triggers /
+  Conditions / Effects buttons run after setting the mode `[editor+1C0h]`, 0x8264F0; 1 conditions, 2 effects). It
+  builds the type names and, in step, each entry's data (the type's index), and sets both on the `Type:` textField
+  `[editor+194h]` (0x5BECAA names, 0xAC19D9 data, at 0x8258A0); picking a type uses the entry's data. It then fills
+  the list of the trigger's conditions or effects and builds the selected one's parameters. Each parameter is a
+  textField (gadtrigparam.cpp, 0x82888A) given its list by 0x5BECAA from an array the trigger system keeps: units
+  `[[game+97Ch]+84h]` (0x828A27), unit types `+90h` (0x828A4E), techs `+6Ch` (0x8289D5). A pick gives the parameter
+  the entry's text (event 10: 0x829E29, 0x829F2F), not an index.
 
 **What it does.**
-- The three add calls are redirected (`hooks/editorsearch_hooks.asm`). Each asks `UhcEditorPaletteKeep` or
+- The three add calls of the palette and the dialog are redirected (`hooks/editorsearch_hooks.asm`). Each asks `UhcEditorPaletteKeep` or
   `UhcEditorForbidKeep` whether the entry matches the current text; a match goes on to the stock add with a `jmp`
   (the return address is the fill's own), anything else returns with the add's own stack cleanup (`ret 8` / `ret 4`).
   The fills free their own strings either way. The palette or dialog that called last is remembered by its handle.
@@ -5564,13 +5573,23 @@ list every proto (thousands in a big mod) and every tech, sorted by name, with n
   refills: the palette through its
   refresh slot (checked: vtable 0xB92768 and fill callback 0x7F501E), the dialog through the fill of its display mode
   plus the layout and selection its refresh does.
+- The trigger editor: the type list's two sets at 0x8258A0 are replaced (a `jmp` there; `pushad`, a C++ function that
+  sets the names and data, filtered together, `popad`, back at 0x8258B8), and the three parameter list sets are
+  redirected to a stub that hands 0x5BECAA a filtered copy of the array. A list where nothing matches keeps all its
+  entries, since one field serves every list of the panel; a parameter's current value (`[[param+13Ch]+8]`, entry 0,
+  as 0x992D36 reads it) stays in its list. A new text runs FUN_00825757 again, which rebuilds the type list and the
+  open condition's or effect's parameters through the same hooks.
 - The match: the text is split on spaces and lowered (`towlower`); every word must appear in the text the list shows,
   or, for a proto, in its internal name (`[proto+10h]`) or its display name (the string ID `[proto+144h]`, read through
   0x58EA52 only when a word is not found otherwise).
 
 **Why it is safe.**
 - UI only: the fills run in the editor, the entries are what the stock fill would add minus some, and nothing is
-  saved or sent. The DLL's state is two handles and the texts, cleared when the owner's handle goes stale.
+  saved or sent. The DLL's state is three handles and the texts, cleared when the owner's handle goes stale.
+- The trigger lists keep the game's own mapping: a type's entry data is filtered with its name, and a parameter's
+  value is the text picked, so a value picked from a filtered list is the one the full list gives (saved and loaded
+  again: the same). The type list hook keeps every register (`pushad`/`popad`); the continuation 0x8258B8 reads no
+  flag, and no branch lands inside the 24 replaced bytes.
 - After each redirected call the fill reads no register the add sets (0x7F5382 reloads ECX; 0x9991D5 and 0x99954C
   free the BString), and the hooks keep ECX for the jump.
 - The refills are the game's own: the refresh slot the palette runs when shown, and the fill and layout calls the
@@ -5604,6 +5623,17 @@ dialog; text typed with posted `WM_CHAR`, `testbed.py chars`, erased with posted
 | A word typed at once (`chars musk`) | pass: one refill, after the 250 ms pause |
 | Cost of a refill | palette 180–290 ms (the stock refresh: 188–227 ms with an empty text, the stock list), dialog units 10–26 ms, techs 15–146 ms |
 | Cost of the per-frame check in the editor | 1.1–2.2 µs a frame (5000 frames with no refill) |
+| Triggers, effect, "create" | pass: the Type list keeps 10 of 218 (Unit Create, Unit Create at Location…) |
+| Triggers, Unit Create picked from the filtered Type list | pass: its parameters show |
+| Triggers, "musket" with Unit Create | pass: no type matches, the Type list stays whole; ProtoName keeps 6 of 3,634 |
+| Triggers, Musketeer picked from the filtered ProtoName list | pass: the value is Musketeer |
+| Triggers, condition, "tech", then "guard musket" | pass: 3 of 61 condition types; the Tech list keeps 2 of 10,542 (GuardMusketeers, GuardMusketMarauders) |
+| Triggers, "create unittype", then "cavalry" | pass: 1 type (Unit Create at Unittype); Target Protounit keeps 25 of 3,884 unit types |
+| Triggers, a set value under a text it does not match (Musketeer, "cavalry") | pass: the value stays in the list and in the field (14 of 3,634) |
+| Triggers, values picked from filtered lists, scenario saved, editor left, scenario loaded | pass: Unit Create / CavalryArcher and Tech Status Equals / GuardMusketeers |
+| Triggers, key on, stock `uitriggereditor.xml` | pass: stock lists, `has no textField trEdit-CondEffPanel-search` logged |
+| Triggers, key off, the layout with the field | pass: the field takes text, every list stays full (filmed) |
+| Cost of a trigger refill | 0.1–13 ms (the type list and the parameters), 66 ms once with the tech list |
 
 The palette's refill is slow because the stock refresh is: it rebuilds every entry of the current player, and FUN_00ACF80E
 the buttons. That is why a refill waits for a pause in the typing. A/B with `perfprobe.py` (60 s, the editor with the

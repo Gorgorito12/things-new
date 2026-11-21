@@ -10,9 +10,14 @@ include common.inc
 UhcEditorPaletteKeep PROTO C pal:DWORD, unitProto:DWORD
 UhcEditorForbidKeep PROTO C dlg:DWORD, entryText:DWORD, entry:DWORD, isTech:DWORD
 
+UhcEditorTypeFill PROTO C editor:DWORD, typeField:DWORD, names:DWORD, entryData:DWORD
+UhcEditorParamList PROTO C paramField:DWORD, names:DWORD, param:DWORD
+
 .data
 paletteAdd      dd 00AD0056h    ; the palette's add entry, thiscall(palette, entry*, categories*), ret 8
 listAdd         dd 00AC9228h    ; the list's add item, thiscall(list, BString* text), ret 4
+typeFillNext    dd 008258B8h    ; mov ecx,edi / call 8246E8h: after the type list's two sets
+setList         dd 005BECAAh    ; a textField's dropdown names, thiscall(field, array*), ret 4
 
 .code
 
@@ -72,5 +77,41 @@ UhcEditorForbidTechHook PROC
 drop:
     ret 4
 UhcEditorForbidTechHook ENDP
+
+; Replaces 0x8258A0..0x8258B7 in the trigger editor's type fill FUN_00825757: lea ecx,[esp+20h] / push ecx /
+; mov ecx,ebx / call 5BECAAh (the names) and lea edx,[esp+2Ch] / push edx / mov ecx,ebx / call 0AC19D9h (each entry's
+; type index). EBX = the "Type:" textField, EDI = the editor object, [esp+20h] and [esp+2Ch] the two arrays. Every
+; register is kept; the continuation 0x8258B8 (mov ecx,edi) reads no flag. Nothing branches into the replaced bytes.
+UhcEditorTypeFillHook PROC
+    TRACE_ONCE "editorSearch: trigger type list (0x8258A0)"
+    lea eax, [esp+20h]
+    lea edx, [esp+2Ch]
+    pushad
+    push edx
+    push eax
+    push ebx
+    push edi
+    call UhcEditorTypeFill
+    add esp, 10h
+    popad
+    jmp dword ptr [typeFillNext]
+UhcEditorTypeFillHook ENDP
+
+; Replaces call 5BECAAh at 0x8289D5 (tech), 0x828A27 (unit) and 0x828A4E (unit type) in the trigger parameter builder.
+; ECX = the parameter's textField, ESI = the parameter (its definition at [esi+13Ch]), [esp+4] the array of names. The array to set comes back in EAX (the same one, or a
+; filtered copy the key keeps); the stock setter then runs with the return address of the builder's call. After the
+; call the builder jumps to 0x828B61 (or reads EDI, kept) and reads no register the setter sets.
+UhcEditorParamListHook PROC
+    TRACE_ONCE "editorSearch: trigger parameter list (0x828A27)"
+    push ecx
+    push esi
+    push dword ptr [esp+0Ch]
+    push ecx
+    call UhcEditorParamList
+    add esp, 0Ch
+    pop ecx
+    mov dword ptr [esp+4], eax
+    jmp dword ptr [setList]
+UhcEditorParamListHook ENDP
 
 END
