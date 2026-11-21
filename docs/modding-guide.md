@@ -8864,6 +8864,54 @@ matters:
 - **Extra action tags:** with [`spreadAnyAccuracy`](#spreadanyaccuracy), an `<action>` also reads
   `<maxspread>` and `<spreadfactor>`. Keep its `<name>` as the first child, as WoL's files do.
 
+### A stance on foot for a cavalry unit
+
+*A ranged horseman gets off and fights on foot beside his horse, and mounts again, with data only.*
+
+The pack `wol-fixes/dismount` (`apply_fix.py <WoL folder>`, `--restore` to undo; README in English and Spanish)
+does it for the Chasseur a Cheval, as request #84 asked: a tactic `Dismounted` with its own actions, speed and
+animations, `<transition>`s both ways as the artillery's Limber/Bombard, two buttons
+(`unitSetTactic("Dismounted")`, `unitSetTactic("Stagger")`) and the rider's animations on foot and getting off and
+on, made by aoe3-blender-tools' `tools/make_dismount.py` from the game's infantry animations.
+
+![Dismount in WoL](media/dismount-wol.gif)
+
+*In WoL, with `wol-fixes/dismount` (French against a German AI, four Chasseurs a Cheval, crossbowmen coming; the
+stance set by console, the command the buttons send):* the riders get off on the horses' left side and stand
+beside them, then walk and fire on foot with the horses beside them; read from the game, their tactic stays
+`Dismounted` through the fight. Filmed before the last tuning of the transitions (2 s, a higher leg): the
+close video below shows the final ones. [Full video (MP4)](media/dismount-wol.mp4).
+
+![Without the pack](media/dismount-wol-control.gif)
+
+*The same map with the pack not applied:* the stock chasseurs have no stance on foot and stay in the saddle.
+[Full video (MP4)](media/dismount-wol-control.mp4).
+
+![Dismount and mount, close](media/dismount-transitions-wol.gif)
+
+*A test scenario (its player is not French), the camera close on one chasseur:* the dismount (the right leg over
+the croup, down the side) and, seconds later, the mount back. [Full video (MP4)](media/dismount-transitions-wol.mp4).
+
+No DLL key: what the
+engine does with tactics was read with REA and checked in game ([engine-symbols.md](engine-symbols.md), "Transition
+tags", "Tactic for an action", "Squad mode of a unit"):
+
+- **A transition plays** when it has `<exit>1</exit>` (what a tactic change by command looks for) and, as every stock
+  one, `<action>Limber</action>`; its `<length>` is in seconds.
+- **The stance holds in a fight:** the engine leaves a tactic on its own only through a transition marked
+  `<automatic>` (or `<commandautomatic>` for a command). Measured: four dismounted chasseurs stayed in `Dismounted`
+  (tactic index 3, read from the game every 0.25 s) through a skirmish fight until they were told to mount.
+- **A rider hung on a horse** plays each animation name in both anim files (the horse's carries the tags); the new
+  rider animations must keep their tracks sorted by name, as the stock files do, or only some bones move.
+- **Tested further:** the two buttons clicked (posted clicks on the command row) dismount and mount the selected
+  unit; a game saved while dismounted loads with the stance and the rider on foot (tactic index 3 kept); with the
+  pack applied the AI scripts compile (6 compiles, 0 errors, XS tracer on this copy's game).
+- **What a stance cannot change:** unit types, armour, hit points, obstruction, `<PhysicsInfo>`. On foot the unit
+  still counts as cavalry; if it must count as infantry, the alternative is a transform (`uiTransformSelectedUnit`,
+  [`transformChecks`](#transformchecks)).
+- **Do not add the new animation names to `data\animtypes.xml`:** tried, the unit then played its mounted attack
+  while on foot.
+
 ### Aura rings
 
 A ring on the ground tells the player which units an aura is working on, as the one Karni Mata puts around the Indian
