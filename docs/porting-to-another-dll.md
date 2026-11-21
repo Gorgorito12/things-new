@@ -1383,23 +1383,22 @@ Code: [combat](porting-code/combat.md#snarevalues). It needs `AddActionTagHandle
 
 ### auraStacking
 
-Code: [combat](porting-code/combat.md#aurastacking). It needs `AddActionTagHandler`, `OnDatabaseLoad` and the modifier walk
-`modifiers.h`, in the [helpers](porting-code/helpers.md).
+Code: [combat](porting-code/combat.md#aurastacking). It needs `AddActionTagHandler` and `OnDatabaseLoad`, in the
+[helpers](porting-code/helpers.md).
 
 - **Filter:** the `call` at `0x9D0633` (`E8 00 FC FF FF`, of the filter `0x9D0238`, `bool thiscall(action, target)`,
   `ret 4`), its only call in the aura update FUN_009D033E, goes to `UhcAuraFilterHook`. It calls the stock filter, then
-  refuses a target of a `<ForbidUnitType>` (or `<ForbidAbstractType>`) type and, for a `<NoStack>` aura, a target that
-  holds a modifier with this aura's mark. Verify only the filter's head (6 B).
-- **Mark:** a 5-byte `jmp` at `0x9D0675` (`8B D8 83 FB FF`: `mov ebx,eax / cmp ebx,-1`), right after the creator
-  `0x4DD22D`, with EAX = the new modifier's ID, EBX = the target, ESI = the action. For a `<NoStack>` aura it writes the
-  mark `((proto ID + 1) << 14) | action name index` in `[modifier+84h]`, a field stock saves and loads and nothing reads,
-  then re-executes both instructions and continues at `0x9D067A`.
+  refuses a target of a `<ForbidUnitType>` (or `<ForbidAbstractType>`) type. Verify only the filter's head (6 B).
+- **Not stacking is stock:** `<ModifyExclusive>1</ModifyExclusive>` sets action flag 21h; the aura passes it to the
+  creator `0x4DD22D`, the modifier keeps it as state bit 16h, and the stat sum `0x4B3C7D` stops after it, so five carriers
+  of a ×N aura give ×N. A `<NoStack>` tag (the key's first version) is only logged as retired.
 - **`AuraClaim`** (`aurastacking.h`): `unitResourceAuras` makes no modifier and its take does not reach the filter, so it
-  asks `AuraClaim(world, proto, name, owner, target, now)`, which holds one owner per target and aura while that owner
-  lives and comes back within 7 s. Without auraStacking, make it return true.
+  asks `AuraClaim(world, tactics action, proto, owner, target, now)`. For an aura whose action has flag 21h it holds one
+  owner per target and aura while that owner lives and comes back within 7 s; for any other aura it returns true. It
+  works with the key off too.
 - **Not covered:** the second applier FUN_009D7328, for actions with no range, has no filter.
-- **Test:** two carriers of the same `<NoStack>` aura around one unit: it holds one modifier, and the other carrier takes
-  it when the holder dies or the unit leaves its range.
+- **Test:** an aura with `<ForbidUnitType>Musketeer</ForbidUnitType>` around a Musketeer and a Pikeman: the Pikeman holds
+  its modifier, the Musketeer none. Two `UnitResource` auras with `<ModifyExclusive>` over one tree: one pays.
 
 ### techRenameEffect
 

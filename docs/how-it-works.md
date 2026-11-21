@@ -3546,14 +3546,21 @@ visual of the unit, so nothing reaches the simulation, and no tick walks the who
 
 ### auraStacking
 
-The aura update FUN_009D033E sends each unit it does not hold through the filter 0x9D0238, at one call, 0x9D0633, which the key wraps.
-A modifier does not say which aura made it, so right after the apply, at 0x9D0675, the key writes the aura's mark in `[modifier+84h]`,
-a field stock saves and loads and does not read. `<NoStack>` refuses a target that holds that mark. A refused target stays out of the
-action's list, so every update of every carrier asks again, and a dead carrier's modifier goes with it. `unitResourceAuras` makes no
-modifier: its take asks `AuraClaim`.
+The aura update FUN_009D033E sends each unit it does not hold through the filter 0x9D0238, at one call, 0x9D0633, which the key wraps:
+`<ForbidUnitType>` (or `<ForbidAbstractType>`) refuses a target of that type. A refused target stays out of the action's list, so every
+update asks again.
 
-**Why it is safe.** The mark lives in game state, so every machine and a saved game see the same thing, and the filter runs only for
-targets the action does not hold yet.
+That several carriers of one aura do not multiply is stock: `<ModifyExclusive>` is action flag 21h, passed to the creator 0x4DD22D and
+kept as the modifier's state bit 16h, and the stat sum 0x4B3C7D stops after an exclusive modifier. Each carrier still gives each target
+its modifier, so when one carrier dies the others' modifiers are already there. Measured in game (2026-11-21): five carriers of a ×1.5
+Speed aura with the tag gave villagers 6.0 m/s from 4.0 (×1.5), five without it gave the Explorer 34.17 from 4.5 (×1.5⁵);
+`buildingWorkRateAuras` and `resourceGatherAuras` sum with 0x4B3C7D, so the tag holds there too (×2 against ×32). The key's first
+version had its own `<NoStack>`, with a mark in `[modifier+84h]` written by a hook at 0x9D0675; both are gone, and the tag is logged
+as retired. `unitResourceAuras` makes no modifier: its take asks `AuraClaim`, which gives each target one payer when the aura's action
+has flag 21h, with the key on or off.
+
+**Why it is safe.** The filter runs only for targets the action does not hold yet and reads only data and the target's proto, the
+same on every machine. `AuraClaim` decides by unit IDs and game time.
 
 ### snareValues
 
@@ -4053,7 +4060,7 @@ from the same tail, after the fill placed the portraits.
 | Builder factor 0x9C4C0C (`BuilderFactor`), BuildInfo add 0x9C4BE3 / 0x7ADE95 (`BuildPointsAddCall`, `BuildPointsAdd`) | none | none | 0x9C4C0C reads the worker list and the civ records; for type-59h protos it calls 0x4EC7B4, which rebuilds its own static list 0xD6F6F8 (count reset to 0 on each call, read only inside it): scratch of that function, not state another step reads. Same thread as the tick, never nested in it |
 | BuildingWorkRate getter 0x9BFE33 | `liveBuildingWorkRate` (head), `buildingWorkRateAuras` (four calls), `noTrainNearEnemyTC` (the Train call) | — | Not read: it is the train and research rate, not the build rate |
 | Regeneration FUN_004905E1: head 0x4905E1 and the rate read 0x4907FF..0x49081D (`RegenPlayerHead`, `RegenRateRead`) | `overhealDecay` replaces the add's call 0x49087C (`RegenAddHp`), after the read; `danceBonusCivs` hooks the dance getter 0x49048B, another function | none | No shared byte. `overhealDecay` changes what the add does above max HP, not the rate. The dance's regeneration is a separate source, not shown |
-| `buildingWorkRateAuras`' `Factor`, `resourceGatherAuras`' `StatFactor` | `auraStacking` (`AuraClaim`) decides which modifiers a unit gets | — | They walk the unit's modifiers read-only (`modifiers.h`) and sum them with the stock 0x4B3C7D, as the keys' hooks do, so stacking is already in what they read. Their scratch vector is the key's own, used on the same thread, never during a walk |
+| `buildingWorkRateAuras`' `Factor`, `resourceGatherAuras`' `StatFactor` | `auraStacking`'s filter decides which modifiers a unit gets | — | They walk the unit's modifiers read-only (`modifiers.h`) and sum them with the stock 0x4B3C7D, as the keys' hooks do, so stacking is already in what they read. Their scratch vector is the key's own, used on the same thread, never during a walk |
 | `unitResourceAuras`' aura states | `AuraClaim` (asked before each take) | — | The update writes its takes after the claim; the panel only reads the map. The aura update and `AuraClaim` are never called from the panel |
 | Data refs `uhcBuildTime`, `uhcBuildProgress`, `uhcBuildRate`, `uhcRegen`, `uhcAuras` | `AddDataRef` has no other user | — | Appended after the 116 stock names, none of which starts with `uhc`; the five are new in the key's own list |
 | Stack portraits (2026-11-17): the fill's head 0x4C9458..0x4C9481, its Big0 choice 0x4C9587..0x4C95C7, the list append 0x4C979A..0x4C97B4, the layout call 0x4C7DB3..0x4C7DC0 and the layout 0x4C8F49..0x4C91EB (`StackFillReset`, `StackFillCurrent`, `StackFillAppend`, `StackLayoutCall`, `StackLayout`); the any-type gadget lookup 0x404296 (`GadgetLookupAny`, called, not hooked) | none of our sites is in these ranges; the shared tail hook 0x4C8281 (`AddUnitPanelTail`) and `overhealHitpointBars`' 0x4C83DF come after the layout in the same fill and only read | none: the other DLL's runtime patch list (287 ranges) and a second DLL's patches (0x761BF0, 0x661E15, 0x9AC7E8, 0x9B6655, 0x69920E..0x69922C) have no byte there | Read only, at the tail of the same fill that placed the buttons: the list `[panel+2CCh]`, `[panel+36Ch]`, `[panel+324h]` and the gadgets' rectangles and flags. Nothing is moved, shown or hidden but the key's own gadgets. A mismatch turns off only the portrait rule (logged); `<avoid>` keeps working |

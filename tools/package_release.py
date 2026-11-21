@@ -345,7 +345,7 @@ numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart
                               reload; projectiles: <NumberProjectiles> per shot
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
-auraStacking [log]            <NoStack> and <ForbidUnitType> on any aura
+auraStacking [log]            <ForbidUnitType> on any aura
 dataLint [log] [file]         while the data loads, says what it asks for and the game drops
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0

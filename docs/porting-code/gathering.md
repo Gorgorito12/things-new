@@ -2157,7 +2157,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
     if (have <= kMinAmount) {
       continue;
     }
-    if (!uhc::AuraClaim(world, Field<std::int32_t>(ownerProto, 0x04), auraKey.name, auraKey.owner,
+    if (!uhc::AuraClaim(world, tactics, Field<std::int32_t>(ownerProto, 0x04), auraKey.owner,
                         Field<std::int32_t>(target, 0x10), now)) {
       continue;
     }
