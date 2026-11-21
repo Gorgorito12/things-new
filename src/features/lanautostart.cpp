@@ -6,8 +6,8 @@
 //   lanAutoStart join <address>  join the game hosted at <address> (Direct IP)
 //
 // On the command line, `+uhcLanHost` hosts and `uhcLanJoin="<address>"` joins, the syntax of the stock
-// `OverrideAddress="<address>"`; `uhcLanRules=N` picks the host's Game Rules entry. The command line wins over the cfg's arguments. For a VPN such as Radmin, the
-// launcher passes OverrideAddress (the host's VPN address, so the game binds there) and gives the joiners that
+// `OverrideAddress="<address>"`; `uhcLanRules=N` picks the host's Game Rules entry. The command line wins over
+// the cfg's arguments. For a VPN such as Radmin, the launcher passes OverrideAddress (the host's VPN address, so the game binds there) and gives the joiners that
 // address in uhcLanJoin.
 //
 // Stock route (docs/how-it-works.md, lanAutoStart): the console command doMPSetup(false) sets the SkirmHomeCity
@@ -545,7 +545,13 @@ Outcome ApplyLanAutoStart(const Config& config) {
         const std::wstring value(word.begin() + (word.find('=') == std::string::npos ? word.size() : word.find('=') + 1),
                                  word.end());
         if (_strnicmp(word.c_str(), "rules=", 6) == 0) {
-          g_rules = ParseIndex(value);
+          // uhcLanRules on the command line wins over the cfg's rules=N.
+          if (g_rules < 0) {
+            g_rules = ParseIndex(value);
+            if (g_rules < 0) {
+              Log(L"lanAutoStart: \"%hs\" is not an entry number (0-63); ignored", word.c_str());
+            }
+          }
         } else {
           Log(L"lanAutoStart: unknown host argument \"%hs\"; expected rules=N", word.c_str());
         }
