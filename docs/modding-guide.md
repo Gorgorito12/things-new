@@ -31,25 +31,26 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Saturday 2026-11-21 16:01 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
+| Saturday 2026-11-21 15:50 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
+| Saturday 2026-11-21 15:50 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
+| Saturday 2026-11-21 15:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
+| Saturday 2026-11-21 15:25 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
+| Saturday 2026-11-21 15:06 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Saturday 2026-11-21 12:42 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Saturday 2026-11-21 12:11 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
 | Saturday 2026-11-21 12:07 | [`ageFiveShipments`](#agefiveshipments) | Added. Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | `<age>4</age>` on the cards that want it. |
 | Saturday 2026-11-21 12:07 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
-| Saturday 2026-11-21 12:04 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Saturday 2026-11-21 12:00 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only heal actions with `<CanOverheal>1</CanOverheal>` heal those units above `InitialHitpoints`, up to their `<OverhealCap>`, and techs can turn it on or off; every other heal stops there. | `overhealHitpointBars`, and the tags on the `Heal` actions that may overheal. |
 | Saturday 2026-11-21 11:55 | [`herdWalkAwayFix`](bug-fixes.md#herdwalkawayfix) | Added. A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in. | Nothing; for nomads, `wol-fixes/me-herdables`. |
 | Saturday 2026-11-21 11:54 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
-| Saturday 2026-11-21 11:54 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
-| Saturday 2026-11-21 11:42 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Saturday 2026-11-21 11:35 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | The tag on the civ in `civs.xml`. |
-| Saturday 2026-11-21 11:34 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Saturday 2026-11-21 11:31 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Saturday 2026-11-21 11:07 | [`deadReplacementAtZeroInventory`](bug-fixes.md#deadreplacementatzeroinventory) | Added. A hunt, a herdable or any unit that leaves a body to gather drops its `<DeadReplacement>` when the body is used up, not when it falls. | `<DeadReplacement>` on the protos that want one (none has it today). |
 | Saturday 2026-11-21 11:03 | [`auraStacking`](#aurastacking) | Filmed in WoL, with a control. `<ForbidUnitType>` on any aura: the aura leaves units of a type or proto alone; that an aura does not stack is the game's own `<ModifyExclusive>`. | The tags on the aura. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
-| Friday 2026-11-20 12:52 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
 | Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
 | Friday 2026-11-20 11:59 | [`researchOnTheMove`](#researchonthemove) | Added. A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. |
 | Friday 2026-11-20 11:50 | [`homeCityTechsInUnits`](#homecitytechsinunits) | Added. A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | The card's tech in the `<Tech>` rows, made obtainable for the civ. |
@@ -73,7 +74,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-11-12 15:52 | [`stealthTargeting`](bug-fixes.md#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
-| Thursday 2026-11-12 13:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
 | Thursday 2026-11-12 11:40 | [`menuOptions`](bug-fixes.md#menuoptions) | Added. Lets the player switch `bufferedFileReads` and `fastVertexFill` on or off in the options menu, from the next start. | A field per key in `data\options.xml`. |
 | Thursday 2026-11-12 08:17 | [`fastLastInLine`](bug-fixes.md#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
 | Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
@@ -662,9 +662,7 @@ villagers and the Explorer, and the next villager in the queue waits: there is n
 so the panel reads `14 / 17` with 13 villagers and the queue goes on.
 [Full video (MP4)](media/decimalPopulation-wol-control.mp4).
 
-![decimalPopulation and the population limits](media/decimalPopulation-caps.png)
-
-*The limits:* a test tech gives `PopulationCap` +300 at 12 population. With `decimalPopulation 10` the cap stops at the exe's 200; with `basePop 300` added, at 300; with `basePop 300` alone (the control), at 300, the decimals dropped (6 population).
+*The limits (tested in the original game on 2026-10-29):* a test tech gives `PopulationCap` +300 at 12 population. With `decimalPopulation 10` the cap stops at the exe's 200; with `basePop 300` added, at 300; with `basePop 300` alone (the control), at 300, the decimals dropped (6 population).
 
 ```
 decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in steps of 1/K
@@ -2560,19 +2558,7 @@ back to `122.2` by 55 s. [Full video (MP4)](media/overhealSources-canoverheal-wo
 *In WoL, `overhealSources` and `overhealDecay` off (the same data and scene):* the nurse heals the Pikeman straight to
 `148.2`, before any tech, and it stays there. [Full video (MP4)](media/overhealSources-canoverheal-wol-control.mp4).
 
-*The videos below were filmed before 2026-11-21, when a healer's unit type made it a source (`AbstractOverhealer`, then the default); a type named in the cfg still works that way.*
-
-![overhealSources in WoL](media/overhealSources-wol.gif)
-
-*In WoL, with `overhealSources log` (a `NAnurse` next to the marked Tomahawk, selected):* the Tomahawk
-is hit at 24 s. The nurse is not a source healer: she heals it to `150/150` and stops (`a heal of unit 1
-stops at its 100 %`). At 52 s a source medicine man appears, and the panel climbs to `179/150`, with
-`Overheal: 29/30`. [Full video (MP4)](media/overhealSources-wol.mp4).
-
-![overhealSources in WoL, key off](media/overhealSources-wol-control.gif)
-
-*In WoL, key off (the same scene):* the nurse herself heals it past its 100 %.
-[Full video (MP4)](media/overhealSources-wol-control.mp4).
+*The dance videos below were filmed before 2026-11-21, when a healer's unit type made it a source (`AbstractOverhealer`, then the default); they still show what an area heal does: it is not a `Heal` action with `<CanOverheal>`, so it stops at the 100 %.*
 
 ![overhealSources with the Regeneration dance in WoL](media/overhealSources-dance-wol.gif)
 
@@ -2584,19 +2570,6 @@ a dance is not a source. [Full video (MP4)](media/overhealSources-dance-wol.mp4)
 
 *In WoL, key off (the same scene):* the dance takes it to `180/150`, `Overheal: 30/30`.
 [Full video (MP4)](media/overhealSources-dance-wol-control.mp4).
-
-![overhealSources cap and rate in WoL](media/overhealSources-cap-wol.gif)
-
-*In WoL, with `overhealSources AbstractOverhealer cap=110 rate=50 log` (Player 1's medicine man is a source through a
-tech; the Tomahawk, 150 of 180, selected; `overhealDecay 2 1` with `holdNear xpMedicineMan 12`):* hit to 105 at 18 s, it is
-healed at about 10 HP/s to 150, then at 5 HP/s, and stops at `165/150`, 110 %.
-[Full video (MP4)](media/overhealSources-cap-wol.mp4).
-
-![overhealSources without cap and rate in WoL](media/overhealSources-cap-wol-control.gif)
-
-*In WoL, `overhealSources AbstractOverhealer log` with no option (the same scene, `overhealDecay 2 1` without
-`holdNear`):* healed at 10 HP/s all the way to 180, its max; the decay then takes a little and the medicine man heals it
-back. [Full video (MP4)](media/overhealSources-cap-wol-control.mp4).
 
 ```
 overhealSources [<UnitType> [cap=<percent>] ...] [log]   no type by default; up to 8 types
@@ -2695,7 +2668,7 @@ overhealSources [<UnitType> [cap=<percent>] ...] [log]   no type by default; up 
 
 *Extra health above a unit's normal maximum slowly wears off.*
 
-**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Thursday 2026-11-12 13:25
+**Added:** Thursday 2026-10-29 13:50 · **Filmed in WoL:** Saturday 2026-11-21 15:25
 
 ![overhealDecay in WoL](media/overhealDecay-wol.gif)
 
@@ -2715,15 +2688,18 @@ and the Sepoy keeps `216/180`, `Overheal: 36/36` and both orange ends to the end
 
 ![overhealDecay holdNear in WoL](media/overhealDecay-holdnear-wol.gif)
 
-*In WoL, with `overhealDecay 2 1 holdNear xpAenna 12 holdNear xpMedicineMan 12 log` (and `overhealSources
-AbstractOverhealer cap=110 rate=50`; the Tomahawk and the Aenna beside it selected):* the source medicine man takes the
-Tomahawk to `165/150` and is removed at 20 s; the Aenna, 2 m away, holds the overheal at 165 until it is removed at 34 s;
-then 2 HP/s back to 150 at 41.6 s. [Full video (MP4)](media/overhealDecay-holdnear-wol.mp4).
+*In WoL, with `overhealDecay 2 1 holdNear xpMedicineMan 12 log` (2026-11-21, a scenario; `overhealSources log`, with
+`<CanOverheal>1</CanOverheal>` and `<OverhealCap>110</OverhealCap>` on the `xpMedicineMan`'s Heal, and `overhealHitpointBars
+xpTomahawk segment stat`; test data: an `xpTomahawk` with `MaxHitpoints` 180 over its 150; both units selected):* the
+medicine man walks up at 40 s and heals the Tomahawk to `165/150`, its 110 %, by 50 s; while he stands 4 m away it stays
+at 165.0 with no more heals; he walks off at 62 s, and once he is 12 m away, at 64 s, it goes down 2 HP a second, to 150 at
+71.6 s. [Full video (MP4)](media/overhealDecay-holdnear-wol.mp4).
 
 ![overhealDecay without holdNear in WoL](media/overhealDecay-holdnear-wol-control.gif)
 
-*In WoL, `overhealDecay 2 1 log` without `holdNear` (the same scene; `overhealSources` with no cap, so it starts at
-180):* the decay starts when the medicine man goes at 20 s, with the Aenna still there: 180 to 150 by 34.9 s.
+*In WoL, `overhealDecay 2 1 log` without `holdNear` (the same scene, data and `overhealSources` line):* the overheal
+starts to go 1 s after each heal, so the medicine man keeps healing it back: between 164.4 and 165 while he stands
+there; he walks off at 62 s and it goes down at once, to 150 by 70.8 s.
 [Full video (MP4)](media/overhealDecay-holdnear-wol-control.mp4).
 
 ```
@@ -2753,7 +2729,8 @@ overhealDecay [<rate>[%] [<delay>]] [<UnitType> ...] [holdNear <UnitType> <metre
   12`, so the overheal lasts while a source healer stays with the unit, and the "re-heal it" micro goes.
 - **A bad `holdNear`** stops the key: `overhealDecay: expected holdNear <UnitType> <metres> (more than 0, at most 200;
   up to 4); feature not applied`.
-- **Measured in WoL (2026-11-11),** the scene above: held at 165.0 from 20 to 34 s, then 163.1, 159.6, 156.0, 152.7 and
+- **Measured in WoL (2026-11-11),** in the scene filmed then (`holdNear xpAenna 12`; the medicine man removed at 20 s, an
+  Aenna 2 m from the Tomahawk until 34 s): held at 165.0 from 20 to 34 s, then 163.1, 159.6, 156.0, 152.7 and
   150.0 at 41.5 s; the same after loading a game saved at 26 s (165 until 34 s, 150.0 at 41.6 s). Without `holdNear`,
   179.8 at 19.9 s down to 150.0 at 34.9 s.
 
@@ -2810,7 +2787,9 @@ overhealDecay [<rate>[%] [<delay>]] [<UnitType> ...] [holdNear <UnitType> <metre
     down to 150, and naming another proto left that unit alone; other players' units decay too; poison
     (`damageOverTime`) ticked normally; a skirmish against the AI played normally. Only the game world
     decays: the world update also runs for the home city's world, which the key ignores.
-  - **`holdNear` (2026-11-11, WoL):** the numbers above, a saved game, an AI skirmish of 100 s with every heal and
+  - **`holdNear` (2026-11-21, WoL):** the two videos above, with the overheal from the `<CanOverheal>` and `<OverhealCap>`
+    tags.
+  - **`holdNear` (2026-11-11, WoL):** the numbers measured then (above), a saved game, an AI skirmish of 100 s with every heal and
     overheal key on and no XS error.
   - **Not tested:** multiplayer; `holdNear` with a unit of another player beside the unit (the Gaia unit tried for it
     attacked the Tomahawk).
@@ -2846,7 +2825,7 @@ Attacks, armor, and what a hit does.
 
 *A unit can deal area damage around itself when it dies, and the blast shows on the unit that dies, over the whole of a building.*
 
-**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Saturday 2026-11-21 11:54
+**Added:** Thursday 2026-11-05 10:21 · **Filmed in WoL:** Saturday 2026-11-21 15:25
 
 ![detonationDeath on a building in WoL](media/detonationDeath-building-wol.gif)
 
@@ -2876,7 +2855,7 @@ mortar explosion where it stood (`blast drawn at 1 point`), none on the wagons, 
 
 ![detonationDeath blast in WoL](media/detonationDeath-blast-wol.gif)
 
-*In WoL, with the key (two `xpAenna` with `<DetonationImpactEffect>effects\impacts\mortar</DetonationImpactEffect>` in front,
+*Filmed on 2026-11-13: in the MP4 the units hit still cry out; since 2026-11-21 they are silent.* *In WoL, with the key (two `xpAenna` with `<DetonationImpactEffect>effects\impacts\mortar</DetonationImpactEffect>` in front,
 two `Engineer` behind with their own `BuildingAttack`, whose `<impacteffect>` is the dynamite; both blasts 40 Siege,
 `DamageArea` 5, `GAIAEnemy`; six enemy `WOLScytheman`):* each archer that falls bursts into a mortar explosion, and each
 Engineer knocked down into a dynamite one, where the scythemen around it lose HP. Four of the six scythemen died, the
@@ -2889,7 +2868,7 @@ other two were left at 16 and 28 HP. [Full video (MP4)](media/detonationDeath-bl
 
 ![detonationDeath delete in WoL](media/detonationDeath-delete-wol.gif)
 
-*In WoL, with the key (an `xpAenna` with the mortar effect and `<DetonationCommand>Delete</DetonationCommand>`, deleted with
+*Filmed on 2026-11-13: in the MP4 the units hit still cry out; since 2026-11-21 they are silent.* *In WoL, with the key (an `xpAenna` with the mortar effect and `<DetonationCommand>Delete</DetonationCommand>`, deleted with
 its Delete button next to an enemy `CoveredWagon`):* the mortar explosion where it stood, the log line `kill flags 1 0 0
 (a delete)`, and the wagon destroyed. [Full video (MP4)](media/detonationDeath-delete-wol.mp4).
 
@@ -2909,9 +2888,12 @@ DetonationCommand, no blast`. The wagon then goes into the fog: the archer was t
 
 ![detonationDeath over water in WoL](media/detonationDeath-water-wol.gif)
 
-*In WoL, with the key (a `Caravel` with `SHIPmelee` as its blast, 200 Siege, `DamageArea` 8, and the mortar effect;
-three Gaia `FishingBoat` beside it; a trigger deals it 5000 damage):* a mortar explosion on the water as it sinks, and
-the boats go from 200 to 46.0, 54.3 and 54.3 HP. [Full video (MP4)](media/detonationDeath-water-wol.mp4).
+*In WoL, with `detonationDeath log` (2026-11-21, a scenario on a water map; a `Caravel` with `SHIPmelee` as its blast,
+200 Siege, `DamageArea` 8, `GAIAEnemy`, and `<DetonationImpactEffect>effects\impacts\mortar</DetonationImpactEffect>`; three
+Gaia `FishingBoat` beside it; a trigger deals it 5000 damage at 35 s):* the ship bursts over its footprint, four mortar
+explosions on the water (`blast drawn at 4 points over its footprint`), and sinks. The boats show no explosion of their
+own and go from 200 to 54.3, 46.0 and 46.0 HP, then into the fog: the Caravel was the only one who saw them.
+[Full video (MP4)](media/detonationDeath-water-wol.mp4).
 
 ![detonationDeath over water in WoL, key off](media/detonationDeath-water-wol-control.gif)
 
@@ -3025,21 +3007,27 @@ detonationDeath [log]
   `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0; blast drawn at 1 point` (a building: `blast drawn at 9 points over its footprint`). Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
 ![detonationDeath threshold and decay in WoL](media/detonationDeath-threshold-wol.gif)
 
-*In WoL, with the key (a Musketeer of 4000 HP, threshold 0.25, decay 100, a trigger that takes 76 % of its HP):* from
-960 HP it loses 100 a second and detonates at 0. [Full video (MP4)](media/detonationDeath-threshold-wol.mp4).
+*In WoL, with `detonationDeath log` (2026-11-21, a scenario; a Musketeer of 4000 HP, threshold 0.25, decay 100,
+`VolleyRangedAttack` as its blast with `<DetonationImpactEffect>effects\impacts\mortar</DetonationImpactEffect>`, since that
+attack's own `effects\impacts\gun` is a small puff of dust; a trigger takes 76 % of its HP at 35 s):* from 960 HP it loses
+100 a second and detonates at 0, at 45 s: one mortar explosion where it stood (`blast drawn at 1 point`).
+[Full video (MP4)](media/detonationDeath-threshold-wol.mp4).
 
 ![detonationDeath threshold and decay in WoL, key off](media/detonationDeath-threshold-wol-control.gif)
 
-*In WoL, key off (the same data):* it stays at 960 HP. [Full video (MP4)](media/detonationDeath-threshold-wol-control.mp4).
+*In WoL, key off (filmed on 2026-11-05, the same Musketeer without `<DetonationImpactEffect>`, which the key off ignores
+anyway):* it stays at 960 HP. [Full video (MP4)](media/detonationDeath-threshold-wol-control.mp4).
 
 ![detonationDeath command in WoL](media/detonationDeath-command-wol.gif)
 
-*In WoL, with the key (the same Musketeer, `<DetonationCommand>`, the Delete key):* the blast line, `kill flags 1 0 0
-(a delete)`. [Full video (MP4)](media/detonationDeath-command-wol.mp4).
+*In WoL, with the key (2026-11-21; the same Musketeer, at its full 4000 HP, with `<DetonationCommand>Detonate</DetonationCommand>`,
+deleted with its Delete button at 33.5 s):* the mortar explosion where it stood and the line `kill flags 1 0 0 (a delete);
+blast drawn at 1 point`. [Full video (MP4)](media/detonationDeath-command-wol.mp4).
 
 ![detonationDeath command in WoL, key off](media/detonationDeath-command-wol-control.gif)
 
-*In WoL, key off (the same data):* the Delete key removes it with no line.
+*In WoL, key off (filmed on 2026-11-05, the same Musketeer without `<DetonationImpactEffect>`):* the Delete key removes it
+with no line.
 [Full video (MP4)](media/detonationDeath-command-wol-control.mp4).
 
 - **Tested in WoL (2026-11-21, the blast on the unit that dies, JTMaston's #86):** the two videos above. The damage is
@@ -3049,6 +3037,9 @@ detonationDeath [log]
   A chain of three Gaia grenadiers (one killed, the two beside it at 5 HP): three blasts, one per grenadier, each `blast
   drawn at 1 point`. Beside WoL's own `uhc.dll` (our `dinput8.dll`): applied, and a grenadier's blast as above. An AI
   skirmish (Germans, `wolOtto`) with the key and the test data on: 17 AI units at 159 s, no XS error.
+  Refilmed the same day with this build: the Caravel over water (4 points, the boats at 54.3, 46.0 and 46.0 HP; on
+  2026-11-13, 46.0, 54.3 and 54.3), and the Musketeer's threshold and delete (1 point each). Its delete went through the Delete button: the
+  console's `uiDeleteSelectedUnit` crashed this background copy at 0x7E51C8 again (below).
 - **Tested in WoL (2026-11-13, the blast on screen):** the scene of the first two videos (Ethiopians against an enemy
   of six `WOLScytheman`): four blasts, `unit 3, proto 714, at 41.9, 45.1` and `unit 2 … at 43.8, 45.2` (the archers,
   mortar effect) and `unit 1, proto 1482, at 38.5, 45.9` and `unit 0 … at 36.9, 46.6` (the Engineers, dynamite), each
@@ -3874,7 +3865,7 @@ Skirmisher runs its whole reload animation in a fraction of a second. [Full vide
 
 ![numberOfShots projectiles in WoL](media/numberOfShots-projectiles-wol.gif)
 
-*In WoL, with `numberOfShots projectiles log` and `spreadAnyAccuracy Skirmisher` (the same Skirmishers with
+*Filmed on 2026-11-12, before the quick shots of a burst stopped playing the reload animation.* *In WoL, with `numberOfShots projectiles log` and `spreadAnyAccuracy Skirmisher` (the same Skirmishers with
 `<NumberProjectiles>4</NumberProjectiles><MaxSpread>2</MaxSpread><SpreadFactor>0.2</SpreadFactor>`, test data):* each shot
 is a fan of four tracers, each pellet landing where its own spread takes it. Three settlers fall in 57 s.
 [Full video (MP4)](media/numberOfShots-projectiles-wol.mp4).
@@ -4115,18 +4106,23 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Saturday 2026-11-21 11:42
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Saturday 2026-11-21 15:06
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
-*In WoL, with the key (Ethiopians, 3 `Hussar` against 9 `Crossbowman`, rows ×1.5 damage at 1 kill, ×1.5 hit points at 2,
-×2 damage at 3; [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) on in all four videos, so the bars do not jump):* two hussars survive
-with 504 and 346 hit points, and the log shows the ranks.
+*In WoL, with the key (Ethiopians, 3 `Hussar` against 9 `Crossbowman`, the Hussar's rows ×1.5 damage at 1 kill, ×1.5 hit
+points at 2, ×2 damage at 3; `veterancyBonus notext`, WoL's line, the marks of `art\effects\uhc_rings` and
+[`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars), so the bars do not jump; refilmed 2026-11-21):* the Hussars charge
+from 34 m and take the nine Crossbowmen; each new rank puts its mark centred over the Hussar's HP bar (the copper loop, the
+silver knot, the gold knot) with no name rising over it. One Hussar dies with no kill; the two that survive reach rank 3,
+with 4 and 5 kills, and end with 390 and 481 of 528 hit points (×1.5 of 352 from the second kill), the panel reading
+`Rank 3`, `4 kills` / `5 kills` and a hand attack of 66 (×2 of 33). The log shows each rank.
 [Full video (MP4)](media/veterancyBonus-wol.mp4).
 
 ![veterancyBonus in WoL, key off](media/veterancyBonus-wol-control.gif)
 
-*In WoL, key off (the same data):* the two that survive end with 299 and 113. The game skips a tag it does not know.
+*In WoL, key off (the same scene and data, the rings folder still there):* no marks, and the fight lasts longer; one Hussar
+dies and the two that survive end with 345 and 106 of 352 hit points. The game skips a tag it does not know.
 [Full video (MP4)](media/veterancyBonus-wol-control.mp4).
 
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
@@ -6641,7 +6637,7 @@ nextResearchFree [log]
 
 ![researchGrants in WoL](media/researchGrants-wol.gif)
 
-*In WoL, with the key (British skirmish against a French AI; test data of `tools/grant_testdata.py`: the Market with
+*Filmed on 2026-11-12: the row read `next in 14 s`; since 2026-11-21 it reads `next in 14s`.* *In WoL, with the key (British skirmish against a French AI; test data of `tools/grant_testdata.py`: the Market with
 `ResearchGrantInterval` 20, `ResearchGrantMax` 3, `ResearchGrantCost` 0 and `ResearchGrantScope` `self`, and four test
 techs of 300 wood on its buttons, Optics, Public Lighting, Reservists and Mass Cavalry; 1200 wood; the Market stays
 selected; each research is started by a click on its button, after the pointer has rested on it):* until the first
@@ -6827,10 +6823,18 @@ usable; Food Crates 2 (bottom) ends with the red line `Shipment techs: 3/3, the 
 
 ![shipTechLimit in WoL, key off](media/shipTechLimit-wol-control.gif)
 
-*In WoL, key off (the same scenario, tag and commands):* the fourth research is paid and queued like the others; no
-count on the buttons, no line in the rollover. [Full video (MP4)](media/shipTechLimit-wol-control.mp4).
+*In WoL, key off (an earlier take, 2026-11-20: player 1 Ethiopian in a scenario with a `MapucheWarchief`, Villagers 1
+and two crates queued, then a fourth council tech; not the setup or the commands of the video above):* the fourth
+research is paid and queued like the others; no count on the buttons, no line in the rollover.
+[Full video (MP4)](media/shipTechLimit-wol-control.mp4).
 
 ![The rollover at the limit](media/shipTechLimit-rollover.png)
+
+*At the limit (2026-11-21, `shipTechLimit log`; a skirmish on a test map, player 1 Portuguese with a limit of 3, a
+`MapucheWarchief`, `Age0Mapuche`, Age III and 10 Ships):* three council techs that are not repeatable were researched
+(Fowl, Food Crates 3 and Wood Crates 3: 1, 2 and 3 of 3 in the log). Every limited button shows `3/3`, the repeatable
+crates (purple frames) show nothing, and the rollover of Villagers 3 ends with the red line `Shipment techs: 3/3, the
+limit is reached`.
 
 ```
 shipTechLimit [notext] [log]
@@ -6889,7 +6893,8 @@ shipTechLimit [notext] [log]
   1), loaded with this build: `player 1's count from an older build (2) held repeatable techs: now 1`;
   beside WoL's own DLL (our `dinput8.dll`, its `uhc.dll`): the key applied, three council techs 1 to 3 of 3, Food Crates
   1 and Coin Crates 1 (repeatable) queued with no count, Coin Crates 2 refused; the key off is the control video above
-  (unchanged).
+  (unchanged). The rollover picture was retaken the same day in Age III (Fowl, Food Crates 3, Wood Crates 3: 1 to 3 of
+  3; a request for Coin Crates 3 then queued nothing and logged no count).
 
 #### homeCityTechsInUnits
 
@@ -7401,7 +7406,7 @@ kothTimer teams 2=900 3=600 4=480
 
 *Counts the home city cards each player has shipped of each age (the age that enables the card), once they arrive, so a card or tech can send one unit per card; the counts are kept in saved games.*
 
-**Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Saturday 2026-11-21 11:34
+**Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Saturday 2026-11-21 15:50
 
 ![shipmentCounts in WoL](media/shipmentCounts-wol.gif)
 
@@ -7414,9 +7419,12 @@ left is a test rule that prints `xsGetShipmentCount`. [Full video (MP4)](media/s
 
 ![shipmentCounts in WoL, a tech](media/shipmentCounts-reward-wol.gif)
 
-*In WoL, with the key (the same game, later):* a test tech with `FreeHomeCityUnitByShipmentCount` Hussar `age='1'`
-amount 1, and Cuirassier `age='2'` amount 2, is researched: two Hussars come to the Town Center, for the two Age I cards,
-and no Cuirassier, as no card was shipped in Age II. [Full video (MP4)](media/shipmentCounts-reward-wol.mp4).
+*In WoL, with `shipmentCounts log` (2026-11-21, the setup of the video above in a new game: the three Age II cards sent
+in Age III, the count `0, 3, 0, 0, 0`; then a test tech with `FreeHomeCityUnitByShipmentCount` Hussar `age='1'` amount
+1 and Cuirassier `age='2'` amount 2, set active by a trigger at 5:30 of game time; the Cuirassiers stay selected; 2x
+speed):* six Cuirassiers come to the Town Center, two for each of the three Age II cards, and no Hussar, as no Age I
+card was shipped; the two log lines at the bottom give each count. The unselected Hussars came with the cards.
+[Full video (MP4)](media/shipmentCounts-reward-wol.mp4).
 
 ![shipmentCounts in WoL, key off](media/shipmentCounts-wol-control.gif)
 
@@ -7425,7 +7433,8 @@ and the three Age II cards sent in Age III bring only their crates. [Full video 
 
 ![shipmentCounts in WoL, a tech, key off](media/shipmentCounts-reward-wol-control.gif)
 
-*In WoL, key off (the same game, two Age I cards shipped before):* the test tech is researched and nothing comes.
+*In WoL, key off (2026-11-21, the same data, map, cards and trigger as the tech above, in a new game; 2x speed):* the
+test tech becomes active at 5:30 and nothing comes; the three cards had brought only their crates.
 [Full video (MP4)](media/shipmentCounts-reward-wol-control.mp4).
 
 ```
@@ -7536,7 +7545,10 @@ int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge)  // cAge1..
     the old rule they would have counted in Age III); the next save had no old marker any more;
   - key off (control video): the three cards brought only their crates; beside WoL's own DLL (our `dinput8.dll`): the
     key is not applied, as before (`site FreeHomeCityUnitCase at 0x008D8C62 does not hold the stock bytes`, WoL's DLL
-    patches that case), and the game ran.
+    patches that case), and the game ran;
+  - the tech videos re-filmed with this rule (Portuguese, the three Age II cards sent in Age III, `0, 3, 0, 0, 0`): the
+    test tech brought `age 1: 0 shipment(s) x 1.00 = 0.00` Hussars and `age 2: 3 shipment(s) x 2.00 = 6.00` Cuirassiers
+    (6 in game); key off, nothing.
   - Stock, found on the way: a card with no `<age>` and a card with `<age>4</age>` are left out of the in-game deck
     (the card list is built per age 0 to 3, FUN_006301DE), so they cannot be sent at all; the rule for a card with no
     `<age>` (Age I) only matters to a mod that changes that.
@@ -7815,16 +7827,16 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 *A selected unit shows its range on the ground while Alt is held: one ring per ranged attack.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Saturday 2026-11-21 12:04
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Saturday 2026-11-21 16:01
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
-*In WoL, with `displayedRange log` (Swedes, a skirmish; test data: `<DisplayRange>1</DisplayRange>` on the Fort, the Falconet and the
-Crossbowman, `<Flag>AlwaysDisplayRange</Flag>` on the Outpost):* the Fort is selected and shows nothing; Alt held, its 40 m anti-ship and 26 m cannon rings; Alt released, none; the Outpost, selected, shows its 40 and 24 m at once, with no Alt; two Crossbowmen with Alt show 16 and 6 m each. The log names each ring. [Full video (MP4)](media/displayedRange-wol.mp4).
+*In WoL, with `displayedRange log` (Ethiopians, a scenario, the rings at their true size; test data: `<DisplayRange>1</DisplayRange>` on
+the Fort and the Crossbowman, `<Flag>AlwaysDisplayRange</Flag>` on the Outpost):* the Fort is selected and shows nothing; Alt held, its 40 m anti-ship and 26 m cannon rings; Alt released, none; the Outpost, selected, shows its 40 and 24 m at once, with no Alt; two Crossbowmen with Alt show 16 and 6 m each. The log names each ring. [Full video (MP4)](media/displayedRange-wol.mp4).
 
 ![displayedRange in WoL, key off](media/displayedRange-wol-control.gif)
 
-*In WoL, key off (the same data and the same Alt):* no ring; Alt only shows the HP bars, as in stock.
+*In WoL, key off (Swedes, a skirmish, with that data and the Falconet's `<DisplayRange>`, and the same Alt):* no ring; Alt only shows the HP bars, as in stock.
 [Full video (MP4)](media/displayedRange-wol-control.mp4).
 
 ```
@@ -7857,7 +7869,12 @@ displayedRange [log]
   values instead.
 - **Sizes:** each radius goes to the nearest ring of `tools/rings`: 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
   32, 36, 40, 45, 50, 60, 70, 80 and 100 m (aoe3-blender-tools' `make_rings.py`, `RANGES`; the line widens a little on
-  the large ones so it stays visible).
+  the large ones so it stays visible). The line's outer edge is at the radius.
+- **Before 2026-11-21 the rings showed half their radius:** the 12 m ring was drawn at 6 m (measured with crates at
+  known distances), because the game takes a flat particle's scale as its full width and `make_rings.py` wrote the
+  half width. The `range_*.particle` files of `tools/rings` are fixed (scale doubled; the textures are the same):
+  copy them again to `art/effects/uhc_rings`. Measured after the fix: the 4 m ring passes between markers at 2.83 and
+  4.47 m, the 12 m ring between 11.66 and 12.17 m, the 30 m ring between 29.73 and 31.11 m.
 - **Files:** `range_<metres>.xml`, its particle and its texture, in `art/effects/uhc_rings` for everyone who should see it.
 - **How far an aura reaches:** its `<MaxRange>` goes from the centre of its unit to the edge of the target: a 6.2 m aura
   took trees at 6.0, 6.3 and 7.2 m, and not at 8.9 m. So a small range can stay under a big building's model.
@@ -8158,25 +8175,19 @@ attackTypeIcons <UnitType> <StringID> <IconPath> [<UnitType> <StringID> <IconPat
 
 **Added:** Tuesday 2026-11-17 08:07 · **Filmed in WoL:** Tuesday 2026-11-17 10:30
 
-![minUIStats in WoL](media/minUIStats-wol.gif)
+![minUIStats version 7 on a unit in WoL](../wol-fixes/min-ui/final/minUIStats-v7-icons-min-escopetero.jpg)
 
-*In WoL, with `minUIStats` and the layout of `wol-fixes/min-ui` (Ethiopians, Menelik II selected, minimized interface):* Train
-Points, LOS and live Speed in their own rows, and the hero's 4th and 5th attacks, `Sharpshooter ATK` and `Crack Shot ATK`,
-which the minimized interface had no room for. [Full video (MP4)](media/minUIStats-wol.mp4).
+*In WoL, version 7 (2026-11-21, `minUIStats` and the layout of `wol-fixes/min-ui`, Ethiopians, an `Escopetero`, minimized
+interface):* cost and pop at the top left, LOS, speed and train time at the top right, armor as a percent (`20%`), and
+each attack in one row: damage, rate of fire (`3.50` and the clock icon), range, area, then the bonus multipliers.
+More pictures of version 7 (the big interface, the Falconet limbered and deployed, gathering, beside WoL's own
+`uhc.dll`): `wol-fixes/min-ui/final/minUIStats-v7-*.jpg`.
 
-![minUIStats in WoL, key off](media/minUIStats-wol-control.gif)
+![minUIStats version 7 on a building in WoL](../wol-fixes/min-ui/final/minUIStats-v7-mill.jpg)
 
-*In WoL, key off (the same scene and layout):* the stock rows only: three attacks, no LOS, no speed.
-[Full video (MP4)](media/minUIStats-wol-control.mp4).
+*In WoL, version 7 (a `Mill` with two settlers):* the food it holds (`Infinite`) and `Gatherers: 2 / 10`.
 
-![minUIStats on a building in WoL](media/minUIStats-building-wol.gif)
-
-*In WoL, with `minUIStats` (a `Bunker`, Siege armor 0.3):* `Resists: 0.30` (`30%` since version 7) in the stock spot, `Garrison: 0 / 20` and LOS.
-[Full video (MP4)](media/minUIStats-building-wol.mp4).
-
-![minUIStats on a building in WoL, key off](media/minUIStats-building-wol-control.gif)
-
-*In WoL, key off (the same scene):* no armor, no garrison. [Full video (MP4)](media/minUIStats-building-wol-control.mp4).
+*The videos of the first layout (2026-11-17) were removed on 2026-11-21: the panel has changed since (version 7).*
 
 ```
 minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of wol-fixes/min-ui
@@ -8415,6 +8426,8 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   | `BerryBush` | its stock `Food: 868` row once, no train points | — |
   | `Caravel`, `Galleon` | Garrison 0 / 50, Speed 8.50, Resists, their attacks | — |
 
+  *The pictures below show the first layout (2026-11-17); the current panel is version 7 (top of this section).*
+
   ![The minimized interface, key on](media/minUIStats-test-hero-min.png)
   ![The big interface](media/minUIStats-test-hero-big.png)
   ![A ship](media/minUIStats-test-ship-min.png)
@@ -8437,15 +8450,6 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   | `Settler` gathering | Cost 100 food, Pop 1, ROF, Range; `Food 0.67/s` in the stock rate row (`showGatherRate`) |
   | `Caravel` | Cost 100 gold 300 wood, ROF 2 / 0.05 (broadside), Range 20 |
   | `BerryBush` | nothing new (no attack, no cost) |
-
-  ![Batch 2: a veteran Musketeer](media/minUIStats-batch2-wol.gif)
-
-  *Key on (the Musketeer with 2 kills):* Cost and Pop, ROF and Range above the name.
-  [Full video (MP4)](media/minUIStats-batch2-wol.mp4).
-
-  ![Batch 2, key off](media/minUIStats-batch2-wol-control.gif)
-
-  *Key off (the same scene):* no Cost, ROF or Range row; the stock rows only (the rank row is `veterancyBonus`'s own). [Full video (MP4)](media/minUIStats-batch2-wol-control.mp4).
 
   Performance, batch 2 (`perfprobe.py`, 60 s each, the veteran Musketeer selected; three other test games were running
   on the PC): key on 933 fps, main thread 78 %, update 0.2 ms, render 0.9 ms; key off 999 fps, 83 %, 0.2 ms, 0.8 ms.
@@ -8482,15 +8486,6 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   With every key of the cfg template on (124 keys): 113 applied, 0 failed, 126 hooks reached, after two fixes this run
   found: `population` now divides by `decimalPopulation`'s K (it showed `Pop: 10` for a settler), and the shared proto tag
   table holds 64 tags instead of 32 (`linkedResource` was the 33rd and failed).
-
-  ![Batch 3: a Town Center going up](media/minUIStats-batch3-wol.gif)
-
-  *Key on (the TC site selected, three settlers building it in a x1.5 work aura):* `Done in 1:25` counting down a second
-  per game second. [Full video (MP4)](media/minUIStats-batch3-wol.mp4).
-
-  ![Batch 3, key off](media/minUIStats-batch3-wol-control.gif)
-
-  *Key off (the same scene, the aura keys on):* the stock rows only: no time to finish, no cost, ROF or LOS. [Full video (MP4)](media/minUIStats-batch3-wol-control.mp4).
 
   Performance, batch 3 (`perfprobe.py`, 45 s each, the TC site selected while three settlers build it, 100 stack samples a
   second; other test games were running on the PC): key on 876 fps, main thread 84.9 %, update 0.18 ms, render
@@ -8558,6 +8553,8 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   what another player's villager carries; the stock resource and rate rows were filmed on the Factory, the Sawmill and
   the tree).
 
+  *The pictures below show the third layout (version 3); the current panel is version 7 (top of this section).*
+
   ![Third layout, one Musketeer](media/minUIStats-v3-1type.png)
   ![Third layout, five unit types](media/minUIStats-v3-5types.png)
   ![Third layout, a Presidial: only its own ability attack](media/minUIStats-v3-presidial.png)
@@ -8570,7 +8567,7 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   ![A Caravel](media/minUIStats-v3-ship-caravel.png)
   ![The same layout with the key off](media/minUIStats-v3-keyoff-1type.png)
 
-  All the pictures, as JPG, are also in `wol-fixes/min-ui/media`.
+  Version 3's pictures, as JPG, are kept as history in `wol-fixes/min-ui/media`.
 
   Performance (`perfprobe.py`, 45 s each, five types selected, Explorer included; three other games running): key on
   666 fps, main thread 85.1 %, update 0.16 ms, render 1.34 ms, longest frame 12.8 ms; key off 569 fps, 84.5 %, 0.18 ms,
@@ -8676,19 +8673,23 @@ playerIcon <avatarId>
 
 *A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off.*
 
-**Added:** Thursday 2026-11-19 14:11 · **Filmed in WoL:** Friday 2026-11-20 12:52
+**Added:** Thursday 2026-11-19 14:11 · **Filmed in WoL:** Saturday 2026-11-21 15:50
 
 ![autoScout in WoL](media/autoScout-wol.gif)
 
-*In WoL, with `autoScout log` and `wol-fixes/auto-scout` (Romanians against a German AI, Great Lakes, the camera on one
-of two ravens):* the selected raven flies straight to the nearest unexplored ground, then on to the next, and the
-minimap fills in: 63.7 % of the map explored at 3 minutes, all of it at 6. Each order is a `ordered` line in the log.
-[Full video (MP4)](media/autoScout-wol.mp4).
+*In WoL, with `autoScout log` and `wol-fixes/auto-scout` (2026-11-21, the default key: it keeps away from enemy
+buildings that shoot and backs off when hit; Romanians against a German AI, Great Lakes; the copy's `civs.xml` gives
+the Romanians two starting ravens, as WoL's did on 2026-11-19 (it now starts them with a cartographer); the camera on
+one of the two ravens, which stays selected; the GIF shows the view and the minimap, the MP4 the `ordered` lines of the
+log too):* the raven flies straight to the nearest unexplored ground, then on to the next, and the minimap fills in:
+64.6 % of the map explored at 3 minutes, 97.8 % at 6; what is left is the ground around the German Town Center, an
+enemy building that shoots (a second game: 66.0 % and 97.1 %). [Full video (MP4)](media/autoScout-wol.mp4).
 
 ![autoScout in WoL, key off](media/autoScout-wol-control.gif)
 
-*In WoL, key off and the pack not applied (the same map, civ and raven):* the stock raven circles the Town Center, and
-the minimap stays as it was at the start: 9.4 % explored at 3 minutes, 9.7 % at 6.
+*In WoL, key off and the pack not applied (2026-11-19, the same map, civ and ravens; the key off has not changed):*
+the stock raven circles the Town Center, and the minimap stays as it was at the start: 9.4 % explored at 3 minutes,
+9.7 % at 6.
 
 [Full video (MP4)](media/autoScout-wol-control.mp4).
 
@@ -8707,8 +8708,9 @@ status below. [Full video (MP4)](media/autoScout-back-wol-control.mp4).
 
 ![The minimap at 3 and 6 minutes](media/autoScout-minimaps.jpg)
 
-*The minimap of the two games at 3 and 6 minutes of game time: the share is the player's explored grid, read from
-the game (`testbed.py explored`).*
+*The minimap at 3 and 6 minutes of game time: key off (2026-11-19, top) and the default key (2026-11-21, the game of
+the video, bottom; the black patch at the top right is the ground around the German Town Center). The share is the
+player's explored grid, read from the game (`testbed.py explored`).*
 
 ```
 autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
@@ -8776,7 +8778,8 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
   cell (…), block 34: ordered`), `stopped … block 210 given up`, `got an order (command type 9): back to tactic 0`,
   and every 120 scans their cost.
 - **Status:** confirmed (2026-11-19, single player, WoL): the ravens 9.4 % → 63.7 % at 3 minutes and 9.7 % → 100 %
-  at 6 (two ravens, the rest of the player idle); the Dutch envoy alone 8.6 % → 50.1 % at 3 minutes and 71.1 % at 6
+  at 6 (two ravens, the rest of the player idle; the key of that day, today's `noAvoid noBack`; with the default key,
+  2026-11-21: 64.6 % / 97.8 % and 66.0 % / 97.1 % in two games, the ground around the enemy Town Center left out); the Dutch envoy alone 8.6 % → 50.1 % at 3 minutes and 71.1 % at 6
   (Great Lakes, scenario); a caravel given the tactic for the test scouted the lake on water only; the start and stop
   buttons (posted clicks, and their commands from the console), Stop and a trigger's move order switched it off, a
   save and load kept it scouting, a raven killed while scouting and one killed after: no error. A/B with
@@ -9310,7 +9313,6 @@ the code. Saved games were tested only where a section says so.
   with the same K (tested with K = 100: a game saved at 17 / 20 loaded at 17 / 20).
 - **No feature sends network commands of its own,** but for `repairWallGlobal`, which sends the game's
   own repair command: they all act inside the normal simulation, on every machine, in the same order.
-
 
 **After a load, by key:**
 

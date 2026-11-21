@@ -1158,7 +1158,7 @@ noCorpseDopples [<UnitType>] [log]      default AbstractNoCorpseDopple
 
 ![steadyHitpointBars in WoL](media/steadyHitpointBars-wol.gif)
 
-*In WoL, with `steadyHitpointBars log` (Ethiopians, 3 `Hussar` and 3 `Pikeman` against 16 `Settler` and 3 `Crossbowman`,
+*Filmed on 2026-11-20, before the rank marks got their darker border and WoL's `veterancyBonus notext`; the bars are the same today.* *In WoL, with `steadyHitpointBars log` (Ethiopians, 3 `Hussar` and 3 `Pikeman` against 16 `Settler` and 3 `Crossbowman`,
 the ranks of `veterancyBonus` on, the selected units' bars shown):* the Hussars charge, fight and stand; each bar keeps
 one height over its rider, and the rank marks stay just above it. [Full video (MP4)](media/steadyHitpointBars-wol.mp4).
 

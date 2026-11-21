@@ -2097,6 +2097,10 @@ The ring is a model of the table the tactics parser fills: 0x58F68F gives the ID
 it at the unit's feet. A world tick, ten times a second of game time, compares the selection of 0x453B28 and the Alt state
 with the units that hold rings, and hangs or removes them through the functions of the stock aura update.
 
+**Ring size:** the model's flat particle is drawn `<scale>` metres wide in all, not twice that: `range_<N>.particle` has
+a scale of 2 × N / 0.97, the texture's line ending at 0.97 of its half width (measured in game, 2026-11-21: with the
+half width as the scale every ring showed half its radius).
+
 **Alt** is the game's own query, the one the HP bar chunk makes at 0x452EA0..0x452EB3: `[[[0C66244h]+74h]+2Ch]`, its vtable
 +34h with 2 (0 is Shift, 1 Ctrl). A posted `WM_KEYDOWN` of `VK_MENU` sets it, so a copy in the background can be tested.
 
@@ -4985,7 +4989,8 @@ bits, stances, units, hit points); the attacker search does not depend on the or
 
 <!-- private:begin -->
 **What was measured.** Two ravens of the Romanians on Great Lakes, the rest of the player idle: 9.4 % / 9.7 % of the
-map explored at 3 / 6 minutes without the key, 63.7 % / 100 % with it. The Dutch envoy alone on the same map: 50.1 % /
+map explored at 3 / 6 minutes without the key, 63.7 % / 100 % with it (2026-11-19, without the danger parts; with the
+default key on 2026-11-21: 64.6 % / 97.8 %, the ground around the enemy Town Center left out). The Dutch envoy alone on the same map: 50.1 % /
 71.1 %. A scan: about 50 µs with two scouts on 155 × 155 cells (with `log`, the order lines make the first scans cost
 milliseconds). Danger (2026-11-20, a 260 m map with four enemy outposts and seven Musketeers, an Explorer and an Envoy):
 61.5 % / 70.5 % at 3 / 6 minutes and the Envoy killed with `noAvoid noBack`; 68.7 % / 79.4 % and both alive with the

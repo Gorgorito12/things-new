@@ -77,8 +77,6 @@ overhealHitpointBars-wol 6 22 2
 overhealHitpointBars-wol-control 6 22 2
 overhealSources-dance-wol 2 28 2
 overhealSources-dance-wol-control 2 28 2
-overhealSources-wol 2 28 2
-overhealSources-wol-control 2 28 2
 repairWallGlobal-wol 2 22 2
 repairWallGlobal-wol-control 2 22 2
 selectionLimit-wol 2 12 2 1100:690:400:310
@@ -123,8 +121,8 @@ resourceGatherAuras-wol-control 2 36 3
 unitResourceAuras-depleted-wol 2 36 3
 unitResourceAuras-wol 2 36 3
 unitResourceAuras-wol-control 2 36 3
-veterancyBonus-wol 0 12 1
-veterancyBonus-wol-control 0 12 1
+veterancyBonus-wol 8 12 1
+veterancyBonus-wol-control 7 18 1.5
 veterancyBonus-icons-wol 17 24 2
 veterancyBonus-icons-wol-control 18 24 2
 killSpawn-wol 2 20 2
@@ -150,9 +148,9 @@ nextResearchFree-wol 2 30 3
 nextResearchFree-wol-control 2 30 3
 cantBeSlowed-wol 0 12 1
 cantBeSlowed-wol-control 0 12 1
-detonationDeath-threshold-wol 2 12 1
+detonationDeath-threshold-wol 9 11 1
 detonationDeath-threshold-wol-control 2 12 1
-detonationDeath-command-wol 3 12 1
+detonationDeath-command-wol 3 9 1
 detonationDeath-command-wol-control 3 12 1
 killBountyTechs-wol 0 12 1
 killBountyTechs-wol-control 0 12 1
@@ -169,7 +167,7 @@ detonationDeath-blast-wol-control 10 18 1.5
 detonationDeath-delete-wol 8 8 1
 detonationDeath-delete-nocommand-wol 20 10 1
 detonationDeath-none-wol 5 16 2
-detonationDeath-water-wol 6 8 1
+detonationDeath-water-wol 9.5 5 1
 detonationDeath-water-wol-control 6 8 1
 detonationDeath-knockout-off-wol 2 10 1
 detonationDeath-knockout-on-wol 2 10 1
@@ -177,7 +175,7 @@ hcTargetTechs-wol 2 18 2
 hcTargetTechs-wol-control 2 18 2
 unitResourceAuras-torp-wol 4 12 1
 unitResourceAuras-torp-wol-control 4 12 1
-displayedRange-wol 5 33 3
+displayedRange-wol 3 36 3
 displayedRange-wol-control 5 33 3
 linkedResource-wol 2 12 1
 linkedResource-wol-control 2 12 1
@@ -245,10 +243,8 @@ healNonIdle-busyrate-wol 10 24 2
 healNonIdle-busyrate-wol-control 10 24 2
 smartHealTargets-switch-wol 2 24 2
 smartHealTargets-switch-wol-control 2 24 2
-overhealSources-cap-wol 1 18 1.5
-overhealSources-cap-wol-control 1 18 1.5
-overhealDecay-holdnear-wol 2 22 2
-overhealDecay-holdnear-wol-control 2 22 2
+overhealDecay-holdnear-wol 17 24 2
+overhealDecay-holdnear-wol-control 17 24 2
 researchGrants-wol 17.5 12 1 800:310:170:115+800:250:686:624+800:125:0:680
 researchGrants-wol-control 18 12 1 800:310:170:115+800:250:686:624+800:125:0:680
 stealthTargeting-wol 11 12 1
@@ -277,8 +273,8 @@ orPrereqsQty-wol 2 24 2
 orPrereqsQty-wol-control 0 24 2
 shipmentCounts-wol 30 90 8
 shipmentCounts-wol-control 30 90 8
-shipmentCounts-reward-wol 4 16 2
-shipmentCounts-reward-wol-control 4 16 2
+shipmentCounts-reward-wol 6 20 2
+shipmentCounts-reward-wol-control 2 20 2
 kothTimer-wol 4 24 2
 kothTimer-wol-control 4 24 2
 politicianPlacesFix-wol 4 12 1
@@ -295,15 +291,7 @@ randomCost-wol-control 8 33 3 800:72:0:0+800:300:900:0+800:110:0:190
 impactBoneFix-wol-set-temple 12 12 1
 impactBoneFix-wol-set-temple-control 0 12 1
 impactBoneFix-wol-set-collapse 18 12 1
-minUIStats-wol 2 12 1 800:260:170:0
-minUIStats-wol-control 2 12 1 800:260:170:0
-minUIStats-building-wol 0 12 1 800:260:170:0
-minUIStats-building-wol-control 0 12 1 800:260:170:0
-minUIStats-batch2-wol 2 12 1 800:260:170:0
-minUIStats-batch2-wol-control 2 12 1 800:260:170:0
-minUIStats-batch3-wol 2 12 1 800:260:170:0
-minUIStats-batch3-wol-control 2 12 1 800:260:170:0
-autoScout-wol 2 48 4 800:320:560:330+800:270:0:810
+autoScout-wol 2 48 4 800:400:560:150+800:270:0:810
 autoScout-wol-control 2 48 4 800:320:560:330+800:270:0:810
 multiplierDecimals-wol 2 12 1 800:60:0:0+800:230:6:390
 multiplierDecimals-wol-control 2 12 1 800:60:0:0+800:230:6:390
