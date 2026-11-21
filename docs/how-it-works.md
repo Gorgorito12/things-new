@@ -1779,41 +1779,40 @@ ecx,[esp+24h]` at 0x85856A; `ev_86fde4e0…`). The activation applies the tech's
 cards `[hc+260h]` through 0x444FD3, which adds an index only once: a card sent again is not listed twice, so the list
 is not a count of shipments.
 
-**The age of sending.** A card counts in the age it was sent in, but only once it ships, since a sent card can still be
-cancelled. Three hooks:
-- the head of FUN_00857204 (7 bytes, `push esi / push edi / mov edi,ecx / mov esi,[edi+4]`) jumps to
-  `UhcShipQueueAddHook`: `UhcShipQueued(queue, entry)` notes `{card index, tech ID, [player+50h]}` (the player is
-  `[hc+8]`, hc = queue − 288h); then the replaced instructions run and it jumps to `0x85720B`. doNotQueue's own call of
-  the add (at 0x85AD38) reaches this head too;
-- the head of FUN_00857257 (`cmp byte [esp+8],0`, 5 bytes) jumps to `UhcShipQueueRemoveHook`: `UhcShipUnqueued(queue,
-  index, shift)` forgets the noted card of that entry; then the `cmp` runs again (its flags feed the `jz` at 0x857260)
-  and it jumps to `0x85725C`;
-- the activation call (below) finds the send age of the entry being shipped.
-
-A noted card is found by its card index and tech ID and its rank among the entries with the same pair: the k-th such
-entry in the queue is the k-th noted one, since the queue is FIFO and doNotQueue moves a new card up only past cards of
-the other kind, never past its twin. A card whose send was not seen (a game saved without the key) takes the age at its
-arrival.
+**The age of the card.** A card counts in its own age, the `<age>` of the card in the home city file (the age that
+enables it), not the age it was sent or shipped in, and only once it ships, since a sent card can still be cancelled.
+The card is found as the send and the shipment find it: FUN_0085FFCE, `thiscall(list = hc+228h, index)`, `ret 4`,
+answers `[list+1Ch] + index × 28h` for an index from 0 to `[list+20h]` − 1, else 0 (capstone; its seven callers, REA
+`ev_ebf467d4…`: the queue update, 0x85650A, the shipment FUN_00858299 at 0x85830B, 0x859CFE, 0x85A24D, the send at
+0x85A853 and the cancel 0x85ADD9). The send compares the card's `[card+18h]` with `[player+50h]` (0x85A90A: a negative
+age, no `<age>`, passes; a higher one is refused with string 8FFCh), so `[card+18h]` has the scale of `kbGetAge`
+(cAge1 = 0). None of the four of those callers decompiled (REA `ev_784ac21f…`: 0x85650A, 0x859CFE, 0x85A24D,
+0x85ADD9) nor the send writes `[card+18h]`; a writer elsewhere was not searched for (inferred: only the home city's load
+sets it). A card with no `<age>` (−1) counts in Age I.
 
 **The count.** The key redirects the activation call to `UhcShipActivateHook`: `TRACE_ONCE`, `UhcShipBegin(entry,
-player, hc, queue entry)` notes the player ID and the send age of that queue entry and marks a shipment as in progress,
-then the stock activation runs with its five arguments as they were pushed, then `UhcShipEnd()` adds one to the count of
-that player and send age and clears the mark. The return address is kept in a global while the activation runs, and the
-hook leaves with `jmp` to it. The counts are a 16 × 5 table (an age past cAge5 counts in the last).
+player, hc, queue entry)` notes the player ID, reads the queue entry's card index (`+0`), finds the card with
+FUN_0085FFCE (verified as `ShipCardLookup`) and takes its age, and marks a shipment as in progress; then the stock
+activation runs with its five arguments as they were pushed, then `UhcShipEnd()` adds one to the count of that player
+and card age and clears the mark. The return address is kept in a global while the activation runs, and the hook leaves
+with `jmp` to it. The counts are a 16 × 5 table (an age past cAge5 counts in the last). The queue entry is checked to lie
+in the player's queue before its card index is read.
 
-**Saved games.** The counts and the noted cards live in the DLL, so they are written into the game as saved markers
-(`savedmarkers.h`, stat 67h): stat modifiers that no code reads, whose save and load copy four dwords. Per player with
-anything to keep, one marker holds the five counts (16 bits each, word 0 `'SC' << 16 | player << 8 | 1`), and one, while
-the player has queued cards, the send ages of its queue in queue order (3 bits per place, 32 places, `| 2`). All of them
-sit on one unit, the carrier: the first living unit of a player (then of anyone) that takes a marker. A world tick
-(`AddWorldTick`) rewrites them after a change and moves them when the carrier is gone, dead, or lost its markers (a
-transform in place ends a unit's modifiers); old markers are freed. So at a save, which happens between world updates,
-the markers are on a living unit.
+Until 2026-11-21 a card counted in the age it was sent in, which took two more hooks (the heads of the queue's add
+0x857204 and removal 0x857257) to note each queued card's send age; both are gone.
+
+**Saved games.** The counts live in the DLL, so they are written into the game as saved markers (`savedmarkers.h`, stat
+67h): stat modifiers that no code reads, whose save and load copy four dwords. Per player with anything to keep, one
+marker holds the five counts (16 bits each, word 0 `'SC' << 16 | player << 8 | 1`). All of them sit on one unit, the
+carrier: the first living unit of a player (then of anyone) that takes a marker. A world tick (`AddWorldTick`) rewrites
+them after a change and moves them when the carrier is gone, dead, or lost its markers (a transform in place ends a
+unit's modifiers); old markers are freed. So at a save, which happens between world updates, the markers are on a living
+unit. A save of an older build may also hold a marker `| 2` (the send ages of the queued cards): it is ignored, and the
+next write drops it.
 
 A game is told apart as `researchGrants` does: the world `[game+13Ch]`, its time `[world+108h]` not going back and its
 step `[world+F8h]` advancing by at most one. A new or loaded game (seen by the tick, or by a hook or a syscall that runs
-first) rebuilds the table in one walk over the units: the counts from the count markers, and the noted cards from the
-loaded queue `[hc+288h]` of each player with the send ages of their places.
+first) rebuilds the table in one walk over the units, from the count markers.
 
 **The tech subtype.** `FreeHomeCityUnitByShipmentCount` is a Data subtype on a Player target, which the shared tech
 subtype code did not have: stock applies a Player target through 0x7F874A, which pushes the effect's fields and calls the
@@ -1830,7 +1829,7 @@ a range `N-M` of them, and `includeself` true or 1. They are packed into the eff
 low 24 bits, the first age in bits 24-26, `includeself` in bit 28, the last age in bits 29-31. A bad one drops the effect
 (the lookup answers −1, as for a name nobody knows). When the effect applies, the handler adds the counts of those ages
 (or of every age), adds one when `includeself` is set and the effect runs inside the activation of a shipment of the
-same player whose send age is in the range, writes the proto ID into the field and `amount × count` into the amount,
+same player whose card's age is in the range, writes the proto ID into the field and `amount × count` into the amount,
 and answers 37h: the stock `FreeHomeCityUnit` case (0x8D8C62) then creates the units at the home city gather point
 through 0x857E77, with its checks. A count of zero answers done, and nothing is created.
 
@@ -1842,14 +1841,56 @@ int lastAge)` in the XS group (every script: the AI, triggers), through `AddSysc
 - The activation gets the same `this`, the same five arguments and the same return address; EAX, its result, is kept,
   and the code at 0x858504 reloads ECX from EDI, which the C code keeps. Only one card ships at a time, and the
   activation never ships another, so one global return address is enough.
-- The two head hooks keep EAX, ECX and EDX, run the replaced instructions themselves and jump to the verified next
-  instruction; the add's and the removal's work is untouched. `ShipEntryArg` verifies the frame the hook reads the
-  queue entry from.
+- `ShipEntryArg` verifies the frame the hook reads the queue entry from, and `ShipCardLookup` the bytes of the card
+  lookup the C code calls; the card is read, never written.
 - The player switch hook re-executes the stolen `ja` with the flags of the stock `cmp`, so every stock subtype runs as
   before; the success and failure exits are the stock ones, with the stack as the cases leave it.
-- The counts read only simulation events (sends, cancels, shipments, ages), the same on every machine; the table is
+- The counts read only simulation events (shipments) and data (the cards' ages), the same on every machine; the table is
   ordered by player ID and age, and the carrier is picked in unit order, so the markers are the same on every machine.
 - A marker is a modifier of a stat no code reads; a game loaded without the key ignores it.
+
+### ageFiveShipments
+
+`src/features/agefiveshipments.cpp`, `hooks/agefive_hooks.asm`.
+
+**Stock (#83, 2026-11-21).** A card's `<age>` is read by the home city card loader (FUN_0062E6C9; the `Age` tag,
+string 0xBA38C0, handled at 0x66B6FC) and kept as `[card+18h]`, from 0 (Age I) up; nothing caps it there. Three places
+stop at four ages (REA `ev_4c5c5b11…`, `ev_cb7f901b…`; capstone):
+- the game's card list of a player, `hc+228h` (the list FUN_0085FFCE indexes), is built from the chosen deck by
+  FUN_006301DE (callers 0x62FA64, 0x857BF1, 0x857C8E, 0x857D6E, 0x85A63E): one pass over the home city's cards per age,
+  keeping those of the deck, so the list is in age order; the passes end after age 3 (`cmp eax,4` at 0x63022E). A card
+  of age 4 (or with no `<age>`, −1) never reaches the game: in a test a deck of 25 with one such card played with 23
+  cards;
+- the in-game shipment panel, the gadget type `homeCityCardPanel` (`uihomecitycommandpanel.xml`), fills its buttons in
+  FUN_009A5658: a card of age below 0 or above 3 is skipped (0x9A5A25..0x9A5A30), the others go to row = age, column =
+  their rank in that age (at most 11, counted in `[panel+4D0h + 4 × age]`). Its buttons are named
+  `homeCityCardPanel-button<row><column>` and looked up once (FUN_009A4E50, rows below 4, columns below 11) into four
+  arrays of 44 slots at `+140h`, `+2A0h`, `+354h` and `+40Ch` of the gadget, packed one after another, with the per-age
+  counts at `+4D0h..+4DCh` and an init flag at `+4F4h`;
+- the deck builder of the home city screen ("Build a Deck", `uihcdeckbuilder.xml`, buttons `hcDeck-button<row><column>`)
+  fills its rows the same way at 0x9A0489 and stops at the first card whose age is 4 or more (0x9A04A7); in a test the
+  Age V card of a 25-card deck was missing from its Age IV row while the counter read 25/25;
+- the `homeCityDeck` dialog (`uihomecitydeck.xml`, loaded at 0x9A737B, FUN_009A7670) has the same fill (0x9A77BE,
+  stop at 0x9A77DC); it did not open in the tests (inferred: another deck dialog of the same screen).
+
+The panel greys a card whose age is above the player's (`[card+18h]` against `[player+50h]`, rollover string 8FA6h),
+and the send FUN_0085A724 refuses it (0x85A90A, string 8FFCh); neither stops at 3.
+
+**What the key does.** The immediate of `cmp eax,4` at 0x63022E becomes 5 (`CardListAgePasses`), so the game's list
+takes the cards of age 4 too, after those of age 3. The three fills get a 5-byte `jmp` over `mov eax,[esi+18h]` and the
+`cmp` after it (`CardPanelAgeRow` 0x9A5A22, `DeckBuilderAgeRow` 0x9A0489, `DeckEditorAgeRow` 0x9A77BE): the hook reads
+the card's age, turns 4 into 3, re-runs the `cmp` and jumps back (0x9A5A27, 0x9A048E, 0x9A77C3). So an Age V card sits in the Age IV row, after the Age IV cards,
+while `[card+18h]` stays 4: greyed with its reason until the Imperial Age, refused by the send before it, and counted in
+Age V by `shipmentCounts`.
+
+**Why not a fifth row.** The row index is the card's age, and each panel object holds exactly 4 × 11 buttons in arrays
+that touch each other (the deck builder's at `+178h`); the card inventory's "By Age" view has four tabs too; a fifth row would need a larger gadget object and every reader of those arrays (the fill, the
+click and rollover handlers, the refresh at 0x9A5205) moved to new storage, plus 11 more named buttons in the layout.
+That is a reimplementation of both gadgets, not a patch.
+
+**Why it is safe.** Only the row changes; the count per row keeps its cap of 11 (an Age IV row with 11 cards leaves the
+Age V cards out, as stock leaves a twelfth card out). The hooks keep every register but EAX, which the replaced `mov`
+loads anyway, and re-run the replaced `cmp` for the branch after it.
 
 ### maintainWaitForPop
 
@@ -4566,7 +4607,10 @@ That run's second research was paid by the Market (a tie), so it had no Time fac
   skipped). A player's civ is `[[player+20h]]` when `[player+24h]` > 0 (0x4539D3).
 - **A shipment tech:** the player's status entry of the tech has Ships (resource 6) above 0 in its cost list
   `[status+10h]` (0x44EFFF), the list the research pays and the rollover shows. The status of a research is found by
-  0x94ADAA(`[world+7Ch]`, player ID, tech ID).
+  0x94ADAA(`[world+7Ch]`, player ID, tech ID). A repeatable tech is not one (#91, 2026-11-21): the flag
+  `YPInfiniteTech` is bit 29 of the status's bitset (`[status+4]` bytes, `[status+8]` bit count; the bit index the flag
+  parser 0x622B7D gives it, read as stock's 0x44D863 reads a status bit), so the payment, the refund, the refusal, the
+  rollover line and the load fallback all skip it.
 - **Counting** (per player, 16): the shared payment (`AddResearchPayer`) with a claim that never claims: its `started`
   runs for every research once its action is set up, with `[action+64h]` the player and `[action+68h]` the tech; a
   shipment tech of a limited player adds 1. `AddResearchRefundObserver` (new in `researchpay.*`) redirects the two calls
@@ -4585,11 +4629,15 @@ That run's second research was paid by the Market (a tie), so it had no Time fac
 - **The display:** the shared tech rollover (the `call` of the builder 0x4C737C at 0x4622C5): a green or red line
   `Shipment techs: n/N` appended with 0x443960, and, at the limit, `n/N` in the button's empty overlay text (the panel's
   256-char buffer `[esp+2C0h]`).
-- **Saved games:** a saved marker per limited player (`savedmarkers.h`, stat 69h, word 0 `'ST' << 16 | player << 8 | 1`,
+- **Saved games:** a saved marker per limited player (`savedmarkers.h`, stat 69h, word 0 `'ST' << 16 | player << 8 | 2`,
   word 1 the count) on one of his living units; the world tick writes it when the count changes and moves it when that
   unit dies or loses it. A new game (another world, the time going back or the step count jumping, as in
   `shipmentCounts`) walks the unit table once and reads the markers; a limited player with none gets the sum of the
-  research count bytes `[status+21h]` (bumped by the activation 0x94CF27 at 0x94D02F) over his shipment techs.
+  research count bytes `[status+21h]` (bumped by the activation 0x94CF27 at 0x94D02F) over his shipment techs. A marker
+  of kind 1 comes from a build before #91, whose count held the repeatable techs: on load it loses the sum of the count
+  bytes of the player's repeatable techs that cost Ships, is rewritten in place as kind 2, and the change is logged. A
+  repeatable research paid but still queued at that save was not activated yet, so it stays in the count (a slot too
+  many, until the game ends).
 
 **Why it is safe.**
 - The head hook keeps ECX for the stock test and uses only EAX and EDX, which a `thiscall`'s caller does not expect kept;

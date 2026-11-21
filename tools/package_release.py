@@ -281,7 +281,9 @@ techPrereqRecheck [N] [log]   <TypeCount> tech prerequisites react when units ar
                               created or die, not only at the next house or age-up
 orPrereqsQty [log]            <Flag qty="N">OrPrereqs</Flag>: a tech needs N of its
                               prerequisites instead of one
-shipmentCounts [log]          cards sent per player and age, kept in saved games; Data
+ageFiveShipments              cards of <age>4</age> (Imperial Age) in the deck, in the Age IV row,
+                              sendable in the Imperial Age
+shipmentCounts [log]          cards shipped per player and card age, kept in saved games; Data
                               subtype FreeHomeCityUnitByShipmentCount, XS
                               xsGetShipmentCount and xsGetShipmentCountRange
 kothTimer [players|teams] N=s ...   King of the Hill time by the number of players or teams
@@ -371,6 +373,7 @@ researchOnTheMove [log]       units of type ResearchOnTheMove take orders and wa
 nextResearchFree [log]        a Data tech effect makes a building's next research free
 researchGrants [log]          <ResearchGrantInterval> buildings gather points that make researches cheaper or free
 shipTechLimit [log]           <ShipTechLimit>N</ShipTechLimit> in a civ caps its techs that cost Ships per game
+                              (repeatable techs excepted)
 homeCityTechsInUnits [log]    a home city card listed in a proto's <Tech> rows is researched there like a tech
 killBountyTechs [log]         a Data tech effect may change a proto's Bounty
 resourceBounty [log]          <Bounty resourcetype> pays a resource at the kill

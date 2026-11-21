@@ -124,6 +124,7 @@ set(UHC_SOURCES
   src/features/techprereq.cpp
   src/features/orprereqs.cpp
   src/features/shipmentcounts.cpp
+  src/features/agefiveshipments.cpp
   src/features/shiptechlimit.cpp
   src/features/hctechsinunits.cpp
   src/features/kothtimer.cpp
@@ -214,6 +215,7 @@ set(UHC_SOURCES
   src/hooks/techprereq_hooks.asm
   src/hooks/orprereqs_hooks.asm
   src/hooks/shipmentcount_hooks.asm
+  src/hooks/agefive_hooks.asm
   src/hooks/kothtimer_hooks.asm
   src/hooks/techrename_hooks.asm
   src/hooks/transform_hooks.asm

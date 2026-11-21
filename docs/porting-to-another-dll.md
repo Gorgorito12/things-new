@@ -1011,22 +1011,16 @@ Code: [techs](porting-code/techs.md#kothtimer).
 Code: [techs](porting-code/techs.md#shipmentcounts). It needs the Player target of the shared tech subtypes
 (`AddTechPlayerSubtype`, in the [helpers](porting-code/helpers.md)) and `AddSyscall`.
 
-- **The send:** a 7-byte `jmp` at the head of the queue add FUN_00857204 (`56 57 8B F9 8B 77 04`: `push esi / push edi /
-  mov edi,ecx / mov esi,[edi+4]`), `thiscall(queue = [hc+288h], entry*)`, `ret 4`; the send FUN_0085A724 is its only
-  caller. Note the entry's card index `[entry+0]`, tech ID `[entry+4]` and the player's age `[[hc+8]+50h]` (hc = queue −
-  288h; cAge1 = 0), then run the five replaced bytes and `jmp 85720Bh`.
-- **The removal:** a 5-byte `jmp` at the head of FUN_00857257 (`80 7C 24 08 00`, `cmp byte [esp+8],0`), `thiscall(queue,
-  index, bool shift)`, `ret 8`, called when a card ships (0x4BF86F) or is cancelled (0x85ADD9). Forget the noted card of
-  entry `index`, then run the `cmp` and `jmp 85725Ch` (the `jz` there reads its flags). Match a noted card by card index,
-  tech ID and its rank among the entries with the same pair.
 - **The count:** a `call` at `0x8584FF` (`E8 23 4A 0F 00`, `call 94CF27h`) in the card shipment FUN_00858299. Entry:
   ECX = EDI = the card tech's status entry, ESI = the home city, `[esp+4]` the player, five arguments, `ret 14h`;
-  `[esp+3Ch]` is FUN_00858299's argument, the queue entry being shipped. Note the player ID and that entry's send age,
-  run the activation with the stack as it is (keep the return address aside), then add one to that player's count of
-  that age. The card's effects run inside the activation: `includeself` adds the card being shipped.
-- **Saved games:** keep the counts and the send ages of the queued cards on a living unit as saved markers (stat
-  modifiers no code reads, whose save copies four dwords; `savedmarkers.h`), rewritten from a world tick after a change
-  and moved when that unit dies; read them back when a new or loaded world appears.
+  `[esp+3Ch]` is FUN_00858299's argument, the queue entry being shipped. Note the player ID and the age of that entry's
+  card: `card = 0x85FFCE(hc + 228h, [entry+0])` (`thiscall(list, index)`, `ret 4`, 0 for a bad index), its `<age>` is
+  `[card+18h]` (cAge1 = 0, −1 for a card with no `<age>`: count it in Age I). Run the activation with the stack as it is
+  (keep the return address aside), then add one to that player's count of that age. The card's effects run inside the
+  activation: `includeself` adds the card being shipped.
+- **Saved games:** keep the counts on a living unit as saved markers (stat modifiers no code reads, whose save copies
+  four dwords; `savedmarkers.h`), rewritten from a world tick after a change and moved when that unit dies; read them
+  back when a new or loaded world appears.
 - **The subtype:** a 6-byte `jmp` over `ja 8D878Fh` at `0x8D843E` (`0F 87 4B 03 00 00`) in the player Data apply
   FUN_008D842B. Entry: EBP = subtype, EAX = subtype − 0Ah, the flags of `cmp eax,5Ah`, ESI = the player, the field
   `[esp+2Ch]` (the effect's `+10h`), the amount `[esp+34h]`. A stock ID continues at `0x8D8444`. For the new ID, write
@@ -1038,8 +1032,22 @@ Code: [techs](porting-code/techs.md#shipmentcounts). It needs the Player target 
 - **The syscalls:** `int xsGetShipmentCount(int playerID, int age)` and `int xsGetShipmentCountRange(int playerID, int
   firstAge, int lastAge)` in the XS group.
 - **Test:** a card with the effect and `includeself`: it brings one unit; a tech after two cards of Age I with
-  `age='1'`: two units; a card sent in Age II that arrives in Age III counts in Age II; save, load in a new process: the
-  same counts.
+  `age='1'`: two units; a card of Age II (`<age>1</age>`) sent in Age III counts in Age II; save, load in a new process:
+  the same counts.
+
+### ageFiveShipments
+
+Code: [techs](porting-code/techs.md#agefiveshipments). No shared hook.
+
+- **The deck:** at `0x63022E` (`83 F8 04`, `cmp eax,4` in FUN_006301DE, the build of the game's card list from the deck,
+  one pass per age) write 5 over the immediate: the cards of `<age>4</age>` join the game's deck, after those of age 3.
+- **The rows:** three 5-byte `jmp`s over `mov eax,[esi+18h]` and the `cmp` after it, each to code that loads the card's
+  age, turns 4 into 3, re-runs the `cmp` and jumps back: `0x9A5A22` (`8B 46 18 3B C7`, the in-game shipment panel,
+  back to `0x9A5A27`), `0x9A0489` (`8B 46 18 3B F8`, the home city's deck builder, back to `0x9A048E`) and `0x9A77BE`
+  (`8B 46 18 3B D8`, the `homeCityDeck` dialog, back to `0x9A77C3`). ESI is the card in all three. Leave
+  `[card+18h]` alone: the panel greys the card and the send refuses it until the player's age reaches 4.
+- **Test:** a card given `<age>4</age>` in its home city file: fourth in the Age IV row of both panels, greyed until the
+  Imperial Age, refused before, sent in it.
 
 ### orPrereqsQty
 
@@ -1845,9 +1853,11 @@ It comes after `researchGrants`.
   `0x4C696D`; `bool thiscall(status, unit)`, `ret 4`. A refused tech returns 0 there.
 - **Tech rollover:** the `call` at `0x4622C5` of the builder `0x4C737C` (shared with `researchGrants`' price).
 - **Read only:** `0x44EFFF` (a cost entry: Ships is 6), `0x94ADAA` (a player's status of a tech), the alive slot of the
-  unit vtable.
+  unit vtable, and the status's bit 29 (`YPInfiniteTech`: the bitset `[status+4]`, its bit count `[status+8]`): a
+  repeatable tech is outside the rule everywhere (count, refusal, rollover).
 - **Test:** `<ShipTechLimit>3</ShipTechLimit>` on a civ, as in the [modding guide](modding-guide.md#shiptechlimit): the
-  fourth shipment tech is refused, a cancel gives the slot back, and a save keeps the count.
+  fourth shipment tech is refused, a cancel gives the slot back, and a save keeps the count; a repeatable crate tech
+  that costs a Ship neither counts nor is refused at the limit.
 
 ### homeCityTechsInUnits
 

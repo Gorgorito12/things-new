@@ -37,6 +37,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 11:54 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
 | Saturday 2026-11-21 11:07 | [`deadReplacementAtZeroInventory`](bug-fixes.md#deadreplacementatzeroinventory) | Added. A hunt, a herdable or any unit that leaves a body to gather drops its `<DeadReplacement>` when the body is used up, not when it falls. | `<DeadReplacement>` on the protos that want one (none has it today). |
+| Saturday 2026-11-21 12:07 | [`ageFiveShipments`](#agefiveshipments) | Added. Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | `<age>4</age>` on the cards that want it. |
+| Saturday 2026-11-21 11:35 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | The tag on the civ in `civs.xml`. |
+| Saturday 2026-11-21 11:34 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -44,7 +47,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-20 12:00 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
 | Friday 2026-11-20 11:59 | [`researchOnTheMove`](#researchonthemove) | Added. A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. |
-| Friday 2026-11-20 11:50 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | The tag on the civ in `civs.xml`. |
 | Friday 2026-11-20 11:50 | [`homeCityTechsInUnits`](#homecitytechsinunits) | Added. A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | The card's tech in the `<Tech>` rows, made obtainable for the civ. |
 | Friday 2026-11-20 11:39 | [`truckAttackResourceFix`](bug-fixes.md#truckattackresourcefix) | Added. A `TruckAttack` (the mustard gas, the tornado, the fire power, the monster truck) no longer empties the Mills, plantations and other gather buildings it hits, so villagers can still gather there afterwards. | Nothing. |
 | Thursday 2026-11-19 15:22 | [`attackTypeIcons`](#attacktypeicons) | Filmed in WoL, with a control. A bonus multiplier against an abstract type the attack rows have no icon for (WoL's Maneuver, Assault, Standing units...) shows in both panels, with the icon and name the line gives it. | Nothing: the line of `wol.cfg`. |
@@ -57,7 +59,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-13 10:03 | [`playerIcon`](#playericon) | Filmed in WoL, with a control. In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. |
 | Friday 2026-11-13 09:01 | [`politicianPlacesFix`](bug-fixes.md#politicianplacesfix) | Added. The age-up dialog shows only as many politicians as its layout has places, instead of crashing on a fifth politician with WoL's four-place dialog. | Nothing; a fifth place in `uipoliticianEuropeandlg.xml` shows five. |
 | Friday 2026-11-13 08:06 | [`kothTimer`](#kothtimer) | Added. The King of the Hill time comes from a table by the number of players, or of teams. | Nothing. |
-| Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added. Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Friday 2026-11-13 07:37 | [`ageUpBuildings`](#ageupbuildings) | Added. The age-up button opens the politician dialog on the buildings you list too, not only on the Town Center, and each building offers only the politicians its own proto lists. | The politicians (techs with `AgeUpgrade`) in those buildings' `<Tech>` lists. |
 | Friday 2026-11-13 07:24 | [`orPrereqsQty`](#orprereqsqty) | Added. `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | The attribute on the techs that want it. |
 | Thursday 2026-11-12 18:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
@@ -592,6 +593,7 @@ Caps that are fixed in the exe.
 | [`basePop`, `extraPop`](#basepop-and-extrapop) | Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | in WoL's DLL | Enough population buildings: 20 houses of 10 give 200 today. | confirmed |
 | [`decimalPopulation`](#decimalpopulation) | Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | **new** | The decimals in `protoy` and `techtreey`. | confirmed (single player, also a skirmish vs AI) |
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | in WoL's DLL | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). | confirmed above the level table; see the section |
+| [`ageFiveShipments`](#agefiveshipments) | Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | **new** | `<age>4</age>` on the cards that want it. | confirmed (single player) |
 | [`selectionLimit`](#selectionlimit) | A selection holds up to N units (50 in the exe). `wol.cfg` sets 75. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`noAILimit`](#noailimit) | Shows every `AI4\*.personality` file in game setup. WoL uses `noAILimitV2` instead. | in WoL's DLL | The personality files. | confirmed |
 | [`noAILimitV2`](#noailimitv2) | Shows WoL's 52 `AI4\*.personality` files in game setup. Without it, a random AI crashes the game. | **in `wol.cfg`** | The personality files. | confirmed |
@@ -773,6 +775,44 @@ deckCardCount <N>        N from 20 to 10000
   - with a raised `homecitylevels.xml`, the engine's level table reads 40 at every level, but
     building a 40-card deck at a normal level has not been tried in game yet;
   - not filmed in WoL yet.
+
+#### ageFiveShipments
+
+*Home city cards of the Imperial Age (`<age>4</age>`) can be in a deck and be sent once the player reaches that age.*
+
+**Added:** Saturday 2026-11-21 12:07
+
+```
+ageFiveShipments
+```
+
+- **In WoL today:** no card has `<age>4</age>`. The exe leaves such a card out of the game: a deck of 25 with one plays
+  with 24 cards (the game builds its deck one age at a time, ages I to IV only), and both deck panels stop at four rows.
+  JTMaston's #83 (2026-11-21).
+- **What the key does:** a card of `<age>4</age>` is in the game's deck, after the Age IV cards. It is shown **in the
+  Age IV row**, after the Age IV cards, in the in-game shipment panel and in the home city's deck builder ("Build a
+  Deck"). Until the player reaches the Imperial Age it is greyed, and its rollover says, in red, *This Card cannot be
+  sent until Age 5* (the game's own line); a send before that is refused, as stock refuses a card of a later age. In
+  the Imperial Age it is sent like any other card. [`shipmentCounts`](#shipmentcounts) counts it in Age V.
+- **Not a fifth row:** each deck panel holds four rows of 11 buttons in the exe, and the row is the card's age. A fifth
+  row needs those panels rebuilt (`how-it-works.md`, ageFiveShipments); the Imperial cards share the Age IV row instead.
+  A row holds 11 cards: Age IV and Age V cards together beyond 11 are not shown, as stock leaves out a twelfth card.
+- **What a modder writes:** `<age>4</age>` in the card of the home city file (`data\homecityxxx.xml`), as for the
+  other ages (`0` is Age I). The card goes in a deck the usual way; the "By Age" view of the card inventory has four
+  tabs and does not list it (use "By Building").
+- **Off:** as stock: the card never reaches the game.
+- **Multiplayer:** every player needs the same setting (it changes which cards a deck holds in the game).
+- **Log:** `ageFiveShipments: cards of the fifth age (<age>4</age>) are in the game's deck, shown in the fourth age's
+  row of the shipment panel and the deck editor, and sendable in the fifth age`, `hook reached: ageFiveShipments panel
+  (0x9A5A22)`, `hook reached: ageFiveShipments deck builder (0x9A0489)`.
+- **Tested in WoL (2026-11-21, single player, `C:\AoE3-UHC-WoLReal11`, Dutch skirmish on a test map,
+  `HCShipCannons1` given `<age>4</age>` in the copy's `homecitydutch.xml`):** key off, the game's deck held 23 of the 25
+  cards (that card and a card with no `<age>` left out) and both panels showed three Age IV cards; key on, 24 (the Age V
+  card last), shown fourth in the Age IV row of the shipment panel and of "Build a Deck", greyed with *This Card cannot
+  be sent until Age 5* in Ages I to IV; a send in Age IV refused (nothing queued); in Age V sent, arrived, and counted
+  by `shipmentCounts` (`a card of age 5, in age 5`, `0, 0, 0, 0, 1`). Screenshots in `wol-fixes/age5-shipments`. Not
+  tested: the AI with an Age V card in its deck; the `homeCityDeck` dialog (its hook was not reached: no screen of
+  the tests opened it).
 
 #### selectionLimit
 
@@ -5435,7 +5475,7 @@ How buildings train, spawn, live and get replaced.
 | [`researchOnTheMove`](#researchonthemove) | A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | **new** | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. | confirmed (single player) |
 | [`nextResearchFree`](#nextresearchfree) | A tech can make the next research of a building free, with a `Data` effect of subtype `NextResearchIsFree`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`researchGrants`](#researchgrants) | A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | **new** | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. | confirmed (single player, also a skirmish vs AI) |
-| [`shipTechLimit`](#shiptechlimit) | `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | **new** | The tag on the civ in `civs.xml`. | confirmed (single player, scenario route) |
+| [`shipTechLimit`](#shiptechlimit) | `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | **new** | The tag on the civ in `civs.xml`. | confirmed (single player, scenario route) |
 | [`homeCityTechsInUnits`](#homecitytechsinunits) | A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | **new** | The card's tech in the `<Tech>` rows, made obtainable for the civ. | confirmed (single player, scenario route; the deck card not tested) |
 | [`trainBatchSize`](#trainbatchsize) | `<TrainBatchSize>N</TrainBatchSize>` in a proto limits how many of it share one Train action. | **new** | The tag on the protos that want it. | confirmed |
 | [`costEscalationTechs`](#costescalationtechs) | A tech can change a proto's `<CostEscalation>`, with a `Data` effect of subtype `CostEscalation`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
@@ -6625,17 +6665,22 @@ researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
 
 *A civ can research only so many "shipment techs" (techs that cost Ships) per game, as WoL's Mapuche council techs.*
 
-**Added:** Friday 2026-11-20 11:50 · **Filmed in WoL:** Friday 2026-11-20 11:50
+**Added:** Friday 2026-11-20 11:50 · **Filmed in WoL:** Saturday 2026-11-21 11:35
 
 ![shipTechLimit in WoL](media/shipTechLimit-wol.gif)
 
-*In WoL, with `shipTechLimit log` (scenario route: player 1 is Ethiopian with `<ShipTechLimit>3</ShipTechLimit>` in the
-copy's `civs.xml`, a `MapucheWarchief` and `Age0Mapuche`, 20 Ships granted; the Warchief stays selected and the pointer
-rests on the Coin Crates button):* three shipment techs are queued (Villagers, Food Crates, Wood Crates: 1, 2 and 3 of
-3 in the log), then the Coin Crates research is refused: it does not start and the Ships stay. Every shipment tech
-button shows `3/3`, and the rollover ends with the red line `Shipment techs: 3/3, the limit is reached`. A click on the
-second queued research cancels it: the Ship comes back, the log says 2 of 3, and the Coin Crates research then goes
-through (3 of 3). [Full video (MP4)](media/shipTechLimit-wol.mp4).
+*In WoL, with `shipTechLimit log` (2026-11-21, after #91; a skirmish on a test map, player 1 Portuguese with
+`<ShipTechLimit>3</ShipTechLimit>` in the copy's `civs.xml`, a `MapucheWarchief` and `Age0Mapuche`, 10 Ships granted;
+the Warchief stays selected; the GIF shows the log and the command panel):* three council techs that are not
+repeatable are queued (Fowl, Food Crates 2, Wood Crates 2: 1, 2 and 3 of 3 in the log) and their buttons show `3/3`;
+then the repeatable Food Crates 1 (`YPInfiniteTech`) is queued at the limit, with no log line, and Coin Crates 2 is
+refused (no fifth entry in the queue). The repeatable crate buttons (purple frames) never get the `3/3` mark.
+[Full video (MP4)](media/shipTechLimit-wol.mp4).
+
+![The rollovers of a repeatable and a limited tech at the limit](media/shipTechLimit-infinite-rollover.png)
+
+*At the limit (Dutch, the same test):* the repeatable Food Crates 1 (top) has no `Shipment techs` line and stays
+usable; Food Crates 2 (bottom) ends with the red line `Shipment techs: 3/3, the limit is reached`.
 
 ![shipTechLimit in WoL, key off](media/shipTechLimit-wol-control.gif)
 
@@ -6666,26 +6711,42 @@ shipTechLimit [notext] [log]
 - **What counts:** a research, on a unit or a building, of a tech whose cost has `Ships` (any amount above 0). Home
   city cards sent from the deck never count: they are not researched. A HomeCity tech that a unit researches with
   [`homeCityTechsInUnits`](#homecitytechsinunits) does count.
+- **Repeatable techs are outside the limit** (`<Flag>YPInfiniteTech</Flag>`, as the crates; JTMaston's #91, 2026-11-21):
+  they never count, they are never refused at the limit, and their rollover has no `Shipment techs` line.
 - **When:** a research counts when it is paid, which is when it is queued; a cancel that refunds it gives the slot back.
-  A repeatable tech (`YPInfiniteTech`, the crates) counts each time. A research that ends without a refund (its unit
-  dies) keeps its count, as the Ship is not given back either.
+  A research that ends without a refund (its unit dies) keeps its count, as the Ship is not given back either.
 - **At the limit:** every other shipment tech of that player is refused for his units: the research does not start on
   any machine and nothing is paid. The button stays, marked `n/N`, and its rollover ends with the red line `Shipment
   techs: n/N, the limit is reached` (below the limit, a green `Shipment techs: n/N`). In WoL's interface a refused tech
   button is drawn as bright as the others, like a tech of a later age: the mark and the line say why.
 - **Saved games:** the counts are saved (on one unit of each player) and come back on load. A game saved without the
-  key starts from the shipment techs the player has researched (repeatable ones by their count).
+  key starts from the shipment techs the player has researched. A game saved by a build before 2026-11-21 (whose count
+  held the repeatable techs) loads with them taken out, logged as `player 1's count from an older build (5) held
+  repeatable techs: now 3`; a repeatable research still queued at that save stays counted.
 - **Log:** `shipTechLimit: civ 48 (WallMapu): at most 12 shipment techs per game`, `shipTechLimit: player 1 paid shipment
-  tech 3934: 1 of 3 (game time 15246 ms)`, `... cancelled shipment tech 3937: 2 of 3`, `game start or load: player 1
-  has 3 of 3 shipment techs`; `hook reached: can-research test (0x4C6968)`, `hook reached: tech rollover (0x4622C5)`.
+  tech 3934: 1 of 3 (game time 15246 ms)`, `... cancelled shipment tech 3946: 2 of 3`, `game start or load: player 1
+  has 3 of 3 shipment techs`, after loading an older build's save `player 1's count from an older build (2) held
+  repeatable techs: now 1`; `hook reached: can-research test (0x4C6968)`, `hook reached: tech rollover (0x4622C5)`.
 - **The AI:** it is refused the same way; an AI plan that keeps asking for a refused tech gets nothing.
 - **Tested in WoL (2026-11-20, single player, scenario route, `C:\AoE3-UHC-WoLReal7`):** limit 3 with four requests
   (the fourth refused, Ships 20 to 17); a refused click on the button; a cancel (Ships back, count 2, the button usable
-  again); a repeatable tech twice (Food Crates: 2 then 3 of 5); a HomeCity tech researched by a council member counted;
+  again); a repeatable tech twice (Food Crates: 2 then 3 of 5, the rule before #91); a HomeCity tech researched by a council member counted;
   a save at 3 of 3 and its load (`game start or load: player 1 has 3 of 3`, a fourth still refused); a player of a civ
   without the tag (Egyptians) researched five; the key off (control video); a skirmish against a German AI with the key
   on (the AI played, no `XS: Error`); beside WoL's own DLL (our `dinput8.dll`, `C:\WoL-Test`'s `uhc.dll`: both keys
-  applied, the fourth research refused); `researchGrants` on the shared rollover with both keys on: its `Free` word and green line as before ([picture](media/shipTechLimit-researchGrants-regression.png)). Not tested: a WallMapu skirmish with its home city, multiplayer.
+  applied, the fourth research refused); `researchGrants` on the shared rollover with both keys on: its `Free` word and green line as before ([picture](media/shipTechLimit-researchGrants-regression.png)). Not tested: a WallMapu skirmish with its home city.
+- **Tested in WoL (2026-11-21, #91, single player, skirmishes on a test map in `C:\AoE3-UHC-WoLReal11`, Dutch and
+  Portuguese with a limit of 3 and a `MapucheWarchief`):** a repeatable tech (Food Crates 1) queued below the limit and
+  at it: paid, queued and researched, no count and no log line; three other council techs counted 1, 2, 3 of 3; at the
+  limit Wood Crates 2 was refused (`... is not ready to research`, the Ships stayed) while Coin Crates 1 and Food Crates
+  1 (repeatable) were accepted; their buttons had no `3/3` mark and their rollover no line (picture above); a queued
+  repeatable research cancelled from the queue: the Ship came back, the count stayed 3 of 3, no log line; saved at 3 of 3
+  and loaded: `game start or load: player 1 has 3 of 3 shipment techs`, Food Crates 1 still accepted and a limited
+  tech still refused; a save of the build before #91 holding a count of 2 (Villagers 1 and the repeatable Food Crates
+  1), loaded with this build: `player 1's count from an older build (2) held repeatable techs: now 1`;
+  beside WoL's own DLL (our `dinput8.dll`, its `uhc.dll`): the key applied, three council techs 1 to 3 of 3, Food Crates
+  1 and Coin Crates 1 (repeatable) queued with no count, Coin Crates 2 refused; the key off is the control video above
+  (unchanged).
 
 #### homeCityTechsInUnits
 
@@ -7026,7 +7087,7 @@ What happens when a tech activates or a unit changes proto.
 | [`unitTypeTechs`](#unittypetechs) | Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | **new** | The effects in your techs. | confirmed |
 | [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
 | [`orPrereqsQty`](#orprereqsqty) | `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | **new** | The attribute on the techs that want it. | confirmed (single player) |
-| [`shipmentCounts`](#shipmentcounts) | Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | **new** | The effect in the cards or techs that want it. | confirmed (single player) |
+| [`shipmentCounts`](#shipmentcounts) | Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | **new** | The effect in the cards or techs that want it. | confirmed (single player) |
 | [`kothTimer`](#kothtimer) | The King of the Hill time comes from a table by the number of players, or of teams. | **new** | Nothing. | confirmed (single player) |
 | [`transformChecks`](#transformchecks) | A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | **new** | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. | confirmed (single player) |
 
@@ -7195,16 +7256,17 @@ kothTimer teams 2=900 3=600 4=480
 
 #### shipmentCounts
 
-*Counts the home city cards each player has sent in each age, once they arrive, so a card or tech can send one unit per card; the counts are kept in saved games.*
+*Counts the home city cards each player has shipped of each age (the age that enables the card), once they arrive, so a card or tech can send one unit per card; the counts are kept in saved games.*
 
-**Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Friday 2026-11-13 07:54
+**Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Saturday 2026-11-21 11:34
 
 ![shipmentCounts in WoL](media/shipmentCounts-wol.gif)
 
-*In WoL, with `shipmentCounts log` (a skirmish, Dutch against a Belgian AI; two cards shipped in Age I, then the test
-moved to Age III; `HCShipWoodCrates2` given `FreeHomeCityUnitByShipmentCount` Hussar, `age='3'`, `includeself='true'`,
-and `HCShipWoodCrates3` the same without `includeself`):* the first card arrives with its crates and one Hussar (`1
-shipment(s) (this one included)`), the second with one more (`1 shipment(s)`: the first one). The AI's chat at the
+*In WoL, with `shipmentCounts log` (a skirmish on a test map, Portuguese against a German AI, already in Age III;
+`HCShipWoodCrates2`, `HCShipWoodCrates3` and `HCShipCoinCrates3`, three cards of Age II (`<age>1</age>`), each given
+`FreeHomeCityUnitByShipmentCount` Hussar `age='2'` `includeself='true'`, all three sent in Age III; the video runs at 8x
+speed):* each card counts in Age II, its own age, though it is sent and arrives in Age III (`a card of age 2, in age
+3`): the first brings 1 Hussar, the second 2, the third 3, and the count reads `0, 3, 0, 0, 0`. The AI's chat at the
 left is a test rule that prints `xsGetShipmentCount`. [Full video (MP4)](media/shipmentCounts-wol.mp4).
 
 ![shipmentCounts in WoL, a tech](media/shipmentCounts-reward-wol.gif)
@@ -7215,8 +7277,8 @@ and no Cuirassier, as no card was shipped in Age II. [Full video (MP4)](media/sh
 
 ![shipmentCounts in WoL, key off](media/shipmentCounts-wol-control.gif)
 
-*In WoL, key off (the same data and cards, in a new game):* the game drops the effect it does not know, and the two Age
-III cards bring only their crates. [Full video (MP4)](media/shipmentCounts-wol-control.mp4).
+*In WoL, key off (the same data, map and cards, in a new game; 8x speed):* the game drops the effect it does not know,
+and the three Age II cards sent in Age III bring only their crates. [Full video (MP4)](media/shipmentCounts-wol-control.mp4).
 
 ![shipmentCounts in WoL, a tech, key off](media/shipmentCounts-reward-wol-control.gif)
 
@@ -7248,43 +7310,46 @@ int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge)  // cAge1..
 - **Effect:**
   - `unittype`: a proto, delivered as the stock `FreeHomeCityUnit` delivers: at the home city gather point, with its checks
     (no gather point, no units);
-  - `amount` × the count: the count is the cards of the player sent in `age`, one age from 1 to 5 (Age I to Age V) or a
-    range such as `age='2-4'` (Age II to Age IV), or in every age without `age`. A fraction is cut, as `FreeHomeCityUnit`
-    cuts it; a count of 0 sends nothing;
-  - `includeself='true'` (or `1`): when the effect is on a card, that card counts too, if it was sent in that age (or in
-    the range).
+  - `amount` × the count: the count is the player's cards of `age`, one age from 1 to 5 (Age I to Age V) or a range such
+    as `age='2-4'` (Age II to Age IV), or of every age without `age`. A fraction is cut, as `FreeHomeCityUnit` cuts it; a
+    count of 0 sends nothing;
+  - `includeself='true'` (or `1`): when the effect is on a card, that card counts too, if it is a card of that age (or
+    of the range).
   - Target: `<Target type='Player'/>`, as `FreeHomeCityUnit`.
-- **What counts, and in which age:** a card counts in the age it was **sent** in (the player's decision), and only once
-  it has **arrived** (its transit ended and its tech activated: the effects of a card run at that moment). So a card sent
-  in Age II that arrives in Age III counts in Age II, and a card on its way counts nowhere yet. A card cancelled from the
-  queue, by the player or by a Blockade, never counts: that is why the count waits for the arrival. Every card counts, a
-  card sent again too. Cards of other players never count.
+- **What counts, and in which age:** a card counts in **its own age**, the `<age>` of the card in the home city file
+  (the age that enables it: `<age>0</age>` is Age I, `<age>1</age>` Age II, ... `<age>4</age>` Age V), whenever it is
+  sent (JTMaston's #76, 2026-11-21: 9 cards of Age II, 4 of them sent in Age IV, add 4 to Age II). A card with no
+  `<age>` counts in Age I. It counts only once it has **arrived** (its transit ended and its tech activated: the effects
+  of a card run at that moment), so a card on its way counts nowhere yet. A card cancelled from the queue, by the player
+  or by a Blockade, never counts: that is why the count waits for the arrival. Every card counts, a card sent again too.
+  Cards of other players never count. Until 2026-11-21 a card counted in the age it was sent in.
 - **The syscalls:** in AI scripts and triggers, with XS ages (`cAge1` = 0 … `cAge5` = 4): `xsGetShipmentCount(playerID,
   age)`, `-1` for every age; `xsGetShipmentCountRange(playerID, firstAge, lastAge)` for a range (0 for a bad range). Note
   that the effect's `age` is 1 to 5 (Age I to V), and the syscalls' are `cAge1`..`cAge5`.
 - **Bad data:** a `unittype` that is no proto, or an `age` that is not 1..5 or a range of them (`'4-2'`, `'7'`), drops the
   effect, with a log line; `dataLint` then lists it among the effects the game deletes.
-- **Saved games:** the counts are kept, and so is the age each card on its way was sent in: a loaded game goes on with the
-  counts it had when it was saved, and a card in transit at the save counts in the age it was sent in when it arrives
-  after the load. They are kept on one living unit of the game (a hidden marker that nothing reads); when that unit dies
-  they move to another one. A new game starts at zero. A game saved without the key loads with every count at zero.
+- **Saved games:** the counts are kept: a loaded game goes on with the counts it had when it was saved, and a card in
+  transit at the save counts in its own age when it arrives after the load. They are kept on one living unit of the
+  game (a hidden marker that nothing reads); when that unit dies they move to another one. A new game starts at zero. A
+  game saved without the key loads with every count at zero. A game saved by a build before 2026-11-21 loads with its
+  counts (made by the old rule) and a line in the log; what it also kept for the cards on their way is no longer used.
 - **Off:** the game deletes an effect with this subtype and the syscalls do not exist: a script that calls them does not
   compile. Test it with the key on.
 - **Multiplayer:** it changes the simulation: every player needs the same setting.
-- **Performance:** one count per send and per shipment, one per effect; per frame only a check that the unit holding the
+- **Performance:** one count per shipment (and one card lookup), one per effect; per frame only a check that the unit holding the
   counts is alive. A/B in WoL (2026-11-13, `perfprobe.py`, 90 s of a skirmish from 2:20, no other game open, the AI's
   card already counted): the game's update 0.40 ms per frame with and without the key, 1 frame over 50 ms in each, main
   thread 94 % and 93 %; the frame rate (375 and 449 fps, uncapped) differed by render time (2.3 and 1.8 ms), which the
   key does not touch.
-- **Log:** `shipmentCounts: shipments are counted per player and the age they were sent in, and kept in saved games; the
-  Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount and xsGetShipmentCountRange read
-  them`, `hook reached: shipmentCounts send (0x857204)`, `hook reached: shipmentCounts (0x8584FF)`, `hook reached:
-  shipmentCounts queue removal (0x857257)`, `hook reached: tech subtype on a player (0x8D843E)`. With `log`:
-  `shipmentCounts: player 1 sends tech 715 (HCShipWoodCrates2) in age 2`, `shipmentCounts: player 1 ships tech 715
-  (HCShipWoodCrates2), sent in age 2, now age 3`, `shipmentCounts: player 1 has shipped 1, 2, 0, 0, 0 in ages I to V`,
+- **Log:** `shipmentCounts: shipments are counted per player and the age of each card (its <age>; none: Age I), and kept
+  in saved games; the Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount and
+  xsGetShipmentCountRange read them`, `hook reached: shipmentCounts (0x8584FF)`, `hook reached: tech subtype on a player
+  (0x8D843E)`. With `log`: `shipmentCounts: player 1 ships tech 715 (HCShipWoodCrates2), a card of age 2, in age 3`
+  (`(it has no <age>)` for a card without one), `shipmentCounts: player 1 has shipped 1, 2, 0, 0, 0 in ages I to V`,
   `shipmentCounts: player 1, FreeHomeCityUnitByShipmentCount proto 318, age 2: 2 shipment(s) (this one included) x 1.00 =
   2.00 unit(s)`, `shipmentCounts: the counts are kept on unit 8`, after a load `shipmentCounts: loaded: player 1 has
-  shipped 1, 0, 0, 0, 0 in ages I to V, 2 card(s) queued`. Errors: `a FreeHomeCityUnitByShipmentCount effect names
+  shipped 1, 0, 0, 0, 0 cards of ages I to V`; a save of an older build: `shipmentCounts: loaded a save of an older
+  build: the send ages it kept are not used, a card counts in the age of the card`. Errors: `a FreeHomeCityUnitByShipmentCount effect names
   NoSuchProto, which is not a proto; effect dropped`, `age="4-2" is not an age 1 to 5 (Age I to V) or a range such as 2-4;
   effect dropped`.
 - **Tested in WoL (2026-11-13),** a skirmish, Dutch (player 1) against a Belgian AI; cards sent from the console with
@@ -7310,9 +7375,28 @@ int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge)  // cAge1..
   - the Town Center holding the counts deleted by an AI rule: `the counts are kept on unit 8` (the Explorer); saved,
     loaded in a new process: `1, 0, 0, 0, 0`, and the AI's card that was on its way at the save counted in its Age I;
   - `age='4-2'`: dropped and logged.
-  - Not tested: a cancelled card (the queue removal it goes through was reached by every shipment), multiplayer, a
-    `Data2` effect. The video above is the first test: what it shows has not changed (its cards were sent in the age they
-    arrived in).
+  - Not tested: a cancelled card (it never reaches the activation the count hooks), a `Data2` effect.
+- **Tested in WoL (2026-11-21), the age of the card (#76),** skirmishes on a test map in `C:\AoE3-UHC-WoLReal11`,
+  Dutch (then Portuguese) against a German AI; Ships and the ages set by test techs (`SetAge`), cards sent with
+  `homeCityTrain2(1, <index>)` (the index in the player's in-game card list); `HCShipWoodCrates2`, `WoodCrates3` and
+  `CoinCrates3` (`<age>1</age>`) given Hussar `age='2'` `includeself='true'`, a test tech with Hussar `age='2'`,
+  Cuirassier `age='1'` and Grenadier `age='5'`, and an AI rule that prints both syscalls:
+  - an Age I card sent in Age I: `a card of age 1, in age 1`, counted `1, 0, 0, 0, 0`;
+  - two Age II cards sent in Age III: `a card of age 2, in age 3`, both counted in Age II (1 then 2 Hussars); three
+    more Age II cards sent in Age IV counted in Age II too (`1, 5, 0, 0, 0`; `CoinCrates3` brought 3 Hussars);
+  - the test tech in Age V: 5 Hussars, 1 Cuirassier, no Grenadier; the AI read `all 6, I 1, II 5, III 0, IV 0, V 0,
+    II-V 5`, 0 for the range 3-2;
+  - saved with two Age II cards on their way in Age IV, loaded in a new process: `loaded: player 1 has shipped 1, 3, 0,
+    0, 0`, and both arrived counted in Age II (`1, 5`);
+  - a save of the build before this change (two Age II cards sent in Age III, still on their way), loaded with this
+    build: `loaded a save of an older build ...`, the counts `1, 0, 0, 0, 0`, and the two cards counted in Age II (under
+    the old rule they would have counted in Age III); the next save had no old marker any more;
+  - key off (control video): the three cards brought only their crates; beside WoL's own DLL (our `dinput8.dll`): the
+    key is not applied, as before (`site FreeHomeCityUnitCase at 0x008D8C62 does not hold the stock bytes`, WoL's DLL
+    patches that case), and the game ran.
+  - Stock, found on the way: a card with no `<age>` and a card with `<age>4</age>` are left out of the in-game deck
+    (the card list is built per age 0 to 3, FUN_006301DE), so they cannot be sent at all; the rule for a card with no
+    `<age>` (Age I) only matters to a mod that changes that.
 - **Note for tests:** `uiDeleteSelectedUnit()` from the console, in a copy with `multipleInstances background`, crashed
   the game in the interface code (a null UI context at 0x7E51C8, not in the key's code); an AI rule deleting the unit did
   not.

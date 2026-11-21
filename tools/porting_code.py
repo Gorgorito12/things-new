@@ -147,6 +147,7 @@ PAGES = {
         "techPrereqRecheck": ["src/features/techprereq.cpp", "src/hooks/techprereq_hooks.asm"],
         "orPrereqsQty": ["src/features/orprereqs.cpp", "src/hooks/orprereqs_hooks.asm"],
         "shipmentCounts": ["src/features/shipmentcounts.cpp", "src/hooks/shipmentcount_hooks.asm"],
+        "ageFiveShipments": ["src/features/agefiveshipments.cpp", "src/hooks/agefive_hooks.asm"],
         "kothTimer": ["src/features/kothtimer.cpp", "src/hooks/kothtimer_hooks.asm"],
         "transformUpdatesLOS": ["src/features/transform.cpp", "src/hooks/transform_hooks.asm"],
         "transformSpan": ["src/features/transformspan.cpp"],

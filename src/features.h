@@ -76,6 +76,7 @@ Outcome ApplySnareValues(const Config& config);
 Outcome ApplyTechPrereqRecheck(const Config& config);
 Outcome ApplyOrPrereqsQty(const Config& config);
 Outcome ApplyShipmentCounts(const Config& config);
+Outcome ApplyAgeFiveShipments(const Config& config);
 Outcome ApplyKothTimer(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
@@ -194,6 +195,7 @@ inline constexpr Feature kFeatures[] = {
     {"costEscalationTechs", ApplyCostEscalationTechs},
     {"randomCost", ApplyRandomCost},
     {"shipmentCounts", ApplyShipmentCounts},
+    {"ageFiveShipments", ApplyAgeFiveShipments},
     {"kothTimer", ApplyKothTimer},
     {"unitTypeTechs", ApplyUnitTypeTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
@@ -339,6 +341,7 @@ inline constexpr Feature kFeatures[] = {
 // Lowercase cfg keys read by the features above; any other key is logged as not implemented.
 inline constexpr const char* kHandledKeys[] = {
     "customabstracttypes",
+    "agefiveshipments",
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "decimalpopulation",
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
