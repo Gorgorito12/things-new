@@ -18,12 +18,15 @@
 // - in the command panel (the shared button hook, panelbuttons.h): a button whose command is
 //   uiTransformSelectedUnit("Proto") (its click, or the record's command for a click commandResearch(ID, unit), the
 //   form a command with an <associatedtech> takes) asks, for each of the local player's selected units, the checks
-//   the command makes (the cost of that many units and its affordability 0x8D6BAE / 0x8D6C1B, the build limit,
-//   PLACE with the same arguments). With no
-//   unit that passes, the button is disabled, its click and shift-click emptied, and its rollover gets the reason in
-//   red: the failing placement rule's error string when PLACE gives one, else "Other objects prevent you..." (25528),
-//   "Not enough resources" (41543) or the build limit (36198). With some that pass, the rollover says how many. The
-//   answer is kept 250 ms per button (real time): the panel is interface only, so nothing here reaches the game.
+//   the command makes, in its order (PLACE with the same arguments, the build limit, the cost of that many units and
+//   its affordability 0x8D6BAE / 0x8D6C1B). With no unit that passes, the button is disabled, its click and
+//   shift-click emptied, and its rollover gets the reason in red: the failing placement rule's error string when PLACE
+//   gives one, else "Other objects prevent you..." (25528) or the build limit (36198). When the cost is the only
+//   reason (every refused unit passed PLACE and the limit), the button stays enabled with its click, and only the red
+//   line "Not enough resources" (41543) is added: the click reaches the command, whose payment shows the stock
+//   "can't pay" message and sound (0x8D271A, string 17064), as a Train button does. With some that pass, the rollover
+//   says how many. The answer is kept 250 ms per button (real time): the panel is interface only, so nothing here
+//   reaches the game.
 #include <windows.h>
 
 #include <cstdarg>
@@ -155,6 +158,7 @@ struct Verdict {
   std::int32_t total = 0;  // the local player's selected units
   std::int32_t pass = 0;   // those that would transform
   std::wstring reason;     // why the first refused one is refused
+  bool costOnly = true;    // every refused unit passed PLACE and the limit, and only its cost failed
 };
 
 struct Cached {
@@ -220,19 +224,21 @@ Verdict Judge(const std::string& name) {
       continue;
     }
     ++verdict.total;
+    // The order of the command's own checks: PLACE, the build limit (the hook at 0x7D65E3), then the payment.
     std::int32_t reasonId = -1;
-    if (!affordable(verdict.pass + 1)) {
-      reasonId = kStringResources;
+    std::int32_t placeReason = -1;
+    const auto place = reinterpret_cast<PlaceFn>(Field<const void* const*>(world, 0)[0x14 / 4]);
+    if (!place(world, protoId, local, reinterpret_cast<const float*>(unit + 0x14),
+               reinterpret_cast<const float*>(unit + 0x20), reinterpret_cast<const float*>(unit + 0x38), 0, 2,
+               &placeReason, 0, 0, 0)) {
+      reasonId = placeReason > 0 ? placeReason : kStringObjects;
     } else if (left == 0) {
       reasonId = kStringBuildLimit;
-    } else {
-      std::int32_t placeReason = -1;
-      const auto place = reinterpret_cast<PlaceFn>(Field<const void* const*>(world, 0)[0x14 / 4]);
-      if (!place(world, protoId, local, reinterpret_cast<const float*>(unit + 0x14),
-                 reinterpret_cast<const float*>(unit + 0x20), reinterpret_cast<const float*>(unit + 0x38), 0, 2,
-                 &placeReason, 0, 0, 0)) {
-        reasonId = placeReason > 0 ? placeReason : kStringObjects;
-      }
+    } else if (!affordable(verdict.pass + 1)) {
+      reasonId = kStringResources;
+    }
+    if (reasonId >= 0 && reasonId != kStringResources) {
+      verdict.costOnly = false;
     }
     if (reasonId < 0) {
       ++verdict.pass;
@@ -320,7 +326,11 @@ void TransformButton(const uhc::PanelButton& button) {
     return;
   }
   std::wstring line;
-  if (verdict.pass == 0) {
+  if (verdict.pass == 0 && verdict.costOnly) {
+    // Only the cost stops them: the click goes through, and the command's own payment shows the stock "not enough
+    // resources" message and sound (0x8D271A), as a Train button does.
+    line = L"\n<color=1, 0.35, 0.35>" + verdict.reason + L"</color>";
+  } else if (verdict.pass == 0) {
     button.State() = 1;
     button.Click()[0] = 0;
     button.ShiftClick()[0] = 0;

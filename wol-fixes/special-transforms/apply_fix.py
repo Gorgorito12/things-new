@@ -22,6 +22,11 @@ What it changes (README.txt has the why):
 - data\\stringtabley.xml and translations\\_originals\\stringtabley.xml: the five tooltips in English (IDs
   690911..690915), written like WoL's TransformBowmanMaturing tooltip: name, cost, where it can mature, the unit's
   own description. Other languages fall back to nothing: translate them there.
+- art\\War of the Triple Alliance\\Buildingsets\\Delta\\Discovery\\maturing\\maturing2.xml, maturing3.xml and
+  maturing4.xml (the anim files of the four kraal maturings): their "finished" stage, the one a transformed maturing
+  shows from its first moment (the transform creates it built), gets the dancing youth of the last construction stage
+  (lvl6: the model, the dance or the Escort's heal2, the chant, the rifle of the Askari, the shockwave), without its
+  Death anim; the decal stays. CRLF line endings are kept (an anim file with LF made a building invisible);
 The near-kraal rule needs nothing new: the game checks the target's own PlacementFile (maturinggunpowder.xml,
 maturinghorse.xml) at the unit's position when the button is pressed, on every machine.
 The DLL key `transformChecks` (optional) greys a button out with the reason and enforces the target's BuildLimit; the script adds it to Startup\\wol.cfg with
@@ -49,6 +54,11 @@ COMMANDS = [
 # WOLColonializeGreeks, the age-up tech WoL's commented-out entry named). The game does not check that the target is
 # enabled for the player when the command runs.
 ASSOCIATED_TECH = {"TransformPyrpolikon": "Age0Greeks"}
+MATURING_ART = "art/War of the Triple Alliance/Buildingsets/Delta/Discovery/maturing"
+# The anim files of the four kraal maturings (maturing.xml is the other AFRICAN*MATURING protos', which no button
+# makes; WoL's own button maturings use art\WoL\units\maturing\maturing.xml, which dances already).
+ANIMS = [f"{MATURING_ART}/maturing2.xml", f"{MATURING_ART}/maturing3.xml", f"{MATURING_ART}/maturing4.xml"]
+DANCE_MARK = "<!-- special-transforms: the finished stage dances too -->"
 CHANGED = [
     "data/protoy.xml",
     "data/protounitcommands.xml",
@@ -56,7 +66,7 @@ CHANGED = [
     "data/stringtabley.xml",
     "translations/_originals/stringtabley.xml",
     "Startup/wol.cfg",
-]
+] + ANIMS
 RESOURCE_ICONS = {
     "food": "ui/ingame/resource_food", "wood": "ui/ingame/resource_wood", "gold": "ui/ingame/resource_gold",
     "trade": "ui/ingame/resource_export", "fame": "ui/ingame/resource_fame", "xp": "ui/ingame/resource_xp",
@@ -169,6 +179,23 @@ def edit_protoy(text):
     return text
 
 
+def dancing_finished(text):
+    """The anim file with its "finished" submodel replaced by a copy of "lvl6" (the dancer) without its Death anim.
+    None when the file has no such pair. The text keeps its line endings."""
+    if DANCE_MARK in text:
+        return text
+    stage = r"<submodel>[ \t]*\r?\n[ \t]*%s[ \t]*\r?\n.*?</submodel>"
+    lvl6 = re.search(stage % "lvl6", text, flags=re.S)
+    finished = re.search(stage % "finished", text, flags=re.S)
+    if lvl6 is None or finished is None:
+        return None
+    nl = "\r\n" if "\r\n" in text else "\n"
+    block = re.sub(r"(<submodel>[ \t]*\r?\n[ \t]*)lvl6", r"\g<1>finished", lvl6.group(0), count=1)
+    block = re.sub(r"[ \t]*<anim>[ \t]*\r?\n[ \t]*Death[ \t]*\r?\n.*?</anim>[ \t]*\r?\n", "", block, flags=re.S)
+    block = DANCE_MARK + nl + block
+    return text[:finished.start()] + block + text[finished.end():]
+
+
 def command_entries(text):
     out = ""
     for command, target, _, sid in COMMANDS:
@@ -195,6 +222,17 @@ def apply(root, key):
             sys.exit(f"apply_fix: {root / rel} is missing: is this a Wars of Liberty folder?")
     protoy, protoy_enc = read_text(root / "data/protoy.xml")
     new_protoy = edit_protoy(protoy)  # checks every row before anything is written
+    anims = {}
+    for rel in ANIMS:
+        if not (root / rel).exists():
+            print(f"apply_fix: {rel} is missing; its maturing keeps its look")
+            continue
+        text, enc = read_text(root / rel)
+        new = dancing_finished(text)
+        if new is None:
+            print(f"apply_fix: {rel} has no lvl6 and finished stages; left as it is")
+        elif new != text:
+            anims[rel] = (new, enc)
     strings = strings_by_id(root)
 
     backup.mkdir()
@@ -207,6 +245,8 @@ def apply(root, key):
     (backup / "manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
 
     write_text(root / "data/protoy.xml", new_protoy, protoy_enc)
+    for rel, (text, enc) in anims.items():
+        write_text(root / rel, text, enc)
 
     path = root / "data/protounitcommands.xml"
     text, enc = read_text(path)
@@ -274,6 +314,10 @@ def check(root):
         state = "applied" if f">{command}</Command>" in block else (
             "not applied" if f">{target}</Train>" in block else "neither row found")
         print(f"{unit} {command}: {state}")
+    for rel in ANIMS:
+        if (root / rel).exists():
+            text, _ = read_text(root / rel)
+            print(f"{rel}: {'finished stage dances' if DANCE_MARK in text else 'not applied'}")
 
 
 def main():
