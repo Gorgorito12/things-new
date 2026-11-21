@@ -24,9 +24,10 @@
 //   gives one, else "Other objects prevent you..." (25528) or the build limit (36198). When the cost is the only
 //   reason (every refused unit passed PLACE and the limit), the button stays enabled with its click, and only the red
 //   line "Not enough resources" (41543) is added: the click reaches the command, whose payment shows the stock
-//   "can't pay" message and sound (0x8D271A, string 17064), as a Train button does. With some that pass, the rollover
-//   says how many. The answer is kept 250 ms per button (real time): the panel is interface only, so nothing here
-//   reaches the game.
+//   "can't pay" message and sound (0x8D271A, string 17064), as a Train button does (a commandResearch click is made the
+//   transform command itself, so that a failed one does not use up the unit's one-shot command). With some that
+//   pass, the rollover says how many. The answer is kept 250 ms per button (real time): the panel is interface only,
+//   so nothing here reaches the game.
 #include <windows.h>
 
 #include <cstdarg>
@@ -328,7 +329,13 @@ void TransformButton(const uhc::PanelButton& button) {
   std::wstring line;
   if (verdict.pass == 0 && verdict.costOnly) {
     // Only the cost stops them: the click goes through, and the command's own payment shows the stock "not enough
-    // resources" message and sound (0x8D271A), as a Train button does.
+    // resources" message and sound (0x8D271A), as a Train button does. A click commandResearch(...) (a command with
+    // an <associatedtech>) would run the command as a one-shot research of that unit, which removes the button from
+    // it even when the transform then fails: it becomes the transform itself, the command it runs.
+    if (_strnicmp(button.Click(), "commandResearch(", 16) == 0) {
+      sprintf_s(button.Click(), 256, "uiTransformSelectedUnit(\"%s\")", name.c_str());
+      sprintf_s(button.ShiftClick(), 256, "uiTransformSelectedUnit(\"%s\")", name.c_str());
+    }
     line = L"\n<color=1, 0.35, 0.35>" + verdict.reason + L"</color>";
   } else if (verdict.pass == 0) {
     button.State() = 1;

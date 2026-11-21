@@ -31,11 +31,11 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Saturday 2026-11-21 11:54 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Friday 2026-11-20 12:52 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
-| Friday 2026-11-20 12:00 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
 | Friday 2026-11-20 11:59 | [`researchOnTheMove`](#researchonthemove) | Added. A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. |
 | Friday 2026-11-20 11:50 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game. | The tag on the civ in `civs.xml`. |
@@ -7240,20 +7240,21 @@ unitTypeTechs [log]
 
 *A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit.*
 
-**Added:** Friday 2026-11-20 11:52 · **Filmed in WoL:** Friday 2026-11-20 12:00
+**Added:** Friday 2026-11-20 11:52 · **Filmed in WoL:** Saturday 2026-11-21 11:54
 
 ![transformChecks in WoL](media/transformChecks-wol.gif)
 
-*In WoL, with `transformChecks log` and `wol-fixes/special-transforms` (a scenario, Zulu youths in the Fortress age, a
-Gunpowder Kraal in the middle):* three youths are selected, two near the kraal and one 28 m away. The Askari button's
-tooltip says `2 / 3` and why the third cannot; a click turns the two near ones into Askari maturing units (the cost is
-paid twice) and their Askaris come out; the far youth stays, and with it alone the button is grey with the kraal rule
-in red. [Full video (MP4)](media/transformChecks-wol.mp4).
+*In WoL, with `transformChecks log` and `wol-fixes/special-transforms` (a scenario, a youth 10 m from a Gunpowder
+Kraal, no resources until 22 s):* the Askari button stays enabled, its tooltip ends with "Not enough resources" in
+red, and a click shows the game's own message, "55 food, 70 gold required to build another Askari.", as a Train
+button does. Once the resources come, the same click turns the youth into an Askari maturing unit: the Askari comes
+out at once, and the youth dances on the maturing ground (the pack's anim files) until the maturing ends.
+[Full video (MP4)](media/transformChecks-wol.mp4).
 
 ![transformChecks in WoL, key off](media/transformChecks-wol-control.gif)
 
-*In WoL, key off, the pack applied (the same scene):* the button is the pack's, so the click transforms the same two
-youths: the kraal rule is the game's. The far youth stays too, but nothing says why, and the button stays enabled.
+*In WoL, key off, the pack applied (the same scene):* the click without resources shows the same message (it is the
+game's), but the tooltip says nothing; the transform and the dance are the same, since both are the pack's data.
 [Full video (MP4)](media/transformChecks-wol-control.mp4).
 
 ```
@@ -7267,12 +7268,14 @@ transformChecks [log]
   kraal rule `distanceatmostfromtype ... AFRICANgunpowderkraal` of `maturinggunpowder.xml` applies to a button
   too), charges the target's cost, and puts the target, built, where the unit stood.
 - **What the key adds:**
-  - **the button:** for each of your selected units the panel asks the same checks (the cost, the build limit, the
-    placement). With none that passes, the button is grey, a click does nothing, and the tooltip ends with the
-    reason in red: the placement rule's own `errorstringid` text ("This unit must be matured near a Gunpowder
-    Kraal."), "Not enough resources" or "You are at the build limit for the …". With some that pass, the tooltip
-    says how many ("2 / 3: …") and the click transforms those. Without the key the button is always enabled and a
-    refused unit does nothing, silently;
+  - **the button:** for each of your selected units the panel asks the same checks, in the game's order (the
+    placement, the build limit, the cost). With none that passes, the button is grey, a click does nothing, and the
+    tooltip ends with the reason in red: the placement rule's own `errorstringid` text ("This unit must be matured
+    near a Gunpowder Kraal.") or "You are at the build limit for the …". When the cost is the only reason, the
+    button stays enabled with "Not enough resources" in red, and a click shows the game's own message and sound
+    ("55 food, 70 gold required to build another Askari.", the routine a Train button uses), once for a group. With
+    some that pass, the tooltip says how many ("2 / 3: …") and the click transforms those. Without the key the button
+    is always enabled and a refused unit does nothing, silently (the cost message excepted: it is the game's);
   - **the build limit:** a target whose `<BuildLimit>` the player's living units of that proto reach is refused, unit
     by unit, before the payment. Without the key six fishing boats pressed together made six `PyrpolikoMaturing`
     with a limit of 5.
@@ -7296,9 +7299,17 @@ transformChecks [log]
   `Age0Greeks` had no fireship button (the pack's `<associatedtech>`), and with the console command still transformed
   (the game does not check that the target is enabled); beside WoL's DLL (`dinput8.dll`) both
   hooks were reached and the same group gave `2 / 3` and two transforms; `nativePreview` still applied with the shared
-  hook. Not tested: multiplayer, an AI game with the pack (WoL's AI builds these maturing protos with build plans, which
-  do not need the `<Train>` rows the pack removes: an inference), the reload of a game saved during a maturing (the
-  console `loadGame` did not visibly reload).
+  hook. Again on 2026-11-21 (JTMaston's feedback; screenshots 9 to 17 there), Zulu youths with no resources: one
+  youth 10 m from the kraal, button enabled with the red line, the click gave "55 food, 70 gold required to build
+  another Askari."; three youths, one message; a youth 30 m away, grey with the kraal rule; a fishing boat with no
+  wood, "150 wood required to build another Pyrpoliko." and the button kept (before the click rewrite the failed
+  `commandResearch` took it off that boat), and with wood the same boat transformed; seven boats, five transforms and
+  the two others grey with the build limit. A skirmish with the pack and a German AI played with no XS error. With the
+  pack, a trigger's build order no longer made the youth place the four kraal maturings (it did with the `<Train>`
+  rows kept): WoL's AI, which builds them with build plans, probably cannot either (the pack's `--keep-train`; a
+  question for the WoL team). The transform makes the maturing unit complete, so its single-use `Spawn` gives the unit
+  at once; the pack's anim files make the youth dance beside it until the maturing unit's lifespan ends. Not tested:
+  multiplayer, the reload of a game saved during a maturing (the console `loadGame` did not visibly reload).
 
 ### Interface
 

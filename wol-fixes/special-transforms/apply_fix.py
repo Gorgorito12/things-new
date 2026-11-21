@@ -7,11 +7,13 @@ ground any more.
                                                   <WoL folder>\\special-transforms-backup\\ first)
     python apply_fix.py <WoL folder> --restore    put the backed-up files back
     python apply_fix.py <WoL folder> --check      say what is applied, change nothing
+    python apply_fix.py <WoL folder> --keep-train also keep the youth's four <Train> rows (for WoL's AI, which
+                                                  builds these maturings; the player then sees both buttons)
     (a folder under steamapps is refused unless --force is given)
 
 What it changes (README.txt has the why):
-- data\\protoy.xml: AFRICANyouth loses its four <Train> rows of AFRICAN*MATURING and gets four <Command> rows in the
-  same columns; FishingBoat loses its <Train> row of PyrpolikoMaturing and gets a <Command> row in the same column;
+- data\\protoy.xml: AFRICANyouth loses its four <Train> rows of AFRICAN*MATURING (--keep-train keeps them, for WoL's
+  AI) and gets four <Command> rows in the same columns; FishingBoat loses its <Train> row of PyrpolikoMaturing and gets a <Command> row in the same column;
   the five target protos get <Flag>NonCollideable</Flag> (as the six WOL*Maturing protos have), else the unit that
   transforms stands in the way of its own target and the game refuses it;
 - data\\protounitcommands.xml: five commands, uiTransformSelectedUnit("<target>"), with the target's own icon (the
@@ -155,7 +157,7 @@ def tooltip(root, text, target, strings):
     return "\\n".join(lines)
 
 
-def edit_protoy(text):
+def edit_protoy(text, keep_train=False):
     """The <Train> rows become <Command> rows in the same columns; the targets get NonCollideable."""
     for command, target, unit, _ in COMMANDS:
         start, end = unit_block(text, unit)
@@ -166,6 +168,11 @@ def edit_protoy(text):
         if m is None:
             sys.exit(f"apply_fix: {unit} has no <Train> row of {target}")
         line = f'{m.group(1)}<Command column="{m.group(2)}" page="{m.group(3)}">{command}</Command>\r\n'
+        if unit == YOUTH and keep_train:
+            # --keep-train: the youth keeps its <Train> row beside the command. WoL's AI builds these maturings with
+            # build plans, and a youth without the row cannot build them (a trigger's build order was refused); but
+            # the row shows a second, placing button (every page shows: 9 and 20 were tried).
+            line = m.group(0) + line
         block = block[:m.start()] + line + block[m.end():]
         text = text[:start] + block + text[end:]
     for _, target, _, _ in COMMANDS:
@@ -212,7 +219,7 @@ def command_entries(text):
     return out
 
 
-def apply(root, key):
+def apply(root, key, keep_train=False):
     backup = root / BACKUP
     if (backup / "manifest.json").exists():
         sys.exit(f"apply_fix: already applied ({backup} exists); run --restore first")
@@ -221,7 +228,7 @@ def apply(root, key):
         if not (root / rel).exists():
             sys.exit(f"apply_fix: {root / rel} is missing: is this a Wars of Liberty folder?")
     protoy, protoy_enc = read_text(root / "data/protoy.xml")
-    new_protoy = edit_protoy(protoy)  # checks every row before anything is written
+    new_protoy = edit_protoy(protoy, keep_train)  # checks every row before anything is written
     anims = {}
     for rel in ANIMS:
         if not (root / rel).exists():
@@ -331,7 +338,7 @@ def main():
     elif "--check" in sys.argv:
         check(root)
     else:
-        apply(root, "--key" in sys.argv)
+        apply(root, "--key" in sys.argv, "--keep-train" in sys.argv)
 
 
 if __name__ == "__main__":
