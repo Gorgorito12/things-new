@@ -280,8 +280,9 @@ In media\ (JPG pictures of the panel at native pixels, with the health bar; PNG 
     minUIStats-v3-vs-wol-*.jpg        both side by side
     minui-icons.png                   the icons and where each comes from, with the speed variants and
                                       the replaced population icon (each with its look in game)
-    minUIStats-v3-popicon-vs-old.jpg  the population icon, before (WoL's stat_icon_building) and now
-                                      (stat_icon_pop): one Musketeer, a Barracks, a group of six types
+    minUIStats-v3-popicon-vs-old.jpg  version 3's population icon (stat_icon_pop) against WoL's stat_icon_building:
+                                      one Musketeer, a Barracks, a group of six types; version 4 went back to
+                                      WoL's house icon
     minUIStats-v3-popicon-*.jpg       the same scenes with the new icon (unit, building, group)
     minui-preview-proposed.png        the proposed layout's rectangles, new ones in yellow, the centre lines
     minui-preview-wol.png             WoL's current file's rectangles

@@ -143,8 +143,9 @@ portrait band, the health bar shown.
       selected, other games beside it): keys on 913 fps,
       update 0.1 ms, render 1.0 ms; off 906 fps, 0.2 ms
 
-Unchanged since version 4 (pictures minUIStats-v4-*)
-----------------------------------------------------
+Taken in version 4 (pictures minUIStats-v4-*)
+---------------------------------------------
+Version 7 changed the poison, armor and rate-of-fire texts and the tooltips; for those, see version 7's pictures.
 Icons (icons-x4.png), hit points as a word, the game's house, three and four costs (cost3-*, cost4-caravan),
 1/2/5/9 unit types, buildings (building, factory, bank), long names, the Chief before/after (cartographer-*),
 three armors (wachtmeester), Grognard, Settler, poison, auras, ships, construction, r1024-caravan, spanish-hitpoints,

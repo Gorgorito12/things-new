@@ -662,9 +662,7 @@ villagers and the Explorer, and the next villager in the queue waits: there is n
 so the panel reads `14 / 17` with 13 villagers and the queue goes on.
 [Full video (MP4)](media/decimalPopulation-wol-control.mp4).
 
-![decimalPopulation and the population limits](media/decimalPopulation-caps.png)
-
-*The limits:* a test tech gives `PopulationCap` +300 at 12 population. With `decimalPopulation 10` the cap stops at the exe's 200; with `basePop 300` added, at 300; with `basePop 300` alone (the control), at 300, the decimals dropped (6 population).
+*The limits (tested in the original game on 2026-10-29):* a test tech gives `PopulationCap` +300 at 12 population. With `decimalPopulation 10` the cap stops at the exe's 200; with `basePop 300` added, at 300; with `basePop 300` alone (the control), at 300, the decimals dropped (6 population).
 
 ```
 decimalPopulation [<K>] [log]      K from 2 to 1000, default 10: population in steps of 1/K
@@ -2851,7 +2849,7 @@ mortar explosion where it stood (`blast drawn at 1 point`), none on the wagons, 
 
 ![detonationDeath blast in WoL](media/detonationDeath-blast-wol.gif)
 
-*In WoL, with the key (two `xpAenna` with `<DetonationImpactEffect>effects\impacts\mortar</DetonationImpactEffect>` in front,
+*Filmed on 2026-11-13: in the MP4 the units hit still cry out; since 2026-11-21 they are silent.* *In WoL, with the key (two `xpAenna` with `<DetonationImpactEffect>effects\impacts\mortar</DetonationImpactEffect>` in front,
 two `Engineer` behind with their own `BuildingAttack`, whose `<impacteffect>` is the dynamite; both blasts 40 Siege,
 `DamageArea` 5, `GAIAEnemy`; six enemy `WOLScytheman`):* each archer that falls bursts into a mortar explosion, and each
 Engineer knocked down into a dynamite one, where the scythemen around it lose HP. Four of the six scythemen died, the
@@ -2864,7 +2862,7 @@ other two were left at 16 and 28 HP. [Full video (MP4)](media/detonationDeath-bl
 
 ![detonationDeath delete in WoL](media/detonationDeath-delete-wol.gif)
 
-*In WoL, with the key (an `xpAenna` with the mortar effect and `<DetonationCommand>Delete</DetonationCommand>`, deleted with
+*Filmed on 2026-11-13: in the MP4 the units hit still cry out; since 2026-11-21 they are silent.* *In WoL, with the key (an `xpAenna` with the mortar effect and `<DetonationCommand>Delete</DetonationCommand>`, deleted with
 its Delete button next to an enemy `CoveredWagon`):* the mortar explosion where it stood, the log line `kill flags 1 0 0
 (a delete)`, and the wagon destroyed. [Full video (MP4)](media/detonationDeath-delete-wol.mp4).
 
@@ -3000,7 +2998,7 @@ detonationDeath [log]
   `detonationDeath: unit 8, proto 294, at 195.0, 45.0, kill flags 0 0 0; blast drawn at 1 point` (a building: `blast drawn at 9 points over its footprint`). Kill flags 1 0 0: a trigger's kill; 0 0 0 anything else seen.
 ![detonationDeath threshold and decay in WoL](media/detonationDeath-threshold-wol.gif)
 
-*In WoL, with the key (a Musketeer of 4000 HP, threshold 0.25, decay 100, a trigger that takes 76 % of its HP):* from
+*Filmed on 2026-11-05, before the blast was drawn on screen.* *In WoL, with the key (a Musketeer of 4000 HP, threshold 0.25, decay 100, a trigger that takes 76 % of its HP):* from
 960 HP it loses 100 a second and detonates at 0. [Full video (MP4)](media/detonationDeath-threshold-wol.mp4).
 
 ![detonationDeath threshold and decay in WoL, key off](media/detonationDeath-threshold-wol-control.gif)
@@ -3009,7 +3007,7 @@ detonationDeath [log]
 
 ![detonationDeath command in WoL](media/detonationDeath-command-wol.gif)
 
-*In WoL, with the key (the same Musketeer, `<DetonationCommand>`, the Delete key):* the blast line, `kill flags 1 0 0
+*Filmed on 2026-11-05, before the blast was drawn on screen.* *In WoL, with the key (the same Musketeer, `<DetonationCommand>`, the Delete key):* the blast line, `kill flags 1 0 0
 (a delete)`. [Full video (MP4)](media/detonationDeath-command-wol.mp4).
 
 ![detonationDeath command in WoL, key off](media/detonationDeath-command-wol-control.gif)
@@ -6616,7 +6614,7 @@ nextResearchFree [log]
 
 ![researchGrants in WoL](media/researchGrants-wol.gif)
 
-*In WoL, with the key (British skirmish against a French AI; test data of `tools/grant_testdata.py`: the Market with
+*Filmed on 2026-11-12: the row read `next in 14 s`; since 2026-11-21 it reads `next in 14s`.* *In WoL, with the key (British skirmish against a French AI; test data of `tools/grant_testdata.py`: the Market with
 `ResearchGrantInterval` 20, `ResearchGrantMax` 3, `ResearchGrantCost` 0 and `ResearchGrantScope` `self`, and four test
 techs of 300 wood on its buttons, Optics, Public Lighting, Reservists and Mass Cavalry; 1200 wood; the Market stays
 selected; each research is started by a click on its button, after the pointer has rested on it):* until the first
@@ -8384,6 +8382,8 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   | `BerryBush` | its stock `Food: 868` row once, no train points | — |
   | `Caravel`, `Galleon` | Garrison 0 / 50, Speed 8.50, Resists, their attacks | — |
 
+  *The pictures below show the first layout (2026-11-17); the current panel is version 7 (top of this section).*
+
   ![The minimized interface, key on](media/minUIStats-test-hero-min.png)
   ![The big interface](media/minUIStats-test-hero-big.png)
   ![A ship](media/minUIStats-test-ship-min.png)
@@ -8509,6 +8509,8 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   what another player's villager carries; the stock resource and rate rows were filmed on the Factory, the Sawmill and
   the tree).
 
+  *The pictures below show the third layout (version 3); the current panel is version 7 (top of this section).*
+
   ![Third layout, one Musketeer](media/minUIStats-v3-1type.png)
   ![Third layout, five unit types](media/minUIStats-v3-5types.png)
   ![Third layout, a Presidial: only its own ability attack](media/minUIStats-v3-presidial.png)
@@ -8521,7 +8523,7 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   ![A Caravel](media/minUIStats-v3-ship-caravel.png)
   ![The same layout with the key off](media/minUIStats-v3-keyoff-1type.png)
 
-  All the pictures, as JPG, are also in `wol-fixes/min-ui/media`.
+  Version 3's pictures, as JPG, are kept as history in `wol-fixes/min-ui/media`.
 
   Performance (`perfprobe.py`, 45 s each, five types selected, Explorer included; three other games running): key on
   666 fps, main thread 85.1 %, update 0.16 ms, render 1.34 ms, longest frame 12.8 ms; key off 569 fps, 84.5 %, 0.18 ms,
