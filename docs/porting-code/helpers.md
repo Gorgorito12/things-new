@@ -1287,6 +1287,15 @@ inline constexpr Site kImpactEffectByName{"ImpactEffectByName", 0x0058F017, kImp
 inline constexpr std::uint8_t kModelPathLookupBytes[] = {0x51, 0x53, 0x55, 0x56, 0x8B, 0xE9, 0x57, 0x8D, 0x4C, 0x24};
 inline constexpr Site kModelPathLookup{"ModelPathLookup", 0x0058F68F, kModelPathLookupBytes, sizeof(kModelPathLookupBytes)};
 
+inline constexpr std::uint8_t kAltQueryBytes[] = {0x8B, 0x15, 0x44, 0x62, 0xC6, 0x00, 0x8B, 0x42, 0x74, 0x8B, 0x48, 0x2C, 0x8B, 0x11, 0x6A, 0x02, 0x8B, 0x42, 0x34, 0xE8, 0x7F, 0x0F, 0x02, 0x00};
+inline constexpr Site kAltQuery{"AltQuery", 0x00452EA0, kAltQueryBytes, sizeof(kAltQueryBytes)};
+
+inline constexpr std::uint8_t kActionRangeByKeyBytes[] = {0x8B, 0x51, 0x1C, 0x53, 0x8B, 0x5C, 0x24, 0x08, 0x56, 0x33};
+inline constexpr Site kActionRangeByKey{"ActionRangeByKey", 0x004946D6, kActionRangeByKeyBytes, sizeof(kActionRangeByKeyBytes)};
+
+inline constexpr std::uint8_t kProtoFlagLastCompareBytes[] = {0x56, 0x68, 0xE0, 0xA0, 0xBC, 0x00, 0xE8, 0x40, 0xB6, 0xE0, 0xFF, 0x83, 0xC4, 0x08, 0x85, 0xC0, 0x0F, 0x84, 0x14, 0x63, 0x00, 0x00, 0x5E, 0xC2, 0x08, 0x00};
+inline constexpr Site kProtoFlagLastCompare{"ProtoFlagLastCompare", 0x005F7269, kProtoFlagLastCompareBytes, sizeof(kProtoFlagLastCompareBytes)};
+
 inline constexpr std::uint8_t kBoneNameLookupBytes[] = {0x53, 0x8B, 0xD9, 0x57, 0x8B, 0x7B, 0x08, 0x85, 0xFF, 0x0F};
 inline constexpr Site kBoneNameLookup{"BoneNameLookup", 0x0058E506, kBoneNameLookupBytes, sizeof(kBoneNameLookupBytes)};
 
@@ -1295,9 +1304,6 @@ inline constexpr Site kAuraFilterCall{"AuraFilterCall", 0x009D0633, kAuraFilterC
 
 inline constexpr std::uint8_t kAuraFilterBytes[] = {0x56, 0x8B, 0x74, 0x24, 0x08, 0x57};
 inline constexpr Site kAuraFilter{"AuraFilter", 0x009D0238, kAuraFilterBytes, sizeof(kAuraFilterBytes)};
-
-inline constexpr std::uint8_t kAuraAppliedNextBytes[] = {0x8B, 0xD8, 0x83, 0xFB, 0xFF};
-inline constexpr Site kAuraAppliedNext{"AuraAppliedNext", 0x009D0675, kAuraAppliedNextBytes, sizeof(kAuraAppliedNextBytes)};
 
 inline constexpr std::uint8_t kXsReportHeadBytes[] = {0x81, 0xEC, 0x04, 0x08, 0x00, 0x00};
 inline constexpr Site kXsReportHead{"XsReportHead", 0x0043A3A4, kXsReportHeadBytes, sizeof(kXsReportHeadBytes)};

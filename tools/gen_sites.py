@@ -1021,12 +1021,17 @@ SITES = [
     # displayedRange: the ID of a model path, thiscall(table [0xC66240], path, 1, 0, 0), called at 0x5FC94C; the ID
     # of a bone name, thiscall(0xD6F478, name), called at 0x5FC8FC; both verify only
     ("ModelPathLookup", 0x58F68F, 10),
+    # displayedRange: the Alt query of the HP bar chunk, mov edx,[0C66244h] .. call 473E37h (verify only: the key
+    # makes the same call); the range getter 0x4946D6, float thiscall(action, key), verify only; and the proto flag
+    # parser's last compare, push esi / push 0BCA0E0h / call 4028B4h / add esp,8 / test eax,eax / je, whose call
+    # (at +6) goes to the key, then pop esi / ret 8, the return for a name no flag matched
+    ("AltQuery", 0x452EA0, 0x18),
+    ("ActionRangeByKey", 0x4946D6, 10),
+    ("ProtoFlagLastCompare", 0x5F7269, 0x1A),
     ("BoneNameLookup", 0x58E506, 10),
-    # auraStacking: the one call of the filter in the aura update, the filter's head, and mov ebx,eax /
-    # cmp ebx,-1 after the apply
+    # auraStacking: the one call of the filter in the aura update, and the filter's head
     ("AuraFilterCall", 0x9D0633, 5),
     ("AuraFilter", 0x9D0238, 6),
-    ("AuraAppliedNext", 0x9D0675, 5),
     # xsErrorLog: sub esp,804h at the head of each XS reporter, and the formatter they call
     ("XsReportHead", 0x43A3A4, 6),
     ("XsMessageHead", 0xA5667F, 6),

@@ -109,7 +109,6 @@ struct KnownTag {
 };
 
 constexpr KnownTag kKnownTags[] = {
-    {L"NoStack", "auraStacking"},
     {L"NativePreview", "nativePreview"},
     {L"SnareFactor", "snareValues"},
     {L"SnareDuration", "snareValues"},
@@ -149,6 +148,7 @@ constexpr KnownTag kKnownTags[] = {
     {L"DetonationOnKnockout", "detonationDeath"},
     {L"DisplayRange", "displayedRange"},
     {L"DisplayedRange", "displayedRange"},
+    {L"AlwaysDisplayRange", "displayedRange"},
     {L"CanDodgeAttacks", "dodgeAnyUnit"},
     {L"DodgeChance", "dodgeAnyUnit"},
     {L"DoNotQueue", "doNotQueue"},

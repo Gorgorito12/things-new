@@ -42,6 +42,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 11:34 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Saturday 2026-11-21 11:31 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Saturday 2026-11-21 11:07 | [`deadReplacementAtZeroInventory`](bug-fixes.md#deadreplacementatzeroinventory) | Added. A hunt, a herdable or any unit that leaves a body to gather drops its `<DeadReplacement>` when the body is used up, not when it falls. | `<DeadReplacement>` on the protos that want one (none has it today). |
+| Saturday 2026-11-21 12:41 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
+| Saturday 2026-11-21 12:04 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
+| Saturday 2026-11-21 11:03 | [`auraStacking`](#aurastacking) | Filmed in WoL, with a control. `<ForbidUnitType>` on any aura: the aura leaves units of a type or proto alone; that an aura does not stack is the game's own `<ModifyExclusive>`. | The tags on the aura. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -92,18 +95,15 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-06 13:55 | [`danceBonusCivs`](#dancebonuscivs) | Filmed in WoL, with a control. Lets the civs you list get the fire pit's Training, XPTrickle, Gathering and Regeneration dances, which the exe applies only to `XPIroquois`, `XPSioux`, `XPAztec` and `XPSPC`. | A building with `AbstractFirePit`, its dance enabled for those civs, and villagers that can work on it. |
 | Friday 2026-11-06 13:55 | [`transformInventory`](bug-fixes.md#transforminventory) | Filmed in WoL, with a control. A unit transformed in place (a `TransformUnit` tech effect, a revolution) takes its new proto's `InitialResource` when the two protos hold different resource types. | Nothing; with a new marker, that type on the target protos. |
 | Friday 2026-11-06 13:50 | [`hcShipmentPointFallback`](#hcshipmentpointfallback) | Filmed in WoL, with a control. When the building holding the shipment point dies and none of the exe's 10 fallback types (Town Center, Outpost, forts, …) is left, moves the point to the first alive building of the types you list, or to the player's first town center (`FirstTC`). | Nothing beyond the proto names in the cfg; `FirstTC` needs `startingTC` or `civFirstTC`. |
-| Friday 2026-11-06 13:44 | [`auraStacking`](#aurastacking) | Added. `<NoStack>` and `<ForbidUnitType>` on any aura. | The tags on the aura. |
 | Friday 2026-11-06 13:36 | [`showGatherRate`](#showgatherrate) | Filmed in WoL, with a control. Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | Nothing; for the data ref, a `formatText` gadget. |
 | Friday 2026-11-06 13:02 | [`damageOverTime`](#damageovertime) | Filmed in WoL, with a control. Poison: an attack that names an attachment proto keeps damaging its target every few seconds after the hit. | `<AttachProtoUnit>` on the attack, a new attachment proto in `protoy.xml`, and a small tactics file. |
 | Friday 2026-11-06 12:56 | [`xsErrorLog`](#xserrorlog) | Added. Writes the XS compiler's messages to the log, with file and line. | Nothing. |
 | Friday 2026-11-06 12:52 | [`dataLint`](#datalint) | Added. While the data loads, lists what it asks for and the game drops. | Nothing. |
 | Friday 2026-11-06 12:40 | [`lifespanAfterConstruction`](#lifespanafterconstruction) | Filmed in WoL, with a control. Starts the `<Lifespan>` of marked buildings when their construction is finished, not when the foundation is placed. | A `<Lifespan>` on the buildings, and the unit type on them (or a type or proto name in the cfg). |
-| Friday 2026-11-06 11:33 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Friday 2026-11-06 11:33 | [`resourceGatherAuras`](#resourcegatherauras) | Filmed in WoL, with a control. Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | A `<ModifyType>` with those names. |
 | Friday 2026-11-06 11:33 | [`maintainWaitForPop`](bug-fixes.md#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. |
 | Friday 2026-11-06 10:47 | [`doNotQueue`](#donotqueue) | Filmed in WoL, with a control. `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | The tag on the protos that want it. |
 | Friday 2026-11-06 09:06 | [`linkedResource`](#linkedresource) | Filmed in WoL, with a control. A resource building gathers the stock of a mine beside it. | The tags on a resource building of your own. |
-| Friday 2026-11-06 07:32 | [`displayedRange`](#displayedrange) | Added. A selected unit shows a ring of the radius of `<DisplayedRange>`. | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. |
 | Thursday 2026-11-05 15:23 | [`cantBeSlowed`](#cantbeslowed) | Filmed in WoL, with a control. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | The type on the protos that want it. |
 | Thursday 2026-11-05 13:29 | [`pillageGold`](#pillagegold) | Added. A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | The type and the tag on the protos. |
 | Thursday 2026-11-05 10:29 | [`accuracyTechs`](#accuracytechs) | Filmed in WoL, with a control. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
@@ -944,7 +944,7 @@ New names the game's data and scripts can use.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`customAbstractTypes`](#customabstracttypes) | Turns every name in `data\uhc\customabstracttypes.xml` (47 today) into an abstract unit type that protos, techs, auras and XS scripts can use. | always on | The file. | confirmed |
-| [`auraStacking`](#aurastacking) | `<NoStack>` and `<ForbidUnitType>` on any aura. | **new** | The tags on the aura. | confirmed |
+| [`auraStacking`](#aurastacking) | `<ForbidUnitType>` on any aura: the aura leaves units of a type or proto alone; that an aura does not stack is the game's own `<ModifyExclusive>`. | **new** | The tags on the aura. | confirmed (single player) |
 | [`customProtoUnitCommands`](#customprotounitcommands) | Adds the command types (buttons) listed in `data\uhc\customprotounitcommands.xml` (55 today). | always on | The file, and the `<Command>` lines that use them. | confirmed |
 | [`customHotkeyContexts`](#customhotkeycontexts) | Makes keymap contexts named `<ProtoName>Accel` work, such as WoL's `WOLBarracksGreekAccel`. Today the exe drops them. | **new** | Those contexts in `data\DefaultKeyMapY.xml`; WoL's file already has three. | confirmed (single player) |
 | [`techRenameEffect`](#techrenameeffect) | The tech effect `SetTechName`: a tech gives another tech a new name, rollover and help text, for the players it reaches only. | **in `wol.cfg`**, but WoL's renames for all players | `<Effect type='SetTechName' …/>` in a tech, and the string IDs in `stringtabley.xml`. | confirmed (single player) |
@@ -1359,18 +1359,20 @@ kbUnitSyscalls
 
 #### auraStacking
 
-*Several carriers of the same aura no longer multiply it, and an aura can skip chosen units.*
+*An aura can skip chosen units; that several carriers of one aura do not multiply is the game's own `<ModifyExclusive>`.*
 
-**Added:** Friday 2026-11-06 13:44 · **Filmed in WoL:** Friday 2026-11-06 13:44
+**Added:** Friday 2026-11-06 13:44 · **Filmed in WoL:** Saturday 2026-11-21 11:03
 
 ![auraStacking in WoL](media/auraStacking-wol.gif)
 
-*In WoL, with `auraStacking log` (Ethiopians, 5 `Pikeman` with a test aura `BuildingWorkRate` ×3 and `<NoStack>`, `ring_work.xml`):*
-the Town Centers in range work at ×3. [Full video (MP4)](media/auraStacking-wol.mp4).
+*In WoL, with `auraStacking log` (Danes; a Pikeman carries a test aura `Speed` ×1.5 on `AbstractInfantry`, 12 m, with
+`<ModifyExclusive>`, `<ForbidUnitType>Musketeer</ForbidUnitType>` and [`ring_speed.xml`](#aura-rings)):* the three Crossbowmen
+wear the blue ring and walk at 6.0, the three Musketeers have no ring and stay at 4.0; the log names each refusal.
+[Full video (MP4)](media/auraStacking-wol.mp4).
 
 ![auraStacking in WoL, key off](media/auraStacking-wol-control.gif)
 
-*In WoL, key off (the same data):* the game skips the tag, the auras multiply and they work at ×27.
+*In WoL, key off (the same data):* the game skips the tag, and the Musketeers wear the ring too.
 [Full video (MP4)](media/auraStacking-wol-control.mp4).
 
 ```
@@ -1381,28 +1383,39 @@ auraStacking [log]
 <action>
     <name>MyAura</name>
     <type>AutoRangedModify</type>
-    <nostack>1</nostack>
-    <forbidunittype>Hussar</forbidunittype>
+    <modifyexclusive>1</modifyexclusive>           <!-- stock: carriers of this aura do not multiply -->
+    <forbidunittype>Musketeer</forbidunittype>      <!-- this key -->
 </action>
 ```
 
-- **In WoL today:** every carrier of an aura multiplies: five of ×4 give ×1024.
-- **`<NoStack>`:** a target holds this aura from one carrier. When that one dies or it leaves its range, the next takes over,
-  0.6 s later in the test. Another aura still multiplies with it. For stock auras and those of `buildingWorkRateAuras`,
-  `resourceGatherAuras` and `unitResourceAuras`, where each target is paid by one carrier.
-- **`<ForbidUnitType>`** (or `<ForbidAbstractType>`, more than once): the aura leaves those units alone, on any aura.
-- **Same aura:** the same proto and action name. Two protos sharing a tactics file are two auras, and the first carrier stays: the
-  strongest does not win.
+- **`<ForbidUnitType>`** (or `<ForbidAbstractType>`, more than once, a unit type or a proto): the aura leaves those units alone,
+  on any aura. A name the game does not know is logged once and ignored.
+- **Stacking is stock:** `<ModifyExclusive>1</ModifyExclusive>` on the aura. Every carrier still gives each unit its
+  modifier, but the game's stat sum stops at the first exclusive one, so five carriers of a ×1.5 aura give ×1.5, not
+  ×1.5⁵, and when a carrier dies the others' modifiers are already there. It also stops the auras of the same stat that
+  come after it: a unit under two exclusive Speed auras, ×1.5 and ×1.2, walks at ×1.5. The same holds for the stats of
+  [`buildingWorkRateAuras`](#buildingworkrateauras) and [`resourceGatherAuras`](#resourcegatherauras), and for
+  [`unitResourceAuras`](#unitresourceauras), where each target then pays one carrier, with this key on or off.
+- **`<NoStack>` is retired** (JTMaston, 2026-11-21: `<ModifyExclusive>` already did it). Data that still has it loads:
+  the key logs `auraStacking: proto Pikeman: <NoStack> is retired, use <ModifyExclusive>1</ModifyExclusive>; ignored`
+  (20 lines at most) and [`dataLint`](#datalint) counts it as an unknown action tag. Put `<ModifyExclusive>1</ModifyExclusive>`
+  in its place.
 - **Changes the simulation:** every player needs the same setting and data.
-- **Saved games:** nothing to do: the mark is in the modifier, which the game saves.
-- **Log:** `auraStacking: applied`, `hook reached: auraStacking filter (0x9D0633)`, `auraStacking applied (0x9D0675)`, and with `log`
-  `auraStacking: unit 1 holds unit 6`, `unit 2 leaves unit 6 alone: it holds this aura`.
+- **Saved games:** nothing to keep: the modifiers are the game's, and the payer of a `UnitResource` target is chosen again
+  after a load.
+- **Log:** `auraStacking: applied`, `hook reached: auraStacking filter (0x9D0633)`, and with `log`
+  `unit 0 leaves unit 4 alone: a forbidden type (Musketeer)`, `unit 7 leaves unit 9 to unit 8: <ModifyExclusive>`.
 - **Not covered:** the applier of auras with no range, FUN_009D7328, and powers.
-- **Tested in WoL (2026-11-06):** a stock Speed ×4 aura, ×256 with 4 carriers and ×4 with the tag; `resourceGatherAuras` ×1024 against
-  ×4; `buildingWorkRateAuras` ×64 against ×4; two Sawmills on three trees, one payer each; two auras ×8; a Hussar forbidden from an
-  `AbstractCavalry` aura, 0 modifiers; a loaded game kept one modifier; beside WoL's DLL; an AI skirmish of 100 s with no XS error.
-  Performance could not be compared: other games were running, and the two runs do not carry the same modifiers. Not tested:
-  multiplayer, recorded games.
+- **Tested in WoL (2026-11-21, `<ModifyExclusive>`):** five Pikemen with six test auras, read in game memory and the keys'
+  logs: villagers under an exclusive Speed ×1.5 at 6.00 from 4.00, the Explorer under the same aura without the tag at
+  34.17 from 4.5 (×1.5⁵); `buildingWorkRateAuras` ×2 on the Town Center with the tag; `resourceGatherAuras` wood ×2 with
+  the tag against food ×32 without it, on the same villagers. Four carriers killed one after the other: the villagers
+  stayed at 6.00, the Explorer went down to 6.75. Two Sawmills over three trees with `<ModifyExclusive>`: each tree paid
+  one Sawmill.
+- **Tested in WoL (2026-11-21, the key without `<NoStack>`):** `<ForbidUnitType>Musketeer` and
+  `<ForbidAbstractType>AbstractGunpowderTrooper`: the Crossbowmen held both modifiers, the Musketeers none; a bad name
+  logged once; old `<NoStack>` data loaded and logged as retired; a game saved and loaded kept the modifiers, and the
+  Sawmills one payer per tree. Not tested: multiplayer, recorded games.
 
 ### Civs
 
@@ -5055,7 +5068,7 @@ autoGatherScaleByContained
 
 *An aura earns resources from the units in its range, such as nearby trees.*
 
-**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Friday 2026-11-06 11:33
+**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Saturday 2026-11-21 12:41
 
 ![unitResourceAuras in WoL](media/unitResourceAuras-wol.gif)
 
@@ -5081,14 +5094,16 @@ unitResourceAuras [log]
 
 ![unitResourceAuras with the Torp's tags in WoL](media/unitResourceAuras-torp-wol.gif)
 
-*In WoL, the Torp's tags on `WOLSawmill` (Ethiopians, test data, marker `aura_<colour>.xml`):* a coin over the Mine, a drumstick
-over the bush and the two carcasses, and no mark on the live Deer or the Plantation.
+*In WoL, the Torp's tags on `WOLSawmill` (Portuguese, a skirmish; test data: seven `UnitResource` auras on the Sawmill,
+each with its [marker](#the-marker-of-a-gathered-resource)):* a pickaxe over the Mine, a bow over the killed Deer, berries
+over the bush, an ear of wheat over the Mill, a leg of meat over the Sheep, an axe over each tree, and the fish marker
+over a Cow (only to show the icon: fish need water).
 [Full video (MP4)](media/unitResourceAuras-torp-wol.mp4).
 
 ![unitResourceAuras with the Torp's tags in WoL, key off](media/unitResourceAuras-torp-wol-control.gif)
 
-*In WoL, key off (the same data, the marker there):* stock hangs the model on every unit of the type, a live Sheep and the
-Plantation too, and nothing is gathered. [Full video (MP4)](media/unitResourceAuras-torp-wol-control.mp4).
+*In WoL, key off (the same data, the markers there):* stock hangs the model only on the player's own units of the type
+(the Sheep, the Cow, the Mill), none on Gaia's trees, mine, bush or deer, and nothing is gathered. [Full video (MP4)](media/unitResourceAuras-torp-wol-control.mp4).
 
 - **The ring:** a `UnitResource` aura does not run the stock update, so the key hangs the [aura's ring](#aura-rings) itself: on
   the units that gave resources in that update, and it takes it off when they stop, when the aura's owner dies, or at the limit
@@ -5143,7 +5158,7 @@ Plantation too, and nothing is gathered. [Full video (MP4)](media/unitResourceAu
   resource, the icon and the auras' take per second plus the building's AutoGather, in the order of the resources.
   Two resources fit: in WoL's layout at 1920×1080 a third shows its icon with no number. It shows while an aura pays.
   **Pending:** the stat panel of the normal interface.
-- **Not covered:** other players' units are never targets. Stock has no `SquareAura`; `NoStack` comes with [`auraStacking`](#aurastacking).
+- **Not covered:** other players' units are never targets. Stock has no `SquareAura`. With `<ModifyExclusive>1</ModifyExclusive>` on the aura, each target pays one Sawmill (`AuraClaim`), with or without [`auraStacking`](#aurastacking).
 - **Log:** `unitResourceAuras: applied`, `hook reached: unitResourceAuras (0x9D033E)`, and while the data loads
   `hook reached: ModifyType names (0x5FE6D7)`. With `log`, the first 200 takes: `unit 0 (WOLSawmill) took 0.142 of
   resource 1 from unit 2 (TreeNewEngland), 299.1 left`.
@@ -7689,7 +7704,7 @@ What the panels and the fog of war show.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`abilitySlots`](#abilityslots) | Lets the command panel show up to N abilities per unit instead of 6. | **new** | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. | confirmed (single player, UI) |
-| [`displayedRange`](#displayedrange) | A selected unit shows a ring of the radius of `<DisplayedRange>`. | **new** | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. | confirmed |
+| [`displayedRange`](#displayedrange) | A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | **new** | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. | confirmed (single player) |
 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | **new** | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. | confirmed (single player, UI) |
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
@@ -7762,43 +7777,86 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 #### displayedRange
 
-*A selected unit shows a ring on the ground marking its range.*
+*A selected unit shows its range on the ground while Alt is held: one ring per ranged attack.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Friday 2026-11-06 07:32
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Saturday 2026-11-21 12:04
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
-*In WoL, with `displayedRange log` (Ethiopians, test data, a Sawmill with 14 and a Town Center with 20):* the ring shows
-while the building is selected and goes when it is not. [Full video (MP4)](media/displayedRange-wol.mp4).
+*In WoL, with `displayedRange log` (Swedes, a skirmish; test data: `<DisplayRange>1</DisplayRange>` on the Fort, the Falconet and the
+Crossbowman, `<Flag>AlwaysDisplayRange</Flag>` on the Outpost):* the Fort is selected and shows nothing; Alt held, its 40 m anti-ship and 26 m cannon rings; Alt released, none; the Outpost, selected, shows its 40 and 24 m at once, with no Alt; two Crossbowmen with Alt show 16 and 6 m each. The log names each ring. [Full video (MP4)](media/displayedRange-wol.mp4).
 
 ![displayedRange in WoL, key off](media/displayedRange-wol-control.gif)
 
-*In WoL, key off (the same data):* no ring. [Full video (MP4)](media/displayedRange-wol-control.mp4).
+*In WoL, key off (the same data and the same Alt):* no ring; Alt only shows the HP bars, as in stock.
+[Full video (MP4)](media/displayedRange-wol-control.mp4).
 
 ```
 displayedRange [log]
 ```
 
 ```xml
+<Unit name="FortFrontier">
+    <DisplayRange>1</DisplayRange>              <!-- rings while selected and Alt is held -->
+</Unit>
+<Unit name="Outpost">
+    <Flag>AlwaysDisplayRange</Flag>             <!-- or <AlwaysDisplayRange>1</AlwaysDisplayRange>: rings while selected -->
+</Unit>
 <Unit name="WOLSawmill">
     <DisplayRange>1</DisplayRange>
-    <DisplayedRange>14</DisplayedRange>
+    <DisplayedRange>14</DisplayedRange>         <!-- a fixed radius instead of the attacks'; more than one is fine -->
 </Unit>
 ```
 
-- **In WoL today:** nothing shows how far a building's aura reaches.
-- **Effect:** a selected unit with both tags shows a thin white ring on the ground, centred on it, of the radius of
-  `<DisplayedRange>`: the nearest of 4, 6, 8, 10, 12, 14, 16, 20, 24 and 30 m, the sizes in `tools/rings`.
+- **In WoL today:** nothing shows how far a unit shoots or an aura reaches.
+- **When:** a unit with `<DisplayRange>1</DisplayRange>` shows its rings while it is selected and Alt is held (JTMaston,
+  2026-11-21), the key that already shows every HP bar; they go when Alt is released or the unit is deselected.
+  `<AlwaysDisplayRange>1</AlwaysDisplayRange>`, or `<Flag>AlwaysDisplayRange</Flag>`, shows them whenever the unit is
+  selected, Alt or not (the stock flag parser drops a name it does not know; the key catches it).
+- **Which rings:** one per ranged attack (`<RangedLogic>1</RangedLogic>`) of the unit's current tactic, at that attack's
+  `MaxRange` as the player has it now: a tech that adds range moves the ring at once (`Revetment`: the Fort's 26 m ring
+  became 32 m). A Fort shows its 40 m anti-ship attack and its 26 m cannon, an Outpost 40 and 24, a Crossbowman 16 and the
+  6 of its building attack. Two attacks on the same ring size share one ring. A cannon limbered to move has no attack in
+  that tactic, so it shows the attacks of all its tactics (the Falconet's 26). With `<DisplayedRange>` the rings are those
+  values instead.
+- **Sizes:** each radius goes to the nearest ring of `tools/rings`: 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
+  32, 36, 40, 45, 50, 60, 70, 80 and 100 m (aoe3-blender-tools' `make_rings.py`, `RANGES`; the line widens a little on
+  the large ones so it stays visible).
 - **Files:** `range_<metres>.xml`, its particle and its texture, in `art/effects/uhc_rings` for everyone who should see it.
 - **How far an aura reaches:** its `<MaxRange>` goes from the centre of its unit to the edge of the target: a 6.2 m aura
   took trees at 6.0, 6.3 and 7.2 m, and not at 8.9 m. So a small range can stay under a big building's model.
-- **Several units:** each selected unit with the tags shows its own, as long as it is selected.
-- **Multiplayer:** display only: the selection is this machine's and a model is a visual. Every player can have it or not.
-- **Log:** `displayedRange: the proto tags DisplayRange and DisplayedRange are on`, and with `log`
-  `displayedRange: ring of 14.0 m on unit 1 (WOLSawmill)` and `ring off unit 1`.
-- **Performance:** a tick four times a second over the selected units only. Not measured with `perfprobe.py`.
-- **Tested in WoL (2026-11-06):** selecting a Sawmill and a Town Center by console, 14 m and 20 m, on and off in the log and on
-  screen. Not tested: 24 and 30 m, a saved game, multiplayer.
+- **Cost, and the caps:** measured with `perfprobe.py` (2026-11-21, 45 s a case, 50 selected units on screen, the
+  render time of a frame, other games running on the PC):
+
+  | 50 selected units | Rings each | Rings on screen | Render a frame, key on | Key off |
+  |---|---|---|---|---|
+  | Hussar (no tag) | 0 | 0 | 4.45, 3.71, 4.85 ms (three runs) | 3.91 ms |
+  | Rodelero | 1 (12 m) | 50 | 4.35, 4.83 ms | — |
+  | Doppelsoldner | 2 (12, 20 m) | 100, no cap | 6.63 ms | 5.99 ms |
+  | Halberdier | 4 (8 to 20 m) | 200, no cap | 7.98 ms | 7.59 ms |
+  | Doppelsoldner | 2 | 60, the cap | 5.31 ms | 5.99 ms |
+  | Halberdier | 4 | 60, the cap | 6.88 ms | 7.59 ms |
+
+  The differences stay inside the noise between runs of one case (0.6 to 1.1 ms; seven other games ran on the PC); the
+  Halberdiers cost more than the Hussars with the key off too, so it is their models, not the rings. With 1 and 20 units
+  the numbers were the same with 0, 1, 2 and 4 rings. No frame over 100 ms in any capped run.
+
+  So the rings cost nothing measurable. A selection still shows at most 4 rings a unit and 60 in all, the units
+  with the longest ranges first, so that a big selection stays readable.
+- **Multiplayer:** display only: the selection and the keyboard are this machine's, and a model is a visual. Every player
+  can have it or not.
+- **Log:** `displayedRange: applied`, `hook reached: displayedRange: proto flag parser's last compare (0x5F726F)`, and
+  with `log` `proto Outpost: <Flag>AlwaysDisplayRange</Flag>`, `Alt held`, `ring of 40 m on unit 206 (FortFrontier), Alt
+  held`, `Alt released`, `rings off unit 206`.
+- **Tested in WoL (2026-11-21):** a scenario (Ethiopians) and a skirmish (Swedes), Alt posted to the window as
+  `WM_KEYDOWN` / `WM_KEYUP` of `VK_MENU` (the game reads it from its messages, so no real keyboard was needed):
+  the Fort selected, no ring; Alt, 40 and 26 m; released, none; after `Revetment` the 26 m ring became 32 m; the
+  Outpost (`<Flag>`) 40 and 24 m without Alt; the Falconet (`<AlwaysDisplayRange>1`, limbered) 26 m without Alt;
+  the Musketeer's two `<DisplayedRange>` (12 and 6) only with Alt; a Pikeman with no tag, none; a Frigate 30 m
+  (its ranged and broadside attacks share the ring) and a Caravel 20 m on a water map; 50 selected units with 1, 2
+  and 4 rings each (the table); a game saved and loaded: the Outpost's and the Fort's rings came back; key off: no
+  ring, Alt shows the HP bars only. Not tested: multiplayer, a selection of a building with units (the console
+  route selects one kind at a time).
 
 #### abilitySlots
 
@@ -8897,11 +8955,40 @@ More about the tools: [tools/README.md](../tools/README.md).
 
 ### The marker of a gathered resource
 
-`aura_wood.xml`, `aura_food.xml` and `aura_gold.xml` in `tools/rings` are a ring plus a floating icon of that resource, the
-same idea as DE's marker on what a Torp works, with our own art: name one in a `UnitResource` aura's
-`<modelattachment>`. The icon is a sprite that faces the camera, at a height by kind of unit in `ICON_HEIGHTS` of
-`tools/make_rings.py` (aoe3-blender-tools). Plain rings stay as they were. Legacy shows only one of two particle systems in a logic branch,
-so the icon is a second `<attachment>`, not a second `<assetreference>`.
+A marker is a ring plus a floating icon of what is gathered, the same idea as DE's marker on what a Torp works, with our own
+art: name one in a `UnitResource` aura's `<modelattachment>`. The icons are cartoons of the gathering tool or of the food
+(JTMaston, 2026-11-21: "a more cartoonish version of the gathering cursor icons", one for each kind of food), drawn from
+scratch by `tools/cartoon_icons.py` of aoe3-blender-tools: flat colours, one light tone per part and a thick dark outline, so
+they read at the few dozen pixels they take over a unit.
+
+![The marker icons](media/marker-icons.png)
+
+| Marker | Icon | Ring | For |
+|---|---|---|---|
+| `effects\uhc_rings\aura_gold.xml` | a pickaxe over a gold nugget | gold | coin: mines, plantations |
+| `effects\uhc_rings\aura_wood.xml` | an axe | wood | trees |
+| `effects\uhc_rings\aura_food.xml` | a leg of meat | food | food in general, livestock |
+| `effects\uhc_rings\aura_hunt.xml` | a bow and arrow | food | hunts |
+| `effects\uhc_rings\aura_berry.xml` | a bunch of berries | food | bushes |
+| `effects\uhc_rings\aura_farm.xml` | an ear of wheat | food | farms, Mills |
+| `effects\uhc_rings\aura_fish.xml` | a fish | food | fish |
+| `effects\uhc_rings\aura_work.xml` | a gear | work | work, unchanged |
+
+The first three keep their names, so data that already uses them gets the new icons with no edit. The icon is a sprite that
+faces the camera, 2.5 m wide (`CARTOON_SIDE`), uncompressed (128 texels, with its smaller levels), at a height by kind of unit in
+`ICON_HEIGHTS` of `tools/make_rings.py`. Plain rings stay as they were. Legacy shows only one of two particle systems in a
+logic branch, so the icon is a second `<attachment>`, not a second `<assetreference>`.
+
+- **Tested in WoL (2026-11-21, Portuguese, a skirmish):** each of the seven markers over its target, from the normal
+  camera (the [`unitResourceAuras`](#unitresourceauras) video): the pickaxe over a Mine, the bow over a killed Deer,
+  the berries over a bush, the wheat over a Mill (at a building's height, 11 m), the meat over a Sheep, the fish
+  over a Cow (test data). Grass only; not tried on snow.
+- **Over trees** the icon floats at 13 m, above the canopy of the common trees (test markers at 10 to 18 m on the same
+  trees: Great Lakes birch and pine, ponderosa, New England and palms clear at 12 to 13 m). A redwood is about as tall,
+  so its axe sits at its top:
+
+  ![Great Lakes birch](media/marker-tree-greatlakes.png) ![Ponderosa pine](media/marker-tree-ponderosa.png)
+  ![New England](media/marker-tree-newengland.png) ![Redwood](media/marker-tree-redwood.png)
 
 ### Rotating a building while placing it
 

@@ -1465,23 +1465,22 @@ Code: [combat](porting-code/combat.md#snarevalues). It needs `AddActionTagHandle
 
 ### auraStacking
 
-Code: [combat](porting-code/combat.md#aurastacking). It needs `AddActionTagHandler`, `OnDatabaseLoad` and the modifier walk
-`modifiers.h`, in the [helpers](porting-code/helpers.md).
+Code: [combat](porting-code/combat.md#aurastacking). It needs `AddActionTagHandler` and `OnDatabaseLoad`, in the
+[helpers](porting-code/helpers.md).
 
 - **Filter:** the `call` at `0x9D0633` (`E8 00 FC FF FF`, of the filter `0x9D0238`, `bool thiscall(action, target)`,
   `ret 4`), its only call in the aura update FUN_009D033E, goes to `UhcAuraFilterHook`. It calls the stock filter, then
-  refuses a target of a `<ForbidUnitType>` (or `<ForbidAbstractType>`) type and, for a `<NoStack>` aura, a target that
-  holds a modifier with this aura's mark. Verify only the filter's head (6 B).
-- **Mark:** a 5-byte `jmp` at `0x9D0675` (`8B D8 83 FB FF`: `mov ebx,eax / cmp ebx,-1`), right after the creator
-  `0x4DD22D`, with EAX = the new modifier's ID, EBX = the target, ESI = the action. For a `<NoStack>` aura it writes the
-  mark `((proto ID + 1) << 14) | action name index` in `[modifier+84h]`, a field stock saves and loads and nothing reads,
-  then re-executes both instructions and continues at `0x9D067A`.
+  refuses a target of a `<ForbidUnitType>` (or `<ForbidAbstractType>`) type. Verify only the filter's head (6 B).
+- **Not stacking is stock:** `<ModifyExclusive>1</ModifyExclusive>` sets action flag 21h; the aura passes it to the
+  creator `0x4DD22D`, the modifier keeps it as state bit 16h, and the stat sum `0x4B3C7D` stops after it, so five carriers
+  of a ×N aura give ×N. A `<NoStack>` tag (the key's first version) is only logged as retired.
 - **`AuraClaim`** (`aurastacking.h`): `unitResourceAuras` makes no modifier and its take does not reach the filter, so it
-  asks `AuraClaim(world, proto, name, owner, target, now)`, which holds one owner per target and aura while that owner
-  lives and comes back within 7 s. Without auraStacking, make it return true.
+  asks `AuraClaim(world, tactics action, proto, owner, target, now)`. For an aura whose action has flag 21h it holds one
+  owner per target and aura while that owner lives and comes back within 7 s; for any other aura it returns true. It
+  works with the key off too.
 - **Not covered:** the second applier FUN_009D7328, for actions with no range, has no filter.
-- **Test:** two carriers of the same `<NoStack>` aura around one unit: it holds one modifier, and the other carrier takes
-  it when the holder dies or the unit leaves its range.
+- **Test:** an aura with `<ForbidUnitType>Musketeer</ForbidUnitType>` around a Musketeer and a Pikeman: the Pikeman holds
+  its modifier, the Musketeer none. Two `UnitResource` auras with `<ModifyExclusive>` over one tree: one pays.
 
 ### techRenameEffect
 
@@ -2241,17 +2240,27 @@ Code: [gathering](porting-code/gathering.md#deadreplacementatzeroinventory).
 Code: [gathering](porting-code/gathering.md#displayedrange). It needs `AddProtoTagHandler`, `AddWorldTick`,
 `OnDatabaseLoad` and the models on a unit, `unitmodels.*`, in the [helpers](porting-code/helpers.md).
 
-- **No site of its own.** The tags `<DisplayRange>` and `<DisplayedRange>` come through the shared proto tag hook
-  (`0x51DB0F`); a world tick does the rest. Verify only the selection `0x453B28` (`CurrentSelectionGroup`), the unit by ID
-  `0x44CC6D` and the model functions (`VerifyUnitModels`).
-- **The tick,** four times a second of game time, for the game's world only: it compares the local selection of
-  `0x453B28` (IDs `[group+10h]`, count `[group+14h]`) with the units that hold a ring. A selected unit whose proto has
-  both tags gets the model `effects\uhc_rings\range_<N>.xml`, N the radius nearest to `<DisplayedRange>` among 4, 6, 8,
-  10, 12, 14, 16, 20, 24 and 30, on the bone `bonethatdoesntexist` (at its feet); a unit that leaves the selection loses
-  it. A model that is not in the game is skipped.
-- **Changes:** only what the local player sees: the selection is only read, and a model is a visual of the unit.
-- **Test:** with the ring files in `art\effects\uhc_rings`, select a unit with both tags: the ring is at its feet, and
-  goes when the unit is deselected.
+- **Tags:** `<DisplayRange>`, `<AlwaysDisplayRange>` and `<DisplayedRange>` (repeatable) come through the shared proto tag
+  hook (`0x51DB0F`).
+- **`<Flag>AlwaysDisplayRange</Flag>`:** the `call 4028B4h` at `0x5F726F` (`E8 40 B6 E0 FF`), the last string compare of
+  the proto flag parser `0x5F640A` (`stdcall(proto, name)`, `ret 8`), goes to `UhcProtoFlagCompareHook`: it calls the
+  compare with the same two arguments and, when it returns non-zero, passes the proto (`[esp+14h]` at entry) and the name
+  (`[esp+8]`) to the key, then returns the compare's result. Verify `0x5F7269..0x5F7283` (`ProtoFlagLastCompare`): the
+  pushes, the call, `add esp,8 / test eax,eax / je`, and `pop esi / ret 8`.
+- **Verify only:** the selection `0x453B28` (`CurrentSelectionGroup`), the unit by ID `0x44CC6D`, the Alt query of the HP
+  bar chunk `0x452EA0` (`AltQuery`, 24 bytes), the range getter `0x4946D6` (`ActionRangeByKey`, `float
+  thiscall(action, key)`, `ret 4`) and the model functions (`VerifyUnitModels`).
+- **The tick,** ten times a second of game time, for the game's world only. Alt is `[[[0C66244h]+74h]+2Ch]`'s vtable `+34h`
+  called with 2. A selected unit whose proto has `<AlwaysDisplayRange>`, or `<DisplayRange>` while Alt is held, gets one
+  model `effects\uhc_rings\range_<N>.xml` per radius, N the ring size nearest to it (4 to 100 m, `kRadii`), on the bone
+  `bonethatdoesntexist` (at its feet). The radii are the `<DisplayedRange>` values, or the range `0x4946D6(action, -1)` of
+  each active action (bit 0 of `[action+64h]`) with bit 0Ah (`<RangedLogic>`) in the unit's current tactic
+  (`[[unit+58h]+0A8h]` into `[[proto+44h]+10h]`; entries of 12 bytes at `[tactic+44h]`, `+4` the index into
+  `[[tactic]+1Ch]`), or in all its tactics when the current one has none. At most 4 rings a unit and 60 in all, the
+  units with the longest ranges first. A unit that leaves the selection, or whose Alt is released, loses its rings.
+- **Changes:** only what the local player sees: the selection and the keyboard are only read, and a model is a visual.
+- **Test:** with the ring files in `art\effects\uhc_rings`, select a fort with `<DisplayRange>1`: no ring; hold Alt: a 40 m
+  and a 26 m ring; release Alt: none. A unit with `<AlwaysDisplayRange>1` shows its rings without Alt.
 
 ### showGatherRate
 

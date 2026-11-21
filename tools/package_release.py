@@ -293,7 +293,7 @@ transformUpdatesLOS [log]     units transformed by a tech or revolution get the 
 broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6);
                               <NumberProjectiles> P: P shots per side over the muzzles
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
-displayedRange [log]          a selected unit with <DisplayRange> shows a ring of <DisplayedRange> m
+displayedRange [log]          a selected unit shows a ring per ranged attack while Alt is held
 steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit
                               instead of jumping with its animations
 inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]   while Alt is held,
@@ -349,7 +349,7 @@ numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart
                               reload, aiming between them; projectiles: <NumberProjectiles> per shot
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
-auraStacking [log]            <NoStack> and <ForbidUnitType> on any aura
+auraStacking [log]            <ForbidUnitType> on any aura
 dataLint [log] [file]         while the data loads, says what it asks for and the game drops
 resourceGatherAuras [log]     ModifyType names for one kind of target or one resource
 resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0

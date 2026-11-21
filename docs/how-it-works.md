@@ -2094,11 +2094,27 @@ itself and jumps to `0x696C75`.
 
 The ring is a model of the table the tactics parser fills: 0x58F68F gives the ID of `effects\uhc_rings\range_<N>.xml`, as
 0x5FC91C does for `<ModelAttachment>`, and 0x58E506 the ID of the bone `bonethatdoesntexist`, as 0x5FC8EE does, which puts
-it at the unit's feet. A world tick, four times a second of game time, compares the selection of 0x453B28 with the units
-that hold a ring, and hangs or removes it through the functions of the stock aura update.
+it at the unit's feet. A world tick, ten times a second of game time, compares the selection of 0x453B28 and the Alt state
+with the units that hold rings, and hangs or removes them through the functions of the stock aura update.
 
-**Why it is safe.** Nothing here reaches the simulation: the selection is local and is only read, and a model is a visual
-of the unit. The tick walks the selection and its own map, never the world's units.
+**Alt** is the game's own query, the one the HP bar chunk makes at 0x452EA0..0x452EB3: `[[[0C66244h]+74h]+2Ch]`, its vtable
++34h with 2 (0 is Shift, 1 Ctrl). A posted `WM_KEYDOWN` of `VK_MENU` sets it, so a copy in the background can be tested.
+
+**The radii** come from the unit's current tactic, `[[unit+58h]+0A8h]`, an index into the tactics `[[proto+44h]+10h]` of the
+player's proto: its action entries are 12 bytes at `[tactic+44h]` (count `+48h`), `+4` the index of the action in
+`[[tactic]+1Ch]`, as the attack list 0x487EEE reads them. An action counts when bit 0 (active) and bit 0Ah (`<RangedLogic>`,
+set by its handler 0x5FAC6D) of `[action+64h]` are set; its range is 0x4946D6(action, −1), the entry the stat panel shows. The
+player's copy is read every tick, so a range tech shows at once. A tactic with no ranged attack (a cannon limbered to move)
+takes the ranged attacks of all the unit's tactics. Each radius goes to the nearest ring size; equal sizes share a ring;
+at most 4 rings a unit, the largest first, and 75 units with rings, the longest ranges first.
+
+**`<Flag>AlwaysDisplayRange</Flag>`.** The proto flag parser 0x5F640A (`stdcall(proto, name)`) compares the name with each
+flag it knows, through the string compare 0x4028B4, and returns with nothing for any other name. The key replaces the call of
+its last compare, 0x5F726F, with a hook that runs the compare and, when it does not match, hands the name to the key.
+
+**Why it is safe.** Nothing here reaches the simulation: the selection and the keyboard are local and only read, and a model is
+a visual of the unit. The tick walks the selection and its own map, never the world's units. The flag hook returns the
+compare's own result, so the parser goes on exactly as before.
 
 ### wonderPanelSkipAuras
 
@@ -3710,14 +3726,21 @@ visual of the unit, so nothing reaches the simulation, and no tick walks the who
 
 ### auraStacking
 
-The aura update FUN_009D033E sends each unit it does not hold through the filter 0x9D0238, at one call, 0x9D0633, which the key wraps.
-A modifier does not say which aura made it, so right after the apply, at 0x9D0675, the key writes the aura's mark in `[modifier+84h]`,
-a field stock saves and loads and does not read. `<NoStack>` refuses a target that holds that mark. A refused target stays out of the
-action's list, so every update of every carrier asks again, and a dead carrier's modifier goes with it. `unitResourceAuras` makes no
-modifier: its take asks `AuraClaim`.
+The aura update FUN_009D033E sends each unit it does not hold through the filter 0x9D0238, at one call, 0x9D0633, which the key wraps:
+`<ForbidUnitType>` (or `<ForbidAbstractType>`) refuses a target of that type. A refused target stays out of the action's list, so every
+update asks again.
 
-**Why it is safe.** The mark lives in game state, so every machine and a saved game see the same thing, and the filter runs only for
-targets the action does not hold yet.
+That several carriers of one aura do not multiply is stock: `<ModifyExclusive>` is action flag 21h, passed to the creator 0x4DD22D and
+kept as the modifier's state bit 16h, and the stat sum 0x4B3C7D stops after an exclusive modifier. Each carrier still gives each target
+its modifier, so when one carrier dies the others' modifiers are already there. Measured in game (2026-11-21): five carriers of a ×1.5
+Speed aura with the tag gave villagers 6.0 m/s from 4.0 (×1.5), five without it gave the Explorer 34.17 from 4.5 (×1.5⁵);
+`buildingWorkRateAuras` and `resourceGatherAuras` sum with 0x4B3C7D, so the tag holds there too (×2 against ×32). The key's first
+version had its own `<NoStack>`, with a mark in `[modifier+84h]` written by a hook at 0x9D0675; both are gone, and the tag is logged
+as retired. `unitResourceAuras` makes no modifier: its take asks `AuraClaim`, which gives each target one payer when the aura's action
+has flag 21h, with the key on or off.
+
+**Why it is safe.** The filter runs only for targets the action does not hold yet and reads only data and the target's proto, the
+same on every machine. `AuraClaim` decides by unit IDs and game time.
 
 ### snareValues
 
@@ -4217,7 +4240,7 @@ from the same tail, after the fill placed the portraits.
 | Builder factor 0x9C4C0C (`BuilderFactor`), BuildInfo add 0x9C4BE3 / 0x7ADE95 (`BuildPointsAddCall`, `BuildPointsAdd`) | none | none | 0x9C4C0C reads the worker list and the civ records; for type-59h protos it calls 0x4EC7B4, which rebuilds its own static list 0xD6F6F8 (count reset to 0 on each call, read only inside it): scratch of that function, not state another step reads. Same thread as the tick, never nested in it |
 | BuildingWorkRate getter 0x9BFE33 | `liveBuildingWorkRate` (head), `buildingWorkRateAuras` (four calls), `noTrainNearEnemyTC` (the Train call) | — | Not read: it is the train and research rate, not the build rate |
 | Regeneration FUN_004905E1: head 0x4905E1 and the rate read 0x4907FF..0x49081D (`RegenPlayerHead`, `RegenRateRead`) | `overhealDecay` replaces the add's call 0x49087C (`RegenAddHp`), after the read; `danceBonusCivs` hooks the dance getter 0x49048B, another function | none | No shared byte. `overhealDecay` changes what the add does above max HP, not the rate. The dance's regeneration is a separate source, not shown |
-| `buildingWorkRateAuras`' `Factor`, `resourceGatherAuras`' `StatFactor` | `auraStacking` (`AuraClaim`) decides which modifiers a unit gets | — | They walk the unit's modifiers read-only (`modifiers.h`) and sum them with the stock 0x4B3C7D, as the keys' hooks do, so stacking is already in what they read. Their scratch vector is the key's own, used on the same thread, never during a walk |
+| `buildingWorkRateAuras`' `Factor`, `resourceGatherAuras`' `StatFactor` | `auraStacking`'s filter decides which modifiers a unit gets | — | They walk the unit's modifiers read-only (`modifiers.h`) and sum them with the stock 0x4B3C7D, as the keys' hooks do, so stacking is already in what they read. Their scratch vector is the key's own, used on the same thread, never during a walk |
 | `unitResourceAuras`' aura states | `AuraClaim` (asked before each take) | — | The update writes its takes after the claim; the panel only reads the map. The aura update and `AuraClaim` are never called from the panel |
 | Data refs `uhcBuildTime`, `uhcBuildProgress`, `uhcBuildRate`, `uhcRegen`, `uhcAuras` | `AddDataRef` has no other user | — | Appended after the 116 stock names, none of which starts with `uhc`; the five are new in the key's own list |
 | Stack portraits (2026-11-17): the fill's head 0x4C9458..0x4C9481, its Big0 choice 0x4C9587..0x4C95C7, the list append 0x4C979A..0x4C97B4, the layout call 0x4C7DB3..0x4C7DC0 and the layout 0x4C8F49..0x4C91EB (`StackFillReset`, `StackFillCurrent`, `StackFillAppend`, `StackLayoutCall`, `StackLayout`); the any-type gadget lookup 0x404296 (`GadgetLookupAny`, called, not hooked) | none of our sites is in these ranges; the shared tail hook 0x4C8281 (`AddUnitPanelTail`) and `overhealHitpointBars`' 0x4C83DF come after the layout in the same fill and only read | none: the other DLL's runtime patch list (287 ranges) and a second DLL's patches (0x761BF0, 0x661E15, 0x9AC7E8, 0x9B6655, 0x69920E..0x69922C) have no byte there | Read only, at the tail of the same fill that placed the buttons: the list `[panel+2CCh]`, `[panel+36Ch]`, `[panel+324h]` and the gadgets' rectangles and flags. Nothing is moved, shown or hidden but the key's own gadgets. A mismatch turns off only the portrait rule (logged); `<avoid>` keeps working |

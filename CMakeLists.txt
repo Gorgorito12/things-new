@@ -255,6 +255,7 @@ set(UHC_SOURCES
   src/hooks/sharedlimit_hooks.asm
   src/hooks/pillage_hooks.asm
   src/hooks/aurastacking_hooks.asm
+  src/hooks/displayrange_hooks.asm
   src/hooks/trainbatch_hooks.asm
   src/hooks/killobservers_hooks.asm
   src/hooks/researchpay_hooks.asm
