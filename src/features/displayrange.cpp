@@ -1,18 +1,34 @@
-// displayedRange: a selected unit with <DisplayRange>1</DisplayRange> shows a ring of the radius of
-// <DisplayedRange>N</DisplayedRange> on the ground, the ring of tools/rings nearest to N.
+// displayedRange: a selected unit shows its range on the ground while Alt is held, one ring per ranged attack.
 //
-// The ring is a model of the table the tactics parser uses: 0x58F68F gives the ID of a path (0x5FC91C) and
-// 0x58E506 the ID of a bone name (0x5FC8EE), and the model goes on the unit as the stock aura update does
-// (0x9D054A..0x9D059C). A world tick compares the local selection (0x453B28: IDs [group+10h], count
-// [group+14h]) with the units that hold a ring. Display only: a model is a visual of the unit, the selection
-// is this machine's, and nothing here reaches the simulation.
+// Proto data:
+//   <DisplayRange>1</DisplayRange>              the unit shows its rings when it is selected and Alt is held;
+//   <AlwaysDisplayRange>1</AlwaysDisplayRange>  (or <Flag>AlwaysDisplayRange</Flag>) it shows them whenever it is
+//                                               selected, without Alt;
+//   <DisplayedRange>N</DisplayedRange>          a fixed radius instead of the attacks', repeatable.
+// With no <DisplayedRange>, the radii are the MaxRange (0x4946D6 with key -1, as the stat panel reads it) of each
+// active action of the unit's current tactic with the ranged flag 0Ah (<RangedLogic>), read from the player's copy,
+// so range techs show at once. Each radius is drawn as the ring of tools/rings nearest to it; two attacks on one
+// ring share it.
+//
+// Alt is the game's own query, the one the HP bar chunk makes (0x452EA0..0x452EB3: [[[0C66244h]+74h]+2Ch], vtable
+// +34h with 2). The ring is a model of the table the tactics parser uses (0x58F68F, 0x58E506), hung on the unit as
+// the stock aura update does. A world tick every 100 ms compares the local selection (0x453B28: IDs [group+10h],
+// count [group+14h]) and the Alt state with the rings the units hold. Display only: a model is a visual of the unit,
+// the selection and the keyboard are this machine's, and nothing here reaches the simulation.
+//
+// <Flag>: the proto flag parser 0x5F640A (stdcall(proto, name)) compares the name with each flag it knows and
+// returns with nothing for any other name. Its last compare, the call 0x5F726F of the string compare 0x4028B4, is
+// redirected: the compare runs, and a name it does not match is offered to this key.
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <cwchar>
 #include <map>
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include "../features.h"
 #include "../generated/sites.h"
@@ -23,41 +39,75 @@
 #include "../unittypes.h"
 #include "../worldtick.h"
 
+extern "C" {
+void UhcProtoFlagCompareHook();
+std::uint32_t g_uhcStringCompare = 0x004028B4;
+}
+
 namespace {
 
 constexpr std::uint32_t kGameGlobal = 0x00C66234;
-constexpr std::uint32_t kTickMs = 250;
-constexpr std::int32_t kRadii[] = {4, 6, 8, 10, 12, 14, 16, 20, 24, 30};  // the sizes aoe3-blender-tools' make_rings.py writes
+constexpr std::uint32_t kInputGlobal = 0x00C66244;  // [[+74h]+2Ch]: the object the Alt query asks
+constexpr std::uint32_t kTickMs = 100;
+constexpr std::uint32_t kRangedFlag = 0x0A;  // <RangedLogic> (0x5FAC6D), the bit the stat panel tests for a range
+// Measured (perfprobe, 2026-11-21, 50 selected units on screen, render time a frame): 100 rings 6.6 ms against 6.0
+// with the key off, 200 rings 8.0 against 7.6, inside the noise of the runs (0.6 ms). The caps keep a big selection
+// readable: at most 4 rings a unit and 60 in all, the units with the longest ranges first.
+constexpr std::size_t kMaxRingsPerUnit = 4;
+constexpr std::size_t kMaxRings = 60;
+// The sizes aoe3-blender-tools' make_rings.py writes (RANGES).
+constexpr std::int32_t kRadii[] = {4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 45, 50, 60, 70, 80, 100};
 
 using SelectionFn = const char*(__cdecl*)();
 using UnitByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
+using RangeFn = float(__thiscall*)(const char* action, std::int32_t key);
+using KeyQueryFn = bool(__thiscall*)(void* input, std::int32_t key);
 
 const auto kSelection = reinterpret_cast<SelectionFn>(0x00453B28);
 const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
+const auto kRange = reinterpret_cast<RangeFn>(0x004946D6);
 
 struct Range {
-  bool show = false;
-  float metres = 0.0f;
+  bool show = false;    // <DisplayRange>
+  bool always = false;  // <AlwaysDisplayRange>
+  std::vector<float> fixed;  // <DisplayedRange>, each
 };
 
 std::unordered_map<std::int32_t, Range> g_protos;  // by proto ID; the load fills it
 std::map<std::int32_t, std::int32_t> g_models;     // by radius; -1: not in the game
-std::map<std::int32_t, std::int32_t> g_hung;       // by unit ID: the model on it
+std::map<std::int32_t, std::vector<std::int32_t>> g_hung;  // by unit ID: the models on it
 std::int32_t g_bone = -2;
 const char* g_world = nullptr;
 std::uint32_t g_nextTick = 0;
+bool g_lastAlt = false;
 bool g_log = false;
+int g_logLines = 0;
+constexpr int kMaxLogLines = 200;
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
   return *reinterpret_cast<const T*>(base + offset);
 }
 
+bool Bit(const char* object, std::uint32_t offset, std::uint32_t bit) {
+  if (Field<std::uint32_t>(object, offset + 4) <= bit) {
+    return false;
+  }
+  const auto* bytes = Field<const std::uint8_t*>(object, offset);
+  return bytes != nullptr && (bytes[bit >> 3] & (1u << (bit & 7))) != 0;
+}
+
 const wchar_t* NodeText(const char* node) { return *reinterpret_cast<const wchar_t* const*>(node + 0x14); }
 
+bool On(const wchar_t* text) { return text == nullptr || text[0] == L'\0' || _wtoi(text) != 0; }
+
 bool __cdecl ReadShow(void*, const char* node, char* proto) {
-  const wchar_t* text = NodeText(node);
-  g_protos[Field<std::int32_t>(proto, 0x04)].show = text == nullptr || text[0] == L'\0' || _wtoi(text) != 0;
+  g_protos[Field<std::int32_t>(proto, 0x04)].show = On(NodeText(node));
+  return true;
+}
+
+bool __cdecl ReadAlways(void*, const char* node, char* proto) {
+  g_protos[Field<std::int32_t>(proto, 0x04)].always = On(NodeText(node));
   return true;
 }
 
@@ -65,7 +115,7 @@ bool __cdecl ReadMetres(void*, const char* node, char* proto) {
   const wchar_t* text = NodeText(node);
   const float metres = text == nullptr ? 0.0f : std::wcstof(text, nullptr);
   if (metres > 0.0f) {
-    g_protos[Field<std::int32_t>(proto, 0x04)].metres = metres;
+    g_protos[Field<std::int32_t>(proto, 0x04)].fixed.push_back(metres);
   } else {
     uhc::Log(L"displayedRange: proto %d: <DisplayedRange> needs a number above 0, ignored", Field<std::int32_t>(proto, 0x04));
   }
@@ -77,15 +127,31 @@ void NewDatabase(char*) {
   g_models.clear();
   g_hung.clear();
   g_bone = -2;
+  g_logLines = 0;
 }
 
-std::int32_t ModelFor(float metres) {
+bool AltHeld() {
+  const char* root = *reinterpret_cast<const char* const*>(kInputGlobal);
+  const char* inner = root == nullptr ? nullptr : Field<const char*>(root, 0x74);
+  char* input = inner == nullptr ? nullptr : Field<char*>(inner, 0x2C);
+  if (input == nullptr || Field<const void*>(input, 0) == nullptr) {
+    return false;
+  }
+  const auto query = Field<KeyQueryFn>(Field<const char*>(input, 0), 0x34);
+  return query(input, 2);
+}
+
+std::int32_t RingRadius(float metres) {
   std::int32_t radius = kRadii[0];
   for (const std::int32_t candidate : kRadii) {
     if (std::abs(static_cast<float>(candidate) - metres) < std::abs(static_cast<float>(radius) - metres)) {
       radius = candidate;
     }
   }
+  return radius;
+}
+
+std::int32_t ModelFor(std::int32_t radius) {
   const auto found = g_models.find(radius);
   if (found != g_models.end()) {
     return found->second;
@@ -100,14 +166,87 @@ std::int32_t ModelFor(float metres) {
   return model;
 }
 
-void Release(const char* world, std::int32_t id, std::int32_t model) {
-  if (char* unit = const_cast<char*>(kUnitById(world, id))) {
-    uhc::RemoveUnitModel(unit, model);
-  }
-  if (g_log) {
-    uhc::Log(L"displayedRange: ring off unit %d", id);
+// The ranged attacks of one tactic, as the attack list 0x487EEE reads them: 12-byte entries at [tactic+44h] (count
+// +48h), +4 the index of the action in the set [tactic+0] (actions [set+1Ch], count +20h); an action counts when it is
+// active (bit 0 of [action+64h]), has the ranged flag and a range entry.
+void TacticRadii(const char* tactic, std::vector<std::int32_t>& radii) {
+  const char* owner = Field<const char*>(tactic, 0x00);
+  const char* entries = Field<const char*>(tactic, 0x44);
+  const std::int32_t count = Field<std::int32_t>(tactic, 0x48);
+  const auto* actions = owner == nullptr ? nullptr : Field<const char* const*>(owner, 0x1C);
+  const std::int32_t actionCount = owner == nullptr ? 0 : Field<std::int32_t>(owner, 0x20);
+  for (std::int32_t i = 0; i < count && entries != nullptr && actions != nullptr; ++i) {
+    const std::int32_t which = Field<std::int32_t>(entries, 12 * i + 4);
+    if (which < 0 || which >= actionCount) {
+      continue;
+    }
+    const char* action = actions[which];
+    if (action == nullptr || !Bit(action, 0x64, 0) || !Bit(action, 0x64, kRangedFlag) ||
+        Field<std::int32_t>(action, 0x1C) <= 0) {
+      continue;
+    }
+    const float metres = kRange(action, -1);
+    if (metres > 0.5f) {
+      radii.push_back(RingRadius(metres));
+    }
   }
 }
+
+// The rings the unit wants, largest first, at most kMaxRingsPerUnit: the fixed <DisplayedRange> values, or the ranged
+// attacks of its current tactic ([mgr+0A8h], an index into the player's proto's tactics [[proto+44h]+10h], count
+// +14h); a tactic with none (an artillery piece limbered to move) takes those of all its tactics, the attacks it
+// unlimbers to.
+std::vector<std::int32_t> WantedRadii(const char* unit, const Range& range) {
+  std::vector<std::int32_t> radii;
+  if (!range.fixed.empty()) {
+    for (const float metres : range.fixed) {
+      radii.push_back(RingRadius(metres));
+    }
+  } else {
+    const char* proto = Field<const char*>(unit, 0x5C);
+    const char* manager = Field<const char*>(unit, 0x58);
+    const char* set = proto == nullptr ? nullptr : Field<const char*>(proto, 0x44);
+    const auto* tactics = set == nullptr ? nullptr : Field<const char* const*>(set, 0x10);
+    const std::int32_t count = set == nullptr ? 0 : Field<std::int32_t>(set, 0x14);
+    if (manager != nullptr && tactics != nullptr) {
+      const std::int32_t index = Field<std::int32_t>(manager, 0xA8);
+      if (index >= 0 && index < count && tactics[index] != nullptr) {
+        TacticRadii(tactics[index], radii);
+      }
+      for (std::int32_t i = 0; radii.empty() && i < count; ++i) {
+        if (tactics[i] != nullptr) {
+          TacticRadii(tactics[i], radii);
+        }
+      }
+    }
+  }
+  std::sort(radii.begin(), radii.end(), [](std::int32_t a, std::int32_t b) { return a > b; });
+  radii.erase(std::unique(radii.begin(), radii.end()), radii.end());
+  if (radii.size() > kMaxRingsPerUnit) {
+    radii.resize(kMaxRingsPerUnit);
+  }
+  return radii;
+}
+
+void Release(const char* world, std::int32_t id, const std::vector<std::int32_t>& models) {
+  if (char* unit = const_cast<char*>(kUnitById(world, id))) {
+    for (const std::int32_t model : models) {
+      uhc::RemoveUnitModel(unit, model);
+    }
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"displayedRange: rings off unit %d", id);
+  }
+}
+
+struct Want {
+  std::int32_t id;
+  char* unit;
+  std::vector<std::int32_t> models;
+  std::vector<std::int32_t> radii;  // each model's
+  std::int32_t largest;
+};
 
 void Tick(char* world, std::int32_t) {
   const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
@@ -124,54 +263,113 @@ void Tick(char* world, std::int32_t) {
     return;
   }
   g_nextTick = now + kTickMs;
+  const bool alt = AltHeld();
+  if (g_log && alt != g_lastAlt && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"displayedRange: Alt %ls", alt ? L"held" : L"released");
+  }
+  g_lastAlt = alt;
 
-  std::set<std::int32_t> wanted;
+  std::vector<Want> wants;
   const char* selection = kSelection();
   const std::int32_t count = selection == nullptr ? 0 : Field<std::int32_t>(selection, 0x14);
   const auto* ids = selection == nullptr ? nullptr : Field<const std::int32_t*>(selection, 0x10);
   for (std::int32_t i = 0; i < count && ids != nullptr; ++i) {
-    wanted.insert(ids[i]);
-  }
-  for (auto it = g_hung.begin(); it != g_hung.end();) {
-    if (wanted.count(it->first) != 0) {
-      ++it;
-      continue;
-    }
-    Release(world, it->first, it->second);
-    it = g_hung.erase(it);
-  }
-  for (const std::int32_t id : wanted) {
-    if (g_hung.count(id) != 0) {
-      continue;
-    }
-    char* unit = const_cast<char*>(kUnitById(world, id));
+    char* unit = const_cast<char*>(kUnitById(world, ids[i]));
     const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
     if (proto == nullptr) {
       continue;
     }
     const auto found = g_protos.find(Field<std::int32_t>(proto, 0x04));
-    if (found == g_protos.end() || !found->second.show || found->second.metres <= 0.0f) {
+    if (found == g_protos.end() || !(found->second.always || (found->second.show && alt))) {
       continue;
     }
-    const std::int32_t model = ModelFor(found->second.metres);
-    if (model == -1) {
+    Want want{ids[i], unit, {}, {}, 0};
+    for (const std::int32_t radius : WantedRadii(unit, found->second)) {
+      const std::int32_t model = ModelFor(radius);
+      if (model != -1) {
+        want.models.push_back(model);
+        want.radii.push_back(radius);
+        want.largest = std::max(want.largest, radius);
+      }
+    }
+    if (!want.models.empty()) {
+      wants.push_back(std::move(want));
+    }
+  }
+  std::stable_sort(wants.begin(), wants.end(), [](const Want& a, const Want& b) { return a.largest > b.largest; });
+  std::size_t budget = kMaxRings;
+  for (Want& want : wants) {  // each unit's rings are largest first
+    const std::size_t keep = std::min(budget, want.models.size());
+    want.models.resize(keep);
+    want.radii.resize(keep);
+    budget -= keep;
+  }
+  std::erase_if(wants, [](const Want& want) { return want.models.empty(); });
+
+  std::map<std::int32_t, const Want*> byId;
+  for (const Want& want : wants) {
+    byId[want.id] = &want;
+  }
+  for (auto it = g_hung.begin(); it != g_hung.end();) {
+    const auto wanted = byId.find(it->first);
+    if (wanted == byId.end()) {
+      Release(world, it->first, it->second);
+      it = g_hung.erase(it);
       continue;
     }
-    if (g_bone == -2) {
-      g_bone = uhc::NoBone();
+    // Rings the unit no longer wants (a tactic or a tech changed its attacks).
+    std::vector<std::int32_t> keep;
+    char* unit = wanted->second->unit;
+    for (const std::int32_t model : it->second) {
+      if (std::find(wanted->second->models.begin(), wanted->second->models.end(), model) !=
+          wanted->second->models.end()) {
+        keep.push_back(model);
+      } else {
+        uhc::RemoveUnitModel(unit, model);
+      }
     }
-    const uhc::ModelHang hang = uhc::HangUnitModel(unit, model, g_bone);
-    if (hang == uhc::ModelHang::kHung || hang == uhc::ModelHang::kNotInGame) {
-      g_hung[id] = model;
-      if (g_log) {
-        uhc::Log(L"displayedRange: ring of %.1f m on unit %d (%hs)", static_cast<double>(found->second.metres), id,
-                 Field<const char*>(proto, 0x10));
+    it->second = std::move(keep);
+    ++it;
+  }
+  if (g_bone == -2 && !wants.empty()) {
+    g_bone = uhc::NoBone();
+  }
+  for (const Want& want : wants) {
+    std::vector<std::int32_t>& hung = g_hung[want.id];
+    for (std::size_t k = 0; k < want.models.size(); ++k) {
+      const std::int32_t model = want.models[k];
+      if (std::find(hung.begin(), hung.end(), model) != hung.end()) {
+        continue;
+      }
+      const uhc::ModelHang hang = uhc::HangUnitModel(want.unit, model, g_bone);
+      if (hang == uhc::ModelHang::kHung || hang == uhc::ModelHang::kNotInGame) {
+        hung.push_back(model);
+        if (g_log && g_logLines < kMaxLogLines) {
+          ++g_logLines;
+          uhc::Log(L"displayedRange: ring of %d m on unit %d (%hs)%ls", want.radii[k], want.id,
+                   Field<const char*>(Field<const char*>(want.unit, 0x5C), 0x10), alt ? L", Alt held" : L"");
+        }
       }
     }
   }
 }
 
 }  // namespace
+
+extern "C" {
+
+// From the flag parser's last compare: a name no stock flag matched.
+void __stdcall UhcUnknownProtoFlag(const char* proto, const char* name) {
+  if (proto == nullptr || name == nullptr || _stricmp(name, "AlwaysDisplayRange") != 0) {
+    return;
+  }
+  g_protos[Field<std::int32_t>(proto, 0x04)].always = true;
+  if (g_log) {
+    uhc::Log(L"displayedRange: proto %hs: <Flag>AlwaysDisplayRange</Flag>", Field<const char*>(proto, 0x10));
+  }
+}
+}
 
 namespace uhc {
 
@@ -187,13 +385,16 @@ Outcome ApplyDisplayedRange(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("displayedRange", {&sites::kCurrentSelectionGroup, &sites::kUnitById}) ||
-      !VerifyUnitModels("displayedRange") ||
-      !AddProtoTagHandler("DisplayRange", &ReadShow) || !AddProtoTagHandler("DisplayedRange", &ReadMetres) ||
-      !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick)) {
+  if (!VerifyAll("displayedRange", {&sites::kCurrentSelectionGroup, &sites::kUnitById, &sites::kAltQuery,
+                                    &sites::kActionRangeByKey, &sites::kProtoFlagLastCompare}) ||
+      !VerifyUnitModels("displayedRange") || !AddProtoTagHandler("DisplayRange", &ReadShow) ||
+      !AddProtoTagHandler("DisplayedRange", &ReadMetres) || !AddProtoTagHandler("AlwaysDisplayRange", &ReadAlways) ||
+      !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick) ||
+      !WriteCall(sites::kProtoFlagLastCompare.va + 6, reinterpret_cast<const void*>(&UhcProtoFlagCompareHook))) {
     return Outcome::kFailed;
   }
-  Log(L"displayedRange: the proto tags DisplayRange and DisplayedRange are on");
+  Log(L"displayedRange: rings while Alt is held (<DisplayRange>) or always (<AlwaysDisplayRange>), one per ranged "
+      L"attack or <DisplayedRange>");
   return Outcome::kApplied;
 }
 

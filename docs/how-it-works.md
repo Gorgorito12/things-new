@@ -1993,11 +1993,27 @@ itself and jumps to `0x696C75`.
 
 The ring is a model of the table the tactics parser fills: 0x58F68F gives the ID of `effects\uhc_rings\range_<N>.xml`, as
 0x5FC91C does for `<ModelAttachment>`, and 0x58E506 the ID of the bone `bonethatdoesntexist`, as 0x5FC8EE does, which puts
-it at the unit's feet. A world tick, four times a second of game time, compares the selection of 0x453B28 with the units
-that hold a ring, and hangs or removes it through the functions of the stock aura update.
+it at the unit's feet. A world tick, ten times a second of game time, compares the selection of 0x453B28 and the Alt state
+with the units that hold rings, and hangs or removes them through the functions of the stock aura update.
 
-**Why it is safe.** Nothing here reaches the simulation: the selection is local and is only read, and a model is a visual
-of the unit. The tick walks the selection and its own map, never the world's units.
+**Alt** is the game's own query, the one the HP bar chunk makes at 0x452EA0..0x452EB3: `[[[0C66244h]+74h]+2Ch]`, its vtable
++34h with 2 (0 is Shift, 1 Ctrl). A posted `WM_KEYDOWN` of `VK_MENU` sets it, so a copy in the background can be tested.
+
+**The radii** come from the unit's current tactic, `[[unit+58h]+0A8h]`, an index into the tactics `[[proto+44h]+10h]` of the
+player's proto: its action entries are 12 bytes at `[tactic+44h]` (count `+48h`), `+4` the index of the action in
+`[[tactic]+1Ch]`, as the attack list 0x487EEE reads them. An action counts when bit 0 (active) and bit 0Ah (`<RangedLogic>`,
+set by its handler 0x5FAC6D) of `[action+64h]` are set; its range is 0x4946D6(action, −1), the entry the stat panel shows. The
+player's copy is read every tick, so a range tech shows at once. A tactic with no ranged attack (a cannon limbered to move)
+takes the ranged attacks of all the unit's tactics. Each radius goes to the nearest ring size; equal sizes share a ring;
+at most 4 rings a unit, the largest first, and 75 units with rings, the longest ranges first.
+
+**`<Flag>AlwaysDisplayRange</Flag>`.** The proto flag parser 0x5F640A (`stdcall(proto, name)`) compares the name with each
+flag it knows, through the string compare 0x4028B4, and returns with nothing for any other name. The key replaces the call of
+its last compare, 0x5F726F, with a hook that runs the compare and, when it does not match, hands the name to the key.
+
+**Why it is safe.** Nothing here reaches the simulation: the selection and the keyboard are local and only read, and a model is
+a visual of the unit. The tick walks the selection and its own map, never the world's units. The flag hook returns the
+compare's own result, so the parser goes on exactly as before.
 
 ### wonderPanelSkipAuras
 

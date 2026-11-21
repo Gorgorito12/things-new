@@ -2130,17 +2130,27 @@ Code: [gathering](porting-code/gathering.md#truckattackresourcefix).
 Code: [gathering](porting-code/gathering.md#displayedrange). It needs `AddProtoTagHandler`, `AddWorldTick`,
 `OnDatabaseLoad` and the models on a unit, `unitmodels.*`, in the [helpers](porting-code/helpers.md).
 
-- **No site of its own.** The tags `<DisplayRange>` and `<DisplayedRange>` come through the shared proto tag hook
-  (`0x51DB0F`); a world tick does the rest. Verify only the selection `0x453B28` (`CurrentSelectionGroup`), the unit by ID
-  `0x44CC6D` and the model functions (`VerifyUnitModels`).
-- **The tick,** four times a second of game time, for the game's world only: it compares the local selection of
-  `0x453B28` (IDs `[group+10h]`, count `[group+14h]`) with the units that hold a ring. A selected unit whose proto has
-  both tags gets the model `effects\uhc_rings\range_<N>.xml`, N the radius nearest to `<DisplayedRange>` among 4, 6, 8,
-  10, 12, 14, 16, 20, 24 and 30, on the bone `bonethatdoesntexist` (at its feet); a unit that leaves the selection loses
-  it. A model that is not in the game is skipped.
-- **Changes:** only what the local player sees: the selection is only read, and a model is a visual of the unit.
-- **Test:** with the ring files in `art\effects\uhc_rings`, select a unit with both tags: the ring is at its feet, and
-  goes when the unit is deselected.
+- **Tags:** `<DisplayRange>`, `<AlwaysDisplayRange>` and `<DisplayedRange>` (repeatable) come through the shared proto tag
+  hook (`0x51DB0F`).
+- **`<Flag>AlwaysDisplayRange</Flag>`:** the `call 4028B4h` at `0x5F726F` (`E8 40 B6 E0 FF`), the last string compare of
+  the proto flag parser `0x5F640A` (`stdcall(proto, name)`, `ret 8`), goes to `UhcProtoFlagCompareHook`: it calls the
+  compare with the same two arguments and, when it returns non-zero, passes the proto (`[esp+14h]` at entry) and the name
+  (`[esp+8]`) to the key, then returns the compare's result. Verify `0x5F7269..0x5F7283` (`ProtoFlagLastCompare`): the
+  pushes, the call, `add esp,8 / test eax,eax / je`, and `pop esi / ret 8`.
+- **Verify only:** the selection `0x453B28` (`CurrentSelectionGroup`), the unit by ID `0x44CC6D`, the Alt query of the HP
+  bar chunk `0x452EA0` (`AltQuery`, 24 bytes), the range getter `0x4946D6` (`ActionRangeByKey`, `float
+  thiscall(action, key)`, `ret 4`) and the model functions (`VerifyUnitModels`).
+- **The tick,** ten times a second of game time, for the game's world only. Alt is `[[[0C66244h]+74h]+2Ch]`'s vtable `+34h`
+  called with 2. A selected unit whose proto has `<AlwaysDisplayRange>`, or `<DisplayRange>` while Alt is held, gets one
+  model `effects\uhc_rings\range_<N>.xml` per radius, N the ring size nearest to it (4 to 100 m, `kRadii`), on the bone
+  `bonethatdoesntexist` (at its feet). The radii are the `<DisplayedRange>` values, or the range `0x4946D6(action, -1)` of
+  each active action (bit 0 of `[action+64h]`) with bit 0Ah (`<RangedLogic>`) in the unit's current tactic
+  (`[[unit+58h]+0A8h]` into `[[proto+44h]+10h]`; entries of 12 bytes at `[tactic+44h]`, `+4` the index into
+  `[[tactic]+1Ch]`), or in all its tactics when the current one has none. At most 4 rings a unit and 60 in all, the
+  units with the longest ranges first. A unit that leaves the selection, or whose Alt is released, loses its rings.
+- **Changes:** only what the local player sees: the selection and the keyboard are only read, and a model is a visual.
+- **Test:** with the ring files in `art\effects\uhc_rings`, select a fort with `<DisplayRange>1`: no ring; hold Alt: a 40 m
+  and a 26 m ring; release Alt: none. A unit with `<AlwaysDisplayRange>1` shows its rings without Alt.
 
 ### showGatherRate
 

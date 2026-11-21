@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Saturday 2026-11-21 12:04 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Saturday 2026-11-21 11:03 | [`auraStacking`](#aurastacking) | Filmed in WoL, with a control. `<ForbidUnitType>` on any aura: the aura leaves units of a type or proto alone; that an aura does not stack is the game's own `<ModifyExclusive>`. | The tags on the aura. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
@@ -97,7 +98,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-06 11:33 | [`maintainWaitForPop`](bug-fixes.md#maintainwaitforpop) | Filmed in WoL, with a control. When a marked building's automatic production finishes a unit while its player is at the population cap, keeps the unit and spawns it as soon as there is room. | The name of an existing type or proto (`TownCenter`, `Factory`), or that unit type on the producing buildings in `protoy.xml`. |
 | Friday 2026-11-06 10:47 | [`doNotQueue`](#donotqueue) | Filmed in WoL, with a control. `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | The tag on the protos that want it. |
 | Friday 2026-11-06 09:06 | [`linkedResource`](#linkedresource) | Filmed in WoL, with a control. A resource building gathers the stock of a mine beside it. | The tags on a resource building of your own. |
-| Friday 2026-11-06 07:32 | [`displayedRange`](#displayedrange) | Added. A selected unit shows a ring of the radius of `<DisplayedRange>`. | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. |
 | Thursday 2026-11-05 15:23 | [`cantBeSlowed`](#cantbeslowed) | Filmed in WoL, with a control. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`. | The type on the protos that want it. |
 | Thursday 2026-11-05 13:29 | [`pillageGold`](#pillagegold) | Added. A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | The type and the tag on the protos. |
 | Thursday 2026-11-05 10:29 | [`accuracyTechs`](#accuracytechs) | Filmed in WoL, with a control. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
@@ -7320,7 +7320,7 @@ What the panels and the fog of war show.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`abilitySlots`](#abilityslots) | Lets the command panel show up to N abilities per unit instead of 6. | **new** | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. | confirmed (single player, UI) |
-| [`displayedRange`](#displayedrange) | A selected unit shows a ring of the radius of `<DisplayedRange>`. | **new** | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. | confirmed |
+| [`displayedRange`](#displayedrange) | A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | **new** | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. | confirmed (single player) |
 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | **new** | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. | confirmed (single player, UI) |
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
@@ -7392,43 +7392,86 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 #### displayedRange
 
-*A selected unit shows a ring on the ground marking its range.*
+*A selected unit shows its range on the ground while Alt is held: one ring per ranged attack.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Friday 2026-11-06 07:32
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Saturday 2026-11-21 12:04
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
-*In WoL, with `displayedRange log` (Ethiopians, test data, a Sawmill with 14 and a Town Center with 20):* the ring shows
-while the building is selected and goes when it is not. [Full video (MP4)](media/displayedRange-wol.mp4).
+*In WoL, with `displayedRange log` (Swedes, a skirmish; test data: `<DisplayRange>1</DisplayRange>` on the Fort, the Falconet and the
+Crossbowman, `<Flag>AlwaysDisplayRange</Flag>` on the Outpost):* the Fort is selected and shows nothing; Alt held, its 40 m anti-ship and 26 m cannon rings; Alt released, none; the Outpost, selected, shows its 40 and 24 m at once, with no Alt; two Crossbowmen with Alt show 16 and 6 m each. The log names each ring. [Full video (MP4)](media/displayedRange-wol.mp4).
 
 ![displayedRange in WoL, key off](media/displayedRange-wol-control.gif)
 
-*In WoL, key off (the same data):* no ring. [Full video (MP4)](media/displayedRange-wol-control.mp4).
+*In WoL, key off (the same data and the same Alt):* no ring; Alt only shows the HP bars, as in stock.
+[Full video (MP4)](media/displayedRange-wol-control.mp4).
 
 ```
 displayedRange [log]
 ```
 
 ```xml
+<Unit name="FortFrontier">
+    <DisplayRange>1</DisplayRange>              <!-- rings while selected and Alt is held -->
+</Unit>
+<Unit name="Outpost">
+    <Flag>AlwaysDisplayRange</Flag>             <!-- or <AlwaysDisplayRange>1</AlwaysDisplayRange>: rings while selected -->
+</Unit>
 <Unit name="WOLSawmill">
     <DisplayRange>1</DisplayRange>
-    <DisplayedRange>14</DisplayedRange>
+    <DisplayedRange>14</DisplayedRange>         <!-- a fixed radius instead of the attacks'; more than one is fine -->
 </Unit>
 ```
 
-- **In WoL today:** nothing shows how far a building's aura reaches.
-- **Effect:** a selected unit with both tags shows a thin white ring on the ground, centred on it, of the radius of
-  `<DisplayedRange>`: the nearest of 4, 6, 8, 10, 12, 14, 16, 20, 24 and 30 m, the sizes in `tools/rings`.
+- **In WoL today:** nothing shows how far a unit shoots or an aura reaches.
+- **When:** a unit with `<DisplayRange>1</DisplayRange>` shows its rings while it is selected and Alt is held (JTMaston,
+  2026-11-21), the key that already shows every HP bar; they go when Alt is released or the unit is deselected.
+  `<AlwaysDisplayRange>1</AlwaysDisplayRange>`, or `<Flag>AlwaysDisplayRange</Flag>`, shows them whenever the unit is
+  selected, Alt or not (the stock flag parser drops a name it does not know; the key catches it).
+- **Which rings:** one per ranged attack (`<RangedLogic>1</RangedLogic>`) of the unit's current tactic, at that attack's
+  `MaxRange` as the player has it now: a tech that adds range moves the ring at once (`Revetment`: the Fort's 26 m ring
+  became 32 m). A Fort shows its 40 m anti-ship attack and its 26 m cannon, an Outpost 40 and 24, a Crossbowman 16 and the
+  6 of its building attack. Two attacks on the same ring size share one ring. A cannon limbered to move has no attack in
+  that tactic, so it shows the attacks of all its tactics (the Falconet's 26). With `<DisplayedRange>` the rings are those
+  values instead.
+- **Sizes:** each radius goes to the nearest ring of `tools/rings`: 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
+  32, 36, 40, 45, 50, 60, 70, 80 and 100 m (aoe3-blender-tools' `make_rings.py`, `RANGES`; the line widens a little on
+  the large ones so it stays visible).
 - **Files:** `range_<metres>.xml`, its particle and its texture, in `art/effects/uhc_rings` for everyone who should see it.
 - **How far an aura reaches:** its `<MaxRange>` goes from the centre of its unit to the edge of the target: a 6.2 m aura
   took trees at 6.0, 6.3 and 7.2 m, and not at 8.9 m. So a small range can stay under a big building's model.
-- **Several units:** each selected unit with the tags shows its own, as long as it is selected.
-- **Multiplayer:** display only: the selection is this machine's and a model is a visual. Every player can have it or not.
-- **Log:** `displayedRange: the proto tags DisplayRange and DisplayedRange are on`, and with `log`
-  `displayedRange: ring of 14.0 m on unit 1 (WOLSawmill)` and `ring off unit 1`.
-- **Performance:** a tick four times a second over the selected units only. Not measured with `perfprobe.py`.
-- **Tested in WoL (2026-11-06):** selecting a Sawmill and a Town Center by console, 14 m and 20 m, on and off in the log and on
-  screen. Not tested: 24 and 30 m, a saved game, multiplayer.
+- **Cost, and the caps:** measured with `perfprobe.py` (2026-11-21, 45 s a case, 50 selected units on screen, the
+  render time of a frame, other games running on the PC):
+
+  | 50 selected units | Rings each | Rings on screen | Render a frame, key on | Key off |
+  |---|---|---|---|---|
+  | Hussar (no tag) | 0 | 0 | 4.45, 3.71, 4.85 ms (three runs) | 3.91 ms |
+  | Rodelero | 1 (12 m) | 50 | 4.35, 4.83 ms | — |
+  | Doppelsoldner | 2 (12, 20 m) | 100, no cap | 6.63 ms | 5.99 ms |
+  | Halberdier | 4 (8 to 20 m) | 200, no cap | 7.98 ms | 7.59 ms |
+  | Doppelsoldner | 2 | 60, the cap | 5.31 ms | 5.99 ms |
+  | Halberdier | 4 | 60, the cap | 6.88 ms | 7.59 ms |
+
+  The differences stay inside the noise between runs of one case (0.6 to 1.1 ms; seven other games ran on the PC); the
+  Halberdiers cost more than the Hussars with the key off too, so it is their models, not the rings. With 1 and 20 units
+  the numbers were the same with 0, 1, 2 and 4 rings. No frame over 100 ms in any capped run.
+
+  So the rings cost nothing measurable. A selection still shows at most 4 rings a unit and 60 in all, the units
+  with the longest ranges first, so that a big selection stays readable.
+- **Multiplayer:** display only: the selection and the keyboard are this machine's, and a model is a visual. Every player
+  can have it or not.
+- **Log:** `displayedRange: applied`, `hook reached: displayedRange: proto flag parser's last compare (0x5F726F)`, and
+  with `log` `proto Outpost: <Flag>AlwaysDisplayRange</Flag>`, `Alt held`, `ring of 40 m on unit 206 (FortFrontier), Alt
+  held`, `Alt released`, `rings off unit 206`.
+- **Tested in WoL (2026-11-21):** a scenario (Ethiopians) and a skirmish (Swedes), Alt posted to the window as
+  `WM_KEYDOWN` / `WM_KEYUP` of `VK_MENU` (the game reads it from its messages, so no real keyboard was needed):
+  the Fort selected, no ring; Alt, 40 and 26 m; released, none; after `Revetment` the 26 m ring became 32 m; the
+  Outpost (`<Flag>`) 40 and 24 m without Alt; the Falconet (`<AlwaysDisplayRange>1`, limbered) 26 m without Alt;
+  the Musketeer's two `<DisplayedRange>` (12 and 6) only with Alt; a Pikeman with no tag, none; a Frigate 30 m
+  (its ranged and broadside attacks share the ring) and a Caravel 20 m on a water map; 50 selected units with 1, 2
+  and 4 rings each (the table); a game saved and loaded: the Outpost's and the Fort's rings came back; key off: no
+  ring, Alt shows the HP bars only. Not tested: multiplayer, a selection of a building with units (the console
+  route selects one kind at a time).
 
 #### abilitySlots
 

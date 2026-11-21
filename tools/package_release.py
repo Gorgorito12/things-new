@@ -289,7 +289,7 @@ maintainWaitForPop [UnitType] [log]  marked buildings keep a finished auto-produ
 transformUpdatesLOS [log]     units transformed by a tech or revolution get the new LOS
 broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6)
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
-displayedRange [log]          a selected unit with <DisplayRange> shows a ring of <DisplayedRange> m
+displayedRange [log]          a selected unit shows a ring per ranged attack while Alt is held
 steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit
                               instead of jumping with its animations
 inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]   while Alt is held,
