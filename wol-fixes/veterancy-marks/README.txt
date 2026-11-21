@@ -12,6 +12,16 @@ The marks over a unit with a veterancy rank are the five soutache knots of the s
     rank 5   gold     a pointed top loop and two tiers
     No stars. A rank above the fifth keeps rank 5's mark.
 
+Your cfg line is
+
+    veterancyBonus notext
+
+notext (2026-11-21, as you asked) turns off the floating text at a new rank, so it does not clash with your general
+upgrade system. The bonuses, the marks and the rank row in the unit panel stay. notext-test\ shows both, a frame every
+0.5 s in the game at native pixels: notext-on.jpg (no names, the marks go copper, silver, gold) and
+notext-off-control.jpg (the option off: "Veteran", "Elite", "Champion" rise over the Hussars). The blue "+8" in both is
+the game's own text.
+
 Every mark is centred on the unit's HP bar and all five end at the same height above it. Measured in the game, default
 camera, a Crossbowman and a Hussar at the screen's centre: see marks-ingame.png (the offset under each cut).
 

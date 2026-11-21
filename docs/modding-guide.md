@@ -3928,8 +3928,10 @@ Crossbowman: [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame
 Hussars die. [Full video (MP4)](media/veterancyBonus-icons-wol-control.mp4).
 
 ```
-veterancyBonus [log] [file.xml]
+veterancyBonus [notext] [log] [file.xml]
 ```
+
+WoL's line: `veterancyBonus notext` (no floating text at a new rank; the marks and the panel row stay).
 
 ```xml
 <Unit name="Hussar">
@@ -3966,7 +3968,7 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
 - **In WoL today:** no unit changes with its kills. The stock flag `ExperienceUnit` has no reader in the exe. JTMaston's #42.
 - **Effect:** each row says that from that many kills on, the stat is multiplied by that value **in all**: above, damage is
   ×1.5 from the first kill and ×2.0, not ×3.0, from the third. `modifytype` takes every `<ModifyType>` name. A rank is each
-  distinct `kills` value, and reaching one shows `Rank N` over the unit, or the rank's name.
+  distinct `kills` value, and reaching one shows `Rank N` over the unit, or the rank's name (nothing with `notext`).
 - **Default rows (2026-11-11):** a `<VeterancyDefault unittype="...">` of `veterancy.xml` gives its rows to every proto of
   that unit type (an abstract type or a proto name) that has **no** `<VeterancyBonus>` of its own: a proto's own rows replace
   the defaults entirely, they are not added to them. A proto of two listed types takes the first block of the file that it
@@ -3985,7 +3987,7 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   proportion, as with ×.
 - **Rank names and colours (2026-11-11):** `<VeterancyRank rank="N" name="..." color="RRGGBB"/>` names a rank and gives it a
   colour (a leading `#` is accepted). A `name` made of digits is a string ID of the string table (`32485` showed `Hero`).
-  The floating text over the unit shows the name in that colour, and the unit panel's row shows it too, coloured with the
+  The floating text over the unit shows the name in that colour (not with `notext`), and the unit panel's row shows it too, coloured with the
   string table's `<color=r, g, b>` markup (`Legend` in light blue, `6 kills`). A rank with no `<VeterancyRank>` stays
   `Rank N`, in gold. The names are display only.
 - **The file:** missing, it is no error (no defaults, no names); named on the cfg line and missing, or not well-formed XML,
@@ -4031,7 +4033,14 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   `VeterancyEnable` 0 player 1's logged no rank. A tech cannot add or change the rows themselves. A tech that
   changes a stat works with the rows as with any modifier.
 - **Interface:** the rank marks above, the floating text when a rank is reached and the unit panel's row; DE's rank icons in
-  the selection panel are not there. Damage and hit points in the panel are the game's, with the modifiers.
+  the selection panel are not there.
+- **`notext` (2026-11-21):** no floating text when a unit reaches a rank, for a mod whose own upgrades show text over the unit
+  (JTMaston: the rank text clashes with WoL's general upgrade system). The rows, the count, the rank marks and the unit
+  panel's row are unchanged, and the log's first line ends `; no rank text (notext)`. Tested in WoL (2026-11-21, 2
+  `Hussar` against 10 `Crossbowman`, the defaults above, the marks of `tools/rings`): with `notext` the Hussars went
+  through ranks 1 to 5 with their marks (copper, silver, gold) and no name over them; without it, `Veteran`, `Elite` and
+  `Champion` rose over them as before. Both runs `veterancyBonus: applied`, no `FAILED`. The blue `+8` in both is the game's
+  own text, not the key's. Damage and hit points in the panel are the game's, with the modifiers.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data. `Rank N` is local.
 - **Log:** `veterancyBonus: the proto tag VeterancyBonus is on`, `hook reached: killing blows (0x4D4F37)` (the hook it shares with `killSpawn`), and with `log`:
   `veterancyBonus: proto 318: from 1 kills, stat 2 x1.5`, `veterancyBonus: unit 0, proto 318: 3 kills, a new rank, rank 3`,

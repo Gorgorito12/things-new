@@ -2274,6 +2274,10 @@ default whose type its player's copy has (0x44D7FA); no list per proto is kept, 
 lookup runs on a kill, at a transform, in the one walk after a load and in the panel row of one selected unit. Names made of
 digits are string IDs, read with 0x58EA52 when shown; the panel row's colour is the string table's `<color=r, g, b>` markup.
 
+**`notext` (2026-11-21).** The option only skips the two calls of `floatingtext.*` at a new rank, for a mod whose own upgrades
+show their text there. The count, the rows, the mark and the panel row are the same; the string sites stay verified, as the
+rank names and the panel row read them too.
+
 - **Observed in game:** see the tests in the modding guide.
 
 ### snareOnlyHitUnit
