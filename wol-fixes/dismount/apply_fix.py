@@ -157,7 +157,7 @@ def tactics_file(text):
         b = m.group(0)
         i = b.index("\t\t<attacktype>") if "\t\t<attacktype>" in b else b.rindex("\t</tactic>")
         trans = (f"\t\t<transition>\n\t\t\t<tactic>{STANCE}</tactic>\n\t\t\t<action>Limber</action>\n\t\t\t<anim>Dismount</anim>\n"
-                 f"\t\t\t<length>2</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n")
+                 f"\t\t\t<length>2.5</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n")
         text = text[:m.start()] + b[:i] + trans + b[i:] + text[m.end():]
     # 3. the stance on foot, after the last tactic: the name and the first child on one line (a line break after
     #    the name defines the tactic's XS constant twice)
@@ -166,7 +166,7 @@ def tactics_file(text):
             if not any(old in line for old in ACTIONS) and "BuildingAttack" not in line
             and "JezailRangedAttack" not in line]
     back = "".join(f"\t\t<transition>\n\t\t\t<tactic>{t}</tactic>\n\t\t\t<action>Limber</action>\n\t\t\t<anim>Mount</anim>\n"
-                   f"\t\t\t<length>2</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n" for t in MOUNTED)
+                   f"\t\t\t<length>2.5</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n" for t in MOUNTED)
     stance = (f"\t<tactic>{STANCE}\n" + "\n".join(keep) + "\n"
               f"\t\t<action priority=\"100\">{ACTIONS['DefendRangedAttack']}</action>\n"
               f"\t\t<action priority=\"90\">{ACTIONS['MeleeHandAttack']}</action>\n"

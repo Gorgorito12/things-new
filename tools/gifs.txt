@@ -324,4 +324,4 @@ autoScout-back-wol 8 24 2
 autoScout-back-wol-control 8 24 2
 dismount-wol 0 24 2
 dismount-wol-control 0 24 2
-dismount-transitions-wol 0 14 1.2
+dismount-transitions-wol 0 20 1.6

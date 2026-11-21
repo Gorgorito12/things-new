@@ -8360,7 +8360,8 @@ on, made by aoe3-blender-tools' `tools/make_dismount.py` from the game's infantr
 *In WoL, with `wol-fixes/dismount` (French against a German AI, four Chasseurs a Cheval, crossbowmen coming; the
 stance set by console, the command the buttons send):* the riders get off on the horses' left side and stand
 beside them, then walk and fire on foot with the horses beside them; read from the game, their tactic stays
-`Dismounted` through the fight. [Full video (MP4)](media/dismount-wol.mp4).
+`Dismounted` through the fight. Filmed before the last tuning of the transitions (2 s, a higher leg): the
+close video below shows the final ones. [Full video (MP4)](media/dismount-wol.mp4).
 
 ![Without the pack](media/dismount-wol-control.gif)
 
@@ -8383,6 +8384,9 @@ tags", "Tactic for an action", "Squad mode of a unit"):
   (tactic index 3, read from the game every 0.25 s) through a skirmish fight until they were told to mount.
 - **A rider hung on a horse** plays each animation name in both anim files (the horse's carries the tags); the new
   rider animations must keep their tracks sorted by name, as the stock files do, or only some bones move.
+- **Tested further:** the two buttons clicked (posted clicks on the command row) dismount and mount the selected
+  unit; a game saved while dismounted loads with the stance and the rider on foot (tactic index 3 kept); with the
+  pack applied the AI scripts compile (6 compiles, 0 errors, XS tracer on this copy's game).
 - **What a stance cannot change:** unit types, armour, hit points, obstruction, `<PhysicsInfo>`. On foot the unit
   still counts as cavalry; if it must count as infantry, the alternative is a transform (`uiTransformSelectedUnit`,
   [`transformChecks`](#transformchecks)).

@@ -6,10 +6,10 @@ ENGLISH
 
 What it does
 - The Chasseur a Cheval gets two buttons on its command row: Dismount and Mount.
-- Dismount: the rider gets off on the horse's left side (a 2 s animation), then stands beside his horse and
+- Dismount: the rider gets off on the horse's left side (a 2.5 s animation), then stands beside his horse and
   fights with the infantry's own animations (volley fire and reload, bayonet, idle, walk, death). The horse stays
   beside him and walks with him.
-- Mount: he climbs back on (2 s) and the unit is cavalry again, in the Stagger stance.
+- Mount: he climbs back on (2.5 s) and the unit is cavalry again, in the Stagger stance.
 - On foot the unit is slower (speed x0.67, the line infantry's 4.0 instead of 6.0). Its attacks keep the numbers
   of the mounted attacks (DefendRangedAttack, MeleeHandAttack), and every tech effect on those reaches the attacks
   on foot too. Its unit types, hit points, armour and obstruction do not change: a stance cannot change them
@@ -28,7 +28,7 @@ How it is built (the recipe for another unit)
 1. Tactics. A copy of the unit's tactics file. Two new actions, copies of the mounted ranged and hand attacks with
    other animation names (Dismounted_Attack, Dismounted_Reload, Dismounted_Melee, Dismounted_Idle). A new
    tactic "Dismounted" with those actions, <speedmodifier>, its own idle/bored/walk/jog/run/death animations, and
-   one <transition> back to each mounted tactic (<action>Limber</action>, <anim>Mount</anim>, <length>2</length>,
+   one <transition> back to each mounted tactic (<action>Limber</action>, <anim>Mount</anim>, <length>2.5</length>,
    <exit>1</exit>). Every mounted tactic gets a <transition> to "Dismounted" (<anim>Dismount</anim>). This is how
    the artillery's Limber/Bombard works (falconet.tactics). <exit>1 is what lets a button's tactic change use the
    transition; <action>Limber</action> is the built-in transition action every stock artillery transition names.
@@ -75,19 +75,20 @@ experience, queued orders). We recommend the stance unless the infantry types ma
 
 Tested (single player)
 In a copy of Wars of Liberty: French skirmish against a German AI (crossbowmen) and test scenarios. The stance
-switch by console (unitSetTactic, the command the buttons send), the dismount and mount transitions, standing,
-walking and firing on foot beside the horse, the stance kept through the fight (read from the game every 0.25 s),
-mounting again. Not tested: the two buttons clicked by hand, death on foot filmed, a saved game, multiplayer.
+switch by the two buttons (posted clicks) and by console, the dismount and mount transitions, standing, walking and
+firing on foot beside the horse, the stance kept through the fight (read from the game every 0.25 s), mounting again,
+a game saved while dismounted and loaded (stance kept), the AI scripts compiling with the pack applied. Not tested:
+multiplayer.
 
 ESPAÑOL
 -------
 
 Qué hace
 - El Chasseur a Cheval tiene dos botones en su fila de comandos: Desmontar y Montar.
-- Desmontar: el jinete baja por el lado izquierdo del caballo (animación de 2 s), se queda de pie junto a él y
+- Desmontar: el jinete baja por el lado izquierdo del caballo (animación de 2,5 s), se queda de pie junto a él y
   pelea con las animaciones de la infantería (fuego y recarga, bayoneta, reposo, marcha, muerte). El caballo se
   queda a su lado y camina con él.
-- Montar: vuelve a subir (2 s) y la unidad es caballería otra vez, en la postura Stagger.
+- Montar: vuelve a subir (2,5 s) y la unidad es caballería otra vez, en la postura Stagger.
 - A pie es más lenta (velocidad x0,67: 4,0 en vez de 6,0). Sus ataques conservan los valores de los ataques montados
   (DefendRangedAttack, MeleeHandAttack) y todo efecto de técnica sobre ellos llega también a los de a pie. Sus tipos,
   puntos de vida, armadura y obstrucción no cambian: una postura no puede cambiarlos (ver abajo).
@@ -125,7 +126,8 @@ Cómo está hecho (la receta para otra unidad)
 
 Probado (un jugador): escaramuza francesa contra una IA alemana y escenarios de prueba, cambio de postura por
 consola (el mismo comando que envían los botones), las transiciones, de pie, caminando y disparando junto al
-caballo, y montar de nuevo. Sin probar: los botones con clic real, una partida guardada, multijugador.
+caballo, montar de nuevo, los dos botones (clics), guardar y cargar desmontado (la postura se conserva) y la IA
+compila. Sin probar: multijugador.
 
 Lo que una postura no puede hacer (pregunta para el equipo)
 Una táctica cambia acciones, animaciones y velocidad, no tipos de unidad, armadura, vida, radio de obstrucción ni
