@@ -2543,6 +2543,12 @@ inline constexpr Site kLanBrowserCountdown{"LanBrowserCountdown", 0x008BA87A, kL
 inline constexpr std::uint8_t kGatherWorkOrderBytes[] = {0xB8, 0x01, 0x00, 0x00, 0x00, 0x84, 0x05, 0x5C, 0xF7, 0xD6, 0x00, 0x56, 0x8B, 0xF1};
 inline constexpr Site kGatherWorkOrder{"GatherWorkOrder", 0x004EFCB2, kGatherWorkOrderBytes, sizeof(kGatherWorkOrderBytes)};
 
+inline constexpr std::uint8_t kHerdWalkAwayCallBytes[] = {0x6A, 0x00, 0x68, 0x00, 0x00, 0xC0, 0x40, 0x52, 0xE8, 0x96, 0xAD, 0xE3, 0xFF};
+inline constexpr Site kHerdWalkAwayCall{"HerdWalkAwayCall", 0x006A8C94, kHerdWalkAwayCallBytes, sizeof(kHerdWalkAwayCallBytes)};
+
+inline constexpr std::uint8_t kHerdFleeHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x54, 0x53, 0x8B, 0x5C, 0x24, 0x5C};
+inline constexpr Site kHerdFleeHead{"HerdFleeHead", 0x004E3A37, kHerdFleeHeadBytes, sizeof(kHerdFleeHeadBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -2997,6 +3003,7 @@ Outcome ApplyCantBeSlowed(const Config& config);
 Outcome ApplyStealthTargeting(const Config& config);
 Outcome ApplyAutoScout(const Config& config);
 Outcome ApplyAutoGatherFrom(const Config& config);
+Outcome ApplyHerdWalkAwayFix(const Config& config);
 Outcome ApplyResearchOnTheMove(const Config& config);
 Outcome ApplyTransformChecks(const Config& config);
 Outcome ApplyCustomWalls(const Config& config);
@@ -3164,6 +3171,8 @@ inline constexpr Feature kFeatures[] = {
     {"stealthTargeting", ApplyStealthTargeting},
     {"autoScout", ApplyAutoScout},
     {"autoGatherFrom", ApplyAutoGatherFrom},
+    // No order constraint: the only key that writes 0x6A8C9C or verifies 0x4E3A37.
+    {"herdWalkAwayFix", ApplyHerdWalkAwayFix},
     // No order constraint: the only key that writes 0x487E1B or verifies 0x487D8B.
     {"researchOnTheMove", ApplyResearchOnTheMove},
     {"transformChecks", ApplyTransformChecks},
@@ -3267,7 +3276,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "herdwalkawayfix", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",

@@ -4827,6 +4827,27 @@ ID, and the order is the simulation's own function, called in the world update o
 network or reads the local player. The per-unit table (idle-since time, last target, held amount) is a cache: a loaded
 game rebuilds it and an idle unit waits `delay` again. The real clock of the `log` timing line only goes to the log.
 
+### herdWalkAwayFix
+
+**The walk-away.** In the gather tick's cold path, a herdable gathering into its own inventory that is full and whose
+target is the LivestockPen proto (`[db+6030h]`), the paddy (`[db+607Ch]`) or of the abstract type 5Bh
+(`AbstractTypeHerdableMagnet`, 0x44CAC4) is sent away: 0x6A8C8B..0x6A8C9C `push 0 / push 6.0f / push targetId / call
+4E3A37h`, the flee move (`thiscall(mgr, targetId, distance, flag)`, `ret 0Ch`, a point away from the unit with the
+synced RNG), then the tick returns; any other full herdable ends its action (state 0Ah, 0x6A8CAB).
+
+**The fault.** The flee leaves the action manager's anchor `[mgr+7Ch]` as it was, and the leash 0x489B15 walks an idle
+unit back to its anchor. A herdable drawn by the idle search 0x4C31EE keeps the anchor it had before (its spawn point),
+so with a magnet that moves, the fattened herdable walked back to where the herd had been (observed: two sheep 33 m
+back, anchors at their spawn points; ordered camels keep an anchor near their gather).
+
+**The fix.** The call at 0x6A8C9C is redirected (site `HerdWalkAwayCall`, 0x6A8C94..0x6A8CA0 verified) to a
+`__fastcall` wrapper with the same frame (ECX = the manager, three stack arguments popped). It makes the stock call,
+then writes the anchor: the herdable's position plus 6 m along the line from the target through it (its height kept).
+The return value is passed on (the caller ignores it).
+
+**Why it is safe.** One call site, no other caller changed; the anchor is simulation state that the game saves and
+the leash already uses; the point depends only on the two units' positions. The flee keeps its own random point.
+
 ### transformChecks
 
 **The stock transform.** `uiTransformSelectedUnit("Proto")` (UI command 0x7E7193) looks the proto up and sends a

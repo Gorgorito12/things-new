@@ -116,6 +116,7 @@ PAGES = {
         "resourceDebt": ["src/features/resourcedebt.cpp", "src/hooks/resourcedebt_hooks.asm"],
         "truckAttackResourceFix": ["src/features/truckattack.cpp", "src/hooks/truckattack_hooks.asm"],
         "autoGatherFrom": ["src/features/autogatherfrom.cpp"],
+        "herdWalkAwayFix": ["src/features/herdwalkaway.cpp"],
     }),
     "buildings": ("Buildings and training", {
         "liveBuildingWorkRate": ["src/features/workrate.cpp", "src/hooks/workrate_hooks.asm"],

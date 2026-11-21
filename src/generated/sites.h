@@ -2477,4 +2477,10 @@ inline constexpr Site kLanBrowserCountdown{"LanBrowserCountdown", 0x008BA87A, kL
 inline constexpr std::uint8_t kGatherWorkOrderBytes[] = {0xB8, 0x01, 0x00, 0x00, 0x00, 0x84, 0x05, 0x5C, 0xF7, 0xD6, 0x00, 0x56, 0x8B, 0xF1};
 inline constexpr Site kGatherWorkOrder{"GatherWorkOrder", 0x004EFCB2, kGatherWorkOrderBytes, sizeof(kGatherWorkOrderBytes)};
 
+inline constexpr std::uint8_t kHerdWalkAwayCallBytes[] = {0x6A, 0x00, 0x68, 0x00, 0x00, 0xC0, 0x40, 0x52, 0xE8, 0x96, 0xAD, 0xE3, 0xFF};
+inline constexpr Site kHerdWalkAwayCall{"HerdWalkAwayCall", 0x006A8C94, kHerdWalkAwayCallBytes, sizeof(kHerdWalkAwayCallBytes)};
+
+inline constexpr std::uint8_t kHerdFleeHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x54, 0x53, 0x8B, 0x5C, 0x24, 0x5C};
+inline constexpr Site kHerdFleeHead{"HerdFleeHead", 0x004E3A37, kHerdFleeHeadBytes, sizeof(kHerdFleeHeadBytes)};
+
 }  // namespace uhc::sites

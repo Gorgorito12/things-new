@@ -337,6 +337,7 @@ impactBoneFix [all] [log]
 | [`workRateByAbstractType`](#workratebyabstracttype) | A `WorkRate` effect on an abstract type, `AbstractMine` by default, also reaches the rates a unit has for the protos of that type. | **new** | Take `AbstractMine` off the buildings the techs already name, or those techs count twice on them. | confirmed |
 | [`betterfreedynamicunit`](#betterfreedynamicunit) | Dynamic free units grow smoothly with game time, not in 2-minute steps. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`truckAttackResourceFix`](#truckattackresourcefix) | A `TruckAttack` (the mustard gas, the tornado, the fire power, the monster truck) no longer empties the Mills, plantations and other gather buildings it hits, so villagers can still gather there afterwards. | **new** | Nothing. | confirmed (single player) |
+| [`herdWalkAwayFix`](#herdwalkawayfix) | A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in. | **new** | Nothing; for nomads, `wol-fixes/me-herdables`. | confirmed (single player) |
 
 #### gatherFix
 
@@ -514,6 +515,47 @@ truckAttackResourceFix [log]
   took two new settlers; key off, all four were left with 0 and took none, and an emptied Mill was still refused 6
   minutes later. The damage did not change: a `Target` under five gas clouds lost 352 HP per second with the key and
   357 without (29 s each). An own gas did not empty its own Mill in either case (the action skips its own player).
+
+#### herdWalkAwayFix
+
+*A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in.*
+
+**Added:** Saturday 2026-11-21 11:55 · **Filmed in WoL:** Saturday 2026-11-21 11:55
+
+![herdWalkAwayFix in WoL](media/herdWalkAwayFix-wol.gif)
+
+*In WoL, with `herdWalkAwayFix log` and the nomads of `wol-fixes/me-herdables`, the herd's range left at the stock
+0.5 m (a scenario: a Nomad, three camels ordered to it, three sheep it drew in, two more camels; the Nomad walked 32 m
+north at 50 s and the herd followed):* the sheep reach 300 food, walk a few metres away from the Nomad (a log line each)
+and stay there. [Full video (MP4)](media/herdWalkAwayFix-wol.mp4).
+
+![herdWalkAwayFix in WoL, key off](media/herdWalkAwayFix-wol-control.gif)
+
+*The same scenario, key off:* two of the three fattened sheep walk out of the picture, 33 m back south to where they
+stood at the start, and stand there idle. [Full video (MP4)](media/herdWalkAwayFix-wol-control.mp4).
+
+```
+herdWalkAwayFix [log]
+```
+
+- **The bug (found for WoL request #79):** a full herdable whose target is a Livestock Pen, a rice paddy or a unit of the
+  type `AbstractTypeHerdableMagnet` walks a few metres away from it, but the game leaves its "leash" point (where the
+  game walks an idle unit back to) as it was. A herdable that the game drew in on its own (idle herdables within 10 m
+  of a pen or magnet go to it) keeps the leash point it had before: where it was born or last ordered. When its
+  walk-away ends, it walks back there. With a pen that is a few metres; with a nomad that has walked on, it is where
+  the herd started. Herdables the player ordered to the target keep a leash point near it.
+- **Effect:** the walk-away also moves the herdable's leash point 6 m beyond where it stands, away from the target,
+  about where the walk-away takes it. Nothing else changes: the same herdables walk away, at the same time.
+- **When it shows:** in the tests, with the herd's stock 0.5 m range two fattened sheep of three walked back 33 m (in
+  two runs); with the 3 m typed range of `wol-fixes/me-herdables`, the fattened sheep stayed in their walk-away state by
+  the nomad even without the key (two runs). The key is cheap; keep it on with nomads.
+- **Log:** `herdWalkAwayFix: a herdable walked away from its pen or magnet keeps its leash anchor there`; with `log`, each
+  walk-away: `unit 2 walks away from unit 0 at (64.7, 75.8): anchor (60.1, 72.0)`.
+- **Simulation:** yes: every player needs the same line. The point depends only on the two units' positions.
+- **Performance:** a few float operations per walk-away of a full herdable; nothing runs otherwise.
+- **Status:** confirmed (2026-11-21, single player, WoL, scenarios): with the key, the three fattened sheep stayed 8 to 10 m
+  from the nomad; without it, two walked back to their start points (anchors read from memory at their spawn points).
+  Beside the other keys of the test copy: 43 applied, 0 failed.
 
 ### Buildings and training
 
