@@ -262,7 +262,10 @@ there:
   `…\RM3\Age3RM<name>.dmp.txt`.
 - **What a scenario's triggers can and cannot do** (checked 2026-10-29): Change Unit Type, Kill,
   Damage Unit, Unit Create, Set Tech Status, Grant Resources and Move From Area (`go<N>=`) work;
-  the unit-order effects `Unit Work` and `Unit Build Building` do nothing. Give such orders with
+  `Unit Build Building` does nothing. `Unit Work` and `Move To Point` do work with single units
+  (2026-11-21: `"at5=Unit Work;SrcObject=g0.0;DstObject=g6.0"` sent villagers to gather a mine, a Mill,
+  a Plantation and a deer, and herdables to a pen; a whole group `g1` as the source works too, one
+  effect per unit). Otherwise give orders with
   the real mouse: `exec 'uiLookAtAndSelectUnit(<id>)' 'uiLookAtUnit(<target id>)'`, then
   `rclick 1277 757 right` (the looked-at unit is at the centre of the view); to build, select the
   builder, `exec 'tis("<Proto>")'`, then `rclick <x> <y>`. The first real click after the window

@@ -379,6 +379,9 @@ snareValues [strongest] [log]  SnareFactor and SnareDuration by action and by te
 stealthTargeting [log]        large units in stealth hidden from enemies; no attack on an unseen stealthed unit
 autoScout [Tactic [Return]] [noAvoid] [noBack] [log]  units in that tactic explore the map on their own,
                               away from enemy towers, backing off when hit; an order switches it off
+autoGatherFrom [log]          a unit idle for a few seconds gathers from what its gather action's
+                              <AutogatherFrom> names, if one is within the action's range
+herdWalkAwayFix [log]         a fattened herdable that walks away from its pen or nomad stays there
 transformChecks [log]         transform buttons grey out with the reason; a transform respects BuildLimit
 lanAutoStart [host [rules=N] | join <address>]   from the main menu straight to hosting or joining
                               a LAN game; +uhcLanHost / uhcLanJoin="<address>" on the command line

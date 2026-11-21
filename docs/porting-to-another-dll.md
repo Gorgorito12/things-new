@@ -16,7 +16,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt` | [gathering](porting-code/gathering.md) |
+| Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `herdWalkAwayFix` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon`, `autoScout` | [interface](porting-code/interface.md) |
@@ -1294,6 +1294,30 @@ Code: [interface](porting-code/interface.md#autoscout). It needs `AddWorldTick`
   scan), so a unit that stops scouting does not walk back.
 - **Test:** a unit whose first tactic is `AutoScout`: it leaves at once, and `testbed.py explored` rises (two ravens on
   Great Lakes: 63.7 % at 3 minutes against 9.4 % without); a Stop order puts it back in its other tactic.
+
+### autoGatherFrom
+
+Code: [gathering](porting-code/gathering.md#autogatherfrom). It needs `AddWorldTick`
+([world tick](porting-code/helpers.md#world-tick)) and `AddActionTagHandler` with the tag's XML node (the field
+`node` of `ActionTag`, for the `delay` attribute).
+
+- **Sites:** none written. Called functions, verify only: `0x4EFCB2` (the action manager's work order,
+  `B8 01 00 00 00 84 05 5C F7 D6 00 56 8B F1`), `0x44F1A7` (idle), `0x4A1C55` (units near a point), `0x44D7FA` (is-a),
+  `0x44DDB4` (built), `0x484D2D` (enemy), `0x4E5979` (held amount), `0x598F37` / `0x402733` (XML attribute).
+- **What it writes:** besides the orders, the leash anchor `[[unit+58h]+7Ch..84h]` of a tagged unit while it gathers.
+- **Test:** a villager with `<AutogatherFrom>AbstractMine</AutogatherFrom>` and `<maxrange>10</maxrange>` in its Gather,
+  left idle 6 m from a mine: it mines 3 s later; one without the tag stays idle.
+
+### herdWalkAwayFix
+
+Code: [gathering](porting-code/gathering.md#herdwalkawayfix).
+
+- **Sites:** the `call` at `0x6A8C9C` (in `6A 00 68 00 00 C0 40 52 E8 96 AD E3 FF` from `0x6A8C94`, the gather tick's
+  walk-away of a full herdable) is redirected to a wrapper; the flee `0x4E3A37` is verified only. Check that your DLL
+  does not hook either.
+- **What it writes:** the herdable's leash anchor `[mgr+7Ch..84h]`, after the stock flee.
+- **Test:** a nomad with `AbstractTypeHerdableMagnet` (`wol-fixes/me-herdables`) and sheep drawn to it: fattened
+  sheep walk away and stay there; without the key, the ones the game drew in walk back to where they stood first.
 
 ### directionalAttack
 

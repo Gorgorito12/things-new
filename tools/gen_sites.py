@@ -1961,6 +1961,16 @@ SITES = [
     ("LanBrowserJoinRequest", 0x8BB749, 0x0E),
     ("LanBrowserJoinStart", 0x8BB762, 6),
     ("LanBrowserCountdown", 0x8BA87A, 0x11),
+    # autoGatherFrom, verify only: the work order of the action manager FUN_004EFCB2, thiscall(mgr, targetId, 0, -1, 0),
+    # ret 10h (mov eax,1 / test [0D6F75Ch],al / push esi / mov esi,ecx), the call the stock idle-herdable search
+    # 0x4C31EE gives to a pen or magnet within 10 m, and the command execute's unit-order path (0x944D3F, 0x944E0D).
+    ("GatherWorkOrder", 0x4EFCB2, 0x0E),
+    # herdWalkAwayFix: the gather tick's walk-away of a full herdable from a pen, the paddy or an
+    # AbstractTypeHerdableMagnet target: push 0 / push 40C00000h (6.0f) / push edx (the target's ID) / call 4E3A37h
+    # (the flee move, thiscall(mgr, targetId, distance, flag), ret 0Ch). The call at +8 is redirected; the flee's head
+    # (mov eax,[0C66234h] / sub esp,54h / push ebx / mov ebx,[esp+5Ch]) is verified only.
+    ("HerdWalkAwayCall", 0x6A8C94, 0x0D),
+    ("HerdFleeHead", 0x4E3A37, 0x0D),
 ]
 
 
