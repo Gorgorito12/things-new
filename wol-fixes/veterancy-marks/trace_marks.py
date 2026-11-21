@@ -18,8 +18,8 @@ Then the silhouette's and the holes' IoU against the sheet, at the sheet's resol
 
 --border PX widens the dark border inward by PX pixels of rank_N.png: the metal is eroded by a disk of that radius
 before the colours are laid, so the silhouette (the alpha) and the loop holes stay as they are and only the metal
-narrows. The approved border is about 33 to 43 pixels there (0.065 glyph units); 0, the default, writes the approved
-images unchanged."""
+narrows. The sheet's border is about 33 to 43 pixels there (0.065 glyph units); 12, the default, is the border the
+owner approved on 2026-11-21 (border-review.png), a little darker in the game; 0 traces the sheet's border as it is."""
 import argparse
 import json
 import math
@@ -241,8 +241,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(HERE / "traced"))
     ap.add_argument("--no-symmetry", dest="symmetry", action="store_false", help="trace the sheet as it is (to measure)")
-    ap.add_argument("--border", type=float, default=0.0,
-                    help="widen the dark border inward by this many pixels of rank_N.png (0: the approved images)")
+    ap.add_argument("--border", type=float, default=12.0,
+                    help="widen the dark border inward by this many pixels of rank_N.png (12, approved; 0: the sheet's)")
     a = ap.parse_args()
     out = pathlib.Path(a.out)
     out.mkdir(parents=True, exist_ok=True)

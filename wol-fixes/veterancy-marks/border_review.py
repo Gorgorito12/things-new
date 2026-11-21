@@ -7,8 +7,8 @@ texture and in the game at its real size. Private: the design is the WoL team's.
     venv/Scripts/python -I wol-fixes/veterancy-marks/border_review.py --scratch <scratch> --borders 0,6,12,18
         --tools <aoe3-blender-tools> [--out wol-fixes/veterancy-marks/border-review.png]
 
-The game part: the Crossbowman cuts of marks-ingame.png (the game's own pixels, default camera, 1920x1080; nothing drawn
-there today but the approved marks). For each rank the sprite of today's texture is fitted to the mark in the cut (its
+The game part: the Crossbowman cuts of marks-ingame.png (the game's own pixels, default camera, 1920x1080), as it was
+when the review was made (git show 05ae126:wol-fixes/veterancy-marks/marks-ingame.png): the sheet's border. For each rank the sprite of today's texture is fitted to the mark in the cut (its
 size on screen and a sub-pixel offset from the HP bar's centre), then every variant's texture is drawn there as the
 graphics card does: trilinear filtering over its mip levels (512 down to 64 texels), alpha blended over the cut. The
 silhouette is the same in every variant, so each covers today's mark exactly and only the metal and the border differ.
@@ -312,4 +312,5 @@ def main():
     print(f"wrote {a.out}")
 
 
-main()
+if __name__ == "__main__":
+    main()

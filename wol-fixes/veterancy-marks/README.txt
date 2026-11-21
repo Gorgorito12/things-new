@@ -22,6 +22,10 @@ upgrade system. The bonuses, the marks and the rank row in the unit panel stay. 
 notext-off-control.jpg (the option off: "Veteran", "Elite", "Champion" rise over the Hussars). The blue "+8" in both is
 the game's own text.
 
+The border (2026-11-21): the dark outline is 12 px of traced\rank_N.png wider than on your sheet, inward only (the
+metal narrows; the silhouette and the loop holes do not move), so that it shows a little more at the small size of the
+game. trace_marks.py --border 12 (the default) does it; border-review.png compares it.
+
 Every mark is centred on the unit's HP bar and all five end at the same height above it. Measured in the game, default
 camera, a Crossbowman and a Hussar at the screen's centre: see marks-ingame.png (the offset under each cut).
 
@@ -35,16 +39,17 @@ Files
                                     metal edge and loop holes traced as smooth closed curves (traced\rank_N.json) and
                                     rendered with your sheet's colours under a dark border (traced\rank_N.png)
     traced\                         those curves and images, and shapes.json (pixels per glyph unit)
-    border-review.png               a review (2026-11-21, not yet chosen): the border a little darker, inward only (the
-                                    silhouette and the holes do not move), today against +6, +12 and +18 px of
-                                    traced\rank_N.png; at 4 times the texture, and over the game's pixels enlarged and at
-                                    the real size. trace_marks.py --border N makes a variant; border_review.py the sheet
+    border-review.png               the review of a darker border (2026-11-21): the sheet's border against +6, +12 and
+                                    +18 px of traced\rank_N.png, at 4 times the texture and over the game's pixels.
+                                    +12 was chosen (border_review.py makes the sheet)
+    ingame_sheet.py                 makes marks-ingame.png from screenshots of units with a rank, and measures each mark's
+                                    offset from its HP bar's centre
 
 Overlap with your sheet (IoU, 1 = identical):
     rank                 1      2      3      4      5
     silhouette       0.985  0.995  0.992  0.995  0.991
     loop holes       0.990  0.983  0.953  0.958  0.968
 
-How the files are made: python -I wol-fixes\veterancy-marks\trace_marks.py (needs numpy and Pillow), then
+How the files are made: python -I wol-fixes\veterancy-marks\trace_marks.py --border 12 (needs numpy and Pillow), then
 aoe3-blender-tools' tools\make_rings.py --out tools\rings --folder uhc_rings --rank-shapes wol-fixes\veterancy-marks\traced
 writes the textures and particles of art\effects\uhc_rings (in the DLL's release zip). Nothing else changes.

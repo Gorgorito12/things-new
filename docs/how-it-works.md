@@ -3545,7 +3545,8 @@ drifts sideways in perspective, so the sprite's centre is at the bar's own heigh
 aoe3-blender-tools' `tools/make_rings.py`) and the mark is drawn high inside the sprite, which moves it straight up on screen:
 it stays centred on the bar, its lowest point the same height over the bar for every rank, and the bar and the mark scale
 alike with the camera, so the gap holds at every zoom. The images are the team's approved soutache knots, traced from their
-sheet into smooth symmetric curves and rendered with its colours (private), then placed by `make_rings.py --rank-shapes`. **Why it is safe:** a model is a
+sheet into smooth symmetric curves and rendered with its colours and a dark border widened inward, so that it still reads at
+the 64-texel level the game samples at the default camera (private), then placed by `make_rings.py --rank-shapes`. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking
