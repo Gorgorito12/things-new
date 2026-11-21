@@ -396,6 +396,42 @@ building, 0x44CAC4). Then it goes on at the damage, 0x9EC64D; otherwise it re-ex
 and ECX; 0x9EC64D loads ECX, and its branches load EAX and EDX); EBX, ESI, EDI and EBP are kept by the stdcall
 callee. The test reads only the target's proto, the same on every machine. Units are reset as in stock.
 
+### deadReplacementAtZeroInventory
+
+**The stock replacement.** `<DeadReplacement>` (handler 0x5FC33B) stores a proto ID at `[proto+F8h]`. The death
+replacement FUN_004B4F2F places it once per unit (state bit 29h) through 0x506F61 (the placement test, the creation
+0x498ACC). It has four callers: the kill handler 0x4B4F70 (0x4B527E; not for a `DeadReplacementWhenDestroyed` proto,
+flag 4Ah), the two removal paths of a flag-4Ah proto (0x4E6FC6 and 0x6A4013) and the state check FUN_00482152
+(0x4F1680). A unit with `DieAtZeroResources` (flag 0Eh) and `DoNotDieAtZeroHitpoints` (which clears the default flag
+0Dh) is never killed at 0 HP: the state check turns it into a body (state bit 12, owner gaia, the death sound) and
+calls the replacement at once, so a hunt or a herdable leaves it beside the body it has just become. When the body is
+used up, the same check asks the kill queue, but the unit update marks the body for removal (state bit 7) and the
+world removes it in the same update (0x495D61 → 0x4726B2), before the queue's drain: the kill handler never sees it.
+Observed with hardware breakpoints on a cow emptied by settlers: the inventory test 0x4B43B0 and the kill queue ask
+ran, then the removal, and no kill handler for it. The two updates that remove a unit marked so call the removal
+notice FUN_00495D6B first (0x495DEE in FUN_00482F16, 0x6A3FF0 in 0x5116xx), then place the replacement of a flag-4Ah
+proto.
+
+**The hooks** (`hooks/deadrepl_hooks.asm`).
+- The replacement's head 0x4B4F2F (7 bytes, `push ecx / push esi / mov esi,ecx / mov eax,[esi+68h]`, continuation
+  0x4B4F36): `UhcDeadReplacementSkip(unit, return address)` is true only for the return address 0x4F1685 and a proto
+  with flag 0Eh, without flag 0Dh, and a replacement; the hook then returns with nothing done (bit 29h stays clear).
+- The removal notice's head 0x495D6B (5 bytes, `mov eax,[0C66234h]`, continuation 0x495D70):
+  `UhcDeadReplacementOnRemove(unit)` calls FUN_004B4F2F for a body (state bit 12) of such a proto whose bit 29h is
+  clear. The call goes through the first hook with a return address in the DLL, so it is stock. The replacement then
+  comes at the moment and through the same code as for a `DeadReplacementWhenDestroyed` proto.
+
+A body killed by the kill handler (a trigger's `Kill`) gets the replacement there, as in stock; bit 29h keeps it to one
+either way. The trigger `Destroy` removes a unit without the notice, so a body destroyed that way leaves nothing, as a
+flag-4Ah proto does in stock.
+
+**Why it is safe.** At the head, EAX and EDX are not inputs (thiscall with no argument) and each caller reloads EAX
+before reading it; ECX is pushed and restored around the stdcall callee, which keeps EBX, ESI, EDI and EBP. A skipped
+call returns as the stock function does when bit 29h is set. At the notice, ECX is restored and EAX is written by the
+stolen instruction. The decisions read only the unit's proto and state bits, the same on every machine. Evidence:
+`rea/evidence/age3y-b1a1dab7/r1121-b-deadrepl-detonation-heal.json` (`ev_df5ab456…`, FUN_00482152), capstone over the
+exe for FUN_004B4F2F, its callers, 0x506F61, 0x495D6B and 0x4B4D80.
+
 ### nowalkfarm
 
 The gather action calls `0x9DDADE` (the spot picker that `farmingRadius` hooks) at `0x6A9067` each

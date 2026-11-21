@@ -2126,6 +2126,21 @@ Code: [gathering](porting-code/gathering.md#truckattackresourcefix).
 - **Test:** an enemy `MonsterTruckA` placed beside a Mill: with the key the Mill keeps its 999 food and villagers gather
   there; without it, the Mill is empty and villagers stand idle beside it.
 
+### deadReplacementAtZeroInventory
+
+Code: [gathering](porting-code/gathering.md#deadreplacementatzeroinventory).
+
+- **Sites:** a 7-byte `jmp` at `0x4B4F2F` (`51 56 8B F1 8B 46 68`, the head of the death replacement; continuation
+  `0x4B4F36`) and a 5-byte `jmp` at `0x495D6B` (`A1 34 62 C6 00`, `mov eax,[0C66234h]`, the head of the removal notice;
+  continuation `0x495D70`). Verify the calls `0x4F1680` (`E8 AA 38 FC FF`), `0x495DEE` and `0x6A3FF0` too: the first hook
+  recognises its caller by the return address `0x4F1685`. Neither DLL of WoL patches these bytes in the map of
+  [wol-uhc-map.md](wol-uhc-map.md). <!-- private -->
+- **Logic:** the head returns at once when called from `0x4F1685` for a unit whose proto has a `<DeadReplacement>`
+  (`[proto+F8h]` ≥ 0), proto flag `0Eh` (`DieAtZeroResources`) and not `0Dh` (cleared by `DoNotDieAtZeroHitpoints`). The
+  notice, for such a unit with state bit 12 (a body) and without state bit 29h (already replaced), calls `0x4B4F2F`.
+- **Test:** a `Cow` with `<DeadReplacement>Turkey</DeadReplacement>`, killed by a trigger: no turkey while the body lies
+  there; settlers gather it, and the turkey appears where the body was when it is used up.
+
 ### displayedRange
 
 Code: [gathering](porting-code/gathering.md#displayedrange). It needs `AddProtoTagHandler`, `AddWorldTick`,

@@ -228,6 +228,7 @@ gatherFix                     gather on a fixed interval (the data's rate)
 rofFix, stunMovingTargetFix   orders keep the attack timer; stuns survive a moving target
 noDamageOnUnbuiltFoundations  unbuilt foundations take no damage
 truckAttackResourceFix [log] a TruckAttack no longer empties the buildings it hits
+deadReplacementAtZeroInventory [log] a hunt or herdable leaves its DeadReplacement when its body is used up
 fallenHeroTacticsFix          knocked-out or stunned units keep their tactic
 impactBoneFix [all]           impact effects hung on scaled bones keep their size
 customImpactTypes <names>     impact types after the 15 stock ones (.dmg, ImpactType)

@@ -1235,6 +1235,21 @@ inline constexpr Site kTechLoadHead{"TechLoadHead", 0x0094DDEA, kTechLoadHeadByt
 inline constexpr std::uint8_t kIsEnemyHeadBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0};
 inline constexpr Site kIsEnemyHead{"IsEnemyHead", 0x00484D2D, kIsEnemyHeadBytes, sizeof(kIsEnemyHeadBytes)};
 
+inline constexpr std::uint8_t kDeadReplacementHeadBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x8B, 0x46, 0x68, 0x85, 0xC0, 0x0F, 0x85, 0xE2, 0x12, 0x03, 0x00};
+inline constexpr Site kDeadReplacementHead{"DeadReplacementHead", 0x004B4F2F, kDeadReplacementHeadBytes, sizeof(kDeadReplacementHeadBytes)};
+
+inline constexpr std::uint8_t kCorpseReplacementCallBytes[] = {0xE8, 0xAA, 0x38, 0xFC, 0xFF};
+inline constexpr Site kCorpseReplacementCall{"CorpseReplacementCall", 0x004F1680, kCorpseReplacementCallBytes, sizeof(kCorpseReplacementCallBytes)};
+
+inline constexpr std::uint8_t kRemovalNoticeHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x56, 0x57};
+inline constexpr Site kRemovalNoticeHead{"RemovalNoticeHead", 0x00495D6B, kRemovalNoticeHeadBytes, sizeof(kRemovalNoticeHeadBytes)};
+
+inline constexpr std::uint8_t kRemovalNoticeCall1Bytes[] = {0xE8, 0x78, 0xFF, 0xFF, 0xFF};
+inline constexpr Site kRemovalNoticeCall1{"RemovalNoticeCall1", 0x00495DEE, kRemovalNoticeCall1Bytes, sizeof(kRemovalNoticeCall1Bytes)};
+
+inline constexpr std::uint8_t kRemovalNoticeCall2Bytes[] = {0xE8, 0x76, 0x1D, 0xDF, 0xFF};
+inline constexpr Site kRemovalNoticeCall2{"RemovalNoticeCall2", 0x006A3FF0, kRemovalNoticeCall2Bytes, sizeof(kRemovalNoticeCall2Bytes)};
+
 inline constexpr std::uint8_t kDetonationKillCallBytes[] = {0xE8, 0xDC, 0x11, 0x02, 0x00};
 inline constexpr Site kDetonationKillCall{"DetonationKillCall", 0x00493D8F, kDetonationKillCallBytes, sizeof(kDetonationKillCallBytes)};
 
@@ -2974,6 +2989,7 @@ Outcome ApplyKillSpawn(const Config& config);
 Outcome ApplyHcTargetTechs(const Config& config);
 Outcome ApplyDetonationDeath(const Config& config);
 Outcome ApplyAnnexFacing(const Config& config);
+Outcome ApplyDeadReplacementAtZeroInventory(const Config& config);
 Outcome ApplyAccuracyTechs(const Config& config);
 Outcome ApplyCratePriority(const Config& config);
 Outcome ApplySharedBuildLimit(const Config& config);
@@ -3217,6 +3233,7 @@ inline constexpr Feature kFeatures[] = {
     {"detonationDeath", ApplyDetonationDeath},
     // Shares the death observer (deathobservers.h) with detonationDeath; its observer runs after that one.
     {"annexFacing", ApplyAnnexFacing},
+    {"deadReplacementAtZeroInventory", ApplyDeadReplacementAtZeroInventory},
     {"steadyHitpointBars", ApplySteadyHitpointBars},
     // After overhealHitpointBars: both add bars through the shared floating bar hooks (floatingbars.h), the segment
     // first.
@@ -3269,7 +3286,7 @@ inline constexpr const char* kHandledKeys[] = {
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "lanautostart", "playericon", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
+    "perffilelog", "multipleinstances", "lanautostart", "playericon", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory",
 };
 
 }  // namespace uhc
