@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Saturday 2026-11-21 15:06 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Saturday 2026-11-21 12:42 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Saturday 2026-11-21 12:11 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
 | Saturday 2026-11-21 12:07 | [`ageFiveShipments`](#agefiveshipments) | Added. Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | `<age>4</age>` on the cards that want it. |
@@ -41,7 +42,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 11:54 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Saturday 2026-11-21 11:54 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
-| Saturday 2026-11-21 11:42 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Saturday 2026-11-21 11:35 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | The tag on the civ in `civs.xml`. |
 | Saturday 2026-11-21 11:34 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Saturday 2026-11-21 11:31 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
@@ -4088,18 +4088,23 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Saturday 2026-11-21 11:42
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Saturday 2026-11-21 15:06
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
-*In WoL, with the key (Ethiopians, 3 `Hussar` against 9 `Crossbowman`, rows ×1.5 damage at 1 kill, ×1.5 hit points at 2,
-×2 damage at 3; [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) on in all four videos, so the bars do not jump):* two hussars survive
-with 504 and 346 hit points, and the log shows the ranks.
+*In WoL, with the key (Ethiopians, 3 `Hussar` against 9 `Crossbowman`, the Hussar's rows ×1.5 damage at 1 kill, ×1.5 hit
+points at 2, ×2 damage at 3; `veterancyBonus notext`, WoL's line, the marks of `art\effects\uhc_rings` and
+[`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars), so the bars do not jump; refilmed 2026-11-21):* the Hussars charge
+from 34 m and take the nine Crossbowmen; each new rank puts its mark centred over the Hussar's HP bar (the copper loop, the
+silver knot, the gold knot) with no name rising over it. One Hussar dies with no kill; the two that survive reach rank 3,
+with 4 and 5 kills, and end with 390 and 481 of 528 hit points (×1.5 of 352 from the second kill), the panel reading
+`Rank 3`, `4 kills` / `5 kills` and a hand attack of 66 (×2 of 33). The log shows each rank.
 [Full video (MP4)](media/veterancyBonus-wol.mp4).
 
 ![veterancyBonus in WoL, key off](media/veterancyBonus-wol-control.gif)
 
-*In WoL, key off (the same data):* the two that survive end with 299 and 113. The game skips a tag it does not know.
+*In WoL, key off (the same scene and data, the rings folder still there):* no marks, and the fight lasts longer; one Hussar
+dies and the two that survive end with 345 and 106 of 352 hit points. The game skips a tag it does not know.
 [Full video (MP4)](media/veterancyBonus-wol-control.mp4).
 
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)

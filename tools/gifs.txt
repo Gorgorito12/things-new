@@ -121,8 +121,8 @@ resourceGatherAuras-wol-control 2 36 3
 unitResourceAuras-depleted-wol 2 36 3
 unitResourceAuras-wol 2 36 3
 unitResourceAuras-wol-control 2 36 3
-veterancyBonus-wol 0 12 1
-veterancyBonus-wol-control 0 12 1
+veterancyBonus-wol 8 12 1
+veterancyBonus-wol-control 7 18 1.5
 veterancyBonus-icons-wol 17 24 2
 veterancyBonus-icons-wol-control 18 24 2
 killSpawn-wol 2 20 2
