@@ -2540,6 +2540,9 @@ inline constexpr Site kLanBrowserJoinStart{"LanBrowserJoinStart", 0x008BB762, kL
 inline constexpr std::uint8_t kLanBrowserCountdownBytes[] = {0xE8, 0x80, 0x85, 0xB4, 0xFF, 0x8B, 0x8E, 0xB4, 0x01, 0x00, 0x00, 0x03, 0x8E, 0xB0, 0x01, 0x00, 0x00};
 inline constexpr Site kLanBrowserCountdown{"LanBrowserCountdown", 0x008BA87A, kLanBrowserCountdownBytes, sizeof(kLanBrowserCountdownBytes)};
 
+inline constexpr std::uint8_t kGatherWorkOrderBytes[] = {0xB8, 0x01, 0x00, 0x00, 0x00, 0x84, 0x05, 0x5C, 0xF7, 0xD6, 0x00, 0x56, 0x8B, 0xF1};
+inline constexpr Site kGatherWorkOrder{"GatherWorkOrder", 0x004EFCB2, kGatherWorkOrderBytes, sizeof(kGatherWorkOrderBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -2993,6 +2996,7 @@ Outcome ApplyResourceBounty(const Config& config);
 Outcome ApplyCantBeSlowed(const Config& config);
 Outcome ApplyStealthTargeting(const Config& config);
 Outcome ApplyAutoScout(const Config& config);
+Outcome ApplyAutoGatherFrom(const Config& config);
 Outcome ApplyResearchOnTheMove(const Config& config);
 Outcome ApplyTransformChecks(const Config& config);
 Outcome ApplyCustomWalls(const Config& config);
@@ -3159,6 +3163,7 @@ inline constexpr Feature kFeatures[] = {
     {"snareValues", ApplySnareValues},
     {"stealthTargeting", ApplyStealthTargeting},
     {"autoScout", ApplyAutoScout},
+    {"autoGatherFrom", ApplyAutoGatherFrom},
     // No order constraint: the only key that writes 0x487E1B or verifies 0x487D8B.
     {"researchOnTheMove", ApplyResearchOnTheMove},
     {"transformChecks", ApplyTransformChecks},
@@ -3262,7 +3267,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
@@ -3592,6 +3597,7 @@ struct ActionTag {
   const char* proto;    // the proto whose action set holds the action: [proto+4] ID, [proto+10h] name
   const char* action;   // the action: [action+4] name index, -1 until the action's <Name> is read
   ActionSource source;
+  const char* node;     // the child's XML node, for its attributes (0x598F37)
 };
 
 // Called for each such child while the data loads, in file order, by the handlers in the order the
@@ -3617,7 +3623,7 @@ bool AddActionTagHandler(ActionTagHandler handler);
 
 namespace {
 
-constexpr std::size_t kMaxHandlers = 12;
+constexpr std::size_t kMaxHandlers = 16;
 // Return address of the parser's call by the <ProtoAction> handler; the hook passes only that one
 // and 0x5FA623, the tactics <action> creator's (docs/engine-symbols.md, "Damage and poison").
 constexpr std::uint32_t kFromProtoAction = 0x005FA213;
@@ -3640,7 +3646,8 @@ void __stdcall UhcActionTag(const wchar_t* const* tag, const char* node, const c
   }
   const uhc::ActionTag child{*tag, *reinterpret_cast<const wchar_t* const*>(node + 0x14), proto, action,
                              returnAddress == kFromProtoAction ? uhc::ActionSource::kProtoAction
-                                                               : uhc::ActionSource::kTactics};
+                                                               : uhc::ActionSource::kTactics,
+                             node};
   for (std::size_t i = 0; i < g_handlerCount; ++i) {
     g_handlers[i](child);
   }

@@ -2474,4 +2474,7 @@ inline constexpr Site kLanBrowserJoinStart{"LanBrowserJoinStart", 0x008BB762, kL
 inline constexpr std::uint8_t kLanBrowserCountdownBytes[] = {0xE8, 0x80, 0x85, 0xB4, 0xFF, 0x8B, 0x8E, 0xB4, 0x01, 0x00, 0x00, 0x03, 0x8E, 0xB0, 0x01, 0x00, 0x00};
 inline constexpr Site kLanBrowserCountdown{"LanBrowserCountdown", 0x008BA87A, kLanBrowserCountdownBytes, sizeof(kLanBrowserCountdownBytes)};
 
+inline constexpr std::uint8_t kGatherWorkOrderBytes[] = {0xB8, 0x01, 0x00, 0x00, 0x00, 0x84, 0x05, 0x5C, 0xF7, 0xD6, 0x00, 0x56, 0x8B, 0xF1};
+inline constexpr Site kGatherWorkOrder{"GatherWorkOrder", 0x004EFCB2, kGatherWorkOrderBytes, sizeof(kGatherWorkOrderBytes)};
+
 }  // namespace uhc::sites

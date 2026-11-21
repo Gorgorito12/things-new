@@ -4790,6 +4790,43 @@ milliseconds). Danger (2026-11-20, a 260 m map with four enemy outposts and seve
 default; about 90 µs a scan.
 <!-- private:end -->
 
+### autoGatherFrom
+
+**The tag.** `<AutogatherFrom delay="s">Name</AutogatherFrom>` in an action is read by the shared action tag hook
+(`actiontags.*`, 0x5FA11E), keyed by the proto ID `[proto+4]` and the action's name index `[action+4]`; the `delay`
+attribute through the XML attribute reader 0x598F37 (the tag's node is passed to the handlers since this key). The name
+is looked up lazily in the unittype table `[db+190h]` (0x58E685, 0x40295B): a proto or an abstract type, tested later
+with the is-a test 0x44D7FA. The tables are emptied at each data load (`OnDatabaseLoad`).
+
+**The scan.** `AddWorldTick`, every 500 ms of game time `[world+108h]`. For each player from 1, its unit list
+`[player+F8h]` (count `+FCh`), sorted by ID; a unit whose proto (the player's copy) holds a tagged action, alive,
+built (0x44DDB4), not inside another unit (`[unit+6Ch]` = -1) and with an inventory `[[unit+B4h]+94h]` (the Gather
+start sends a gatherer without one to state 9, 0x50DE80..0x50DE90). Per proto pointer the key caches the sources and the
+action's range: the longest maximum `+8` of its 16-byte range entries `[action+18h]` (count `[action+1Ch]`), which hold
+`<maxrange>` and the `<typedmaxrange>` lines. A busy unit (0x44F1A7 false) only gets its leash anchor `[mgr+7Ch]` set to
+its position while its current action `[mgr+24h]` is a Gather (vtable 0xB97880). An idle one starts a timer; after the
+shortest `delay` of its sources the nearest unit within range + 12 m (0x4A1C55) that is alive, of a named type, owned
+by Gaia, the unit's player or a player that is not its enemy (0x484D2D), and within the source's range measured to its
+edge (the target's vtable `+B8h`, a distance from its obstruction to a point) is the target (the lower ID on a tie).
+
+**The order.** FUN_004EFCB2, `thiscall(mgr, targetId, 0, -1, 0)`, `ret 10h`: the action manager's work order, the one
+the stock idle-herdable search FUN_004C31EE gives a pen or a magnet within 10 m (the call at 0x4C31E4 passes the radius
+10.0 and -1), and the one the command execute's unit-order path calls (0x944D3F, 0x944E0D). It sets `[mgr+94h]` = -1,
+picks the action for the target and walks the unit there; the trigger `trUnitDoWorkOnUnit` reaches the same code
+through a network command (0x833681). The held amount of the unit's main resource (0x4DBEC1, 0x4E5979) is kept at the
+order: if the unit is idle again with no more than that, the target is refused until the amount changes.
+
+**What stock already does.** A Gather action's range (`<maxrange>`, `<typedmaxrange>`) is respected for every target
+kind tried: mine, Mill, Plantation, hunt (Hunting), a nomad. The Gather action follows a target that moves. A building
+ordered to gather gets a Gather action that never starts (state FFh with the target in range): the start code at
+0x50DE54.. that decides (`setState` 5 at 0x6A8ED5, 9 at 0x586D64) is in Ghidra chunks without a function, not read to
+the end.
+
+**Why it is safe.** Everything read is simulation state; units are walked by player and ID, the containers are keyed by
+ID, and the order is the simulation's own function, called in the world update on every machine; nothing goes to the
+network or reads the local player. The per-unit table (idle-since time, last target, held amount) is a cache: a loaded
+game rebuilds it and an idle unit waits `delay` again. The real clock of the `log` timing line only goes to the log.
+
 ### transformChecks
 
 **The stock transform.** `uiTransformSelectedUnit("Proto")` (UI command 0x7E7193) looks the proto up and sends a

@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -4548,6 +4549,7 @@ Resources, gatherers, and what pays for them.
 
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
+| [`autoGatherFrom`](#autogatherfrom) | A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | **new** | `<AutogatherFrom>` in the gather action of the units that want it. | confirmed (single player) |
 | [`linkedResource`](#linkedresource) | A resource building gathers the stock of a mine beside it. | **new** | The tags on a resource building of your own. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget. | confirmed (single player, UI) |
 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
@@ -4558,6 +4560,84 @@ Resources, gatherers, and what pays for them.
 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`nowalkfarm`](#nowalkfarm) | Gatherers on a farm keep the spot they take. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`marketUnits`](#marketunits) | Owning a unit of a listed proto (`WOLMarketGreek`, `SoukCaravan`, …) counts as owning a Market. | **in `wol.cfg`** | Nothing. | confirmed |
+
+#### autoGatherFrom
+
+*A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range.*
+
+**Added:** Saturday 2026-11-21 11:52 · **Filmed in WoL:** Saturday 2026-11-21 11:52
+
+![autoGatherFrom in WoL](media/autoGatherFrom-wol.gif)
+
+*In WoL, with `autoGatherFrom log` (a scenario, player 1 Ethiopian; three Chinese villagers, `ypSettlerAsian`, whose
+`settler.tactics` Gather action has `<maxrange>10</maxrange>` and `<AutogatherFrom delay="3">AbstractMine</AutogatherFrom>`,
+and a Japanese villager, whose `settlerJapanese.tactics` has no tag):* a trigger walks the four of them to about 6 m
+from a silver mine at 30 s. Three seconds after they stop, the three Chinese villagers start mining from where they
+stand, 10 m from the mine's centre (`ordered` lines at the bottom); the Japanese villager stays idle.
+[Full video (MP4)](media/autoGatherFrom-wol.mp4).
+
+![autoGatherFrom in WoL, key off](media/autoGatherFrom-wol-control.gif)
+
+*The same scenario with the key off:* the four villagers stop beside the mine and stay idle.
+[Full video (MP4)](media/autoGatherFrom-wol-control.mp4).
+
+```
+autoGatherFrom [log]
+```
+
+- **What a modder writes:** in a gather action of the unit's tactics file (or a `<ProtoAction>`), one line per
+  source, a proto or a unit type, with an optional `delay` in seconds (3 when absent, 0 to 3600):
+
+  ```xml
+  <action>
+      <name stringid="42178">Gather</name>
+      <type>Gather</type>
+      <maxrange>10</maxrange>
+      <rate type="AbstractMine">1.0</rate>
+      <AutogatherFrom delay="3">AbstractMine</AutogatherFrom>
+      <AutogatherFrom delay="6">Mill</AutogatherFrom>
+  </action>
+  ```
+
+  The search range is the longest of the action's ranges (`<maxrange>` and its `<typedmaxrange>` lines), measured to
+  the edge of the target.
+- **Ranged gathering needs no key:** the game already respects `<maxrange>` and `<typedmaxrange>` in a Gather or
+  Hunting action. Measured in WoL with the villagers' Gather at `<maxrange>10</maxrange>`: a Settler mined at 13.8 m
+  from a Mine's centre, worked a Mill from 7.7 m and a Plantation from 9.3 m; the Hunting action's
+  `<typedmaxrange type="Huntable">10</typedmaxrange>` (WoL's own) gathers a deer from 11.4 m. Trees are the exception
+  in WoL's data: they have hit points, and the villager must cut one down first with `ChopAttack` (`<maxrange>2</maxrange>`);
+  with the Hunting action's `<typedmaxrange type="Tree">` raised to 10, the villager stopped 13.8 m away and never
+  cut the tree. Raise `ChopAttack`'s range too, or keep trees close.
+- **Buildings do not gather:** a building ordered to gather (a Mill with a Gather action, by a trigger or by this
+  key) gets a Gather action that never starts: it stayed in its waiting state with the target in range (2026-11-21),
+  with or without a `<CarryCapacity>`. That would take a key of its own.
+- **Effect:** every 500 ms of game time, each unit of a proto with the tag that has been idle for `delay` seconds gets
+  the order the game itself gives an idle herdable near a pen: work on the nearest unit of a named type within the
+  range, owned by its player, an ally or Gaia. The game then picks the action and walks the unit as a right-click
+  would. Any order of the player, a fight or a gather in progress is left alone: the key waits until the unit is idle
+  again. A unit that gained nothing from its last order to a target (a fattened herdable, a full gatherer) is not
+  sent there again until what it holds changes. Units inside a building or a ship, and units without an inventory,
+  are skipped.
+- **Moving targets:** the game's Gather action follows a target that moves (a nomad, a Llanero): see
+  [`herdWalkAwayFix`](bug-fixes.md#herdwalkawayfix) and the pack `wol-fixes/me-herdables`. While a tagged unit
+  gathers, its leash anchor follows it, so it does not walk back to where it stood before when it stops.
+- **Simulation:** yes. Everyone needs the key and the data. Everything it reads is game state, the order is the game's
+  own, and no network command is sent. Not tested in multiplayer.
+- **Saved games:** nothing of its own is saved: after a load, a unit idle then waits `delay` again (tested).
+- **Bad values:** a name that is neither a proto nor a unit type is logged once per data load and ignored; a `delay`
+  that is not a number from 0 to 3600 is logged and taken as 3 s; an empty tag is ignored.
+- **Cost:** a scan takes 263 µs on average with 120 tagged villagers idle and out of range (each one searching every
+  scan, the worst case), 5 to 70 µs with none. A/B with `perfprobe.py` (60 s, the same scenario, other games running
+  on the machine): update 0.3 ms with and without the key, one frame over 50 ms in each run.
+- **Log:** `autoGatherFrom: units with an <AutogatherFrom> action tag gather on their own once idle`; with `log`, a line
+  per order (`unit 0 (player 1, proto 935) idle 3.0 s -> unit 4, 6.7 m: ordered`) and every 240 scans their cost.
+- **Status:** confirmed (2026-11-21, single player, WoL, scenario route): a Settler 6 m from a mine's edge ordered
+  after 3.0 s, a Settler beside a Mill after 6.0 s (`delay="6"`), a Settler 21 m away and an untagged Japanese villager
+  left idle; a Settler moved away by a trigger right after its order stayed where it was put; a game saved and loaded
+  before a trigger's move: the native Settler moved there was ordered 3.0 s later. A skirmish as Persians against a
+  German AI (`wolOtto`) with the tag on `settler.tactics`: the AI went from 12 to 18 units in 2.5 minutes, built a
+  Manor, no XS error. Beside the other gathering keys of the test copy (`gatherFix`, `showGatherRate`,
+  `resourceGatherAuras`, `nowalkfarm`, `farmingRadius`): 43 applied, 0 failed.
 
 #### showGatherRate
 

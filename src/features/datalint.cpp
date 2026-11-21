@@ -112,6 +112,7 @@ constexpr KnownTag kKnownTags[] = {
     {L"ShowUnitResourceActionRates", "unitResourceAuras"},
     {L"PillageAmount", "pillageGold"},
     {L"GatherLinkedResource", "linkedResource"},
+    {L"AutogatherFrom", "autoGatherFrom"},
     {L"LinkedResourceType", "linkedResource"},
     {L"LinkedResourceRange", "linkedResource"},
     {L"DetonationProtoAction", "detonationDeath"},
