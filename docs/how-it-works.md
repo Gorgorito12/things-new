@@ -2274,6 +2274,10 @@ default whose type its player's copy has (0x44D7FA); no list per proto is kept, 
 lookup runs on a kill, at a transform, in the one walk after a load and in the panel row of one selected unit. Names made of
 digits are string IDs, read with 0x58EA52 when shown; the panel row's colour is the string table's `<color=r, g, b>` markup.
 
+**`notext` (2026-11-21).** The option only skips the two calls of `floatingtext.*` at a new rank, for a mod whose own upgrades
+show their text there. The count, the rows, the mark and the panel row are the same; the string sites stay verified, as the
+rank names and the panel row read them too.
+
 - **Observed in game:** see the tests in the modding guide.
 
 ### snareOnlyHitUnit
@@ -3541,7 +3545,8 @@ drifts sideways in perspective, so the sprite's centre is at the bar's own heigh
 aoe3-blender-tools' `tools/make_rings.py`) and the mark is drawn high inside the sprite, which moves it straight up on screen:
 it stays centred on the bar, its lowest point the same height over the bar for every rank, and the bar and the mark scale
 alike with the camera, so the gap holds at every zoom. The images are the team's approved soutache knots, traced from their
-sheet into smooth symmetric curves and rendered with its colours (private), then placed by `make_rings.py --rank-shapes`. **Why it is safe:** a model is a
+sheet into smooth symmetric curves and rendered with its colours and a dark border widened inward, so that it still reads at
+the 64-texel level the game samples at the default camera (private), then placed by `make_rings.py --rank-shapes`. **Why it is safe:** a model is a
 visual of the unit, so nothing reaches the simulation, and no tick walks the whole world.
 
 ### auraStacking

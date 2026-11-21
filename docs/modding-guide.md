@@ -31,8 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Saturday 2026-11-21 11:42 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
-| Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Friday 2026-11-20 12:52 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
 | Friday 2026-11-20 12:00 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
@@ -3898,7 +3898,7 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 15:39
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Saturday 2026-11-21 11:42
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
@@ -3915,11 +3915,13 @@ with 504 and 346 hit points, and the log shows the ranks.
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
 
 *In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (2 `Hussar` against 10 `Crossbowman`, both taking
-the defaults of their type):* each rank shows its mark centred over the unit's HP bar: the soutache knots the WoL team
-approved, a copper loop at rank 1, a silver knot at rank 2, gold knots at ranks 3 to 5; a Crossbowman that kills shows the
-copper loop. The floating text gives the rank's name in its colour. A Hussar reaches rank 5. The five marks enlarged:
+the defaults of their type; `veterancyBonus notext`, WoL's line, and the darker border of 2026-11-21):* each rank
+shows its mark centred over the unit's HP bar: the soutache knots the WoL team approved, a copper loop at rank 1, a silver
+knot at rank 2, gold knots at ranks 3 to 5; a Crossbowman that kills shows the copper loop. With `notext` no name rises
+over the unit. A Hussar reaches rank 5. The five marks enlarged:
 [veterancyBonus-marks-x4.png](media/veterancyBonus-marks-x4.png); in the game at the default camera, on a Hussar and on a
-Crossbowman: [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png).
+Crossbowman, ranks 1 to 5, each mark measured 0.0 px from its bar's centre (to half a pixel, 2026-11-21):
+[veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png).
 [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
 
 ![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
@@ -3928,8 +3930,10 @@ Crossbowman: [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame
 Hussars die. [Full video (MP4)](media/veterancyBonus-icons-wol-control.mp4).
 
 ```
-veterancyBonus [log] [file.xml]
+veterancyBonus [notext] [log] [file.xml]
 ```
+
+WoL's line: `veterancyBonus notext` (no floating text at a new rank; the marks and the panel row stay).
 
 ```xml
 <Unit name="Hussar">
@@ -3966,7 +3970,7 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
 - **In WoL today:** no unit changes with its kills. The stock flag `ExperienceUnit` has no reader in the exe. JTMaston's #42.
 - **Effect:** each row says that from that many kills on, the stat is multiplied by that value **in all**: above, damage is
   ×1.5 from the first kill and ×2.0, not ×3.0, from the third. `modifytype` takes every `<ModifyType>` name. A rank is each
-  distinct `kills` value, and reaching one shows `Rank N` over the unit, or the rank's name.
+  distinct `kills` value, and reaching one shows `Rank N` over the unit, or the rank's name (nothing with `notext`).
 - **Default rows (2026-11-11):** a `<VeterancyDefault unittype="...">` of `veterancy.xml` gives its rows to every proto of
   that unit type (an abstract type or a proto name) that has **no** `<VeterancyBonus>` of its own: a proto's own rows replace
   the defaults entirely, they are not added to them. A proto of two listed types takes the first block of the file that it
@@ -3985,7 +3989,7 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   proportion, as with ×.
 - **Rank names and colours (2026-11-11):** `<VeterancyRank rank="N" name="..." color="RRGGBB"/>` names a rank and gives it a
   colour (a leading `#` is accepted). A `name` made of digits is a string ID of the string table (`32485` showed `Hero`).
-  The floating text over the unit shows the name in that colour, and the unit panel's row shows it too, coloured with the
+  The floating text over the unit shows the name in that colour (not with `notext`), and the unit panel's row shows it too, coloured with the
   string table's `<color=r, g, b>` markup (`Legend` in light blue, `6 kills`). A rank with no `<VeterancyRank>` stays
   `Rank N`, in gold. The names are display only.
 - **The file:** missing, it is no error (no defaults, no names); named on the cfg line and missing, or not well-formed XML,
@@ -4001,13 +4005,19 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   its rank, the marks the WoL team approved (JTMaston's #74, 2026-11-20), traced from their sheet: rank 1 a copper loop like
   a cursive "l", its tails sweeping out left and right; rank 2 a silver knot, a round top loop on a stem with two
   eye-shaped side loops over a tail bar; rank 3 the same in gold with a pointed top loop; rank 4 gold, a round top loop and
-  two tiers of side loops; rank 5 gold, a pointed top loop and two tiers. A rank above the fifth keeps rank 5's mark. With no
+  two tiers of side loops; rank 5 gold, a pointed top loop and two tiers. A rank above the fifth keeps rank 5's mark.
+  Since 2026-11-21 their dark border is a little wider than on the team's sheet, inward only (the metal narrows; the
+  outline and the loop holes stay), so that it shows more at the game's size: at the default camera the game samples the
+  texture's 64-texel level, where the sheet's border was under a texel. The repository owner chose it from four widths
+  (`wol-fixes/veterancy-marks/border-review.png`). With no
   such folder the log says so once and the bonuses work as before. Display only: it changes nothing in the simulation. In the
   minimized interface the unit panel's row shows `Rank 3` and `3 kills`. DE's rank icons are images in its selection panel.
 - **Centred on the HP bar:** every mark is horizontally centred on its unit's HP bar, and all five end at the same height
   above it. The mark's sprite has its centre at the bar's own height (2.9 m for infantry, 4.1 m for cavalry, 5.1 m for WoL's
   `AbstractElephant`), so it does not drift sideways in perspective. Measured at the default camera, the unit at the
-  screen's centre: a Hussar 0 px from the bar's centre at every rank, a Crossbowman within 1 px
+  screen's centre: a Hussar 0 px from the bar's centre at every rank, a Crossbowman within 1 px; again with the darker
+  border (2026-11-21, `wol-fixes/veterancy-marks/ingame_sheet.py`: the mark's axis of symmetry against the bar's middle,
+  to half a pixel): 0.0 px for both at ranks 1 to 5
   ([veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png)). An elephant's bar sits toward its head and
   turns with it, while the mark hangs at the unit's position, so an elephant's mark can be up to about 13 px off its bar at a
   close camera. Bar and mark scale alike with the camera, so the gap holds at any zoom; units packed together can put a mark
@@ -4031,7 +4041,14 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   `VeterancyEnable` 0 player 1's logged no rank. A tech cannot add or change the rows themselves. A tech that
   changes a stat works with the rows as with any modifier.
 - **Interface:** the rank marks above, the floating text when a rank is reached and the unit panel's row; DE's rank icons in
-  the selection panel are not there. Damage and hit points in the panel are the game's, with the modifiers.
+  the selection panel are not there.
+- **`notext` (2026-11-21):** no floating text when a unit reaches a rank, for a mod whose own upgrades show text over the unit
+  (JTMaston: the rank text clashes with WoL's general upgrade system). The rows, the count, the rank marks and the unit
+  panel's row are unchanged, and the log's first line ends `; no rank text (notext)`. Tested in WoL (2026-11-21, 2
+  `Hussar` against 10 `Crossbowman`, the defaults above, the marks of `tools/rings`): with `notext` the Hussars went
+  through ranks 1 to 5 with their marks (copper, silver, gold) and no name over them; without it, `Veteran`, `Elite` and
+  `Champion` rose over them as before. Both runs `veterancyBonus: applied`, no `FAILED`. The blue `+8` in both is the game's
+  own text, not the key's. Damage and hit points in the panel are the game's, with the modifiers.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data. `Rank N` is local.
 - **Log:** `veterancyBonus: the proto tag VeterancyBonus is on`, `hook reached: killing blows (0x4D4F37)` (the hook it shares with `killSpawn`), and with `log`:
   `veterancyBonus: proto 318: from 1 kills, stat 2 x1.5`, `veterancyBonus: unit 0, proto 318: 3 kills, a new rank, rank 3`,
