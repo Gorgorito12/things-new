@@ -1490,6 +1490,23 @@ REA 6.8 (Ghidra 12.1.4) on the stock exe, snapshot `rea/snapshots/age3y-b1a1dab7
 | Command panel button join | 0x462317 | `cs`, in game | [O] Shared hook `panelbuttons.*` (`nativePreview`, `transformChecks`). `[esp+18h]` rollover BString (the tech rollover builder gets `lea ecx,[esp+30h]` after six pushes, 0x4622BF), copied to the button at 0x462604 (0x40196F into `[button+68h]`). |
 | Player unit list | `[player+F8h]` (IDs), `[player+FCh]` (count) | in game | [O] 2026-11-20: exactly the player's five living Pyrpolikon, after the maturing units had died. |
 
+### Particle emitter cycle (WoL #69, the works' smoke on and off, 2026-11-21)
+
+REA 6.8 (Ghidra 12.1.4) on the stock exe, opened with snapshot `rea/snapshots/age3y-b1a1dab7-rea68.json`, and capstone
+(`cs`) of the exe's bytes; checked in game in `C:\AoE3-UHC-WoLReal5`. [O] observed, [I] inferred, [U] unknown.
+
+| Name | Where | Evidence | Notes |
+|---|---|---|---|
+| `.particle` `<emitter>` parser | 0x59FF31 (reads at 0x5A11E3..) | `ev_8f96b5f7` | [O] Bytes: TiedToEmitter +3Ch, IgnoreRotation +3Dh, EmitByMotion +3Eh, Loop +3Fh, InheritVelocity +40h, UseMin/MaxVelocity +41h/+42h, AlwaysActive +43h, SyncWithAttackAnim +44h, CastShadows +45h. Floats: UpdateRadius +50h (clamped 3..25), ParticleLife/Var +58h/+5Ch, EmissionRate/Var +78h/+7Ch, InitialDormancy/Var +80h/+84h, InitialUpdate/Var +88h/+8Ch, EmissionTime/Var +90h/+94h, DormantTime/Var +98h/+9Ch (offsets in the emitter definition). |
+| Varied value | 0x422929 | `cs` | [O] `cdecl(value, var)`: `value` when `var` <= 1e-6, else `value * (1 + var * r)`, `r` from 0x422648 (`thiscall(0xC66588, stream 4, -1.0, 1.0)`: an LCG per stream, `x = x * 0x343FD + 0x269EC3`, state advanced on every call). So a `*var` is a share of the value, and every call draws a new number. [U] Whether stream 4 is ever synchronised between players (not needed: visual only). |
+| Emitter start | 0x5925B2 | `cs` | [O] Instance `+80h` = definition, `+5Ch` = state (1 dormant, 2 emitting, 3 done), `[+ECh]+4` = ms left in the state. Start time set back by `varied(InitialUpdate)` x 1000 ms (the pre-run). When `x + InitialDormancy` > 0 (0x592686..0x5926A2, `x` from 0x58EC4B, [U]) it starts dormant for `varied(InitialDormancy)` (0x592A58..), else emitting for `varied(EmissionTime)` (0x5926A8). |
+| Emitter state machine | 0x425335 with pieces at 0x59309B, 0x4A6EA9, 0x5118C8, 0x6E5A2E | `cs` | [O] Runs only when `EmissionTime` > 1e-6, or `Loop` and `DormantTime` < 1e-6 (then it emits without end: the old `works_smoke`); else the emitter ends (state 3) unless EmitByMotion. Emitting runs out: dormant for `varied(DormantTime)`; with `Loop` 0 it ends. Dormant runs out: emitting for `varied(EmissionTime)`. Each switch draws again, per emitter instance. |
+| AlwaysActive readers | 0x44E11D, 0xA21AE6 (`cmp byte [x+43h],0`) | `cs` | [U] Not traced. 0x44E11D skips a check through `[0xC67314]` vtable `+6Ch` when the flag is set. In game (2026-11-20) the arsenal's `white_smoke_b` with AlwaysActive 0 gave the age 2 works no smoke for a minute. |
+
+In game (2026-11-21, `wol-fixes/paraguayan-works/LEEME-README.txt`, "Smoke on and off"): with EmissionTime 14 var 0.43 and
+DormantTime 18.5 var 0.35, every chimney alternates on its own and no two are in step [O]; the double attach of the smoke
+(component and Idle anim) makes one emitter per bone [I, from the measured pauses].
+
 ## Rendering, threads and timing (2026-10-28, for the performance investigation)
 
 Full write-up and evidence: [performance.md](performance.md). REA bundles:
