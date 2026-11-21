@@ -356,9 +356,9 @@ resourceDebt [Food] [Wood] [Gold] [log]   trickles and unit rates may go below 0
 costEscalationTechs [log]     a Data tech effect may change CostEscalation
 randomCost [log]              <RandomCost> rolls a unit's price in a range, a new one per purchase
 unitTypeTechs [log]           Data tech effects AddUnitType and RemoveUnitType, for one player's copy of a proto
-veterancyBonus [log] [file]   <VeterancyBonus> rows give a proto bonuses by its kills, with a rank mark;
-                              tech="..." rows; data\\uhc\\veterancy.xml: rows by unit type and
-                              <Civilization> blocks, rank names and colours
+veterancyBonus [notext] [log] [file]   <VeterancyBonus> rows give a proto bonuses by its kills, with a
+                              rank mark; tech="..." rows; data\\uhc\\veterancy.xml: rows by unit type and
+                              <Civilization> blocks, rank names and colours; notext: no floating text at a new rank
 killSpawn [log]               civs.xml <killSpawn>: enemies a civ kills become animals, by weight
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners

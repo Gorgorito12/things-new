@@ -125,8 +125,8 @@ unitResourceAuras-wol 2 36 3
 unitResourceAuras-wol-control 2 36 3
 veterancyBonus-wol 0 12 1
 veterancyBonus-wol-control 0 12 1
-veterancyBonus-icons-wol 11 24 2
-veterancyBonus-icons-wol-control 15 24 2
+veterancyBonus-icons-wol 17 24 2
+veterancyBonus-icons-wol-control 18 24 2
 killSpawn-wol 2 20 2
 killSpawn-wol-control 2 20 2
 workRateByAbstractType-wol 2 36 3
@@ -311,7 +311,8 @@ researchOnTheMove-wol 0 20 2 800:80:0:0+800:480:700:200+800:80:1120:850
 researchOnTheMove-wol-control 0 20 2 800:80:0:0+800:480:700:200+800:80:1120:850
 truckAttackResourceFix-wol 0 24 2
 truckAttackResourceFix-wol-control 0 24 2
-paraguayanWorks-smoke-wol 4 36 3
+paraguayanWorks-smoke-wol 4 84 7
+paraguayanWorks-smoke-wol-steady 4 84 7
 paraguayanWorks-smoke-wol-control 4 36 3
 paraguayanWorks-damage-wol 32 24 2
 paraguayanWorks-damage-wol-control 32 24 2
@@ -319,8 +320,8 @@ paraguayanWorks-collapse-wol 62 4 0.5
 paraguayanWorks-collapse-wol-control 67 4 0.5
 shipTechLimit-wol 2 36 3 800:70:0:375+800:240:480:480
 shipTechLimit-wol-control 3 30 3 800:240:480:320
-transformChecks-wol 3 12 1 800:700:380:60+800:230:1060:850
-transformChecks-wol-control 3 12 1 800:700:380:60+800:230:1060:850
+transformChecks-wol 4.5 12 1 800:640:560:290+800:175:1110:945
+transformChecks-wol-control 2 12 1 800:640:560:290+800:175:1110:945
 autoScout-back-wol 8 24 2
 autoScout-back-wol-control 8 24 2
 autoGatherFrom-wol 8 24 2

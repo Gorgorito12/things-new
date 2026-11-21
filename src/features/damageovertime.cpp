@@ -901,7 +901,7 @@ bool Poison(const char* unit, std::wstring* out) {
     return false;
   }
   wchar_t text[48];
-  swprintf_s(text, L"%u x %.0f s", static_cast<unsigned>(stacks), static_cast<double>(end - now) / 1000.0);
+  swprintf_s(text, L"%u x %.0fs", static_cast<unsigned>(stacks), static_cast<double>(end - now) / 1000.0);
   *out = text;
   return true;
 }

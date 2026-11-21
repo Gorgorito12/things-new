@@ -1,0 +1,87 @@
+Minimized UI, version 7: answers to JTMaston's points on version 6
+==================================================================
+
+1. "4 s there should be 4s, character and value sticked together"
+   Done everywhere our DLL writes seconds:
+   - the attack rows' tooltip line: "Rate of fire: 3.50s" (item 3 below);
+   - the lifespan item: "40s"; the poison item: "3 x 8s";
+   - the rows our keys add to the big panel: Lifespan "40s" / "40s once built", Research grants "2/3, next in 14s".
+   final\minUIStats-v7-tip-escopetero-ranged.jpg, -tip-escopetero-siege.jpg
+
+2. "Armor indicator should show the % character sticked to the value"
+   Done: "20%", "75%" (0.30 is "30%"; a value with a tenth keeps it: 0.125 is "12.5%"), the damage type icon after it,
+   no parentheses. With multiarmor: "30% (hand)  20% (ranged)  10% (siege)". It applies to our resists row and also to
+   the panel's original resists value (which the game writes "0.20"), so the minimized panel never shows the old form.
+   The big UI's own Resists row is the game's and still reads "0.20" (final\minUIStats-v7-bigui-*.jpg); tell us if you
+   want it changed there too.
+   final\minUIStats-v7-falconet-limber.jpg (75%), -gather-food.jpg (20%)
+
+3. "Change attacks every to Rate of fire"
+   Done: the tooltip line reads "Rate of fire: 3.50s (stopwatch)". It is rofTip in minuirows.xml
+   (rofTip="Rate of fire: %ss"), so you can still reword it.
+
+4. "Does the speed indicator update for units that have a speedmodifier in some of their tactics, such as artillery
+   with limber and unlimber?"
+   Yes. The speed shown is the unit's live maximum speed (the same value the big UI's Speed row shows), and it includes
+   the current tactic's speedmodifier. Tested with your Falconet (MaxVelocity 4; falconet.tactics: Limber 1.0,
+   Bombard 0.4):
+   - Limber: 4 (minimized and big UI);
+   - Bombard (unitSetTactic("Bombard"), or the button): 1.60 = 4 x 0.4, in both UIs, at the panel's next refresh
+     (it refreshes at most every 0.25 s);
+   - real movement: a Falconet in Bombard given a move order went back to Limber by itself and moved at 4.0 m/s
+     (44.1 m in 11.0 s; one left in Limber: 3.99 m/s). The game limbers artillery to move, so 1.60 is the speed of the
+     deployed gun, never one it moves at; the panel showed 4 again after the move.
+   final\minUIStats-v7-falconet-limber.jpg, -falconet-bombard.jpg, -falconet-after-move.jpg,
+   -bigui-falconet-limber.jpg, -bigui-falconet-bombard.jpg
+
+5. "I see the line unit icon is still the original"
+   Redrawn in this version, as you asked, in a new style (soft edges and shading like your own icons, a thin dark
+   outline, parts thick enough to survive the panel's small size):
+       Line       (AbstractHeavyInfantry)   the infantryman in a shako with a BLUE coat, white crossbelts, musket
+                                            and bayonet          art\ui\ingame\stat_icon_heavy_infantry.ddt
+       Standing   (AbstractInfantry)        the same soldier with a RED coat
+                                            art\ui\ingame\stat_icon_infantry.ddt and
+                                            art\WoL\ui\ingame\staticons\stat_icon_standing_unit.ddt
+       Maneuver   (AbstractRangedCavalry)   a winged arrow       art\WoL\ui\ingame\staticons\stat_icon_ranged.ddt
+   They replace your files at the same paths, so your attackTypeIcons line and your data do not change. All three
+   are 32x32 BGRA. A second Maneuver icon was drawn, a winged bullet (review\stat_icon_ranged-winged-bullet.ddt);
+   we chose the arrow because it reads better at the panel's size, but you can copy the bullet over
+   stat_icon_ranged.ddt if you prefer it. The new apply_fix.py installs the whole pack (layout, rows, icons) and keeps
+   your files for --restore. The sheet icons-v7-review.png shows the old and new icons side by side, enlarged
+   and at real size.
+   Note: for Standing the panels draw ui\ingame\stat_icon_infantry.ddt (the game's own icon for AbstractInfantry,
+   which your copy has as the same purple soldier), not the staticons file your attackTypeIcons line names, so the
+   red soldier goes in both files.
+   Checked in game (1920x1080, our UHC.dll, the pack installed with apply_fix.py and removed with --restore): the
+   Escopetero's rows and tooltips show the arrow (1.5x Maneuver Unit) and the blue soldier (1.25x Line Unit), the
+   Falconet's Bombard row the red soldier (3x Standing Unit), in the minimized and the big UI; the rows end where they
+   ended with your icons (no layout change).
+   final\minUIStats-v7-icons-min-*.jpg, final\minUIStats-v7-icons-big-*.jpg
+
+6. "How is showGatherRate doing with all the changes we've done so far to the UI?"
+   It works with the minimized UI, with one bug found and fixed in this round: a villager chopping wood showed no
+   rate (only wood: berries, mines, the Mill, crates were fine). Tested in WoL (Ethiopians, 1920x1080) with
+   minUIStats, multiplierDecimals, attackTypeIcons and, in a second run, resourceGatherAuras and resourceDebt on as
+   well (40 keys applied, 0 failed):
+       Villager on                minimized panel        big UI                 (rate row "Food (icon): ...")
+       berries                    0.67/s                 0.67/s
+       a Mine                     0.60/s                 0.60/s
+       the Mill                   0.50/s                 0.50/s
+       a tree                     0.50/s (after the fix)
+       a crate                    8/s
+   In the minimized panel the rate is on the right column's first line, where the game puts the AutoGather rate; the
+   attack row that was there moves one line down, so nothing overlaps. The Mill itself shows "Food: Infinite" and
+   "Gatherers: 1 / 10".
+   The optional row "Gathers: {gatherRate}" (commented in minuirows.xml) shows the same value ("Gathers: Wood 0.50/s")
+   if you give it a gadget; we tried it under the unit's name, where the status row is. Since the rate row already
+   shows the value, we suggest keeping it off. Its neighbour "Holds: {inventory}" was fixed too: a Mill read
+   "999/100" (now no row: the game already writes "Infinite"), a Mine "1928/0" (now "1929", as the game's row).
+   final\minUIStats-v7-gather-food.jpg, -gather-gold.jpg, -gather-mill-settler.jpg, -mill.jpg (the pack as shipped),
+   final\minUIStats-v7-allkeys-gather-*.jpg (all keys on, the optional rows on), final\minUIStats-v7-bigui-*.jpg
+   With your own uhc.dll and our dinput8.dll (minUIStats, multiplierDecimals, showGatherRate): 5 applied, 0 failed;
+   the same rates (berries 0.67/s, Mine 0.60/s, Mill 0.50/s, tree 0.50/s). There the resists keep your DLL's text
+   ("Resists: 0.20"): your uhc.dll replaces the panel's armor code, and ours then stands aside, so the "%" form needs
+   our UHC.dll (or the same change in yours).
+   final\minUIStats-v7-woluhcdll-*.jpg
+
+Everything else is as in version 6. The pack files changed: minuirows.xml (rofTip, comments), README.txt, the three icons in art\, and apply_fix.py (new: install and --restore).

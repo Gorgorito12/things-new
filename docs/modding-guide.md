@@ -46,10 +46,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 11:07 | [`deadReplacementAtZeroInventory`](bug-fixes.md#deadreplacementatzeroinventory) | Added. A hunt, a herdable or any unit that leaves a body to gather drops its `<DeadReplacement>` when the body is used up, not when it falls. | `<DeadReplacement>` on the protos that want one (none has it today). |
 | Saturday 2026-11-21 11:03 | [`auraStacking`](#aurastacking) | Filmed in WoL, with a control. `<ForbidUnitType>` on any aura: the aura leaves units of a type or proto alone; that an aura does not stack is the game's own `<ModifyExclusive>`. | The tags on the aura. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
-| Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
+| Saturday 2026-11-21 11:54 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
+| Saturday 2026-11-21 11:42 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Friday 2026-11-20 12:52 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
-| Friday 2026-11-20 12:00 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Friday 2026-11-20 11:59 | [`politicianEnablesTech`](#politicianenablestech) | Filmed in WoL, with a control. A politician of the European age-up dialog shows the techs it makes available as icons with their names and their research rollover, and its picture shows only the flag. | `<PoliticianEnablesTech>` lines in the politicians' `<Tech>`, and the new gadgets in `uipoliticianEuropeandlg.xml` (`wol-fixes/politician-ui`). |
 | Friday 2026-11-20 11:59 | [`researchOnTheMove`](#researchonthemove) | Added. A unit of the abstract type `ResearchOnTheMove` keeps researching while it walks, fights or does anything else, instead of standing still until its research is done. | `<UnitType>ResearchOnTheMove</UnitType>` on the protos: `wol-fixes/research-on-the-move` gives it to the Mapuche council. |
 | Friday 2026-11-20 11:50 | [`homeCityTechsInUnits`](#homecitytechsinunits) | Added. A home city card's tech listed in a proto's `<Tech>` rows is researched there like a normal tech. | The card's tech in the `<Tech>` rows, made obtainable for the civ. |
@@ -4115,7 +4115,7 @@ cantBeSlowed [log]
 
 *Units grow stronger as they get kills.*
 
-**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Friday 2026-11-20 15:39
+**Added:** Thursday 2026-11-05 10:17 · **Filmed in WoL:** Saturday 2026-11-21 11:42
 
 ![veterancyBonus in WoL](media/veterancyBonus-wol.gif)
 
@@ -4132,11 +4132,13 @@ with 504 and 346 hit points, and the log shows the ranks.
 ![Rank marks of veterancyBonus in WoL](media/veterancyBonus-icons-wol.gif)
 
 *In WoL, with `art\effects\uhc_rings` and the `veterancy.xml` below (2 `Hussar` against 10 `Crossbowman`, both taking
-the defaults of their type):* each rank shows its mark centred over the unit's HP bar: the soutache knots the WoL team
-approved, a copper loop at rank 1, a silver knot at rank 2, gold knots at ranks 3 to 5; a Crossbowman that kills shows the
-copper loop. The floating text gives the rank's name in its colour. A Hussar reaches rank 5. The five marks enlarged:
+the defaults of their type; `veterancyBonus notext`, WoL's line, and the darker border of 2026-11-21):* each rank
+shows its mark centred over the unit's HP bar: the soutache knots the WoL team approved, a copper loop at rank 1, a silver
+knot at rank 2, gold knots at ranks 3 to 5; a Crossbowman that kills shows the copper loop. With `notext` no name rises
+over the unit. A Hussar reaches rank 5. The five marks enlarged:
 [veterancyBonus-marks-x4.png](media/veterancyBonus-marks-x4.png); in the game at the default camera, on a Hussar and on a
-Crossbowman: [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png).
+Crossbowman, ranks 1 to 5, each mark measured 0.0 px from its bar's centre (to half a pixel, 2026-11-21):
+[veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png).
 [Full video (MP4)](media/veterancyBonus-icons-wol.mp4).
 
 ![Rank marks in WoL, key off](media/veterancyBonus-icons-wol-control.gif)
@@ -4145,8 +4147,10 @@ Crossbowman: [veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame
 Hussars die. [Full video (MP4)](media/veterancyBonus-icons-wol-control.mp4).
 
 ```
-veterancyBonus [log] [file.xml]
+veterancyBonus [notext] [log] [file.xml]
 ```
+
+WoL's line: `veterancyBonus notext` (no floating text at a new rank; the marks and the panel row stay).
 
 ```xml
 <Unit name="Hussar">
@@ -4183,7 +4187,7 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
 - **In WoL today:** no unit changes with its kills. The stock flag `ExperienceUnit` has no reader in the exe. JTMaston's #42.
 - **Effect:** each row says that from that many kills on, the stat is multiplied by that value **in all**: above, damage is
   ×1.5 from the first kill and ×2.0, not ×3.0, from the third. `modifytype` takes every `<ModifyType>` name. A rank is each
-  distinct `kills` value, and reaching one shows `Rank N` over the unit, or the rank's name.
+  distinct `kills` value, and reaching one shows `Rank N` over the unit, or the rank's name (nothing with `notext`).
 - **Default rows (2026-11-11):** a `<VeterancyDefault unittype="...">` of `veterancy.xml` gives its rows to every proto of
   that unit type (an abstract type or a proto name) that has **no** `<VeterancyBonus>` of its own: a proto's own rows replace
   the defaults entirely, they are not added to them. A proto of two listed types takes the first block of the file that it
@@ -4254,7 +4258,7 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   marks with these rows (no `uhc_rings` in the test copy), the unit panel's row, multiplayer.
 - **Rank names and colours (2026-11-11):** `<VeterancyRank rank="N" name="..." color="RRGGBB"/>` names a rank and gives it a
   colour (a leading `#` is accepted). A `name` made of digits is a string ID of the string table (`32485` showed `Hero`).
-  The floating text over the unit shows the name in that colour, and the unit panel's row shows it too, coloured with the
+  The floating text over the unit shows the name in that colour (not with `notext`), and the unit panel's row shows it too, coloured with the
   string table's `<color=r, g, b>` markup (`Legend` in light blue, `6 kills`). A rank with no `<VeterancyRank>` stays
   `Rank N`, in gold. The names are display only.
 - **The file:** missing, it is no error (no defaults, no names); named on the cfg line and missing, or not well-formed XML,
@@ -4270,13 +4274,19 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   its rank, the marks the WoL team approved (JTMaston's #74, 2026-11-20), traced from their sheet: rank 1 a copper loop like
   a cursive "l", its tails sweeping out left and right; rank 2 a silver knot, a round top loop on a stem with two
   eye-shaped side loops over a tail bar; rank 3 the same in gold with a pointed top loop; rank 4 gold, a round top loop and
-  two tiers of side loops; rank 5 gold, a pointed top loop and two tiers. A rank above the fifth keeps rank 5's mark. With no
+  two tiers of side loops; rank 5 gold, a pointed top loop and two tiers. A rank above the fifth keeps rank 5's mark.
+  Since 2026-11-21 their dark border is a little wider than on the team's sheet, inward only (the metal narrows; the
+  outline and the loop holes stay), so that it shows more at the game's size: at the default camera the game samples the
+  texture's 64-texel level, where the sheet's border was under a texel. The repository owner chose it from four widths
+  (`wol-fixes/veterancy-marks/border-review.png`). With no
   such folder the log says so once and the bonuses work as before. Display only: it changes nothing in the simulation. In the
   minimized interface the unit panel's row shows `Rank 3` and `3 kills`. DE's rank icons are images in its selection panel.
 - **Centred on the HP bar:** every mark is horizontally centred on its unit's HP bar, and all five end at the same height
   above it. The mark's sprite has its centre at the bar's own height (2.9 m for infantry, 4.1 m for cavalry, 5.1 m for WoL's
   `AbstractElephant`), so it does not drift sideways in perspective. Measured at the default camera, the unit at the
-  screen's centre: a Hussar 0 px from the bar's centre at every rank, a Crossbowman within 1 px
+  screen's centre: a Hussar 0 px from the bar's centre at every rank, a Crossbowman within 1 px; again with the darker
+  border (2026-11-21, `wol-fixes/veterancy-marks/ingame_sheet.py`: the mark's axis of symmetry against the bar's middle,
+  to half a pixel): 0.0 px for both at ranks 1 to 5
   ([veterancyBonus-marks-ingame.png](media/veterancyBonus-marks-ingame.png)). An elephant's bar sits toward its head and
   turns with it, while the mark hangs at the unit's position, so an elephant's mark can be up to about 13 px off its bar at a
   close camera. Bar and mark scale alike with the camera, so the gap holds at any zoom; units packed together can put a mark
@@ -4300,7 +4310,14 @@ log my.xml`), optional, holds rows by unit type and the names of the ranks:
   `VeterancyEnable` 0 player 1's logged no rank. A tech cannot add or change the rows themselves. A tech that
   changes a stat works with the rows as with any modifier.
 - **Interface:** the rank marks above, the floating text when a rank is reached and the unit panel's row; DE's rank icons in
-  the selection panel are not there. Damage and hit points in the panel are the game's, with the modifiers.
+  the selection panel are not there.
+- **`notext` (2026-11-21):** no floating text when a unit reaches a rank, for a mod whose own upgrades show text over the unit
+  (JTMaston: the rank text clashes with WoL's general upgrade system). The rows, the count, the rank marks and the unit
+  panel's row are unchanged, and the log's first line ends `; no rank text (notext)`. Tested in WoL (2026-11-21, 2
+  `Hussar` against 10 `Crossbowman`, the defaults above, the marks of `tools/rings`): with `notext` the Hussars went
+  through ranks 1 to 5 with their marks (copper, silver, gold) and no name over them; without it, `Veteran`, `Elite` and
+  `Champion` rose over them as before. Both runs `veterancyBonus: applied`, no `FAILED`. The blue `+8` in both is the game's
+  own text, not the key's. Damage and hit points in the panel are the game's, with the modifiers.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data. `Rank N` is local.
 - **Log:** `veterancyBonus: the proto tag VeterancyBonus is on`, `hook reached: killing blows (0x4D4F37)` (the hook it shares with `killSpawn`), and with `log`:
   `veterancyBonus: proto 318: from 1 kills, stat 2 x1.5`, `veterancyBonus: unit 0, proto 318: 3 kills, a new rank, rank 3`,
@@ -5014,6 +5031,14 @@ showGatherRate [<UnitType>] [log]      no UnitType: every unit
   interface: the row in the unit panel, gone when the villager stops and with two villagers selected,
   and the data ref. In the normal interface, on the stock game (2026-10-29): the row under the HP row.
   Other targets, whole-number rates, a `<UnitType>` and `DoNotShowAutoGatherRate` were not tested.
+- **Fixed (2026-11-21): wood.** A villager on a tree showed no row: while it chops and gathers, its current action is
+  not the Gather action that ticks (that one has vtable 0xB97880; the current one 0xB979D8, in its state 5), and
+  the record test wanted them equal. The test now also takes that current action, with the record's own action,
+  state, owner and age as before. Tested in WoL with every UI key of the minimized panel (`minUIStats`,
+  `multiplierDecimals`, `resourceGatherAuras`, `resourceDebt`; 40 applied, 0 failed), both interfaces, the same
+  value in each: berries 0.67/s, a `Mine` 0.60/s, a `Mill` 0.50/s, `TreeGreatLakes` 0.50/s, crates 8/s
+  (pictures `wol-fixes/min-ui/final/minUIStats-v7-allkeys-gather-*` and `-bigui-*`). Beside WoL's own `uhc.dll`
+  (our `dinput8.dll`): see the minUIStats version 7 notes.
 
 #### autoGatherScaleByContained
 
@@ -5949,7 +5974,7 @@ lifespanAfterConstruction [<UnitType>] [log]     default AbstractLifespanAfterCo
 
 ![The Lifespan row in WoL](media/lifespanAfterConstruction-countdown-wol.gif)
 
-*In WoL (Ethiopians, an Apartment with a test Lifespan of 40 s):* the panel shows `40 s once built` on the foundation, then counts
+*In WoL (Ethiopians, an Apartment with a test Lifespan of 40 s):* the panel shows `40 s once built` (`40s once built` since 2026-11-21) on the foundation, then counts
 down. [Full video (MP4)](media/lifespanAfterConstruction-countdown-wol.mp4).
 
 ![The Lifespan row in WoL, key off](media/lifespanAfterConstruction-countdown-wol-control.gif)
@@ -6712,7 +6737,7 @@ researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
   <Effect type='Data' amount='2.00' subtype='ResearchGrantPoints' relativity='Absolute'>
       <Target type='ProtoUnit'>Market</Target></Effect>
   ```
-- **Unit panel:** a selected building with grants shows `Research grants` `2/3, next in 14 s`, `3/3 (full)` or
+- **Unit panel:** a selected building with grants shows `Research grants` `2/3, next in 14s`, `3/3 (full)` or
   `0/3 once built`.
 - **With `nextResearchFree`:** a research that key makes free spends no grant point.
 - **The AI** gets and spends points as players do: its researches go through the same payment.
@@ -7637,20 +7662,21 @@ unitTypeTechs [log]
 
 *A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit.*
 
-**Added:** Friday 2026-11-20 11:52 · **Filmed in WoL:** Friday 2026-11-20 12:00
+**Added:** Friday 2026-11-20 11:52 · **Filmed in WoL:** Saturday 2026-11-21 11:54
 
 ![transformChecks in WoL](media/transformChecks-wol.gif)
 
-*In WoL, with `transformChecks log` and `wol-fixes/special-transforms` (a scenario, Zulu youths in the Fortress age, a
-Gunpowder Kraal in the middle):* three youths are selected, two near the kraal and one 28 m away. The Askari button's
-tooltip says `2 / 3` and why the third cannot; a click turns the two near ones into Askari maturing units (the cost is
-paid twice) and their Askaris come out; the far youth stays, and with it alone the button is grey with the kraal rule
-in red. [Full video (MP4)](media/transformChecks-wol.mp4).
+*In WoL, with `transformChecks log` and `wol-fixes/special-transforms` (a scenario, a youth 10 m from a Gunpowder
+Kraal, no resources until 22 s):* the Askari button stays enabled, its tooltip ends with "Not enough resources" in
+red, and a click shows the game's own message, "55 food, 70 gold required to build another Askari.", as a Train
+button does. Once the resources come, the same click turns the youth into an Askari maturing unit: the Askari comes
+out at once, and the youth dances on the maturing ground (the pack's anim files) until the maturing ends.
+[Full video (MP4)](media/transformChecks-wol.mp4).
 
 ![transformChecks in WoL, key off](media/transformChecks-wol-control.gif)
 
-*In WoL, key off, the pack applied (the same scene):* the button is the pack's, so the click transforms the same two
-youths: the kraal rule is the game's. The far youth stays too, but nothing says why, and the button stays enabled.
+*In WoL, key off, the pack applied (the same scene):* the click without resources shows the same message (it is the
+game's), but the tooltip says nothing; the transform and the dance are the same, since both are the pack's data.
 [Full video (MP4)](media/transformChecks-wol-control.mp4).
 
 ```
@@ -7664,12 +7690,14 @@ transformChecks [log]
   kraal rule `distanceatmostfromtype ... AFRICANgunpowderkraal` of `maturinggunpowder.xml` applies to a button
   too), charges the target's cost, and puts the target, built, where the unit stood.
 - **What the key adds:**
-  - **the button:** for each of your selected units the panel asks the same checks (the cost, the build limit, the
-    placement). With none that passes, the button is grey, a click does nothing, and the tooltip ends with the
-    reason in red: the placement rule's own `errorstringid` text ("This unit must be matured near a Gunpowder
-    Kraal."), "Not enough resources" or "You are at the build limit for the …". With some that pass, the tooltip
-    says how many ("2 / 3: …") and the click transforms those. Without the key the button is always enabled and a
-    refused unit does nothing, silently;
+  - **the button:** for each of your selected units the panel asks the same checks, in the game's order (the
+    placement, the build limit, the cost). With none that passes, the button is grey, a click does nothing, and the
+    tooltip ends with the reason in red: the placement rule's own `errorstringid` text ("This unit must be matured
+    near a Gunpowder Kraal.") or "You are at the build limit for the …". When the cost is the only reason, the
+    button stays enabled with "Not enough resources" in red, and a click shows the game's own message and sound
+    ("55 food, 70 gold required to build another Askari.", the routine a Train button uses), once for a group. With
+    some that pass, the tooltip says how many ("2 / 3: …") and the click transforms those. Without the key the button
+    is always enabled and a refused unit does nothing, silently (the cost message excepted: it is the game's);
   - **the build limit:** a target whose `<BuildLimit>` the player's living units of that proto reach is refused, unit
     by unit, before the payment. Without the key six fishing boats pressed together made six `PyrpolikoMaturing`
     with a limit of 5.
@@ -7693,9 +7721,17 @@ transformChecks [log]
   `Age0Greeks` had no fireship button (the pack's `<associatedtech>`), and with the console command still transformed
   (the game does not check that the target is enabled); beside WoL's DLL (`dinput8.dll`) both
   hooks were reached and the same group gave `2 / 3` and two transforms; `nativePreview` still applied with the shared
-  hook. Not tested: multiplayer, an AI game with the pack (WoL's AI builds these maturing protos with build plans, which
-  do not need the `<Train>` rows the pack removes: an inference), the reload of a game saved during a maturing (the
-  console `loadGame` did not visibly reload).
+  hook. Again on 2026-11-21 (JTMaston's feedback; screenshots 9 to 17 there), Zulu youths with no resources: one
+  youth 10 m from the kraal, button enabled with the red line, the click gave "55 food, 70 gold required to build
+  another Askari."; three youths, one message; a youth 30 m away, grey with the kraal rule; a fishing boat with no
+  wood, "150 wood required to build another Pyrpoliko." and the button kept (before the click rewrite the failed
+  `commandResearch` took it off that boat), and with wood the same boat transformed; seven boats, five transforms and
+  the two others grey with the build limit. A skirmish with the pack and a German AI played with no XS error. With the
+  pack, a trigger's build order no longer made the youth place the four kraal maturings (it did with the `<Train>`
+  rows kept): WoL's AI, which builds them with build plans, probably cannot either (the pack's `--keep-train`; a
+  question for the WoL team). The transform makes the maturing unit complete, so its single-use `Spawn` gives the unit
+  at once; the pack's anim files make the youth dance beside it until the maturing unit's lifespan ends. Not tested:
+  multiplayer, the reload of a game saved during a maturing (the console `loadGame` did not visibly reload).
 
 ### Interface
 
@@ -8135,7 +8171,7 @@ which the minimized interface had no room for. [Full video (MP4)](media/minUISta
 
 ![minUIStats on a building in WoL](media/minUIStats-building-wol.gif)
 
-*In WoL, with `minUIStats` (a `Bunker`, Siege armor 0.3):* `Resists: 0.30` in the stock spot, `Garrison: 0 / 20` and LOS.
+*In WoL, with `minUIStats` (a `Bunker`, Siege armor 0.3):* `Resists: 0.30` (`30%` since version 7) in the stock spot, `Garrison: 0 / 20` and LOS.
 [Full video (MP4)](media/minUIStats-building-wol.mp4).
 
 ![minUIStats on a building in WoL, key off](media/minUIStats-building-wol-control.gif)
@@ -8244,7 +8280,7 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       as with WoL's DLL: the Escopetero's ranged row has three.
     - Tooltips: the attack rows keep the game's own tooltip (name; damage; range and area; one line per multiplier) and
       get two lines after the damage, `Attacks every 3.50 s (<stopwatch>)` and `4 projectiles before the reload
-      (<cylinder>)`. Their texts are `rofTip` and `projectilesTip` on `<bigPanelRows>` (`%s` the number;
+      (<cylinder>)` (version 7: `Rate of fire: 3.50s <stopwatch>` and `4 projectiles <cylinder>`). Their texts are `rofTip` and `projectilesTip` on `<bigPanelRows>` (`%s` the number;
       `[string:ID]` works; empty: no line). A row shown in short form (too long for its column, or the `+N more`
       gadget) has that full tooltip too, instead of its text without icons.
     - An original attack row too long for the panel (at 1024 x 768 the font is relatively wider) drops its last
@@ -8254,13 +8290,52 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   - **Version 6 (2026-11-20), after JTMaston's review of version 5:**
     - The projectiles line of the tooltip reads `4 projectiles` (`projectilesTip` defaults to `%s projectiles`): a unit
       such as the Chu Ko Nu does not fire them all at once.
-    - No parentheses around icons: the key's own lines end with the icon (`Attacks every 3.50 s <stopwatch>`), and in the
+    - No parentheses around icons: the key's own lines end with the icon (`Attacks every 3.50 s <stopwatch>`; version 7: `Rate of fire: 3.50s`), and in the
       game's lines the parentheses around an icon or around the name right after one go (`11 <icon> Ranged Damage`,
       `1.5X Bonus Damage against <icon> Maneuver Unit`; strings 42226, 42229, 42230, 42223). `tipParentheses="keep"` on
       `<bigPanelRows>` keeps them. The string tables are not changed.
     - The unit type icons of the multipliers stay WoL's own: a redrawn set (`make_stat_icon.py --types` in
-      aoe3-blender-tools) was tried and not kept. WoL's `staticons\stat_icon_hand_cavalry.ddt` is an empty 24-byte file,
+      aoe3-blender-tools) was tried and not kept (version 7 redraws three of them in another style). WoL's `staticons\stat_icon_hand_cavalry.ddt` is an empty 24-byte file,
       so a multiplier against Hand Cavalry shows no icon.
+  - **Version 7 (2026-11-21), after JTMaston's review of version 6:**
+    - Seconds stuck to the number: the ROF line of the attack rows' tooltip is `Rate of fire: 3.50s <stopwatch>`
+      (`rofTip` defaults to `Rate of fire: %ss`), the `lifespan` item `40s`, `poison` `3 x 8s`, and the normal
+      interface's rows of [`lifespanAfterConstruction`](#lifespanafterconstruction) (`40s once built`) and
+      [`researchGrants`](#researchgrants) (`2/3, next in 14s`).
+    - The armor as a percent stuck to the value, to a tenth when it has one: `30%`, `12.5%`, each with its damage
+      type's icon after it (`30% <hand>  20% <ranged>` with `multiarmor`), in the `armor` and `armorValue` items and in
+      the original resists value of the minimized panel, which the key now rewrites for every unit (it was
+      `0.30`, the exe's `%.2f`). Beside another DLL that changed the resists armor test, that DLL's text stays.
+    - The `inventory` item (`Holds: ...`) leaves out a proto with an infinite resource (proto flag 24h: a `Mill`,
+      where it read `999/100`; the stock row says `Infinite`), writes the amount alone when the unit has no initial
+      amount (a placed `Mine` read `1928/0`), rounds up as the stock row does (`1929`), and its icon is the panel's
+      size (`(10)`, it was `(16)`).
+    - `speed` and the tactic's `<speedmodifier>` (JTMaston's question): the item is the unit's live maximum speed,
+      the same function the big interface's Speed row reads, so it includes the current tactic's speed modifier.
+      WoL's `Falconet` (`MaxVelocity` 4, `falconet.tactics`: Limber 1.0, Bombard 0.4): `4` in Limber and `1.60` in
+      Bombard after `unitSetTactic("Bombard")`, within the panel's next refresh, in both interfaces. Moved by a
+      trigger's `Move To Point` while in Bombard, it went back to Limber and moved at 4.0 m/s (44.1 m in 11.0 s; the
+      one left in Limber 3.99 m/s): the game limbers artillery to move, so 1.60 is never a speed it moves at, and the
+      panel showed 4 again after the move. Pictures `wol-fixes/min-ui/final/minUIStats-v7-falconet-*` and
+      `-bigui-falconet-*`.
+    - Tested in WoL (2026-11-21, single player, Ethiopians, our `UHC.dll` with `minUIStats`, `multiplierDecimals`,
+      `showGatherRate`, WoL's `wol.cfg` lines with `attackTypeIcons`, the pack's layout and rows, 1920 x 1080): the
+      resists `20%` / `75%`, the tooltip `Rate of fire: 3.50s` and `3s`; gatherers in both interfaces with the same
+      value (berries 0.67/s, a Mine 0.60/s, the Mill 0.50/s, trees 0.50/s after the
+      [`showGatherRate`](#showgatherrate) fix below); with `resourceGatherAuras` and `resourceDebt` on too, 40
+      applied, 0 failed, the same rows. The shipped file's commented `Gathers: {gatherRate}` row was tried in a gadget
+      at `uhcRow2`'s place: `Gathers: Wood 0.50/s`, the same value as the stock rate row.
+    - Three unit type icons redrawn at the team's request, approved in review: Line (`AbstractHeavyInfantry`, an
+      infantryman in a shako with a blue coat), Standing (`AbstractInfantry`, the same in a red coat) and Maneuver
+      (`AbstractRangedCavalry`, a winged arrow; a winged bullet was the alternative, kept in the pack's `review`
+      folder). They replace WoL's files at the paths the panels draw (`ui\ingame\stat_icon_heavy_infantry`,
+      `WoL\ui\ingame\staticons\stat_icon_ranged`; for Standing `ui\ingame\stat_icon_infantry`, the stock icon of
+      `AbstractInfantry`, which wins over the `WoL\...\stat_icon_standing_unit` of `attackTypeIcons`, so both get it),
+      32x32 BGRA, soft edges and shading like WoL's own, drawn by aoe3-blender-tools' `make_type_icon.py`. The pack
+      now has an `apply_fix.py` (install, `--restore`, `--check`). Checked in WoL (1920 x 1080, installed and removed
+      with it, files byte for byte back): the Escopetero's rows and tooltips show the arrow and the blue soldier, the
+      Falconet's Bombard row the red soldier, in both interfaces, rows as long as with WoL's icons
+      (`wol-fixes/min-ui/final/minUIStats-v7-icons-*`).
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.
@@ -8331,7 +8406,7 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   | Selection | Minimized, key on | Big interface |
   |---|---|---|
   | `Musketeer` | 3 attacks (stock), LOS 16, Speed 4, Train Points 30 | the same 3 attacks, Speed 4 |
-  | `Bunker` (Siege armor 0.3) | `Resists: 0.30`, Garrison 0 / 20, LOS 32, its attack | no armor row (unchanged) |
+  | `Bunker` (Siege armor 0.3) | `Resists: 0.30` (version 7: `30%`), Garrison 0 / 20, LOS 32, its attack | no armor row (unchanged) |
   | `Explorer` (Menelik II) | 3 attacks + `Sharpshooter ATK`, `Crack Shot ATK`; Speed 4.50 | the same 5 attacks |
   | `Grenadier` | 3 attacks + `Hand ATK`, `Hand ATK` | the same 5 attacks |
   | `Dragoon` | 3 attacks + `Hand ATK`; Speed 7.25 | the same 4 attacks |
@@ -8466,10 +8541,10 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   bar shown): one `Musketeer`, a `Barracks`, a `Factory` (its trickle row), a `Bank`, 2, 5 and 9 unit types, Menelik II
   damaged (`Regen 1/s`; of its five ability attacks only Sharpshooter, which needs no tech), a `WoLPresidial`
   (Sharpshooter, its own ability; no Crack Shot), the Chief (`WOLcartographer`) before and after `HCSteelCrown`
-  (Anti-artillery Crackshot only after), the `Wachtmesteer` with three armors (`0.30 0.20 0.10`, by damage type), a
+  (Anti-artillery Crackshot only after), the `Wachtmesteer` with three armors (`0.30 0.20 0.10`, by damage type; `30% 20% 10%` since version 7), a
   `Grenadier` and a `Settler` with long attack rows (they end at x ~557 and ~568, before the second column at 583), a
   long name (Húsar de la Muerte), the overheal (`Overheal +50`, HP 150/100); a `Villero` whose ranged row runs on into
-  the second column (the second-column gadget of its line stays empty); a poisoned `Halberdier` (`Poison 3 x 8 s`, the
+  the second column (the second-column gadget of its line stays empty); a poisoned `Halberdier` (`Poison 3 x 8 s`, `3 x 8s` since version 7, the
   Aenna's arrows of `dot_testdata.py --wol`); a `WOLSawmill` and a tree in its `unitResourceAuras` aura (`Aura pays
   0.10/s`, `Aura -0.05/s`); in an AI skirmish a `Manor` going up (`Done in 0:12`) and its builder (`Builds 1.00/s`)
   under the AI's two-line name; ships on a water map (a `Caravel`, a `Frigate` with two armors, garrison 0 / 50);

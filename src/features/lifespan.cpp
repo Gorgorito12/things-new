@@ -58,7 +58,7 @@ bool __stdcall UhcLifespanRow(const char* panel, const char* unit) {
     return false;
   }
   wchar_t value[32];
-  swprintf_s(value, kIsBuilt(unit) ? L"%.0f s" : L"%.0f s once built", static_cast<double>(left));
+  swprintf_s(value, kIsBuilt(unit) ? L"%.0fs" : L"%.0fs once built", static_cast<double>(left));
   return uhc::SetUnitPanelRow(panel, L"Lifespan", value);
 }
 

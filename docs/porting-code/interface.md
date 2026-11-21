@@ -2363,7 +2363,7 @@ Contract: [minUIStats](../porting-to-another-dll.md#minuistats).
 
 Besides the core helpers, it needs: [`datarefs.h`](helpers.md#data-refs), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetLookupAny` `0x404296` (49 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `ResListGet` `0x44EFFF` (61 B), `HoldsResource` `0x45EE8B` (20 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `RateLookupHead` `0x487C45` (16 B), `AttackListFill` `0x487EEE` (24 B), `RegenPlayerHead` `0x4905E1` (16 B), `RegenRateRead` `0x4907FF` (31 B), `UnitCarryCapacity` `0x494503` (16 B), `ActionRangeEntry` `0x4946D6` (55 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `StackLayoutCall` `0x4C7DB3` (14 B), `MinBlockChoice` `0x4C8276` (11 B), `StackLayout` `0x4C8F49` (675 B), `StackFillReset` `0x4C9458` (42 B), `StackFillCurrent` `0x4C9587` (65 B), `StackFillAppend` `0x4C979A` (27 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `StatFillRowCap` `0x4D7944` (28 B), `AttackRowName` `0x4D7A2E` (116 B), `AttackRowDamage` `0x4D7AC8` (273 B), `AttackRowTypeIcon` `0x4D7BD9` (126 B), `AttackRowRange` `0x4D7D2A` (120 B), `AttackRowSiege` `0x4D8265` (79 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `BStringFromId` `0x58EA52` (25 B), `PowerUnitActionStore` `0x5F22CA` (54 B), `ActionRawName` `0x5F8FC3` (24 B), `MinResistsUnitGate` `0x698BE2` (26 B), `MinResistsArmorTest` `0x698BFC` (26 B), `AttackRowCold` `0x69B617` (128 B), `AttackRowModifier` `0x69FDDC` (28 B), `AttackRowTyped` `0x69FE1F` (25 B), `AbilityAvailableTest` `0x6EE68C` (118 B), `CurrentUnitRef` `0x6F49B1` (65 B), `ResourceIconText` `0x706EFB` (16 B), `BuildPointsAdd` `0x7ADE95` (16 B), `BuildPointsAddCall` `0x9C4BE3` (30 B), `BuilderFactor` `0x9C4C0C` (26 B), `BuildTickRateHead` `0x9D3D6B` (16 B), `BuildTickScale` `0x9D3D80` (71 B), `BuildTickAdd` `0x9D3DE9` (12 B), `GadgetByName` `0xAB7C2F` (38 B), `PowerUnitActionVtable` `0xB855F4` (4 B).
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetLookupAny` `0x404296` (49 B), `GadgetRelease` `0x40431B` (44 B), `BStringAssign` `0x443BB8` (15 B), `GadgetShow` `0x447F7B` (70 B), `GadgetHide` `0x448F13` (57 B), `IsA` `0x44D7FA` (105 B), `ResListGet` `0x44EFFF` (61 B), `ProtoFlag` `0x45EE02` (53 B), `HoldsResource` `0x45EE8B` (20 B), `MaxHitpointsGetter` `0x480408` (38 B), `LosGetterHead` `0x48206D` (52 B), `RateLookupHead` `0x487C45` (16 B), `AttackListFill` `0x487EEE` (24 B), `RegenPlayerHead` `0x4905E1` (16 B), `RegenRateRead` `0x4907FF` (31 B), `UnitCarryCapacity` `0x494503` (16 B), `ActionRangeEntry` `0x4946D6` (55 B), `MaxContained` `0x49EB5A` (17 B), `GadgetRef` `0x4C519C` (27 B), `StackLayoutCall` `0x4C7DB3` (14 B), `MinBlockChoice` `0x4C8276` (11 B), `StackLayout` `0x4C8F49` (675 B), `StackFillReset` `0x4C9458` (42 B), `StackFillCurrent` `0x4C9587` (65 B), `StackFillAppend` `0x4C979A` (27 B), `StatFillHead` `0x4D70ED` (24 B), `StatFillMinGate` `0x4D721B` (76 B), `StatFillRowCap` `0x4D7944` (28 B), `AttackRowName` `0x4D7A2E` (116 B), `AttackRowDamage` `0x4D7AC8` (273 B), `AttackRowTypeIcon` `0x4D7BD9` (126 B), `AttackRowRange` `0x4D7D2A` (120 B), `AttackRowSiege` `0x4D8265` (79 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `BStringFromId` `0x58EA52` (25 B), `PowerUnitActionStore` `0x5F22CA` (54 B), `ActionRawName` `0x5F8FC3` (24 B), `MinResistsUnitGate` `0x698BE2` (26 B), `MinResistsArmorTest` `0x698BFC` (26 B), `AttackRowCold` `0x69B617` (128 B), `AttackRowModifier` `0x69FDDC` (28 B), `AttackRowTyped` `0x69FE1F` (25 B), `AbilityAvailableTest` `0x6EE68C` (118 B), `CurrentUnitRef` `0x6F49B1` (65 B), `ResourceIconText` `0x706EFB` (16 B), `BuildPointsAdd` `0x7ADE95` (16 B), `BuildPointsAddCall` `0x9C4BE3` (30 B), `BuilderFactor` `0x9C4C0C` (26 B), `BuildTickRateHead` `0x9D3D6B` (16 B), `BuildTickScale` `0x9D3D80` (71 B), `BuildTickAdd` `0x9D3DE9` (12 B), `GadgetByName` `0xAB7C2F` (38 B), `PowerUnitActionVtable` `0xB855F4` (4 B).
 
 ### src/features/minuistats.cpp
 
@@ -2525,6 +2525,20 @@ std::wstring Number(float value) {
   return text;
 }
 
+// An armor as a percent stuck to its value, to a tenth: 0.30 is "30%", 0.125 "12.5%".
+std::wstring Percent(float value) {
+  wchar_t text[32];
+  const float tenths = std::floor(value * 1000.0f + 0.5f);
+  const int whole = static_cast<int>(tenths) / 10;
+  const int tenth = static_cast<int>(tenths) % 10;
+  if (tenth == 0) {
+    swprintf_s(text, L"%d%%", whole);
+  } else {
+    swprintf_s(text, L"%d.%d%%", whole, tenth);
+  }
+  return text;
+}
+
 std::wstring StringById(std::int32_t id) {
   BString text{nullptr};
   kBStringFromId(&text, id);
@@ -2589,9 +2603,9 @@ std::wstring DamageIcon(std::uint8_t type) {
   return tag;
 }
 
-// The armor as the stock resists value: "0.20" and the icon of its damage type ([proto+1D3h]: 0 hand, 1 ranged,
-// 2 siege, icons [[game+920h]+1CCh/1D0h/1D4h]). With multiarmor (a proto with an armor per damage type), every armor
-// above 0, by damage type: "0.30 <hand>  0.20 <ranged>".
+// The armor as a percent ("20%", where the stock resists value writes "0.20") and the icon of its damage type
+// ([proto+1D3h]: 0 hand, 1 ranged, 2 siege, icons [[game+920h]+1CCh/1D0h/1D4h]). With multiarmor (a proto with an
+// armor per damage type), every armor above 0, by damage type: "30% <hand>  20% <ranged>".
 bool ArmorText(const char* unit, bool icon, std::wstring* out) {
   if (g_armorOther) {
     return false;
@@ -2608,7 +2622,7 @@ bool ArmorText(const char* unit, bool icon, std::wstring* out) {
     std::sort(armors.begin(), armors.end());  // hand, ranged, siege, then the mod's own
     out->clear();
     for (const auto& [type, armor] : armors) {
-      *out += (out->empty() ? L"" : L"  ") + Number(armor) + (icon ? DamageIcon(type) : L"");
+      *out += (out->empty() ? L"" : L"  ") + Percent(armor) + (icon ? DamageIcon(type) : L"");
     }
     return true;
   }
@@ -2616,7 +2630,7 @@ bool ArmorText(const char* unit, bool icon, std::wstring* out) {
   if (!(armor > 0.0f)) {
     return false;
   }
-  *out = Number(armor) + (icon ? DamageIcon(Field<std::uint8_t>(proto, 0x1D3)) : L"");
+  *out = Percent(armor) + (icon ? DamageIcon(Field<std::uint8_t>(proto, 0x1D3)) : L"");
   return true;
 }
 
@@ -2669,6 +2683,9 @@ const auto kAttackListFill = reinterpret_cast<AttackListFn>(0x00487EEE);
 const auto kResListGet = reinterpret_cast<ResListGetFn>(0x0044EFFF);
 const auto kResourceIcon = reinterpret_cast<ResourceIconFn>(0x00706EFB);
 const auto kHoldsResource = reinterpret_cast<UnitTestFn>(0x0045EE8B);
+using ProtoFlagFn = bool(__thiscall*)(const char* proto, std::int32_t flag);
+const auto kProtoFlag = reinterpret_cast<ProtoFlagFn>(0x0045EE02);
+constexpr std::int32_t kInfiniteFlag = 0x24;  // the stock resource row writes "Infinite" for it
 const auto kHeldResource = reinterpret_cast<UnitResourceFn>(0x004DBEC1);
 const auto kHeldAmount = reinterpret_cast<UnitAmountFn>(0x004E5979);
 const auto kHeldInitial = reinterpret_cast<UnitAmountFn>(0x00494503);
@@ -3058,19 +3075,28 @@ bool ItemBounty(const char* unit, std::wstring* out) {  // <Bounty>, float [prot
   return true;
 }
 
-// What a mine, bush, carcass or herd animal holds, as the stock "resource held" row reads it.
+// What a mine, bush, carcass or herd animal holds, as the stock "resource held" row reads it. A proto with an
+// infinite resource (flag 24h, a Mill or a Plantation: the stock row writes "Infinite") answers nothing: its amount
+// is a placeholder (a Mill read 999/100).
 bool ItemInventory(const char* unit, std::wstring* out) {
   const char* database = Database();
-  if (database == nullptr || !kHoldsResource(unit)) {
+  if (database == nullptr || !kHoldsResource(unit) || kProtoFlag(Field<const char*>(unit, 0x5C), kInfiniteFlag)) {
     return false;
   }
   const std::int32_t resource = kHeldResource(unit);
   if (resource < 0) {
     return false;
   }
+  // Rounded up as the stock row writes it (a Silver Mine with 1928.x: 1929, a tree 268.x: 269); the initial amount
+  // only when the unit has one (a placed Mine has 0: the stock row writes the amount alone).
+  const int amount = static_cast<int>(std::ceil(kHeldAmount(unit, resource)));
+  const int initial = static_cast<int>(kHeldInitial(unit, resource) + 0.5f);
   wchar_t text[96];
-  swprintf_s(text, L"%d/%d <icon=\"(16)(%hs)\">", static_cast<int>(kHeldAmount(unit, resource)),
-             static_cast<int>(kHeldInitial(unit, resource)), kResourceIcon(database, resource));
+  if (initial > 0) {
+    swprintf_s(text, L"%d/%d <icon=\"(%d)(%hs)\">", amount, initial, kIconSize, kResourceIcon(database, resource));
+  } else {
+    swprintf_s(text, L"%d <icon=\"(%d)(%hs)\">", amount, kIconSize, kResourceIcon(database, resource));
+  }
   *out = text;
   return true;
 }
@@ -3087,7 +3113,7 @@ bool ItemLifespan(const char* unit, std::wstring* out) {
     return false;
   }
   wchar_t text[32];
-  swprintf_s(text, L"%d s", static_cast<int>(left + 0.5f));
+  swprintf_s(text, L"%ds", static_cast<int>(left + 0.5f));
   *out = text;
   return true;
 }
@@ -3520,7 +3546,7 @@ struct BigPanel {
   bool unwrapIcons = true;
   // The attack rows' help text gets a line for the ROF and one for the projectiles ("%s": the number), each with
   // its icon, after the stock lines (damage, range and area, one per multiplier).
-  std::wstring rofTip = L"Attacks every %s s";
+  std::wstring rofTip = L"Rate of fire: %ss";
   std::wstring projectilesTip = L"%s projectiles";
 };
 
@@ -4760,16 +4786,22 @@ void ApplyStockPlan() {
 
 constexpr std::uint32_t kResistsValue = 0x2FC;  // the selection panel's unitResistsValue handle
 
-// With multiarmor, a proto can have an armor per damage type, and the minimized block writes only the stock one
-// ("%.2f %s", 0x698C41..): its resists value then lists them all, "0.30 <hand>  0.20 <ranged>".
+// The minimized block's resists value is the stock armor as "%.2f %s" (0x698C41..): "0.30 <ranged>". The key writes
+// it as the armor items do, a percent stuck to the value, and with multiarmor (a proto with an armor per damage type)
+// every armor above 0: "30% <hand>  20% <ranged>". Another DLL's armor text there (g_armorOther) is left as it is.
 void ApplyResists(const char* unit) {
   unsigned char types[8];
   float values[8];
   const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
-  const int n = proto == nullptr ? 0 : uhc::unitinfo::Armors(proto, types, values, 8);
   const std::int32_t handle = Field<std::int32_t>(g_panel.panel, kResistsValue);
-  if (n < 2 || !ValidHandle(handle) || !GadgetShown(handle)) {
+  if (g_armorOther || proto == nullptr || !ValidHandle(handle) || !GadgetShown(handle)) {
     return;
+  }
+  int n = uhc::unitinfo::Armors(proto, types, values, 8);
+  if (n == 0) {  // no multiarmor, or no armor above 0: the stock armor, as the game shows it
+    types[0] = Field<std::uint8_t>(proto, 0x1D3);
+    values[0] = Field<float>(proto, 0xC4);
+    n = 1;
   }
   std::vector<std::pair<unsigned char, float>> armors;
   for (int i = 0; i < n; ++i) {
@@ -4778,9 +4810,7 @@ void ApplyResists(const char* unit) {
   std::sort(armors.begin(), armors.end());  // by damage type: hand, ranged, siege, then the mod's own
   std::wstring text;
   for (const auto& [type, armor] : armors) {
-    wchar_t value[32];
-    swprintf_s(value, L"%.2f", static_cast<double>(armor));
-    text += (text.empty() ? L"" : L"  ") + std::wstring(value) + TypeIcon(type);
+    text += (text.empty() ? L"" : L"  ") + Percent(armor) + TypeIcon(type);
   }
   WriteLabel(handle, text, L"");
 }
@@ -5220,7 +5250,7 @@ Outcome ApplyMinUiStats(const Config& config) {
                   &sites::kBStringAssign, &sites::kBStringFree, &sites::kCurrentUnitRef, &sites::kMaxHitpointsGetter,
                   &sites::kLosGetterHead, &sites::kMaxContained, &sites::kIsA, &sites::kAttackListFill,
                   &sites::kResListGet, &sites::kResourceIconText, &sites::kHoldsResource, &sites::kMainResource,
-                  &sites::kHeldAmount, &sites::kUnitCarryCapacity})) {
+                  &sites::kHeldAmount, &sites::kUnitCarryCapacity, &sites::kProtoFlag})) {
     return Outcome::kFailed;
   }
   // The build and regeneration items mirror stock code they never write to; they are checked apart, so another DLL
@@ -6854,12 +6884,16 @@ Sites: `BStringAppend` `0x443960` (16 B), `CostListCtor` `0x44717F` (9 B), `Cost
 // - in the command panel (the shared button hook, panelbuttons.h): a button whose command is
 //   uiTransformSelectedUnit("Proto") (its click, or the record's command for a click commandResearch(ID, unit), the
 //   form a command with an <associatedtech> takes) asks, for each of the local player's selected units, the checks
-//   the command makes (the cost of that many units and its affordability 0x8D6BAE / 0x8D6C1B, the build limit,
-//   PLACE with the same arguments). With no
-//   unit that passes, the button is disabled, its click and shift-click emptied, and its rollover gets the reason in
-//   red: the failing placement rule's error string when PLACE gives one, else "Other objects prevent you..." (25528),
-//   "Not enough resources" (41543) or the build limit (36198). With some that pass, the rollover says how many. The
-//   answer is kept 250 ms per button (real time): the panel is interface only, so nothing here reaches the game.
+//   the command makes, in its order (PLACE with the same arguments, the build limit, the cost of that many units and
+//   its affordability 0x8D6BAE / 0x8D6C1B). With no unit that passes, the button is disabled, its click and
+//   shift-click emptied, and its rollover gets the reason in red: the failing placement rule's error string when PLACE
+//   gives one, else "Other objects prevent you..." (25528) or the build limit (36198). When the cost is the only
+//   reason (every refused unit passed PLACE and the limit), the button stays enabled with its click, and only the red
+//   line "Not enough resources" (41543) is added: the click reaches the command, whose payment shows the stock
+//   "can't pay" message and sound (0x8D271A, string 17064), as a Train button does (a commandResearch click is made the
+//   transform command itself, so that a failed one does not use up the unit's one-shot command). With some that
+//   pass, the rollover says how many. The answer is kept 250 ms per button (real time): the panel is interface only,
+//   so nothing here reaches the game.
 #include <windows.h>
 
 #include <cstdarg>
@@ -6991,6 +7025,7 @@ struct Verdict {
   std::int32_t total = 0;  // the local player's selected units
   std::int32_t pass = 0;   // those that would transform
   std::wstring reason;     // why the first refused one is refused
+  bool costOnly = true;    // every refused unit passed PLACE and the limit, and only its cost failed
 };
 
 struct Cached {
@@ -7056,19 +7091,21 @@ Verdict Judge(const std::string& name) {
       continue;
     }
     ++verdict.total;
+    // The order of the command's own checks: PLACE, the build limit (the hook at 0x7D65E3), then the payment.
     std::int32_t reasonId = -1;
-    if (!affordable(verdict.pass + 1)) {
-      reasonId = kStringResources;
+    std::int32_t placeReason = -1;
+    const auto place = reinterpret_cast<PlaceFn>(Field<const void* const*>(world, 0)[0x14 / 4]);
+    if (!place(world, protoId, local, reinterpret_cast<const float*>(unit + 0x14),
+               reinterpret_cast<const float*>(unit + 0x20), reinterpret_cast<const float*>(unit + 0x38), 0, 2,
+               &placeReason, 0, 0, 0)) {
+      reasonId = placeReason > 0 ? placeReason : kStringObjects;
     } else if (left == 0) {
       reasonId = kStringBuildLimit;
-    } else {
-      std::int32_t placeReason = -1;
-      const auto place = reinterpret_cast<PlaceFn>(Field<const void* const*>(world, 0)[0x14 / 4]);
-      if (!place(world, protoId, local, reinterpret_cast<const float*>(unit + 0x14),
-                 reinterpret_cast<const float*>(unit + 0x20), reinterpret_cast<const float*>(unit + 0x38), 0, 2,
-                 &placeReason, 0, 0, 0)) {
-        reasonId = placeReason > 0 ? placeReason : kStringObjects;
-      }
+    } else if (!affordable(verdict.pass + 1)) {
+      reasonId = kStringResources;
+    }
+    if (reasonId >= 0 && reasonId != kStringResources) {
+      verdict.costOnly = false;
     }
     if (reasonId < 0) {
       ++verdict.pass;
@@ -7156,7 +7193,17 @@ void TransformButton(const uhc::PanelButton& button) {
     return;
   }
   std::wstring line;
-  if (verdict.pass == 0) {
+  if (verdict.pass == 0 && verdict.costOnly) {
+    // Only the cost stops them: the click goes through, and the command's own payment shows the stock "not enough
+    // resources" message and sound (0x8D271A), as a Train button does. A click commandResearch(...) (a command with
+    // an <associatedtech>) would run the command as a one-shot research of that unit, which removes the button from
+    // it even when the transform then fails: it becomes the transform itself, the command it runs.
+    if (_strnicmp(button.Click(), "commandResearch(", 16) == 0) {
+      sprintf_s(button.Click(), 256, "uiTransformSelectedUnit(\"%s\")", name.c_str());
+      sprintf_s(button.ShiftClick(), 256, "uiTransformSelectedUnit(\"%s\")", name.c_str());
+    }
+    line = L"\n<color=1, 0.35, 0.35>" + verdict.reason + L"</color>";
+  } else if (verdict.pass == 0) {
     button.State() = 1;
     button.Click()[0] = 0;
     button.ShiftClick()[0] = 0;

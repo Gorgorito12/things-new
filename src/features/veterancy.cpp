@@ -24,7 +24,8 @@
 // civ (a <Civilization> block) whose type the player's proto has, else the first global one (outside any block);
 // a proto's own rows replace the defaults entirely. An unknown civ name is logged and its block ignored. A rank's
 // name (a text, or a string ID) and colour (RRGGBB) are shown by the floating text and the unit panel's row; "Rank N"
-// otherwise.
+// otherwise. The option notext drops the floating text at a new rank (a mod whose own upgrades show text); the mark
+// and the panel row stay.
 //
 // Stock's flag ExperienceUnit has no reader in the exe, so nothing counts a unit's kills. The key observes
 // TakeDamage's kill path (killobservers.h, shared with killSpawn), where the attacker unit is known. The count and the bonuses are all stat
@@ -201,6 +202,7 @@ struct TechOverride {
 };
 std::unordered_map<const char*, TechOverride> g_tech;  // by the player's copy of the proto
 bool g_log = false;
+bool g_text = true;  // notext: no floating text at a new rank; the mark and the panel row stay
 bool g_anyTechRows = false;  // some row names a tech: the tech tick has work
 std::map<std::pair<std::int32_t, std::int32_t>, bool> g_techSeen;  // (player, tech ID): active at the last look
 const char* g_techWorld = nullptr;
@@ -776,13 +778,15 @@ Synced GiveReached(char* unit, const std::vector<Row>& rows, float kills, float 
   return out;
 }
 
-// The floating text of a new rank, and its mark.
+// The floating text of a new rank (not with notext), and its mark.
 void ShowRank(char* unit, std::int32_t rank) {
-  const auto style = g_styles.find(rank);
-  if (style != g_styles.end() && style->second.stringId >= 0) {
-    uhc::ShowUnitText(unit, nullptr, style->second.stringId, style->second.colour);
-  } else {
-    uhc::ShowUnitText(unit, RankName(rank).c_str(), -1, RankColour(rank));
+  if (g_text) {
+    const auto style = g_styles.find(rank);
+    if (style != g_styles.end() && style->second.stringId >= 0) {
+      uhc::ShowUnitText(unit, nullptr, style->second.stringId, style->second.colour);
+    } else {
+      uhc::ShowUnitText(unit, RankName(rank).c_str(), -1, RankColour(rank));
+    }
   }
   if (g_marks) {
     g_pending.push_back(Field<std::int32_t>(unit, 0x10));
@@ -1285,10 +1289,12 @@ Outcome ApplyVeterancyBonus(const Config& config) {
   for (const std::string& arg : *args) {
     if (_stricmp(arg.c_str(), "log") == 0) {
       g_log = true;
+    } else if (_stricmp(arg.c_str(), "notext") == 0) {
+      g_text = false;
     } else if (arg.size() > 4 && _stricmp(arg.c_str() + arg.size() - 4, ".xml") == 0 && file.empty()) {
       file = arg;
     } else {
-      Log(L"veterancyBonus: unknown option %hs; feature not applied", arg.c_str());
+      Log(L"veterancyBonus: unknown option %hs (expected: [notext] [log] [file.xml]); feature not applied", arg.c_str());
       return Outcome::kFailed;
     }
   }
@@ -1296,6 +1302,7 @@ Outcome ApplyVeterancyBonus(const Config& config) {
                                      &sites::kCivById, &sites::kCivByName}) ||
       !LoadDataFile(file) ||
       !AddTransformObserver({&KillsBeforeTransform, &RestoreAfterTransform}) ||
+      // Also with notext: the rank names and the panel row read the same string sites.
       !VerifyFloatingText("veterancyBonus") || !AddProtoTagHandler("VeterancyBonus", &ReadVeterancyBonus) ||
       !AddTechSubtype("VeterancyEnable", &ChangeEnable) || !AddTechSubtype("VeterancyBonus", &ChangeFactor) ||
       !OnDatabaseLoad(&ForgetOnDataLoad) || !AddKillObserver(&VeterancyKill) || !AddWorldTick(&VeterancyTechTick)) {
@@ -1308,8 +1315,8 @@ Outcome ApplyVeterancyBonus(const Config& config) {
     Log(L"veterancyBonus: no rank row in the unit panel");
   }
   Log(L"veterancyBonus: the proto tag VeterancyBonus is on (tech= rows too), and the Data subtypes VeterancyEnable and "
-      L"VeterancyBonus%ls",
-      g_marks ? L"; rank marks on" : L"; no rank marks");
+      L"VeterancyBonus%ls%ls",
+      g_marks ? L"; rank marks on" : L"; no rank marks", g_text ? L"" : L"; no rank text (notext)");
   if (g_defaults.empty() && g_styles.empty()) {
     Log(L"veterancyBonus: no default rows and no rank names (%ls)", g_file.c_str());
   } else {

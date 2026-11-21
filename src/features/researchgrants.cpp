@@ -892,7 +892,7 @@ bool __stdcall GrantRow(const char* panel, const char* unit) {
     swprintf_s(value, L"%d/%d (full)", points, cap);
   } else {
     const std::uint32_t left = progress < interval ? interval - progress : 0;
-    swprintf_s(value, L"%d/%d, next in %u s", points, cap, (left + 999) / 1000);
+    swprintf_s(value, L"%d/%d, next in %us", points, cap, (left + 999) / 1000);
   }
   return uhc::SetUnitPanelRow(panel, L"Research grants", value);
 }

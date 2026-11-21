@@ -84,6 +84,7 @@ constexpr std::uint32_t kGameGlobal = 0x00C66234;        // game; +13Ch world, +
 constexpr std::uint32_t kUiGlobal = 0x00C67310;          // [[+920h]+13Ch]: the data refs' current unit ID
 
 constexpr std::uint8_t kGatheringState = 5;          // [action+61h] while the tick runs (0x4ECC8E)
+constexpr std::uint32_t kTreeGatherVtable = 0x00B979D8;  // the current action of a villager on a tree
 constexpr std::int32_t kMaxResources = 16;
 constexpr std::int32_t kShowAutoGatherRate = 0x9B;   // proto flag; <Flag>DoNotShowAutoGatherRate clears it
 constexpr std::int32_t kAbstractShrine = 0x58;       // abstract index: the tick adds nothing (0x4ED14B)
@@ -178,11 +179,11 @@ struct Rate {
 };
 
 // The unit's current gather rate from its record, or false. Valid while the unit's current
-// action ([[unit+58h]+24h]) is the recorded Gather action, that action is in its gathering state
-// and still belongs to the unit (actions come from a pool), and the record is younger than two
-// of its animation loops (2.5 s at least) in game time. Two cases where the tick adds nothing
-// although it computed a rate are left out: a target of type AbstractShrine (0x4ED14B) and a
-// player with [player+338h] set (0x4ED1AB).
+// action ([[unit+58h]+24h]) is the recorded Gather action (or, on a tree, the action over it),
+// that action is in its gathering state and still belongs to the unit (actions come from a pool),
+// and the record is younger than two of its animation loops (2.5 s at least) in game time. Two
+// cases where the tick adds nothing although it computed a rate are left out: a target of type
+// AbstractShrine (0x4ED14B) and a player with [player+338h] set (0x4ED1AB).
 bool CurrentRate(const char* world, const char* database, const char* unit, Rate* rate) {
   if (world == nullptr || database == nullptr || unit == nullptr) {
     return false;
@@ -193,9 +194,17 @@ bool CurrentRate(const char* world, const char* database, const char* unit, Rate
   }
   const UhcGatherRecord& record = g_uhcGatherRecords[static_cast<std::size_t>(id) & (kRecordCount - 1)];
   const char* manager = Field<const char*>(unit, 0x58);
-  if (record.unit != id || record.action == nullptr || manager == nullptr ||
-      Field<const char*>(manager, 0x24) != record.action ||
+  const char* current = manager == nullptr ? nullptr : Field<const char*>(manager, 0x24);
+  if (record.unit != id || record.action == nullptr || current == nullptr ||
       Field<std::uint8_t>(record.action, 0x61) != kGatheringState || Field<const char*>(record.action, 0x10) != unit) {
+    return false;
+  }
+  // A villager on a tree: its current action is not the Gather action that ticks but another one (vtable 0xB979D8,
+  // in its state 5 while the wood comes in; seen in game, 2026-11-21: the record written each loop, the current
+  // action that one). The record's own action, state and owner, and its age, then decide.
+  if (current != record.action &&
+      (Field<std::uint32_t>(current, 0) != kTreeGatherVtable ||
+       Field<std::uint8_t>(current, 0x61) != kGatheringState)) {
     return false;
   }
   if (record.resource < 0 || record.resource >= Field<std::int32_t>(database, 0x80) || !(record.rate > 0.0f)) {

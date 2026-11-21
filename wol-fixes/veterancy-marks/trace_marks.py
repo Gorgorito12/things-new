@@ -3,7 +3,7 @@ alpha: ranks 1 to 3 in its first row, 4 and 5 in the second) into
 smooth closed curves, and
 render each as an RGBA image for aoe3-blender-tools' make_rings.py --rank-shapes. Private: the design is the team's.
 
-    venv/Scripts/python -I wol-fixes/veterancy-marks/trace_marks.py [--out traced]
+    venv/Scripts/python -I wol-fixes/veterancy-marks/trace_marks.py [--out traced] [--border PX]
 
 For each rank (the sheet's green row, which separates the dark outline from the ground best):
 - a soft silhouette (how far each pixel is from the ground's green) and a soft metal mask (the bright part inside the
@@ -14,7 +14,12 @@ For each rank (the sheet's green row, which separates the dark outline from the 
 - rendered back from those curves (even-odd fill, supersampled): the outline's dark brown, the metal in the sheet's own
   colours, low-pass filtered, so the light band along the top of each strand and the dark underside read as on the sheet;
   written to rank_N.png, with shapes.json giving the scale (pixels per glyph unit).
-Then the silhouette's and the holes' IoU against the sheet, at the sheet's resolution."""
+Then the silhouette's and the holes' IoU against the sheet, at the sheet's resolution.
+
+--border PX widens the dark border inward by PX pixels of rank_N.png: the metal is eroded by a disk of that radius
+before the colours are laid, so the silhouette (the alpha) and the loop holes stay as they are and only the metal
+narrows. The sheet's border is about 33 to 43 pixels there (0.065 glyph units); 12, the default, is the border the
+owner approved on 2026-11-21 (border-review.png), a little darker in the game; 0 traces the sheet's border as it is."""
 import argparse
 import json
 import math
@@ -213,6 +218,21 @@ def holes(mask):
     return ~mask & ~out
 
 
+def erode(cover, radius):
+    """Grey erosion of a coverage map by a disk of `radius` pixels: each pixel the least coverage within it."""
+    if radius <= 0:
+        return cover
+    r = int(math.ceil(radius))
+    h, w = cover.shape
+    padded = np.pad(cover, r)
+    out = cover.copy()
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            if dx * dx + dy * dy <= radius * radius:
+                np.minimum(out, padded[r + dy:r + dy + h, r + dx:r + dx + w], out=out)
+    return out
+
+
 def iou(a, b):
     return (a & b).sum() / max(1, (a | b).sum())
 
@@ -221,6 +241,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=str(HERE / "traced"))
     ap.add_argument("--no-symmetry", dest="symmetry", action="store_false", help="trace the sheet as it is (to measure)")
+    ap.add_argument("--border", type=float, default=12.0,
+                    help="widen the dark border inward by this many pixels of rank_N.png (12, approved; 0: the sheet's)")
     a = ap.parse_args()
     out = pathlib.Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -266,6 +288,8 @@ def main():
         if rank == 1:  # its crossing: the sheet draws one strand over the other, which no symmetric shape keeps; close the seam
             seam = Image.fromarray((met * 255).astype(np.uint8)).filter(ImageFilter.MaxFilter(9)).filter(ImageFilter.MinFilter(9))
             met = np.minimum(np.asarray(seam).astype(np.float32) / 255, cov)
+        if a.border > 0:  # a wider dark border, inward only: the silhouette and the holes do not move
+            met = np.minimum(erode(met, a.border), cov)
         colour = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).resize((w, h), Image.BICUBIC)
         colour = np.asarray(colour.filter(ImageFilter.GaussianBlur(1.5))).astype(np.float32)
         if a.symmetry:  # the colour too, so the shading matches the symmetric shape (the light band along the tops)

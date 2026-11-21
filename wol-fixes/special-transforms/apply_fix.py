@@ -7,11 +7,13 @@ ground any more.
                                                   <WoL folder>\\special-transforms-backup\\ first)
     python apply_fix.py <WoL folder> --restore    put the backed-up files back
     python apply_fix.py <WoL folder> --check      say what is applied, change nothing
+    python apply_fix.py <WoL folder> --keep-train also keep the youth's four <Train> rows (for WoL's AI, which
+                                                  builds these maturings; the player then sees both buttons)
     (a folder under steamapps is refused unless --force is given)
 
 What it changes (README.txt has the why):
-- data\\protoy.xml: AFRICANyouth loses its four <Train> rows of AFRICAN*MATURING and gets four <Command> rows in the
-  same columns; FishingBoat loses its <Train> row of PyrpolikoMaturing and gets a <Command> row in the same column;
+- data\\protoy.xml: AFRICANyouth loses its four <Train> rows of AFRICAN*MATURING (--keep-train keeps them, for WoL's
+  AI) and gets four <Command> rows in the same columns; FishingBoat loses its <Train> row of PyrpolikoMaturing and gets a <Command> row in the same column;
   the five target protos get <Flag>NonCollideable</Flag> (as the six WOL*Maturing protos have), else the unit that
   transforms stands in the way of its own target and the game refuses it;
 - data\\protounitcommands.xml: five commands, uiTransformSelectedUnit("<target>"), with the target's own icon (the
@@ -22,6 +24,11 @@ What it changes (README.txt has the why):
 - data\\stringtabley.xml and translations\\_originals\\stringtabley.xml: the five tooltips in English (IDs
   690911..690915), written like WoL's TransformBowmanMaturing tooltip: name, cost, where it can mature, the unit's
   own description. Other languages fall back to nothing: translate them there.
+- art\\War of the Triple Alliance\\Buildingsets\\Delta\\Discovery\\maturing\\maturing2.xml, maturing3.xml and
+  maturing4.xml (the anim files of the four kraal maturings): their "finished" stage, the one a transformed maturing
+  shows from its first moment (the transform creates it built), gets the dancing youth of the last construction stage
+  (lvl6: the model, the dance or the Escort's heal2, the chant, the rifle of the Askari, the shockwave), without its
+  Death anim; the decal stays. CRLF line endings are kept (an anim file with LF made a building invisible);
 The near-kraal rule needs nothing new: the game checks the target's own PlacementFile (maturinggunpowder.xml,
 maturinghorse.xml) at the unit's position when the button is pressed, on every machine.
 The DLL key `transformChecks` (optional) greys a button out with the reason and enforces the target's BuildLimit; the script adds it to Startup\\wol.cfg with
@@ -49,6 +56,11 @@ COMMANDS = [
 # WOLColonializeGreeks, the age-up tech WoL's commented-out entry named). The game does not check that the target is
 # enabled for the player when the command runs.
 ASSOCIATED_TECH = {"TransformPyrpolikon": "Age0Greeks"}
+MATURING_ART = "art/War of the Triple Alliance/Buildingsets/Delta/Discovery/maturing"
+# The anim files of the four kraal maturings (maturing.xml is the other AFRICAN*MATURING protos', which no button
+# makes; WoL's own button maturings use art\WoL\units\maturing\maturing.xml, which dances already).
+ANIMS = [f"{MATURING_ART}/maturing2.xml", f"{MATURING_ART}/maturing3.xml", f"{MATURING_ART}/maturing4.xml"]
+DANCE_MARK = "<!-- special-transforms: the finished stage dances too -->"
 CHANGED = [
     "data/protoy.xml",
     "data/protounitcommands.xml",
@@ -56,7 +68,7 @@ CHANGED = [
     "data/stringtabley.xml",
     "translations/_originals/stringtabley.xml",
     "Startup/wol.cfg",
-]
+] + ANIMS
 RESOURCE_ICONS = {
     "food": "ui/ingame/resource_food", "wood": "ui/ingame/resource_wood", "gold": "ui/ingame/resource_gold",
     "trade": "ui/ingame/resource_export", "fame": "ui/ingame/resource_fame", "xp": "ui/ingame/resource_xp",
@@ -145,7 +157,7 @@ def tooltip(root, text, target, strings):
     return "\\n".join(lines)
 
 
-def edit_protoy(text):
+def edit_protoy(text, keep_train=False):
     """The <Train> rows become <Command> rows in the same columns; the targets get NonCollideable."""
     for command, target, unit, _ in COMMANDS:
         start, end = unit_block(text, unit)
@@ -156,6 +168,11 @@ def edit_protoy(text):
         if m is None:
             sys.exit(f"apply_fix: {unit} has no <Train> row of {target}")
         line = f'{m.group(1)}<Command column="{m.group(2)}" page="{m.group(3)}">{command}</Command>\r\n'
+        if unit == YOUTH and keep_train:
+            # --keep-train: the youth keeps its <Train> row beside the command. WoL's AI builds these maturings with
+            # build plans, and a youth without the row cannot build them (a trigger's build order was refused); but
+            # the row shows a second, placing button (every page shows: 9 and 20 were tried).
+            line = m.group(0) + line
         block = block[:m.start()] + line + block[m.end():]
         text = text[:start] + block + text[end:]
     for _, target, _, _ in COMMANDS:
@@ -167,6 +184,23 @@ def edit_protoy(text):
         block = block[:m.end()] + f"{m.group(1)}<Flag>NonCollideable</Flag>\r\n" + block[m.end():]
         text = text[:start] + block + text[end:]
     return text
+
+
+def dancing_finished(text):
+    """The anim file with its "finished" submodel replaced by a copy of "lvl6" (the dancer) without its Death anim.
+    None when the file has no such pair. The text keeps its line endings."""
+    if DANCE_MARK in text:
+        return text
+    stage = r"<submodel>[ \t]*\r?\n[ \t]*%s[ \t]*\r?\n.*?</submodel>"
+    lvl6 = re.search(stage % "lvl6", text, flags=re.S)
+    finished = re.search(stage % "finished", text, flags=re.S)
+    if lvl6 is None or finished is None:
+        return None
+    nl = "\r\n" if "\r\n" in text else "\n"
+    block = re.sub(r"(<submodel>[ \t]*\r?\n[ \t]*)lvl6", r"\g<1>finished", lvl6.group(0), count=1)
+    block = re.sub(r"[ \t]*<anim>[ \t]*\r?\n[ \t]*Death[ \t]*\r?\n.*?</anim>[ \t]*\r?\n", "", block, flags=re.S)
+    block = DANCE_MARK + nl + block
+    return text[:finished.start()] + block + text[finished.end():]
 
 
 def command_entries(text):
@@ -185,7 +219,7 @@ def command_entries(text):
     return out
 
 
-def apply(root, key):
+def apply(root, key, keep_train=False):
     backup = root / BACKUP
     if (backup / "manifest.json").exists():
         sys.exit(f"apply_fix: already applied ({backup} exists); run --restore first")
@@ -194,7 +228,18 @@ def apply(root, key):
         if not (root / rel).exists():
             sys.exit(f"apply_fix: {root / rel} is missing: is this a Wars of Liberty folder?")
     protoy, protoy_enc = read_text(root / "data/protoy.xml")
-    new_protoy = edit_protoy(protoy)  # checks every row before anything is written
+    new_protoy = edit_protoy(protoy, keep_train)  # checks every row before anything is written
+    anims = {}
+    for rel in ANIMS:
+        if not (root / rel).exists():
+            print(f"apply_fix: {rel} is missing; its maturing keeps its look")
+            continue
+        text, enc = read_text(root / rel)
+        new = dancing_finished(text)
+        if new is None:
+            print(f"apply_fix: {rel} has no lvl6 and finished stages; left as it is")
+        elif new != text:
+            anims[rel] = (new, enc)
     strings = strings_by_id(root)
 
     backup.mkdir()
@@ -207,6 +252,8 @@ def apply(root, key):
     (backup / "manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
 
     write_text(root / "data/protoy.xml", new_protoy, protoy_enc)
+    for rel, (text, enc) in anims.items():
+        write_text(root / rel, text, enc)
 
     path = root / "data/protounitcommands.xml"
     text, enc = read_text(path)
@@ -274,6 +321,10 @@ def check(root):
         state = "applied" if f">{command}</Command>" in block else (
             "not applied" if f">{target}</Train>" in block else "neither row found")
         print(f"{unit} {command}: {state}")
+    for rel in ANIMS:
+        if (root / rel).exists():
+            text, _ = read_text(root / rel)
+            print(f"{rel}: {'finished stage dances' if DANCE_MARK in text else 'not applied'}")
 
 
 def main():
@@ -287,7 +338,7 @@ def main():
     elif "--check" in sys.argv:
         check(root)
     else:
-        apply(root, "--key" in sys.argv)
+        apply(root, "--key" in sys.argv, "--keep-train" in sys.argv)
 
 
 if __name__ == "__main__":
