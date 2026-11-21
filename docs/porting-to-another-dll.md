@@ -94,6 +94,34 @@ says so:
 | `DodgeSound` | `0x6A2628` | 8 B | 5 B at `0x6A2628` | `68 E0 74 BD 00` (`push "PowerEvade"`) | the dodge's sound set; dodgeSoundSet hook |
 | `CriticalSound` | `0x6A2A9A` | 8 B | 5 B at `0x6A2A9A` | `68 18 75 BD 00` (`push "PowerCriticalStrike"`) | the critical hit's sound set; criticalSoundSet hook |
 | `SingleInstanceSemaphore` | `0x55A185` | 6 B | — (the IAT slot `0xB843F0` instead) | `FF 15 F0 43 B8 00` (`call [CreateSemaphoreW]`) | the single-instance check; multipleInstances knows this call by its return address `0x55A18B` |
+| `LanConsoleExecute` | `0x433D0D` | 7 B | — (verified only) | `56 8B F1 80 7E 69 00` | the console command runner, `thiscall(console = [0xC672E4], command, source)`, ret 8; lanAutoStart runs `doMPSetup(false)` through it |
+| `LanDoMpSetupLan` | `0x6F0C09` | `0x24` B | — (verified only) | `6A 36 E8 CD B2 D5 FF 85 C0 74 19 C7 …` | `doMPSetup(false)`: the SkirmHomeCity screen (36h) next screen `[+3Ch]` = 2Eh, then a switch to 36h; lanAutoStart |
+| `LanScreenLookup` | `0x44BEDD` | `0x21` B | — (verified only) | `8B 51 08 53 55 56 33 F6 33 C0 85 D2 …` | the screen lookup FUN_0044BEDD: count `[+8]`, array `[+4]`, ID `[+0Ch]`, which lanAutoStart walks itself; lanAutoStart |
+| `LanLoginDescriptorHandle` | `0x8BCEB5` | 9 B | — (verified only) | `8B 47 04 3B 05 E8 72 C6 00` | a screen descriptor holds its screen handle at `[+4]`; lanAutoStart |
+| `LanScreenResolve` | `0x40439A` | `0x1C` B | — (verified only) | `A1 44 62 C6 00 8B 54 24 04 8B 48 64 …` | `screen* cdecl(handle)`, the screen of a descriptor handle; lanAutoStart |
+| `LanLoginScreenInit` | `0xB957D0` | 4 B | — (verified only) | `08 D4 8B 00` | MPLoginScreen's vtable `0xB95788`, slot 18 = its init `0x8BD408`; lanAutoStart |
+| `LanLoginScreenBrowser` | `0x8BD4DF` | 3 B | — (verified only) | `89 5E 54` | the init stores the MPLanBrowserDialog handle at `[screen+54h]`; lanAutoStart |
+| `LanGadgetLookup` | `0x40423C` | `0x0A` B | — (verified only) | `8B 54 24 04 3B 15 C0 72 C6 00` | `gadget* thiscall(manager = [[0xC66244]+44h], handle, type)`, ret 8; lanAutoStart |
+| `LanGadgetShownFlag` | `0x447BBF` | 8 B | — (verified only) | `8A 87 A4 00 00 00 A8 01` | a gadget is shown when bit 0 of `[+0A4h]` is set; lanAutoStart |
+| `LanBrowserHostGadget` | `0x8BB0E7` | 6 B | — (verified only) | `89 86 74 01 00 00` | MPLanBrowserDialog's Host button at `[dlg+174h]`; lanAutoStart |
+| `LanBrowserIpGadget` | `0x8BB138` | 6 B | — (verified only) | `89 86 7C 01 00 00` | its Direct IP edit box at `[dlg+17Ch]`; lanAutoStart |
+| `LanBrowserSession` | `0x8BBAB3` | 6 B | — (verified only) | `89 86 AC 01 00 00` | its activation creates the LAN browser `[dlg+1ACh]`; lanAutoStart |
+| `LanBrowserSetText` | `0x8BBB06` | `0x0F` B | — (verified only) | `8D 86 44 01 00 00 50 8B CF FF 92 80 …` | a gadget's set-text slot, vtable `+80h`, given a string; lanAutoStart |
+| `LanBrowserClickHost` | `0x8BC555` | 5 B | — (verified only) | `6A 00 8B CF E8` | the click switch's Host case: `push 0; mov ecx,edi; call`; the call's rel32 at `0x8BC55A` is left out because another DLL may point it at its own wrapper (WoL's does), and the key calls whatever it targets; lanAutoStart |
+| `LanBrowserClickHostNext` | `0x8BC55E` | 2 B | — (verified only) | `EB 1D` | the jmp after that call; lanAutoStart |
+| `LanBrowserClickJoinIp` | `0x8BC569` | 7 B | — (verified only) | `8B CF E8 A0 F1 FF FF` | the click switch calls `0x8BB710(dlg)` for Join IP; lanAutoStart |
+| `LanBrowserHost` | `0x8BBD88` | `0x16` B | — (verified only) | `81 EC 84 06 00 00 A1 28 62 C6 00 53 …` | Host: `thiscall(dlg, 0)`, ret 4; lanAutoStart |
+| `LanBrowserJoinIp` | `0x8BB710` | `0x11` B | — (verified only) | `53 56 8B F1 57 8B BE 7C 01 00 00 57 …` | Join IP: `thiscall(dlg)`, reads the Direct IP box; lanAutoStart |
+| `LanBrowserRulesGadget` | `0x8BB1A4` | 6 B | — (verified only) | `89 96 90 01 00 00` | MPLanBrowserDialog's Game Rules dropdown at `[dlg+190h]`; lanAutoStart |
+| `LanBrowserNameGadget` | `0x8BB096` | 6 B | — (verified only) | `89 86 64 01 00 00` | the init stores the game name box at `[dlg+164h]`; with the boxes and dropdowns it recognises the dialog when another DLL replaced its vtable; lanAutoStart |
+| `LanBrowserModeGadget` | `0x8BB0B1` | 6 B | — (verified only) | `89 96 68 01 00 00` | the init stores the Game Type dropdown at `[dlg+168h]`; as above; lanAutoStart |
+| `LanDropdownSelect` | `0x5C36AE` | `0x0A` B | — (verified only) | `53 8B D9 57 8B BB 64 01 00 00` | a dropdown's select, `thiscall(index, 0)`, ret 8; lanAutoStart |
+| `LanBrowserRulesFill` | `0x8BA863` | `0x0B` B | — (verified only) | `6A 00 6A 00 8B CE E8 40 8E D0 FF` | the rules fill selects its first entry with it; lanAutoStart |
+| `LanDropdownCurrent` | `0xAC0D1B` | `0x0D` B | — (verified only) | `57 8B B9 64 01 00 00 3B 3D C0 72 C6 …` | a dropdown's current index, `thiscall()`; lanAutoStart |
+| `LanGameClock` | `0x402DFF` | `0x0D` B | — (verified only) | `80 3D C8 72 C6 00 00 0F 85 95 A0 2B …` | the game clock, `cdecl()`; lanAutoStart |
+| `LanBrowserJoinRequest` | `0x8BB749` | `0x0E` B | — (verified only) | `85 C0 89 86 B0 01 00 00 76 1E 6A 00 …` | Join IP stores the wait in `[dlg+1B0h]` (0 = refused at once); lanAutoStart |
+| `LanBrowserJoinStart` | `0x8BB762` | 6 B | — (verified only) | `89 86 B4 01 00 00` | and the clock at the press in `[dlg+1B4h]`; lanAutoStart |
+| `LanBrowserCountdown` | `0x8BA87A` | `0x11` B | — (verified only) | `E8 80 85 B4 FF 8B 8E B4 01 00 00 03 …` | the countdown shows their sum minus the clock; lanAutoStart |
 | `BuildingWorkRateGetter` | `0x9BFE33` | `0x15` B | 5 B at `0x9BFE33` | `8B 41 68 85 C0` (`mov eax,[ecx+68h]; test eax,eax`) | the BuildingWorkRate getter, including the tail `0x9BFE3E` the hook continues at; liveBuildingWorkRate |
 | `WorkRateTrainCall` | `0x9EA410` | `0x14` B | 8 B at `0x9EA410` (`jmp` + 3 NOP), noTrainNearEnemyTC only | `8B 4E 10 E8 1B 5A FD FF` (`mov ecx,[esi+10h]; call 9BFE33h`) | the Train update's getter call (FUN_009EA28B), up to its first write of EAX; liveBuildingWorkRate verifies it, noTrainNearEnemyTC hooks it (continuation `0x9EA418`) |
 | `BwrTrainCall` | `0x9EA410` | 8 B | 5 B at `0x9EA413` (a `call` to the wrapper), buildingWorkRateAuras, only while all 8 bytes are stock | `E8 1B 5A FD FF` (`call 9BFE33h`) | the same call, checked on its own: with noTrainNearEnemyTC on, buildingWorkRateAuras leaves it to that key's hook |
@@ -288,6 +316,7 @@ Each key's page has the code of every file below, the helpers it needs and its s
 | [`src/features/heal.cpp`](../src/features/heal.cpp), [`src/hooks/heal_hooks.asm`](../src/hooks/heal_hooks.asm) | `healNonIdle`. | unittypes, sites `HealIdleCheck` and `HealAutoSearchIdle`, your cfg reader |
 | [`src/features/shipments.cpp`](../src/features/shipments.cpp), [`src/hooks/shipment_hooks.asm`](../src/hooks/shipment_hooks.asm) | `hcShipmentPointFallback`. | sites `GatherFallback*` and `GatherPointValid`; with `FirstTC` also `FirstTcSet`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`; your cfg reader |
 
+| [`src/features/lanautostart.cpp`](../src/features/lanautostart.cpp) (no `.asm`) | `lanAutoStart`. | sites `Lan*`, `BStringFromWide`, `BStringFree`, `VerifyAll`, `AddD3D9Observer` (`d3d9hooks.*`), `Log`, your cfg reader |
 | [`src/features/instances.cpp`](../src/features/instances.cpp) (no `.asm`) | `multipleInstances`. | site `SingleInstanceSemaphore`, `VerifyAll`, `WriteDword`, `Log`, your cfg reader |
 | [`src/features/workrate.cpp`](../src/features/workrate.cpp), [`src/hooks/workrate_hooks.asm`](../src/hooks/workrate_hooks.asm) | `liveBuildingWorkRate`. | sites `BuildingWorkRateGetter`, `WorkRate*Call`, `TrainFrac`, `MaintainFrac`, `TrainPoints*`, `MaintainPoints*`, your cfg reader |
 | [`src/features/techprereq.cpp`](../src/features/techprereq.cpp), [`src/hooks/techprereq_hooks.asm`](../src/hooks/techprereq_hooks.asm) | `techPrereqRecheck`. | sites `TechPrereq*`, `TypeCount*`, `PrereqBaseCtor`, `TechTemplate*`, `TechNameById`, `TechStatusUpdateCall`, `WorldStepCount`; `OnDatabaseLoad` (unittypes); your cfg reader |
@@ -866,6 +895,23 @@ A tool for testing: WoL's players don't need it, so it has no code page. Its cod
   initializes elsewhere must target the main thread's ID instead. The hook creates top-level windows
   with `hwndInsertAfter = HWND_BOTTOM`, wraps their window procedure to keep that z-order, and
   refuses every `HCBT_ACTIVATE`.
+
+### lanAutoStart
+
+Its code is `src/features/lanautostart.cpp` ([code page](porting-code/game-files.md#lanautostart)). It writes
+nothing in the exe, so it needs no hook of its own, only a per-frame callback on the main thread.
+
+- **A callback after each D3D9 `Present`**, on the game's main thread (`AddD3D9Observer` here). A DLL
+  with its own present hook calls `AfterPresent` from it; a timer thread would not do, the UI is not
+  thread safe.
+- **The action** comes from the command line (`+uhcLanHost`, `uhcLanJoin="<address>"`,
+  `uhcLanRules=N`) when the cfg line has no argument. Read it at start with `GetCommandLineW`.
+- **The join wait** reads the dialog's own pending answer (`[dlg+1B0h]`, `[dlg+1B4h]`, the game clock
+  0x402DFF) so it never presses Connect while the game is still waiting for the last one.
+- **It calls only stock routines**, each verified first (sites `Lan*`, `BStringFromWide`,
+  `BStringFree`), and checks the vtables of the login screen (`0xB95788`) and the LAN dialog
+  (`0xB8CE10`) before it touches them. If WoL's DLL changes the LAN screen's code, those checks fail
+  and the key does nothing.
 
 ### liveBuildingWorkRate
 

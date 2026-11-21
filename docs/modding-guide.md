@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
 | Friday 2026-11-20 12:52 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
@@ -372,6 +373,7 @@ Where the game reads its data, how it reads it, and how it starts.
 | [`dataLint`](#datalint) | While the data loads, lists what it asks for and the game drops. | **new** | Nothing. | confirmed |
 | [`multipleInstances`](#multipleinstances) | Lets this copy of the game run while a copy from another folder is running. With `background`, its window stays behind every other window and never takes the focus. | for tests | Nothing. | confirmed (two copies, single player) |
 | [`preloadDll`](#preloaddll) | Our `dinput8.dll` also loads another DLL of the game folder, such as WoL's `WoL.dll`, at the moment WoL's own `dinput8.dll` loader would. | `dinput8.dll` build only | Nothing. | confirmed (`WoL.dll` v1.33, single player) |
+| [`lanAutoStart`](#lanautostart) | Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | **new** | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. | confirmed (host, and Connect with no host; no join between two machines yet) |
 
 #### ignoreRegistryPath
 
@@ -505,6 +507,77 @@ preloadDll <file> [<file> ...]      in engine-ext\engine-ext.cfg only
   `banTech` and an AI skirmish ran. Details:
   [wol-uhc-map.md](wol-uhc-map.md#woldll-v133-with-its-real-load-order-2026-11-17).
   - Not tested: three or more copies, multiplayer.
+
+#### lanAutoStart
+
+*Takes the game straight to a LAN game: it hosts, or joins the host's address, with no clicks.*
+
+**Added:** Friday 2026-11-20 18:41
+
+```
+lanAutoStart [host [rules=N] | join <address>]
+```
+
+For a launcher that has already decided who hosts (a lobby with Radmin VPN, for example).
+
+- **In WoL today:** every player clicks Multiplayer, LAN, then Host, or types the host's address in
+  Direct IP and clicks Connect. The command line cannot open that screen.
+- **Effect:**
+  - With the line alone, the action comes from the game's command line. `+uhcLanHost` hosts a LAN
+    game; `uhcLanJoin="<address>"` joins the game hosted at that address by Direct IP. With neither,
+    the game starts as stock, so `wol.cfg` can keep the line on for everyone.
+  - `uhcLanRules=N` (or `rules=N` after `host` in the cfg) picks the host's Game Rules entry before
+    Host: 0 Standard, 1 Classic, 2-6 the treaties, 7 King of the Hill. The Game Type stays as the
+    game opens it (Supremacy).
+  - `host` or `join <address>` in the cfg does the same with no command line; the command line wins.
+  - About 4 s after the main menu shows, the game opens the LAN / Direct IP screen and hosts, or,
+    5 s later, fills Direct IP and presses Connect (the host loads the same game and needs a
+    moment to host). A joiner whose host is not up yet gets "No game was found" when the game's
+    15-second wait for an answer ends; Connect is pressed again 3 s later, never while a wait is
+    running, for up to 3 minutes, while the screen stays. The game shows that message in its one
+    message dialog, so it never stacks. A Connect the game refuses at once is not pressed again.
+  - **Record Game** needs nothing from this key: the lobby's box opens with the value of
+    `gamerecordgame` in the host profile's `MultiplayerGameSettings` block (`Users3\*.xml`), which
+    the game saves from the last lobby. A launcher sets it to `true` there before a competitive
+    match.
+  - With Radmin, the launcher also passes `OverrideAddress="<this player's Radmin address>"` so the
+    game binds to the VPN, and gives the joiners the host's Radmin address.
+- **WoL needs:** nothing. A launcher that passes the arguments.
+- **Log:**
+  - at startup, `lanAutoStart: will host a LAN game once the main menu is up` (or `will join
+    <address>`), or `no action` when the command line has neither;
+  - `attempt 1: doMPSetup(false)`, `the LAN / Direct IP dialog is open`, then `hosting a LAN game`
+    or `joining <address> by Direct IP`; with rules, `Game Rules entry N` before hosting;
+  - a bad address: `uhcLanJoin on the command line has no valid address; ignored`; a bad rules
+    value: `uhcLanRules on the command line is not an entry number (0-63); ignored`, or `Game Rules
+    entry N does not exist (8 entries); left as it is`.
+- **Simulation:** no. It only presses the menu's buttons, before any game exists; a player without
+  the key joins the same game through the menus.
+- **Status:** confirmed on 2026-11-15 in WoL (`C:\AoE3-UHC-WoLReal`, this DLL, `wol.cfg` with every
+  key of the bed, 35 applied, 0 failed):
+  - `+uhcLanHost OverrideAddress="26.162.244.170"`: the hosted game's lobby, with that address at the
+    top;
+  - `uhcLanJoin="26.10.20.30"` with no host: Direct IP filled, Connect pressed again every 6 s, no
+    stacked messages;
+  - the line with no argument and no command-line token: WoL's main menu as always; a bad address:
+    ignored and logged.
+  - `uhcLanRules=7` and `=1`: the hosted lobby shows King of the Hill and Classic (WoL and the
+    stock game); `uhcLanRules=2`, `=5` and `=6` on the stock game: the 10 and 40 minute treaties and
+    Treaty: No Blockade; `uhcLanRules=99`: ignored and logged, Standard. WoL names its treaty entries
+    "Not supported", which is its team's statement; the entries are the same.
+  - The joiner's new wait: each Connect waited for the game's 15-second answer, then 3 s; four in
+    70 s with no host, one message dialog on screen.
+  - `gamerecordgame` set to `true` in the profile: the hosted lobby opened with Record Game ticked.
+  - Beside WoL's own DLL (`dinput8.dll` and `engine-ext\engine-ext.cfg` with the line), 2026-11-15:
+    host with Classic rules, Connect with no host, and no action without the command line, as above.
+    The first try FAILED: WoL's DLL hooks the Host button and replaces the dialog's vtable; both are
+    handled now ([how it works](how-it-works.md#lanautostart)).
+  - Also on a copy of the stock game on 2026-11-14: host, Connect with no host, and no action
+    without the command line.
+  - With the stock exe and no loader (`dinput8.dll` hooked at the entry point), 2026-11-15: host
+    with the 20 minute treaty, Connect with no host, no action without the command line.
+  - Not tested: a join between two machines (two copies on one machine share the game's ports, so
+    they cannot).
 
 ### Population, decks and limits
 

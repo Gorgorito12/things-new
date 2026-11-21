@@ -2390,4 +2390,88 @@ inline constexpr Site kCostListCtor{"CostListCtor", 0x0044717F, kCostListCtorByt
 inline constexpr std::uint8_t kCostListDtorBytes[] = {0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x85, 0xC0, 0x74, 0x0B, 0x50, 0xB9};
 inline constexpr Site kCostListDtor{"CostListDtor", 0x0044C817, kCostListDtorBytes, sizeof(kCostListDtorBytes)};
 
+inline constexpr std::uint8_t kLanConsoleExecuteBytes[] = {0x56, 0x8B, 0xF1, 0x80, 0x7E, 0x69, 0x00};
+inline constexpr Site kLanConsoleExecute{"LanConsoleExecute", 0x00433D0D, kLanConsoleExecuteBytes, sizeof(kLanConsoleExecuteBytes)};
+
+inline constexpr std::uint8_t kLanDoMpSetupLanBytes[] = {0x6A, 0x36, 0xE8, 0xCD, 0xB2, 0xD5, 0xFF, 0x85, 0xC0, 0x74, 0x19, 0xC7, 0x40, 0x3C, 0x2E, 0x00, 0x00, 0x00, 0x8B, 0x0D, 0x44, 0x62, 0xC6, 0x00, 0x8B, 0x49, 0x60, 0x8B, 0x11, 0x6A, 0x00, 0x6A, 0x36, 0xFF, 0x52, 0x14};
+inline constexpr Site kLanDoMpSetupLan{"LanDoMpSetupLan", 0x006F0C09, kLanDoMpSetupLanBytes, sizeof(kLanDoMpSetupLanBytes)};
+
+inline constexpr std::uint8_t kLanScreenLookupBytes[] = {0x8B, 0x51, 0x08, 0x53, 0x55, 0x56, 0x33, 0xF6, 0x33, 0xC0, 0x85, 0xD2, 0x57, 0x0F, 0x8E, 0x8F, 0xA0, 0x28, 0x00, 0x8B, 0x79, 0x04, 0x8B, 0x5C, 0x24, 0x14, 0x8B, 0xCF, 0x8B, 0x29, 0x39, 0x5D, 0x0C};
+inline constexpr Site kLanScreenLookup{"LanScreenLookup", 0x0044BEDD, kLanScreenLookupBytes, sizeof(kLanScreenLookupBytes)};
+
+inline constexpr std::uint8_t kLanLoginDescriptorHandleBytes[] = {0x8B, 0x47, 0x04, 0x3B, 0x05, 0xE8, 0x72, 0xC6, 0x00};
+inline constexpr Site kLanLoginDescriptorHandle{"LanLoginDescriptorHandle", 0x008BCEB5, kLanLoginDescriptorHandleBytes, sizeof(kLanLoginDescriptorHandleBytes)};
+
+inline constexpr std::uint8_t kLanScreenResolveBytes[] = {0xA1, 0x44, 0x62, 0xC6, 0x00, 0x8B, 0x54, 0x24, 0x04, 0x8B, 0x48, 0x64, 0x52, 0x83, 0xEC, 0x04, 0x8B, 0x54, 0x24, 0x04, 0x32, 0xC0, 0x3B, 0x15, 0xE8, 0x72, 0xC6, 0x00};
+inline constexpr Site kLanScreenResolve{"LanScreenResolve", 0x0040439A, kLanScreenResolveBytes, sizeof(kLanScreenResolveBytes)};
+
+inline constexpr std::uint8_t kLanLoginScreenInitBytes[] = {0x08, 0xD4, 0x8B, 0x00};
+inline constexpr Site kLanLoginScreenInit{"LanLoginScreenInit", 0x00B957D0, kLanLoginScreenInitBytes, sizeof(kLanLoginScreenInitBytes)};
+
+inline constexpr std::uint8_t kLanLoginScreenBrowserBytes[] = {0x89, 0x5E, 0x54};
+inline constexpr Site kLanLoginScreenBrowser{"LanLoginScreenBrowser", 0x008BD4DF, kLanLoginScreenBrowserBytes, sizeof(kLanLoginScreenBrowserBytes)};
+
+inline constexpr std::uint8_t kLanGadgetLookupBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x3B, 0x15, 0xC0, 0x72, 0xC6, 0x00};
+inline constexpr Site kLanGadgetLookup{"LanGadgetLookup", 0x0040423C, kLanGadgetLookupBytes, sizeof(kLanGadgetLookupBytes)};
+
+inline constexpr std::uint8_t kLanGadgetShownFlagBytes[] = {0x8A, 0x87, 0xA4, 0x00, 0x00, 0x00, 0xA8, 0x01};
+inline constexpr Site kLanGadgetShownFlag{"LanGadgetShownFlag", 0x00447BBF, kLanGadgetShownFlagBytes, sizeof(kLanGadgetShownFlagBytes)};
+
+inline constexpr std::uint8_t kLanBrowserHostGadgetBytes[] = {0x89, 0x86, 0x74, 0x01, 0x00, 0x00};
+inline constexpr Site kLanBrowserHostGadget{"LanBrowserHostGadget", 0x008BB0E7, kLanBrowserHostGadgetBytes, sizeof(kLanBrowserHostGadgetBytes)};
+
+inline constexpr std::uint8_t kLanBrowserIpGadgetBytes[] = {0x89, 0x86, 0x7C, 0x01, 0x00, 0x00};
+inline constexpr Site kLanBrowserIpGadget{"LanBrowserIpGadget", 0x008BB138, kLanBrowserIpGadgetBytes, sizeof(kLanBrowserIpGadgetBytes)};
+
+inline constexpr std::uint8_t kLanBrowserSessionBytes[] = {0x89, 0x86, 0xAC, 0x01, 0x00, 0x00};
+inline constexpr Site kLanBrowserSession{"LanBrowserSession", 0x008BBAB3, kLanBrowserSessionBytes, sizeof(kLanBrowserSessionBytes)};
+
+inline constexpr std::uint8_t kLanBrowserSetTextBytes[] = {0x8D, 0x86, 0x44, 0x01, 0x00, 0x00, 0x50, 0x8B, 0xCF, 0xFF, 0x92, 0x80, 0x00, 0x00, 0x00};
+inline constexpr Site kLanBrowserSetText{"LanBrowserSetText", 0x008BBB06, kLanBrowserSetTextBytes, sizeof(kLanBrowserSetTextBytes)};
+
+inline constexpr std::uint8_t kLanBrowserClickHostBytes[] = {0x6A, 0x00, 0x8B, 0xCF, 0xE8};
+inline constexpr Site kLanBrowserClickHost{"LanBrowserClickHost", 0x008BC555, kLanBrowserClickHostBytes, sizeof(kLanBrowserClickHostBytes)};
+
+inline constexpr std::uint8_t kLanBrowserClickHostNextBytes[] = {0xEB, 0x1D};
+inline constexpr Site kLanBrowserClickHostNext{"LanBrowserClickHostNext", 0x008BC55E, kLanBrowserClickHostNextBytes, sizeof(kLanBrowserClickHostNextBytes)};
+
+inline constexpr std::uint8_t kLanBrowserClickJoinIpBytes[] = {0x8B, 0xCF, 0xE8, 0xA0, 0xF1, 0xFF, 0xFF};
+inline constexpr Site kLanBrowserClickJoinIp{"LanBrowserClickJoinIp", 0x008BC569, kLanBrowserClickJoinIpBytes, sizeof(kLanBrowserClickJoinIpBytes)};
+
+inline constexpr std::uint8_t kLanBrowserHostBytes[] = {0x81, 0xEC, 0x84, 0x06, 0x00, 0x00, 0xA1, 0x28, 0x62, 0xC6, 0x00, 0x53, 0x56, 0x8B, 0xF1, 0x57, 0x8B, 0xBE, 0x64, 0x01, 0x00, 0x00};
+inline constexpr Site kLanBrowserHost{"LanBrowserHost", 0x008BBD88, kLanBrowserHostBytes, sizeof(kLanBrowserHostBytes)};
+
+inline constexpr std::uint8_t kLanBrowserJoinIpBytes[] = {0x53, 0x56, 0x8B, 0xF1, 0x57, 0x8B, 0xBE, 0x7C, 0x01, 0x00, 0x00, 0x57, 0xE8, 0x99, 0x69, 0xB8, 0xFF};
+inline constexpr Site kLanBrowserJoinIp{"LanBrowserJoinIp", 0x008BB710, kLanBrowserJoinIpBytes, sizeof(kLanBrowserJoinIpBytes)};
+
+inline constexpr std::uint8_t kLanBrowserRulesGadgetBytes[] = {0x89, 0x96, 0x90, 0x01, 0x00, 0x00};
+inline constexpr Site kLanBrowserRulesGadget{"LanBrowserRulesGadget", 0x008BB1A4, kLanBrowserRulesGadgetBytes, sizeof(kLanBrowserRulesGadgetBytes)};
+
+inline constexpr std::uint8_t kLanBrowserNameGadgetBytes[] = {0x89, 0x86, 0x64, 0x01, 0x00, 0x00};
+inline constexpr Site kLanBrowserNameGadget{"LanBrowserNameGadget", 0x008BB096, kLanBrowserNameGadgetBytes, sizeof(kLanBrowserNameGadgetBytes)};
+
+inline constexpr std::uint8_t kLanBrowserModeGadgetBytes[] = {0x89, 0x96, 0x68, 0x01, 0x00, 0x00};
+inline constexpr Site kLanBrowserModeGadget{"LanBrowserModeGadget", 0x008BB0B1, kLanBrowserModeGadgetBytes, sizeof(kLanBrowserModeGadgetBytes)};
+
+inline constexpr std::uint8_t kLanDropdownSelectBytes[] = {0x53, 0x8B, 0xD9, 0x57, 0x8B, 0xBB, 0x64, 0x01, 0x00, 0x00};
+inline constexpr Site kLanDropdownSelect{"LanDropdownSelect", 0x005C36AE, kLanDropdownSelectBytes, sizeof(kLanDropdownSelectBytes)};
+
+inline constexpr std::uint8_t kLanBrowserRulesFillBytes[] = {0x6A, 0x00, 0x6A, 0x00, 0x8B, 0xCE, 0xE8, 0x40, 0x8E, 0xD0, 0xFF};
+inline constexpr Site kLanBrowserRulesFill{"LanBrowserRulesFill", 0x008BA863, kLanBrowserRulesFillBytes, sizeof(kLanBrowserRulesFillBytes)};
+
+inline constexpr std::uint8_t kLanDropdownCurrentBytes[] = {0x57, 0x8B, 0xB9, 0x64, 0x01, 0x00, 0x00, 0x3B, 0x3D, 0xC0, 0x72, 0xC6, 0x00};
+inline constexpr Site kLanDropdownCurrent{"LanDropdownCurrent", 0x00AC0D1B, kLanDropdownCurrentBytes, sizeof(kLanDropdownCurrentBytes)};
+
+inline constexpr std::uint8_t kLanGameClockBytes[] = {0x80, 0x3D, 0xC8, 0x72, 0xC6, 0x00, 0x00, 0x0F, 0x85, 0x95, 0xA0, 0x2B, 0x00};
+inline constexpr Site kLanGameClock{"LanGameClock", 0x00402DFF, kLanGameClockBytes, sizeof(kLanGameClockBytes)};
+
+inline constexpr std::uint8_t kLanBrowserJoinRequestBytes[] = {0x85, 0xC0, 0x89, 0x86, 0xB0, 0x01, 0x00, 0x00, 0x76, 0x1E, 0x6A, 0x00, 0x8B, 0xCE};
+inline constexpr Site kLanBrowserJoinRequest{"LanBrowserJoinRequest", 0x008BB749, kLanBrowserJoinRequestBytes, sizeof(kLanBrowserJoinRequestBytes)};
+
+inline constexpr std::uint8_t kLanBrowserJoinStartBytes[] = {0x89, 0x86, 0xB4, 0x01, 0x00, 0x00};
+inline constexpr Site kLanBrowserJoinStart{"LanBrowserJoinStart", 0x008BB762, kLanBrowserJoinStartBytes, sizeof(kLanBrowserJoinStartBytes)};
+
+inline constexpr std::uint8_t kLanBrowserCountdownBytes[] = {0xE8, 0x80, 0x85, 0xB4, 0xFF, 0x8B, 0x8E, 0xB4, 0x01, 0x00, 0x00, 0x03, 0x8E, 0xB0, 0x01, 0x00, 0x00};
+inline constexpr Site kLanBrowserCountdown{"LanBrowserCountdown", 0x008BA87A, kLanBrowserCountdownBytes, sizeof(kLanBrowserCountdownBytes)};
+
 }  // namespace uhc::sites

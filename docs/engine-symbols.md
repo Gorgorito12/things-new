@@ -1349,6 +1349,25 @@ REA (Ghidra 12.1.4) and capstone (`cs`) on the stock exe; bundles `rea/evidence/
 | Avatar table | `[[0xC66234]+140h]` → 0x7EEEE7 → lookup 0x7A77EF(string*) | confirmed (`cs`) | An empty name gives the first entry. Loaded from `avatar_*.xml` (FUN_007A7875: `<avatar id>` with `image`, `portrait`, `tier`, `minLevel`, `type`, `civ`). |
 | Game string | one pointer to the characters, header 10h bytes before; ctor 0x401A12(const wchar_t*) `ret 4`, dtor 0x4010CA, empty ctor 0x40133F | confirmed (`cs`) | |
 
+### Main menu to the LAN / Direct IP screen (for `lanAutoStart`, 2026-11-14)
+
+REA (Ghidra) and capstone (`cs`) on the stock exe, then the live objects logged in game (stock and WoL with this DLL).
+
+| Name | Address | Status | Notes |
+|---|---|---|---|
+| Console execute | 0x433D0D `thiscall(console = [0xC672E4], const char* command, const char* source)`, `ret 8` | confirmed (`cs`, in game) | Runs a console command as the menu XML's `<command>` does; `doMPSetup(false)` through it opens the LAN route. |
+| doMPSetup, LAN branch | 0x6F0C09 (in FUN_006F0BEE) | confirmed (`cs`, in game) | The SkirmHomeCity screen (ID 36h) gets next screen `[+3Ch]` = 2Eh (MPLoginScreen), then the screen manager switches to 36h. `doMPSetup(true)` is the ESO route. |
+| Screen manager | `[[0xC66244]+60h]`; switch vtable +14h `thiscall(id, 0)`; list count `[+8]`, array `[+4]` | confirmed (`cs`, in game) | The list holds descriptors: ID `[+0Ch]`, screen handle `[+4]`. FUN_0044BEDD looks an ID up and asserts on a miss. |
+| Screen of a handle | 0x40439A `screen* cdecl(handle)` | confirmed (in game) | |
+| MPLoginScreen | vtable 0xB95788; slot 18 its init 0x8BD408 (loads `uiMPLoginScreen.xml`) | confirmed (in game) | `[screen+54h]` = the MPLanBrowserDialog handle (0x8BD4DF). |
+| MPLanBrowserDialog | vtable 0xB8CE10, `uimplanip.xml`; init FUN_008BB001, activation FUN_008BBA72, click switch FUN_008BC4E4 (table 0x8BC808) | confirmed (`cs`, in game) | `[+164h]` game name box, `[+170h]` Refresh, `[+174h]` Host, `[+178h]` Join LAN, `[+17Ch]` Direct IP edit box, `[+180h]` Join IP; `[+1ACh]` LAN browser, created on activation and released (not cleared) on deactivation; `[+1B0h]` request ID. Host = 0x8BBD88 `thiscall(dlg, 0)` `ret 4`; Join IP = 0x8BB710 `thiscall(dlg)`, which reads `[+17Ch]`. |
+| Gadget shown bit | bit 0 of `[gadget+0A4h]` (tested at 0x447BBF) | confirmed (in game) | Set while the dialog is shown. |
+| Gadget set text | vtable +80h `thiscall(gadget, string*)` | confirmed (in game) | The call the activation makes for the game name box (0x8BBB06); the edit box type is 23h for 0x40423C. |
+| LAN dialog dropdowns | Game Type `MPLanIP-HostGameModeDropdown` `[dlg+168h]` (0x8BB0B1), Game Rules `MPLanIP-HostXtraRulesDropdown` `[dlg+190h]` (0x8BB1A4); fills 0x8BA518 and 0x8BA62E, called from the init (0x8BB240, 0x8BB247) | confirmed (`cs`; rules in game) | Dropdown = gadget type 0Dh (0x46AC10 looks one up AND takes a reference, `[+5Ch]`, released by 0x40431B; 0x40423C with type 0Dh takes none). Select 0x5C36AE `thiscall(index, 0)` `ret 8`; current index 0xAC0D1B; an entry's data 0xAC0B6B `thiscall(index)` `ret 4`, `[+19Ch]` the data count (Game Type only: its entries carry their type value). The rules fill adds 0..7 (Standard, Classic, 4 treaties, treaty without blockade, King of the Hill). A Game Type change (event 10, 0x8BC504) runs 0x8BA90E (rules back to 0; Deathmatch, value 1, forces rules 1 and hides the dropdown) and 0x8BABF7 (the saved game entry, value `[dlg+1C0h]`). Deathmatch then needs a Deathmatch home city, in WoL and in the stock game. |
+| Join IP wait | `[dlg+1B0h]` the browser's answer (ms to wait, 15000 for an unknown address; 0 = refused at once with a message), `[dlg+1B4h]` the game clock 0x402DFF at the press (0x8BB749, 0x8BB762); countdown 0x8BA872 | confirmed (`cs`, in game) | While waiting, 0x8BA31E(0) disables Host, Join and Join IP. |
+| Pre-game message dialog | `[[0xC66234]+920h]`, shown through the UI object's vtable +24h / +28h (0x6F2188, 0x6F2105) → 0x838E3A / 0x838F48 → 0x5183C6 | confirmed (`cs`) | One dialog gadget (`pregame-messagedialog-prompt`): a new message rewrites its text, nothing stacks. |
+| Game settings table | 0xD840E4, 88h bytes per entry (UTF-16 name, then type and ID); the setting's index is its ID: `GameRecordGame` 17h (bool), `GameStartingAge` 18h, `GameKOTH` 27h | confirmed (`cs`, in game) | Bool set 0xA26341 `thiscall(id, value)` and int set 0xA26321 send to every player (0xA2B475). 0x704D7E restores the last lobby's values, which the profile keeps in `MultiplayerGameSettings`; `gamerecordgame` true there opened the hosted lobby with Record Game ticked. |
+
 ### Impact types and impact effects (for `impactBoneFix` and `customImpactTypes`, 2026-11-12)
 
 REA (Ghidra 12.1.4) on the stock exe, records in `rea/evidence/age3y-b1a1dab7/impact49-50.json`; `cs` = capstone over

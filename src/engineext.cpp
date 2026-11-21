@@ -1,4 +1,5 @@
-// dinput8.dll: this DLL for a game whose loader runs another UHC.dll. The exe imports DINPUT8.dll and
+// dinput8.dll: this DLL for a game whose loader runs another UHC.dll, or for the stock exe with no loader at all
+// (hooked at its entry point instead of the boot stub; see DllMain). The exe imports DINPUT8.dll and
 // Windows looks next to the exe first, so it loads with no change to the exe, to that DLL or to their
 // files. Every export goes on to the system's dinput8.dll (engineext_forward.cpp). Not VERSION.dll: the
 // exe imports it too, but the game was seen to load the one in System32 with a copy next to the exe.
@@ -61,6 +62,23 @@ bool IsPatchedAge3y() {
   return nt->FileHeader.TimeDateStamp == kTimeDateStamp && nt->OptionalHeader.SizeOfImage == kSizeOfImage &&
          nt->OptionalHeader.AddressOfEntryPoint == 0x007836BE &&
          std::memcmp(reinterpret_cast<const void*>(kStubEnd), kStubEndBytes, sizeof(kStubEndBytes)) == 0;
+}
+
+// The stock exe, with no loader: its entry point 0x5876AC starts push 60h / push 0BEB228h (7 bytes), then a call.
+constexpr std::uint32_t kStockEntryNext = 0x005876B3;
+constexpr BYTE kStockEntryBytes[] = {0x6A, 0x60, 0x68, 0x28, 0xB2, 0xBE, 0x00, 0xE8};
+const std::uint32_t g_stockEntryNext = kStockEntryNext;
+
+bool IsStockAge3y() {
+  const BYTE* exe = reinterpret_cast<const BYTE*>(GetModuleHandleW(nullptr));
+  if (exe != kImageBase) {
+    return false;
+  }
+  const auto* dos = reinterpret_cast<const IMAGE_DOS_HEADER*>(exe);
+  const auto* nt = reinterpret_cast<const IMAGE_NT_HEADERS32*>(exe + dos->e_lfanew);
+  return nt->FileHeader.TimeDateStamp == kTimeDateStamp && nt->OptionalHeader.SizeOfImage == kSizeOfImage &&
+         nt->OptionalHeader.AddressOfEntryPoint == g_gameEntry - 0x00400000 &&
+         std::memcmp(reinterpret_cast<const void*>(g_gameEntry), kStockEntryBytes, sizeof(kStockEntryBytes)) == 0;
 }
 
 bool SameName(const std::wstring& a, const wchar_t* b) {
@@ -126,13 +144,32 @@ extern "C" __declspec(naked) void EngineExtEntry() {
   }
 }
 
+// The same for the stock exe, hooked at its entry point: the two pushes the jmp replaced, then the entry's call.
+extern "C" __declspec(naked) void EngineExtStockEntry() {
+  __asm {
+    pushad
+    pushfd
+    call EngineExtMain
+    popfd
+    popad
+    push 60h
+    push 0BEB228h
+    jmp g_stockEntryNext
+  }
+}
+
 // Moves the jmp and runs preloadDll; with the loader lock held, the rest waits for EngineExtMain.
+// preloadDll stays with the loader's exe: it stands in for a mod's own dinput8.dll proxy, and a mod
+// whose DLLs need that runs the loader.
 BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID) {
   if (reason == DLL_PROCESS_ATTACH) {
     DisableThreadLibraryCalls(module);
     if (IsPatchedAge3y()) {
       uhc::WriteJmp(kStubJump, reinterpret_cast<const void*>(&EngineExtEntry), 5);
       PreloadDlls();
+    } else if (IsStockAge3y()) {
+      // No loader: the exe imports this DLL, so this runs before its entry point 0x5876AC.
+      uhc::WriteJmp(g_gameEntry, reinterpret_cast<const void*>(&EngineExtStockEntry), 7);
     }
   }
   return TRUE;

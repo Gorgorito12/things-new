@@ -76,6 +76,12 @@ coming last, verify the preloaded DLL's patches like the other DLL's.
 Tested with WoL's `WoL.dll` v1.33 (`wol-uhc-map.md`, "WoL.dll v1.33 with its real load order").
 <!-- private:end -->
 
+**With the stock exe, no loader at all.** The stock `age3y.exe` imports `DINPUT8.dll` too, so the same file loads there.
+`DllMain` then finds the stock entry point (0x5876AC, `push 60h / push 0BEB228h`, 7 bytes, then a call) and replaces those
+7 bytes with a `jmp` to a stub that runs `EngineExtMain`, executes the two pushes itself and continues at 0x5876B3. The keys
+that need the loader's own files are not available this way; a key that only calls the game (`lanAutoStart`) is. Confirmed
+in game 2026-11-15: host with treaty rules, Connect, and no action without the command line.
+
 ## 2. Verify, then patch
 
 Every byte the DLL writes is checked first:
@@ -5449,6 +5455,82 @@ installs a `WH_CBT` hook for that thread only:
 
 A window that cannot be activated gets no keyboard input. The game is driven through `perfExecFile`
 and watched with `PrintWindow`, and both work without focus.
+
+### lanAutoStart
+
+**Why it exists.** A launcher that has already agreed on a host (a lobby, Radmin VPN) starts every
+player's game, and each player then clicks Multiplayer, LAN, and Host or types the host's address.
+The command line cannot do it: `+name` sets config variables only, and the LAN screen is reached
+through the command `doMPSetup(false)` that the menu's XML runs. There is no command for hosting or
+joining at all: those are the LAN dialog's buttons.
+
+**What it does.** It writes nothing in the exe. After the first frame it does what the clicks do,
+calling the game's own routines, from an `AfterPresent` observer of `d3d9hooks.*`:
+1. 3 s after the first frame, with the UI object `[0xC66244]`, its screen manager `[+60h]` and the
+   console `[0xC672E4]` present, it runs `doMPSetup(false)` through the console's execute 0x433D0D
+   (thiscall, console, command, source). That sets the SkirmHomeCity screen's (ID 36h) next screen
+   `[+3Ch]` to 2Eh, MPLoginScreen (site `LanDoMpSetupLan`, 0x6F0C09).
+2. 1.5 s later, if `[+3Ch]` is 2Eh, it switches to screen 2Eh (the screen manager's vtable +14h,
+   `(id, 0)`). If not, the menu was not ready: it tries again in 2 s without counting an attempt.
+3. It waits for MPLanBrowserDialog (`uimplanip.xml`): the screen list holds descriptors (count `[+8]`,
+   array `[+4]`, ID `[+0Ch]`, as 0x44BEDD walks it), the screen is the handle `[descriptor+4]`
+   resolved by 0x40439A, and must have vtable 0xB95788; the dialog is the gadget `[screen+54h]`
+   looked up through 0x40423C and must have vtable 0xB8CE10. It is ready when it is shown (bit 0 of
+   `[+0A4h]`, the bit the base activation 0x447BBC tests) and its LAN browser `[+1ACh]` exists. The
+   deactivation releases the browser and leaves the pointer, so the pointer alone is not enough.
+   15 s without it is an attempt; after 3, it stops.
+4. 750 ms later it acts (a joiner 5 s more: the host needs a moment to host). Host: with rules
+   asked, the Game Rules dropdown (`MPLanIP-HostXtraRulesDropdown`, gadget `[dlg+190h]`, type 0Dh)
+   gets that entry through 0x5C36AE(index, 0), the call its own fill makes for the first entry
+   (0x8BA863), read back with 0xAC0D1B; Host reads the rules from that dropdown. The fill always adds
+   entries 0..7, so that is the range ([dropdown+19Ch] counts per-entry data, which this list does
+   not have). Then 0x8BBD88(dlg, 0), the routine the click switch (0x8BC555) calls for
+   the Host button. Join: the Direct IP edit box (gadget `[dlg+17Ch]`, type 23h) gets the address
+   through its set-text slot (vtable +80h, the call the activation makes for the game name) with a
+   string built by 0x401A12 and freed by 0x4010CA, then 0x8BB710(dlg), the routine of the Join IP
+   button (0x8BC569), which reads that box.
+5. Joining: every copy is launched at once, so a joiner can press Connect before the host's game
+   exists. Join IP stores the browser's answer in `[dlg+1B0h]` (a wait in ms, 15000 for an unknown
+   address; 0 when it refuses at once with a message) and the game clock 0x402DFF in `[dlg+1B4h]`;
+   the dialog's countdown shows their sum minus the clock. While that wait runs nothing is pressed;
+   3 s after it ends, if the dialog is still shown, Connect is pressed again, for up to 3 minutes. A
+   0 stops it, since another press would show the message again. A wait that ends unanswered shows
+   "No game was found" in the pre-game message dialog, a single gadget whose text each message
+   rewrites (0x5183C6), so the messages never stack. Leaving the screen ends it.
+
+It gives up 120 s after the first frame unless it is retrying Connect.
+
+**Beside another DLL** (`dinput8.dll` next to a mod's own `uhc.dll`, measured with a mod's own 2026 DLL):
+- That DLL points the Host button's call (0x8BC559, rel32 at 0x8BC55A) at a wrapper of its own. The key
+  verifies the bytes around the rel32 (sites `LanBrowserClickHost`, `LanBrowserClickHostNext`) and, when hosting,
+  calls whatever that call targets, as the click does; a target that is not executable code of a loaded module is
+  refused. The log names the module (`UHC.dll+43180` for that mod).
+- It also replaces the dialog's vtable pointer with a table whose every entry forwards through its code, so the
+  dialog is recognised by the gadgets its init bound (`[+164h]`, `[+17Ch]` edit boxes, `[+168h]`, `[+190h]`
+  dropdowns) when its vtable is not 0xB8CE10.
+
+**The action.** The cfg line alone reads it from the command line, so a mod can ship the line and
+the game starts as stock unless a launcher passes `+uhcLanHost` or `uhcLanJoin="<address>"` (the
+syntax of the stock `OverrideAddress`), and for the host `uhcLanRules=N` (0..63, checked against the
+eight entries).
+
+**Record Game is not part of the key.** The lobby's box is game setting 17h (`GameRecordGame`, the
+24th entry of the settings table at 0xD840E4, entries 88h bytes), a host setting sent to every player
+(bool set 0xA26341). When the game hosts, 0x704D7E copies it from the last lobby's settings, which
+the profile keeps as `gamerecordgame` in its `MultiplayerGameSettings` block; the box is ticked when
+that says `true` (seen in game). So a launcher writes that line before the match and the DLL does
+nothing. The address may hold letters, digits, `.`, `-` and `:`, at
+most 64 characters; anything else is ignored and logged.
+
+**Why it is safe.**
+- It writes no byte of the exe: `VerifyAll` checks the 25 `Lan*` sites and the two string routines,
+  and every object it touches is checked by its vtable before it is used, so a mod whose UI or exe
+  differs gets `FAILED` or a log line, never a call into the wrong code.
+- It calls only what the menu's own clicks call, in the order they call it, on the main thread
+  (the D3D9 present runs there), so the game sees an ordinary click.
+- It does not change the simulation: it acts before any game exists, and a player without the key
+  joins the same game through the normal menus.
+- It runs once per start; nothing is kept for a saved game or the next game.
 
 ### impactBoneFix
 

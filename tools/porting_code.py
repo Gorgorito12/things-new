@@ -56,6 +56,7 @@ PAGES = {
         "rendererOption": ["src/features/renderer.cpp"],
         "menuOptions": ["src/menuoptions.h", "src/menuoptions.cpp", "src/hooks/menuoptions_hooks.asm"],
         "xsErrorLog": ["src/features/xslog.cpp", "src/hooks/xslog_hooks.asm"],
+        "lanAutoStart": ["src/features/lanautostart.cpp"],
     }),
     "population": ("Population", {
         "decimalPopulation": ["src/features/decimalpop.cpp", "src/hooks/decimalpop_hooks.asm",
