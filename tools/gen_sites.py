@@ -1897,6 +1897,70 @@ SITES = [
     # transformChecks: the cost list's constructor 0x44717F and destructor 0x44C817 (thiscall(list))
     ("CostListCtor", 0x44717F, 0x09),
     ("CostListDtor", 0x44C817, 0x0B),
+    # lanAutoStart, verify only (nothing is written). The console command runner 0x433D0D
+    # (thiscall(console = [0xC672E4], const char* command, const char* source), ret 8). The LAN branch of the
+    # doMPSetup(false) helper FUN_006F0BEE: push 36h / call 44BEDDh (screen lookup) / test / je / mov
+    # [eax+3Ch],2Eh (the SkirmHomeCity screen's next screen) / mov ecx,[[0C66244h]+60h] / mov edx,[ecx] / push 0 /
+    # push 36h / call [edx+14h] (the screen manager's switch(id, 0))
+    ("LanConsoleExecute", 0x433D0D, 7),
+    ("LanDoMpSetupLan", 0x6F0C09, 0x24),
+    # lanAutoStart: the screen lookup FUN_0044BEDD (thiscall(manager, id), ret 4): count [ecx+8], array [ecx+4],
+    # each screen's ID at [screen+0Ch]
+    ("LanScreenLookup", 0x44BEDD, 0x21),
+    # lanAutoStart: those entries are descriptors; the screen itself is the handle at [descriptor+4]
+    # (screen 46's descriptor method 0x8BCE8F: mov eax,[edi+4] / cmp eax,[0C672E8h], the invalid screen handle),
+    # resolved by 0x40439A (screen* cdecl(handle): the table [[[0C66244h]+64h]+4], null when invalid)
+    ("LanLoginDescriptorHandle", 0x8BCEB5, 9),
+    ("LanScreenResolve", 0x40439A, 0x1C),
+    # lanAutoStart: MPLoginScreen's vtable 0xB95788 (seen on the live screen; slot 18 = its init 0x8BD408, which
+    # loads uiMPLoginScreen.xml) and the init's store of the MPLanBrowserDialog handle, mov [esi+54h],ebx
+    ("LanLoginScreenInit", 0xB957D0, 4),
+    ("LanLoginScreenBrowser", 0x8BD4DF, 3),
+    # lanAutoStart: the gadget lookup 0x40423C (gadget* thiscall(manager = [[0C66244h]+44h], handle, type),
+    # ret 8)
+    ("LanGadgetLookup", 0x40423C, 0x0A),
+    # lanAutoStart: MPLanBrowserDialog (uimplanip.xml). Its init FUN_008BB001 binds the gadgets: MPLanIP-HostButton
+    # to [esi+174h] (0x8BB0E7) and MPLanIP-DirectIPEditBox to [esi+17Ch] (0x8BB138); its activation FUN_008BBA72
+    # creates the LAN browser [esi+1ACh] (0x8BBAB3) and fills the game name box through the gadget's set-text
+    # slot, lea eax,[esi+144h] / push eax / mov ecx,edi / call [edx+80h] (0x8BBB06)
+    # lanAutoStart: a gadget's shown bit, bit 0 of [gadget+0A4h], as the base activation 0x447BBC tests it
+    # (mov al,[edi+0A4h] / test al,1)
+    ("LanGadgetShownFlag", 0x447BBF, 8),
+    ("LanBrowserHostGadget", 0x8BB0E7, 6),
+    ("LanBrowserIpGadget", 0x8BB138, 6),
+    ("LanBrowserSession", 0x8BBAB3, 6),
+    ("LanBrowserSetText", 0x8BBB06, 0x0F),
+    # lanAutoStart: the click switch of FUN_008BC4E4 (index of the gadget in [esi+160h..], minus 4): Host is
+    # call 8BBD88h with push 0 (0x8BC555), Join IP is call 8BB710h (0x8BC569); the host routine's head (sub
+    # esp,684h ... mov edi,[esi+164h], the game name box) and the join routine's head (mov edi,[esi+17Ch] /
+    # push edi / call 4420BAh: the Direct IP box)
+    # Host's case is split around the call's rel32: a mod's DLL can point that call at a wrapper of its own, so the
+    # key verifies push 0 / mov ecx,edi / the call opcode and the jmp after it, and calls whatever the click
+    # calls (lanautostart.cpp, HostRoutine).
+    ("LanBrowserClickHost", 0x8BC555, 5),
+    ("LanBrowserClickHostNext", 0x8BC55E, 2),
+    ("LanBrowserClickJoinIp", 0x8BC569, 7),
+    ("LanBrowserHost", 0x8BBD88, 0x16),
+    ("LanBrowserJoinIp", 0x8BB710, 0x11),
+    # lanAutoStart, game rules: the init binds MPLanIP-HostXtraRulesDropdown to [esi+190h] (0x8BB1A4), a dropdown
+    # (gadget type 0Dh). Its fill FUN_008BA62E adds entries 0..7 and selects the first through 0x5C36AE
+    # (thiscall(dropdown, index, 0), ret 8; 0x8BA863); the current index is 0xAC0D1B (thiscall, plain ret), which
+    # Host (0x8BBD88) reads as the rules.
+    ("LanBrowserRulesGadget", 0x8BB1A4, 6),
+    # lanAutoStart: the game name box [esi+164h] (0x8BB096) and the Game Type dropdown [esi+168h] (0x8BB0B1), which
+    # with the Direct IP box and the rules dropdown recognise the dialog when another DLL replaced its vtable.
+    ("LanBrowserNameGadget", 0x8BB096, 6),
+    ("LanBrowserModeGadget", 0x8BB0B1, 6),
+    ("LanDropdownSelect", 0x5C36AE, 0x0A),
+    ("LanBrowserRulesFill", 0x8BA863, 0x0B),
+    ("LanDropdownCurrent", 0xAC0D1B, 0x0D),
+    # lanAutoStart, a pending join: Join IP (0x8BB710) stores the browser's connect result in [esi+1B0h]
+    # (0x8BB749; 0 = refused at once, with a message box, and the buttons stay) and the game clock 0x402DFF
+    # (cdecl, no argument) in [esi+1B4h] (0x8BB762); the countdown 0x8BA872 shows [1B4h] + [1B0h] - clock.
+    ("LanGameClock", 0x402DFF, 0x0D),
+    ("LanBrowserJoinRequest", 0x8BB749, 0x0E),
+    ("LanBrowserJoinStart", 0x8BB762, 6),
+    ("LanBrowserCountdown", 0x8BA87A, 0x11),
 ]
 
 

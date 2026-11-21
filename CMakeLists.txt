@@ -91,6 +91,7 @@ set(UHC_SOURCES
   src/features/heal.cpp
   src/features/hotkeys.cpp
   src/features/instances.cpp
+  src/features/lanautostart.cpp
   src/features/playericon.cpp
   src/features/lifespan.cpp
   src/features/limits.cpp
