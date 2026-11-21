@@ -48,6 +48,7 @@ PAGES = {
         "Tech rollover": ["src/techrollover.h", "src/techrollover.cpp", "src/hooks/techrollover_hooks.asm"],
         "ROF reads": ["src/rofreads.h", "src/rofreads.cpp", "src/hooks/rofreads_hooks.asm"],
         "Floating bars": ["src/floatingbars.h", "src/floatingbars.cpp", "src/hooks/floatingbars_hooks.asm"],
+        "UI gadgets": ["src/uigadgets.h", "src/uigadgets.cpp"],
     }),
     "game-files": ("Game files", {
         "bufferedFileReads": ["src/features/fileio.cpp"],
@@ -164,6 +165,7 @@ PAGES = {
         "autoScout": ["src/features/autoscout.cpp", "src/hooks/autoscout_hooks.asm"],
         "transformChecks": ["src/features/transformchecks.cpp", "src/hooks/transformchecks_hooks.asm",
                             "src/panelbuttons.cpp", "src/panelbuttons.h", "src/hooks/panelbuttons_hooks.asm"],
+        "editorSearch": ["src/features/editorsearch.cpp", "src/hooks/editorsearch_hooks.asm"],
     }),
 }
 

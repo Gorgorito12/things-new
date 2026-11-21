@@ -326,3 +326,5 @@ autoGatherFrom-wol 8 24 2
 autoGatherFrom-wol-control 8 24 2
 herdWalkAwayFix-wol 6 36 3
 herdWalkAwayFix-wol-control 6 36 3
+editorSearch-wol 3 12 1 800:70:240:30+800:240:0:100
+editorSearch-wol-control 3 12 1 800:70:240:30+800:240:0:100

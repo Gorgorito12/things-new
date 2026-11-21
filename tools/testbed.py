@@ -74,6 +74,8 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   front                      keep the game window above every other window and focus it
   key <name>... | rkey <name>...           posted / real key presses (rkey takes ctrl+x combos)
   type <text>                real typing (keyboard focus needed)
+  chars <text>               posted WM_CHAR per character, no keyboard or focus: the game's focused text
+                             field takes them (click it first); erase with key back
   log [--grep RE] [--tail N] UHC.log lines
   monitors                   the monitors and the one tests use (UHC_TEST_MONITOR)
   safety record|check [wol]  Steam bin listing and the stock age3y.exe hash; with wol, the Steam
@@ -1631,6 +1633,15 @@ def posted_key(name):
     time.sleep(0.1)
 
 
+def posted_chars(text):
+    """WM_CHAR per character, posted: the text field that has the game's focus takes them (no keyboard, no
+    window focus). Erase with `key back` (a posted WM_KEYDOWN): the game ignores WM_CHAR 8."""
+    hwnd = window()
+    for ch in text:
+        user32.PostMessageW(hwnd, 0x0102, ord(ch), 1)
+        time.sleep(0.08)
+
+
 def posted_click(x, y):
     hwnd = window()
     lp = (y & 0xFFFF) << 16 | (x & 0xFFFF)
@@ -2082,6 +2093,8 @@ def main(argv):
             real_key(name)
     elif cmd == "type":
         real_type(" ".join(args))
+    elif cmd == "chars":
+        posted_chars(" ".join(args))
     elif cmd == "log":
         pattern = args[args.index("--grep") + 1] if "--grep" in args else None
         tail = int(args[args.index("--tail") + 1]) if "--tail" in args else 0

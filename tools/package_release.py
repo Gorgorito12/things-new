@@ -385,6 +385,8 @@ herdWalkAwayFix [log]         a fattened herdable that walks away from its pen o
 transformChecks [log]         transform buttons grey out with the reason; a transform respects BuildLimit
 lanAutoStart [host [rules=N] | join <address>]   from the main menu straight to hosting or joining
                               a LAN game; +uhcLanHost / uhcLanJoin="<address>" on the command line
+editorSearch [log]            search fields in the editor's Objects palette and Forbidden Units/Techs
+                              dialog (the fields come in the layouts)
 directionalAttack [log]       <DirectionalAttack>: a shot flies past its target and hits what it flies over
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed

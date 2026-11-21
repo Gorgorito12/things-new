@@ -33,6 +33,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 |---|---|---|---|
 | Saturday 2026-11-21 11:55 | [`herdWalkAwayFix`](bug-fixes.md#herdwalkawayfix) | Added. A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in. | Nothing; for nomads, `wol-fixes/me-herdables`. |
 | Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
+| Saturday 2026-11-21 11:23 | [`editorSearch`](#editorsearch) | Added. The scenario editor's Objects palette and its Forbidden Units/Techs dialog get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml` and `uiforbiddenunitstechs.xml`: `wol-fixes/editor` has both. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -7397,6 +7398,7 @@ What the panels and the fog of war show.
 | [`minUIStats`](#minuistats) | The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | **new** | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. | confirmed (single player, UI) |
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
 | [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. | confirmed (single player) |
+| [`editorSearch`](#editorsearch) | The scenario editor's Objects palette and its Forbidden Units/Techs dialog get a search field: typing part of a name keeps only the entries that match. | **new** | The search fields in `uieditorpalettes.xml` and `uiforbiddenunitstechs.xml`: `wol-fixes/editor` has both. | confirmed (editor, UI) |
 
 #### nativePreview
 
@@ -8359,6 +8361,62 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
   (`dinput8.dll`, its `uhc.dll`): applied, back-offs in the log. A/B with `perfprobe.py` (100 s, no `log`, the same
   map, other games running on the machine): 1263 fps against 1278, update 0.134 ms against 0.140, main thread 79 %
   against 75 %, one 67 ms frame with the key's danger parts on and none off.
+
+#### editorSearch
+
+*In the scenario editor, a search field above the list of objects and in the Forbidden Units/Techs dialog: type part of a name and the list shows only what matches.*
+
+**Added:** Saturday 2026-11-21 11:23 · **Filmed in WoL:** Saturday 2026-11-21 11:23
+
+![editorSearch in WoL](media/editorSearch-wol.gif)
+
+*In WoL, with `editorSearch log` and `wol-fixes/editor` (the editor's Objects palette, player 1):* "musk" keeps 9 of
+the 3,211 entries, " ox" narrows them to the Musk Ox, the erased field brings the full list back, and "prowler" finds
+the two Prowlers by the names the palette shows; the log lines at the bottom count each search.
+[Full video (MP4)](media/editorSearch-wol.mp4).
+
+![editorSearch in WoL, key off](media/editorSearch-wol-control.gif)
+
+*In WoL, key off and the same layouts (the same typing):* the field takes the text, and the palette keeps all its
+entries. [Full video (MP4)](media/editorSearch-wol-control.mp4).
+
+![editorSearch: the Objects palette, "musk"](media/editorSearch-palette-wol.png)
+
+*The same palette, "musk" typed:* the musketeers, the musket riders, the Musk Deer and the Musk Ox.
+
+![editorSearch: Forbidden Units/Techs, "musket"](media/editorSearch-forbid-wol.png)
+
+*The same in the Forbidden Units/Techs dialog, "Display Techs":* the allowed techs whose name has "musket".
+
+```
+editorSearch [log]
+```
+
+- **What it needs:** a `textField` named `EditorProtoPaletteSearch` inside the `EditorProtoPalette` gadget of
+  `uieditorpalettes.xml`, and one named `ForbiddenUnitsTechs_Search` in `uiforbiddenunitstechs.xml`. The pack
+  `wol-fixes/editor` has both files: the game's own layouts (WoL ships none of its own) with the field and a
+  `Search:` label, to the right of the palette's category list and under the dialog's Allowed list. Either can be
+  left out: a list without its field stays as it is.
+- **Effect:** while the field holds text, the list keeps only the entries in which every word of it appears, upper
+  or lower case alike. A unit matches by the name the list shows, its internal name or its display name ("INF musk"
+  finds `INF R-LU Musketeer`; "prowler" finds the Forest Prowler, `xpMusketWarrior`), a tech by its internal name
+  (what the dialog shows). The list follows the text once the typing pauses for a quarter of a second (refilling
+  the palette takes the game about 0.2 s, so a word typed at speed refills it once); empty, it is the stock list.
+- **With the rest of the lists:** the palette's category list still applies (Nature with "musk": the Musk Deer and
+  the Musk Ox); an entry picked from a filtered palette is placed as usual; in the dialog, Add and Remove work on the
+  filtered list, Display Units / Display Techs keep the search, and the dialog's own refresh (a new player, Cancel)
+  keeps it too. Leaving the editor empties the fields.
+- **Typing:** the field is the game's own `textField`: click it, type, Backspace erases. Keys typed there go to the
+  field, as in the trigger editor's name field.
+- **Not covered yet:** the trigger editor (the condition and effect types and the unit and tech lists of their
+  parameters), the next step of the request.
+- **Simulation:** none. It runs in the editor's lists only: nothing is saved in the scenario, nothing reaches a game.
+- **Log:** `editorSearch: the Objects palette and the Forbidden Units/Techs dialog filter by their search fields
+  (EditorProtoPaletteSearch, ForbiddenUnitsTechs_Search)`; with `log`, `Objects palette search field found` (or
+  `has no textField …; its list stays stock`), each search (`Objects palette "musk": 9 shown, 3202 hidden (181.5 ms)`)
+  and every 5000 frames the cost of the per-frame check.
+- **Status:** confirmed (2026-11-21, WoL, the editor, single player): see the pass/fail table in
+  [how-it-works.md](how-it-works.md#editorsearch) and the screenshots in `wol-fixes/editor/media`.
 
 ## 6. Editing the game data
 

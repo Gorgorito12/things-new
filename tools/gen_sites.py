@@ -1971,6 +1971,53 @@ SITES = [
     # (mov eax,[0C66234h] / sub esp,54h / push ebx / mov ebx,[esp+5Ch]) is verified only.
     ("HerdWalkAwayCall", 0x6A8C94, 0x0D),
     ("HerdFleeHead", 0x4E3A37, 0x0D),
+    # uigadgets (shared): a gadget among a parent's descendants by name, 0x433812 (int* thiscall(parent, int* out,
+    # const char* name, int 1), ret 0Ch; out = [0C672C0h] when none). A textField (gadfield.cpp) makes an editBox
+    # child for its typed text and keeps its handle, mov [edi+160h],ebx (0x62BDD5, after the child's factory
+    # 0x62C0CF); 0x4420BA looks that child up with type mask 23h. The editBox's set-text slot (vtable 0xB91A38 +80h
+    # = 0x5C2C20) keeps the text at lea esi,[edi+170h] (0x5C2C54), where typing puts it too (seen in game).
+    ("UiFindChild", 0x433812, 0x0A),
+    ("UiFieldEditBox", 0x62BDD2, 0x09),
+    ("UiEditBoxText", 0x5C2C54, 0x06),
+    # editorSearch: the Objects palette fill FUN_007F501E (the fill callback [palette+17Ch] that 0x7F5C51 gives
+    # EditorProtoPalette) adds each proto with lea edx,[esp+58h] / push edx / lea eax,[esp+14h] / push eax /
+    # mov ecx,edi / call 0AD0056h (0x7F537D, ESI = the player's proto), the add thiscall(palette, entry*,
+    # categories*), ret 8. The palette class (ctor 0xACFBA0, mov [esi],0B92768h) refills through its vtable +0F0h,
+    # 0xACE8DF: mov eax,[ecx+17Ch] / test / je / push ecx / call eax.
+    ("EditorPaletteAddProto", 0x7F5371, 0x11),
+    ("EditorPaletteAdd", 0xAD0056, 0x0B),
+    ("EditorPaletteObjectsFill", 0x7F5C51, 0x0A),
+    ("EditorPaletteVtable", 0xACFBAA, 6),
+    ("EditorPaletteRefill", 0xACE8DF, 0x0F),
+    # editorSearch: the palette's refresh slot (vtable +20h = 0xAD01FD, what refreshonreal runs): the base refresh
+    # 0x4540D4, the entries emptied (call 0AD0189h), the refill (call [eax+0F0h]), the button list laid out, then the
+    # buttons of the current category [esi+168h] through FUN_00ACF80E (thiscall(palette, category, bool force),
+    # ret 8): mov edx,[esi+168h] / push 1 / push edx / mov ecx,esi / call 0ACF80Eh (0xAD0262).
+    ("EditorPaletteRefreshSlot", 0xB92788, 4),
+    ("EditorPaletteRefresh", 0xAD01FD, 0x1B),
+    ("EditorPaletteLayoutShow", 0xAD0262, 0x10),
+    # editorSearch: the Forbidden Units/Techs dialog (uiforbiddenunitstechs.xml; ctor 0x9990BE, mov [esi],0B8D690h)
+    # binds ForbiddenUnitsTechs_AllowedList to [esi+144h] (0x999B1F); its refresh 0x99960A switches on the display
+    # mode [ebx+160h] (0x9996C6: 0 units, 1 techs). The allowed units fill FUN_0099912F adds each proto's name with
+    # mov ecx,[esp+1Ch] / lea eax,[esp+10h] / push eax / call 0AC9228h (0x9991D0, ESI = the proto, EBX = the
+    # dialog), the techs fill FUN_00999493 with lea eax,[esp+14h] / push eax / mov ecx,ebp / call 0AC9228h
+    # (0x999547, ESI = the tech index, EDI = the dialog); 0xAC9228 is the list's add item thiscall(list, BString*),
+    # ret 4. Both fills are thiscall(dialog, list), ret 4, and empty the list first.
+    ("EditorForbidVtable", 0x9990CB, 6),
+    ("EditorForbidBind", 0x999B1F, 6),
+    ("EditorForbidMode", 0x9996C6, 0x0C),
+    ("EditorForbidUnitAdd", 0x9991C7, 0x0E),
+    ("EditorForbidTechAdd", 0x999540, 0x0C),
+    ("EditorListAdd", 0xAC9228, 9),
+    ("EditorFillAllowedUnits", 0x99912F, 0x0B),
+    ("EditorFillAllowedTechs", 0x999493, 0x0A),
+    # editorSearch: after the fills the refresh lays the allowed list out and selects its first item: mov eax,[edi] /
+    # mov ecx,edi / call [eax+100h] / push 0 / mov ecx,edi / call 0AC8A43h (0x9997C8; 0xAC8A43 thiscall(list, index),
+    # ret 4)
+    ("EditorForbidRelayout", 0x9997C8, 0x13),
+    # editorSearch: a proto's display name string ID [proto+144h], as FUN_008F7A89 reads it (mov eax,[ecx+144h] /
+    # cmp eax,-1)
+    ("EditorProtoDisplayName", 0x8F7A89, 9),
 ]
 
 
