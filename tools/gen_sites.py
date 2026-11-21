@@ -1137,6 +1137,16 @@ SITES = [
     # [list+20h], else 0), called as is with the entry's card index (+0); the card's <age> is [card+18h]
     ("ShipEntryArg", 0x85856A, 0x0A),
     ("ShipCardLookup", 0x85FFCE, 0x1E),
+    # ageFiveShipments: the game's card list builder FUN_006301DE, one pass per age: cmp eax,4 (its immediate becomes
+    # 5) / mov [esp+14h],eax; the in-game shipment panel's fill FUN_009A5658: mov eax,[esi+18h] / cmp eax,edi
+    # (replaced, 5 bytes) / jl / cmp eax,3 / jg / mov edx,[esp+14h], the card's age and its row; the deck editor's
+    # fill FUN_009A7670: mov eax,[esi+18h] / cmp ebx,eax (replaced, 5 bytes) / jge ... / cmp ebx,4 / jge
+    ("CardListAgePasses", 0x63022E, 7),
+    ("CardPanelAgeRow", 0x9A5A22, 0x14),
+    ("DeckEditorAgeRow", 0x9A77BE, 0x27),
+    # and the deck builder's fill (the home city screen's "Build a Deck", buttons hcDeck-button<row><column>):
+    # mov eax,[esi+18h] / cmp edi,eax (replaced, 5 bytes) / jge ... / cmp edi,4 / jge
+    ("DeckBuilderAgeRow", 0x9A0489, 0x27),
     # kothTimer: FUN_009F02DD, the King of the Hill time in seconds on the victory settings (DefaultVP.xml, ECX):
     # mov eax,[0C66234h] (replaced, 5 bytes) / mov edx,[eax+13Ch] / ... / KOTHVictoryTime +104h, PerPlayer +108h,
     # [world+5Ch], [world+18Ch], AdjustKOTHTotalTimeByTeams +10Ch, its Factor +110h / ret; its only call, at

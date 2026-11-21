@@ -1032,6 +1032,20 @@ Code: [techs](porting-code/techs.md#shipmentcounts). It needs the Player target 
   `age='1'`: two units; a card of Age II (`<age>1</age>`) sent in Age III counts in Age II; save, load in a new process:
   the same counts.
 
+### ageFiveShipments
+
+Code: [techs](porting-code/techs.md#agefiveshipments). No shared hook.
+
+- **The deck:** at `0x63022E` (`83 F8 04`, `cmp eax,4` in FUN_006301DE, the build of the game's card list from the deck,
+  one pass per age) write 5 over the immediate: the cards of `<age>4</age>` join the game's deck, after those of age 3.
+- **The rows:** three 5-byte `jmp`s over `mov eax,[esi+18h]` and the `cmp` after it, each to code that loads the card's
+  age, turns 4 into 3, re-runs the `cmp` and jumps back: `0x9A5A22` (`8B 46 18 3B C7`, the in-game shipment panel,
+  back to `0x9A5A27`), `0x9A0489` (`8B 46 18 3B F8`, the home city's deck builder, back to `0x9A048E`) and `0x9A77BE`
+  (`8B 46 18 3B D8`, the `homeCityDeck` dialog, back to `0x9A77C3`). ESI is the card in all three. Leave
+  `[card+18h]` alone: the panel greys the card and the send refuses it until the player's age reaches 4.
+- **Test:** a card given `<age>4</age>` in its home city file: fourth in the Age IV row of both panels, greyed until the
+  Imperial Age, refused before, sent in it.
+
 ### orPrereqsQty
 
 Code: [techs](porting-code/techs.md#orprereqsqty).

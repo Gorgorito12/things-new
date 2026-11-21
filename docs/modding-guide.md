@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Saturday 2026-11-21 12:07 | [`ageFiveShipments`](#agefiveshipments) | Added. Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | `<age>4</age>` on the cards that want it. |
 | Saturday 2026-11-21 11:35 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | The tag on the civ in `civs.xml`. |
 | Saturday 2026-11-21 11:34 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
@@ -588,6 +589,7 @@ Caps that are fixed in the exe.
 | [`basePop`, `extraPop`](#basepop-and-extrapop) | Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | in WoL's DLL | Enough population buildings: 20 houses of 10 give 200 today. | confirmed |
 | [`decimalPopulation`](#decimalpopulation) | Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | **new** | The decimals in `protoy` and `techtreey`. | confirmed (single player, also a skirmish vs AI) |
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | in WoL's DLL | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). | confirmed above the level table; see the section |
+| [`ageFiveShipments`](#agefiveshipments) | Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | **new** | `<age>4</age>` on the cards that want it. | confirmed (single player) |
 | [`selectionLimit`](#selectionlimit) | A selection holds up to N units (50 in the exe). `wol.cfg` sets 75. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`noAILimit`](#noailimit) | Shows every `AI4\*.personality` file in game setup. WoL uses `noAILimitV2` instead. | in WoL's DLL | The personality files. | confirmed |
 | [`noAILimitV2`](#noailimitv2) | Shows WoL's 52 `AI4\*.personality` files in game setup. Without it, a random AI crashes the game. | **in `wol.cfg`** | The personality files. | confirmed |
@@ -769,6 +771,44 @@ deckCardCount <N>        N from 20 to 10000
   - with a raised `homecitylevels.xml`, the engine's level table reads 40 at every level, but
     building a 40-card deck at a normal level has not been tried in game yet;
   - not filmed in WoL yet.
+
+#### ageFiveShipments
+
+*Home city cards of the Imperial Age (`<age>4</age>`) can be in a deck and be sent once the player reaches that age.*
+
+**Added:** Saturday 2026-11-21 12:07
+
+```
+ageFiveShipments
+```
+
+- **In WoL today:** no card has `<age>4</age>`. The exe leaves such a card out of the game: a deck of 25 with one plays
+  with 24 cards (the game builds its deck one age at a time, ages I to IV only), and both deck panels stop at four rows.
+  JTMaston's #83 (2026-11-21).
+- **What the key does:** a card of `<age>4</age>` is in the game's deck, after the Age IV cards. It is shown **in the
+  Age IV row**, after the Age IV cards, in the in-game shipment panel and in the home city's deck builder ("Build a
+  Deck"). Until the player reaches the Imperial Age it is greyed, and its rollover says, in red, *This Card cannot be
+  sent until Age 5* (the game's own line); a send before that is refused, as stock refuses a card of a later age. In
+  the Imperial Age it is sent like any other card. [`shipmentCounts`](#shipmentcounts) counts it in Age V.
+- **Not a fifth row:** each deck panel holds four rows of 11 buttons in the exe, and the row is the card's age. A fifth
+  row needs those panels rebuilt (`how-it-works.md`, ageFiveShipments); the Imperial cards share the Age IV row instead.
+  A row holds 11 cards: Age IV and Age V cards together beyond 11 are not shown, as stock leaves out a twelfth card.
+- **What a modder writes:** `<age>4</age>` in the card of the home city file (`data\homecityxxx.xml`), as for the
+  other ages (`0` is Age I). The card goes in a deck the usual way; the "By Age" view of the card inventory has four
+  tabs and does not list it (use "By Building").
+- **Off:** as stock: the card never reaches the game.
+- **Multiplayer:** every player needs the same setting (it changes which cards a deck holds in the game).
+- **Log:** `ageFiveShipments: cards of the fifth age (<age>4</age>) are in the game's deck, shown in the fourth age's
+  row of the shipment panel and the deck editor, and sendable in the fifth age`, `hook reached: ageFiveShipments panel
+  (0x9A5A22)`, `hook reached: ageFiveShipments deck builder (0x9A0489)`.
+- **Tested in WoL (2026-11-21, single player, `C:\AoE3-UHC-WoLReal11`, Dutch skirmish on a test map,
+  `HCShipCannons1` given `<age>4</age>` in the copy's `homecitydutch.xml`):** key off, the game's deck held 23 of the 25
+  cards (that card and a card with no `<age>` left out) and both panels showed three Age IV cards; key on, 24 (the Age V
+  card last), shown fourth in the Age IV row of the shipment panel and of "Build a Deck", greyed with *This Card cannot
+  be sent until Age 5* in Ages I to IV; a send in Age IV refused (nothing queued); in Age V sent, arrived, and counted
+  by `shipmentCounts` (`a card of age 5, in age 5`, `0, 0, 0, 0, 1`). Screenshots in `wol-fixes/age5-shipments`. Not
+  tested: the AI with an Age V card in its deck; the `homeCityDeck` dialog (its hook was not reached: no screen of
+  the tests opened it).
 
 #### selectionLimit
 

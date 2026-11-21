@@ -1804,6 +1804,49 @@ int lastAge)` in the XS group (every script: the AI, triggers), through `AddSysc
   ordered by player ID and age, and the carrier is picked in unit order, so the markers are the same on every machine.
 - A marker is a modifier of a stat no code reads; a game loaded without the key ignores it.
 
+### ageFiveShipments
+
+`src/features/agefiveshipments.cpp`, `hooks/agefive_hooks.asm`.
+
+**Stock (#83, 2026-11-21).** A card's `<age>` is read by the home city card loader (FUN_0062E6C9; the `Age` tag,
+string 0xBA38C0, handled at 0x66B6FC) and kept as `[card+18h]`, from 0 (Age I) up; nothing caps it there. Three places
+stop at four ages (REA `ev_4c5c5b11…`, `ev_cb7f901b…`; capstone):
+- the game's card list of a player, `hc+228h` (the list FUN_0085FFCE indexes), is built from the chosen deck by
+  FUN_006301DE (callers 0x62FA64, 0x857BF1, 0x857C8E, 0x857D6E, 0x85A63E): one pass over the home city's cards per age,
+  keeping those of the deck, so the list is in age order; the passes end after age 3 (`cmp eax,4` at 0x63022E). A card
+  of age 4 (or with no `<age>`, −1) never reaches the game: in a test a deck of 25 with one such card played with 23
+  cards;
+- the in-game shipment panel, the gadget type `homeCityCardPanel` (`uihomecitycommandpanel.xml`), fills its buttons in
+  FUN_009A5658: a card of age below 0 or above 3 is skipped (0x9A5A25..0x9A5A30), the others go to row = age, column =
+  their rank in that age (at most 11, counted in `[panel+4D0h + 4 × age]`). Its buttons are named
+  `homeCityCardPanel-button<row><column>` and looked up once (FUN_009A4E50, rows below 4, columns below 11) into four
+  arrays of 44 slots at `+140h`, `+2A0h`, `+354h` and `+40Ch` of the gadget, packed one after another, with the per-age
+  counts at `+4D0h..+4DCh` and an init flag at `+4F4h`;
+- the deck builder of the home city screen ("Build a Deck", `uihcdeckbuilder.xml`, buttons `hcDeck-button<row><column>`)
+  fills its rows the same way at 0x9A0489 and stops at the first card whose age is 4 or more (0x9A04A7); in a test the
+  Age V card of a 25-card deck was missing from its Age IV row while the counter read 25/25;
+- the `homeCityDeck` dialog (`uihomecitydeck.xml`, loaded at 0x9A737B, FUN_009A7670) has the same fill (0x9A77BE,
+  stop at 0x9A77DC); it did not open in the tests (inferred: another deck dialog of the same screen).
+
+The panel greys a card whose age is above the player's (`[card+18h]` against `[player+50h]`, rollover string 8FA6h),
+and the send FUN_0085A724 refuses it (0x85A90A, string 8FFCh); neither stops at 3.
+
+**What the key does.** The immediate of `cmp eax,4` at 0x63022E becomes 5 (`CardListAgePasses`), so the game's list
+takes the cards of age 4 too, after those of age 3. The three fills get a 5-byte `jmp` over `mov eax,[esi+18h]` and the
+`cmp` after it (`CardPanelAgeRow` 0x9A5A22, `DeckBuilderAgeRow` 0x9A0489, `DeckEditorAgeRow` 0x9A77BE): the hook reads
+the card's age, turns 4 into 3, re-runs the `cmp` and jumps back (0x9A5A27, 0x9A048E, 0x9A77C3). So an Age V card sits in the Age IV row, after the Age IV cards,
+while `[card+18h]` stays 4: greyed with its reason until the Imperial Age, refused by the send before it, and counted in
+Age V by `shipmentCounts`.
+
+**Why not a fifth row.** The row index is the card's age, and each panel object holds exactly 4 × 11 buttons in arrays
+that touch each other (the deck builder's at `+178h`); the card inventory's "By Age" view has four tabs too; a fifth row would need a larger gadget object and every reader of those arrays (the fill, the
+click and rollover handlers, the refresh at 0x9A5205) moved to new storage, plus 11 more named buttons in the layout.
+That is a reimplementation of both gadgets, not a patch.
+
+**Why it is safe.** Only the row changes; the count per row keeps its cap of 11 (an Age IV row with 11 cards leaves the
+Age V cards out, as stock leaves a twelfth card out). The hooks keep every register but EAX, which the replaced `mov`
+loads anyway, and re-run the replaced `cmp` for the branch after it.
+
 ### maintainWaitForPop
 
 **The stock mechanism.** `Maintain` is unit action type 22h (ctor `0x9E2510`, vtable `0xB97B98`).
