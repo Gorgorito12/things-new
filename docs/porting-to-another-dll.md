@@ -749,6 +749,21 @@ Code: [combat](porting-code/combat.md#containedunitsrof).
 Check it in the game: put `<scalebycontainedunits target="ROF"></scalebycontainedunits>` on a Blockhouse's `RangedAttack`:
 empty, it does not fire; with 2 settlers inside it fires every 1.5 s instead of 3 s.
 
+### numberOfShots
+
+Code: [combat](porting-code/combat.md#numberofshots). It needs the ROF filters of `rofreads.*` (the five reads above) and
+`AddActionTagHandler`.
+
+- **Projectiles** (option `projectiles`): a 5-byte `jmp` over `call 499422h` at `0x48F88D`, continue at `0x48F892`.
+- **No reload between the burst's shots (2026-11-21):** a 6-byte `jmp` at `0x4976CB` (`83 EC 08 56 8B F1`: `sub esp,8 /
+  push esi / mov esi,ecx`, the head of the reload animation's start, `thiscall(unitAction)`, AL the result), continue at
+  `0x4976D1`. For a shot that does not end its burst, swap `[ua+84h]` / `[ua+88h]` for the idle animation
+  `[[ua+4]+60h]` and its index `0x471D24(unit [ua+10h], anim)` (`thiscall`, `ret 4`, −1 when the model lacks it), call the
+  function (its head re-executed, then `0x4976D1`), put the two words back and return its AL. Change no state: both callers
+  (0x497813, 0x49A3E6) go on as stock.
+- **Test:** Skirmishers with 3 shots: between the quick shots they hold the aiming pose; the third shot reloads; the shot
+  times are those of the key without this hook.
+
 ### bufferedFileReads
 
 Code: [game-files](porting-code/game-files.md#bufferedfilereads).

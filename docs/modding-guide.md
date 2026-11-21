@@ -31,7 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Saturday 2026-11-21 10:23 | [`cantBeSlowed`](#cantbeslowed) | Filmed in WoL, with a control. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | The type on the protos that want it. |
+| Saturday 2026-11-21 11:30 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills; defaults by unit type, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -56,7 +56,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-13 07:54 | [`shipmentCounts`](#shipmentcounts) | Added. Counts the home city cards each player sends in each age (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Friday 2026-11-13 07:37 | [`ageUpBuildings`](#ageupbuildings) | Added. The age-up button opens the politician dialog on the buildings you list too, not only on the Town Center, and each building offers only the politicians its own proto lists. | The politicians (techs with `AgeUpgrade`) in those buildings' `<Tech>` lists. |
 | Friday 2026-11-13 07:24 | [`orPrereqsQty`](#orprereqsqty) | Added. `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | The attribute on the techs that want it. |
-| Thursday 2026-11-12 18:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Thursday 2026-11-12 18:35 | [`inventoryBars`](#inventorybars) | Filmed in WoL, with a control. While Alt is held, a unit, mine, bush or carcass with resources shows a bar under its HP bar: how much of its resources is left, in the colour of the resource. | Nothing. |
 | Thursday 2026-11-12 18:26 | [`directionalAttack`](#directionalattack) | Filmed in WoL, with a control. A shot that flies on past its target and hits every unit it flies over, before and after the target. | `<DirectionalAttack>` or `<DirectionalFiringRange>` on the attack. |
 | Thursday 2026-11-12 18:01 | [`customWalls`](#customwalls) | Added. A building with `<WallPiece>` tags is laid like a wall, from point A to point B, with its own posts and pieces instead of the civ's stone wall. | The tags and the `wallBuild` flag on the post, and `wallBuild` and `wall.xml` placement on the pieces. |
@@ -99,6 +98,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Friday 2026-11-06 10:47 | [`doNotQueue`](#donotqueue) | Filmed in WoL, with a control. `<DoNotQueue/>` in a proto trains it ahead of what waits in the building. | The tag on the protos that want it. |
 | Friday 2026-11-06 09:06 | [`linkedResource`](#linkedresource) | Filmed in WoL, with a control. A resource building gathers the stock of a mine beside it. | The tags on a resource building of your own. |
 | Friday 2026-11-06 07:32 | [`displayedRange`](#displayedrange) | Added. A selected unit shows a ring of the radius of `<DisplayedRange>`. | The two proto tags, and `tools/rings` in `art/effects/uhc_rings`. |
+| Thursday 2026-11-05 15:23 | [`cantBeSlowed`](#cantbeslowed) | Filmed in WoL, with a control. A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | The type on the protos that want it. |
 | Thursday 2026-11-05 13:29 | [`pillageGold`](#pillagegold) | Added. A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | The type and the tag on the protos. |
 | Thursday 2026-11-05 10:29 | [`accuracyTechs`](#accuracytechs) | Filmed in WoL, with a control. A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | The `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-05 10:29 | [`cratePriority`](#cratepriority) | Filmed in WoL, with a control. The order in which a civ's units gather crates, instead of the exe's hardcoded one. | One line per civ in `wol.cfg`. |
@@ -3683,18 +3683,24 @@ containedUnitsROF [log]
 
 *An attack can fire several quick shots before it reloads, and a shot can fire several projectiles, like a shotgun.*
 
-**Added:** Thursday 2026-11-12 18:11 · **Filmed in WoL:** Thursday 2026-11-12 18:35
+**Added:** Thursday 2026-11-12 18:11 · **Filmed in WoL:** Saturday 2026-11-21 11:30
 
 ![numberOfShots in WoL](media/numberOfShots-wol.gif)
 
-*In WoL, with `numberOfShots log` (3 `Skirmisher`s, selected, whose ranged attacks have
-`<NumberOfShots>3</NumberOfShots><ShotInterval>0.4</ShotInterval>` in `protoy.xml`, test data; 5 enemy `Settler`s; the
-log at the bottom):* each Skirmisher fires three shots 0.4 s apart, then waits its 3 s ROF. The settlers' HP is at the top:
-after two bursts one has fallen and two are hurt; all five are down by 49 s. [Full video (MP4)](media/numberOfShots-wol.mp4).
+*In WoL, with `numberOfShots projectiles log` and `containedUnitsROF` (3 `Skirmisher`s, selected, whose ranged attacks have
+`<NumberOfShots>3</NumberOfShots><ShotInterval>0.4</ShotInterval>` in `protoy.xml`, test data; 6 enemy `Settler`s created
+in range at 16 s; the log at the bottom; filmed again on 2026-11-21):* each Skirmisher fires three shots 0.4 s apart,
+holding its aim between them, then reloads during its 3 s ROF. All six settlers are down by 41 s.
+[Full video (MP4)](media/numberOfShots-wol.mp4).
+
+![numberOfShots in WoL, before 2026-11-21](media/numberOfShots-before-wol.gif)
+
+*In WoL, the key as it was before 2026-11-21 (the same scene):* the same shot times, but between the quick shots each
+Skirmisher runs its whole reload animation in a fraction of a second. [Full video (MP4)](media/numberOfShots-before-wol.mp4).
 
 ![numberOfShots in WoL, key off](media/numberOfShots-wol-control.gif)
 
-*In WoL, key off (the same scene and data):* one shot every 3 s; at 50 s two settlers have fallen.
+*In WoL, key off (the same scene and data):* one shot every 3 s; at 41 s one settler has fallen and one is hurt.
 [Full video (MP4)](media/numberOfShots-wol-control.mp4).
 
 ![numberOfShots projectiles in WoL](media/numberOfShots-projectiles-wol.gif)
@@ -3722,6 +3728,12 @@ numberOfShots [projectiles] [log]
   ROF's pace, so it comes a little later (the aim of the stock animation: 0.67 s after the one before for a 3 s
   Skirmisher), and waits the ROF: the reload. So a burst takes about (N − 1) × interval + ROF. Each shot is a full stock shot:
   its own accuracy roll, damage and projectile. Melee attacks take it too (N hits). A new target starts a new burst.
+- **No reload between the shots of a burst (2026-11-21, JTMaston's #87):** an attack whose tactics action has a
+  `<reloadanim>` plays it only after the burst's last shot. After a quick shot the unit holds the action's `<idleanim>` (its
+  aiming pose) until the next shot, instead of running the whole reload in a fraction of a second. The shot times do not
+  change (in the test 0.40 and 0.67 s between the shots and a 3.80 s burst, with and without it). An action with no
+  `<idleanim>` (or a model without that animation) still shows the reload; an attack with no `<reloadanim>` (melee, or an
+  animation that holds its own reload) plays its attack animation for each shot as before.
 
   ```xml
   <action>
@@ -3747,9 +3759,10 @@ numberOfShots [projectiles] [log]
   ROF). An ROF that something other than the tactics sets (an ability's own) gets no burst.
 - **With other keys:** [`containedUnitsROF`](#containedunitsrof) shares the ROF hooks; with both, the reload is the divided
   ROF and the interval is not divided. `spreadAnyAccuracy` scatters each projectile.
-- **Log:** `numberOfShots: applied`, `hook reached: ROF read: attack start (0x4A1189)`, `ROF read: after a shot (0x48F8B5)`
-  and, with `projectiles`, `numberOfShots projectiles (0x48F88D)`. With `log`: each tag read (at most 200), and the first
-  shots of each action: `numberOfShots: 29731 ms, unit 0 (Skirmisher/VolleyRangedAttack) shot 1 of its burst of 3 (shots so
+- **Log:** `numberOfShots: applied`, `hook reached: ROF read: attack start (0x4A1189)`, `ROF read: after a shot (0x48F8B5)`,
+  `numberOfShots reload (0x4976CB)` and, with `projectiles`, `numberOfShots projectiles (0x48F88D)`. With `log`: each tag read
+  (at most 200), the first six quick shots that skip the reload (`numberOfShots: unit 1 (Skirmisher) shot 1 of its burst of
+  3: the idle animation, no reload`), and the first shots of each action: `numberOfShots: 29731 ms, unit 0 (Skirmisher/VolleyRangedAttack) shot 1 of its burst of 3 (shots so
   far 1): wait 400 ms (the interval)`, `... shot 3 of its burst of 3 ...: wait 3000 ms (the ROF: reload)`, `unit 2
   (Skirmisher/VolleyRangedAttack) launches 4 projectiles for one shot`.
 - **Simulation:** changes combat: every player needs the same line and data.
@@ -3762,6 +3775,13 @@ numberOfShots [projectiles] [log]
   logged and ignored; `numberOfShots bogus`: logged, not applied. A 100 s skirmish against `wolOtto` (Germans) with
   `projectiles` (so WoL's own `numberprojectiles` read): no XS error, the AI had 10 settlers and a Manor. Performance (`perfprobe.py`, 60 s each, 30 `Skirmisher`s against 30 `Crossbowman`s beside a forest, a mine and deer): with the key and `projectiles` but no tag in the data, 978 fps, update 0.133 ms, render 0.89 ms a frame; key off 988 fps, 0.136 ms, 0.88 ms; no frame over 50 ms in any run (the longest 4 ms). With the Skirmishers' 3-shot bursts and 2 projectiles a shot, the update stays 0.13 ms and the render rises to 1.0–1.3 ms: six times the tracers on screen, the data's cost. Not tested:
   multiplayer, beside WoL's DLL (`dinput8.dll`).
+- **Tested in WoL (2026-11-21, no reload between the shots):** the videos above (Skirmishers, 3 shots 0.4 s apart, with
+  `projectiles` and `containedUnitsROF` on): shots at 17.22, 17.61 and 18.29 s and the next burst at 21.02 s with the change;
+  17.98, 18.38, 19.04 and 21.78 s without it: the same 0.40 / 0.67 / 2.73 s steps. Frames between the quick shots show the
+  aiming pose instead of the ramrod. A `Falconet` with 3 shots 0.6 s apart (`Bombard_reload`) logged the idle animation
+  after its quick shots and kept firing; against Settlers it starts a new burst after one or two shots, with the change and
+  without it alike (a new target). Two `Pikeman`s with 3 hits 0.3 s apart (no reload animation): bursts of 3 hits as before.
+  Not tested: multiplayer, beside WoL's DLL.
 
 #### broadsideMuzzleLimit
 
@@ -3839,7 +3859,7 @@ broadsideMuzzleLimit <N> [<UnitType>] [log]     N from 1 to 255; without a UnitT
 
 *Chosen units can't be slowed by attacks.*
 
-**Added:** Thursday 2026-11-05 09:39 · **Filmed in WoL:** Saturday 2026-11-21 10:23
+**Added:** Thursday 2026-11-05 09:39 · **Filmed in WoL:** Thursday 2026-11-05 15:23
 
 ![cantBeSlowed in WoL](media/cantBeSlowed-wol.gif)
 

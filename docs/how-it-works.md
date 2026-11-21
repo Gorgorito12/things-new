@@ -3455,6 +3455,26 @@ that did not fire) keep the ROF. The count belongs to the unit action, and a new
 starts a new burst. A filter's result goes through the next one: after `containedUnitsROF` the burst's last shot waits the
 divided ROF, and the interval is not divided.
 
+**No reload between the burst's shots (2026-11-21).** [O] An attack with a `<reloadanim>` keeps two animations on its unit
+action: the attack animation `[ua+7Ch]` (its model index `[ua+80h]`) and the reload animation `[ua+84h]` / `[ua+88h]`,
+looked up from the tactics action's `[+58h]` and `[+5Ch]` (the parser's `Anim` and `ReloadAnim` cases, 0x5FB28D and
+0x5FB238) by FUN_00471CAC when a cycle begins. The cycle paces the attack animation so that both last the ROF (the rate
+`[unit+0B0h]` = (attack length + reload length) / ROF, 0x4A1197..0x4A1234). Once the attack animation has played,
+FUN_004976CB (thiscall(ua), AL 1 = started, 0 without a reload animation) starts the reload animation through 0x486E40,
+paced to end with the wait (`[[unit+58h]+0B8h] + [+0BCh]` − now). Its callers are setState(15h)'s case 0x497807 (on 0 it
+sets state 0Ch, the idle animation `[tactics action+60h]`, case 0x4A4EE6) and the update in state 19h (0x49A3E6, vtable slot
+0x48D519; on 0 it sets state 0Ah). So with a burst the quick shots still showed the reload, squeezed into the interval.
+The hook replaces the function's head (`sub esp,8 / push esi / mov esi,ecx`, 6 B at 0x4976CB). After a shot that does
+not end its burst (`[ua+68h]` mod N ≠ 0, the after-shot read's test) it swaps `[ua+84h]` / `[ua+88h]` for the idle
+animation and its model index (0x471D24 on the unit), runs the stock function on them, and puts the two words back: the
+unit holds its aiming pose instead of reloading, and the states, the waits and the next cycle are the stock ones, so the
+shot times do not move. Without an idle animation, or a model without it, the reload plays. The burst's last shot reloads.
+Tried first and dropped: returning 1 at once (a Falconet then waited for an animation that never played and stopped
+firing), returning 0 (the callers' state changes, not the stock path of an attack with a reload animation), and pacing the
+attack animation alone over the interval (it moved the quick shots later in their cycle: 0.52 s instead of 0.67 s between
+a Skirmisher's second and third shot). [O] A Falconet against Settlers starts a new burst after one or two shots with the
+reload fix and without it alike (a new target, a new unit action): that is the stock retargeting, not the hook.
+
 **The projectiles** (option `projectiles`): `hooks/shots_hooks.asm` replaces the attack step's `call 499422h` (5 B at
 0x48F88D, ECX = EBP = the unit action, the five arguments pushed) with a jmp. While some action has
 `<NumberProjectiles>` above 1 (`g_uhcShotsProjectiles`), `UhcShotsProjectiles(ua)` gives N, and the hook calls the

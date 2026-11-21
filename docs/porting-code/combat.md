@@ -2990,7 +2990,7 @@ Contract: [numberOfShots](../porting-to-another-dll.md#numberofshots).
 
 Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`rofreads.h`](helpers.md#rof-reads), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `ShotsLaunchCall` `0x48F838` (93 B), `ShotsLaunch` `0x499422` (29 B), `ShotsLaunchRet` `0x4999DA` (9 B).
+Sites: `ShotsAnimVariant` `0x471D24` (11 B), `ShotsLaunchCall` `0x48F838` (93 B), `ShotsReloadAnim` `0x4976CB` (9 B), `ShotsLaunch` `0x499422` (29 B), `ShotsLaunchRet` `0x4999DA` (9 B).
 
 ### src/features/shots.cpp
 
@@ -3009,6 +3009,12 @@ Sites: `ShotsLaunchCall` `0x48F838` (93 B), `ShotsLaunch` `0x499422` (29 B), `Sh
 // shot that does not end the burst (count mod N != 0) the wait is the interval. The last shot plays the stock
 // animation and waits the ROF: N - 1 quick shots, then a normal one and its reload. The count belongs to the unit
 // action, which a new target replaces, so a new target starts a new burst.
+//
+// No reload between the burst's shots: an attack with a <reloadanim> plays its attack animation, then the reload
+// animation (started by FUN_004976CB once the attack animation has played), the two together paced to last the cycle
+// (0x4A11C2..0x4A120A adds the reload's length). After a shot that does not end its burst the reload hook
+// (hooks/shots_hooks.asm, 0x4976CB) runs that function on the action's idle animation instead, the aiming pose, so the
+// unit aims until its next shot; the states and the timing stay the stock ones. Only the burst's last shot reloads.
 //
 // The projectiles: a jmp over the launch call at 0x48F88D (hooks/shots_hooks.asm) calls the launch N times with
 // the same four arguments; each projectile rolls its own accuracy and spread and deals the action's damage.
@@ -3037,8 +3043,11 @@ Sites: `ShotsLaunchCall` `0x48F838` (93 B), `ShotsLaunch` `0x499422` (29 B), `Sh
 
 extern "C" {
 void UhcShotsLaunchHook();  // hooks/shots_hooks.asm
+void UhcShotsReloadHook();
 // Above 0 while some action has more than one projectile: the launch hook asks UhcShotsProjectiles only then.
 std::int32_t g_uhcShotsProjectiles = 0;
+// Above 0 while some action has a burst: the reload hook asks UhcShotsSkipReload only then.
+std::int32_t g_uhcShotsBurst = 0;
 }
 
 namespace {
@@ -3101,6 +3110,8 @@ bool g_log = false;
 unsigned g_tagLines = 0;
 unsigned g_invalidLines = 0;
 unsigned g_shotLines = 0;
+unsigned g_reloadLines = 0;
+constexpr unsigned kMaxReloadLines = 6;
 
 std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::RofRead read);
 
@@ -3117,6 +3128,7 @@ void SyncGates() {
     projectiles = projectiles || entry.projectiles > 1;
   }
   uhc::SetRofGate(&ShotsRof, burst);
+  g_uhcShotsBurst = burst ? 1 : 0;
   g_uhcShotsProjectiles = g_projectiles && projectiles ? 1 : 0;
 }
 
@@ -3126,6 +3138,7 @@ void ResetForDataLoad(char*) {
   g_tagLines = 0;
   g_invalidLines = 0;
   g_shotLines = 0;
+  g_reloadLines = 0;
 }
 
 const Entry* Find(const char* unitAction, const char** unitOut) {
@@ -3290,6 +3303,26 @@ bool EnsureReader() {
 
 extern "C" {
 
+// From the reload hook (0x4976CB), while some action has a burst: true after a shot that does not end its burst
+// (the same test as the after-shot ROF read): the idle animation plays instead of the reload.
+bool __stdcall UhcShotsSkipReload(const char* unitAction) {
+  const char* unit = nullptr;
+  const Entry* entry = unitAction == nullptr ? nullptr : Find(unitAction, &unit);
+  if (entry == nullptr || entry->shots <= 1) {
+    return false;
+  }
+  const std::int32_t count = Field<std::int32_t>(unitAction, 0x68);
+  if ((count < 0 ? 0 : count % entry->shots) == 0) {
+    return false;
+  }
+  if (g_log && g_reloadLines < kMaxReloadLines) {
+    ++g_reloadLines;  // its own budget, so the shots' lines still show whole bursts
+    uhc::Log(L"numberOfShots: unit %d (%hs) shot %d of its burst of %d: the idle animation, no reload",
+             Field<std::int32_t>(unit, 0x10), ProtoName(Field<const char*>(unit, 0x5C)), count % entry->shots, entry->shots);
+  }
+  return true;
+}
+
 // From the launch hook (0x48F88D), while some action has projectiles: how many times to call the launch for this
 // shot (at least 1).
 std::int32_t __stdcall UhcShotsProjectiles(const char* unitAction) {
@@ -3351,8 +3384,13 @@ Outcome ApplyNumberOfShots(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  if (!VerifyAll("numberOfShots", {&sites::kShotsLaunchCall, &sites::kShotsLaunch, &sites::kShotsLaunchRet}) ||
+  if (!VerifyAll("numberOfShots", {&sites::kShotsLaunchCall, &sites::kShotsLaunch, &sites::kShotsLaunchRet,
+                                     &sites::kShotsReloadAnim, &sites::kShotsAnimVariant}) ||
       !EnsureReader() || !AddRofFilter(&ShotsRof, "numberOfShots")) {
+    return Outcome::kFailed;
+  }
+  // sub esp,8 / push esi / mov esi,ecx (6 B) at the head of the reload animation's start 0x4976CB.
+  if (!WriteJmp(sites::kShotsReloadAnim.va, reinterpret_cast<const void*>(&UhcShotsReloadHook), 6)) {
     return Outcome::kFailed;
   }
   // call 499422h (5 B) at 0x48F88D, the launch of the attack step's shot.
@@ -3360,8 +3398,8 @@ Outcome ApplyNumberOfShots(const Config& config) {
     return Outcome::kFailed;
   }
   g_combat = true;  // before the data loads, which runs after every key is applied
-  Log(L"numberOfShots: attacks read <NumberOfShots> and <ShotInterval> (default %.2f s)%ls%ls (multiplayer "
-      L"unverified)",
+  Log(L"numberOfShots: attacks read <NumberOfShots> and <ShotInterval> (default %.2f s), no reload animation between "
+      L"a burst's shots%ls%ls (multiplayer unverified)",
       kDefaultIntervalMs / 1000.0,
       g_projectiles ? L", and <NumberProjectiles> projectiles per shot" : L"",
       g_log ? L"; tags and the first shots logged" : L"");
@@ -3374,8 +3412,9 @@ Outcome ApplyNumberOfShots(const Config& config) {
 ### src/hooks/shots_hooks.asm
 
 ```asm
-; The launch hook of numberOfShots "projectiles" (features/shots.cpp), entered through a jmp written over the
-; stock call and left through an explicit jmp to its verified continuation (docs/engine-symbols.md, "Rate of fire").
+; The hooks of numberOfShots (features/shots.cpp): the launch hook of "projectiles", entered through a jmp written over
+; the stock call and left through an explicit jmp to its verified continuation (docs/engine-symbols.md, "Rate of
+; fire"), and the reload hook, at the head of the reload animation's start.
 .686
 .model flat, c
 option casemap :none
@@ -3383,12 +3422,16 @@ option casemap :none
 include common.inc
 
 UhcShotsProjectiles PROTO STDCALL :DWORD
+UhcShotsSkipReload PROTO STDCALL :DWORD
 
 EXTERNDEF g_uhcShotsProjectiles:DWORD      ; above 0 while some action has more than one projectile
+EXTERNDEF g_uhcShotsBurst:DWORD            ; above 0 while some action has a burst (the reload hook asks only then)
 
 .data
 stockLaunch     dd 00499422h    ; thiscall(unitAction, unit, target, [[frame+2CCh]+28h], byte, [ua+6Ch]), ret 14h
 launchNext      dd 0048F892h    ; mov eax,[ebp+6Ch]: after the launch, ranged and melee join
+reloadBody      dd 004976D1h    ; mov eax,[esi+10h]: the body of the reload animation's start
+animVariant     dd 00471D24h    ; thiscall(unit, anim ID): the unit's model's index of that animation, below 0 if none
 
 .code
 
@@ -3425,6 +3468,75 @@ single:
     call stockLaunch                    ; the stock call, on the stock arguments
     jmp launchNext
 UhcShotsLaunchHook ENDP
+
+; Replaces sub esp,8 / push esi / mov esi,ecx (6 bytes) at 0x4976CB, the head of FUN_004976CB, thiscall(unitAction):
+; once the attack animation of a shot has played it starts the reload animation ([ua+84h], its model index [ua+88h]),
+; paced to end with the wait before the next cycle, and returns AL 1 (0 without a reload animation). Called from
+; setState(15h)'s case (0x497813) and from the update in state 19h (0x49A3E6); both go on as stock with either result.
+; After a shot that does not end its burst (UhcShotsSkipReload) the function runs on the action's idle animation
+; ([tactics action+60h], the aiming pose) instead: [ua+84h] and [ua+88h] are swapped for the call and put back, so the
+; action's states, its timing and the cycle that follows are the stock ones, and the unit aims instead of reloading.
+; Without an idle animation, or when the model lacks it, the reload plays as stock.
+UhcShotsReloadHook PROC
+    TRACE_ONCE "numberOfShots reload (0x4976CB)"
+    cmp g_uhcShotsBurst, 0
+    je stockReload
+    push ecx
+    push ecx
+    call UhcShotsSkipReload             ; true: the burst goes on
+    pop ecx
+    test al, al
+    je stockReload
+    mov eax, [ecx+4]                    ; the tactics action
+    test eax, eax
+    je stockReload
+    mov eax, [eax+60h]                  ; its idle animation
+    test eax, eax
+    jl stockReload
+    push ebx
+    push esi
+    push edi
+    mov esi, ecx
+    mov ebx, eax
+    mov ecx, [esi+10h]                  ; the unit
+    test ecx, ecx
+    je giveUp
+    push ebx
+    call animVariant
+    test eax, eax
+    jl giveUp
+    mov edi, eax
+    push dword ptr [esi+88h]
+    push dword ptr [esi+84h]
+    mov [esi+84h], ebx
+    mov [esi+88h], edi
+    mov ecx, esi
+    call reloadStart                    ; the stock function on the idle animation; AL its result
+    pop dword ptr [esi+84h]
+    pop dword ptr [esi+88h]
+    pop edi
+    pop esi
+    pop ebx
+    ret
+giveUp:
+    mov ecx, esi
+    pop edi
+    pop esi
+    pop ebx
+stockReload:
+    sub esp, 8
+    push esi
+    mov esi, ecx
+    jmp reloadBody
+UhcShotsReloadHook ENDP
+
+; The stock function, called from the hook: its head re-executed, then its body; it returns to the caller.
+reloadStart PROC
+    sub esp, 8
+    push esi
+    mov esi, ecx
+    jmp reloadBody
+reloadStart ENDP
 
 END
 ```

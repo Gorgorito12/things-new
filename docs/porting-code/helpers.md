@@ -1811,6 +1811,12 @@ inline constexpr Site kShotsLaunch{"ShotsLaunch", 0x00499422, kShotsLaunchBytes,
 inline constexpr std::uint8_t kShotsLaunchRetBytes[] = {0x81, 0xC4, 0xD4, 0x00, 0x00, 0x00, 0xC2, 0x14, 0x00};
 inline constexpr Site kShotsLaunchRet{"ShotsLaunchRet", 0x004999DA, kShotsLaunchRetBytes, sizeof(kShotsLaunchRetBytes)};
 
+inline constexpr std::uint8_t kShotsReloadAnimBytes[] = {0x83, 0xEC, 0x08, 0x56, 0x8B, 0xF1, 0x8B, 0x46, 0x10};
+inline constexpr Site kShotsReloadAnim{"ShotsReloadAnim", 0x004976CB, kShotsReloadAnimBytes, sizeof(kShotsReloadAnimBytes)};
+
+inline constexpr std::uint8_t kShotsAnimVariantBytes[] = {0x8B, 0x49, 0x60, 0x85, 0xC9, 0x0F, 0x84, 0xD8, 0xC8, 0x07, 0x00};
+inline constexpr Site kShotsAnimVariant{"ShotsAnimVariant", 0x00471D24, kShotsAnimVariantBytes, sizeof(kShotsAnimVariantBytes)};
+
 inline constexpr std::uint8_t kUnitResourceAuraEntryBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x10};
 inline constexpr Site kUnitResourceAuraEntry{"UnitResourceAuraEntry", 0x009D033E, kUnitResourceAuraEntryBytes, sizeof(kUnitResourceAuraEntryBytes)};
 

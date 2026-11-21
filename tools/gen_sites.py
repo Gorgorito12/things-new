@@ -1381,6 +1381,11 @@ SITES = [
     ("ShotsLaunchCall", 0x48F838, 0x5D),
     ("ShotsLaunch", 0x499422, 0x1D),
     ("ShotsLaunchRet", 0x4999DA, 9),
+    # numberOfShots, no reload between a burst's shots: the head of the reload animation's start FUN_004976CB,
+    # sub esp,8 / push esi / mov esi,ecx (replaced, 6 B) / mov eax,[esi+10h], its continuation (no branch lands
+    # inside); and the model index lookup 0x471D24 (mov ecx,[ecx+60h] / test ecx,ecx / je), which the hook calls.
+    ("ShotsReloadAnim", 0x4976CB, 9),
+    ("ShotsAnimVariant", 0x471D24, 0xB),
     # unitResourceAuras: the aura update's mov eax,[0C66234h] and the sub esp,10h it continues at
     ("UnitResourceAuraEntry", 0x9D033E, 8),
     # unitResourceAuras, verify only: the aura's scan (thiscall(action, IdList*)), inventory add
