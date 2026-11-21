@@ -2474,4 +2474,67 @@ inline constexpr Site kLanBrowserJoinStart{"LanBrowserJoinStart", 0x008BB762, kL
 inline constexpr std::uint8_t kLanBrowserCountdownBytes[] = {0xE8, 0x80, 0x85, 0xB4, 0xFF, 0x8B, 0x8E, 0xB4, 0x01, 0x00, 0x00, 0x03, 0x8E, 0xB0, 0x01, 0x00, 0x00};
 inline constexpr Site kLanBrowserCountdown{"LanBrowserCountdown", 0x008BA87A, kLanBrowserCountdownBytes, sizeof(kLanBrowserCountdownBytes)};
 
+inline constexpr std::uint8_t kUiFindChildBytes[] = {0x83, 0xEC, 0x0C, 0x8B, 0x44, 0x24, 0x14, 0x53, 0x55, 0x56};
+inline constexpr Site kUiFindChild{"UiFindChild", 0x00433812, kUiFindChildBytes, sizeof(kUiFindChildBytes)};
+
+inline constexpr std::uint8_t kUiFieldEditBoxBytes[] = {0x8B, 0x18, 0x53, 0x89, 0x9F, 0x60, 0x01, 0x00, 0x00};
+inline constexpr Site kUiFieldEditBox{"UiFieldEditBox", 0x0062BDD2, kUiFieldEditBoxBytes, sizeof(kUiFieldEditBoxBytes)};
+
+inline constexpr std::uint8_t kUiEditBoxTextBytes[] = {0x8D, 0xB7, 0x70, 0x01, 0x00, 0x00};
+inline constexpr Site kUiEditBoxText{"UiEditBoxText", 0x005C2C54, kUiEditBoxTextBytes, sizeof(kUiEditBoxTextBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteAddProtoBytes[] = {0x8D, 0x54, 0x24, 0x58, 0x52, 0x8D, 0x44, 0x24, 0x14, 0x50, 0x8B, 0xCF, 0xE8, 0xD4, 0xAC, 0x2D, 0x00};
+inline constexpr Site kEditorPaletteAddProto{"EditorPaletteAddProto", 0x007F5371, kEditorPaletteAddProtoBytes, sizeof(kEditorPaletteAddProtoBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteAddBytes[] = {0x53, 0x55, 0x56, 0x8B, 0xD9, 0x8B, 0xB3, 0x4C, 0x01, 0x00, 0x00};
+inline constexpr Site kEditorPaletteAdd{"EditorPaletteAdd", 0x00AD0056, kEditorPaletteAddBytes, sizeof(kEditorPaletteAddBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteObjectsFillBytes[] = {0xC7, 0x86, 0x7C, 0x01, 0x00, 0x00, 0x1E, 0x50, 0x7F, 0x00};
+inline constexpr Site kEditorPaletteObjectsFill{"EditorPaletteObjectsFill", 0x007F5C51, kEditorPaletteObjectsFillBytes, sizeof(kEditorPaletteObjectsFillBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteVtableBytes[] = {0xC7, 0x06, 0x68, 0x27, 0xB9, 0x00};
+inline constexpr Site kEditorPaletteVtable{"EditorPaletteVtable", 0x00ACFBAA, kEditorPaletteVtableBytes, sizeof(kEditorPaletteVtableBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteRefillBytes[] = {0x8B, 0x81, 0x7C, 0x01, 0x00, 0x00, 0x85, 0xC0, 0x74, 0x04, 0x51, 0xFF, 0xD0, 0x59, 0xC3};
+inline constexpr Site kEditorPaletteRefill{"EditorPaletteRefill", 0x00ACE8DF, kEditorPaletteRefillBytes, sizeof(kEditorPaletteRefillBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteRefreshSlotBytes[] = {0xFD, 0x01, 0xAD, 0x00};
+inline constexpr Site kEditorPaletteRefreshSlot{"EditorPaletteRefreshSlot", 0x00B92788, kEditorPaletteRefreshSlotBytes, sizeof(kEditorPaletteRefreshSlotBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteRefreshBytes[] = {0x53, 0x56, 0x57, 0x8B, 0xF1, 0xE8, 0xCD, 0x3E, 0x98, 0xFF, 0x8B, 0xCE, 0xE8, 0x7B, 0xFF, 0xFF, 0xFF, 0x8B, 0x06, 0x8B, 0xCE, 0xFF, 0x90, 0xF0, 0x00, 0x00, 0x00};
+inline constexpr Site kEditorPaletteRefresh{"EditorPaletteRefresh", 0x00AD01FD, kEditorPaletteRefreshBytes, sizeof(kEditorPaletteRefreshBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteLayoutShowBytes[] = {0x8B, 0x96, 0x68, 0x01, 0x00, 0x00, 0x6A, 0x01, 0x52, 0x8B, 0xCE, 0xE8, 0x9C, 0xF5, 0xFF, 0xFF};
+inline constexpr Site kEditorPaletteLayoutShow{"EditorPaletteLayoutShow", 0x00AD0262, kEditorPaletteLayoutShowBytes, sizeof(kEditorPaletteLayoutShowBytes)};
+
+inline constexpr std::uint8_t kEditorForbidVtableBytes[] = {0xC7, 0x06, 0x90, 0xD6, 0xB8, 0x00};
+inline constexpr Site kEditorForbidVtable{"EditorForbidVtable", 0x009990CB, kEditorForbidVtableBytes, sizeof(kEditorForbidVtableBytes)};
+
+inline constexpr std::uint8_t kEditorForbidBindBytes[] = {0x89, 0x8E, 0x44, 0x01, 0x00, 0x00};
+inline constexpr Site kEditorForbidBind{"EditorForbidBind", 0x00999B1F, kEditorForbidBindBytes, sizeof(kEditorForbidBindBytes)};
+
+inline constexpr std::uint8_t kEditorForbidModeBytes[] = {0x8B, 0x83, 0x60, 0x01, 0x00, 0x00, 0x83, 0xE8, 0x00, 0x0F, 0x84, 0x93};
+inline constexpr Site kEditorForbidMode{"EditorForbidMode", 0x009996C6, kEditorForbidModeBytes, sizeof(kEditorForbidModeBytes)};
+
+inline constexpr std::uint8_t kEditorForbidUnitAddBytes[] = {0x8B, 0x4C, 0x24, 0x1C, 0x8D, 0x44, 0x24, 0x10, 0x50, 0xE8, 0x53, 0x00, 0x13, 0x00};
+inline constexpr Site kEditorForbidUnitAdd{"EditorForbidUnitAdd", 0x009991C7, kEditorForbidUnitAddBytes, sizeof(kEditorForbidUnitAddBytes)};
+
+inline constexpr std::uint8_t kEditorForbidTechAddBytes[] = {0x8D, 0x44, 0x24, 0x14, 0x50, 0x8B, 0xCD, 0xE8, 0xDC, 0xFC, 0x12, 0x00};
+inline constexpr Site kEditorForbidTechAdd{"EditorForbidTechAdd", 0x00999540, kEditorForbidTechAddBytes, sizeof(kEditorForbidTechAddBytes)};
+
+inline constexpr std::uint8_t kEditorListAddBytes[] = {0x56, 0x57, 0x8B, 0xF1, 0xE8, 0xC8, 0xA1, 0x97, 0xFF};
+inline constexpr Site kEditorListAdd{"EditorListAdd", 0x00AC9228, kEditorListAddBytes, sizeof(kEditorListAddBytes)};
+
+inline constexpr std::uint8_t kEditorFillAllowedUnitsBytes[] = {0x83, 0xEC, 0x08, 0x53, 0x8B, 0xD9, 0x8B, 0x4C, 0x24, 0x10, 0x55};
+inline constexpr Site kEditorFillAllowedUnits{"EditorFillAllowedUnits", 0x0099912F, kEditorFillAllowedUnitsBytes, sizeof(kEditorFillAllowedUnitsBytes)};
+
+inline constexpr std::uint8_t kEditorFillAllowedTechsBytes[] = {0x55, 0x8B, 0x6C, 0x24, 0x08, 0x57, 0x8B, 0xF9, 0x8B, 0xCD};
+inline constexpr Site kEditorFillAllowedTechs{"EditorFillAllowedTechs", 0x00999493, kEditorFillAllowedTechsBytes, sizeof(kEditorFillAllowedTechsBytes)};
+
+inline constexpr std::uint8_t kEditorForbidRelayoutBytes[] = {0x8B, 0x07, 0x8B, 0xCF, 0xFF, 0x90, 0x00, 0x01, 0x00, 0x00, 0x6A, 0x00, 0x8B, 0xCF, 0xE8, 0x68, 0xF2, 0x12, 0x00};
+inline constexpr Site kEditorForbidRelayout{"EditorForbidRelayout", 0x009997C8, kEditorForbidRelayoutBytes, sizeof(kEditorForbidRelayoutBytes)};
+
+inline constexpr std::uint8_t kEditorProtoDisplayNameBytes[] = {0x8B, 0x81, 0x44, 0x01, 0x00, 0x00, 0x83, 0xF8, 0xFF};
+inline constexpr Site kEditorProtoDisplayName{"EditorProtoDisplayName", 0x008F7A89, kEditorProtoDisplayNameBytes, sizeof(kEditorProtoDisplayNameBytes)};
+
 }  // namespace uhc::sites

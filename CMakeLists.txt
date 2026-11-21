@@ -43,6 +43,7 @@ set(UHC_SOURCES
   src/menuoptions.cpp
   src/rofreads.cpp
   src/floatingbars.cpp
+  src/uigadgets.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
   src/features/accuracy.cpp
@@ -92,6 +93,7 @@ set(UHC_SOURCES
   src/features/hotkeys.cpp
   src/features/instances.cpp
   src/features/lanautostart.cpp
+  src/features/editorsearch.cpp
   src/features/playericon.cpp
   src/features/lifespan.cpp
   src/features/limits.cpp
@@ -258,6 +260,7 @@ set(UHC_SOURCES
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm
   src/hooks/datarefs_hooks.asm
+  src/hooks/editorsearch_hooks.asm
   src/hooks/minuistats_hooks.asm
   src/hooks/attacktypeicons_hooks.asm
   src/version.rc

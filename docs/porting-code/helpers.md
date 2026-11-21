@@ -37,6 +37,7 @@ Contents:
 - [Tech rollover](#tech-rollover)
 - [ROF reads](#rof-reads)
 - [Floating bars](#floating-bars)
+- [UI gadgets](#ui-gadgets)
 
 ## Site table
 
@@ -2540,6 +2541,69 @@ inline constexpr Site kLanBrowserJoinStart{"LanBrowserJoinStart", 0x008BB762, kL
 inline constexpr std::uint8_t kLanBrowserCountdownBytes[] = {0xE8, 0x80, 0x85, 0xB4, 0xFF, 0x8B, 0x8E, 0xB4, 0x01, 0x00, 0x00, 0x03, 0x8E, 0xB0, 0x01, 0x00, 0x00};
 inline constexpr Site kLanBrowserCountdown{"LanBrowserCountdown", 0x008BA87A, kLanBrowserCountdownBytes, sizeof(kLanBrowserCountdownBytes)};
 
+inline constexpr std::uint8_t kUiFindChildBytes[] = {0x83, 0xEC, 0x0C, 0x8B, 0x44, 0x24, 0x14, 0x53, 0x55, 0x56};
+inline constexpr Site kUiFindChild{"UiFindChild", 0x00433812, kUiFindChildBytes, sizeof(kUiFindChildBytes)};
+
+inline constexpr std::uint8_t kUiFieldEditBoxBytes[] = {0x8B, 0x18, 0x53, 0x89, 0x9F, 0x60, 0x01, 0x00, 0x00};
+inline constexpr Site kUiFieldEditBox{"UiFieldEditBox", 0x0062BDD2, kUiFieldEditBoxBytes, sizeof(kUiFieldEditBoxBytes)};
+
+inline constexpr std::uint8_t kUiEditBoxTextBytes[] = {0x8D, 0xB7, 0x70, 0x01, 0x00, 0x00};
+inline constexpr Site kUiEditBoxText{"UiEditBoxText", 0x005C2C54, kUiEditBoxTextBytes, sizeof(kUiEditBoxTextBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteAddProtoBytes[] = {0x8D, 0x54, 0x24, 0x58, 0x52, 0x8D, 0x44, 0x24, 0x14, 0x50, 0x8B, 0xCF, 0xE8, 0xD4, 0xAC, 0x2D, 0x00};
+inline constexpr Site kEditorPaletteAddProto{"EditorPaletteAddProto", 0x007F5371, kEditorPaletteAddProtoBytes, sizeof(kEditorPaletteAddProtoBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteAddBytes[] = {0x53, 0x55, 0x56, 0x8B, 0xD9, 0x8B, 0xB3, 0x4C, 0x01, 0x00, 0x00};
+inline constexpr Site kEditorPaletteAdd{"EditorPaletteAdd", 0x00AD0056, kEditorPaletteAddBytes, sizeof(kEditorPaletteAddBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteObjectsFillBytes[] = {0xC7, 0x86, 0x7C, 0x01, 0x00, 0x00, 0x1E, 0x50, 0x7F, 0x00};
+inline constexpr Site kEditorPaletteObjectsFill{"EditorPaletteObjectsFill", 0x007F5C51, kEditorPaletteObjectsFillBytes, sizeof(kEditorPaletteObjectsFillBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteVtableBytes[] = {0xC7, 0x06, 0x68, 0x27, 0xB9, 0x00};
+inline constexpr Site kEditorPaletteVtable{"EditorPaletteVtable", 0x00ACFBAA, kEditorPaletteVtableBytes, sizeof(kEditorPaletteVtableBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteRefillBytes[] = {0x8B, 0x81, 0x7C, 0x01, 0x00, 0x00, 0x85, 0xC0, 0x74, 0x04, 0x51, 0xFF, 0xD0, 0x59, 0xC3};
+inline constexpr Site kEditorPaletteRefill{"EditorPaletteRefill", 0x00ACE8DF, kEditorPaletteRefillBytes, sizeof(kEditorPaletteRefillBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteRefreshSlotBytes[] = {0xFD, 0x01, 0xAD, 0x00};
+inline constexpr Site kEditorPaletteRefreshSlot{"EditorPaletteRefreshSlot", 0x00B92788, kEditorPaletteRefreshSlotBytes, sizeof(kEditorPaletteRefreshSlotBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteRefreshBytes[] = {0x53, 0x56, 0x57, 0x8B, 0xF1, 0xE8, 0xCD, 0x3E, 0x98, 0xFF, 0x8B, 0xCE, 0xE8, 0x7B, 0xFF, 0xFF, 0xFF, 0x8B, 0x06, 0x8B, 0xCE, 0xFF, 0x90, 0xF0, 0x00, 0x00, 0x00};
+inline constexpr Site kEditorPaletteRefresh{"EditorPaletteRefresh", 0x00AD01FD, kEditorPaletteRefreshBytes, sizeof(kEditorPaletteRefreshBytes)};
+
+inline constexpr std::uint8_t kEditorPaletteLayoutShowBytes[] = {0x8B, 0x96, 0x68, 0x01, 0x00, 0x00, 0x6A, 0x01, 0x52, 0x8B, 0xCE, 0xE8, 0x9C, 0xF5, 0xFF, 0xFF};
+inline constexpr Site kEditorPaletteLayoutShow{"EditorPaletteLayoutShow", 0x00AD0262, kEditorPaletteLayoutShowBytes, sizeof(kEditorPaletteLayoutShowBytes)};
+
+inline constexpr std::uint8_t kEditorForbidVtableBytes[] = {0xC7, 0x06, 0x90, 0xD6, 0xB8, 0x00};
+inline constexpr Site kEditorForbidVtable{"EditorForbidVtable", 0x009990CB, kEditorForbidVtableBytes, sizeof(kEditorForbidVtableBytes)};
+
+inline constexpr std::uint8_t kEditorForbidBindBytes[] = {0x89, 0x8E, 0x44, 0x01, 0x00, 0x00};
+inline constexpr Site kEditorForbidBind{"EditorForbidBind", 0x00999B1F, kEditorForbidBindBytes, sizeof(kEditorForbidBindBytes)};
+
+inline constexpr std::uint8_t kEditorForbidModeBytes[] = {0x8B, 0x83, 0x60, 0x01, 0x00, 0x00, 0x83, 0xE8, 0x00, 0x0F, 0x84, 0x93};
+inline constexpr Site kEditorForbidMode{"EditorForbidMode", 0x009996C6, kEditorForbidModeBytes, sizeof(kEditorForbidModeBytes)};
+
+inline constexpr std::uint8_t kEditorForbidUnitAddBytes[] = {0x8B, 0x4C, 0x24, 0x1C, 0x8D, 0x44, 0x24, 0x10, 0x50, 0xE8, 0x53, 0x00, 0x13, 0x00};
+inline constexpr Site kEditorForbidUnitAdd{"EditorForbidUnitAdd", 0x009991C7, kEditorForbidUnitAddBytes, sizeof(kEditorForbidUnitAddBytes)};
+
+inline constexpr std::uint8_t kEditorForbidTechAddBytes[] = {0x8D, 0x44, 0x24, 0x14, 0x50, 0x8B, 0xCD, 0xE8, 0xDC, 0xFC, 0x12, 0x00};
+inline constexpr Site kEditorForbidTechAdd{"EditorForbidTechAdd", 0x00999540, kEditorForbidTechAddBytes, sizeof(kEditorForbidTechAddBytes)};
+
+inline constexpr std::uint8_t kEditorListAddBytes[] = {0x56, 0x57, 0x8B, 0xF1, 0xE8, 0xC8, 0xA1, 0x97, 0xFF};
+inline constexpr Site kEditorListAdd{"EditorListAdd", 0x00AC9228, kEditorListAddBytes, sizeof(kEditorListAddBytes)};
+
+inline constexpr std::uint8_t kEditorFillAllowedUnitsBytes[] = {0x83, 0xEC, 0x08, 0x53, 0x8B, 0xD9, 0x8B, 0x4C, 0x24, 0x10, 0x55};
+inline constexpr Site kEditorFillAllowedUnits{"EditorFillAllowedUnits", 0x0099912F, kEditorFillAllowedUnitsBytes, sizeof(kEditorFillAllowedUnitsBytes)};
+
+inline constexpr std::uint8_t kEditorFillAllowedTechsBytes[] = {0x55, 0x8B, 0x6C, 0x24, 0x08, 0x57, 0x8B, 0xF9, 0x8B, 0xCD};
+inline constexpr Site kEditorFillAllowedTechs{"EditorFillAllowedTechs", 0x00999493, kEditorFillAllowedTechsBytes, sizeof(kEditorFillAllowedTechsBytes)};
+
+inline constexpr std::uint8_t kEditorForbidRelayoutBytes[] = {0x8B, 0x07, 0x8B, 0xCF, 0xFF, 0x90, 0x00, 0x01, 0x00, 0x00, 0x6A, 0x00, 0x8B, 0xCF, 0xE8, 0x68, 0xF2, 0x12, 0x00};
+inline constexpr Site kEditorForbidRelayout{"EditorForbidRelayout", 0x009997C8, kEditorForbidRelayoutBytes, sizeof(kEditorForbidRelayoutBytes)};
+
+inline constexpr std::uint8_t kEditorProtoDisplayNameBytes[] = {0x8B, 0x81, 0x44, 0x01, 0x00, 0x00, 0x83, 0xF8, 0xFF};
+inline constexpr Site kEditorProtoDisplayName{"EditorProtoDisplayName", 0x008F7A89, kEditorProtoDisplayNameBytes, sizeof(kEditorProtoDisplayNameBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -3041,6 +3105,7 @@ Outcome ApplyFastLastInLine(const Config& config);
 Outcome ApplyXsErrorLog(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyLanAutoStart(const Config& config);
+Outcome ApplyEditorSearch(const Config& config);
 Outcome ApplyPlayerIcon(const Config& config);
 Outcome ApplyPlugins(const Config& config);
 Outcome ApplyAsianCivs(const Config& config);
@@ -3250,6 +3315,8 @@ inline constexpr Feature kFeatures[] = {
     // After rendererOption: it observes the Present of whichever Direct3DCreate9 the game gets (d3d9hooks.h).
     {"lanAutoStart", ApplyLanAutoStart},
     {"playerIcon", ApplyPlayerIcon},
+    // After rendererOption: it reads its search fields from the Present of whichever Direct3DCreate9 the game gets.
+    {"editorSearch", ApplyEditorSearch},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
 };
@@ -3269,7 +3336,7 @@ inline constexpr const char* kHandledKeys[] = {
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "lanautostart", "playericon", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
+    "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes",
 };
 
 }  // namespace uhc
@@ -7786,4 +7853,124 @@ done:
 UhcFloatingBarVertexHook ENDP
 
 END
+```
+
+## UI gadgets
+
+### src/uigadgets.h
+
+```cpp
+// UI gadgets: the engine's gadget calls, in one place for every key that reads or changes the interface. Handles
+// are the engine's: an int whose low 18 bits index the gadget manager's table, the rest a generation, so a stale
+// handle resolves to no gadget (0x40423C returns null), never to another gadget.
+//
+// The addresses are verified once by VerifyUiGadgets (each key that uses this module calls it from its apply
+// function and refuses to apply when it fails). Not thread-safe: the game's main thread only.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc::ui {
+
+// Gadget type masks for Gadget(): what 0x40423C asks the gadget's virtual +0CCh.
+enum GadgetType : std::int32_t {
+  kAnyGadget = 0,
+  kList = 0x07,       // type="list" (vtable 0xB92378)
+  kTextField = 0x0D,  // type="textField": an editable field with an optional dropdown (vtable 0xB91D60)
+  kPalette = 0x18,    // type="palette" (vtable 0xB92768)
+  kEditBox = 0x23,    // type="editBox", and the one a textField makes for its typed text (vtable 0xB91A38)
+};
+
+// True if the addresses below hold the stock code. `feature` names the caller in the log.
+bool VerifyUiGadgets(const char* feature);
+
+// The gadget manager [[0C66244h]+44h], or null before the UI exists.
+void* Manager();
+
+// The gadget of a handle when its type matches, else null (0 or a stale handle included). Takes no reference.
+void* Gadget(std::int32_t handle, std::int32_t type);
+
+// A gadget's own handle, [gadget+0Ch].
+std::int32_t HandleOf(const void* gadget);
+
+// The handle of a gadget named `name` among `parent`'s descendants (0x433812), or 0 if none.
+std::int32_t FindChild(void* parent, const char* name);
+
+// The text typed in a textField: the editBox it makes for it ([field+160h], 0x62BDD5) keeps it at [edit+170h], a
+// BString (its set-text slot 0x5C2C20 and typing write it there). Empty when it has none. The pointer lives until
+// the text changes; copy it.
+const wchar_t* FieldText(const void* field);
+
+}  // namespace uhc::ui
+```
+
+### src/uigadgets.cpp
+
+```cpp
+#include "uigadgets.h"
+
+#include "generated/sites.h"
+#include "patch.h"
+
+namespace uhc::ui {
+namespace {
+
+constexpr std::uint32_t kUiGlobal = 0x00C66244;  // [+44h] the gadget manager
+constexpr std::uint32_t kNoGadget = 0x00C672C0;  // [..] the handle of "no gadget"
+
+using LookupFn = void*(__fastcall*)(void* manager, void* edx, std::int32_t handle, std::int32_t type);
+using FindChildFn = std::int32_t*(__fastcall*)(void* parent, void* edx, std::int32_t* out, const char* name,
+                                               std::int32_t flag);
+
+const auto kLookup = reinterpret_cast<LookupFn>(0x0040423C);
+const auto kFindChild = reinterpret_cast<FindChildFn>(0x00433812);
+
+template <typename T>
+T Read(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+bool g_verified = false;
+
+}  // namespace
+
+bool VerifyUiGadgets(const char* feature) {
+  if (!g_verified) {
+    g_verified = VerifyAll(feature, {&sites::kGadgetLookup, &sites::kUiFindChild, &sites::kUiFieldEditBox,
+                                     &sites::kUiEditBoxText});
+  }
+  return g_verified;
+}
+
+void* Manager() {
+  const char* ui = *reinterpret_cast<const char* const*>(kUiGlobal);
+  return ui == nullptr ? nullptr : Read<void*>(ui, 0x44);
+}
+
+void* Gadget(std::int32_t handle, std::int32_t type) {
+  void* manager = Manager();
+  if (manager == nullptr || handle == 0 || handle == *reinterpret_cast<const std::int32_t*>(kNoGadget)) {
+    return nullptr;
+  }
+  return kLookup(manager, nullptr, handle, type);
+}
+
+std::int32_t HandleOf(const void* gadget) { return gadget == nullptr ? 0 : Read<std::int32_t>(gadget, 0x0C); }
+
+std::int32_t FindChild(void* parent, const char* name) {
+  if (parent == nullptr) {
+    return 0;
+  }
+  std::int32_t handle = 0;
+  kFindChild(parent, nullptr, &handle, name, 1);
+  return handle == *reinterpret_cast<const std::int32_t*>(kNoGadget) ? 0 : handle;
+}
+
+const wchar_t* FieldText(const void* field) {
+  const void* edit = field == nullptr ? nullptr : Gadget(Read<std::int32_t>(field, 0x160), kEditBox);
+  const wchar_t* text = edit == nullptr ? nullptr : Read<const wchar_t*>(edit, 0x170);
+  return text == nullptr ? L"" : text;
+}
+
+}  // namespace uhc::ui
 ```

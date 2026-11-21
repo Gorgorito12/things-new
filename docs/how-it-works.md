@@ -5532,6 +5532,87 @@ most 64 characters; anything else is ignored and logged.
   joins the same game through the normal menus.
 - It runs once per start; nothing is kept for a saved game or the next game.
 
+### editorSearch
+
+**Why it exists.** The scenario editor's Objects palette and the Allowed list of its Forbidden Units/Techs dialog
+list every proto (thousands in a big mod) and every tech, sorted by name, with no way to find one but scrolling.
+
+**The lists** (`docs/engine-symbols.md`, "Scenario editor lists"):
+- The Objects palette is the `palette` gadget `EditorProtoPalette` (`uieditorpalettes.xml`; class vtable 0xB92768,
+  type mask 18h). The editor gives it the fill callback FUN_007F501E (`[palette+17Ch]`, 0x7F5C51), which adds one
+  entry per proto of the current player through `0xAD0056(palette, entry*, categories*)` at 0x7F537D, ESI = the proto.
+  The palette's refresh slot (vtable +20h, FUN_00AD01FD, what `refreshonreal` runs) empties the entries (0xAD0189),
+  calls the refill slot (+0F0h, which calls `[+17Ch]`), lays its button list out and shows the buttons of the current
+  category `[+168h]` through FUN_00ACF80E. The category dropdown only calls FUN_00ACF80E, over the same entries.
+- The Forbidden Units/Techs dialog (class vtable 0xB8D690, `uiforbiddenunitstechs.xml`) keeps its Allowed list's
+  handle at `[dlg+144h]` and its display mode at `[dlg+160h]` (0 units, 1 techs). FUN_0099912F (units) and FUN_00999493
+  (techs), `thiscall(dialog, list)`, empty the list and add each name through the list's `0xAC9228(list, BString*)`
+  (0x9991D0, ESI = the proto; 0x999547, ESI = the tech's index); after them the dialog's refresh calls the list's layout
+  slot (+100h) and selects the first item (0xAC8A43(0)).
+- A `textField` (gadfield.cpp, vtable 0xB91D60, type mask 0Dh) keeps its typed text in an `editBox` it makes for it:
+  the handle at `[field+160h]` (0x62BDD5), type mask 23h, the text a BString at `[edit+170h]` (its set-text slot
+  0x5C2C20). Typing changes that text and nothing else; no event reaches the dialog.
+
+**What it does.**
+- The three add calls are redirected (`hooks/editorsearch_hooks.asm`). Each asks `UhcEditorPaletteKeep` or
+  `UhcEditorForbidKeep` whether the entry matches the current text; a match goes on to the stock add with a `jmp`
+  (the return address is the fill's own), anything else returns with the add's own stack cleanup (`ret 8` / `ret 4`).
+  The fills free their own strings either way. The palette or dialog that called last is remembered by its handle.
+- A Present observer (`d3d9hooks.*`) reads each field once a frame: the remembered owner through 0x40423C (null once
+  it is destroyed, since a handle carries a generation), its field by name among the owner's descendants (0x433812,
+  once per owner) and the field's text. When the words of the text change and the typing has paused for 250 ms, it
+  refills: the palette through its
+  refresh slot (checked: vtable 0xB92768 and fill callback 0x7F501E), the dialog through the fill of its display mode
+  plus the layout and selection its refresh does.
+- The match: the text is split on spaces and lowered (`towlower`); every word must appear in the text the list shows,
+  or, for a proto, in its internal name (`[proto+10h]`) or its display name (the string ID `[proto+144h]`, read through
+  0x58EA52 only when a word is not found otherwise).
+
+**Why it is safe.**
+- UI only: the fills run in the editor, the entries are what the stock fill would add minus some, and nothing is
+  saved or sent. The DLL's state is two handles and the texts, cleared when the owner's handle goes stale.
+- After each redirected call the fill reads no register the add sets (0x7F5382 reloads ECX; 0x9991D5 and 0x99954C
+  free the BString), and the hooks keep ECX for the jump.
+- The refills are the game's own: the refresh slot the palette runs when shown, and the fill and layout calls the
+  dialog's refresh makes, on the main thread (Present runs there), between frames.
+- A layout without a field leaves the list stock (found missing once per owner, logged with `log`). Every address is
+  verified (`UiFindChild`, `UiFieldEditBox`, `UiEditBoxText`, the `EditorPalette*`, `EditorForbid*` and `EditorList*`
+  sites, `EditorProtoDisplayName`).
+- Cost: nothing outside the editor (two null checks a frame); in the editor, two handle lookups and a string compare
+  a frame. A refill is the stock fill (see the table).
+
+**Tests** (2026-11-21, a mod's editor, 3,211 palette entries for player 1, 3,634 protos and 10,542 techs in the
+dialog; text typed with posted `WM_CHAR`, `testbed.py chars`, erased with posted Backspace, `testbed.py key back`):
+
+| Test | Result |
+|---|---|
+| Palette, "musk" | pass: 9 shown, 3,202 hidden; the buttons are the 9 |
+| Palette, "INF musk" (two words, display-name prefix) | pass: 4 shown |
+| Palette, "prowler" (display name only) | pass: 2 shown |
+| Palette, text erased | pass: 3,211 shown, the stock list |
+| Palette, category Nature with "musk" | pass: Musk Deer and Musk Ox |
+| Palette, an entry of a filtered list placed | pass: the unit is on the map |
+| Palette, editor left and opened again | pass: empty field, stock list |
+| Dialog, units, "musket" | pass: 7 shown |
+| Dialog, Add from the filtered list | pass: the unit moves to Forbidden |
+| Dialog, Display Techs with the text kept | pass: the matching techs |
+| Dialog, text erased | pass: the full list, without the forbidden unit |
+| Key on, layouts without the fields | pass: stock lists, `has no textField` logged |
+| Key off, layouts with the fields | pass: the fields take text, the lists stay stock |
+| Dialog, a filtered tech added, OK, dialog opened again | pass: the tech stays forbidden; the dialog object is kept, so the field still holds the text and the list is filtered |
+| Typed letters with posted key presses | pass: they go to the field (doubled with an extra `WM_CHAR`, as a real key makes its own); no editor command ran |
+| A word typed at once (`chars musk`) | pass: one refill, after the 250 ms pause |
+| Cost of a refill | palette 180–290 ms (the stock refresh: 188–227 ms with an empty text, the stock list), dialog units 10–26 ms, techs 15–146 ms |
+| Cost of the per-frame check in the editor | 1.1–2.2 µs a frame (5000 frames with no refill) |
+
+The palette's refill is slow because the stock refresh is: it rebuilds every entry of the current player, and FUN_00ACF80E
+the buttons. That is why a refill waits for a pause in the typing. A/B with `perfprobe.py` (60 s, the editor with the
+palette open and the field empty, seven other games running on the machine): 279 fps key off, 181 fps key on, main
+thread 29 % against 19 %; the difference follows the other games' load (render time 3.8 against 5.3 ms), not this key,
+whose check measured 1–2 µs a frame.
+
+Not tested: a real keyboard (posted messages only), another resolution than 1920 × 1080, IME input.
+
 ### impactBoneFix
 
 A hit on a unit with a damage template picks one of its impact points (FUN_0049ABA1) and plays the projectile's

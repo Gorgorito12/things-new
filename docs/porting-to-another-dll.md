@@ -1295,6 +1295,23 @@ Code: [interface](porting-code/interface.md#autoscout). It needs `AddWorldTick`
 - **Test:** a unit whose first tactic is `AutoScout`: it leaves at once, and `testbed.py explored` rises (two ravens on
   Great Lakes: 63.7 % at 3 minutes against 9.4 % without); a Stop order puts it back in its other tactic.
 
+### editorSearch
+
+Code: [interface](porting-code/interface.md#editorsearch). It needs the [UI gadgets](porting-code/helpers.md#ui-gadgets)
+helper and a callback after each D3D9 `Present` on the main thread (`AddD3D9Observer` here; a DLL with its own present
+hook calls `BeforePresent` from it).
+
+- **Sites:** three calls redirected, 5 bytes each (`E8 rel32`): `0x7F537D` (to `0xAD0056`, the Objects palette's add),
+  `0x9991D0` and `0x999547` (to `0xAC9228`, the Forbidden Units/Techs allowed list's add, units and techs). The hooks
+  jump to the stock callee when the entry matches. Check them against your DLL first: another key that filters those
+  lists must share the call.
+- **Called, verify only:** the palette's refresh slot (vtable `0xB92768` +20h = `0xAD01FD`), the fills `0x99912F` and
+  `0x999493`, the list's select `0xAC8A43`, `0x58EA52` and `0x4010CA` (a proto's display name), `0x40423C`, `0x433812`.
+- **Layouts:** a `textField` `EditorProtoPaletteSearch` inside `EditorProtoPalette` (`uieditorpalettes.xml`) and
+  `ForbiddenUnitsTechs_Search` in `uiforbiddenunitstechs.xml` (`wol-fixes/editor`).
+- **Test:** in the editor, Place Object, click the field and type (`testbed.py chars musk`): the palette keeps the
+  matching entries and the log says `Objects palette "musk": 9 shown, 3202 hidden`.
+
 ### directionalAttack
 
 Code: [combat](porting-code/combat.md#directionalattack). It needs `AddActionTagHandler`, `AddWorldTick` and

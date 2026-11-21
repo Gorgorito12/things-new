@@ -211,8 +211,9 @@ python -I tools/testbed.py [--bed <folder>] <command> ...
 
 Drives the game of a test copy (default `C:\AoE3-UHC-Test`, or the `UHC_TESTBED` variable) with
 no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wait`, `state`,
-`units`, `explored`, `shot`, `record`, `click`/`rclick`, `hover`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `log`, `safety`; the
-docstring lists their arguments.
+`units`, `explored`, `shot`, `record`, `click`/`rclick`, `hover`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `chars`, `log`, `safety`; the
+docstring lists their arguments. `chars <text>` posts `WM_CHAR`s to the window, so the text field that has the
+game's focus (click it first) takes them with no keyboard and no focus, in a `background` copy too; `key back` erases.
 
 A command that waits on the game ends with exit code 3 when the game dies meanwhile (the message gives
 the process's exit code, `0xc0000005` for an access violation), and 4 when it hangs: the window does
