@@ -322,3 +322,6 @@ transformChecks-wol 3 12 1 800:700:380:60+800:230:1060:850
 transformChecks-wol-control 3 12 1 800:700:380:60+800:230:1060:850
 autoScout-back-wol 8 24 2
 autoScout-back-wol-control 8 24 2
+dismount-wol 0 24 2
+dismount-wol-control 0 24 2
+dismount-transitions-wol 0 14 1.2
