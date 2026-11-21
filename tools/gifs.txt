@@ -175,8 +175,8 @@ detonationDeath-knockout-off-wol 2 10 1
 detonationDeath-knockout-on-wol 2 10 1
 hcTargetTechs-wol 2 18 2
 hcTargetTechs-wol-control 2 18 2
-unitResourceAuras-torp-wol 12 12 1
-unitResourceAuras-torp-wol-control 12 12 1
+unitResourceAuras-torp-wol 4 12 1
+unitResourceAuras-torp-wol-control 4 12 1
 displayedRange-wol 5 33 3
 displayedRange-wol-control 5 33 3
 linkedResource-wol 2 12 1
