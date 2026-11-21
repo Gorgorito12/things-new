@@ -289,5 +289,5 @@ In media\ (JPG pictures of the panel at native pixels, with the health bar; PNG 
     minui-preview-stock.png           the original minimized layout's rectangles
     minui-shot-min-*.png, minui-shot-big-*.png   WoL's UI before the key: a unit, a building, a villager
     minUIStats-test-hero-big.png      Menelik II in the big UI (it lists every attack, usable or not)
-Videos of the first proposal (2026-11-17 morning, its layout): minUIStats-wol, minUIStats-building-wol,
-minUIStats-batch2-wol, minUIStats-batch3-wol (.gif / .mp4), each with a -control twin (key off).
+The videos of the first proposal (2026-11-17) were removed on 2026-11-21: they showed a layout that version 7 has
+replaced. Version 7's pictures are in final\ (minUIStats-v7-*.jpg).

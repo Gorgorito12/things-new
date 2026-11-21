@@ -2560,19 +2560,7 @@ back to `122.2` by 55 s. [Full video (MP4)](media/overhealSources-canoverheal-wo
 *In WoL, `overhealSources` and `overhealDecay` off (the same data and scene):* the nurse heals the Pikeman straight to
 `148.2`, before any tech, and it stays there. [Full video (MP4)](media/overhealSources-canoverheal-wol-control.mp4).
 
-*The videos below were filmed before 2026-11-21, when a healer's unit type made it a source (`AbstractOverhealer`, then the default); a type named in the cfg still works that way.*
-
-![overhealSources in WoL](media/overhealSources-wol.gif)
-
-*In WoL, with `overhealSources log` (a `NAnurse` next to the marked Tomahawk, selected):* the Tomahawk
-is hit at 24 s. The nurse is not a source healer: she heals it to `150/150` and stops (`a heal of unit 1
-stops at its 100 %`). At 52 s a source medicine man appears, and the panel climbs to `179/150`, with
-`Overheal: 29/30`. [Full video (MP4)](media/overhealSources-wol.mp4).
-
-![overhealSources in WoL, key off](media/overhealSources-wol-control.gif)
-
-*In WoL, key off (the same scene):* the nurse herself heals it past its 100 %.
-[Full video (MP4)](media/overhealSources-wol-control.mp4).
+*The dance videos below were filmed before 2026-11-21, when a healer's unit type made it a source (`AbstractOverhealer`, then the default); they still show what an area heal does: it is not a `Heal` action with `<CanOverheal>`, so it stops at the 100 %.*
 
 ![overhealSources with the Regeneration dance in WoL](media/overhealSources-dance-wol.gif)
 
@@ -2584,19 +2572,6 @@ a dance is not a source. [Full video (MP4)](media/overhealSources-dance-wol.mp4)
 
 *In WoL, key off (the same scene):* the dance takes it to `180/150`, `Overheal: 30/30`.
 [Full video (MP4)](media/overhealSources-dance-wol-control.mp4).
-
-![overhealSources cap and rate in WoL](media/overhealSources-cap-wol.gif)
-
-*In WoL, with `overhealSources AbstractOverhealer cap=110 rate=50 log` (Player 1's medicine man is a source through a
-tech; the Tomahawk, 150 of 180, selected; `overhealDecay 2 1` with `holdNear xpMedicineMan 12`):* hit to 105 at 18 s, it is
-healed at about 10 HP/s to 150, then at 5 HP/s, and stops at `165/150`, 110 %.
-[Full video (MP4)](media/overhealSources-cap-wol.mp4).
-
-![overhealSources without cap and rate in WoL](media/overhealSources-cap-wol-control.gif)
-
-*In WoL, `overhealSources AbstractOverhealer log` with no option (the same scene, `overhealDecay 2 1` without
-`holdNear`):* healed at 10 HP/s all the way to 180, its max; the decay then takes a little and the medicine man heals it
-back. [Full video (MP4)](media/overhealSources-cap-wol-control.mp4).
 
 ```
 overhealSources [<UnitType> [cap=<percent>] ...] [log]   no type by default; up to 8 types
@@ -3874,7 +3849,7 @@ Skirmisher runs its whole reload animation in a fraction of a second. [Full vide
 
 ![numberOfShots projectiles in WoL](media/numberOfShots-projectiles-wol.gif)
 
-*In WoL, with `numberOfShots projectiles log` and `spreadAnyAccuracy Skirmisher` (the same Skirmishers with
+*Filmed on 2026-11-12, before the quick shots of a burst stopped playing the reload animation.* *In WoL, with `numberOfShots projectiles log` and `spreadAnyAccuracy Skirmisher` (the same Skirmishers with
 `<NumberProjectiles>4</NumberProjectiles><MaxSpread>2</MaxSpread><SpreadFactor>0.2</SpreadFactor>`, test data):* each shot
 is a fan of four tracers, each pellet landing where its own spread takes it. Three settlers fall in 57 s.
 [Full video (MP4)](media/numberOfShots-projectiles-wol.mp4).
@@ -8158,25 +8133,19 @@ attackTypeIcons <UnitType> <StringID> <IconPath> [<UnitType> <StringID> <IconPat
 
 **Added:** Tuesday 2026-11-17 08:07 · **Filmed in WoL:** Tuesday 2026-11-17 10:30
 
-![minUIStats in WoL](media/minUIStats-wol.gif)
+![minUIStats version 7 on a unit in WoL](../wol-fixes/min-ui/final/minUIStats-v7-icons-min-escopetero.jpg)
 
-*In WoL, with `minUIStats` and the layout of `wol-fixes/min-ui` (Ethiopians, Menelik II selected, minimized interface):* Train
-Points, LOS and live Speed in their own rows, and the hero's 4th and 5th attacks, `Sharpshooter ATK` and `Crack Shot ATK`,
-which the minimized interface had no room for. [Full video (MP4)](media/minUIStats-wol.mp4).
+*In WoL, version 7 (2026-11-21, `minUIStats` and the layout of `wol-fixes/min-ui`, Ethiopians, an `Escopetero`, minimized
+interface):* cost and pop at the top left, LOS, speed and train time at the top right, armor as a percent (`20%`), and
+each attack in one row: damage, rate of fire (`3.50` and the clock icon), range, area, then the bonus multipliers.
+More pictures of version 7 (the big interface, the Falconet limbered and deployed, gathering, beside WoL's own
+`uhc.dll`): `wol-fixes/min-ui/final/minUIStats-v7-*.jpg`.
 
-![minUIStats in WoL, key off](media/minUIStats-wol-control.gif)
+![minUIStats version 7 on a building in WoL](../wol-fixes/min-ui/final/minUIStats-v7-mill.jpg)
 
-*In WoL, key off (the same scene and layout):* the stock rows only: three attacks, no LOS, no speed.
-[Full video (MP4)](media/minUIStats-wol-control.mp4).
+*In WoL, version 7 (a `Mill` with two settlers):* the food it holds (`Infinite`) and `Gatherers: 2 / 10`.
 
-![minUIStats on a building in WoL](media/minUIStats-building-wol.gif)
-
-*In WoL, with `minUIStats` (a `Bunker`, Siege armor 0.3):* `Resists: 0.30` (`30%` since version 7) in the stock spot, `Garrison: 0 / 20` and LOS.
-[Full video (MP4)](media/minUIStats-building-wol.mp4).
-
-![minUIStats on a building in WoL, key off](media/minUIStats-building-wol-control.gif)
-
-*In WoL, key off (the same scene):* no armor, no garrison. [Full video (MP4)](media/minUIStats-building-wol-control.mp4).
+*The videos of the first layout (2026-11-17) were removed on 2026-11-21: the panel has changed since (version 7).*
 
 ```
 minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of wol-fixes/min-ui
@@ -8438,15 +8407,6 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   | `Caravel` | Cost 100 gold 300 wood, ROF 2 / 0.05 (broadside), Range 20 |
   | `BerryBush` | nothing new (no attack, no cost) |
 
-  ![Batch 2: a veteran Musketeer](media/minUIStats-batch2-wol.gif)
-
-  *Key on (the Musketeer with 2 kills):* Cost and Pop, ROF and Range above the name.
-  [Full video (MP4)](media/minUIStats-batch2-wol.mp4).
-
-  ![Batch 2, key off](media/minUIStats-batch2-wol-control.gif)
-
-  *Key off (the same scene):* no Cost, ROF or Range row; the stock rows only (the rank row is `veterancyBonus`'s own). [Full video (MP4)](media/minUIStats-batch2-wol-control.mp4).
-
   Performance, batch 2 (`perfprobe.py`, 60 s each, the veteran Musketeer selected; three other test games were running
   on the PC): key on 933 fps, main thread 78 %, update 0.2 ms, render 0.9 ms; key off 999 fps, 83 %, 0.2 ms, 0.8 ms.
   About 0.07 ms a frame at 1000 fps, within what the other games make the numbers move; no frame over 50 ms.
@@ -8482,15 +8442,6 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
   With every key of the cfg template on (124 keys): 113 applied, 0 failed, 126 hooks reached, after two fixes this run
   found: `population` now divides by `decimalPopulation`'s K (it showed `Pop: 10` for a settler), and the shared proto tag
   table holds 64 tags instead of 32 (`linkedResource` was the 33rd and failed).
-
-  ![Batch 3: a Town Center going up](media/minUIStats-batch3-wol.gif)
-
-  *Key on (the TC site selected, three settlers building it in a x1.5 work aura):* `Done in 1:25` counting down a second
-  per game second. [Full video (MP4)](media/minUIStats-batch3-wol.mp4).
-
-  ![Batch 3, key off](media/minUIStats-batch3-wol-control.gif)
-
-  *Key off (the same scene, the aura keys on):* the stock rows only: no time to finish, no cost, ROF or LOS. [Full video (MP4)](media/minUIStats-batch3-wol-control.mp4).
 
   Performance, batch 3 (`perfprobe.py`, 45 s each, the TC site selected while three settlers build it, 100 stack samples a
   second; other test games were running on the PC): key on 876 fps, main thread 84.9 %, update 0.18 ms, render
@@ -9310,7 +9261,6 @@ the code. Saved games were tested only where a section says so.
   with the same K (tested with K = 100: a game saved at 17 / 20 loaded at 17 / 20).
 - **No feature sends network commands of its own,** but for `repairWallGlobal`, which sends the game's
   own repair command: they all act inside the normal simulation, on every machine, in the same order.
-
 
 **After a load, by key:**
 
