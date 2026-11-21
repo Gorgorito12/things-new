@@ -35,9 +35,28 @@ Minimized UI, version 7: answers to JTMaston's points on version 6
    -bigui-falconet-limber.jpg, -bigui-falconet-bombard.jpg
 
 5. "I see the line unit icon is still the original"
-   Yes, we kept your originals after our first redraw was not good enough. New icons for Line (blue coat, shako),
-   Standing (the same soldier, red coat) and Maneuver (a winged bullet, or a winged arrow) are being drawn in a new
-   style and are coming after an internal review; nothing changed in this version.
+   Redrawn in this version, as you asked, in a new style (soft edges and shading like your own icons, a thin dark
+   outline, parts thick enough to survive the panel's small size):
+       Line       (AbstractHeavyInfantry)   the infantryman in a shako with a BLUE coat, white crossbelts, musket
+                                            and bayonet          art\ui\ingame\stat_icon_heavy_infantry.ddt
+       Standing   (AbstractInfantry)        the same soldier with a RED coat
+                                            art\ui\ingame\stat_icon_infantry.ddt and
+                                            art\WoL\ui\ingame\staticons\stat_icon_standing_unit.ddt
+       Maneuver   (AbstractRangedCavalry)   a winged arrow       art\WoL\ui\ingame\staticons\stat_icon_ranged.ddt
+   They replace your files at the same paths, so your attackTypeIcons line and your data do not change. All three
+   are 32x32 BGRA. A second Maneuver icon was drawn, a winged bullet (review\stat_icon_ranged-winged-bullet.ddt);
+   we chose the arrow because it reads better at the panel's size, but you can copy the bullet over
+   stat_icon_ranged.ddt if you prefer it. The new apply_fix.py installs the whole pack (layout, rows, icons) and keeps
+   your files for --restore. The sheet icons-v7-review.png shows the old and new icons side by side, enlarged
+   and at real size.
+   Note: for Standing the panels draw ui\ingame\stat_icon_infantry.ddt (the game's own icon for AbstractInfantry,
+   which your copy has as the same purple soldier), not the staticons file your attackTypeIcons line names, so the
+   red soldier goes in both files.
+   Checked in game (1920x1080, our UHC.dll, the pack installed with apply_fix.py and removed with --restore): the
+   Escopetero's rows and tooltips show the arrow (1.5x Maneuver Unit) and the blue soldier (1.25x Line Unit), the
+   Falconet's Bombard row the red soldier (3x Standing Unit), in the minimized and the big UI; the rows end where they
+   ended with your icons (no layout change).
+   final\minUIStats-v7-icons-min-*.jpg, final\minUIStats-v7-icons-big-*.jpg
 
 6. "How is showGatherRate doing with all the changes we've done so far to the UI?"
    It works with the minimized UI, with one bug found and fixed in this round: a villager chopping wood showed no
@@ -65,4 +84,4 @@ Minimized UI, version 7: answers to JTMaston's points on version 6
    our UHC.dll (or the same change in yours).
    final\minUIStats-v7-woluhcdll-*.jpg
 
-Everything else is as in version 6. The pack files changed: minuirows.xml (rofTip, comments) and README.txt.
+Everything else is as in version 6. The pack files changed: minuirows.xml (rofTip, comments), README.txt, the three icons in art\, and apply_fix.py (new: install and --restore).

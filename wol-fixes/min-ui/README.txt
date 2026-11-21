@@ -117,10 +117,27 @@ minuirows.xml
     every item and option. No new DLL is needed to change any of it.
 
 art\ui\ingame\*.ddt
-    The six drawn icons (stopwatch, hourglass, shield, eye, winged boot, cylinder). The unit type icons of the
-    multipliers stay WoL's own. They go in
+    The six drawn icons (stopwatch, hourglass, shield, eye, winged boot, cylinder). They go in
     art\ui\ingame\ of the mod (version 4: stat_icon_hitpoints.ddt and stat_icon_pop.ddt are no longer used;
     delete them if version 3 put them there).
+
+art\ui\ingame\stat_icon_heavy_infantry.ddt, stat_icon_infantry.ddt, art\WoL\ui\ingame\staticons\
+stat_icon_standing_unit.ddt and stat_icon_ranged.ddt (version 7)
+    Three unit type icons of the multipliers, redrawn at WoL's request, at the paths the panels draw (they replace
+    WoL's files; no data changes): Line (AbstractHeavyInfantry), an infantryman in a shako with a blue coat;
+    Standing (AbstractInfantry), the same soldier with a red coat (in stat_icon_infantry.ddt, which the panels draw
+    for AbstractInfantry, and in the staticons file WoL's attackTypeIcons line names); Maneuver
+    (AbstractRangedCavalry), a winged arrow. 32x32 uncompressed BGRA, one level, soft edges and shading as WoL's
+    own icons, a thin dark outline; drawn by aoe3-blender-tools' make_type_icon.py (no pixel from another game).
+    The other unit type icons stay WoL's own.
+
+review\stat_icon_ranged-winged-bullet.ddt
+    The other Maneuver icon drawn in version 7, a winged bullet, not chosen (the arrow reads better at the
+    panel's size). To use it, copy it over art\WoL\ui\ingame\staticons\stat_icon_ranged.ddt.
+    icons-v7-review.png: the old and new icons side by side, x8 and at real size.
+
+apply_fix.py
+    Installs the pack in a WoL folder and keeps the files it replaces (see Install).
 
 note-for-drmaxy.txt
     What was decided and why (for information).
@@ -131,9 +148,14 @@ optional\uiunitstatpanel3.xml
 
 Install
 -------
+    python apply_fix.py <WoL folder>              steps 1 to 4 below; the files it replaces go to
+                                                  <WoL folder>\min-ui-backup\ first
+    python apply_fix.py <WoL folder> --restore    puts them back and deletes the files it added
+    python apply_fix.py <WoL folder> --check      says what is applied
+By hand:
 1. Copy proposed-uiunitselectionmin.xml to data\uiunitselectionmin.xml (keep a copy of yours).
 2. Copy minuirows.xml to data\uhc\minuirows.xml.
-3. Copy art\ui\ingame\*.ddt to art\ui\ingame\.
+3. Copy the art folder's files to the same paths under art\ (keep a copy of your three unit type icons).
 4. Add the line   minUIStats   to Startup\wol.cfg.
 5. Keep optionminimizedui on (WoL's profile has it on).
 

@@ -7826,7 +7826,7 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       `1.5X Bonus Damage against <icon> Maneuver Unit`; strings 42226, 42229, 42230, 42223). `tipParentheses="keep"` on
       `<bigPanelRows>` keeps them. The string tables are not changed.
     - The unit type icons of the multipliers stay WoL's own: a redrawn set (`make_stat_icon.py --types` in
-      aoe3-blender-tools) was tried and not kept. WoL's `staticons\stat_icon_hand_cavalry.ddt` is an empty 24-byte file,
+      aoe3-blender-tools) was tried and not kept (version 7 redraws three of them in another style). WoL's `staticons\stat_icon_hand_cavalry.ddt` is an empty 24-byte file,
       so a multiplier against Hand Cavalry shows no icon.
   - **Version 7 (2026-11-21), after JTMaston's review of version 6:**
     - Seconds stuck to the number: the ROF line of the attack rows' tooltip is `Rate of fire: 3.50s <stopwatch>`
@@ -7856,6 +7856,17 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       [`showGatherRate`](#showgatherrate) fix below); with `resourceGatherAuras` and `resourceDebt` on too, 40
       applied, 0 failed, the same rows. The shipped file's commented `Gathers: {gatherRate}` row was tried in a gadget
       at `uhcRow2`'s place: `Gathers: Wood 0.50/s`, the same value as the stock rate row.
+    - Three unit type icons redrawn at the team's request, approved in review: Line (`AbstractHeavyInfantry`, an
+      infantryman in a shako with a blue coat), Standing (`AbstractInfantry`, the same in a red coat) and Maneuver
+      (`AbstractRangedCavalry`, a winged arrow; a winged bullet was the alternative, kept in the pack's `review`
+      folder). They replace WoL's files at the paths the panels draw (`ui\ingame\stat_icon_heavy_infantry`,
+      `WoL\ui\ingame\staticons\stat_icon_ranged`; for Standing `ui\ingame\stat_icon_infantry`, the stock icon of
+      `AbstractInfantry`, which wins over the `WoL\...\stat_icon_standing_unit` of `attackTypeIcons`, so both get it),
+      32x32 BGRA, soft edges and shading like WoL's own, drawn by aoe3-blender-tools' `make_type_icon.py`. The pack
+      now has an `apply_fix.py` (install, `--restore`, `--check`). Checked in WoL (1920 x 1080, installed and removed
+      with it, files byte for byte back): the Escopetero's rows and tooltips show the arrow and the blue soldier, the
+      Falconet's Bombard row the red soldier, in both interfaces, rows as long as with WoL's icons
+      (`wol-fixes/min-ui/final/minUIStats-v7-icons-*`).
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.
