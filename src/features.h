@@ -93,6 +93,7 @@ Outcome ApplyNoCorpseDopples(const Config& config);
 Outcome ApplyDanceBonusCivs(const Config& config);
 Outcome ApplyStartingTc(const Config& config);
 Outcome ApplyCivFirstTc(const Config& config);
+Outcome ApplyScenarioCivs(const Config& config);
 Outcome ApplyTransformInventory(const Config& config);
 Outcome ApplyTransformSpan(const Config& config);
 Outcome ApplyNoTrainNearEnemyTc(const Config& config);
@@ -284,6 +285,9 @@ inline constexpr Feature kFeatures[] = {
     {"startingTC", ApplyStartingTc},
     // After startingTC: both use the FirstTC proto hook at 0x506B3B, which the first one writes.
     {"civFirstTC", ApplyCivFirstTc},
+    // No order constraint: the only key that writes 0x52B485. Its second walk of the civs.xml loader runs the civ tag
+    // handlers of civtags.h too, whichever key installed them.
+    {"scenarioCivs", ApplyScenarioCivs},
     {"transformInventory", ApplyTransformInventory},
     {"transformSpan", ApplyTransformSpan},
     // After liveBuildingWorkRate, which verifies the stock bytes of the site this one hooks.
@@ -351,7 +355,7 @@ inline constexpr const char* kHandledKeys[] = {
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
-    "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
+    "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc", "scenariocivs",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory",

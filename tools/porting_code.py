@@ -72,6 +72,7 @@ PAGES = {
         "danceBonusCivs": ["src/features/dance.cpp", "src/hooks/dance_hooks.asm"],
         "startingTC": ["src/features/startingtc.cpp", "src/hooks/startingtc_hooks.asm"],
         "civFirstTC": ["src/features/civfirsttc.cpp", "src/hooks/civfirsttc_hooks.asm"],
+        "scenarioCivs": ["src/features/scenariocivs.cpp", "src/hooks/scenariocivs_hooks.asm"],
         "ageUpBuildings": ["src/features/ageupbuildings.cpp", "src/hooks/ageup_hooks.asm"],
         "politicianPlacesFix": ["src/features/politicianplaces.cpp", "src/hooks/politicianplaces_hooks.asm"],
         "politicianEnablesTech": ["src/features/politicianenablestech.cpp"],

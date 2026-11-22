@@ -2807,6 +2807,68 @@ its Market and settlers, then stayed idle), and the engine's AI auto-base FUN_00
 picker `uiPoliticianUI` (0x7E6905, 0x7E803F), the start camera (0x82E45B) and the `Maintain` spawn
 gate (0x492FD6), which all look for `TownCenter` itself.
 
+### scenarioCivs
+
+WoL's request #95 (JTMaston, 2026-11-22). <!-- private -->
+A second civ file, `data\scenariocivs.xml`, read right after `civs.xml`; its civs are appended to the same list and are
+visible in the scenario editor only.
+
+**The stock loader.** FUN_0052A590 (`thiscall`, ECX = the civ database, kept in EDI and at `[esp+1Ch]`):
+- creates civ 0, `Nature`, through the civ append FUN_0052A4DB;
+- builds an XML reader on its stack at `[esp+100h]` and loads the file into it: FUN_00599A7D(reader, `[0D6F510h]` (the
+  directory), `L"civs.xml"` (0xBD1124), 0, 1), `bool thiscall`, `ret 10h`. The load finds the loose file or the archive's,
+  XML or XMB. Its head releases a document the reader already holds (`cmp byte [esi+1864h],0 / call 598E2Bh`);
+- reads the root `[esp+108h]` (the reader's `+8`), checks its name against `Civs` (the compare 0x443C10 ignores case: a
+  root `<civs>` passes), and walks its elements (`[node+8]`, count `[node+0Ch]`, index `[esp+90h]`). Each `<civ>` becomes a civ
+  object appended by FUN_0052A4DB: it grows `[db+24h]` (count `[db+28h]`) by one, so a civ's ID is its position. Other
+  elements (`<subcivalliancecost>` …) set the database's values;
+- when the walk ends, 0x52B485 (`push 0BCEE80h`, reached from 0x52B480 after the last element and from 0x52A68C when the root
+  has none) goes on with the database's other values and the native civ marks (0x52B54F..0x52B581, by name), then destroys
+  the reader (0x52B588) and returns. Nothing after 0x52B485 reads the reader's document.
+
+**The hook** replaces the `push` at 0x52B485 (5 bytes; `hooks/scenariocivs_hooks.asm`). At the end of the walk over
+`civs.xml`, `UhcScenarioCivsNext` (`features/scenariocivs.cpp`):
+1. returns at once when `data\scenariocivs.xml` (or `.xmb`) does not exist;
+2. loads it into the loader's reader with FUN_00599A7D, the arguments of the stock call; a file that does not load is
+   logged and dropped;
+3. checks the document, since the stock walk cannot skip an element: the root is `<civs>`, every element under it is a
+   `<civ>`, and each civ's `<name>` is an identifier that no civ has yet (XS gets `cCiv<name>=<id>` for every civ, format
+   string 0xBF702A, and a second constant of one name stops the AI scripts from compiling);
+4. records the civ count and returns true. The hook then sets EDI to `[esp+1Ch]` and jumps to 0x52A62B, where the stock code
+   reads the root of the document just loaded, checks its name and walks it like the first. The civ tag handlers of the
+   shared hook 0x52BB07 (`civtags.h`) run on these civs too.
+
+When the second walk ends at 0x52B485, the function sees the count past the recorded one: it sets the flags of the new civs and
+returns false, and the hook re-executes the `push` and continues at 0x52B48A. A walk that stopped half-way (a stock error path)
+never comes back to the hook; the next load's first end then finds no new civ and is treated as a first end.
+
+**The flags.** The `<Visible>` handler (0x52D302) and the `<VisibleInEditor>` handler (0x52BE78) set bit 0 and bit 1 of the
+civ's flag bitset `[civ+128h]` (a pointer; bit count `[civ+12Ch]`). The hook clears bit 0 and sets bit 1. Readers found by a
+scan of `.text` for `mov r32,[r32+128h]` followed by a test of the byte (capstone; REA was in use by another agent):
+- bit 0 (Visible): 0x777BAC (in FUN_00777B20, called from many places around 0x8B87DA), 0x77D942 (in FUN_0077D90B, called
+  just before the hero UI test 0x77EBB2), 0x92966F (in FUN_0092944F, which fills a list gadget with the visible civs that also
+  pass FUN_006EF1CA(2));
+- bit 1 (VisibleInEditor): 0x9B2518 (in FUN_009B24C3, which fills a list with the display names of those civs: the editor's
+  Player Data list, seen in game).
+
+**Why it is safe:**
+- The stock walk does all the work: the scenario civs are built, appended and parsed by the code that builds the others, in
+  one call of the loader, before anything after 0x52B485 runs (the native civ marks, then whatever caches civ IDs later).
+- The civs of `civs.xml` keep their positions, so their IDs and every cache by name stay as they were.
+- The reader is the loader's own: FUN_00599A7D frees the first document before it loads the second, and the destructor at
+  0x52B588 frees the second.
+- At 0x52A62B the stock code depends only on the stack frame (the same at 0x52B485) and on EDI = the database, which the hook
+  sets. EAX is the compare result the code writes before it reads it.
+- Nothing runs during the game.
+
+**Observed in game** (2026-11-22, a test copy with a mod's data): two civs added as 169 and 170; the first 169 entries of the
+list identical with the key off; the editor's list showed them, the skirmish's personality list did not; a scenario with players
+on them loaded, fought, was saved as a game and reloaded; an AI skirmish compiled and played; bad files logged and dropped.
+`civs.xml` was read once per launch: with `log`, neither a scenario load nor a skirmish start logged a second read.
+
+**Not covered:** the lobby; multiplayer; beside another DLL that hooks the loader; which screen FUN_00777B20 and FUN_0092944F fill (inferred from the
+bit they test, not seen); a civ of this file in a campaign.
+
 ### transformSpan
 
 The seven calls of the transform 0x9C754C belong to `transformcalls.*`: `veterancyBonus` and `transformSpan` both need them,

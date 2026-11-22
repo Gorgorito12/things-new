@@ -1213,6 +1213,24 @@ SITES = [
     ("CivByName", 0x52D6FF, 0x1C),
     # civFirstTC: a player's civ ID 0x4539D3, [[player+20h]] when [player+24h] > 0, else -1
     ("CivOfPlayer", 0x4539D3, 0x10),
+    # scenarioCivs, verify only: the civs.xml loader FUN_0052A590 loads the file into its stack reader,
+    # mov ecx,[0D6F510h] / push 1 / push 0 / push 0BD1124h (L"civs.xml") / push ecx / lea ecx,[esp+110h] /
+    # call 599A7Dh / test al,al / je 65991Ah, then the root mov ecx,[esp+108h] / test ecx,ecx / mov esi,ecx /
+    # mov [esp+2Ch],esi / je 52C32Bh: 0x52A62B is where the hook runs the walk again on a second document
+    ("ScenarioCivsLoad", 0x52A607, 0x39),
+    # scenarioCivs: the end of the walk over the root's elements, jl 52A692h / mov ebx,2 / push 0BCEE80h
+    # (replaced, 5 bytes at 0x52B485, also the target of the jle at 0x52A68C) / lea ecx,[esp+30h] (continuation)
+    ("ScenarioCivsEnd", 0x52B47A, 0x14),
+    # scenarioCivs, verify only: the civ append FUN_0052A4DB's head, push ebx / push ebp / push edi / mov edi,ecx /
+    # mov ebx,[edi+28h] (the count) / push 0 / lea eax,[ebx+1] / lea ebp,[edi+24h] (the list) / push eax / mov ecx,ebp
+    ("ScenarioCivsAppend", 0x52A4DB, 0x13),
+    # scenarioCivs, verify only: the <Visible> and <VisibleInEditor> handlers of the civ tag loop set bit 0 and
+    # bit 1 of the civ's flag bitset [civ+128h] (push eax / push 0 or 1 / ... / mov eax,[eax+128h] ...)
+    ("CivFlagVisible", 0x52D302, 0x3E),
+    ("CivFlagEditor", 0x52BE78, 0x40),
+    # scenarioCivs, verify only: the XML reader's load FUN_00599A7D, thiscall(reader, directory, file, int, int),
+    # ret 10h; its head releases the document already loaded (cmp byte [esi+1864h],0 / je / call 598E2Bh)
+    ("XmlReaderLoad", 0x599A7D, 0x25),
     # civFirstTC: proto by name 0x5A2346, thiscall(database, const char*), ret 4: a
     # case-insensitive scan of [db+54h] (count [db+58h]) by [proto+10h], -1 if none
     ("ProtoByName", 0x5A2346, 0x20),

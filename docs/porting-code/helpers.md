@@ -1572,6 +1572,24 @@ inline constexpr Site kCivByName{"CivByName", 0x0052D6FF, kCivByNameBytes, sizeo
 inline constexpr std::uint8_t kCivOfPlayerBytes[] = {0x83, 0x79, 0x24, 0x00, 0x0F, 0x8E, 0x22, 0x5B, 0x22, 0x00, 0x8B, 0x41, 0x20, 0x8B, 0x00, 0xC3};
 inline constexpr Site kCivOfPlayer{"CivOfPlayer", 0x004539D3, kCivOfPlayerBytes, sizeof(kCivOfPlayerBytes)};
 
+inline constexpr std::uint8_t kScenarioCivsLoadBytes[] = {0x8B, 0x0D, 0x10, 0xF5, 0xD6, 0x00, 0x6A, 0x01, 0x6A, 0x00, 0x68, 0x24, 0x11, 0xBD, 0x00, 0x51, 0x8D, 0x8C, 0x24, 0x10, 0x01, 0x00, 0x00, 0xE8, 0x5A, 0xF4, 0x06, 0x00, 0x84, 0xC0, 0x0F, 0x84, 0xEF, 0xF2, 0x12, 0x00, 0x8B, 0x8C, 0x24, 0x08, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x8B, 0xF1, 0x89, 0x74, 0x24, 0x2C, 0x0F, 0x84, 0xEB, 0x1C, 0x00, 0x00};
+inline constexpr Site kScenarioCivsLoad{"ScenarioCivsLoad", 0x0052A607, kScenarioCivsLoadBytes, sizeof(kScenarioCivsLoadBytes)};
+
+inline constexpr std::uint8_t kScenarioCivsEndBytes[] = {0x0F, 0x8C, 0x12, 0xF2, 0xFF, 0xFF, 0xBB, 0x02, 0x00, 0x00, 0x00, 0x68, 0x80, 0xEE, 0xBC, 0x00, 0x8D, 0x4C, 0x24, 0x30};
+inline constexpr Site kScenarioCivsEnd{"ScenarioCivsEnd", 0x0052B47A, kScenarioCivsEndBytes, sizeof(kScenarioCivsEndBytes)};
+
+inline constexpr std::uint8_t kScenarioCivsAppendBytes[] = {0x53, 0x55, 0x57, 0x8B, 0xF9, 0x8B, 0x5F, 0x28, 0x6A, 0x00, 0x8D, 0x43, 0x01, 0x8D, 0x6F, 0x24, 0x50, 0x8B, 0xCD};
+inline constexpr Site kScenarioCivsAppend{"ScenarioCivsAppend", 0x0052A4DB, kScenarioCivsAppendBytes, sizeof(kScenarioCivsAppendBytes)};
+
+inline constexpr std::uint8_t kCivFlagVisibleBytes[] = {0x8D, 0x54, 0x24, 0x14, 0x52, 0xC7, 0x44, 0x24, 0x18, 0x01, 0x00, 0x00, 0x00, 0xE8, 0x12, 0xE2, 0x06, 0x00, 0x83, 0x7C, 0x24, 0x14, 0x00, 0x8B, 0x4C, 0x24, 0x10, 0x0F, 0x95, 0xC0, 0x50, 0x6A, 0x00, 0x83, 0xEC, 0x04, 0x8B, 0xC1, 0x8B, 0x4C, 0x24, 0x04, 0x8B, 0x80, 0x28, 0x01, 0x00, 0x00, 0x8B, 0xD1, 0xC1, 0xEA, 0x03, 0x03, 0xC2, 0x83, 0xE1, 0x07, 0xB2, 0x01, 0xD2, 0xE2};
+inline constexpr Site kCivFlagVisible{"CivFlagVisible", 0x0052D302, kCivFlagVisibleBytes, sizeof(kCivFlagVisibleBytes)};
+
+inline constexpr std::uint8_t kCivFlagEditorBytes[] = {0x8D, 0x4C, 0x24, 0x14, 0x51, 0x8B, 0xCE, 0xC7, 0x44, 0x24, 0x18, 0x01, 0x00, 0x00, 0x00, 0xE8, 0x9A, 0xF6, 0x06, 0x00, 0x83, 0x7C, 0x24, 0x14, 0x00, 0x8B, 0x4C, 0x24, 0x10, 0x0F, 0x95, 0xC2, 0x52, 0x6A, 0x01, 0x83, 0xEC, 0x04, 0x8B, 0xC1, 0x8B, 0x4C, 0x24, 0x04, 0x8B, 0x80, 0x28, 0x01, 0x00, 0x00, 0x8B, 0xD1, 0xC1, 0xEA, 0x03, 0x03, 0xC2, 0x83, 0xE1, 0x07, 0xB2, 0x01, 0xD2, 0xE2};
+inline constexpr Site kCivFlagEditor{"CivFlagEditor", 0x0052BE78, kCivFlagEditorBytes, sizeof(kCivFlagEditorBytes)};
+
+inline constexpr std::uint8_t kXmlReaderLoadBytes[] = {0x83, 0xEC, 0x2C, 0x53, 0x55, 0x56, 0x8B, 0xF1, 0x57, 0x8D, 0x4C, 0x24, 0x10, 0x8B, 0xC1, 0xC7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xBE, 0x64, 0x18, 0x00, 0x00, 0x00, 0x74, 0x07, 0x8B, 0xCE, 0xE8, 0x89, 0xF3, 0xFF, 0xFF};
+inline constexpr Site kXmlReaderLoad{"XmlReaderLoad", 0x00599A7D, kXmlReaderLoadBytes, sizeof(kXmlReaderLoadBytes)};
+
 inline constexpr std::uint8_t kProtoByNameBytes[] = {0x53, 0x8B, 0x5C, 0x24, 0x08, 0x85, 0xDB, 0x57, 0x8B, 0xF9, 0x0F, 0x84, 0xD0, 0x6E, 0x0B, 0x00, 0x56, 0x33, 0xF6, 0x39, 0x77, 0x58, 0x7E, 0x2A, 0x8D, 0x24, 0x24, 0x8B, 0x47, 0x54, 0x8B, 0x04};
 inline constexpr Site kProtoByName{"ProtoByName", 0x005A2346, kProtoByNameBytes, sizeof(kProtoByNameBytes)};
 
@@ -3166,6 +3184,7 @@ Outcome ApplyNoCorpseDopples(const Config& config);
 Outcome ApplyDanceBonusCivs(const Config& config);
 Outcome ApplyStartingTc(const Config& config);
 Outcome ApplyCivFirstTc(const Config& config);
+Outcome ApplyScenarioCivs(const Config& config);
 Outcome ApplyTransformInventory(const Config& config);
 Outcome ApplyTransformSpan(const Config& config);
 Outcome ApplyNoTrainNearEnemyTc(const Config& config);
@@ -3357,6 +3376,9 @@ inline constexpr Feature kFeatures[] = {
     {"startingTC", ApplyStartingTc},
     // After startingTC: both use the FirstTC proto hook at 0x506B3B, which the first one writes.
     {"civFirstTC", ApplyCivFirstTc},
+    // No order constraint: the only key that writes 0x52B485. Its second walk of the civs.xml loader runs the civ tag
+    // handlers of civtags.h too, whichever key installed them.
+    {"scenarioCivs", ApplyScenarioCivs},
     {"transformInventory", ApplyTransformInventory},
     {"transformSpan", ApplyTransformSpan},
     // After liveBuildingWorkRate, which verifies the stock bytes of the site this one hooks.
@@ -3424,7 +3446,7 @@ inline constexpr const char* kHandledKeys[] = {
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
-    "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
+    "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc", "scenariocivs",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory",

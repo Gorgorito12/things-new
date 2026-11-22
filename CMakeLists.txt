@@ -71,6 +71,7 @@ set(UHC_SOURCES
   src/features/directional.cpp
   src/features/snarevalues.cpp
   src/features/civfirsttc.cpp
+  src/features/scenariocivs.cpp
   src/features/datalint.cpp
   src/features/displayrange.cpp
   src/features/linkedresource.cpp
@@ -182,6 +183,7 @@ set(UHC_SOURCES
   src/hooks/menuoptions_hooks.asm
   src/hooks/bwraura_hooks.asm
   src/hooks/civfirsttc_hooks.asm
+  src/hooks/scenariocivs_hooks.asm
   src/hooks/civ_hooks.asm
   src/hooks/ageup_hooks.asm
   src/hooks/politicianplaces_hooks.asm
