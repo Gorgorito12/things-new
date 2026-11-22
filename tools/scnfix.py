@@ -6,7 +6,8 @@ Usage:
 proto:OLD=NEW renames an entry of the saved proto table instead, so the units placed as a proto
 the data no longer has load as NEW (same length rule).
 --data=<game folder> player:NAME=CIV sets the civ of the player(s) named NAME to CIV of that
-folder's civs.xml (a player's civ is stored as a number and is not re-mapped at load).
+folder's civs.xml, or of its scenariocivs.xml (scenarioCivs), numbered after civs.xml (a player's
+civ is stored as a number and is not re-mapped at load).
 unit:ID=PROTO gives the placed unit with that ID another proto of the scenario's saved proto
 table. ID is the in-game ID (the EN record's, the one Trigger3\\trigtemp.xs uses); the triggers
 stored in the scenario name the unit by its editor ID (its UN record's name), which
@@ -79,12 +80,17 @@ def rename_proto(raw, old, new):
 
 def set_player_civ(raw, player, civ, root):
     """Sets the civ of every player record named PLAYER to CIV, by its ID now: 0 is Mother Nature,
-    then the <civ> entries of <root>\\data\\civs.xml from 1 in file order. The game stores the ID
+    then the <civ> entries of <root>\\data\\civs.xml from 1 in file order, then those of
+    data\\scenariocivs.xml when it exists (the key scenarioCivs appends them). The game stores the ID
     as a number 17 bytes after the record's name and does not re-map it at load."""
-    text = re.sub(r"<!--.*?-->", "", (Path(root) / "data" / "civs.xml").read_text(encoding="utf-8", errors="replace"),
-                  flags=re.S)
-    names = [re.search(r"<name>([^<]+)</name>", b).group(1).strip()
-             for b in re.findall(r"<civ>(.*?)</civ>", text, flags=re.S | re.I)]
+    names = []
+    for file in ("civs.xml", "scenariocivs.xml"):
+        path = Path(root) / "data" / file
+        if file != "civs.xml" and not path.exists():
+            continue
+        text = re.sub(r"<!--.*?-->", "", path.read_text(encoding="utf-8", errors="replace"), flags=re.S)
+        names += [re.search(r"<name>([^<]+)</name>", b).group(1).strip()
+                  for b in re.findall(r"<civ>(.*?)</civ>", text, flags=re.S | re.I)]
     if civ not in names:
         sys.exit(f"scnfix: {civ} is not a civ of {root}\\data\\civs.xml")
     civ_id = names.index(civ) + 1

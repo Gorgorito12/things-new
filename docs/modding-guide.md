@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Sunday 2026-11-22 11:56 | [`scenarioCivs`](#scenariocivs) | Added. Reads a second civ file, `data\scenariocivs.xml`, after `civs.xml`: its civs come after the others (no ID moves), show in the scenario editor's list and not in the skirmish and lobby lists. | The file, with `<civ>` elements in `civs.xml`'s format. |
 | Saturday 2026-11-21 16:01 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Saturday 2026-11-21 15:50 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Saturday 2026-11-21 15:50 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
@@ -1432,6 +1433,7 @@ What the exe decides by civ.
 | [`startingTC`](#startingtc) | Lets buildings of a marked type be a player's first town center, the unit the placement rules call `FirstTC` (no enemy building within 65 m), not only a `TownCenter`; one also replaces a first town center that is gone, dead or about to expire. | **new** | That unit type on the starting buildings in `protoy` (e.g. `MaoriPa`), or an existing type or proto name in the cfg. | confirmed (single player) |
 | [`civFirstTC`](#civfirsttc) | A civ's `<firstTC>Proto</firstTC>` in `civs.xml` replaces the `TownCenter` that random maps place for its players (not in a Nomad start); that building is their first town center (`FirstTC`) and receives their town starting units. | **new** | The tag in `civs.xml`; for the town starting units, `<Flag>StartingColonyBuilding</Flag>` on the proto and the proto in `placementrules\colonies.xml` `<starttypes>`; for shipments, `hcShipmentPointFallback FirstTC`. | confirmed (single player; Nomad start not tested) |
 | [`firstTC`](#firsttc) | One line for `civFirstTC` and `startingTC`, with the town units and shipments worked out from the civ's tag. | **new** | `<firstTC>` in `civs.xml`, and the proto in `placementrules\colonies.xml` `<starttypes>`. | confirmed (single player) |
+| [`scenarioCivs`](#scenariocivs) | Reads a second civ file, `data\scenariocivs.xml`, after `civs.xml`: its civs come after the others (no ID moves), show in the scenario editor's list and not in the skirmish and lobby lists. | **new** | The file, with `<civ>` elements in `civs.xml`'s format. | confirmed (single player) |
 | [`customRevolutionBanners`](#customrevolutionbanners) | Shows a banner for each of WoL's 29 `XPRevolution<Name>` techs, not only O'Higgins. | **in `wol.cfg`** | A banner texture per revolution. | partly confirmed |
 | [`removeFameRestriction`](#removefamerestriction) | Shows Fame, XP and shipment costs on politician screens, and Fame/XP icons on home city cards. | **in `wol.cfg`** | Two icon textures. | not tested in game |
 
@@ -2096,6 +2098,74 @@ crates come to the Market, and a card's workers arrive there. [Full video (MP4)]
 - **Tested in WoL (2026-11-06, Dutch):** town units, 400 food, 200 wood, 200 gold, and 2 -> 5 workers from a card; `civFirstTC` alone, none
   of it. An AI skirmish of 80 s had no XS error. A card needs population: the Market gives none, so the test has a House. Not tested:
   a loaded game, beside WoL's DLL, multiplayer.
+
+#### scenarioCivs
+
+*A second civ file for the civs of scenarios and campaigns: they show in the scenario editor, not in the skirmish lists.*
+
+**Added:** Sunday 2026-11-22 11:56
+
+```
+scenarioCivs [log]
+```
+
+Asked by JTMaston (WoL #95, 2026-11-22). Put the civs meant for scenarios and campaigns in `data\scenariocivs.xml`, in the format
+of `civs.xml`:
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<civs>
+    <civ>
+        <name>HistFarrapos</name>
+        <main>1</main>
+        <displaynameid>444433</displaynameid>
+        ...
+    </civ>
+</civs>
+```
+
+- **Where they go:** right after the civs of `civs.xml`, in the file's order. The game reads `civs.xml` first, then this file, and
+  appends its civs to the same list, so every civ of `civs.xml` keeps its ID. A civ's ID is its place in the list: the first
+  scenario civ is one past the last civ of `civs.xml` (169 in WoL 1.2.0e, which has 168 civs after Mother Nature).
+- **Who sees them:** each civ of this file gets `<visible>0</visible>` and `<visibleineditor>1</visibleineditor>`, whatever the file
+  says: it is in the scenario editor's player civ list (Scenario, Player Data), and never in the lists that skirmishes and the
+  lobby build from visible civs. WoL's skirmish picks an AI by personality, so a civ without a personality is not there anyway.
+- **What reads them:** the same code as a `civs.xml` civ, tag by tag, the tags of [`civFirstTC`](#civfirsttc) and
+  [`sharedBuildLimit`](#sharedbuildlimit) included. XS gets a constant `cCiv<name>` for each.
+- **What stops the whole file** (the reason is in the log, and the game goes on with `civs.xml` alone): a root other than `<civs>`;
+  any element under it that is not a `<civ>` (`civs.xml`'s `<subcivalliancecost>` and the like would be read again and replace its
+  values); a civ `<name>` that another civ already has (two `cCiv` constants of one name stop the AI scripts from compiling) or
+  that is not made of letters, digits and `_`; XML that is not well formed. No file: nothing happens.
+- **Scenarios store civs as numbers.** A scenario that uses a scenario civ needs the key and the same files. Without the key its
+  players get IDs past the end of the list: the scenario still loads, and the game knows no civ for them. When `civs.xml` gets a
+  new civ, every scenario civ moves up by one, as a civ appended to `civs.xml` would. `tools/scnfix.py player:NAME=CIV` counts the
+  civs of this file after those of `civs.xml`.
+
+![scenarioCivs in WoL: the editor's list](media/scenarioCivs-wol-editor.jpg)
+
+*In WoL, with `scenarioCivs log` and a test `scenariocivs.xml` (copies of the British and the Japanese named `ScnRegencyBritish` and
+`ScnBakumatsuJapan`, shown as "Redcoats" and "The Shogunate", own home city files, `<visible>1` in the file on purpose):* the end of
+the editor's civ list, Scenario, Player Data. The log: `civ 169 ScnRegencyBritish`, `civ 170 ScnBakumatsuJapan`, `2 civ(s) added`.
+
+![scenarioCivs in WoL: two players on scenario civs](media/scenarioCivs-wol-editor-set.jpg)
+
+*The same, player 1 on "The Shogunate" and player 2 on "Redcoats".*
+
+![scenarioCivs in WoL, key off](media/scenarioCivs-wol-editor-control.jpg)
+
+*Key off, the same files:* the list ends with the last editor civ of `civs.xml` ("Japanese", `SPCJapanese`).
+
+![scenarioCivs in WoL: the skirmish's AI list](media/scenarioCivs-wol-skirmish.jpg)
+
+*Key on, the skirmish setup:* player 2's list, WoL's computer personalities, ends with "Random Personality"; no scenario civ.
+
+- **Tested in WoL (2026-11-22, single player, `C:\AoE3-UHC-WoLReal5`):** the list dumped from memory, key off and on: the first
+  169 entries identical, the two new ones at 169 and 170 with Visible 0 and VisibleInEditor 1. A scenario with players 1 and 2 on the
+  two civs loaded, its armies fought, it was saved as a game and the save loaded with the same civs. An AI skirmish with the key and
+  the file: the AI built and trained, no XS error. A duplicate name (`British`), a `<subcivalliancecostfactor>` element, a broken
+  file and no file: each logged, 169 civs, no error dialog. `civs.xml` is read once per launch: neither a scenario load nor a
+  skirmish start read it again. Not tested: the lobby, multiplayer, beside WoL's DLL, a civ of this file in a campaign.
+- **Performance:** one more small file read at startup; no hook in the game itself.
 
 #### customRevolutionBanners
 

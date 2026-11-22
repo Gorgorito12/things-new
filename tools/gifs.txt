@@ -299,7 +299,7 @@ researchOnTheMove-wol 0 20 2 800:80:0:0+800:480:700:200+800:80:1120:850
 researchOnTheMove-wol-control 0 20 2 800:80:0:0+800:480:700:200+800:80:1120:850
 truckAttackResourceFix-wol 0 24 2
 truckAttackResourceFix-wol-control 0 24 2
-paraguayanWorks-smoke-wol 4 84 7
+paraguayanWorks-smoke-wol 4 120 10
 paraguayanWorks-smoke-wol-steady 4 84 7
 paraguayanWorks-smoke-wol-control 4 36 3
 paraguayanWorks-damage-wol 32 24 2

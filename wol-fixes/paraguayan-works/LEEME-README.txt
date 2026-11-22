@@ -59,16 +59,20 @@ How to undo
   Unzip WoL-paraguayan-works-originals.zip into the WoL folder the same way, then delete the two
   new files art\WoL\buildings\works\works_smoke.particle and works_smoke.particle.xmb.
 
-Smoke on and off (2026-11-21)
+Smoke on and off (2026-11-21, pauses longer on 2026-11-22)
   JTMaston asked: "Paraguayan bases often become giant industrial silos. Is it possible to make
   the works' flues alternate at random intervals between puffing and not puffing smoke?" Yes, in
-  works_smoke.particle alone (the anim files are unchanged). It now has, the rest as before:
+  works_smoke.particle alone (the anim files are unchanged). Then (2026-11-22): "can the off time
+  be made to be one and a half times longer than the on time?" Yes: the mean pause is now 21 s
+  against a mean puff of 14 s, 1.5 times as long. The file now has, the rest as before:
     initialdormancy 8.0,  initialdormancyvar 1.0     first wait  0 to 16 s
-    emissiontime    14.0, emissiontimevar    0.43    each puff   8 to 20 s
-    dormanttime     18.5, dormanttimevar     0.35    each pause 12 to 25 s
-  Kept: loop 1, alwaysactive 1, initialupdate 20 and the smoke's look. The smoke lives 8 to 12 s
-  (particlelife 10, var 0.2), so a pause is never shorter than the longest-lived puff: the old
-  column has risen and faded before that chimney puffs again.
+    emissiontime    14.0, emissiontimevar    0.43    each puff   8 to 20 s (mean 14 s)
+    dormanttime     21.0, dormanttimevar     0.35    each pause 14 to 28 s (mean 21 s)
+  (2026-11-21 to 2026-11-22: dormanttime 18.5, pauses 12 to 25 s, mean 18.5 s: 1.32 times the
+  puff.) The var stays 0.35, so the shortest pause, 21 x 0.65 = 13.7 s, is still longer than
+  the smoke lives. Kept: loop 1, alwaysactive 1, initialupdate 20 and the smoke's look. The
+  smoke lives 8 to 12 s (particlelife 10, var 0.2), so a pause is never shorter than the
+  longest-lived puff: the old column has risen and faded before that chimney puffs again.
   How the game reads these values (checked in the game's code):
   - A "var" is a share of the value: 14 with var 0.43 is 14 x (1 - 0.43) to 14 x (1 + 0.43), any
     value in between.
@@ -78,11 +82,23 @@ Smoke on and off (2026-11-21)
     it never stops.
   - initialupdate 20 runs a new building's smoke 20 s ahead, cycle included: when a works appears,
     its chimneys are already at random points of their cycles.
-  Tested in WoL (single player, 2026-11-21): six works in a row (Food, Wood, Gold, twice) and an
-  arsenal, one row per age, about 4 minutes of game time per age, filmed at 2 frames a second and
-  measured from the pictures. For the measurement only, the smoke was drawn small, opaque and
-  without wind (blue in ages 2 and 3), so that each chimney could be told apart; the timing values
-  were the ones above. Results:
+  Tested in WoL with the 1.5 times pauses (single player, 2026-11-22): a row of four works (Gold
+  age 2, Food age 1, Wood age 3, Food age 1), 428 s of game time filmed at 2 frames a second and
+  measured from the pictures, the smoke drawn small, opaque, magenta and without wind for the
+  measure only (the timing values as above). The two or three pipes of a works stand 14 pixels
+  apart there, so most columns overlap at their foot; the third pipe of the age 3 works stands
+  apart, and it gives the clean measure:
+  - That chimney puffed 13 times, 8 to 23 s (mean 13.9 s), and paused 12 times, 13 to 26 s (mean
+    20.1 s): the pauses were 1.45 times as long as the puffs (1.5 expected; the measure adds or
+    takes up to a second at each end, as a frame is 0.65 s of game time and the smoke takes a
+    moment to leave the spot measured). It smoked 42 % of the time (40 % expected).
+  - Per works (both pipes together): each works went fully quiet 5 to 10 times, 5 to 16 s each
+    time, in the same 428 s.
+  Tested in WoL with the first pauses (single player, 2026-11-21): six works in a row (Food, Wood,
+  Gold, twice) and an arsenal, one row per age, about 4 minutes of game time per age, filmed at 2
+  frames a second and measured from the pictures. For the measurement only, the smoke was drawn
+  small, opaque and without wind (blue in ages 2 and 3), so that each chimney could be told apart;
+  the timing values were those of 2026-11-21 (pauses 12 to 25 s). Results:
   - Age 1, two chimneys per works, ten chimneys measured one by one: every chimney stopped and
     started again 5 to 8 times. The clearest ones puffed 9 to 22 s and paused 10 to 23 s (the
     measure adds or takes 1 to 2 s at each end). No two chimneys were in step, the two of one works
@@ -98,11 +114,11 @@ Smoke on and off (2026-11-21)
   - One emitter per chimney: the anim files hang the smoke on each bone twice (on the model and on
     its Idle anim), but the pauses above would be filled in by a second emitter, and the share of
     time a works smokes matches one emitter per bone.
-  Question for the team: are these times right, or should the smoke be lighter or heavier? Each
-  chimney now smokes about 43 % of the time (14 s in every 32.5 s on average); a works with two
-  chimneys has at least one smoking about two thirds of the time, an age 3 works about four
-  fifths. Longer pauses (dormanttime) or shorter puffs (emissiontime) make it lighter; the other
-  way round, heavier.
+  With the 1.5 times pauses each chimney smokes 40 % of the time (14 s in every 35 s on average,
+  43 % before); a works with two chimneys has at least one smoking about 64 % of the time (67 %
+  before), an age 3 works about 78 % (81 % before). Longer pauses (dormanttime) or shorter puffs
+  (emissiontime) make it lighter; the other way round, heavier. To keep every pause longer than
+  the smoke's life, keep dormanttime x (1 - dormanttimevar) at 12 s or more.
 
 Low model detail (checked in game, 2026-11-20)
   The works have no <lowpoly> branch; the arsenal has one (its own simpler lp_ models). This needs
@@ -194,13 +210,18 @@ Cómo deshacerlo
   Descomprimir WoL-paraguayan-works-originals.zip en la carpeta de WoL de la misma forma, y borrar
   los dos archivos nuevos art\WoL\buildings\works\works_smoke.particle y works_smoke.particle.xmb.
 
-Humo intermitente (2026-11-21)
+Humo intermitente (2026-11-21, pausas más largas el 2026-11-22)
   JTMaston preguntó si las chimeneas de las fábricas podían alternar a intervalos al azar entre
   echar humo y no echarlo, porque las bases paraguayas parecen grandes silos industriales. Sí, solo
-  en works_smoke.particle (los archivos de animación no cambian). Ahora tiene, lo demás igual:
+  en works_smoke.particle (los archivos de animación no cambian). Luego (2026-11-22) pidió que el
+  tiempo sin humo fuera 1,5 veces el tiempo con humo: la pausa media es ahora 21 s frente a una
+  bocanada media de 14 s. Ahora tiene, lo demás igual:
     initialdormancy 8.0,  initialdormancyvar 1.0     primera espera 0 a 16 s
-    emissiontime    14.0, emissiontimevar    0.43    cada bocanada   8 a 20 s
-    dormanttime     18.5, dormanttimevar     0.35    cada pausa     12 a 25 s
+    emissiontime    14.0, emissiontimevar    0.43    cada bocanada   8 a 20 s (media 14 s)
+    dormanttime     21.0, dormanttimevar     0.35    cada pausa     14 a 28 s (media 21 s)
+  (Del 2026-11-21 al 2026-11-22: dormanttime 18.5, pausas de 12 a 25 s, 1,32 veces la bocanada.)
+  El var sigue en 0.35, así que la pausa más corta, 21 x 0,65 = 13,7 s, sigue siendo más larga que
+  la vida del humo.
   Se conservan loop 1, alwaysactive 1, initialupdate 20 y el aspecto del humo. El humo vive de 8 a
   12 s, así que una pausa nunca es más corta que la bocanada que más dura: la columna anterior ya
   subió y se desvaneció antes de que esa chimenea vuelva a echar humo.
@@ -210,8 +231,17 @@ Humo intermitente (2026-11-21)
   pausa, así que dos chimeneas nunca comparten ciclo y ninguna repite el suyo. initialupdate 20
   adelanta 20 s el humo de un edificio nuevo, ciclo incluido: al aparecer, sus chimeneas ya están en
   puntos al azar de sus ciclos.
-  Probado en WoL (un jugador, 2026-11-21): seis fábricas en fila (Food, Wood, Gold, dos veces) y un
-  arsenal, una fila por edad, unos 4 minutos de juego por edad, medido sobre las imágenes:
+  Probado en WoL con las pausas de 1,5 veces (un jugador, 2026-11-22): cuatro fábricas en fila (Gold
+  edad 2, Food edad 1, Wood edad 3, Food edad 1), 428 s de juego filmados a 2 imágenes por segundo,
+  el humo pequeño, opaco, magenta y sin viento solo para medir. Las chimeneas de una fábrica están
+  a 14 píxeles y sus columnas se tapan al pie; la tercera chimenea de la fábrica de edad 3 queda
+  aparte y da la medida limpia: 13 bocanadas de 8 a 23 s (media 13,9 s) y 12 pausas de 13 a 26 s
+  (media 20,1 s), 1,45 veces (1,5 esperado; la medida suma o resta hasta un segundo en cada borde).
+  Echó humo el 42 % del tiempo (40 % esperado). Cada fábrica quedó del todo sin humo de 5 a 10
+  veces, de 5 a 16 s cada vez.
+  Probado en WoL con las primeras pausas (un jugador, 2026-11-21): seis fábricas en fila (Food,
+  Wood, Gold, dos veces) y un arsenal, una fila por edad, unos 4 minutos de juego por edad, medido
+  sobre las imágenes:
   - Edad 1 (dos chimeneas, diez medidas una a una): cada chimenea paró y volvió a echar humo de 5 a
     8 veces; las más claras, bocanadas de 9 a 22 s y pausas de 10 a 23 s. Ninguna iba al paso de
     otra, tampoco las dos de una fábrica ni dos fábricas del mismo tipo. Siempre había al menos una
@@ -220,9 +250,11 @@ Humo intermitente (2026-11-21)
     vez. La fila nunca estuvo sin humo más de 4 s.
   - Edad 3 (tres chimeneas): al menos una echa humo cerca del 80 % del tiempo, pero cada fábrica
     quedó sin humo de 4 a 7 veces, de 3 a 20 s. La fila nunca estuvo sin humo más de 1 s.
-  Pregunta para el equipo: ¿están bien estos tiempos, o el humo debería ser más ligero o más denso?
-  Cada chimenea echa humo cerca del 43 % del tiempo. Pausas más largas (dormanttime) o bocanadas
-  más cortas (emissiontime) lo hacen más ligero; al revés, más denso.
+  Con las pausas de 1,5 veces cada chimenea echa humo el 40 % del tiempo (43 % antes); una fábrica
+  de dos chimeneas tiene al menos una echando humo cerca del 64 % del tiempo (67 % antes), una de
+  edad 3 cerca del 78 % (81 % antes). Pausas más largas (dormanttime) o bocanadas más cortas
+  (emissiontime) lo hacen más ligero; al revés, más denso. Para que toda pausa dure más que el humo,
+  mantenga dormanttime x (1 - dormanttimevar) en 12 s o más.
 
 Detalle de modelos bajo (comprobado en el juego, 2026-11-20)
   Las fábricas no tienen rama <lowpoly>; el arsenal sí (sus propios modelos lp_, más simples). No
@@ -262,16 +294,19 @@ MEDIA (in the "media" folder beside this README, not inside the zips)
   WoL in game, a scenario with no AI; player 1's works, player 2's Falconets (placed in range, then
   ordered to fire). Each fixed run has a control: the same scene with WoL's own files.
 
-  paraguayanWorks-smoke-wol.gif / .mp4           NOW (2026-11-21), smoke on and off: two works per
-      age (front Food age 1, middle Gold age 2, back Wood age 3, with a European arsenal between
-      the two Wood works), 90 s of video, the GIF 7 times faster. Each chimney puffs and stops on
-      its own; the two works of each age are never in step.
-  paraguayanWorks-smoke-wol-steady.gif / .mp4    the same scene with the previous works_smoke
-      (2026-11-20, always on): every chimney smokes all the time.
-      In both of these films the two age 1 Food works at the front gave no smoke for their first
-      one to two minutes of game time, with either file; later they smoke like the others (in
-      the measured rows above, age 1 works smoked from the start). Not caused by this change.
-  smoke-cycle.jpg, smoke-steady.jpg              four moments of each (video 10, 30, 50, 70 s).
+  paraguayanWorks-smoke-wol.gif / .mp4           NOW (2026-11-22), smoke on and off with pauses
+      1.5 times as long as the puffs: two works per age (front Food age 1, middle Gold age 2,
+      back Wood age 3, with a European arsenal beside a Wood works), 150 s of video (about 185 s
+      of game time), the GIF its first 72 s at 10 times the speed. Each chimney puffs and stops on
+      its own; the wind of that map lays the smoke low at times. At video 75 s no chimney smokes.
+  paraguayanWorks-smoke-wol-steady.gif / .mp4    the scene of 2026-11-21 with the previous
+      works_smoke (2026-11-20, always on): every chimney smokes all the time. Kept on purpose as
+      the "before" of the cycle; in it the two age 1 Food works at the front gave no smoke for
+      their first one to two minutes of game time; later they smoke like the others.
+  smoke-cycle.jpg                                four moments of the film of 2026-11-22 (video
+      20, 50, 75, 110 s): smoke from several works, then a quiet moment.
+  smoke-steady.jpg                               four moments of the always-on film (video 10,
+      30, 50, 70 s).
   paraguayanWorks-smoke-wol-control.gif / .mp4   BEFORE any fix (WoL's files, 2026-11-20): three
       works, one per age (Food age 1, Gold age 2 in the middle, Wood age 3) and a European arsenal:
       thin grey wisps from the pipes.

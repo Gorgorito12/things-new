@@ -827,6 +827,22 @@ tests of 2026-10-29 ([modding-guide.md](modding-guide.md#civfirsttc)).
 | FirstTC proto hook | 0x506B3B | confirmed, in game | Shared by `startingTC` and `civFirstTC` (one `jmp`, written by whichever applies first). With `civFirstTC`, a unit of its civ's `<firstTC>` proto, added while the player has no FirstTC, outside a Nomad start, is stored as FirstTC by 0x67ABD4. In game `[player+4F0h]` held the Market's ID. |
 | Out of scope | 0x4CF222, 0x7E6905 / 0x7E803F, 0x82E45B, 0x492FD6 | scoping | Code that still looks for the `TownCenter` proto itself: the engine AI's automatic bases (FUN_004CF222), the age-up picker `uiPoliticianUI` (since 2026-11-13 widened by `ageUpBuildings`), the start camera and the `Maintain` spawn gate. The water shipment point does not belong here: 0x855D71 reads `[hc+190h]`, then `[db+6028h]`, `HomeCityWaterSpawnFlag` (0x855E0B), and never `[db+5E08h]`. The AI scripts (XS) also expect a Town Center: in game a tagged AI got its Market and settlers, then stayed idle. |
 
+### Scenario civs (for `scenarioCivs`, WoL #95, 2026-11-22)
+
+Read from the stock exe with capstone (REA was in use by another agent); the ranges are the `scenarioCivs` sites of
+`tools/gen_sites.py`. "In game" means the single-player tests of 2026-11-22 (`modding-guide.md`, "scenarioCivs").
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| civs.xml loader | FUN_0052A590, its only caller 0x526DC5 (in FUN_00524428) | confirmed (`cs`), in game | `thiscall(database)`; EDI and `[esp+1Ch]` = the database. Creates civ 0 `Nature` (0x52A5C1), loads the file into a stack XML reader `[esp+100h]` (0x52A607..0x52A625), walks the root's elements (0x52A692..0x52B47A), then sets the database's other values, marks the native civs (0x52B54F..0x52B581) and destroys the reader (0x52B588). |
+| XML reader load | FUN_00599A7D | confirmed (`cs`), in game | `bool thiscall(reader, int directory, const wchar_t* file, int, int)`, `ret 10h`; the loader passes `[0D6F510h]`, `L"civs.xml"` (0xBD1124), 0, 1. Releases a document the reader holds first (`cmp byte [esi+1864h],0 / call 598E2Bh`, 0x599A92). The root is the reader's `+8` (`[esp+108h]` in the loader). A loose `data\` file overrides the archive; an XML that is not well formed returns false with no dialog [O]. Site `XmlReaderLoad`. |
+| End of the root walk | 0x52B485 (`push 0BCEE80h`) | confirmed (`cs`), in game | Reached from 0x52B480 (after the last element) and from the `jle` at 0x52A68C (a root without elements); nothing after it reads the reader's document. Site `ScenarioCivsEnd`; 0x52A62B (`mov ecx,[esp+108h]`) is where the walk starts on a loaded document (site `ScenarioCivsLoad`). |
+| Civ append | FUN_0052A4DB | confirmed (`cs`), in game | `Civ* thiscall(database)`: grows `[db+24h]` (count `[db+28h]`) by one (FUN_00401113), constructs a 218h-byte civ (FUN_00529FCA with the new index) and stores it last: a civ's ID is its position. Callers 0x52A5C1 (Nature) and 0x52A707 (each `<civ>`). Site `ScenarioCivsAppend`. |
+| Civ flags | `[civ+128h]` (pointer to a bitset, bit count `[civ+12Ch]`) | confirmed (`cs`), in game | Bit 0 `Visible` (handler 0x52D302), bit 1 `VisibleInEditor` (handler 0x52BE78), bit 2 set at 0x52CC1B by another tag. Nature's bits 0 and 1 are cleared at 0x52A5EF. Sites `CivFlagVisible`, `CivFlagEditor`. |
+| Readers of the flags | 0x777BAC, 0x77D942, 0x92966F (bit 0); 0x9B2518 (bit 1) | 0x9B2518 confirmed in game, the others `cs` only | 0x9B2518 in FUN_009B24C3 (one caller, 0x9B32CE) builds a list of the display names (0x4D8205) of the civs with bit 1: the editor's Player Data civ list showed exactly those [O]. Bit 0: FUN_00777B20 (called from a run of sites around 0x8B87DA), FUN_0077D90B (called from 0x77DB93 and 0x77EBAD, before the hero UI test 0x77EBB2), FUN_0092944F (callers 0x929D36, 0x92A05A; fills a list gadget, 0x5BECAA, with the civs that also pass FUN_006EF1CA(2)). Which screens these three fill is inferred [I]. |
+| XS civ constants | format `cCiv%s=%d;` (0xBF702A) | `cs` | One constant per civ name: two civs of one name would declare one constant twice [I]. |
+| When it runs | once per launch | in game | With `scenarioCivs log`, neither `loadScenario` nor a skirmish start logged a second read (2026-11-22). |
+
 ### Age-up dialog (for `ageUpBuildings`, WoL #56 and #62, 2026-11-13)
 
 capstone and REA (Ghidra, bundle `rea/evidence/age3y-b1a1dab7/tier5-56-62-20261113.json`), and the game (WoL). [O]
@@ -1579,7 +1595,10 @@ REA 6.8 (Ghidra 12.1.4) on the stock exe, opened with snapshot `rea/snapshots/ag
 
 In game (2026-11-21, `wol-fixes/paraguayan-works/LEEME-README.txt`, "Smoke on and off"): with EmissionTime 14 var 0.43 and
 DormantTime 18.5 var 0.35, every chimney alternates on its own and no two are in step [O]; the double attach of the smoke
-(component and Idle anim) makes one emitter per bone [I, from the measured pauses].
+(component and Idle anim) makes one emitter per bone [I, from the measured pauses]. Since 2026-11-22 DormantTime is 21 (var
+0.35, pauses 13.7-28.4 s, mean 21 = 1.5 x the mean puff, WoL #69): one chimney measured over 428 s of game time puffed
+13 times for 8-23 s (mean 13.9) and paused 12 times for 13-26 s (mean 20.1) [O], as `varied()` with a mean of the value
+predicts.
 
 ## Rendering, threads and timing (2026-10-28, for the performance investigation)
 

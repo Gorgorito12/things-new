@@ -316,6 +316,8 @@ startingTC [UnitType] [log]   marked buildings count as a player's first town ce
 civFirstTC [log]              a civ's <firstTC> in civs.xml replaces the TownCenter maps
                               place for its players (not Nomad); it is their FirstTC
 firstTC [UnitType] [log]      civFirstTC, and startingTC when a type is named, in one line
+scenarioCivs [log]            data\\scenariocivs.xml: more civs after civs.xml, for scenarios
+                              and campaigns, not in the skirmish list, in the editor's
 transformInventory [all] [scale] [UnitType] [log]   units transformed by a tech get the
                               resources (InitialResource) of their new proto
 noTrainNearEnemyTC M [UnitType] [near UnitType]... [nowarn | warn=Text] [refuse] [log]   marked units

@@ -13,7 +13,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Game files | `bufferedFileReads`, `fastVertexFill`, `fastLastInLine`, `rendererOption`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
 | Population | `decimalPopulation` | [population](porting-code/population.md) |
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
-| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
+| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `scenarioCivs`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `herdWalkAwayFix` | [gathering](porting-code/gathering.md) |
@@ -186,6 +186,8 @@ says so:
 | `RmPlaceCall` | `0x925F45` | `0x0E` B | 5 B at `0x925F4C` (a `call` to the wrapper) | `E8 E5 F9 FF FF` (`call 925936h`) | the only call of objectDef::place, in FUN_00925F11, which every `rmPlaceObjectDef*` reaches; civFirstTC placement wrapper (returns to `0x925F51`) |
 | `TownStartQuery` | `0x679AC1` | `0x15` B | 6 B at `0x679AC8` (`jmp` + 1 NOP) | `8B 99 08 5E 00 00` (`mov ebx,[ecx+5E08h]`) | the TownCenter proto the town starting units' query (FUN_0049039A) looks for; civFirstTC town hook (continues at `0x679ACE`) |
 | `CivTagNextNode`, `CivById`, `CivOfPlayer`, `ProtoByName`, `ProtoById`, `RmPlace`, `RmItemFootprint`, `RmNomadStart`, `TownStartSpawn`, `TownStartColonyLoop` | `0x52B43D`, `0x405C2E`, `0x4539D3`, `0x5A2346`, `0x45316E`, `0x925936`, `0x924B1D`, `0x90B683`, `0x679B50`, `0x7C2407` | `0x14`, `0x18`, `0x10`, `0x20`, `0x1E`, `0x6F`, `0x9E`, `0x19`, `0x1A`, `0x31` B | — | — | the next-child step the tag hook jumps to, the civ by ID and a player's civ ID, the two proto lookups, the head of objectDef::place up to its `Special_StartingUnits` test, addItem's footprint, rmGetNomadStart, the spawn and request clear after the query, and the spawn's colony test the helper repeats; civFirstTC (also `ProtoFlag`, `FirstTcChunk`, `FirstTcProtoCheck` while it is stock, `FirstTcSet`, `PlayerById`, `UnitById`, `UnitAliveSlot`) |
+| `ScenarioCivsEnd` | `0x52B47A` | `0x14` B | 5 B at `0x52B485` (`jmp`) | `68 80 EE BC 00` (`push 0BCEE80h`) | the end of the civs.xml loader's walk over the root's elements (also the target of the `jle` at `0x52A68C`); scenarioCivs hook: loads `scenariocivs.xml` into the loader's reader and walks it again from `0x52A62B`, else re-executes the `push` and continues at `0x52B48A` |
+| `ScenarioCivsLoad`, `ScenarioCivsAppend`, `CivFlagVisible`, `CivFlagEditor`, `XmlReaderLoad` | `0x52A607`, `0x52A4DB`, `0x52D302`, `0x52BE78`, `0x599A7D` | `0x39`, `0x13`, `0x3E`, `0x40`, `0x25` B | — | — | the loader's own load of civs.xml and the root read the hook jumps back to, the civ append's list `[db+24h]`/`[db+28h]`, the two flag handlers (bits 0 and 1 of `[civ+128h]`) and the reader's load; scenarioCivs |
 | `TransformInvHook` | `0x9C7625` | `0x17` B | 7 B at `0x9C7625` (`jmp` + 2 NOP) | `8B 46 58 85 C0 74 10` (`mov eax,[esi+58h]; test eax,eax; je 9C763Ch`) | action manager test in the transform in place FUN_009C754C; transformInventory (continues at `0x9C762C` or `0x9C763C`) |
 | `TransformKbRemove`, `TransformKbReAdd`, `InventorySeed`, `InventoryRecreate`, `InventoryFree`, `ResListCopy`, `ResListScale`, `ResListTotal` | `0x9C75CF`, `0x9C766F`, `0x67DE0D`, `0x9BFE5A`, `0x4BA757`, `0x480A73`, `0x480B94`, `0x58EF02` | `0x56`, `0x23`, `0x1E`, `0x6E`, `0x50`, `0x49`, `0x7E`, `0x81` B | — | — | the knowledge-base remove and re-add around the hook, creation's inventory recipe, the engine functions the helper calls, and the list encoding it decodes; transformInventory (also `TransformProtoLookup`, `TransformPushProto`, `IsA`) |
 | `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`, `PlayerIsEnemy` | `0x9EA2B2`, `0x9EA424`, `0x8CE9BE`, `0x8CEB45`, `0x44CB21`, `0x4649E1`, `0x44CC6D`, `0x4E2A35`, `0x484D2D` | `0x0B`, `0x13`, `0x68`, `0x37`, `0x1E`, 5, `0x3A`, 5, `0x20` B | — | — | the Train action's registers, the code after the continuation, the placement rule's FirstTC loop and player filter the helper mirrors, and the three functions it calls; noTrainNearEnemyTC (also `WorkRateTrainCall`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`); `PlayerById(Null)` and `UnitById(Null)` are also verified by hcShipmentPointFallback when `FirstTC` is listed, and `PlayerById` and `UnitById` by civFirstTC |
@@ -1656,6 +1658,32 @@ Code: [civs](porting-code/civs.md#civfirsttc).
     request after the call whether or not anything spawned. Without the test, a building with no
     colony would use up the request with nothing spawned.
 - **Order:** after startingTC, as in `features.h`; or install the shared proto hook yourself, once.
+
+### scenarioCivs
+
+Code: [civs](porting-code/civs.md#scenariocivs).
+
+- **State** (`scenariocivs.cpp`): the `log` flag; `g_second`, true while the loader walks `scenariocivs.xml`;
+  `g_first`, the civ count when that walk began.
+- **Hook** at `0x52B485`, 5 bytes (`jmp`), in the civs.xml loader FUN_0052A590, where its walk over the
+  root's elements ends:
+  - entry state: `[esp+1Ch]` = the civ database (EDI too), `[esp+100h]` = the loader's XML reader;
+  - `pushad`, then `UhcScenarioCivsNext(reader = esp+120h, database = [esp+3Ch])` (stdcall, offsets
+    after `pushad`), with AL carried through `popad`;
+  - true → `mov edi,[esp+1Ch]` and `jmp 52A62Bh`: the stock code reads the reader's new root, checks it
+    is `Civs` and walks it, appending each `<civ>` with `0x52A4DB`;
+  - false → re-execute `push 0BCEE80h` and `jmp 52B48Ah`.
+- **`UhcScenarioCivsNext`:**
+  - when `g_second` is set and the count `[db+28h]` is above `g_first`: clear `g_second`, give each civ
+    from `g_first` on bit 1 and not bit 0 of the byte at `[civ+128h]` (`[[db+24h]+4·id]`), log, false;
+  - otherwise (the end of civs.xml): no `data\scenariocivs.xml` nor `.xmb` → false; else
+    `0x599A7D(reader, [0D6F510h], L"scenariocivs.xml", 0, 1)` (thiscall, `ret 10h`); false → log, false;
+  - check the document (root `[reader+8]`): its name is `civs` (any case), every child is `civ`, each
+    `<name>` is letters, digits and `_` and no civ of `[db+24h]` nor of the file has it (any case);
+    a failure → log, false;
+  - `g_first` = the count, `g_second` = true, true.
+- **Order:** none; the only key that writes `0x52B485`. The civ tag hook (`0x52BB07`) runs inside the
+  second walk too.
 
 ### ageUpBuildings
 
