@@ -281,8 +281,8 @@ techPrereqRecheck [N] [log]   <TypeCount> tech prerequisites react when units ar
                               created or die, not only at the next house or age-up
 orPrereqsQty [log]            <Flag qty="N">OrPrereqs</Flag>: a tech needs N of its
                               prerequisites instead of one
-ageFiveShipments              cards of <age>4</age> (Imperial Age) in the deck, in the Age IV row,
-                              sendable in the Imperial Age
+ageFiveShipments              cards of <age>4</age> (Imperial Age) in the deck, at the right end of
+                              the Age IV row, sendable in the Imperial Age
 shipmentCounts [log]          cards shipped per player and card age, kept in saved games; Data
                               subtype FreeHomeCityUnitByShipmentCount, XS
                               xsGetShipmentCount and xsGetShipmentCountRange

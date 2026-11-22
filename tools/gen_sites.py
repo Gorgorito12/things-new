@@ -1168,6 +1168,14 @@ SITES = [
     # and the deck builder's fill (the home city screen's "Build a Deck", buttons hcDeck-button<row><column>):
     # mov eax,[esi+18h] / cmp edi,eax (replaced, 5 bytes) / jge ... / cmp edi,4 / jge
     ("DeckBuilderAgeRow", 0x9A0489, 0x27),
+    # the column of a card, once its row is set (#83, Age V cards right-aligned): the panel's mov ecx,[esp+28h]
+    # (column) / mov edx,[esp+14h] (panel) (replaced, 8 bytes) / slot = row*11 + column / mov eax,[edx+edi*4+140h]
+    # (its button); the deck builder's mov edx,[esp+14h] (column) / mov eax,[esp+28h] (builder) (replaced, 8 bytes)
+    # / ... / mov ebx,[eax+ebp*4+178h]; the deck editor's mov ecx,[esp+30h] / lea eax,[ebx+ebx*2] (replaced,
+    # 7 bytes) / ... / add eax,[esp+1Ch] (column) / mov ebp,[ecx+eax*4+154h]
+    ("CardPanelColumn", 0x9A5A7C, 0x1B),
+    ("DeckBuilderColumn", 0x9A04B0, 0x1B),
+    ("DeckEditorColumn", 0x9A77E5, 0x18),
     # kothTimer: FUN_009F02DD, the King of the Hill time in seconds on the victory settings (DefaultVP.xml, ECX):
     # mov eax,[0C66234h] (replaced, 5 bytes) / mov edx,[eax+13Ch] / ... / KOTHVictoryTime +104h, PerPlayer +108h,
     # [world+5Ch], [world+18Ch], AdjustKOTHTotalTimeByTeams +10Ch, its Factor +110h / ret; its only call, at

@@ -1824,9 +1824,11 @@ the field `[esp+2Ch]` and the amount `[esp+34h]`. The handler returns done (AL =
 (`0x8D878F`), or the ID of a stock case to run with the arguments it rewrote.
 
 While the techs are read, the subtype's name lookup (the shared head 0x61FF5D) calls the key's parser with the effect
-and its node: `unittype` must name a proto (an ID below the first abstract type, `[db+19B0h]`), `age` one age 1 to 5 or
-a range `N-M` of them, and `includeself` true or 1. They are packed into the effect's field `+10h`: the proto ID in the
-low 24 bits, the first age in bits 24-26, `includeself` in bit 28, the last age in bits 29-31. A bad one drops the effect
+and its node: `unittype` must name a proto (an ID below the first abstract type, `[db+19B0h]`), `age` one digit 0 to 4
+(Age I to V, the scale of a card's `<age>`) or two digits `NM` for the ages N to M, N <= M (`13`: Ages II to IV; since
+2026-11-22, #76: before, 1 to 5 and `N-M`, now refused), and `includeself` true or 1. They are packed into the
+effect's field `+10h`: the proto ID in the low 24 bits, the first age + 1 in bits 24-26 (0: every age),
+`includeself` in bit 28, the last age + 1 in bits 29-31. A bad one drops the effect
 (the lookup answers −1, as for a name nobody knows). When the effect applies, the handler adds the counts of those ages
 (or of every age), adds one when `includeself` is set and the effect runs inside the activation of a shipment of the
 same player whose card's age is in the range, writes the proto ID into the field and `amount × count` into the amount,
@@ -1863,15 +1865,29 @@ stop at four ages (REA `ev_4c5c5b11…`, `ev_cb7f901b…`; capstone):
   cards;
 - the in-game shipment panel, the gadget type `homeCityCardPanel` (`uihomecitycommandpanel.xml`), fills its buttons in
   FUN_009A5658: a card of age below 0 or above 3 is skipped (0x9A5A25..0x9A5A30), the others go to row = age, column =
-  their rank in that age (at most 11, counted in `[panel+4D0h + 4 × age]`). Its buttons are named
-  `homeCityCardPanel-button<row><column>` and looked up once (FUN_009A4E50, rows below 4, columns below 11) into four
-  arrays of 44 slots at `+140h`, `+2A0h`, `+354h` and `+40Ch` of the gadget, packed one after another, with the per-age
-  counts at `+4D0h..+4DCh` and an init flag at `+4F4h`;
+  their rank in that age (at most 11, counted in `[panel+4D0h + 4 × age]`). Its gadgets are looked up once
+  (FUN_009A4E50, rows below 4, columns below 11; capstone, 2026-11-22) into four arrays of 44 slots, slot = row × 11 +
+  column: `+140h` the buttons `homeCityCardPanel-button<row><column>`, `+2A0h` `shipCostOverlay-button%d%d`, `+354h`
+  `shipmentsLeftOverlay-button%d%d`, `+40Ch` `resourceCostOverlay-button%d%d` (the init loop writes them at
+  `[ebx-160h]`, `[ebx]`, `[ebx+B4h]` and `[ebx+16Ch]` with EBX stepping 4 from `+2A0h`). A fifth array of 44, `+1F0h`,
+  holds no gadget: the fill sets it to −1 (`rep stosd`, 2Ch dwords) and writes each placed card's link there
+  (0x9A5AD2, the value of 0x58EA03 for the card's tech). The per-age counts are at `+4D0h..+4DCh`, the init flag at
+  `+4F4h`. (Until 2026-11-22 this page listed `+140h`, `+2A0h`, `+354h`, `+40Ch` as four button arrays packed one
+  after another; `engine-symbols.md`'s five offsets were the right ones, `+1F0h` being the link array.) Once the row
+  and column are known the fill computes the slot (0x9A5A84..0x9A5A8D), takes that slot's button, writes the link,
+  hands the button the card (vtable `+104h` at 0x9A5D99 with the tech's `+14h`; inferred from the arguments) and calls
+  FUN_009A5205(row, column, card), which sets the three overlays of the same slot; its only caller is the fill.
+  Before any card it hides the 44 buttons and their overlays (0x9A56A0..0x9A5757);
 - the deck builder of the home city screen ("Build a Deck", `uihcdeckbuilder.xml`, buttons `hcDeck-button<row><column>`)
   fills its rows the same way at 0x9A0489 and stops at the first card whose age is 4 or more (0x9A04A7); in a test the
-  Age V card of a 25-card deck was missing from its Age IV row while the counter read 25/25;
+  Age V card of a 25-card deck was missing from its Age IV row while the counter read 25/25. Its buttons are at
+  `+178h` (44, slot = row × 11 + column), its card links at `+228h` (reset to −1 at 0x9A0350, written at 0x9A04F6), and
+  it hides every button and overlay before the fill (0x9A028C..0x9A0343). A click on one of its deck cards (the card
+  leaves the deck) finds the slot of the clicked button in `+178h` and reads the card from `+228h` at that slot
+  (FUN_009A003F, 0x9A0074..0x9A0099);
 - the `homeCityDeck` dialog (`uihomecitydeck.xml`, loaded at 0x9A737B, FUN_009A7670) has the same fill (0x9A77BE,
-  stop at 0x9A77DC); it did not open in the tests (inferred: another deck dialog of the same screen).
+  stop at 0x9A77DC; buttons at `+154h`, hidden first at 0x9A76AC..0x9A76EB); it did not open in the tests (inferred:
+  another deck dialog of the same screen).
 
 The panel greys a card whose age is above the player's (`[card+18h]` against `[player+50h]`, rollover string 8FA6h),
 and the send FUN_0085A724 refuses it (0x85A90A, string 8FFCh); neither stops at 3.
@@ -1879,18 +1895,46 @@ and the send FUN_0085A724 refuses it (0x85A90A, string 8FFCh); neither stops at 
 **What the key does.** The immediate of `cmp eax,4` at 0x63022E becomes 5 (`CardListAgePasses`), so the game's list
 takes the cards of age 4 too, after those of age 3. The three fills get a 5-byte `jmp` over `mov eax,[esi+18h]` and the
 `cmp` after it (`CardPanelAgeRow` 0x9A5A22, `DeckBuilderAgeRow` 0x9A0489, `DeckEditorAgeRow` 0x9A77BE): the hook reads
-the card's age, turns 4 into 3, re-runs the `cmp` and jumps back (0x9A5A27, 0x9A048E, 0x9A77C3). So an Age V card sits in the Age IV row, after the Age IV cards,
-while `[card+18h]` stays 4: greyed with its reason until the Imperial Age, refused by the send before it, and counted in
-Age V by `shipmentCounts`.
+the card's age, turns 4 into 3, re-runs the `cmp` and jumps back (0x9A5A27, 0x9A048E, 0x9A77C3). So an Age V card sits in
+the Age IV row while `[card+18h]` stays 4: greyed with its reason until the Imperial Age, refused by the send before it,
+and counted in Age V by `shipmentCounts`.
+
+**Age V at the right (#83, 2026-11-22).** JTMaston asked for the Age V cards in a line at the right of that row, the
+Age IV cards staying at the left. Each fill gets a second jump once the card's row and column are set and before the
+slot is computed: `CardPanelColumn` 0x9A5A7C (8 bytes, `mov ecx,[esp+28h]` / `mov edx,[esp+14h]`), `DeckBuilderColumn`
+0x9A04B0 (8 bytes, `mov edx,[esp+14h]` / `mov eax,[esp+28h]`), `DeckEditorColumn` 0x9A77E5 (7 bytes, `mov ecx,[esp+30h]`
+/ `lea eax,[ebx+ebx*2]`). The hook passes the card list (panel `[esp+2Ch]`, the others EBP), the card (ESI) and the
+column (panel and builder `[esp+28h]` / `[esp+14h]`, editor `[esp+1Ch]`) to `UhcAgeFiveColumn`, which, when the list
+holds an Age V card, counts the list's Age IV and Age V cards (`[list+1Ch]`, entries of 28h, `[list+20h]` of them) and
+returns: for an Age V card 11 − (Age V cards) + its rank among them; for an Age IV card its rank among the Age IV
+cards, or −1 when that column belongs to the Age V cards. With no Age V card the stock column is kept. The hook writes
+the column back to the fill's variable, re-runs the replaced instructions and continues (0x9A5A84, 0x9A04B8,
+0x9A77EC); −1 goes to the fill's "next card" (0x9A620B, 0x9A076C, 0x9A7A73, where a twelfth card of a row goes), and the
+panel's per-row count `[panel+4D0h+4×row]`, which the fill raised before the hook, is lowered again, so the Age V cards
+that come after are not cut by the panel's cap of 11. The column then goes everywhere the fill uses it: the slot of
+the button, of the link (`+1F0h` / `+228h`) and of the overlays (FUN_009A5205), and the button's own command. The
+column counter the fill raises after each card placed (0x9A61F9, 0x9A0756) only matters to the stock check of a
+twelfth card, which still holds. A log line gives the layout once per change of the two counts.
+
+Overflow: when the Age IV and Age V cards together are more than 11, the Age V cards keep the last columns and the
+last Age IV cards are not shown (logged), instead of the Age V cards being cut as a twelfth card is. More than 11 Age V
+cards: the first 11 are shown.
 
 **Why not a fifth row.** The row index is the card's age, and each panel object holds exactly 4 × 11 buttons in arrays
 that touch each other (the deck builder's at `+178h`); the card inventory's "By Age" view has four tabs too; a fifth row would need a larger gadget object and every reader of those arrays (the fill, the
 click and rollover handlers, the refresh at 0x9A5205) moved to new storage, plus 11 more named buttons in the layout.
 That is a reimplementation of both gadgets, not a patch.
 
-**Why it is safe.** Only the row changes; the count per row keeps its cap of 11 (an Age IV row with 11 cards leaves the
-Age V cards out, as stock leaves a twelfth card out). The hooks keep every register but EAX, which the replaced `mov`
-loads anyway, and re-run the replaced `cmp` for the branch after it.
+**Why it is safe.** The row hooks keep every register but EAX, which the replaced `mov` loads anyway, and re-run the
+replaced `cmp` for the branch after it. The column hooks save every register around the call (`pushad`/`popad`); the
+result goes to EAX, which the code after each continuation overwrites (`lea eax`, `mov eax`), and the replaced
+instructions are re-run with the new column; the flags are not read after them. A card keeps one slot for its
+button, its link and its overlays, since the fill computes all three from the column the hook returns, so a click,
+a rollover or a send reaches the card shown (tested: rollovers of every Age IV row card, sends from the right-aligned
+slots, removal from the deck builder). The slots between the two groups stay hidden: the fill hides all 44 buttons
+and their overlays and resets the links before it places a card. The counts are read from the same list the fill
+walks, so they cannot disagree with it. Not in the hot path: the fills run when a panel is opened or changes, and the
+count is one pass over the list (25 cards in the decks tested) per card of the Age IV row.
 
 ### maintainWaitForPop
 
