@@ -31,19 +31,19 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Sunday 2026-11-22 12:07 | [`ageFiveShipments`](#agefiveshipments) | Filmed in WoL, with a control. Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown at the right end of the Age IV row (the Age IV cards stay at the left), greyed until the Imperial Age, then sent like the others. | `<age>4</age>` on the cards that want it. |
+| Sunday 2026-11-22 12:07 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
+| Sunday 2026-11-22 12:07 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Saturday 2026-11-21 16:01 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
-| Saturday 2026-11-21 15:50 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Saturday 2026-11-21 15:50 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
 | Saturday 2026-11-21 15:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
 | Saturday 2026-11-21 15:25 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Saturday 2026-11-21 15:06 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Saturday 2026-11-21 12:42 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Saturday 2026-11-21 12:11 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
-| Saturday 2026-11-21 12:07 | [`ageFiveShipments`](#agefiveshipments) | Added. Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | `<age>4</age>` on the cards that want it. |
 | Saturday 2026-11-21 12:07 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
 | Saturday 2026-11-21 12:00 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only heal actions with `<CanOverheal>1</CanOverheal>` heal those units above `InitialHitpoints`, up to their `<OverhealCap>`, and techs can turn it on or off; every other heal stops there. | `overhealHitpointBars`, and the tags on the `Heal` actions that may overheal. |
 | Saturday 2026-11-21 11:55 | [`herdWalkAwayFix`](bug-fixes.md#herdwalkawayfix) | Added. A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in. | Nothing; for nomads, `wol-fixes/me-herdables`. |
-| Saturday 2026-11-21 11:54 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
 | Saturday 2026-11-21 11:35 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | The tag on the civ in `civs.xml`. |
 | Saturday 2026-11-21 11:31 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
@@ -593,7 +593,7 @@ Caps that are fixed in the exe.
 | [`basePop`, `extraPop`](#basepop-and-extrapop) | Raises the population caps (200 and 50 in the exe) and removes the 250 hard cap. | in WoL's DLL | Enough population buildings: 20 houses of 10 give 200 today. | confirmed |
 | [`decimalPopulation`](#decimalpopulation) | Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | **new** | The decimals in `protoy` and `techtreey`. | confirmed (single player, also a skirmish vs AI) |
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | in WoL's DLL | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). | confirmed above the level table; see the section |
-| [`ageFiveShipments`](#agefiveshipments) | Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown in the Age IV row, greyed until the Imperial Age, then sent like the others. | **new** | `<age>4</age>` on the cards that want it. | confirmed (single player) |
+| [`ageFiveShipments`](#agefiveshipments) | Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown at the right end of the Age IV row (the Age IV cards stay at the left), greyed until the Imperial Age, then sent like the others. | **new** | `<age>4</age>` on the cards that want it. | confirmed (single player) |
 | [`selectionLimit`](#selectionlimit) | A selection holds up to N units (50 in the exe). `wol.cfg` sets 75. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`noAILimit`](#noailimit) | Shows every `AI4\*.personality` file in game setup. WoL uses `noAILimitV2` instead. | in WoL's DLL | The personality files. | confirmed |
 | [`noAILimitV2`](#noailimitv2) | Shows WoL's 52 `AI4\*.personality` files in game setup. Without it, a random AI crashes the game. | **in `wol.cfg`** | The personality files. | confirmed |
@@ -778,7 +778,30 @@ deckCardCount <N>        N from 20 to 10000
 
 *Home city cards of the Imperial Age (`<age>4</age>`) can be in a deck and be sent once the player reaches that age.*
 
-**Added:** Saturday 2026-11-21 12:07
+**Added:** Saturday 2026-11-21 12:07 · **Filmed in WoL:** Sunday 2026-11-22 12:07
+
+![ageFiveShipments in WoL](media/ageFiveShipments-wol.gif)
+
+*In WoL, with the key (2026-11-22, a skirmish on a test map, Portuguese against a German AI, already in the Imperial Age;
+three Age IV cards of the Lisbon deck, "16 Line Infantry", "14 Ultramarinos" and "2 Steel Guns", given `<age>4</age>`;
+2x speed):* the Age IV row holds its six Age IV cards at the left and the three Age V cards at the right end, with the
+two slots between them empty. The cursor rests on "2 Steel Guns" (its rollover is the card's own); a click sends it,
+then a click on "16 Line Infantry" sends that one, and both turn dark, as a sent card does. The log said `ships tech 745
+(HCShipCannons1), a card of Age V` and `tech 5508 (WOLHCShipLineInfantry5)`: each click sent the card under the cursor.
+[Full video (MP4)](media/ageFiveShipments-wol.mp4).
+
+![ageFiveShipments in WoL, key off](media/ageFiveShipments-wol-control.gif)
+
+*In WoL, key off (the same data, deck and map, in a new game, Imperial Age; 2x speed):* the Age IV row has only its six
+Age IV cards and the counter still says 25 / 25: the three Age V cards are in the deck but the game left them out.
+[Full video (MP4)](media/ageFiveShipments-wol-control.mp4).
+
+![ageFiveShipments: the deck builder](../wol-fixes/age5-shipments/deck-builder-key-on.png)
+
+*"Build a Deck" on the home city screen, with the key: the same layout as in game.* More pictures in
+`wol-fixes/age5-shipments`: the deck builder with two, one and no Age V cards, with the key off, and with too many
+cards for one row; the in-game panel in Age III (the Age V cards greyed, with *This Card cannot be sent until Age 5*)
+and in Age V; the deck chooser of a game with two decks.
 
 ```
 ageFiveShipments
@@ -788,29 +811,62 @@ ageFiveShipments
   with 24 cards (the game builds its deck one age at a time, ages I to IV only), and both deck panels stop at four rows.
   JTMaston's #83 (2026-11-21).
 - **What the key does:** a card of `<age>4</age>` is in the game's deck, after the Age IV cards. It is shown **in the
-  Age IV row**, after the Age IV cards, in the in-game shipment panel and in the home city's deck builder ("Build a
-  Deck"). Until the player reaches the Imperial Age it is greyed, and its rollover says, in red, *This Card cannot be
-  sent until Age 5* (the game's own line); a send before that is refused, as stock refuses a card of a later age. In
-  the Imperial Age it is sent like any other card. [`shipmentCounts`](#shipmentcounts) counts it in Age V.
+  Age IV row, at its right end**: the Age IV cards stay packed at the left as before, the Age V cards are packed at the
+  right, in the order of the deck, and the slots between the two groups stay empty (JTMaston's request of 2026-11-22;
+  before, the Age V cards came right after the Age IV cards). The same layout is used in the in-game shipment panel,
+  in the home city's deck builder ("Build a Deck") and in the deck chooser a game opens when the home city has several
+  decks. Until the player reaches the Imperial Age an Age V card is greyed, and its rollover says, in red, *This Card
+  cannot be sent until Age 5* (the game's own line); a send before that is refused, as stock refuses a card of a later
+  age. In the Imperial Age it is sent like any other card. [`shipmentCounts`](#shipmentcounts) counts it in Age V.
 - **Not a fifth row:** each deck panel holds four rows of 11 buttons in the exe, and the row is the card's age. A fifth
   row needs those panels rebuilt (`how-it-works.md`, ageFiveShipments); the Imperial cards share the Age IV row instead.
-  A row holds 11 cards: Age IV and Age V cards together beyond 11 are not shown, as stock leaves out a twelfth card.
+- **A full row:** a row holds 11 cards. When the Age IV and Age V cards together are more than 11, the Age V cards keep
+  the right end and the last Age IV cards are not shown (with a line in the log): they stay in the deck, but with no
+  button the player cannot send them, as stock does with a twelfth card of a row. A deck with no Age V card is laid
+  out as stock lays it out.
 - **What a modder writes:** `<age>4</age>` in the card of the home city file (`data\homecityxxx.xml`), as for the
   other ages (`0` is Age I). The card goes in a deck the usual way; the "By Age" view of the card inventory has four
   tabs and does not list it (use "By Building").
 - **Off:** as stock: the card never reaches the game.
 - **Multiplayer:** every player needs the same setting (it changes which cards a deck holds in the game).
-- **Log:** `ageFiveShipments: cards of the fifth age (<age>4</age>) are in the game's deck, shown in the fourth age's
-  row of the shipment panel and the deck editor, and sendable in the fifth age`, `hook reached: ageFiveShipments panel
-  (0x9A5A22)`, `hook reached: ageFiveShipments deck builder (0x9A0489)`.
+- **Log:** `ageFiveShipments: cards of the fifth age (<age>4</age>) are in the game's deck, shown at the right of the
+  fourth age's row of the shipment panel and the deck panels (the Age IV cards at the left), and sendable in the fifth
+  age`; `hook reached: ageFiveShipments panel (0x9A5A22)`, `... panel column (0x9A5A7C)`, `... deck builder (0x9A0489)`,
+  `... deck builder column (0x9A04B0)`, `... deck editor (0x9A77BE)`, `... deck editor column (0x9A77E5)`. Once per
+  change of a panel's counts: `ageFiveShipments: the in-game shipment panel's Age IV row: 6 Age IV card(s) at the left,
+  3 Age V card(s) at the right (columns 9 to 11)` (also `the deck builder's`, `the deck editor's`); a full row: `... Age
+  IV row gets 9 Age IV and 3 Age V cards, more than its 11 buttons: the Age V cards keep the right side, and 1 Age IV
+  card(s) are not shown`.
 - **Tested in WoL (2026-11-21, single player, `C:\AoE3-UHC-WoLReal11`, Dutch skirmish on a test map,
   `HCShipCannons1` given `<age>4</age>` in the copy's `homecitydutch.xml`):** key off, the game's deck held 23 of the 25
   cards (that card and a card with no `<age>` left out) and both panels showed three Age IV cards; key on, 24 (the Age V
   card last), shown fourth in the Age IV row of the shipment panel and of "Build a Deck", greyed with *This Card cannot
   be sent until Age 5* in Ages I to IV; a send in Age IV refused (nothing queued); in Age V sent, arrived, and counted
-  by `shipmentCounts` (`a card of age 5, in age 5`, `0, 0, 0, 0, 1`). Screenshots in `wol-fixes/age5-shipments`. Not
-  tested: the AI with an Age V card in its deck; the `homeCityDeck` dialog (its hook was not reached: no screen of
-  the tests opened it).
+  by `shipmentCounts` (`a card of age 5, in age 5`, `0, 0, 0, 0, 1`). Not tested: the AI with an Age V card in its
+  deck; the `homeCityDeck` dialog (its hook was not reached: no screen of the tests opened it).
+- **Tested in WoL (2026-11-22, the right-hand layout, single player, `C:\AoE3-UHC-WoLReal2`, Portuguese skirmishes on
+  a test map against a German AI; in the copy's `homecityportuguese.xml` `HCShipCannons1`, `WOLHCShipLineInfantry5` and
+  `WOLHCShipAtiradores2`, three Age IV cards of the Lisbon deck, given `<age>4</age>`; pictures and videos above and in
+  `wol-fixes/age5-shipments`):**
+  - "Build a Deck": six Age IV cards in columns 1 to 6, the three Age V cards in columns 9 to 11, 7 and 8 empty; the
+    rollover of each Age V card named that card (*16 Line Infantry*, *14 Ultramarinos*, *2 Steel Guns*, each with
+    *cannot be sent until Age 5*), and an Age IV card's its own;
+  - a click on a deck card takes it out of the deck: column 10 removed *Ultramarinos* (24/25), the two others moved to
+    columns 10 and 11; column 10 again removed *Line Infantry*, *Steel Guns* moved to column 11; column 11 removed it,
+    and the row went back to the stock layout (six cards, 22/25). The log followed each step (3, 2, 1 Age V cards);
+  - the in-game panel in Age III: the same layout, the Age IV and Age V cards greyed; rollovers of columns 1, 6, 9, 10
+    and 11 gave their own cards; clicks on an Age V and an Age IV card sent nothing (6 shipments left);
+  - in Age V (two games): clicks on columns 11 and 9 shipped `HCShipCannons1` and `WOLHCShipLineInfantry5` (`a card of Age
+    V, in Age V`), on Age IV columns 1 and 2 `HCRangedInfantryHitpointsPortugueseTeam` and `HCRangedInfantryDamagePortuguese`
+    (`a card of Age IV`), the cards the rollovers named; the counts `0, 0, 0, 1, 2`;
+  - a full row (three Age III cards also made Age IV: 9 + 3): in game and in "Build a Deck", eight Age IV cards at the
+    left, the three Age V cards at the right, one Age IV card not shown, logged;
+  - the deck chooser (the `homeCityDeck` dialog, reached for the first time: a second deck copied in "Build a Deck", then
+    "Select a Deck" in the game's home city panel): the same layout, a rollover of column 11 named *2 Steel Guns*, and
+    after OK the panel showed the chosen deck the same way;
+  - key off: six Age IV cards, no Age V card, 25/25 (panel and deck builder).
+  - Not tested: the AI with an Age V card, multiplayer, other resolutions (the panels' own buttons are used, so none
+    expected).
 
 #### selectionLimit
 
@@ -3039,7 +3095,8 @@ with no line.
   skirmish (Germans, `wolOtto`) with the key and the test data on: 17 AI units at 159 s, no XS error.
   Refilmed the same day with this build: the Caravel over water (4 points, the boats at 54.3, 46.0 and 46.0 HP; on
   2026-11-13, 46.0, 54.3 and 54.3), and the Musketeer's threshold and delete (1 point each). Its delete went through the Delete button: the
-  console's `uiDeleteSelectedUnit` crashed this background copy at 0x7E51C8 again (below).
+  console's `uiDeleteSelectedUnit` crashed this background copy at 0x7E51C8 again (a stock crash, not the key's: typed
+  in the console, that command reads the in-game interface, which a console call does not set up; see below).
 - **Tested in WoL (2026-11-13, the blast on screen):** the scene of the first two videos (Ethiopians against an enemy
   of six `WOLScytheman`): four blasts, `unit 3, proto 714, at 41.9, 45.1` and `unit 2 … at 43.8, 45.2` (the archers,
   mortar effect) and `unit 1, proto 1482, at 38.5, 45.9` and `unit 0 … at 36.9, 46.6` (the Engineers, dynamite), each
@@ -3095,8 +3152,9 @@ with no line.
   - A chain of 3 + 3 settlers of both players: 23, then 26, 27 and 28, then 24 and 25, with no recursion.
   - Key off: no blast, in the same scene.
   - Not tested: a unit that dies garrisoned, and a building that dies with units inside: four trigger attempts left nobody
-    inside (`[unit+74h]` stayed 0). The player's delete key: the console's `uiDeleteSelectedUnit` crashes the stock game at
-    0x7E51C8 with or without keys. Multiplayer, and an A/B: with four games open the numbers are not clean.
+    inside (`[unit+74h]` stayed 0). The player's delete key from a script: `uiDeleteSelectedUnit` typed in the console
+    crashes the stock game at 0x7E51C8 with or without keys (it reads the in-game interface first, a null pointer when
+    the command comes from the console), so the Delete button was used. Multiplayer, and an A/B: with four games open the numbers are not clean.
 
 #### multiarmor
 
@@ -7406,35 +7464,39 @@ kothTimer teams 2=900 3=600 4=480
 
 *Counts the home city cards each player has shipped of each age (the age that enables the card), once they arrive, so a card or tech can send one unit per card; the counts are kept in saved games.*
 
-**Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Saturday 2026-11-21 15:50
+**Added:** Friday 2026-11-13 07:54 · **Filmed in WoL:** Sunday 2026-11-22 12:07
 
 ![shipmentCounts in WoL](media/shipmentCounts-wol.gif)
 
-*In WoL, with `shipmentCounts log` (a skirmish on a test map, Portuguese against a German AI, already in Age III;
-`HCShipWoodCrates2`, `HCShipWoodCrates3` and `HCShipCoinCrates3`, three cards of Age II (`<age>1</age>`), each given
-`FreeHomeCityUnitByShipmentCount` Hussar `age='2'` `includeself='true'`, all three sent in Age III; the video runs at 8x
-speed):* each card counts in Age II, its own age, though it is sent and arrives in Age III (`a card of age 2, in age
-3`): the first brings 1 Hussar, the second 2, the third 3, and the count reads `0, 3, 0, 0, 0`. The AI's chat at the
-left is a test rule that prints `xsGetShipmentCount`. [Full video (MP4)](media/shipmentCounts-wol.mp4).
+*In WoL, with `shipmentCounts log` (filmed again on 2026-11-22 with the new `age` syntax; a skirmish on a test map,
+Portuguese against a German AI, already in Age III; `HCShipWoodCrates2`, `HCShipWoodCrates3` and `HCShipCoinCrates3`,
+three cards of Age II (`<age>1</age>`), each given `FreeHomeCityUnitByShipmentCount` Hussar `age='1'`
+`includeself='true'`, all three sent in Age III; the video runs at 8x speed):* each card counts in Age II, its own age,
+though it is sent and arrives in Age III (`a card of Age II, in Age III`): the first brings 1 Hussar, the second 2, the
+third 3 (`age="1" (Age II): 3 shipment(s) (this one included)`), and the count reads `0, 3, 0, 0, 0`.
+[Full video (MP4)](media/shipmentCounts-wol.mp4).
 
 ![shipmentCounts in WoL, a tech](media/shipmentCounts-reward-wol.gif)
 
-*In WoL, with `shipmentCounts log` (2026-11-21, the setup of the video above in a new game: the three Age II cards sent
-in Age III, the count `0, 3, 0, 0, 0`; then a test tech with `FreeHomeCityUnitByShipmentCount` Hussar `age='1'` amount
-1 and Cuirassier `age='2'` amount 2, set active by a trigger at 5:30 of game time; the Cuirassiers stay selected; 2x
-speed):* six Cuirassiers come to the Town Center, two for each of the three Age II cards, and no Hussar, as no Age I
-card was shipped; the two log lines at the bottom give each count. The unselected Hussars came with the cards.
-[Full video (MP4)](media/shipmentCounts-reward-wol.mp4).
+*In WoL, with `shipmentCounts log` (2026-11-22, the same game as the video above, the count `0, 3, 0, 0, 0`; then a
+test tech with `FreeHomeCityUnitByShipmentCount` Hussar `age='0'` amount 1, Cuirassier `age='1'` amount 2 and Grenadier
+`age='13'` (Ages II to IV) amount 1, set active by a trigger at 5:30 of game time; the Cuirassiers and Grenadiers stay
+selected; 2x speed):* six Cuirassiers come to the Town Center, two for each of the three Age II cards, three Grenadiers,
+one per card of Ages II to IV, and no Hussar, as no Age I card was shipped; the three log lines at the bottom give
+each count. The unselected Hussars came with the cards. [Full video (MP4)](media/shipmentCounts-reward-wol.mp4).
 
 ![shipmentCounts in WoL, key off](media/shipmentCounts-wol-control.gif)
 
-*In WoL, key off (the same data, map and cards, in a new game; 8x speed):* the game drops the effect it does not know,
-and the three Age II cards sent in Age III bring only their crates. [Full video (MP4)](media/shipmentCounts-wol-control.mp4).
+*In WoL, key off (filmed on 2026-11-21, the same map and cards, in a new game; 8x speed; the data then had
+`age='2'`, the old syntax for Age II, which makes no difference with the key off):* the game drops the effect it does
+not know, and the three Age II cards sent in Age III bring only their crates.
+[Full video (MP4)](media/shipmentCounts-wol-control.mp4).
 
 ![shipmentCounts in WoL, a tech, key off](media/shipmentCounts-reward-wol-control.gif)
 
-*In WoL, key off (2026-11-21, the same data, map, cards and trigger as the tech above, in a new game; 2x speed):* the
-test tech becomes active at 5:30 and nothing comes; the three cards had brought only their crates.
+*In WoL, key off (filmed on 2026-11-21, the same map, cards and trigger, in a new game, the tech with the old `age`
+values and without the Grenadier line; 2x speed):* the test tech becomes active at 5:30 and nothing comes; the three
+cards had brought only their crates.
 [Full video (MP4)](media/shipmentCounts-reward-wol-control.mp4).
 
 ```
@@ -7442,10 +7504,10 @@ shipmentCounts [log]
 ```
 
 ```xml
-<Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnitByShipmentCount' unittype ='Hussar' age ='2'
+<Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnitByShipmentCount' unittype ='Hussar' age ='1'
         includeself ='true' relativity ='Absolute'>
     <Target type ='Player' /></Effect>
-<Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnitByShipmentCount' unittype ='Cuirassier' age ='2-4'
+<Effect type ='Data' amount ='1.00' subtype ='FreeHomeCityUnitByShipmentCount' unittype ='Cuirassier' age ='13'
         relativity ='Absolute'>
     <Target type ='Player' /></Effect>
 ```
@@ -7462,9 +7524,11 @@ int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge)  // cAge1..
 - **Effect:**
   - `unittype`: a proto, delivered as the stock `FreeHomeCityUnit` delivers: at the home city gather point, with its checks
     (no gather point, no units);
-  - `amount` × the count: the count is the player's cards of `age`, one age from 1 to 5 (Age I to Age V) or a range such
-    as `age='2-4'` (Age II to Age IV), or of every age without `age`. A fraction is cut, as `FreeHomeCityUnit` cuts it; a
-    count of 0 sends nothing;
+  - `amount` × the count: the count is the player's cards of `age`, or of every age without `age`. `age` is written
+    as a card's `<age>`: **one digit from 0 to 4** (`0` Age I, `1` Age II, ... `4` Age V), or **two digits with no
+    hyphen** for a range, the first age then the last (`age='13'`: Ages II to IV, National to Industrial in WoL;
+    `age='04'`: every age; JTMaston's #76, 2026-11-22). A fraction is cut, as `FreeHomeCityUnit` cuts it; a count of 0
+    sends nothing;
   - `includeself='true'` (or `1`): when the effect is on a card, that card counts too, if it is a card of that age (or
     of the range).
   - Target: `<Target type='Player'/>`, as `FreeHomeCityUnit`.
@@ -7477,9 +7541,12 @@ int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge)  // cAge1..
   Cards of other players never count. Until 2026-11-21 a card counted in the age it was sent in.
 - **The syscalls:** in AI scripts and triggers, with XS ages (`cAge1` = 0 … `cAge5` = 4): `xsGetShipmentCount(playerID,
   age)`, `-1` for every age; `xsGetShipmentCountRange(playerID, firstAge, lastAge)` for a range (0 for a bad range). Note
-  that the effect's `age` is 1 to 5 (Age I to V), and the syscalls' are `cAge1`..`cAge5`.
-- **Bad data:** a `unittype` that is no proto, or an `age` that is not 1..5 or a range of them (`'4-2'`, `'7'`), drops the
-  effect, with a log line; `dataLint` then lists it among the effects the game deletes.
+  that the effect's `age` and the syscalls' ages are the same numbers: `0` (`cAge1`) to `4` (`cAge5`).
+- **Bad data:** a `unittype` that is no proto, or an `age` that is not one digit 0 to 4 or two of them with the first
+  not above the last (`'31'`, `'5'`, `'123'`), drops the effect, with a log line; `dataLint` then lists it among the
+  effects the game deletes. **The old syntax is refused the same way:** until 2026-11-21 `age` was 1 to 5 with a hyphen
+  for a range (`'2'` for Age II, `'2-4'`); `'2-4'` and `'5'` are now dropped with the log line, and a one-digit `'1'` to
+  `'4'` now means one age earlier than it did: rewrite such effects (`'2'` → `'1'`, `'2-4'` → `'13'`).
 - **Saved games:** the counts are kept: a loaded game goes on with the counts it had when it was saved, and a card in
   transit at the save counts in its own age when it arrives after the load. They are kept on one living unit of the
   game (a hidden marker that nothing reads); when that unit dies they move to another one. A new game starts at zero. A
@@ -7496,14 +7563,15 @@ int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge)  // cAge1..
 - **Log:** `shipmentCounts: shipments are counted per player and the age of each card (its <age>; none: Age I), and kept
   in saved games; the Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount and
   xsGetShipmentCountRange read them`, `hook reached: shipmentCounts (0x8584FF)`, `hook reached: tech subtype on a player
-  (0x8D843E)`. With `log`: `shipmentCounts: player 1 ships tech 715 (HCShipWoodCrates2), a card of age 2, in age 3`
+  (0x8D843E)`. With `log`: `shipmentCounts: player 1 ships tech 715 (HCShipWoodCrates2), a card of Age II, in Age III`
   (`(it has no <age>)` for a card without one), `shipmentCounts: player 1 has shipped 1, 2, 0, 0, 0 in ages I to V`,
-  `shipmentCounts: player 1, FreeHomeCityUnitByShipmentCount proto 318, age 2: 2 shipment(s) (this one included) x 1.00 =
-  2.00 unit(s)`, `shipmentCounts: the counts are kept on unit 8`, after a load `shipmentCounts: loaded: player 1 has
+  `shipmentCounts: player 1, FreeHomeCityUnitByShipmentCount proto 318, age="1" (Age II): 2 shipment(s) (this one
+  included) x 1.00 = 2.00 unit(s)` (a range: `age="13" (Ages II to IV)`), `shipmentCounts: the counts are kept on unit 8`, after a load `shipmentCounts: loaded: player 1 has
   shipped 1, 0, 0, 0, 0 cards of ages I to V`; a save of an older build: `shipmentCounts: loaded a save of an older
   build: the send ages it kept are not used, a card counts in the age of the card`. Errors: `a FreeHomeCityUnitByShipmentCount effect names
-  NoSuchProto, which is not a proto; effect dropped`, `age="4-2" is not an age 1 to 5 (Age I to V) or a range such as 2-4;
-  effect dropped`.
+  NoSuchProto, which is not a proto; effect dropped`, `age="2-4" is not an age 0 to 4 (Age I to V) or two of them for a
+  range, first <= last, with no hyphen (13: Ages II to IV); effect dropped`. Lines of builds before 2026-11-22 named the
+  ages 1 to 5 (`a card of age 2, in age 3`, `age 2: 3 shipment(s)`).
 - **Tested in WoL (2026-11-13),** a skirmish, Dutch (player 1) against a Belgian AI; cards sent from the console with
   `homeCityTrain2(1, <card>)`, ships and the age set by test techs:
   - two Age I cards counted in Age I, three later cards in Age III, the AI's own cards for player 2;
@@ -7552,9 +7620,21 @@ int xsGetShipmentCountRange(int playerID, int firstAge, int lastAge)  // cAge1..
   - Stock, found on the way: a card with no `<age>` and a card with `<age>4</age>` are left out of the in-game deck
     (the card list is built per age 0 to 3, FUN_006301DE), so they cannot be sent at all; the rule for a card with no
     `<age>` (Age I) only matters to a mod that changes that.
-- **Note for tests:** `uiDeleteSelectedUnit()` from the console, in a copy with `multipleInstances background`, crashed
-  the game in the interface code (a null UI context at 0x7E51C8, not in the key's code); an AI rule deleting the unit did
-  not.
+- **Tested in WoL (2026-11-22, the new `age` syntax, #76),** a Portuguese skirmish on a test map against a German AI
+  in `C:\AoE3-UHC-WoLReal2` (the videos above); the cards were sent by clicks in the shipment panel:
+  - parse: `age='1'`, `'0'` and `'13'` read with no error; `'2-4'`, `'5'`, `'31'` and `'123'` dropped, each with the
+    log line (`age="2-4" is not an age 0 to 4 ...`);
+  - one age: the three Age II cards with Hussar `age='1'` `includeself` brought 1, 2 and 3 Hussars (`age="1" (Age II): 1
+    / 2 / 3 shipment(s) (this one included)`), counted `0, 3, 0, 0, 0`;
+  - the test tech: `age="0" (Age I): 0 shipment(s)`, `age="1" (Age II): 3 shipment(s) x 2.00 = 6.00` (6 Cuirassiers),
+    and the range `age="13" (Ages II to IV): 3 shipment(s) x 1.00 = 3.00` (3 Grenadiers);
+  - Age V cards (with [`ageFiveShipments`](#agefiveshipments)): `a card of Age V, in Age V`, counted `0, 0, 0, 1, 2`.
+  - The tests above this one wrote `age` in the syntax of their day (1 to 5, `N-M`).
+- **Note for tests (not about this key):** one test needed the unit that holds the counts gone. The obvious way,
+  typing `uiDeleteSelectedUnit()` (the command behind the Delete key) into the console, crashes the stock game with or
+  without any key: that command first reads the in-game interface, which a console call does not set up (a null
+  pointer at 0x7E51C8, `engine-symbols.md`), and only then the selection. So the test deleted the unit with an AI rule
+  instead.
 
 #### orPrereqsQty
 
@@ -7674,21 +7754,22 @@ unitTypeTechs [log]
 
 *A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit.*
 
-**Added:** Friday 2026-11-20 11:52 · **Filmed in WoL:** Saturday 2026-11-21 11:54
+**Added:** Friday 2026-11-20 11:52 · **Filmed in WoL:** Sunday 2026-11-22 12:07
 
 ![transformChecks in WoL](media/transformChecks-wol.gif)
 
-*In WoL, with `transformChecks log` and `wol-fixes/special-transforms` (a scenario, a youth 10 m from a Gunpowder
-Kraal, no resources until 22 s):* the Askari button stays enabled, its tooltip ends with "Not enough resources" in
-red, and a click shows the game's own message, "55 food, 70 gold required to build another Askari.", as a Train
-button does. Once the resources come, the same click turns the youth into an Askari maturing unit: the Askari comes
-out at once, and the youth dances on the maturing ground (the pack's anim files) until the maturing ends.
-[Full video (MP4)](media/transformChecks-wol.mp4).
+*In WoL, with `transformChecks log` and `wol-fixes/special-transforms` (filmed again on 2026-11-22 with the pack's new
+wording, "within a range of 20"; a scenario, a youth 6 m from a Gunpowder Kraal, no resources until 60 s; 3.5x
+speed):* the Askari button stays enabled, its tooltip ends with "Not enough resources" in red, and a click shows the
+game's own message, "55 food, 70 gold required to build another Askari.", as a Train button does. Once the resources
+come, the same click turns the youth into an Askari maturing unit: the Askari comes out at once, and the youth dances
+on the maturing ground (the pack's anim files) until the maturing ends. [Full video (MP4)](media/transformChecks-wol.mp4).
 
 ![transformChecks in WoL, key off](media/transformChecks-wol-control.gif)
 
-*In WoL, key off, the pack applied (the same scene):* the click without resources shows the same message (it is the
-game's), but the tooltip says nothing; the transform and the dance are the same, since both are the pack's data.
+*In WoL, key off, the pack applied (the same scene, 2026-11-22):* the click without resources shows the same message
+(it is the game's), but the tooltip says nothing; the transform and the dance are the same, since both are the pack's
+data.
 [Full video (MP4)](media/transformChecks-wol-control.mp4).
 
 ```
@@ -7744,6 +7825,11 @@ transformChecks [log]
   question for the WoL team). The transform makes the maturing unit complete, so its single-use `Spawn` gives the unit
   at once; the pack's anim files make the youth dance beside it until the maturing unit's lifespan ends. Not tested:
   multiplayer, the reload of a game saved during a maturing (the console `loadGame` did not visibly reload).
+  Again on 2026-11-22 (JTMaston: no unit for distances in the game), the pack's tooltips say "(within a range of 20)"
+  instead of "(within 20 m)": screenshots 2, 3, 7, 9 and 12 and both videos taken again with it (a far youth grey with
+  the kraal rule, `2 / 3` for a group, "Not enough resources" alone, the placement reason over the cost); picture 8
+  (beside WoL's DLL) was removed, as it showed the old wording and the run beside WoL's DLL was not repeated (the text
+  is the pack's data, the same with either DLL).
 
 ### Interface
 

@@ -271,10 +271,12 @@ ageUpBuildings-wol-control 1 12 1
 useBigHugeButton-wol 3 12 1
 orPrereqsQty-wol 2 24 2
 orPrereqsQty-wol-control 0 24 2
-shipmentCounts-wol 30 90 8
+shipmentCounts-wol 18 70 8
 shipmentCounts-wol-control 30 90 8
-shipmentCounts-reward-wol 6 20 2
+shipmentCounts-reward-wol 20 24 2
 shipmentCounts-reward-wol-control 2 20 2
+ageFiveShipments-wol 0 24 2
+ageFiveShipments-wol-control 0 16 2
 kothTimer-wol 4 24 2
 kothTimer-wol-control 4 24 2
 politicianPlacesFix-wol 4 12 1
@@ -308,8 +310,8 @@ paraguayanWorks-collapse-wol 62 4 0.5
 paraguayanWorks-collapse-wol-control 67 4 0.5
 shipTechLimit-wol 2 36 3 800:70:0:375+800:240:480:480
 shipTechLimit-wol-control 3 30 3 800:240:480:320
-transformChecks-wol 4.5 12 1 800:640:560:290+800:175:1110:945
-transformChecks-wol-control 2 12 1 800:640:560:290+800:175:1110:945
+transformChecks-wol 6 42 3.5 800:640:560:290+800:175:1040:945
+transformChecks-wol-control 6 42 3.5 800:640:560:290+800:175:1040:945
 autoScout-back-wol 8 24 2
 autoScout-back-wol-control 8 24 2
 autoGatherFrom-wol 8 24 2

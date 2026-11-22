@@ -1042,12 +1042,13 @@ Code: [techs](porting-code/techs.md#shipmentcounts). It needs the Player target 
   the proto into the field and `amount × count` into the amount, set EBP and `[esp+28h]` to 37h and EAX to 37h − 0Ah,
   and jump to `0x8D8444`: the stock `FreeHomeCityUnit` delivers the units. A count of 0: `mov al,1 / jmp 8D8D23h`.
 - **The parse:** the subtype's name goes through your subtype lookup; while the effect is read, keep its node (the
-  `call` at `0x6206B2` has it in EBP and the effect in ESI) to read `unittype`, `age` (one age or a range `N-M`) and
-  `includeself`, and pack them into the effect's `+10h`.
+  `call` at `0x6206B2` has it in EBP and the effect in ESI) to read `unittype`, `age` (one digit 0 to 4, Age I to V
+  as in a card's `<age>`, or two digits `NM` for a range, N <= M: `13` is Ages II to IV) and `includeself`, and pack
+  them into the effect's `+10h`.
 - **The syscalls:** `int xsGetShipmentCount(int playerID, int age)` and `int xsGetShipmentCountRange(int playerID, int
   firstAge, int lastAge)` in the XS group.
 - **Test:** a card with the effect and `includeself`: it brings one unit; a tech after two cards of Age I with
-  `age='1'`: two units; a card of Age II (`<age>1</age>`) sent in Age III counts in Age II; save, load in a new process:
+  `age='0'`: two units; `age='2-4'` (the old form): dropped, logged; a card of Age II (`<age>1</age>`) sent in Age III counts in Age II; save, load in a new process:
   the same counts.
 
 ### ageFiveShipments
@@ -1061,8 +1062,19 @@ Code: [techs](porting-code/techs.md#agefiveshipments). No shared hook.
   back to `0x9A5A27`), `0x9A0489` (`8B 46 18 3B F8`, the home city's deck builder, back to `0x9A048E`) and `0x9A77BE`
   (`8B 46 18 3B D8`, the `homeCityDeck` dialog, back to `0x9A77C3`). ESI is the card in all three. Leave
   `[card+18h]` alone: the panel greys the card and the send refuses it until the player's age reaches 4.
-- **Test:** a card given `<age>4</age>` in its home city file: fourth in the Age IV row of both panels, greyed until the
-  Imperial Age, refused before, sent in it.
+- **The columns (Age V at the right, 2026-11-22):** a second jump in each fill, once the row and column are set and
+  before the slot `row × 11 + column` is computed: `0x9A5A7C` (`8B 4C 24 28 8B 54 24 14`, 8 bytes, the panel; back to
+  `0x9A5A84`), `0x9A04B0` (`8B 54 24 14 8B 44 24 28`, 8 bytes, the deck builder; back to `0x9A04B8`) and `0x9A77E5`
+  (`8B 4C 24 30 8D 04 5B`, 7 bytes, the dialog; back to `0x9A77EC`). Entry: ESI the card; the card list at `[esp+2Ch]`
+  (panel) or in EBP (the two others), entries of 28h at `[list+1Ch]`, `[list+20h]` of them; the column at `[esp+28h]`,
+  `[esp+14h]`, `[esp+1Ch]`. When the list holds Age V cards (age 4), give an Age V card column 11 − (Age V cards) + its
+  rank among them, and an Age IV card its rank among the Age IV cards, or skip it when that column is the Age V
+  cards' (jump to `0x9A620B`, `0x9A076C`, `0x9A7A73`; in the panel also lower `[panel+4D0h+4×row]`, `[esp+14h]` = the
+  panel, which the fill raised for it). Write the column back and re-run the replaced instructions. Nothing else is
+  needed: the button, its card link (`+1F0h` / `+228h`) and its overlays all take the slot from that column.
+- **Test:** three cards given `<age>4</age>` in a deck with six Age IV cards: Age IV in columns 1 to 6 and Age V in 9 to
+  11, in both panels and the deck chooser; the rollover and a click (a send, a removal from the deck in "Build a
+  Deck") of each give the card shown; greyed until the Imperial Age, refused before, sent in it.
 
 ### orPrereqsQty
 

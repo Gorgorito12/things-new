@@ -126,7 +126,7 @@ def placement_rule_text(root, placement, strings):
         sid = re.search(r'errorstringid="(\d+)"', attrs)
         line = strings.get(int(sid.group(1)), f"Near a {unit.strip()}") if sid else f"Near a {unit.strip()}"
         if dist:
-            line = f"{line.rstrip('.')} (within {float(dist.group(1)):g} m)."
+            line = f"{line.rstrip('.')} (within a range of {float(dist.group(1)):g})."
         out.append(line)
     return out
 
