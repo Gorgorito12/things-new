@@ -19,8 +19,8 @@ What it changes (README.txt has the why and the recipe for another unit):
 - data\\tactics\\wolChasseurDismount.tactics (new, made from the folder's own musketCavalry.tactics): the same
   actions and tactics, plus the actions DismountedRangedAttack, DismountedHandAttack and DismountedBuildingAttack
   (copies of DefendRangedAttack, MeleeHandAttack and BuildingAttack with the animations on foot), a tactic
-  "Dismounted" (speed x0.67) and a transition from every mounted tactic to it (animation Dismount, 2.5 s) and
-  back (Mount, 2.5 s); with --test, the file's Build and Heal actions are active and in the stance on foot only;
+  "Dismounted" (speed x0.67) and a transition from every mounted tactic to it (animation Dismount, 2.5 s; 3.5 s
+  with the horse hidden, the rider then stepping to the unit's centre) and back (Mount, the same); with --test, the file's Build and Heal actions are active and in the stance on foot only;
 - data\\protoy.xml: ChasseuraCheval uses that file and gets the ProtoActions of the three new attacks (copies of
   its own) and the buttons DismountStance and MountStance on its command row (page 10, the first free columns);
   with --test, the unit ChasseuraChevalDismountTest;
@@ -33,8 +33,8 @@ What it changes (README.txt has the why and the recipe for another unit):
 - data\\stringtabley.xml and translations\\_originals\\stringtabley.xml: the tooltips (IDs 690911, 690912);
 - art\\WoL\\units\\cavalry\\chasseur_a_cheval\\chasseur_a_cheval_horse.xml and chasseur_a_cheval_rider.xml: the
   animations Dismounted_* (idle, bored, walk, jog, run, attack, reload, melee, death, raze idle and attack),
-  Dismount and Mount; with the horse hidden, the horse's animations on foot are the clips
-  chasseur_horse_hidden_*, which keep the horse under the ground;
+  Dismount and Mount; with the horse hidden, the clips chasseur_hidden_* (the rider on the unit's centre on foot)
+  and chasseur_horse_hidden_* (the horse under the ground while he is on foot);
 - art\\WoL\\units\\cavalry\\chasseur_a_cheval\\dismount\\*.gr2 (new): the rider's animations and the horse clips
   that go with them, the ones the chosen blocks name (made with aoe3-blender-tools' tools/make_dismount.py).
 """
@@ -55,6 +55,9 @@ TACTICS = "wolChasseurDismount.tactics"
 MOUNTED = ["Stagger", "Defend", "Melee"]
 STANCE = "Dismounted"
 SPEED = "0.67"
+# the transitions' <length>, as long as their animations: hidden, the rider also steps between the horse's side and
+# the unit's centre (make_dismount.py's step_length, 1 s)
+LENGTH = {"keep": "2.5", "hide": "3.5"}
 ART = "art/WoL/units/cavalry/chasseur_a_cheval"
 HORSE_XML = ART + "/chasseur_a_cheval_horse.xml"
 RIDER_XML = ART + "/chasseur_a_cheval_rider.xml"
@@ -173,7 +176,7 @@ def action_block(text, name):
     return m
 
 
-def tactics_file(text, test=False):
+def tactics_file(text, test=False, horse="hide"):
     """The source tactics with the stance on foot (see the module's note)."""
     if re.search(r"<tactic>\s*%s\b" % STANCE, text):
         sys.exit(f"apply_fix: {SOURCE_TACTICS} has a tactic {STANCE} already")
@@ -206,7 +209,7 @@ def tactics_file(text, test=False):
             b = re.sub(r"(?m)^\t\t<action>\s*(?:%s)\s*</action>\r?\n" % "|".join(TEST_ACTIONS), "", b)
         i = b.index("\t\t<attacktype>") if "\t\t<attacktype>" in b else b.rindex("\t</tactic>")
         trans = (f"\t\t<transition>\n\t\t\t<tactic>{STANCE}</tactic>\n\t\t\t<action>Limber</action>\n\t\t\t<anim>Dismount</anim>\n"
-                 f"\t\t\t<length>2.5</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n")
+                 f"\t\t\t<length>{LENGTH[horse]}</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n")
         text = text[:m.start()] + b[:i] + trans + b[i:] + text[m.end():]
     # 3. the stance on foot, after the last tactic: the name and the first child on one line (a line break after
     #    the name defines the tactic's XS constant twice)
@@ -215,7 +218,7 @@ def tactics_file(text, test=False):
     keep = [line.group(0) for line in re.finditer(r"(?m)^\t\t<action[^>]*>\s*([^<]*?)\s*</action>", first)
             if line.group(1) not in actions and line.group(1) != "JezailRangedAttack"]
     back = "".join(f"\t\t<transition>\n\t\t\t<tactic>{t}</tactic>\n\t\t\t<action>Limber</action>\n\t\t\t<anim>Mount</anim>\n"
-                   f"\t\t\t<length>2.5</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n" for t in MOUNTED)
+                   f"\t\t\t<length>{LENGTH[horse]}</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n" for t in MOUNTED)
     on_foot = "".join(f"\t\t<action priority=\"{PRIORITY[new]}\">{new}</action>\n" for new, _a in actions.values())
     if test:
         on_foot += "".join(f"\t\t<action>{name}</action>\n" for name in TEST_ACTIONS)
@@ -292,7 +295,7 @@ def snippets(horse, test):
     under the ground), and the test unit's with --test."""
     hidden = "-hidden" if horse == "hide" else ""
     return {HORSE_XML: [f"anims-horse{hidden}.xml"] + ([f"anims-horse-test{hidden}.xml"] if test else []),
-            RIDER_XML: ["anims-rider.xml"] + (["anims-rider-test.xml"] if test else [])}
+            RIDER_XML: [f"anims-rider{hidden}.xml"] + ([f"anims-rider-test{hidden}.xml"] if test else [])}
 
 
 def needed_art(horse, test):
@@ -342,7 +345,7 @@ def apply(root, horse="hide", test=False):
         if (root / rel).exists():
             sys.exit(f"apply_fix: {root / rel} exists: the game would read it instead of the edited XML")
     # Made and checked before anything is written.
-    tactics = tactics_file((root / "data/tactics" / SOURCE_TACTICS).read_text(encoding="utf-8"), test)
+    tactics = tactics_file((root / "data/tactics" / SOURCE_TACTICS).read_text(encoding="utf-8"), test, horse)
     rider_text, _ = read_text(root / RIDER_XML)
     if not re.search(r"<attachment>\s*torch\b", rider_text):
         sys.exit(f"apply_fix: {RIDER_XML} defines no attachment torch (the attack on buildings on foot holds it)")

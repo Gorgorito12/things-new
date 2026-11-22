@@ -10,8 +10,9 @@ What it does
   infantry's own animations: volley fire and reload, bayonet, the torch against buildings, idle, walk, run, death.
 - The horse, per unit (the --horse option, or the recipe of another unit):
   - hide (the default): the horse is there while the rider gets off and on, and is not drawn while he is on foot.
-    It leaves at the end of the dismount and comes back at the start of the mount, as the stock cannons' limber
-    does when they unlimber;
+    The dismount (3.5 s) ends with the horse gone and the rider stepping from its side to the unit's centre, where
+    he stands on foot, on the selection circle and under the hit point bar; the mount (3.5 s) starts with the step
+    back, then the horse is there again and he climbs on;
   - keep: the horse stays beside him and walks with him (the pack before 2026-11-22).
 - Mount: he climbs back on (2.5 s) and the unit is cavalry again, in the Stagger stance.
 - On foot the unit is slower (speed x0.67, the line infantry's 4.0 instead of 6.0). Its attacks keep the numbers
@@ -40,8 +41,8 @@ How it is built (the recipe for another unit)
    attacks with other animation names (Dismounted_Attack, Dismounted_Reload, Dismounted_Melee, Dismounted_Idle,
    Dismounted_Raze_attack, Dismounted_Raze_idle). A new
    tactic "Dismounted" with those actions, <speedmodifier>, its own idle/bored/walk/jog/run/death animations, and
-   one <transition> back to each mounted tactic (<action>Limber</action>, <anim>Mount</anim>, <length>2.5</length>,
-   <exit>1</exit>). Every mounted tactic gets a <transition> to "Dismounted" (<anim>Dismount</anim>). This is how
+   one <transition> back to each mounted tactic (<action>Limber</action>, <anim>Mount</anim>, <length>2.5</length>
+   with the horse kept, 3.5 hidden: as long as the animations, <exit>1</exit>). Every mounted tactic gets a <transition> to "Dismounted" (<anim>Dismount</anim>). This is how
    the artillery's Limber/Bombard works (falconet.tactics). <exit>1 is what lets a button's tactic change use the
    transition; <action>Limber</action> is the built-in transition action every stock artillery transition names.
    No <automatic>: with it the unit would switch on its own to reach an action of the other stance.
@@ -80,14 +81,18 @@ How it is built (the recipe for another unit)
    pack's --horse. Hidden, the horse's animations on foot are clips of their own (chasseur_horse_hidden_<name>.gr2)
    that put every bone the horse's mesh is skinned to 30 m under the ground and keep the bones nothing is skinned
    to where they were: the root, "bone attachpoint" (the rider), "bone hitpointbar" and "bone_launchpoint". The
-   horse is not seen; the rider, written in the frame of his bone, is the same in both choices. Dismount and Mount
-   keep the visible horse. So a modder chooses per unit: a unit of the recipe with "hide", another with "keep".
+   horse is not seen. The rider's animations on foot are files of their own (chasseur_hidden_<name>.gr2) that put
+   him on the unit's centre (recipe "centre", default 0, 0), where the selection circle and the hit point bar are.
+   The dismount is the kept one (2.5 s) followed, once the horse is under the ground, by a 1 s step from the
+   horse's side to the centre (the idle turning into the walk and back); the mount starts with the step back, and
+   the horse comes up when he stands beside it; so a hidden transition lasts 3.5 s, and the tactics' <length> says
+   3.5. So a modder chooses per unit: a unit of the recipe with "hide", another with "keep".
    Tried first and dropped: a second <component> in the horse's anim file (the way the stock cannons show a
    stripped model in their Bombard animations), named by the animations on foot, with a horse model that draws
    nothing. In game the rider hung on it vanished too (or only his hats showed, on the ground).
-   Limits: the horse appears and disappears at once, at the end of Dismount and at the start of Mount (no fade);
-   the rider stands where he got off, 0.85 m left of the unit's centre, and the selection circle and the hit point
-   bar stay on the unit's centre; the unit keeps the horse's size and obstruction.
+   Limits: the horse disappears and appears at once (no fade), after the dismount's last move and before the
+   mount's first; the unit keeps the horse's size and obstruction. With the horse kept, the rider stands 0.85 m
+   left of the unit's centre, beside the horse, which fills the centre.
    A heal and a construction play the anim names Heal and Build (and BuildLifting, BuildSaw, BuildStaking), not
    the name an action's <anim> gives (measured with the test unit: with Dismounted_Heal it healed in its idle).
 7. The stance holds in a fight. Measured: four dismounted chasseurs kept the stance (tactic index 3) through a
@@ -110,14 +115,16 @@ and test scenarios. The stance switch by the two buttons (posted clicks) and by 
 transitions, standing, walking and firing on foot beside the horse, the stance kept through the fight (read from
 the game every 0.25 s), mounting again, a game saved while dismounted and loaded (stance kept), the AI scripts
 compiling with the pack applied. Not tested: multiplayer.
-2026-11-22, the horse hidden (copy of Wars of Liberty, test scenarios, the stance set by console): the dismount
-(the horse there through it, gone after it) and the mount (back at its start); standing and walking on foot with
-no horse; the torch thrown at an enemy House (its hit points 912 to 588 in 20 s); fire and bayonet
-against four Jaegers, and deaths on foot; the test unit healing a Line Infantry from 17 to 150 hit points and
-placing and building a House, with the Heal and Build animations; a game saved dismounted and loaded (still on
-foot, horse hidden), then mounted again; the same fight with --horse keep (horses beside the riders, dying with
-them); the AI scripts compiling in a French skirmish against a German AI (11 compiles, 0 errors; it trained
-settlers and built a Manor).
+2026-11-22, the horse hidden, the rider on the unit's centre (copy of Wars of Liberty, test scenarios, the stance
+set by console): the dismount (the horse there through it, gone after it, the step to the centre) and the mount
+(the step back, the horse there again); on foot each rider stands on the middle of his selection circle with the
+hit point bar right above him (screenshots of one chasseur mounted and on foot, within a few pixels); standing and
+walking on foot with no horse; the torch thrown at an enemy House (its hit points 1042 to 646 in 22 s); fire and
+bayonet against four Jaegers, and deaths on foot; the test unit healing a Line Infantry from 36 to 165 hit points
+and placing and building a House, with the Heal and Build animations; a game saved dismounted and loaded (still on
+foot on the centre, horse hidden), then mounted again; the same fight with --horse keep (horses beside the riders,
+dying with them); the AI scripts compiling in a French skirmish against a German AI (11 compiles, 0 errors; it
+trained settlers and built a Manor).
 
 ESPAÑOL
 -------
@@ -166,9 +173,11 @@ Cómo está hecho (la receta para otra unidad)
    Una animación escrita guarda sus pistas ordenadas por
    nombre, como las del juego: si no, el juego solo mueve algunos huesos.
 6. El caballo, por unidad: con "hide" los clips del caballo a pie (chasseur_horse_hidden_*) dejan bajo tierra (30 m)
-   cada hueso con malla y dejan en su sitio la raíz, el hueso del jinete, la barra de vida y el punto de disparo; el
-   jinete no cambia. Límites: el caballo desaparece y aparece de golpe (al final de Dismount y al empezar Mount); el
-   jinete queda donde bajó, 0,85 m a la izquierda del centro de la unidad (círculo y barra de vida en el centro).
+   cada hueso con malla y dejan en su sitio la raíz, el hueso del jinete, la barra de vida y el punto de disparo. A
+   pie el jinete está en el centro de la unidad (sobre el círculo de selección, bajo la barra de vida): al desmontar,
+   ya sin caballo, da unos pasos desde el costado al centro, y al montar vuelve al costado antes de que aparezca el
+   caballo (cada transición dura 3,5 s, y el <length> de las tácticas también). Límites: el caballo desaparece y
+   aparece de golpe. Con el caballo a la vista (keep), el jinete sigue a 0,85 m del centro, junto al caballo.
    Curar y construir usan las animaciones Heal y Build (y BuildLifting, BuildSaw, BuildStaking), no el <anim> de la
    acción.
 7. La postura se mantiene en combate: medido, cuatro chasseurs desmontados siguieron a pie toda la pelea.
@@ -177,7 +186,8 @@ Probado (un jugador): escaramuza francesa contra una IA alemana y escenarios de 
 consola (el mismo comando que envían los botones), las transiciones, de pie, caminando y disparando junto al
 caballo, montar de nuevo, los dos botones (clics), guardar y cargar desmontado (la postura se conserva) y la IA
 compila. 2026-11-22, con el caballo oculto: transiciones, a pie sin caballo, antorcha contra una casa, fuego y
-bayoneta contra cuatro Jaegers y muertes a pie, la unidad de prueba curando (17 a 150) y construyendo una casa,
+bayoneta contra cuatro Jaegers y muertes a pie, el jinete a pie en el centro del círculo de selección y bajo la barra de vida (medido en capturas), la unidad de
+prueba curando (36 a 165) y construyendo una casa,
 guardar y cargar desmontado, montar de nuevo, el control con --horse keep y la IA compilando (11 compilaciones,
 0 errores). Sin probar: multijugador.
 

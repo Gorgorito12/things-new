@@ -335,6 +335,6 @@ dismount-wol-control 0 24 2
 dismount-transitions-wol 0 20 1.6
 dismount-hidden-wol 0 22 2
 dismount-hidden-wol-control 0 18 2
-dismount-hidden-transitions-wol 0 18 1.6
+dismount-hidden-transitions-wol 0 19 1.6
 dismount-hidden-torch-wol 0 22 2
-dismount-hidden-heal-build-test-wol 4 24 2
+dismount-hidden-heal-build-test-wol 2 24 2

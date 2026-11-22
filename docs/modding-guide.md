@@ -8958,12 +8958,17 @@ pack takes `--horse hide` (the default) or `--horse keep`:
 - **hide:** the horse is seen while the rider gets off and on, and not while he is on foot. The horse's animations
   on foot are clips of their own (`chasseur_horse_hidden_<name>.gr2`) that put every bone the horse's mesh is
   skinned to 30 m under the ground, and keep where they were the bones nothing is skinned to: the root, `bone
-  attachpoint` (the rider), `bone hitpointbar` and `bone_launchpoint`. The rider's animations do not change: he
-  is written in the frame of his bone.
-- **keep:** the horse stays beside him and walks with him (the pack before 2026-11-22).
-- **Limits of hide:** the horse leaves at once at the end of the dismount and comes back at once at the start of the
-  mount, as the stock cannons' limber does; the rider stands where he got off, 0.85 m left of the unit's centre,
-  where the selection circle and the hit point bar stay; the unit keeps the horse's size and obstruction.
+  attachpoint` (the rider), `bone hitpointbar` and `bone_launchpoint`. On foot the rider stands on the unit's
+  centre, on the selection circle and under the hit point bar (his own files, `chasseur_hidden_<name>.gr2`; recipe
+  `"centre"`, default 0, 0). The dismount is the kept one (2.5 s) followed, once the horse is under the ground, by a
+  1 s step from the horse's side to the centre; the mount starts with the step back, and the horse comes up when he
+  stands beside it. A hidden transition so lasts 3.5 s, and the tactics' `<length>` is 3.5.
+- **keep:** the horse stays beside him and walks with him (the pack before 2026-11-22); the rider stands 0.85 m left
+  of the unit's centre, which the horse fills.
+- **Limits of hide:** the horse disappears and appears at once (no fade), as the stock cannons' limber does; the
+  unit keeps the horse's size and obstruction.
+- **First version of hide (2026-11-22, morning):** the rider stayed where he got off, so the selection circle and the
+  hit point bar were 0.85 m beside him; the user saw it in the first videos, which were filmed again.
 - **Tried first and dropped:** a second `<component>` in the horse's anim file, named by the animations on foot, with
   a horse model that draws nothing (the way the stock cannons show a stripped model in their Bombard animations). In
   game the rider hung on it vanished as well, or only his hats showed, on the ground; with the horse's own model in
@@ -8979,29 +8984,33 @@ the unit healed in its idle pose.
 
 ![The horse hidden, a fight on foot](media/dismount-hidden-wol.gif)
 
-*`--horse hide`, a test scenario (its player is not French), three Chasseurs a Cheval set to Dismounted by console
-and sent by a trigger against four Jaegers (2026-11-22):* no horse on foot; the riders fire and fight with the
-bayonet, and the dead lie on the ground without a horse. [Full video (MP4)](media/dismount-hidden-wol.mp4).
+*`--horse hide`, a test scenario (its player is not French; the chasseurs show their Chasseur d'Afrique model, which
+the anim file picks for that player's techs), three chasseurs set to Dismounted by console and sent by a trigger
+against four Jaegers (filmed again 2026-11-22, the rider on the centre):* no horse on foot; each rider stands on his
+selection circle, fires and fights with the bayonet, and the dead lie on the ground without a horse.
+[Full video (MP4)](media/dismount-hidden-wol.mp4).
 
 ![The horse kept, the same fight](media/dismount-hidden-wol-control.gif)
 
-*The control, `--horse keep`, same scenario:* the horses stand beside the riders and fall with them.
-[Full video (MP4)](media/dismount-hidden-wol-control.mp4).
+*The control, `--horse keep`, same scenario (filmed 2026-11-22; the kept variant did not change since):* the horses
+stand beside the riders and fall with them. [Full video (MP4)](media/dismount-hidden-wol-control.mp4).
 
 ![Dismount and mount, the horse hidden](media/dismount-hidden-transitions-wol.gif)
 
-*`--horse hide`, one chasseur:* the dismount with the horse there, the horse gone at its end; the rider on foot; the
-mount, the horse back at its start. [Full video (MP4)](media/dismount-hidden-transitions-wol.mp4).
+*`--horse hide`, one chasseur, selected:* the dismount with the horse there, the horse gone at its end and the rider
+stepping onto the selection circle; on foot under the hit point bar; the mount: the step back to the side, the horse
+there again, the climb. [Full video (MP4)](media/dismount-hidden-transitions-wol.mp4).
 
 ![The torch on foot](media/dismount-hidden-torch-wol.gif)
 
-*`--horse hide`, three dismounted chasseurs next to an enemy House:* they throw torches at it on foot (the attack on
-buildings, `DismountedBuildingAttack`), its hit points falling from 912 to 588. [Full video (MP4)](media/dismount-hidden-torch-wol.mp4).
+*`--horse hide`, three dismounted chasseurs next to an enemy House, each on his selection circle:* they throw torches
+at it on foot (the attack on buildings, `DismountedBuildingAttack`), its hit points falling from 1042 to 646.
+[Full video (MP4)](media/dismount-hidden-torch-wol.mp4).
 
 ![Heal and build on foot, test unit](media/dismount-hidden-heal-build-test-wol.gif)
 
-*TEST unit (`--test`), `--horse hide`:* it heals a damaged Line Infantry (17 to 150 hit points) with the `Heal`
-animation, then places a House and builds it with the `Build` animation (hammering with the musket).
+*TEST unit (`--test`), `--horse hide`:* on its selection circle, it heals a damaged Line Infantry (36 to 165 hit points)
+with the `Heal` animation, then places a House and builds it with the `Build` animation (hammering with the musket).
 [Full video (MP4)](media/dismount-hidden-heal-build-test-wol.mp4).
 
 ![Dismount in WoL](media/dismount-wol.gif)
@@ -9039,6 +9048,9 @@ tags", "Tactic for an action", "Squad mode of a unit"):
 - **Tested further** (2026-11-21, horse kept): the two buttons clicked (posted clicks on the command row) dismount
   and mount the selected unit; a game saved while dismounted loads with the stance and the rider on foot (tactic
   index 3 kept); with the pack applied the AI scripts compile (6 compiles, 0 errors, XS tracer on this copy's game).
+- **The rider on the centre, measured** (2026-11-22, the same chasseur selected, mounted and then on foot, screenshots
+  at the game's camera): on foot his feet are on the middle of the selection decal and the hit point bar is right
+  above him, within a few pixels at the default zoom; mounted, the horse fills the same decal.
 - **Tested 2026-11-22** (`--horse hide`, test scenarios): the transitions, standing and walking on foot, the torch,
   fire and bayonet, deaths on foot, the test unit's heal and build (videos above); a game saved dismounted and loaded
   (still on foot, no horse), then mounted again (the horse back); the AI scripts compile with the pack (a French
