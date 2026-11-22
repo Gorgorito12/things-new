@@ -12,8 +12,8 @@
 // their opposites) that points most toward the parent. So the annex faces the parent and lines up with it, whatever
 // the parent's own angle. Every machine runs the same command on the same state, so all get the same forward.
 //
-// The placement ghost turns the same way before the click (the hook at 0x96E4E7, before the ghost's placement test
-// in 0x96E062): only the local player's view and its green or red test change, never the game.
+// The placement ghost turns the same way before the click (the shared hook at 0x96E4E7, ghostobservers.h, before the
+// ghost's placement test in 0x96E062): only the local player's view and its green or red test change, never the game.
 //
 // The AI chooses a spot with the world's axes, in two tests: the scan of candidate spots (the hook at 0x87DB9F,
 // before its PLACE at 0x87DBA5) and a build plan's own test FUN_0073D62B (the hook at 0x73D7D2, before PLACE at
@@ -40,6 +40,7 @@
 
 #include "../deathobservers.h"
 #include "../features.h"
+#include "../ghostobservers.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -49,7 +50,6 @@
 
 extern "C" {
 void UhcAnnexForwardHook();  // hooks/annexfacing_hooks.asm
-void UhcAnnexGhostHook();
 void UhcAnnexAiPlaceHook();
 void UhcAnnexAiScanHook();
 }
@@ -496,7 +496,7 @@ void __stdcall UhcAnnexForward(char* command, const char* proto, const char* pla
   g_pending = {command, parent};
 }
 
-// From the hook at 0x96E4E7: the placement ghost's update, before its placement test. ESI = the ghost's visual, whose
+// From the shared hook at 0x96E4E7 (ghostobservers.h): the placement ghost's update, before its placement test. ESI = the ghost's visual, whose
 // axes start at +4: position, forward +10h, up +1Ch, right +28h; +7Dh marks them changed. The local view only.
 void __stdcall UhcAnnexGhost(char* visual) {
   const char* ui = *reinterpret_cast<char* const*>(kUiGlobal);
@@ -609,7 +609,7 @@ Outcome ApplyAnnexFacing(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("annexFacing", {&sites::kAnnexForwardSite, &sites::kAnnexCreateCall, &sites::kAnnexGhostSite,
+  if (!VerifyAll("annexFacing", {&sites::kAnnexForwardSite, &sites::kAnnexCreateCall,
                                  &sites::kUnitCreate, &sites::kUnitsNearPoint, &sites::kUnitById, &sites::kIsA,
                                  &sites::kKillQueueAsk, &sites::kUnitAliveSlot, &sites::kAnnexAiPlaceSite,
                                  &sites::kAnnexAiScanSite}) ||
@@ -619,8 +619,7 @@ Outcome ApplyAnnexFacing(const Config& config) {
       !WriteJmp(sites::kAnnexAiPlaceSite.va, reinterpret_cast<const void*>(&UhcAnnexAiPlaceHook), 5) ||
       !WriteJmp(sites::kAnnexAiScanSite.va, reinterpret_cast<const void*>(&UhcAnnexAiScanHook), 6) ||
       !WriteJmp(sites::kAnnexForwardSite.va, reinterpret_cast<const void*>(&UhcAnnexForwardHook), 6) ||
-      !WriteCall(kCreateCall, reinterpret_cast<const void*>(&Create)) ||
-      !WriteJmp(sites::kAnnexGhostSite.va, reinterpret_cast<const void*>(&UhcAnnexGhostHook), 5)) {
+      !WriteCall(kCreateCall, reinterpret_cast<const void*>(&Create)) || !AddGhostObserver(&UhcAnnexGhost)) {
     return Outcome::kFailed;
   }
   Log(L"annexFacing: the proto tags AnnexOf and AnnexRange are on (multiplayer unverified)");

@@ -23,6 +23,7 @@ Contents:
 - [Modify types](#modify-types)
 - [Floating text](#floating-text)
 - [Death observers](#death-observers)
+- [Placement ghost observers](#placement-ghost-observers)
 - [Kill observers](#kill-observers)
 - [Modifier walk](#modifier-walk)
 - [Unit panel row (the minimized interface)](#unit-panel-row-the-minimized-interface)
@@ -5599,6 +5600,118 @@ bool AddDestroyObserver(DeathObserver observer) {
 }  // namespace uhc
 ```
 
+## Placement ghost observers
+
+### src/ghostobservers.h
+
+```cpp
+// The placement ghost's update, shared by the keys that act on it (annexFacing, displayedRange). FUN_0096E062 moves
+// the ghost of the building being placed to the pointer and then tests the placement at 0x96E531; its line 0x96E4E7
+// (mov eax,[0C66234h], the first of that test's arguments) is replaced once by a jump, whichever keys are on, and the
+// hook runs every observer there, in the order the keys add them (their kFeatures order).
+#pragma once
+
+namespace uhc {
+
+// Called on every update of the ghost (each frame while a building is being placed, the game paused too), with
+// ESI of the update: the ghost's visual, [[0xC67300]+200h] (its axes from +4: position, forward +10h, up +1Ch,
+// right +28h; +7Dh marks them changed). The proto being placed is [[0xC67300]+1FCh]. Local view only: the ghost is
+// this machine's, and the build command carries its own transform.
+using GhostObserver = void(__stdcall*)(char* visual);
+
+// Writes the jump the first time (after checking the site's stock bytes) and adds the observer.
+bool AddGhostObserver(GhostObserver observer);
+
+}  // namespace uhc
+```
+
+### src/ghostobservers.cpp
+
+```cpp
+#include "ghostobservers.h"
+
+#include <cstddef>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcGhostUpdateHook();
+
+namespace {
+
+constexpr std::size_t kMaxObservers = 8;
+
+uhc::GhostObserver g_observers[kMaxObservers] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+extern "C" void __stdcall UhcGhostUpdate(char* visual) {
+  for (std::size_t i = 0; i < g_count; ++i) {
+    g_observers[i](visual);
+  }
+}
+
+namespace uhc {
+
+bool AddGhostObserver(GhostObserver observer) {
+  if (g_count == kMaxObservers) {
+    Log(L"placement ghost: more than %u observers", static_cast<unsigned>(kMaxObservers));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("placement ghost", {&sites::kAnnexGhostSite}) ||
+        !WriteJmp(sites::kAnnexGhostSite.va, reinterpret_cast<const void*>(&UhcGhostUpdateHook), 5)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_observers[g_count++] = observer;
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/ghostobservers_hooks.asm
+
+```asm
+; The placement ghost's update (src/ghostobservers.cpp), shared by annexFacing and displayedRange. The hook is entered
+; through a jmp written over the stock code, re-executes the instruction it replaced, and leaves through an explicit jmp
+; to the verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcGhostUpdate PROTO STDCALL visual:DWORD
+
+.data
+ghostNext   dd 0096E4ECh    ; mov ecx,[eax+13Ch]
+
+.code
+
+; Replaces 0x96E4E7 (mov eax,[0C66234h]) in the placement ghost's update FUN_0096E062, before its placement test:
+; ESI = the ghost's visual. The observers may turn the visual's axes or hang models on it; every register and the
+; flags are kept, then the replaced line writes EAX, which 0x96E4EC reads.
+UhcGhostUpdateHook PROC
+    TRACE_ONCE "placement ghost update (0x96E4E7)"
+    pushfd
+    pushad
+    push esi
+    call UhcGhostUpdate
+    popad
+    popfd
+    mov eax, dword ptr ds:[0C66234h]
+    jmp ghostNext
+UhcGhostUpdateHook ENDP
+
+END
+```
+
 ## Kill observers
 
 ### src/killobservers.h
@@ -6513,6 +6626,13 @@ ModelHang HangUnitModel(char* unit, std::int32_t model, std::int32_t bone);
 bool UnitHasModel(const char* unit, std::int32_t model);
 void RemoveUnitModel(char* unit, std::int32_t model);
 
+// The same on a visual that has no unit, such as the placement ghost's [[0xC67300]+200h]: the three stock functions
+// (0x9C04F3, 0x9C28DE, 0x9C2885) read nothing of the unit but its visual [unit+60h], so they run on a block whose
+// +60h is the visual. The visual must be of a unit visual's class (the caller checks its vtable).
+ModelHang HangVisualModel(char* visual, std::int32_t model, std::int32_t bone);
+bool VisualHasModel(char* visual, std::int32_t model);
+void RemoveVisualModel(char* visual, std::int32_t model);
+
 }  // namespace uhc
 ```
 
@@ -6520,6 +6640,8 @@ void RemoveUnitModel(char* unit, std::int32_t model);
 
 ```cpp
 #include "unitmodels.h"
+
+#include <cstddef>
 
 #include "generated/sites.h"
 #include "patch.h"
@@ -6542,6 +6664,13 @@ const auto kModelById = reinterpret_cast<ModelByIdFn>(0x00405E83);
 const auto kHasModel = reinterpret_cast<HasModelFn>(0x009C28DE);
 const auto kAttachModel = reinterpret_cast<AttachModelFn>(0x009C04F3);
 const auto kRemoveModel = reinterpret_cast<RemoveModelFn>(0x009C2885);
+
+// A stand-in unit: only its visual, at +60h, as the three functions read it.
+struct VisualHolder {
+  char pad[0x60] = {};
+  char* visual = nullptr;
+};
+static_assert(offsetof(VisualHolder, visual) == 0x60);
 
 }  // namespace
 
@@ -6577,6 +6706,29 @@ ModelHang HangUnitModel(char* unit, std::int32_t model, std::int32_t bone) {
 bool UnitHasModel(const char* unit, std::int32_t model) { return kHasModel(unit, model); }
 
 void RemoveUnitModel(char* unit, std::int32_t model) { kRemoveModel(unit, model); }
+
+ModelHang HangVisualModel(char* visual, std::int32_t model, std::int32_t bone) {
+  if (visual == nullptr) {
+    return ModelHang::kRetry;
+  }
+  VisualHolder holder;
+  holder.visual = visual;
+  return HangUnitModel(reinterpret_cast<char*>(&holder), model, bone);
+}
+
+bool VisualHasModel(char* visual, std::int32_t model) {
+  VisualHolder holder;
+  holder.visual = visual;
+  return visual != nullptr && kHasModel(reinterpret_cast<const char*>(&holder), model);
+}
+
+void RemoveVisualModel(char* visual, std::int32_t model) {
+  if (visual != nullptr) {
+    VisualHolder holder;
+    holder.visual = visual;
+    kRemoveModel(reinterpret_cast<char*>(&holder), model);
+  }
+}
 
 }  // namespace uhc
 ```

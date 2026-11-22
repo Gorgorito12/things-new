@@ -28,6 +28,7 @@ set(UHC_SOURCES
   src/canresearch.cpp
   src/techrollover.cpp
   src/deathobservers.cpp
+  src/ghostobservers.cpp
   src/killobservers.cpp
   src/unitpanel.cpp
   src/datarefs.cpp
@@ -253,6 +254,7 @@ set(UHC_SOURCES
   src/hooks/snarevalues_hooks.asm
   src/hooks/linkedresource_hooks.asm
   src/hooks/annexfacing_hooks.asm
+  src/hooks/ghostobservers_hooks.asm
   src/hooks/playericon_hooks.asm
   src/hooks/detonation_hooks.asm
   src/hooks/xslog_hooks.asm

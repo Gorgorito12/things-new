@@ -183,6 +183,10 @@ unitResourceAuras-torp-wol 4 12 1
 unitResourceAuras-torp-wol-control 4 12 1
 displayedRange-wol 3 36 3
 displayedRange-wol-control 5 33 3
+displayedRange-wol-ally 2 12 1
+displayedRange-wol-enemy 1 18 1.5
+displayedRange-wol-placement 2 24 2
+displayedRange-wol-placement-control 2 16 2
 linkedResource-wol 2 12 1
 linkedResource-wol-control 2 12 1
 linkedResource-model-wol 4 84 7
@@ -348,3 +352,6 @@ dismount-hidden-wol-control 0 18 2
 dismount-hidden-transitions-wol 0 19 1.6
 dismount-hidden-torch-wol 0 22 2
 dismount-hidden-heal-build-test-wol 2 24 2
+auraRings-pack-wol 2 18 1.5
+auraRings-pack-units-wol 2 12 1 1160:653:600:280
+auraRings-pack-wol-control 2 18 1.5

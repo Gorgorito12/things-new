@@ -2165,7 +2165,7 @@ The ring is a model of the table the tactics parser fills: 0x58F68F gives the ID
 it at the unit's feet. A world tick, ten times a second of game time, compares the selection of 0x453B28 and the Alt state
 with the units that hold rings, and hangs or removes them through the functions of the stock aura update.
 
-**Ring size:** the model's flat particle is drawn `<scale>` metres wide in all, not twice that: `range_<N>.particle` has
+**Ring size:** a range ring is a mesh since 2026-11-22, its outer edge at N m in `range_<N>.gr2`'s own vertices (in metres through the file's units per metre). Before, with the white particle rings (`make_rings.py --range-particles`), the model's flat particle is drawn `<scale>` metres wide in all, not twice that: `range_<N>.particle` has
 a scale of 2 × N / 0.97, the texture's line ending at 0.97 of its half width (measured in game, 2026-11-21: with the
 half width as the scale every ring showed half its radius).
 
@@ -2178,7 +2178,27 @@ player's proto: its action entries are 12 bytes at `[tactic+44h]` (count `+48h`)
 set by its handler 0x5FAC6D) of `[action+64h]` are set; its range is 0x4946D6(action, −1), the entry the stat panel shows. The
 player's copy is read every tick, so a range tech shows at once. A tactic with no ranged attack (a cannon limbered to move)
 takes the ranged attacks of all the unit's tactics. Each radius goes to the nearest ring size; equal sizes share a ring;
-at most 4 rings a unit, the largest first, and 75 units with rings, the longest ranges first.
+at most 4 rings a unit, the largest first, and 60 rings in all, the units with the longest ranges first.
+
+**The placement ghost.** The shared ghost update (`ghostobservers.*`: the jump at 0x96E4E7 in FUN_0096E062, before the
+ghost's placement test, `AddGhostObserver`; `annexFacing` turns the ghost there too) runs each frame of a placement, the
+game paused too. The ghost object `[[0xC67300]+200h]` holds the transform (`+4` position, `+10h` forward, `+28h` right,
+`+7Dh` changed) and draws the model `[ghost+34h]`: an object of the class of a unit's visual `[unit+60h]`. Seen in game,
+both start with the same word, and the ghost's code calls three of that class's functions on `[ghost+34h]` (0x40431B,
+0xA3FEF8, 0xADA24B, each also called on `[unit+60h]`). The stock model functions 0x9C04F3, 0x9C28DE and 0x9C2885 read nothing
+of their unit but `[unit+60h]`, so `unitmodels.cpp` runs them on a stand-in block whose `+60h` is `[ghost+34h]`. The rings
+are the proto's (`[ui+1FCh]`, the local player's copy through 0x45311B, its `<DisplayedRange>` or the ranged attacks of
+all its tactics) and are worked out once per proto; each frame only checks that the model still has them. A new proto
+takes the old rings off first; a new model object means the old one went with its rings. When the placement ends, the
+ghost's model goes, rings included (tested: Escape, a placed Outpost, `uiSetProtoCursorID(-1)`).
+
+**Player colour.** A particle's colour fields are `UsePalette`, `NumPaletteColors`, `PaletteColors`, `ColorStages`,
+`fWorldLightingInfluence` and the fixed `Color` (the exe's particle tag names, 0xBA41D0): nothing takes the owner's
+colour. So a range ring is a mesh (aoe3-blender-tools' `make_rings.py`): a flat annulus whose cut-out is the geometry,
+on an alpha-1 texture with the units' shader `bumpspec_mask_pixelxform` (`pixelxformColor = playerColor`). Its texels of
+alpha 0 take the colour of the player of the visual the model hangs on: measured 2026-11-22 with a half-and-half test
+texture, blue on player 1's Skirmisher, red on player 2's Outpost, and the local player's blue on a placement ghost. The
+key needs nothing for it.
 
 **`<Flag>AlwaysDisplayRange</Flag>`.** The proto flag parser 0x5F640A (`stdcall(proto, name)`) compares the name with each
 flag it knows, through the string compare 0x4028B4, and returns with nothing for any other name. The key replaces the call of
@@ -3841,9 +3861,10 @@ targets that paid, and keeps per owner what it hung and per target how many aura
 once a second, because a dead owner has no more updates. A model that is not in the game is accepted by 0x9C04F3, returns
 true and is never found by 0x9C28DE: the helper treats it as hung and logs it once, or it would hang it on every update.
 
+The private pack `wol-fixes/aura-rings` (`make_aura_rings.py`) gives the same file names the game's own ring instead: the Indian economic aura's texture recoloured per colour, and per colour and size a copy of its mesh (`effects\ypack_auras\aura_econ`, a 2.79 m alpha-tested quad 0.5 m over the bone) scaled and naming its own texture, its stored texture name rewritten at the same length; with no `<replacetexture>`, a Town Center in the scene changes nothing (tested 2026-11-22). <!-- private -->
 The rings of `tools/rings` (drawn by `tools/make_rings.py` of aoe3-blender-tools) need no code. A ring's `.xml` hangs one flat particle, chosen by `<logic type="UnitType">`:
 `appearancetype` 2 lies on the ground, 0 faces the camera, and `materialtype` 0 with `material` 0 honours the texture's alpha;
-`scale` is half the width of the square in metres. The particle lives 2 s, `emissionrate` 100 with `maxparticles` 1 replaces it
+`scale` is the full width of the square in metres (measured on the range rings, 2026-11-21). The particle lives 2 s, `emissionrate` 100 with `maxparticles` 1 replaces it
 within a frame, and `startfull` has it there at once: 0x9C2885 takes the model off but leaves its particles to die out, so a
 ring with an hour's life stayed on the unit. The stock mesh is out for two reasons: at 2 m on anything it stays under a
 building, and in a scene with a Town Center its `<replacetexture>` falls back to the stock texture. The cause of that is
@@ -4606,7 +4627,7 @@ Every machine runs the same command on the same state (`DistanceTo`, the query a
 only), so all reach the same forward.
 
 **The ghost.** FUN_0096E062 updates the placement ghost (`ESI` = its visual, `[0xC67300]+200h`): it moves it and tests
-the placement at 0x96E531 with the visual's position `+4`, forward `+10h` and right `+28h`. The hook at 0x96E4E7 (`mov
+the placement at 0x96E531 with the visual's position `+4`, forward `+10h` and right `+28h`. The shared hook at 0x96E4E7 (`ghostobservers.*`, `mov
 eax,[0C66234h]`, the first line of that test's arguments) turns the visual of a tagged proto (`[0xC67300]+1FCh`) the
 same way, for the local player (`[game+3C0h]`) and the nearest parent (the UI's selection is not read), and sets
 `[visual+7Dh]`, as the stock rotation 0x9BC546 does. The green or red test, and the forward that `uiBuildAtPointer`

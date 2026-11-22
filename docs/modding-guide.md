@@ -39,12 +39,12 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Sunday 2026-11-22 12:08 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Sunday 2026-11-22 12:08 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Sunday 2026-11-22 11:56 | [`scenarioCivs`](#scenariocivs) | Added. Reads a second civ file, `data\scenariocivs.xml`, after `civs.xml`: its civs come after the others (no ID moves), show in the scenario editor's list and not in the skirmish and lobby lists. | The file, with `<civ>` elements in `civs.xml`'s format. |
-| Saturday 2026-11-21 16:01 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
+| Sunday 2026-11-22 14:03 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
+| Sunday 2026-11-22 13:54 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Saturday 2026-11-21 15:50 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
 | Saturday 2026-11-21 15:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
 | Saturday 2026-11-21 15:25 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Saturday 2026-11-21 15:06 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
-| Saturday 2026-11-21 12:42 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Saturday 2026-11-21 12:11 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
 | Saturday 2026-11-21 12:07 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
 | Saturday 2026-11-21 12:00 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only heal actions with `<CanOverheal>1</CanOverheal>` heal those units above `InitialHitpoints`, up to their `<OverhealCap>`, and techs can turn it on or off; every other heal stops there. | `overhealHitpointBars`, and the tags on the `Heal` actions that may overheal. |
@@ -5403,14 +5403,14 @@ autoGatherScaleByContained
 
 *An aura earns resources from the units in its range, such as nearby trees.*
 
-**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Saturday 2026-11-21 12:42
+**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Sunday 2026-11-22 13:54
 
 ![unitResourceAuras in WoL](media/unitResourceAuras-wol.gif)
 
 *In WoL, with `unitResourceAuras log` (Ethiopians, WoL's own `WOLSawmill` and its `AreaGatherTree`, with
 [`ring_wood.xml`](#aura-rings) in its `<modelattachment>`):* the 4 trees in the Sawmill's reach, on a slope, wear the amber ring on the ground, and the 3
 beyond it do not. It takes 0.05 wood per second from each, 0.20 wood/s on top of its AutoGather; the log shows a take about every
-3 s and the trees going down. [Full video (MP4)](media/unitResourceAuras-wol.mp4).
+3 s and the trees going down. [Full video (MP4)](media/unitResourceAuras-wol.mp4). *Filmed 2026-11-05 with the first rings: wood was amber then, dark copper since 2026-11-22.*
 
 ![unitResourceAuras in WoL, trees used up](media/unitResourceAuras-depleted-wol.gif)
 
@@ -5429,16 +5429,17 @@ unitResourceAuras [log]
 
 ![unitResourceAuras with the Torp's tags in WoL](media/unitResourceAuras-torp-wol.gif)
 
-*In WoL, the Torp's tags on `WOLSawmill` (Portuguese, a skirmish; test data: seven `UnitResource` auras on the Sawmill,
-each with its [marker](#the-marker-of-a-gathered-resource)):* a pickaxe over the Mine, a bow over the killed Deer, berries
-over the bush, an ear of wheat over the Mill, a leg of meat over the Sheep, an axe over each tree, and the fish marker
-over a Cow (only to show the icon: fish need water).
+*In WoL, the Torp's tags on `WOLSawmill` (Dutch, a skirmish on a test map, with the [aura ring pack](#aura-rings); test data
+`tools/torp_testdata.py`: one `UnitResource` aura per resource on the Sawmill, each with its
+[marker](#the-marker-of-a-gathered-resource)):* a pickaxe over the Mine, meat over the killed Deer and the Sheep, berries over
+the bush, a hoe over the Mill, an axe over the trees, the fish over a Cow (only to show the icon: fish need water), and the
+ship, leaves and drop over the Trade, XP and Fame crates, which the Sawmill empties (the log: resource 7, 5 and 3).
 [Full video (MP4)](media/unitResourceAuras-torp-wol.mp4).
 
 ![unitResourceAuras with the Torp's tags in WoL, key off](media/unitResourceAuras-torp-wol-control.gif)
 
-*In WoL, key off (the same data, the markers there):* stock hangs the model only on the player's own units of the type
-(the Sheep, the Cow, the Mill), none on Gaia's trees, mine, bush or deer, and nothing is gathered. [Full video (MP4)](media/unitResourceAuras-torp-wol-control.mp4).
+*In WoL, key off (the same data and map, the markers there):* stock hangs the model only on the player's own units of the
+type (the Sheep, the Cow, the Mill, the crates), none on Gaia's trees, mine, bush or deer, and nothing is gathered. [Full video (MP4)](media/unitResourceAuras-torp-wol-control.mp4).
 
 - **The ring:** a `UnitResource` aura does not run the stock update, so the key hangs the [aura's ring](#aura-rings) itself: on
   the units that gave resources in that update, and it takes it off when they stop, when the aura's owner dies, or at the limit
@@ -5628,7 +5629,7 @@ The mechanic of DE's Ethiopian Mountain Monastery, without its Influence, which 
 *In WoL, with `showGatherRate` and `resourceGatherAuras` (Ethiopians; a test aura `MineGatherRate` ×2 with
 [`ring_gold.xml`](#aura-rings) on the Explorer, 40 m, the Mine on a small hill):* eight settlers gather a mine, trees, berries and a
 Mill, all in range. Only the two at the mine wear the ring, which lies on the ground. The selected miner's rate is 1.20 coin/s,
-and at 68 s the player has 136 gold; wood and food go as in the control. [Full video (MP4)](media/resourceGatherAuras-wol.mp4).
+and at 68 s the player has 136 gold; wood and food go as in the control. [Full video (MP4)](media/resourceGatherAuras-wol.mp4). *Filmed with the first rings: gold was yellow then, orange-gold since 2026-11-22.*
 
 ![resourceGatherAuras in WoL, key off](media/resourceGatherAuras-wol-control.gif)
 
@@ -5953,7 +5954,8 @@ How buildings train, spawn, live and get replaced.
 
 *In WoL, with `buildingWorkRateAuras log` (an African civ, the two Town Centers selected):* both TCs
 train 10 `AFRICANvillager`; the Explorer next to the left one carries a test aura (`AutoRangedModify`, `BuildingWorkRate` x3, 10 m,
-on `TownCenter`, with [`ring_work.xml`](#aura-rings), added to the bed's `explorer.tactics` and removed after). The ring is around
+on `TownCenter`, with [`ring_work.xml`](#aura-rings), added to the bed's `explorer.tactics` and removed after; filmed when
+the work ring was green: it is cyan since 2026-11-22). The ring is around
 the left TC and not the right one. The left TC works at x3 (`works at x3.000 from BuildingWorkRate modifiers`) and trains 7
 villagers while the right one trains 2. The 5 villagers that start beside the left TC are the civ's own, and are not counted.
 [Full video (MP4)](media/buildingWorkRateAuras-wol.mp4).
@@ -6044,7 +6046,8 @@ buildingWorkRateAuras [log]
 
 ![buildingWorkRateAuras on building in WoL](media/buildingWorkRateAuras-build-wol.gif)
 
-*In WoL (Ethiopians, an Explorer's aura ×3 on `AFRICANvillager`, with `ring_work.xml`):* the Apartment is finished at 31 s.
+*In WoL (Ethiopians, an Explorer's aura ×3 on `AFRICANvillager`, with `ring_work.xml`, green when filmed, cyan since
+2026-11-22):* the Apartment is finished at 31 s.
 [Full video (MP4)](media/buildingWorkRateAuras-build-wol.mp4).
 
 ![buildingWorkRateAuras on building in WoL, key off](media/buildingWorkRateAuras-build-wol-control.gif)
@@ -6061,7 +6064,8 @@ buildingWorkRateAuras [log]
 
 ![buildingWorkRateAuras on a repair in WoL](media/buildingWorkRateAuras-repair-wol.gif)
 
-*In WoL (an Explorer's aura ×3 on `Barracks`, with `ring_work.xml`):* the Barracks' HP run three times as fast. [Full video
+*In WoL (an Explorer's aura ×3 on `Barracks`, with `ring_work.xml`, green when filmed, cyan since 2026-11-22):* the
+Barracks' HP run three times as fast. [Full video
 (MP4)](media/buildingWorkRateAuras-repair-wol.mp4).
 
 ![buildingWorkRateAuras on a repair in WoL, key off](media/buildingWorkRateAuras-repair-wol-control.gif)
@@ -7508,8 +7512,8 @@ annexFacing [log]
     in the `Normal` tactic (the test data) the Barracks builds it;
   - a Barracks that built one Torp is refused a second build order (the game keeps the building's last build target), so
     the other Torps of the test were placed by a villager.
-- **Log:** `annexFacing: the proto tags AnnexOf and AnnexRange are on (multiplayer unverified)`, `hook reached: annexFacing
-  ghost (0x96E4E7)`, `hook reached: annexFacing build command (0x7D7CF1)`, `hook reached: annexFacing AI placement
+- **Log:** `annexFacing: the proto tags AnnexOf and AnnexRange are on (multiplayer unverified)`, `hook reached: placement
+  ghost update (0x96E4E7)`, `hook reached: annexFacing build command (0x7D7CF1)`, `hook reached: annexFacing AI placement
   (0x73D7D2)`, `hook reached: annexFacing AI spot scan (0x87DB9F)`, `hook reached: unit deaths (0x493D8F)` (a kill) and
   `hook reached: unit destroys (0x9828E7)` (a trigger's `Destroy`), and with `log`: `annexFacing: proto 2814 at 37.2, 38.7,
   player 1: faces unit 0 (its builder), forward -1.000, 0.000 -> -1.000, 0.000`, `annexFacing: unit 6 (proto 2814) is the
@@ -8169,20 +8173,48 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 *A selected unit shows its range on the ground while Alt is held: one ring per ranged attack.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Saturday 2026-11-21 16:01
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Sunday 2026-11-22 14:03
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
 *In WoL, with `displayedRange log` (Ethiopians, a scenario, the rings at their true size; test data: `<DisplayRange>1</DisplayRange>` on
 the Fort and the Crossbowman, `<Flag>AlwaysDisplayRange</Flag>` on the Outpost):* the Fort is selected and shows nothing; Alt held, its 40 m anti-ship and 26 m cannon rings; Alt released, none; the Outpost, selected, shows its 40 and 24 m at once, with no Alt; two Crossbowmen with Alt show 16 and 6 m each. The log names each ring. [Full video (MP4)](media/displayedRange-wol.mp4).
+*Filmed 2026-11-21 with the white particle rings; since 2026-11-22 the rings are meshes in the owner's colour, as in the
+videos below.*
 
 ![displayedRange in WoL, key off](media/displayedRange-wol-control.gif)
 
 *In WoL, key off (Swedes, a skirmish, with that data and the Falconet's `<DisplayRange>`, and the same Alt):* no ring; Alt only shows the HP bars, as in stock.
 [Full video (MP4)](media/displayedRange-wol-control.mp4).
 
+![displayedRange on the placement ghost](media/displayedRange-wol-placement.gif)
+
+*In WoL, the ghost of a building being placed (Dutch, a skirmish against the German AI; no tag on the Outpost, only its
+attacks):* a Settler starts placing an Outpost (build mode, `uiBuildMode`): its ghost carries the 40 m anti-ship and the
+24 m ranged rings in the player's blue, and they follow it; Escape ends the placement and both rings go with the ghost;
+placing again brings them back, and a click places the Outpost: the rings go with the ghost and the foundation has none.
+The log names each ring. [Full video (MP4)](media/displayedRange-wol-placement.mp4).
+
+![displayedRange on the placement ghost, key off](media/displayedRange-wol-placement-control.gif)
+
+*In WoL, key off (Dutch, a skirmish, the same steps):* the ghost has no ring. [Full video
+(MP4)](media/displayedRange-wol-placement-control.mp4).
+
+![displayedRange on an enemy's units](media/displayedRange-wol-enemy.gif)
+
+*In WoL, your units and an enemy's (Ethiopians, a scenario of 2 players, player 2 the enemy; test data
+`<DisplayRange>1</DisplayRange>` on the Skirmisher, the Outpost and the Grenzer, fog off):* with Alt, your Skirmisher's 20 and
+6 m rings in your blue, then the enemy Outpost's 40 and 24 m in its red, then an enemy Grenzer's 20 and 6 m; Alt released,
+none. [Full video (MP4)](media/displayedRange-wol-enemy.mp4).
+
+![displayedRange on an ally's units](media/displayedRange-wol-ally.gif)
+
+*In WoL, an ally's Outpost (a scenario of 3 players, player 2 an ally of player 1: its diplomacy slot reads 1; the aura
+ring scene of [Aura rings](#aura-rings) beside it):* with Alt its 40 and 24 m rings in its red. [Full video
+(MP4)](media/displayedRange-wol-ally.mp4).
+
 ```
-displayedRange [log]
+displayedRange [log] [noPlacement]
 ```
 
 ```xml
@@ -8203,6 +8235,23 @@ displayedRange [log]
   2026-11-21), the key that already shows every HP bar; they go when Alt is released or the unit is deselected.
   `<AlwaysDisplayRange>1</AlwaysDisplayRange>`, or `<Flag>AlwaysDisplayRange</Flag>`, shows them whenever the unit is
   selected, Alt or not (the stock flag parser drops a name it does not know; the key catches it).
+- **Any player's units:** the rings show on whatever is selected, yours, an ally's or an enemy's, with the same tags
+  and Alt (JTMaston, 2026-11-22). An enemy you select is one you see; a unit under the fog draws no model, so its rings
+  show only when it is in sight (one seen with the fog off kept rings from before for a moment: a particle of a unit
+  out of sight does not age).
+- **While placing a building** (JTMaston, 2026-11-22): the ghost of a building whose proto has a ranged attack shows
+  its rings, with no tag needed: the ranged attacks of every tactic of your copy of the proto (so a range tech shows),
+  or its `<DisplayedRange>` values. They follow the ghost, change when you pick another building, and go when the
+  placement ends (tested: placed, and cancelled with Escape; a right click runs the same `editMode("none")`).
+  `noPlacement` turns this part off.
+- **In the owner's colour** (JTMaston, 2026-11-22: "can these rings use player color via alpha channels?"): a range ring
+  is a flat annulus mesh, `range_<N>.gr2`, with white edges and a core in the colour of the unit's owner (yours on a
+  placement ghost). The cut-out comes from the geometry, so the texture's alpha is free to mark player colour as on a unit
+  (`range_line.ddt`, alpha 1, the units' shader `bumpspec_mask_pixelxform`); the engine does the tinting, so one mesh per
+  radius serves every player and the key picks nothing. A particle has no player colour of its own, which is why the rings
+  are no longer particles. The line is 0.8 m wide (more past 66 m), 0.25 m over the unit's feet; it does not follow the
+  ground, so on a hill a large ring can dip into it. `make_rings.py --range-particles` writes the white particle rings of
+  before, with the same file names.
 - **Which rings:** one per ranged attack (`<RangedLogic>1</RangedLogic>`) of the unit's current tactic, at that attack's
   `MaxRange` as the player has it now: a tech that adds range moves the ring at once (`Revetment`: the Fort's 26 m ring
   became 32 m). A Fort shows its 40 m anti-ship attack and its 26 m cannon, an Outpost 40 and 24, a Crossbowman 16 and the
@@ -8217,7 +8266,7 @@ displayedRange [log]
   half width. The `range_*.particle` files of `tools/rings` are fixed (scale doubled; the textures are the same):
   copy them again to `art/effects/uhc_rings`. Measured after the fix: the 4 m ring passes between markers at 2.83 and
   4.47 m, the 12 m ring between 11.66 and 12.17 m, the 30 m ring between 29.73 and 31.11 m.
-- **Files:** `range_<metres>.xml`, its particle and its texture, in `art/effects/uhc_rings` for everyone who should see it.
+- **Files:** `range_<metres>.xml` and `range_<metres>.gr2`, with `range_line.ddt` and `range_line_bump.ddt`, in `art/effects/uhc_rings` for everyone who should see it.
 - **How far an aura reaches:** its `<MaxRange>` goes from the centre of its unit to the edge of the target: a 6.2 m aura
   took trees at 6.0, 6.3 and 7.2 m, and not at 8.9 m. So a small range can stay under a big building's model.
 - **Cost, and the caps:** measured with `perfprobe.py` (2026-11-21, 45 s a case, 50 selected units on screen, the
@@ -8238,6 +8287,21 @@ displayedRange [log]
 
   So the rings cost nothing measurable. A selection still shows at most 4 rings a unit and 60 in all, the units
   with the longest ranges first, so that a big selection stays readable.
+
+  **Big selections, Alt held (2026-11-22, JTMaston: "do they lag if you have 75 ranged units selected?"):** Skirmishers
+  (2 rings each, 20 and 6 m), selected on screen, 40 s a case with `perfprobe.py`, five other games running on the PC,
+  `selectionLimit` raised to 150 for the test:
+
+  | Selected | Alt | Rings | fps | Render a frame | GPU | Frames over 50 ms |
+  |---|---|---|---|---|---|---|
+  | 108 | no | 0 | 244 | 3.9 ms | 10.7 % | 0 |
+  | 108 | held | 60, the cap | 240 | 3.9 ms | 12.1 % | 0 |
+  | 69 | no | 0 | 254 | 3.7 ms | 10.7 % | 0 |
+  | 69 | held | 138, a test build with no cap | 200 | 4.9 ms | 18.2 % | 0 |
+
+  With the cap, Alt on 108 units costs nothing measurable. With no cap, 138 rings cost about 1.2 ms a frame and 7 % of
+  the GPU (their large particles drawn over each other), and the screen is a white mesh of rings. The cap stays at 60.
+  The camera could not hold all 150 units at once, so 150 was not measured; with the cap it shows 60 rings anyway.
 - **Multiplayer:** display only: the selection and the keyboard are this machine's, and a model is a visual. Every player
   can have it or not.
 - **Log:** `displayedRange: applied`, `hook reached: displayedRange: proto flag parser's last compare (0x5F726F)`, and
@@ -8252,6 +8316,12 @@ displayedRange [log]
   and 4 rings each (the table); a game saved and loaded: the Outpost's and the Fort's rings came back; key off: no
   ring, Alt shows the HP bars only. Not tested: multiplayer, a selection of a building with units (the console
   route selects one kind at a time).
+- **Tested in WoL (2026-11-22):** an enemy's Outpost (2 players, and player 3 of 3) and an ally's (player 2 of 3) with
+  Alt, their rings as on your own; the placement ghost of the Outpost (Dutch, a skirmish; Ethiopians, a scenario,
+  through `uiSetProtoCursor`) with 40 and 24 m, of the Fort with 40 and 26 m, of a House with none; the rings follow the
+  ghost, change with the proto, go on Escape and when the Outpost is placed, and never stay on the foundation; key off,
+  no ring on the ghost; `annexFacing` on the same shared ghost hook still `applied` and reached. Log:
+  `hook reached: placement ghost update (0x96E4E7)`, `ring of 40 m on the placement ghost (Outpost)`.
 
 #### abilitySlots
 
@@ -9415,6 +9485,37 @@ is needed for the ring, though [`resourceGatherAuras`](#resourcegatherauras), [`
 
 ![The seven rings in WoL](media/rings-palette.png)
 
+*The first seven rings in WoL (2026-11-05). Since 2026-11-22 wood is dark copper, gold orange-gold, work cyan, and there are
+five more (export, xp, oil, rate of fire, max HP) and the anti-rings: see the table below and the videos.*
+
+**These rings are the defaults.** A civ with an aura model of its own (a unique attachment, such as WoL's Bolivian aura or
+the Middle East warlords') keeps it; these serve every case with nothing of more personality.
+
+**Two looks, the same file names.** `tools/rings` (public) are flat particles drawn from scratch. The private pack
+`wol-fixes/aura-rings` (JTMaston, 2026-11-22: "use the exact same texture of the Indian aura but make color variations")
+replaces them with the game's own ring, the one Karni Mata puts around the Indian villagers, recoloured in each ring colour,
+each colour a copy of its mesh at each size, so no `<replacetexture>` is involved (that one fell back to the stock green and
+gold in a scene with a Town Center; with these copies a Town Center changes nothing, tested). Install the pack over
+`tools/rings` (its README). Data names the same `ring_<name>.xml` either way.
+
+![The aura rings of the pack in WoL](media/auraRings-pack-wol.gif)
+
+*In WoL with the pack (Ethiopians, a scenario with a Town Center; test data `tools/ring_testdata.py`: display-only
+auras on the Explorer, Damage x1.0, one ring per proto):* the Town Center's work ring (cyan, 20 m), the Barracks' damage
+ring (magenta, 16 m), the House's heal ring (white, 9 m); on the units around the Explorer the rate-of-fire ring on the
+Skirmishers, the speed ring on the Hussars (cavalry size), and the anti-rings of damage and max HP (teeth pointing inward)
+on the Jaegers and the Grenzers. [Full video (MP4)](media/auraRings-pack-wol.mp4).
+The units up close (a scene of their own, `normalZoom` 30, the units spread and selected): the rate-of-fire ring on the
+Skirmishers, the damage and max HP anti-rings on the Jaegers and Grenzers, the speed ring on the Hussars at cavalry size,
+the gold ring on a Settler: ![The pack's rings on units](media/auraRings-pack-units-wol.gif)
+[Full video (MP4)](media/auraRings-pack-units-wol.mp4).
+
+![The aura rings without the pack](media/auraRings-pack-wol-control.gif)
+
+*Control, the same scene with `tools/rings` only:* the flat particle rings, lying on the ground (a building's ring shows
+around all of it); the anti-rings are only in the pack, so the Jaegers and Grenzers show none.
+[Full video (MP4)](media/auraRings-pack-wol-control.mp4).
+
 **1. Install the rings.** Copy every file of `tools/rings/` to `art\effects\uhc_rings\` in the game folder, and restart the game.
 `tools/make_rings.py` of [aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools) draws them (`--folder uhc_rings`): no pixel and no mesh comes from a game.
 
@@ -9444,15 +9545,24 @@ The bone is that word on purpose, as in `EconomicAuraKM`: with no such bone, the
 
 | Ring | Colour | For | `<modelattachment>` |
 |---|---|---|---|
-| wood | amber | gathering wood | `effects\uhc_rings\ring_wood.xml` |
+| wood | dark copper | gathering wood | `effects\uhc_rings\ring_wood.xml` |
 | food | red | gathering food | `effects\uhc_rings\ring_food.xml` |
-| gold | yellow | gathering gold | `effects\uhc_rings\ring_gold.xml` |
-| work | green | gathers or works faster | `effects\uhc_rings\ring_work.xml` |
+| gold | orange-gold | gathering gold | `effects\uhc_rings\ring_gold.xml` |
+| work | cyan | work rate: builds, trains or researches faster (`BuildingWorkRate`) | `effects\uhc_rings\ring_work.xml` |
+| export | lime | export (Trade) | `effects\uhc_rings\ring_export.xml` |
+| xp | violet | experience | `effects\uhc_rings\ring_xp.xml` |
+| oil | black | oil (Fame) | `effects\uhc_rings\ring_oil.xml` |
 | damage | magenta | damage | `effects\uhc_rings\ring_damage.xml` |
-| heal | white | hit points, healing | `effects\uhc_rings\ring_heal.xml` |
+| rof | lemon | rate of fire | `effects\uhc_rings\ring_rof.xml` |
+| hp | rose | maximum hit points | `effects\uhc_rings\ring_hp.xml` |
+| heal | white | healing over time | `effects\uhc_rings\ring_heal.xml` |
 | speed | blue | moves faster | `effects\uhc_rings\ring_speed.xml` |
 
-Each ring is a wide band in its colour, fading to a lighter one, and a thin line inside it, 70% opaque, so the ground shows through.
+**Anti-rings** (pack only), for an aura whose effect is negative: the effect's colour with teeth pointing inward from the
+band: `ring_damage_neg.xml`, `ring_rof_neg.xml`, `ring_hp_neg.xml`, `ring_heal_neg.xml`, `ring_speed_neg.xml`, e.g.
+`<modelattachment>effects\uhc_rings\ring_damage_neg.xml</modelattachment>`.
+
+In `tools/rings`, each ring is a wide band in its colour, fading to a lighter one, and a thin line inside it, 70% opaque, so the ground shows through. In the pack, the stock ring's gear-edged band and inner line, alpha-tested, 0.5 m over the unit's feet as the stock one (a building hides the part of its ring behind it).
 It stays on the ground on a slope: the particle has `terraininteractiontype` 1 and `terrainheight` 0.2, the setting stock's low effects use. A `<decal>` is not drawn on a hung model (tried), and that is why the rings are particles.
 
 **4. The same file works on anything.** The `.xml` picks the size by what it hangs on, with `<logic type="UnitType">`:
@@ -9469,7 +9579,9 @@ The first line that fits wins, top to bottom in `SHAPES` in the script. For a bu
 as `("wonder", "wonder", 30, 256)`: a unit type of the game, a name for the files, the radius, and the side of its texture.
 
 **5. A new colour.** One line in `RINGS` in `tools/make_rings.py` of aoe3-blender-tools, the main colour and the light one.
-Then, from that repo, `python -I tools/make_rings.py --out <this repo>\tools\rings --folder uhc_rings` and copy the files again.
+Then, from that repo, `python -I tools/make_rings.py --out <this repo>\tools\rings --folder uhc_rings --icon-sheet <this
+repo>\tools\rings-source\gather-marker-icons.png`, and for the pack `python -I tools/make_aura_rings.py --game <copy> --out
+<this repo>\wol-fixes\aura-rings\files\art\effects\uhc_rings --folder uhc_rings --compress`; copy the files again.
 
 **What to know:**
 
@@ -9483,11 +9595,11 @@ Then, from that repo, `python -I tools/make_rings.py --out <this repo>\tools\rin
 - **The ring outlasts the aura by the particle's life, 2 s.** It is one particle that lives 2 s and is replaced at once: a model
   taken off a unit leaves its particles to die out. An aura updates about every 3 s, so a unit that walks in or out takes that
   long to change.
-- **The game's own mesh is not a way to colour a ring.** `effects\ypack_auras\aura_econ` with `<replacetexture>` shows the new
-  colour on an empty map, and falls back to the game's green and gold in a scene with a Town Center: on a real map every such
-  ring looks the same. On a building it is also hidden: it stays 4 m wide and sits under the model. WoL's own rings are fine as
-  they are: `effects\ypack_auras\econpower.xml`, `daimyopower.xml` and `frightpower.xml`, `effects\chiefpower\chiefpower.xml`,
-  `effects\me_auras\aura_warlord.xml`, among others.
+- **The game's own mesh with `<replacetexture>` is not a way to colour a ring.** `effects\ypack_auras\aura_econ` with
+  `<replacetexture>` shows the new colour on an empty map, and falls back to the game's green and gold in a scene with a Town
+  Center. A copy of the mesh that names its own texture, as the pack's, does not (tested with a Town Center, 2026-11-22).
+  WoL's own rings are fine as they are: `effects\ypack_auras\econpower.xml`, `daimyopower.xml` and `frightpower.xml`,
+  `effects\chiefpower\chiefpower.xml`, `effects\me_auras\aura_warlord.xml`, among others.
 - **Tested in WoL (2026-11-05),** with a Town Center in the game: each ring in its colour, on infantry, cavalry, trees, Town
   Centers, a Barracks and a House; off when the aura's owner dies; no flicker in 220 frames of a master; off a villager sent from
   the mine to a tree; and beside WoL's own DLL. Saved games, multiplayer
@@ -9498,33 +9610,41 @@ More about the tools: [tools/README.md](../tools/README.md).
 ### The marker of a gathered resource
 
 A marker is a ring plus a floating icon of what is gathered, the same idea as DE's marker on what a Torp works, with our own
-art: name one in a `UnitResource` aura's `<modelattachment>`. The icons are cartoons of the gathering tool or of the food
-(JTMaston, 2026-11-21: "a more cartoonish version of the gathering cursor icons", one for each kind of food), drawn from
-scratch by `tools/cartoon_icons.py` of aoe3-blender-tools: flat colours, one light tone per part and a thick dark outline, so
-they read at the few dozen pixels they take over a unit.
+art: name one in a `UnitResource` aura's `<modelattachment>`. The icons are the user's drawn sheet
+(`tools/rings-source/gather-marker-icons.png`, JTMaston 2026-11-22: a hoe for farms, meat for both herdables and huntables,
+and new ones for experience, export and oil), cut and scaled by `make_rings.py --icon-sheet` of aoe3-blender-tools (its white
+ground made transparent, every icon at one scale and centred; the pickaxe without the nugget drawn beside it).
 
 ![The marker icons](media/marker-icons.png)
 
 | Marker | Icon | Ring | For |
 |---|---|---|---|
-| `effects\uhc_rings\aura_gold.xml` | a pickaxe over a gold nugget | gold | coin: mines, plantations |
+| `effects\uhc_rings\aura_gold.xml` | a pickaxe | gold | coin: mines, plantations |
 | `effects\uhc_rings\aura_wood.xml` | an axe | wood | trees |
 | `effects\uhc_rings\aura_food.xml` | a leg of meat | food | food in general, livestock |
-| `effects\uhc_rings\aura_hunt.xml` | a bow and arrow | food | hunts |
+| `effects\uhc_rings\aura_hunt.xml` | a leg of meat | food | hunts (the name stays; the icon is the herds') |
 | `effects\uhc_rings\aura_berry.xml` | a bunch of berries | food | bushes |
-| `effects\uhc_rings\aura_farm.xml` | an ear of wheat | food | farms, Mills |
+| `effects\uhc_rings\aura_farm.xml` | a hoe | food | farms, Mills |
 | `effects\uhc_rings\aura_fish.xml` | a fish | food | fish |
+| `effects\uhc_rings\aura_export.xml` | a ship | export | Trade (WoL's Export) |
+| `effects\uhc_rings\aura_xp.xml` | green leaves | xp | experience |
+| `effects\uhc_rings\aura_oil.xml` | an oil drop | oil | Fame (WoL's Oil) |
 | `effects\uhc_rings\aura_work.xml` | a gear | work | work, unchanged |
+
+**Which resource a `UnitResource` aura pays** is the target's own: the main resource of its inventory. So export, XP and
+oil need targets that hold them: in WoL `CrateofTradeSmall` (Trade, resource 7, named Export in WoL's string table),
+`CrateofXP` (XP, 5) and `CrateofFameSmall` (Fame, 3, named Oil). Tested 2026-11-22: a Sawmill's aura took resource 7, 5 and 3
+from those crates and paid them. WoL's `ProspectedOil` holds XP (800), not Fame: an oil well pays experience today.
 
 The first three keep their names, so data that already uses them gets the new icons with no edit. The icon is a sprite that
 faces the camera, 2.5 m wide (`CARTOON_SIDE`), uncompressed (128 texels, with its smaller levels), at a height by kind of unit in
 `ICON_HEIGHTS` of `tools/make_rings.py`. Plain rings stay as they were. Legacy shows only one of two particle systems in a
 logic branch, so the icon is a second `<attachment>`, not a second `<assetreference>`.
 
-- **Tested in WoL (2026-11-21, Portuguese, a skirmish):** each of the seven markers over its target, from the normal
-  camera (the [`unitResourceAuras`](#unitresourceauras) video): the pickaxe over a Mine, the bow over a killed Deer,
-  the berries over a bush, the wheat over a Mill (at a building's height, 11 m), the meat over a Sheep, the fish
-  over a Cow (test data). Grass only; not tried on snow.
+- **Tested in WoL (2026-11-22, Dutch, a skirmish, with the pack):** every marker over its target (the
+  [`unitResourceAuras`](#unitresourceauras) video): the pickaxe over a Mine, meat over a killed Deer and a Sheep, berries
+  over a bush, the hoe over a Mill (at a building's height, 11 m), the fish over a Cow (test data), the axe over trees, the
+  ship, leaves and drop over the Trade, XP and Fame crates. Grass only; not tried on snow.
 - **Over trees** the icon floats at 13 m, above the canopy of the common trees (test markers at 10 to 18 m on the same
   trees: Great Lakes birch and pine, ponderosa, New England and palms clear at 12 to 13 m). A redwood is about as tall,
   so its axe sits at its top:

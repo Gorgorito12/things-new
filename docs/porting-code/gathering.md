@@ -734,9 +734,9 @@ END
 
 Contract: [displayedRange](../porting-to-another-dll.md#displayedrange).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`ghostobservers.h`](helpers.md#placement-ghost-observers), [`prototags.h`](helpers.md#proto-tags), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `UnitById` `0x44CC6D` (58 B), `AltQuery` `0x452EA0` (24 B), `CurrentSelectionGroup` `0x453B28` (33 B), `ActionRangeByKey` `0x4946D6` (10 B), `ProtoFlagLastCompare` `0x5F7269` (26 B).
+Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `AltQuery` `0x452EA0` (24 B), `PlayerProtoEntry` `0x45311B` (8 B), `CurrentSelectionGroup` `0x453B28` (33 B), `ActionRangeByKey` `0x4946D6` (10 B), `ProtoFlagLastCompare` `0x5F7269` (26 B).
 
 ### src/features/displayrange.cpp
 
@@ -759,6 +759,16 @@ Sites: `UnitById` `0x44CC6D` (58 B), `AltQuery` `0x452EA0` (24 B), `CurrentSelec
 // count [group+14h]) and the Alt state with the rings the units hold. Display only: a model is a visual of the unit,
 // the selection and the keyboard are this machine's, and nothing here reaches the simulation.
 //
+// Placement: while a building is being placed, its ghost shows the rings of its proto's ranged attacks (every tactic's,
+// from the local player's copy) or its <DisplayedRange>, with no tag needed (option noPlacement turns it off). The
+// shared ghost update (ghostobservers.h, 0x96E4E7) hangs them on the ghost's model [[[0xC67300]+200h]+34h], of a unit
+// visual's class, through the stock model functions, which read only a unit's visual (unitmodels.h); a new proto or a
+// new model starts again, and the model takes its rings with it when the placement ends.
+//
+// Player colour: the rings are aoe3-blender-tools' range meshes (make_rings.py), whose texture marks player colour as a
+// unit's does; the engine tints a model hung on a unit with the unit's owner's colour, and on the ghost with the local
+// player's. Nothing here picks a colour.
+//
 // <Flag>: the proto flag parser 0x5F640A (stdcall(proto, name)) compares the name with each flag it knows and
 // returns with nothing for any other name. Its last compare, the call 0x5F726F of the string compare 0x4028B4, is
 // redirected: the compare runs, and a name it does not match is offered to this key.
@@ -774,6 +784,7 @@ Sites: `UnitById` `0x44CC6D` (58 B), `AltQuery` `0x452EA0` (24 B), `CurrentSelec
 #include <vector>
 
 #include "../features.h"
+#include "../ghostobservers.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -790,6 +801,7 @@ std::uint32_t g_uhcStringCompare = 0x004028B4;
 namespace {
 
 constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr std::uint32_t kUiGlobal = 0x00C67300;     // the placement ghost: +1FCh the proto ID, +200h its visual
 constexpr std::uint32_t kInputGlobal = 0x00C66244;  // [[+74h]+2Ch]: the object the Alt query asks
 constexpr std::uint32_t kTickMs = 100;
 constexpr std::uint32_t kRangedFlag = 0x0A;  // <RangedLogic> (0x5FAC6D), the bit the stat panel tests for a range
@@ -805,10 +817,14 @@ using SelectionFn = const char*(__cdecl*)();
 using UnitByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
 using RangeFn = float(__thiscall*)(const char* action, std::int32_t key);
 using KeyQueryFn = bool(__thiscall*)(void* input, std::int32_t key);
+using PlayerByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
+using PlayerProtoFn = const char*(__thiscall*)(const char* player, std::int32_t id);
 
 const auto kSelection = reinterpret_cast<SelectionFn>(0x00453B28);
 const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
 const auto kRange = reinterpret_cast<RangeFn>(0x004946D6);
+const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
+const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
 
 struct Range {
   bool show = false;    // <DisplayRange>
@@ -817,13 +833,21 @@ struct Range {
 };
 
 std::unordered_map<std::int32_t, Range> g_protos;  // by proto ID; the load fills it
-std::map<std::int32_t, std::int32_t> g_models;     // by radius; -1: not in the game
+std::map<std::int32_t, std::int32_t> g_models;     // by radius
 std::map<std::int32_t, std::vector<std::int32_t>> g_hung;  // by unit ID: the models on it
 std::int32_t g_bone = -2;
 const char* g_world = nullptr;
 std::uint32_t g_nextTick = 0;
 bool g_lastAlt = false;
 bool g_log = false;
+bool g_placement = true;      // the ghost's rings (option noPlacement: off)
+
+struct Ghost {
+  char* visual = nullptr;
+  std::int32_t proto = -2;
+  std::vector<std::int32_t> models;  // what the observer hung on this visual
+};
+Ghost g_ghost;
 int g_logLines = 0;
 constexpr int kMaxLogLines = 200;
 
@@ -871,6 +895,7 @@ void NewDatabase(char*) {
   g_hung.clear();
   g_bone = -2;
   g_logLines = 0;
+  g_ghost = Ghost{};
 }
 
 bool AltHeld() {
@@ -894,6 +919,7 @@ std::int32_t RingRadius(float metres) {
   return radius;
 }
 
+// The model of a ring of `radius` metres, effects\uhc_rings\range_<N>.xml.
 std::int32_t ModelFor(std::int32_t radius) {
   const auto found = g_models.find(radius);
   if (found != g_models.end()) {
@@ -905,7 +931,9 @@ std::int32_t ModelFor(std::int32_t radius) {
   if (g_log) {
     uhc::Log(L"displayedRange: %ls is model %d", path, model);
   }
-  g_models[radius] = model;
+  if (model != -1) {  // -1: the table does not exist yet
+    g_models[radius] = model;
+  }
   return model;
 }
 
@@ -939,6 +967,15 @@ void TacticRadii(const char* tactic, std::vector<std::int32_t>& radii) {
 // attacks of its current tactic ([mgr+0A8h], an index into the player's proto's tactics [[proto+44h]+10h], count
 // +14h); a tactic with none (an artillery piece limbered to move) takes those of all its tactics, the attacks it
 // unlimbers to.
+// Largest first, each size once, at most kMaxRingsPerUnit.
+void Trim(std::vector<std::int32_t>& radii) {
+  std::sort(radii.begin(), radii.end(), [](std::int32_t a, std::int32_t b) { return a > b; });
+  radii.erase(std::unique(radii.begin(), radii.end()), radii.end());
+  if (radii.size() > kMaxRingsPerUnit) {
+    radii.resize(kMaxRingsPerUnit);
+  }
+}
+
 std::vector<std::int32_t> WantedRadii(const char* unit, const Range& range) {
   std::vector<std::int32_t> radii;
   if (!range.fixed.empty()) {
@@ -963,11 +1000,29 @@ std::vector<std::int32_t> WantedRadii(const char* unit, const Range& range) {
       }
     }
   }
-  std::sort(radii.begin(), radii.end(), [](std::int32_t a, std::int32_t b) { return a > b; });
-  radii.erase(std::unique(radii.begin(), radii.end()), radii.end());
-  if (radii.size() > kMaxRingsPerUnit) {
-    radii.resize(kMaxRingsPerUnit);
+  Trim(radii);
+  return radii;
+}
+
+// The rings of a proto with no unit (the placement ghost): its <DisplayedRange> values, or the ranged attacks of every
+// tactic of the player's copy (a building has no current tactic before it stands).
+std::vector<std::int32_t> ProtoRadii(const char* proto, const Range* range) {
+  std::vector<std::int32_t> radii;
+  if (range != nullptr && !range->fixed.empty()) {
+    for (const float metres : range->fixed) {
+      radii.push_back(RingRadius(metres));
+    }
+  } else {
+    const char* set = Field<const char*>(proto, 0x44);
+    const auto* tactics = set == nullptr ? nullptr : Field<const char* const*>(set, 0x10);
+    const std::int32_t count = set == nullptr ? 0 : Field<std::int32_t>(set, 0x14);
+    for (std::int32_t i = 0; tactics != nullptr && i < count; ++i) {
+      if (tactics[i] != nullptr) {
+        TacticRadii(tactics[i], radii);
+      }
+    }
   }
+  Trim(radii);
   return radii;
 }
 
@@ -1098,6 +1153,62 @@ void Tick(char* world, std::int32_t) {
   }
 }
 
+// From the shared ghost update (ghostobservers.h), each frame while a building is placed: the rings of its proto on
+// the ghost's model. The ghost object [[0xC67300]+200h] holds its transform; the model drawn is [ghost+34h], an object
+// of the class of a unit's visual [unit+60h] (in game both start with the same word, and the ghost's code calls three
+// of that class's functions on it: 0x40431B, 0xA3FEF8, 0xADA24B), so the stock model functions take it.
+void __stdcall OnGhost(char* ghost) {
+  const char* ui = *reinterpret_cast<const char* const*>(kUiGlobal);
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  if (ui == nullptr || game == nullptr || ghost == nullptr || Field<char*>(ui, 0x200) != ghost) {
+    return;
+  }
+  char* visual = Field<char*>(ghost, 0x34);
+  if (visual == nullptr || Field<const char*>(visual, 0xA8) == nullptr) {  // the model functions read its +0A8h
+    return;
+  }
+  const std::int32_t protoId = Field<std::int32_t>(ui, 0x1FC);
+  if (visual != g_ghost.visual) {
+    g_ghost = Ghost{visual};  // another visual: what was hung on the old one went with it
+  }
+  if (protoId != g_ghost.proto) {
+    for (const std::int32_t model : g_ghost.models) {
+      uhc::RemoveVisualModel(visual, model);
+    }
+    g_ghost.models.clear();
+    g_ghost.proto = protoId;
+    const char* world = Field<const char*>(game, 0x13C);
+    const std::int32_t playerId = Field<std::int32_t>(game, 0x3C0);
+    const char* player = world == nullptr || protoId < 0 ? nullptr : kPlayerById(world, playerId);
+    const char* proto = player == nullptr ? nullptr : kPlayerProto(player, protoId);
+    if (proto != nullptr) {
+      const auto found = g_protos.find(Field<std::int32_t>(proto, 0x04));
+      for (const std::int32_t radius : ProtoRadii(proto, found == g_protos.end() ? nullptr : &found->second)) {
+        const std::int32_t model = ModelFor(radius);
+        if (model != -1) {
+          g_ghost.models.push_back(model);
+          if (g_log && g_logLines < kMaxLogLines) {
+            ++g_logLines;
+            uhc::Log(L"displayedRange: ring of %d m on the placement ghost (%hs)", radius,
+                     Field<const char*>(proto, 0x10));
+          }
+        }
+      }
+    }
+  }
+  if (g_ghost.models.empty()) {
+    return;
+  }
+  if (g_bone == -2) {
+    g_bone = uhc::NoBone();
+  }
+  for (const std::int32_t model : g_ghost.models) {
+    if (!uhc::VisualHasModel(visual, model)) {
+      uhc::HangVisualModel(visual, model, g_bone);
+    }
+  }
+}
+
 }  // namespace
 
 extern "C" {
@@ -1122,14 +1233,19 @@ Outcome ApplyDisplayedRange(const Config& config) {
     return Outcome::kNotConfigured;
   }
   for (const std::string& arg : *args) {
-    if (_stricmp(arg.c_str(), "log") != 0) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(arg.c_str(), "noPlacement") == 0) {
+      g_placement = false;
+    } else {
       Log(L"displayedRange: unknown option %hs; feature not applied", arg.c_str());
       return Outcome::kFailed;
     }
-    g_log = true;
   }
   if (!VerifyAll("displayedRange", {&sites::kCurrentSelectionGroup, &sites::kUnitById, &sites::kAltQuery,
-                                    &sites::kActionRangeByKey, &sites::kProtoFlagLastCompare}) ||
+                                    &sites::kActionRangeByKey, &sites::kProtoFlagLastCompare, &sites::kPlayerById,
+                                    &sites::kPlayerProtoEntry}) ||
+      (g_placement && !AddGhostObserver(&OnGhost)) ||
       !VerifyUnitModels("displayedRange") || !AddProtoTagHandler("DisplayRange", &ReadShow) ||
       !AddProtoTagHandler("DisplayedRange", &ReadMetres) || !AddProtoTagHandler("AlwaysDisplayRange", &ReadAlways) ||
       !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick) ||
@@ -1137,7 +1253,7 @@ Outcome ApplyDisplayedRange(const Config& config) {
     return Outcome::kFailed;
   }
   Log(L"displayedRange: rings while Alt is held (<DisplayRange>) or always (<AlwaysDisplayRange>), one per ranged "
-      L"attack or <DisplayedRange>");
+      L"attack or <DisplayedRange>%ls", g_placement ? L"; on the placement ghost of a ranged building" : L"");
   return Outcome::kApplied;
 }
 
