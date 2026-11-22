@@ -14,7 +14,7 @@ What it changes (README.txt has the why):
   <InitialResource resourcetype="Food">999 (what a LivestockPen has; the stock gather refuses a target without
   them, and the magnet type is what draws idle herdables and sends fattened ones away);
 - data\\tactics\\herd.tactics and herdcoin.tactics, the Gather action: a <rate> for each nomad, and a
-  <typedmaxrange> of 3 m for each (pens keep the action's 0.5 m), so the herd gathers from a few metres away and
+  <typedmaxrange> of 6 m for each (pens keep the action's 0.5 m), so the herd gathers from a few metres away and
   follows the nomad;
 - Startup\\wol.cfg: the line `herdWalkAwayFix` (added when the file has no such line).
 The nomads' CattleFatteningAura is left as it is.
@@ -27,7 +27,7 @@ import sys
 
 BACKUP = "me-herdables-backup"
 NOMADS = ["Nomad", "NomadKarakalpak", "NomadTurkman", "NomadKyrgyz", "Bedouin", "BedouinFree"]
-DISTANCE = "3"
+DISTANCE = "6"
 TACTICS = ["data/tactics/herd.tactics", "data/tactics/herdcoin.tactics"]
 CHANGED = ["data/protoy.xml"] + TACTICS + ["Startup/wol.cfg"]
 MARK = "AbstractTypeHerdableMagnet"
@@ -160,7 +160,13 @@ def check(root):
         print(f"{name}: {state}")
     for rel in TACTICS:
         body, _ = read_text(root / rel)
-        print(f"{rel}: {'applied' if re.search(r'<rate type=.Nomad.', body) else 'not applied'}")
+        if not re.search(r"<rate type=.Nomad.", body):
+            print(f"{rel}: not applied")
+            continue
+        names = "|".join(NOMADS)
+        ranges = sorted(set(re.findall(r"<typedmaxrange type\s*=\s*['\"](?:%s)['\"]>\s*([0-9.]+)" % names, body)))
+        note = "" if ranges == [DISTANCE] else f" (this version uses {DISTANCE} m: run --restore, then apply again)"
+        print(f"{rel}: applied, distance {', '.join(ranges) or '?'} m{note}")
     cfg = root / "Startup/wol.cfg"
     if cfg.exists():
         on = re.search(r"(?im)^\s*herdWalkAwayFix\b", read_text(cfg)[0])

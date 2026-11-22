@@ -5013,26 +5013,67 @@ action's range: the longest maximum `+8` of its 16-byte range entries `[action+1
 `<maxrange>` and the `<typedmaxrange>` lines. A busy unit (0x44F1A7 false) only gets its leash anchor `[mgr+7Ch]` set to
 its position while its current action `[mgr+24h]` is a Gather (vtable 0xB97880). An idle one starts a timer; after the
 shortest `delay` of its sources the nearest unit within range + 12 m (0x4A1C55) that is alive, of a named type, owned
-by Gaia, the unit's player or a player that is not its enemy (0x484D2D), and within the source's range measured to its
-edge (the target's vtable `+B8h`, a distance from its obstruction to a point) is the target (the lower ID on a tie).
+by Gaia, the unit's player or a player that is not its enemy (0x484D2D), that the player can see (0x48A9EF, the test
+the Gather update makes at 0x4EC753 before it drops an order with state 9), and within the source's range measured to
+its edge (the target's vtable `+B8h`, a distance from its obstruction to a point) is the target (the lower ID on a
+tie). A unit that cannot move (MaxVelocity `[proto+80h]` ≤ 0) is scanned only while `buildingGather` is applied
+(`g_uhcBuildingGather`), and its range test is the gather's own: the gatherer's vtable `+CCh(target, range)`, which
+counts the building's size.
 
 **The order.** FUN_004EFCB2, `thiscall(mgr, targetId, 0, -1, 0)`, `ret 10h`: the action manager's work order, the one
 the stock idle-herdable search FUN_004C31EE gives a pen or a magnet within 10 m (the call at 0x4C31E4 passes the radius
 10.0 and -1), and the one the command execute's unit-order path calls (0x944D3F, 0x944E0D). It sets `[mgr+94h]` = -1,
 picks the action for the target and walks the unit there; the trigger `trUnitDoWorkOnUnit` reaches the same code
 through a network command (0x833681). The held amount of the unit's main resource (0x4DBEC1, 0x4E5979) is kept at the
-order: if the unit is idle again with no more than that, the target is refused until the amount changes.
+order: if the unit is idle again with no more than that, the target is refused until the amount changes. A building is
+exempt: what it gathers goes to the stockpile, so its held amount never rises.
 
 **What stock already does.** A Gather action's range (`<maxrange>`, `<typedmaxrange>`) is respected for every target
 kind tried: mine, Mill, Plantation, hunt (Hunting), a nomad. The Gather action follows a target that moves. A building
-ordered to gather gets a Gather action that never starts (state FFh with the target in range): the start code at
-0x50DE54.. that decides (`setState` 5 at 0x6A8ED5, 9 at 0x586D64) is in Ghidra chunks without a function, not read to
-the end.
+ordered to gather gets a Gather action that never starts: see [buildingGather](#buildinggather).
 
 **Why it is safe.** Everything read is simulation state; units are walked by player and ID, the containers are keyed by
 ID, and the order is the simulation's own function, called in the world update on every machine; nothing goes to the
 network or reads the local player. The per-unit table (idle-since time, last target, held amount) is a cache: a loaded
 game rebuilds it and an idle unit waits `delay` again. The real clock of the `log` timing line only goes to the log.
+
+### buildingGather
+
+**How a Gather action starts (2026-11-22, capstone over the chunks Ghidra has no function for, and hardware
+breakpoints in game).** The Gather action (vtable 0xB97880: `+34h` setState 0x4ED249, `+3Ch` the update 0x4EC4FA,
+`+44h` the event handler 0x4EC904) keeps its state in the byte `[action+61h]`, its gatherer in `[action+10h]`, its
+target's ID in `[action+14h]` and its range in the float `[action+24h]` (15.0 for `<maxrange>15`, read in game). A new
+order sets bit 1 of the action's flags (`[action+30h]`, count `+34h`); the next update runs the start code 0x50DE3E
+(`ja` at 0x4EC6BD). It refuses a gatherer without an inventory `[[unit+B4h]+94h]` (0x50DE89, setState 9: a Market
+without `<CarryCapacity>`, traced) and otherwise calls setState(0) at 0x50DF3D (a target of the proto `[db+6098h]` goes
+to 5 at once, 0x6A8ECF). The state-0 handler 0x4EECED sets the walk up; for a building the state byte stays FFh. The walk
+reports its end as event 9 to the event handler (`[event+1Ch]` = 9 → 0x4EDA75): after some target kinds of their own,
+the gatherer's vtable `+CCh(target, [action+24h])` (0x48C3E1, a `jmp eax` trampoline) says whether it is in range, and
+with state 0 the action goes to 5 at 0x4EDB7B (traced for a Settler: setState(5) from 0x4EDB87 ← 0x48CEAE ← the unit
+update 0x482F9A). A building never walks, so no event 9: its Gather action stayed at FFh, updated 37,908 times in a
+minute with one setState in all. While it waits, the update still drops the order (setState 9 at 0x6A8F32) for a
+target its player cannot see (0x48A9EF at 0x4EC753), so a building only gathers what it sees.
+
+**The hook.** At the update's exit test 0x4EC76B (`cmp al,0Ch / je 586D8Bh`, 8 bytes; AL = the state byte read at
+0x4EC760, ESI = the action, EBX and EDI the saved registers still on the stack) a jump to
+`UhcBuildingGatherHook` (`hooks/buildgather_hooks.asm`), which redoes the compare (0Ch → 0x586D8B) and, for state 0 or
+FFh, calls `UhcBuildingGatherApproach(action)` with every register saved (`pushad`), then continues at 0x4EC773
+(`pop ebx / pop edi / pop esi / pop ebp / add esp,0Ch / ret`). That function returns at once unless the gatherer's
+proto (the player's copy `[unit+5Ch]`) has MaxVelocity `[proto+80h]` ≤ 0 and the target is alive in the unit table; then
+it makes the event 9 test, `vtbl[+CCh](gatherer, target, [action+24h])`, and calls the action's own setState
+(`vtbl[+34h]`) with 5 when in range, 9 when not.
+
+**What follows is stock.** In state 5 the gather tick runs as for a villager: the resources go to the stockpile at the
+action's rate (a Market's held amount stayed 0; the player's gold rose 1 a second from a Mine at rate 1), a used-up
+target is replaced by the next of its kind nearby (three crates in a row), and a standing tree gives wood with no chop.
+Saved games keep the state byte (the Gather save, vtable `+5Ch` 0x9DD0B6); after a load the Market kept gathering.
+
+**Why it is safe.** Only an action that waits for a walk, of a gatherer that cannot walk, changes; units that move
+never do (the MaxVelocity test comes first). The change is the game's own transition with its own range test, made in
+the world update on every machine; nothing reads the local player or a clock. No branch lands inside the 8 bytes
+(checked over the whole `.text`), every register is restored (`popad`), neither continuation reads the flags before
+setting them, and both are the ones the stolen `je` had. Cost: a byte compare in every Gather update. A/B (60 s, 30 settlers and two Markets gathering): 576 / 551 fps, main
+thread 83.6 / 79.3 %, update 0.19 / 0.18 ms, no frame over 50 ms either way (other games ran beside it).
 
 ### herdWalkAwayFix
 

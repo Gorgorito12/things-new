@@ -548,8 +548,9 @@ herdWalkAwayFix [log]
 - **Effect:** the walk-away also moves the herdable's leash point 6 m beyond where it stands, away from the target,
   about where the walk-away takes it. Nothing else changes: the same herdables walk away, at the same time.
 - **When it shows:** in the tests, with the herd's stock 0.5 m range two fattened sheep of three walked back 33 m (in
-  two runs); with the 3 m typed range of `wol-fixes/me-herdables`, the fattened sheep stayed in their walk-away state by
-  the nomad even without the key (two runs). The key is cheap; keep it on with nomads.
+  two runs); with the typed range of `wol-fixes/me-herdables` (3 m on 2026-11-21, two runs; 6 m since 2026-11-22, one
+  run of four minutes with the nomad walking 20 m), the fattened sheep stayed 9 to 13 m from the nomad even without the
+  key. The key is cheap; keep it on with nomads.
 - **Log:** `herdWalkAwayFix: a herdable walked away from its pen or magnet keeps its leash anchor there`; with `log`, each
   walk-away: `unit 2 walks away from unit 0 at (64.7, 75.8): anchor (60.1, 72.0)`.
 - **Simulation:** yes: every player needs the same line. The point depends only on the two units' positions.
@@ -575,6 +576,19 @@ placed now`). The deer's body, not gathered, still has none. [Full video (MP4)](
 
 *In WoL, key off (the same data and scene):* the turkey appears at once, beside the cow's body, while the settlers walk to it, and a second one beside the deer's body. [Full video (MP4)](media/deadReplacementAtZeroInventory-wol-control.mp4).
 
+![deadReplacementAtZeroInventory in WoL, a coin crate](media/deadReplacementAtZeroInventory-crate-wol.gif)
+
+*In WoL, a coin crate as the replacement (2026-11-22, WoL request #77; a scenario, player 1 Ethiopian; test data: `Cow`
+with `<DeadReplacement>CrateofCoin</DeadReplacement>`; the three settlers selected):* a trigger kills the cow at 22 s and
+sends the settlers to it. They eat it up (no crate yet); the crate (WoL's `CrateofCoin`, "Chests of coin") appears where
+the cow lay, and the settlers take its 100 gold on their own in about 4 s (gold at the top left).
+[Full video (MP4)](media/deadReplacementAtZeroInventory-crate-wol.mp4).
+
+![deadReplacementAtZeroInventory in WoL, a coin crate, key off](media/deadReplacementAtZeroInventory-crate-wol-control.gif)
+
+*The same scene, key off:* the crate appears at the kill, on the cow's body; the settlers eat the cow first, then take
+the crate. [Full video (MP4)](media/deadReplacementAtZeroInventory-crate-wol-control.mp4).
+
 ```
 deadReplacementAtZeroInventory [log]
 ```
@@ -591,13 +605,21 @@ deadReplacementAtZeroInventory [log]
   the trigger `Destroy` leaves nothing, as `Destroy` does for any unit.
 - **`<DeadReplacementLifespan>`, `DeadReplaceOnlyOnTimeout`, `DeadReplacementWhenDestroyed`:** unchanged; they act on
   the replacement when it is placed.
+- **The replacement is a new unit of its proto:** a `CrateofCoin` placed for a cow held 100 gold, its own
+  `<InitialResource>` (the cow's food does not carry over), read from memory with the key on and off. It belongs to
+  Gaia in both cases, since the body is Gaia's when the game places it; the player's settlers gathered it to the end
+  all the same (+100 gold), as they gather a Gaia mine. With the key it is placed when the body is gone, at the body's
+  exact spot (47.0, 45.0); stock places it there at the kill, on top of the body.
 - **Log:** `deadReplacementAtZeroInventory: a unit with DoNotDieAtZeroHitpoints and DieAtZeroResources leaves its
   DeadReplacement when its body is used up, not when it falls`; with `log`, each case: `unit 3 (Cow, at 47.0, 45.0)
   fell and keeps its body; its replacement waits until the body is used up: DeadReplacement Turkey (448)` and `unit 3
   (Cow, at 47.0, 45.0) is removed (its body used up): the replacement is placed now: DeadReplacement Turkey (448)`.
 - **Simulation:** yes (the replacement is a unit): every player needs the same line.
 - **Performance:** two proto tests when a body appears and when a unit is removed; nothing per tick. While filming, key on: 621 fps on average, one frame over 50 ms; key off: 408 fps, 13 frames over 50 ms (other games ran beside it; neither number is the key's).
-- **Status:** confirmed (2026-11-21, single player, WoL, scenarios): the two videos (`units` after them: key on, one `Turkey` at 47.0, 45.0 where the cow was and none at the deer's body; key off, two, at the cow's and at the deer's body); two cows gathered one after the other, each replaced when used up; a saved game with a body waiting (saved and loaded at 21 s), gathered after the load: the turkey came when the body was used up; a `House` destroyed beside them left its `BuildingRubble2x2` from the kill handler as before (hardware breakpoints on the placement 0x506F61: the cow from the removal notice, the house from 0x4B527E). Not tested: an AI game (the shared profile's copy was in use), multiplayer.
+- **Status:** confirmed (2026-11-21, single player, WoL, scenarios): the two videos (`units` after them: key on, one `Turkey` at 47.0, 45.0 where the cow was and none at the deer's body; key off, two, at the cow's and at the deer's body); two cows gathered one after the other, each replaced when used up; a saved game with a body waiting (saved and loaded at 21 s), gathered after the load: the turkey came when the body was used up; a `House` destroyed beside them left its `BuildingRubble2x2` from the kill handler as before (hardware breakpoints on the placement 0x506F61: the cow from the removal notice, the house from 0x4B527E). 2026-11-22: a `CrateofCoin` as the replacement of `Cow` (the two crate videos; the crate's
+inventory and owner above); an AI skirmish with the key on and that data, as Persians against a German AI (`wolOtto`):
+the AI went from 16 to 18 units in 2.5 minutes with 12 settlers and a Manor, no XS error (on 2026-11-21 no AI game had
+been played, as the shared profile's copy was in use). Not tested: multiplayer, an AI that kills a cow with the data.
 
 ### Buildings and training
 

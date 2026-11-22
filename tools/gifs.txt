@@ -9,6 +9,8 @@ basePop-wol 2 8 2
 basePop-wol-control 2 8 2
 betterfreedynamicunit-wol 2 22 2
 betterfreedynamicunit-wol-control 2 22 2
+buildingGather-wol 30 36 3
+buildingGather-wol-control 30 36 3
 buildingRotation-wol 6 12 1
 broadsideMuzzleLimit-wol 18 24 2
 broadsideMuzzleLimit-wol-control 18 24 2
@@ -32,6 +34,8 @@ damageOverTime-wol 4 20 2
 damageOverTime-wol-control 4 20 2
 danceBonusCivs-wol 2 40 3
 danceBonusCivs-wol-control 2 40 3
+deadReplacementAtZeroInventory-crate-wol 3 22 2
+deadReplacementAtZeroInventory-crate-wol-control 3 22 2
 decimalPopulation-wol 2 40 3
 decimalPopulation-wol-control 2 40 3
 dodge-wol 3 30 2
