@@ -15,29 +15,37 @@ import sys
 TAB = "\t"
 
 
-def aura(name, target, amount, maxrange, colour, *tags):
-    lines = [f"<name>{name}</name>", "<type>AutoRangedModify</type>", f"<modifyabstracttype>{target}</modifyabstracttype>",
+def aura(name, target, amount, maxrange, marker, *tags, proto=False):
+    kind = "modifyprotoid" if proto else "modifyabstracttype"
+    lines = [f"<name>{name}</name>", "<type>AutoRangedModify</type>", f"<{kind}>{target}</{kind}>",
              "<active>1</active>", f"<maxrange>{maxrange}</maxrange>", "<persistent>1</persistent>",
              "<modifytype>UnitResource</modifytype>", f"<modifyamount>{amount}</modifyamount>",
-             f"<modelattachment>effects\\uhc_rings\\aura_{colour}.xml</modelattachment>",
+             f"<modelattachment>effects\\uhc_rings\\aura_{marker}.xml</modelattachment>",
              "<modelattachmentbone>bonethatdoesntexist</modelattachmentbone>"]
     return "\r\n".join(["\t<action>"] + [TAB * 2 + line for line in lines + list(tags)] + ["\t</action>", ""])
 
 
-# Wider than a Torp's, so a test map need not place things to the metre.
+# Wider than a Torp's, so a test map need not place things to the metre. One marker per kind of resource
+# (make_rings.MARKERS): the Cow shows the fish only to show that icon (fish need water); the crates pay Trade (WoL's
+# Export), XP and Fame (WoL's Oil).
 AURAS = {
     "AreaGatherMine": aura("AreaGatherMine", "AbstractMine", "0.27", 14, "gold", "<includegaia>1</includegaia>",
                            "<forbidunittype>Plantation</forbidunittype>", "<singleunit>1</singleunit>"),
-    "AreaGatherBerry": aura("AreaGatherBerry", "AbstractFruit", "0.30", 14, "food", "<includegaia>1</includegaia>",
+    "AreaGatherBerry": aura("AreaGatherBerry", "AbstractFruit", "0.30", 14, "berry", "<includegaia>1</includegaia>",
                             "<donotignoredead>1</donotignoredead>", "<singleunit>1</singleunit>"),
-    "AreaGatherHuntable": aura("AreaGatherHuntable", "Huntable", "0.42", 14, "food", "<targetgaia>1</targetgaia>",
+    "AreaGatherHuntable": aura("AreaGatherHuntable", "Huntable", "0.42", 14, "hunt", "<targetgaia>1</targetgaia>",
                                "<donotignoredead>1</donotignoredead>", "<deadexclusive>1</deadexclusive>",
                                "<singleunit>1</singleunit>"),
-    "AreaGatherHerdable": aura("AreaGatherHerdable", "Herdable", "1.00", 14, "food", "<targetgaia>1</targetgaia>",
-                               "<donotignoredead>1</donotignoredead>", "<deadexclusive>1</deadexclusive>",
-                               "<singleunit>1</singleunit>"),
-    "AreaGatherCrate": aura("AreaGatherCrate", "AbstractResourceCrate", "4.00", 14, "gold",
-                            "<includegaia>1</includegaia>", "<modifytargetlimit>20</modifytargetlimit>"),
+    "AreaGatherSheep": aura("AreaGatherSheep", "Sheep", "1.00", 14, "food", "<donotignoredead>1</donotignoredead>",
+                            "<singleunit>1</singleunit>", proto=True),
+    "AreaGatherCow": aura("AreaGatherCow", "Cow", "1.00", 14, "fish", "<donotignoredead>1</donotignoredead>",
+                          "<singleunit>1</singleunit>", proto=True),
+    "AreaGatherMill": aura("AreaGatherMill", "Mill", "0.50", 14, "farm", proto=True),
+    "AreaGatherTrade": aura("AreaGatherTrade", "CrateofTradeSmall", "0.50", 14, "export", "<includegaia>1</includegaia>",
+                            proto=True),
+    "AreaGatherXP": aura("AreaGatherXP", "CrateofXP", "0.50", 14, "xp", "<includegaia>1</includegaia>", proto=True),
+    "AreaGatherFame": aura("AreaGatherFame", "CrateofFameSmall", "0.50", 14, "oil", "<includegaia>1</includegaia>",
+                           proto=True),
 }
 TECHS = (
     ("UhcTorpHalfMine", "<Effect type ='Data' amount ='0.50' subtype ='ModifyRate' action ='AreaGatherMine' relativity ='BasePercent'>"),

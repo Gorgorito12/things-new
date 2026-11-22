@@ -1168,6 +1168,14 @@ SITES = [
     # and the deck builder's fill (the home city screen's "Build a Deck", buttons hcDeck-button<row><column>):
     # mov eax,[esi+18h] / cmp edi,eax (replaced, 5 bytes) / jge ... / cmp edi,4 / jge
     ("DeckBuilderAgeRow", 0x9A0489, 0x27),
+    # the column of a card, once its row is set (#83, Age V cards right-aligned): the panel's mov ecx,[esp+28h]
+    # (column) / mov edx,[esp+14h] (panel) (replaced, 8 bytes) / slot = row*11 + column / mov eax,[edx+edi*4+140h]
+    # (its button); the deck builder's mov edx,[esp+14h] (column) / mov eax,[esp+28h] (builder) (replaced, 8 bytes)
+    # / ... / mov ebx,[eax+ebp*4+178h]; the deck editor's mov ecx,[esp+30h] / lea eax,[ebx+ebx*2] (replaced,
+    # 7 bytes) / ... / add eax,[esp+1Ch] (column) / mov ebp,[ecx+eax*4+154h]
+    ("CardPanelColumn", 0x9A5A7C, 0x1B),
+    ("DeckBuilderColumn", 0x9A04B0, 0x1B),
+    ("DeckEditorColumn", 0x9A77E5, 0x18),
     # kothTimer: FUN_009F02DD, the King of the Hill time in seconds on the victory settings (DefaultVP.xml, ECX):
     # mov eax,[0C66234h] (replaced, 5 bytes) / mov edx,[eax+13Ch] / ... / KOTHVictoryTime +104h, PerPlayer +108h,
     # [world+5Ch], [world+18Ch], AdjustKOTHTotalTimeByTeams +10Ch, its Factor +110h / ret; its only call, at
@@ -1213,6 +1221,24 @@ SITES = [
     ("CivByName", 0x52D6FF, 0x1C),
     # civFirstTC: a player's civ ID 0x4539D3, [[player+20h]] when [player+24h] > 0, else -1
     ("CivOfPlayer", 0x4539D3, 0x10),
+    # scenarioCivs, verify only: the civs.xml loader FUN_0052A590 loads the file into its stack reader,
+    # mov ecx,[0D6F510h] / push 1 / push 0 / push 0BD1124h (L"civs.xml") / push ecx / lea ecx,[esp+110h] /
+    # call 599A7Dh / test al,al / je 65991Ah, then the root mov ecx,[esp+108h] / test ecx,ecx / mov esi,ecx /
+    # mov [esp+2Ch],esi / je 52C32Bh: 0x52A62B is where the hook runs the walk again on a second document
+    ("ScenarioCivsLoad", 0x52A607, 0x39),
+    # scenarioCivs: the end of the walk over the root's elements, jl 52A692h / mov ebx,2 / push 0BCEE80h
+    # (replaced, 5 bytes at 0x52B485, also the target of the jle at 0x52A68C) / lea ecx,[esp+30h] (continuation)
+    ("ScenarioCivsEnd", 0x52B47A, 0x14),
+    # scenarioCivs, verify only: the civ append FUN_0052A4DB's head, push ebx / push ebp / push edi / mov edi,ecx /
+    # mov ebx,[edi+28h] (the count) / push 0 / lea eax,[ebx+1] / lea ebp,[edi+24h] (the list) / push eax / mov ecx,ebp
+    ("ScenarioCivsAppend", 0x52A4DB, 0x13),
+    # scenarioCivs, verify only: the <Visible> and <VisibleInEditor> handlers of the civ tag loop set bit 0 and
+    # bit 1 of the civ's flag bitset [civ+128h] (push eax / push 0 or 1 / ... / mov eax,[eax+128h] ...)
+    ("CivFlagVisible", 0x52D302, 0x3E),
+    ("CivFlagEditor", 0x52BE78, 0x40),
+    # scenarioCivs, verify only: the XML reader's load FUN_00599A7D, thiscall(reader, directory, file, int, int),
+    # ret 10h; its head releases the document already loaded (cmp byte [esi+1864h],0 / je / call 598E2Bh)
+    ("XmlReaderLoad", 0x599A7D, 0x25),
     # civFirstTC: proto by name 0x5A2346, thiscall(database, const char*), ret 4: a
     # case-insensitive scan of [db+54h] (count [db+58h]) by [proto+10h], -1 if none
     ("ProtoByName", 0x5A2346, 0x20),
@@ -1417,6 +1443,10 @@ SITES = [
     # inside); and the model index lookup 0x471D24 (mov ecx,[ecx+60h] / test ecx,ecx / je), which the hook calls.
     ("ShotsReloadAnim", 0x4976CB, 9),
     ("ShotsAnimVariant", 0x471D24, 0xB),
+    # broadsideSoundSet: in FUN_004CEB37 (the broadside fire step's effect of one shot), push 0BA1D5Ch (replaced, 5 B)
+    # / add edx,14h (the continuation; no branch lands inside), and the name it pushes, "ShipCannonShoot" with its NUL
+    ("BroadsideSound", 0x4CECBD, 8),
+    ("BroadsideSoundName", 0xBA1D5C, 0x10),
     # unitResourceAuras: the aura update's mov eax,[0C66234h] and the sub esp,10h it continues at
     ("UnitResourceAuraEntry", 0x9D033E, 8),
     # unitResourceAuras, verify only: the aura's scan (thiscall(action, IdList*)), inventory add
@@ -2001,6 +2031,15 @@ SITES = [
     # ret 10h (mov eax,1 / test [0D6F75Ch],al / push esi / mov esi,ecx), the call the stock idle-herdable search
     # 0x4C31EE gives to a pen or magnet within 10 m, and the command execute's unit-order path (0x944D3F, 0x944E0D).
     ("GatherWorkOrder", 0x4EFCB2, 0x0E),
+    # buildingGather: the Gather update 0x4EC4FA (vtable 0xB97880 +3Ch) returns through cmp al,0Ch / je 586D8Bh /
+    # pop ebx / pop edi / pop esi / pop ebp / add esp,0Ch / ret at 0x4EC76B (AL = the state byte [esi+61h], ESI = the
+    # action); the first 8 bytes jump to the hook, which continues at 0x586D8B or 0x4EC773. Verified only: the vtable
+    # slots +34h setState 0x4ED249, +38h, +3Ch the update; setState's head; and the end of the move-done event (9),
+    # whose in-range test (the gatherer's vtable +CCh with the target and [action+24h]) and setState(5) the hook repeats.
+    ("GatherUpdateExit", 0x4EC76B, 0x10),
+    ("GatherVtableSlots", 0xB978B4, 0x0C),
+    ("GatherSetState", 0x4ED249, 0x0B),
+    ("GatherArrivedState", 0x4EDB4F, 0x38),
     # herdWalkAwayFix: the gather tick's walk-away of a full herdable from a pen, the paddy or an
     # AbstractTypeHerdableMagnet target: push 0 / push 40C00000h (6.0f) / push edx (the target's ID) / call 4E3A37h
     # (the flee move, thiscall(mgr, targetId, distance, flag), ret 0Ch). The call at +8 is redirected; the flee's head

@@ -1824,9 +1824,11 @@ the field `[esp+2Ch]` and the amount `[esp+34h]`. The handler returns done (AL =
 (`0x8D878F`), or the ID of a stock case to run with the arguments it rewrote.
 
 While the techs are read, the subtype's name lookup (the shared head 0x61FF5D) calls the key's parser with the effect
-and its node: `unittype` must name a proto (an ID below the first abstract type, `[db+19B0h]`), `age` one age 1 to 5 or
-a range `N-M` of them, and `includeself` true or 1. They are packed into the effect's field `+10h`: the proto ID in the
-low 24 bits, the first age in bits 24-26, `includeself` in bit 28, the last age in bits 29-31. A bad one drops the effect
+and its node: `unittype` must name a proto (an ID below the first abstract type, `[db+19B0h]`), `age` one digit 0 to 4
+(Age I to V, the scale of a card's `<age>`) or two digits `NM` for the ages N to M, N <= M (`13`: Ages II to IV; since
+2026-11-22, #76: before, 1 to 5 and `N-M`, now refused), and `includeself` true or 1. They are packed into the
+effect's field `+10h`: the proto ID in the low 24 bits, the first age + 1 in bits 24-26 (0: every age),
+`includeself` in bit 28, the last age + 1 in bits 29-31. A bad one drops the effect
 (the lookup answers −1, as for a name nobody knows). When the effect applies, the handler adds the counts of those ages
 (or of every age), adds one when `includeself` is set and the effect runs inside the activation of a shipment of the
 same player whose card's age is in the range, writes the proto ID into the field and `amount × count` into the amount,
@@ -1863,15 +1865,29 @@ stop at four ages (REA `ev_4c5c5b11…`, `ev_cb7f901b…`; capstone):
   cards;
 - the in-game shipment panel, the gadget type `homeCityCardPanel` (`uihomecitycommandpanel.xml`), fills its buttons in
   FUN_009A5658: a card of age below 0 or above 3 is skipped (0x9A5A25..0x9A5A30), the others go to row = age, column =
-  their rank in that age (at most 11, counted in `[panel+4D0h + 4 × age]`). Its buttons are named
-  `homeCityCardPanel-button<row><column>` and looked up once (FUN_009A4E50, rows below 4, columns below 11) into four
-  arrays of 44 slots at `+140h`, `+2A0h`, `+354h` and `+40Ch` of the gadget, packed one after another, with the per-age
-  counts at `+4D0h..+4DCh` and an init flag at `+4F4h`;
+  their rank in that age (at most 11, counted in `[panel+4D0h + 4 × age]`). Its gadgets are looked up once
+  (FUN_009A4E50, rows below 4, columns below 11; capstone, 2026-11-22) into four arrays of 44 slots, slot = row × 11 +
+  column: `+140h` the buttons `homeCityCardPanel-button<row><column>`, `+2A0h` `shipCostOverlay-button%d%d`, `+354h`
+  `shipmentsLeftOverlay-button%d%d`, `+40Ch` `resourceCostOverlay-button%d%d` (the init loop writes them at
+  `[ebx-160h]`, `[ebx]`, `[ebx+B4h]` and `[ebx+16Ch]` with EBX stepping 4 from `+2A0h`). A fifth array of 44, `+1F0h`,
+  holds no gadget: the fill sets it to −1 (`rep stosd`, 2Ch dwords) and writes each placed card's link there
+  (0x9A5AD2, the value of 0x58EA03 for the card's tech). The per-age counts are at `+4D0h..+4DCh`, the init flag at
+  `+4F4h`. (Until 2026-11-22 this page listed `+140h`, `+2A0h`, `+354h`, `+40Ch` as four button arrays packed one
+  after another; `engine-symbols.md`'s five offsets were the right ones, `+1F0h` being the link array.) Once the row
+  and column are known the fill computes the slot (0x9A5A84..0x9A5A8D), takes that slot's button, writes the link,
+  hands the button the card (vtable `+104h` at 0x9A5D99 with the tech's `+14h`; inferred from the arguments) and calls
+  FUN_009A5205(row, column, card), which sets the three overlays of the same slot; its only caller is the fill.
+  Before any card it hides the 44 buttons and their overlays (0x9A56A0..0x9A5757);
 - the deck builder of the home city screen ("Build a Deck", `uihcdeckbuilder.xml`, buttons `hcDeck-button<row><column>`)
   fills its rows the same way at 0x9A0489 and stops at the first card whose age is 4 or more (0x9A04A7); in a test the
-  Age V card of a 25-card deck was missing from its Age IV row while the counter read 25/25;
+  Age V card of a 25-card deck was missing from its Age IV row while the counter read 25/25. Its buttons are at
+  `+178h` (44, slot = row × 11 + column), its card links at `+228h` (reset to −1 at 0x9A0350, written at 0x9A04F6), and
+  it hides every button and overlay before the fill (0x9A028C..0x9A0343). A click on one of its deck cards (the card
+  leaves the deck) finds the slot of the clicked button in `+178h` and reads the card from `+228h` at that slot
+  (FUN_009A003F, 0x9A0074..0x9A0099);
 - the `homeCityDeck` dialog (`uihomecitydeck.xml`, loaded at 0x9A737B, FUN_009A7670) has the same fill (0x9A77BE,
-  stop at 0x9A77DC); it did not open in the tests (inferred: another deck dialog of the same screen).
+  stop at 0x9A77DC; buttons at `+154h`, hidden first at 0x9A76AC..0x9A76EB); it did not open in the tests (inferred:
+  another deck dialog of the same screen).
 
 The panel greys a card whose age is above the player's (`[card+18h]` against `[player+50h]`, rollover string 8FA6h),
 and the send FUN_0085A724 refuses it (0x85A90A, string 8FFCh); neither stops at 3.
@@ -1879,18 +1895,46 @@ and the send FUN_0085A724 refuses it (0x85A90A, string 8FFCh); neither stops at 
 **What the key does.** The immediate of `cmp eax,4` at 0x63022E becomes 5 (`CardListAgePasses`), so the game's list
 takes the cards of age 4 too, after those of age 3. The three fills get a 5-byte `jmp` over `mov eax,[esi+18h]` and the
 `cmp` after it (`CardPanelAgeRow` 0x9A5A22, `DeckBuilderAgeRow` 0x9A0489, `DeckEditorAgeRow` 0x9A77BE): the hook reads
-the card's age, turns 4 into 3, re-runs the `cmp` and jumps back (0x9A5A27, 0x9A048E, 0x9A77C3). So an Age V card sits in the Age IV row, after the Age IV cards,
-while `[card+18h]` stays 4: greyed with its reason until the Imperial Age, refused by the send before it, and counted in
-Age V by `shipmentCounts`.
+the card's age, turns 4 into 3, re-runs the `cmp` and jumps back (0x9A5A27, 0x9A048E, 0x9A77C3). So an Age V card sits in
+the Age IV row while `[card+18h]` stays 4: greyed with its reason until the Imperial Age, refused by the send before it,
+and counted in Age V by `shipmentCounts`.
+
+**Age V at the right (#83, 2026-11-22).** JTMaston asked for the Age V cards in a line at the right of that row, the
+Age IV cards staying at the left. Each fill gets a second jump once the card's row and column are set and before the
+slot is computed: `CardPanelColumn` 0x9A5A7C (8 bytes, `mov ecx,[esp+28h]` / `mov edx,[esp+14h]`), `DeckBuilderColumn`
+0x9A04B0 (8 bytes, `mov edx,[esp+14h]` / `mov eax,[esp+28h]`), `DeckEditorColumn` 0x9A77E5 (7 bytes, `mov ecx,[esp+30h]`
+/ `lea eax,[ebx+ebx*2]`). The hook passes the card list (panel `[esp+2Ch]`, the others EBP), the card (ESI) and the
+column (panel and builder `[esp+28h]` / `[esp+14h]`, editor `[esp+1Ch]`) to `UhcAgeFiveColumn`, which, when the list
+holds an Age V card, counts the list's Age IV and Age V cards (`[list+1Ch]`, entries of 28h, `[list+20h]` of them) and
+returns: for an Age V card 11 − (Age V cards) + its rank among them; for an Age IV card its rank among the Age IV
+cards, or −1 when that column belongs to the Age V cards. With no Age V card the stock column is kept. The hook writes
+the column back to the fill's variable, re-runs the replaced instructions and continues (0x9A5A84, 0x9A04B8,
+0x9A77EC); −1 goes to the fill's "next card" (0x9A620B, 0x9A076C, 0x9A7A73, where a twelfth card of a row goes), and the
+panel's per-row count `[panel+4D0h+4×row]`, which the fill raised before the hook, is lowered again, so the Age V cards
+that come after are not cut by the panel's cap of 11. The column then goes everywhere the fill uses it: the slot of
+the button, of the link (`+1F0h` / `+228h`) and of the overlays (FUN_009A5205), and the button's own command. The
+column counter the fill raises after each card placed (0x9A61F9, 0x9A0756) only matters to the stock check of a
+twelfth card, which still holds. A log line gives the layout once per change of the two counts.
+
+Overflow: when the Age IV and Age V cards together are more than 11, the Age V cards keep the last columns and the
+last Age IV cards are not shown (logged), instead of the Age V cards being cut as a twelfth card is. More than 11 Age V
+cards: the first 11 are shown.
 
 **Why not a fifth row.** The row index is the card's age, and each panel object holds exactly 4 × 11 buttons in arrays
 that touch each other (the deck builder's at `+178h`); the card inventory's "By Age" view has four tabs too; a fifth row would need a larger gadget object and every reader of those arrays (the fill, the
 click and rollover handlers, the refresh at 0x9A5205) moved to new storage, plus 11 more named buttons in the layout.
 That is a reimplementation of both gadgets, not a patch.
 
-**Why it is safe.** Only the row changes; the count per row keeps its cap of 11 (an Age IV row with 11 cards leaves the
-Age V cards out, as stock leaves a twelfth card out). The hooks keep every register but EAX, which the replaced `mov`
-loads anyway, and re-run the replaced `cmp` for the branch after it.
+**Why it is safe.** The row hooks keep every register but EAX, which the replaced `mov` loads anyway, and re-run the
+replaced `cmp` for the branch after it. The column hooks save every register around the call (`pushad`/`popad`); the
+result goes to EAX, which the code after each continuation overwrites (`lea eax`, `mov eax`), and the replaced
+instructions are re-run with the new column; the flags are not read after them. A card keeps one slot for its
+button, its link and its overlays, since the fill computes all three from the column the hook returns, so a click,
+a rollover or a send reaches the card shown (tested: rollovers of every Age IV row card, sends from the right-aligned
+slots, removal from the deck builder). The slots between the two groups stay hidden: the fill hides all 44 buttons
+and their overlays and resets the links before it places a card. The counts are read from the same list the fill
+walks, so they cannot disagree with it. Not in the hot path: the fills run when a panel is opened or changes, and the
+count is one pass over the list (25 cards in the decks tested) per card of the Age IV row.
 
 ### maintainWaitForPop
 
@@ -2051,6 +2095,30 @@ side's count, which is what the schedule can time.
   set-up. It adds projectiles (each with its accuracy roll) and sync-RNG draws, so every machine
   needs the same cfg.
 
+### broadsideSoundSet
+
+**Stock.** The broadside fire step (FUN_004C1290's step, the action type `BroadsideAttack`) calls FUN_004CEB37 at 0x4CEA02,
+its only caller (an `E8` scan of `.text`), just before each launch `call 499422h` (0x4CEA43). FUN_004CEB37,
+`thiscall(unitAction, ...)`, `ret 14h`, with EDI = the unit action and `[edi+10h]` the unit (checked at its head): it
+places the muzzle effect `L"NavelCannon"` (0xBA1D6C) through 0x4828E6 on `[[0C66240h]+0C1A0h]`, then at 0x4CECAF..0x4CECC6
+loads EDX = the unit, pushes a local, loads ECX = the game `[0C66234h]`, pushes `0BA1D5Ch` (`"ShipCannonShoot"`), adds 14h to
+EDX (the unit's position) and pushes it, and calls 0x4AA24C, the play of a sound set by name. 0xBA1D5C is pushed nowhere
+else (an `imm32` scan), so every broadside shot of every ship plays that set. An action of type `Attack` plays its shot
+sound from its animation's `SpecificSoundSet` tags.
+
+**The hook** (`hooks/broadsidesound_hooks.asm`) replaces the 5-byte push at 0x4CECBD with a jmp: it saves ECX and EDX, calls
+`UhcBroadsideSoundName(EDI)`, restores them, pushes the returned name and goes on at 0x4CECC2 (`add edx,14h`). The name is
+the action's `<BroadsideSoundSet>` (the shared action tag hook, keyed by `{[[ua+10h]+5Ch]+4, [[ua+4]+4]}`, the proto ID and
+the action's name index, which every player's copy keeps), or the stock pointer. The first shot of each tagged action checks
+the name as 0x597C56 looks a set up: the manager `[game+950h]`, its table `[+4]`, a `BString` of the name (0x401ECA,
+`thiscall(this, const char*)`, `ret 4`; freed by 0x4010CA) and 0x468E7D (`thiscall(table, const BString*)`, `ret 4`: the set,
+or 0). A name the table lacks is logged once and its shots push the stock name.
+
+**Why it is safe.** No branch lands in 0x4CECBE..0x4CECC1 (scan). At 0x4CECBD EAX is dead (written by the call before it is
+read), no x87 value is live (the angle was stored at 0x4CEC0D, the coordinates at 0x4CEBFF), and ECX and EDX are restored;
+EBX, ESI and EDI are callee-saved in the C function. The names are `std::string`s that only change during a data load. The
+hook chooses a sound only: nothing in the simulation reads it.
+
 ### abilitySlots
 
 **Abilities.** `data\abilities\abilities.xml` is loaded into the ability manager `[world+56Ch]`,
@@ -2097,7 +2165,7 @@ The ring is a model of the table the tactics parser fills: 0x58F68F gives the ID
 it at the unit's feet. A world tick, ten times a second of game time, compares the selection of 0x453B28 and the Alt state
 with the units that hold rings, and hangs or removes them through the functions of the stock aura update.
 
-**Ring size:** the model's flat particle is drawn `<scale>` metres wide in all, not twice that: `range_<N>.particle` has
+**Ring size:** a range ring is a mesh since 2026-11-22, its outer edge at N m in `range_<N>.gr2`'s own vertices (in metres through the file's units per metre). Before, with the white particle rings (`make_rings.py --range-particles`), the model's flat particle is drawn `<scale>` metres wide in all, not twice that: `range_<N>.particle` has
 a scale of 2 × N / 0.97, the texture's line ending at 0.97 of its half width (measured in game, 2026-11-21: with the
 half width as the scale every ring showed half its radius).
 
@@ -2110,7 +2178,27 @@ player's proto: its action entries are 12 bytes at `[tactic+44h]` (count `+48h`)
 set by its handler 0x5FAC6D) of `[action+64h]` are set; its range is 0x4946D6(action, −1), the entry the stat panel shows. The
 player's copy is read every tick, so a range tech shows at once. A tactic with no ranged attack (a cannon limbered to move)
 takes the ranged attacks of all the unit's tactics. Each radius goes to the nearest ring size; equal sizes share a ring;
-at most 4 rings a unit, the largest first, and 75 units with rings, the longest ranges first.
+at most 4 rings a unit, the largest first, and 60 rings in all, the units with the longest ranges first.
+
+**The placement ghost.** The shared ghost update (`ghostobservers.*`: the jump at 0x96E4E7 in FUN_0096E062, before the
+ghost's placement test, `AddGhostObserver`; `annexFacing` turns the ghost there too) runs each frame of a placement, the
+game paused too. The ghost object `[[0xC67300]+200h]` holds the transform (`+4` position, `+10h` forward, `+28h` right,
+`+7Dh` changed) and draws the model `[ghost+34h]`: an object of the class of a unit's visual `[unit+60h]`. Seen in game,
+both start with the same word, and the ghost's code calls three of that class's functions on `[ghost+34h]` (0x40431B,
+0xA3FEF8, 0xADA24B, each also called on `[unit+60h]`). The stock model functions 0x9C04F3, 0x9C28DE and 0x9C2885 read nothing
+of their unit but `[unit+60h]`, so `unitmodels.cpp` runs them on a stand-in block whose `+60h` is `[ghost+34h]`. The rings
+are the proto's (`[ui+1FCh]`, the local player's copy through 0x45311B, its `<DisplayedRange>` or the ranged attacks of
+all its tactics) and are worked out once per proto; each frame only checks that the model still has them. A new proto
+takes the old rings off first; a new model object means the old one went with its rings. When the placement ends, the
+ghost's model goes, rings included (tested: Escape, a placed Outpost, `uiSetProtoCursorID(-1)`).
+
+**Player colour.** A particle's colour fields are `UsePalette`, `NumPaletteColors`, `PaletteColors`, `ColorStages`,
+`fWorldLightingInfluence` and the fixed `Color` (the exe's particle tag names, 0xBA41D0): nothing takes the owner's
+colour. So a range ring is a mesh (aoe3-blender-tools' `make_rings.py`): a flat annulus whose cut-out is the geometry,
+on an alpha-1 texture with the units' shader `bumpspec_mask_pixelxform` (`pixelxformColor = playerColor`). Its texels of
+alpha 0 take the colour of the player of the visual the model hangs on: measured 2026-11-22 with a half-and-half test
+texture, blue on player 1's Skirmisher, red on player 2's Outpost, and the local player's blue on a placement ghost. The
+key needs nothing for it.
 
 **`<Flag>AlwaysDisplayRange</Flag>`.** The proto flag parser 0x5F640A (`stdcall(proto, name)`) compares the name with each
 flag it knows, through the string compare 0x4028B4, and returns with nothing for any other name. The key replaces the call of
@@ -2806,6 +2894,68 @@ during the game and its byte `+1A95h` was 0.
 its Market and settlers, then stayed idle), and the engine's AI auto-base FUN_004CF222; the age-up
 picker `uiPoliticianUI` (0x7E6905, 0x7E803F), the start camera (0x82E45B) and the `Maintain` spawn
 gate (0x492FD6), which all look for `TownCenter` itself.
+
+### scenarioCivs
+
+WoL's request #95 (JTMaston, 2026-11-22). <!-- private -->
+A second civ file, `data\scenariocivs.xml`, read right after `civs.xml`; its civs are appended to the same list and are
+visible in the scenario editor only.
+
+**The stock loader.** FUN_0052A590 (`thiscall`, ECX = the civ database, kept in EDI and at `[esp+1Ch]`):
+- creates civ 0, `Nature`, through the civ append FUN_0052A4DB;
+- builds an XML reader on its stack at `[esp+100h]` and loads the file into it: FUN_00599A7D(reader, `[0D6F510h]` (the
+  directory), `L"civs.xml"` (0xBD1124), 0, 1), `bool thiscall`, `ret 10h`. The load finds the loose file or the archive's,
+  XML or XMB. Its head releases a document the reader already holds (`cmp byte [esi+1864h],0 / call 598E2Bh`);
+- reads the root `[esp+108h]` (the reader's `+8`), checks its name against `Civs` (the compare 0x443C10 ignores case: a
+  root `<civs>` passes), and walks its elements (`[node+8]`, count `[node+0Ch]`, index `[esp+90h]`). Each `<civ>` becomes a civ
+  object appended by FUN_0052A4DB: it grows `[db+24h]` (count `[db+28h]`) by one, so a civ's ID is its position. Other
+  elements (`<subcivalliancecost>` …) set the database's values;
+- when the walk ends, 0x52B485 (`push 0BCEE80h`, reached from 0x52B480 after the last element and from 0x52A68C when the root
+  has none) goes on with the database's other values and the native civ marks (0x52B54F..0x52B581, by name), then destroys
+  the reader (0x52B588) and returns. Nothing after 0x52B485 reads the reader's document.
+
+**The hook** replaces the `push` at 0x52B485 (5 bytes; `hooks/scenariocivs_hooks.asm`). At the end of the walk over
+`civs.xml`, `UhcScenarioCivsNext` (`features/scenariocivs.cpp`):
+1. returns at once when `data\scenariocivs.xml` (or `.xmb`) does not exist;
+2. loads it into the loader's reader with FUN_00599A7D, the arguments of the stock call; a file that does not load is
+   logged and dropped;
+3. checks the document, since the stock walk cannot skip an element: the root is `<civs>`, every element under it is a
+   `<civ>`, and each civ's `<name>` is an identifier that no civ has yet (XS gets `cCiv<name>=<id>` for every civ, format
+   string 0xBF702A, and a second constant of one name stops the AI scripts from compiling);
+4. records the civ count and returns true. The hook then sets EDI to `[esp+1Ch]` and jumps to 0x52A62B, where the stock code
+   reads the root of the document just loaded, checks its name and walks it like the first. The civ tag handlers of the
+   shared hook 0x52BB07 (`civtags.h`) run on these civs too.
+
+When the second walk ends at 0x52B485, the function sees the count past the recorded one: it sets the flags of the new civs and
+returns false, and the hook re-executes the `push` and continues at 0x52B48A. A walk that stopped half-way (a stock error path)
+never comes back to the hook; the next load's first end then finds no new civ and is treated as a first end.
+
+**The flags.** The `<Visible>` handler (0x52D302) and the `<VisibleInEditor>` handler (0x52BE78) set bit 0 and bit 1 of the
+civ's flag bitset `[civ+128h]` (a pointer; bit count `[civ+12Ch]`). The hook clears bit 0 and sets bit 1. Readers found by a
+scan of `.text` for `mov r32,[r32+128h]` followed by a test of the byte (capstone; REA was in use by another agent):
+- bit 0 (Visible): 0x777BAC (in FUN_00777B20, called from many places around 0x8B87DA), 0x77D942 (in FUN_0077D90B, called
+  just before the hero UI test 0x77EBB2), 0x92966F (in FUN_0092944F, which fills a list gadget with the visible civs that also
+  pass FUN_006EF1CA(2));
+- bit 1 (VisibleInEditor): 0x9B2518 (in FUN_009B24C3, which fills a list with the display names of those civs: the editor's
+  Player Data list, seen in game).
+
+**Why it is safe:**
+- The stock walk does all the work: the scenario civs are built, appended and parsed by the code that builds the others, in
+  one call of the loader, before anything after 0x52B485 runs (the native civ marks, then whatever caches civ IDs later).
+- The civs of `civs.xml` keep their positions, so their IDs and every cache by name stay as they were.
+- The reader is the loader's own: FUN_00599A7D frees the first document before it loads the second, and the destructor at
+  0x52B588 frees the second.
+- At 0x52A62B the stock code depends only on the stack frame (the same at 0x52B485) and on EDI = the database, which the hook
+  sets. EAX is the compare result the code writes before it reads it.
+- Nothing runs during the game.
+
+**Observed in game** (2026-11-22, a test copy with a mod's data): two civs added as 169 and 170; the first 169 entries of the
+list identical with the key off; the editor's list showed them, the skirmish's personality list did not; a scenario with players
+on them loaded, fought, was saved as a game and reloaded; an AI skirmish compiled and played; bad files logged and dropped.
+`civs.xml` was read once per launch: with `log`, neither a scenario load nor a skirmish start logged a second read.
+
+**Not covered:** the lobby; multiplayer; beside another DLL that hooks the loader; which screen FUN_00777B20 and FUN_0092944F fill (inferred from the
+bit they test, not seen); a civ of this file in a campaign.
 
 ### transformSpan
 
@@ -3643,6 +3793,33 @@ attack animation alone over the interval (it moved the quick shots later in thei
 a Skirmisher's second and third shot). [O] A Falconet against Settlers starts a new burst after one or two shots with the
 reload fix and without it alike (a new target, a new unit action): that is the stock retargeting, not the hook.
 
+**The firing pose between the shots (`<BurstPose>`, 2026-11-22).** [O, frames at 30 fps] the idle animation of a mod's ranged
+infantry (`Volley_standing_idle`, the granny file `idle_rifleman_A`) is the rifle at rest, so the 2026-11-21 fix lowered the
+rifle after every quick shot. The tag now picks the reload slot's animation per action: `reload` (the stock path, hook not
+taken), `idle` (the swap above) or `hold`, the default:
+1. At a quick shot, the after-shot ROF read (0x48F8B5, which runs at the attack animation's Attack tag) also slows the rest
+   of the attack animation (`StretchTail` in `shots.cpp`): with the unit showing `[ua+7Ch]` (`[[[unit+60h]]+14h]`, as
+   0x482771 reads it) and a reload animation in `[ua+84h]`, the time left is the animation's length (0x4939BD,
+   `float thiscall(unit)`, seconds) minus (now − `[ua+78h]`) × the rate `[unit+0B0h]`; the rate becomes that over the interval
+   minus the elapsed time minus a 30 ms lead. [O] Writing `[unit+0B0h]` mid-animation takes effect at once (a Skirmisher: 1000 ms
+   animation at rate 11.25, 528 ms left, rate 1.61 over 328 ms).
+2. The animation then ends 30 ms before the wait, and FUN_004976CB runs from the hook with `[ua+84h]` / `[ua+88h]` = the
+   attack animation. The unit still shows it, so 0x497767 / 0x6A78D0 do not restart it: the function sets its owner (0x4A2320)
+   and paces it over the lead, and returns 1. [ua+70h] is set to −1 after the call: the update in state 19h (0x49A3DB) calls
+   the function while the visual shows `[ua+70h]`, which is the case after a stock reload start no more (the reload animation
+   shows) but would be after this one; [O] without the write the function ran at every update, the lead shrank to 0 and below,
+   and the cycles came early (0.388 s). The next cycle copies `[ua+7Ch]` into `[ua+70h]` again (0x4A115C).
+3. `UhcShotsHoldLead` then checks the wait left (`[[unit+58h]+0B8h] + [+0BCh]` − now): under 10 ms (a reload start that came
+   late), the rate becomes the animation's length / 10 ms. The stock function paces over a wait of 0 at rate 1 (the whole
+   animation) and over a negative one read unsigned (0x4B92E9 adds 2³², so it never ends): either holds the next cycle.
+   [O] It fired once in a test where the target died (`came -658 ms before the wait's end`).
+[O] The next cycle begins when the reload slot's animation ends, not at the wait alone: a reload animation frozen at rate 0.001
+stopped the unit after its first shot, and an animation ended 10 ms early began the next cycle 10 ms early. So every pose keeps
+an animation that ends with the wait. The shot times stay stock within one update (0.403 / 0.665 / 2.735 s against 0.402 /
+0.665 / 2.734 s). What shows: the attack animation's last pose (the aim) from the shot to the lead, then the start of the next
+attack animation (about 40 ms, the raise from frame 0 at the quick pace). An attack without a reload animation keeps the stock
+path for every pose (state 0Ch, its idle animation), as the hook returns to the stock head when `[ua+84h]` < 0.
+
 **The projectiles** (option `projectiles`): `hooks/shots_hooks.asm` replaces the attack step's `call 499422h` (5 B at
 0x48F88D, ECX = EBP = the unit action, the five arguments pushed) with a jmp. While some action has
 `<NumberProjectiles>` above 1 (`g_uhcShotsProjectiles`), `UhcShotsProjectiles(ua)` gives N, and the hook calls the
@@ -3659,9 +3836,11 @@ before reading them. The broadside fire step (0x4CEA43) and melee (0x4DCFE2) are
 - The ROF sites are those of `containedUnitsROF` (above). The launch site: no branch lands in 0x48F88E..0x48F891 (`cs`
   scan); the stack is the stock one at 0x48F892, since each extra launch pops its own copies (`ret 14h`).
 - Deterministic: the count, the tags and the interval are simulation state or data; the extra launches use the stock
-  launch and its synced random draws, the same on every machine. Every player needs the same line and data.
+  launch and its synced random draws, the same on every machine. Every player needs the same line and data. `hold` writes
+  the unit's animation rate from game time, the data's animation length and the stock rate: the same on every machine, as
+  the stock cycle's rate is; that the cycle waits for the animation's end makes it simulation state.
 - Cost: one map lookup per ROF read of an action with a burst while some action has one, one per shot with projectiles;
-  with no tag in the data, the gates are closed and the hooks only compare.
+  with no tag in the data, the gates are closed and the hooks only compare. `hold` adds a call of 0x4939BD per quick shot.
 
 ### unitResourceAuras
 
@@ -3682,9 +3861,10 @@ targets that paid, and keeps per owner what it hung and per target how many aura
 once a second, because a dead owner has no more updates. A model that is not in the game is accepted by 0x9C04F3, returns
 true and is never found by 0x9C28DE: the helper treats it as hung and logs it once, or it would hang it on every update.
 
+The private pack `wol-fixes/aura-rings` (`make_aura_rings.py`) gives the same file names the game's own ring instead: the Indian economic aura's texture recoloured per colour, and per colour and size a copy of its mesh (`effects\ypack_auras\aura_econ`, a 2.79 m alpha-tested quad 0.5 m over the bone) scaled and naming its own texture, its stored texture name rewritten at the same length; with no `<replacetexture>`, a Town Center in the scene changes nothing (tested 2026-11-22). <!-- private -->
 The rings of `tools/rings` (drawn by `tools/make_rings.py` of aoe3-blender-tools) need no code. A ring's `.xml` hangs one flat particle, chosen by `<logic type="UnitType">`:
 `appearancetype` 2 lies on the ground, 0 faces the camera, and `materialtype` 0 with `material` 0 honours the texture's alpha;
-`scale` is half the width of the square in metres. The particle lives 2 s, `emissionrate` 100 with `maxparticles` 1 replaces it
+`scale` is the full width of the square in metres (measured on the range rings, 2026-11-21). The particle lives 2 s, `emissionrate` 100 with `maxparticles` 1 replaces it
 within a frame, and `startfull` has it there at once: 0x9C2885 takes the model off but leaves its particles to die out, so a
 ring with an hour's life stayed on the unit. The stock mesh is out for two reasons: at 2 m on anything it stays under a
 building, and in a scene with a Town Center its `<replacetexture>` falls back to the stock texture. The cause of that is
@@ -4447,7 +4627,7 @@ Every machine runs the same command on the same state (`DistanceTo`, the query a
 only), so all reach the same forward.
 
 **The ghost.** FUN_0096E062 updates the placement ghost (`ESI` = its visual, `[0xC67300]+200h`): it moves it and tests
-the placement at 0x96E531 with the visual's position `+4`, forward `+10h` and right `+28h`. The hook at 0x96E4E7 (`mov
+the placement at 0x96E531 with the visual's position `+4`, forward `+10h` and right `+28h`. The shared hook at 0x96E4E7 (`ghostobservers.*`, `mov
 eax,[0C66234h]`, the first line of that test's arguments) turns the visual of a tagged proto (`[0xC67300]+1FCh`) the
 same way, for the local player (`[game+3C0h]`) and the nearest parent (the UI's selection is not read), and sets
 `[visual+7Dh]`, as the stock rotation 0x9BC546 does. The green or red test, and the forward that `uiBuildAtPointer`
@@ -5013,26 +5193,67 @@ action's range: the longest maximum `+8` of its 16-byte range entries `[action+1
 `<maxrange>` and the `<typedmaxrange>` lines. A busy unit (0x44F1A7 false) only gets its leash anchor `[mgr+7Ch]` set to
 its position while its current action `[mgr+24h]` is a Gather (vtable 0xB97880). An idle one starts a timer; after the
 shortest `delay` of its sources the nearest unit within range + 12 m (0x4A1C55) that is alive, of a named type, owned
-by Gaia, the unit's player or a player that is not its enemy (0x484D2D), and within the source's range measured to its
-edge (the target's vtable `+B8h`, a distance from its obstruction to a point) is the target (the lower ID on a tie).
+by Gaia, the unit's player or a player that is not its enemy (0x484D2D), that the player can see (0x48A9EF, the test
+the Gather update makes at 0x4EC753 before it drops an order with state 9), and within the source's range measured to
+its edge (the target's vtable `+B8h`, a distance from its obstruction to a point) is the target (the lower ID on a
+tie). A unit that cannot move (MaxVelocity `[proto+80h]` ≤ 0) is scanned only while `buildingGather` is applied
+(`g_uhcBuildingGather`), and its range test is the gather's own: the gatherer's vtable `+CCh(target, range)`, which
+counts the building's size.
 
 **The order.** FUN_004EFCB2, `thiscall(mgr, targetId, 0, -1, 0)`, `ret 10h`: the action manager's work order, the one
 the stock idle-herdable search FUN_004C31EE gives a pen or a magnet within 10 m (the call at 0x4C31E4 passes the radius
 10.0 and -1), and the one the command execute's unit-order path calls (0x944D3F, 0x944E0D). It sets `[mgr+94h]` = -1,
 picks the action for the target and walks the unit there; the trigger `trUnitDoWorkOnUnit` reaches the same code
 through a network command (0x833681). The held amount of the unit's main resource (0x4DBEC1, 0x4E5979) is kept at the
-order: if the unit is idle again with no more than that, the target is refused until the amount changes.
+order: if the unit is idle again with no more than that, the target is refused until the amount changes. A building is
+exempt: what it gathers goes to the stockpile, so its held amount never rises.
 
 **What stock already does.** A Gather action's range (`<maxrange>`, `<typedmaxrange>`) is respected for every target
 kind tried: mine, Mill, Plantation, hunt (Hunting), a nomad. The Gather action follows a target that moves. A building
-ordered to gather gets a Gather action that never starts (state FFh with the target in range): the start code at
-0x50DE54.. that decides (`setState` 5 at 0x6A8ED5, 9 at 0x586D64) is in Ghidra chunks without a function, not read to
-the end.
+ordered to gather gets a Gather action that never starts: see [buildingGather](#buildinggather).
 
 **Why it is safe.** Everything read is simulation state; units are walked by player and ID, the containers are keyed by
 ID, and the order is the simulation's own function, called in the world update on every machine; nothing goes to the
 network or reads the local player. The per-unit table (idle-since time, last target, held amount) is a cache: a loaded
 game rebuilds it and an idle unit waits `delay` again. The real clock of the `log` timing line only goes to the log.
+
+### buildingGather
+
+**How a Gather action starts (2026-11-22, capstone over the chunks Ghidra has no function for, and hardware
+breakpoints in game).** The Gather action (vtable 0xB97880: `+34h` setState 0x4ED249, `+3Ch` the update 0x4EC4FA,
+`+44h` the event handler 0x4EC904) keeps its state in the byte `[action+61h]`, its gatherer in `[action+10h]`, its
+target's ID in `[action+14h]` and its range in the float `[action+24h]` (15.0 for `<maxrange>15`, read in game). A new
+order sets bit 1 of the action's flags (`[action+30h]`, count `+34h`); the next update runs the start code 0x50DE3E
+(`ja` at 0x4EC6BD). It refuses a gatherer without an inventory `[[unit+B4h]+94h]` (0x50DE89, setState 9: a Market
+without `<CarryCapacity>`, traced) and otherwise calls setState(0) at 0x50DF3D (a target of the proto `[db+6098h]` goes
+to 5 at once, 0x6A8ECF). The state-0 handler 0x4EECED sets the walk up; for a building the state byte stays FFh. The walk
+reports its end as event 9 to the event handler (`[event+1Ch]` = 9 → 0x4EDA75): after some target kinds of their own,
+the gatherer's vtable `+CCh(target, [action+24h])` (0x48C3E1, a `jmp eax` trampoline) says whether it is in range, and
+with state 0 the action goes to 5 at 0x4EDB7B (traced for a Settler: setState(5) from 0x4EDB87 ← 0x48CEAE ← the unit
+update 0x482F9A). A building never walks, so no event 9: its Gather action stayed at FFh, updated 37,908 times in a
+minute with one setState in all. While it waits, the update still drops the order (setState 9 at 0x6A8F32) for a
+target its player cannot see (0x48A9EF at 0x4EC753), so a building only gathers what it sees.
+
+**The hook.** At the update's exit test 0x4EC76B (`cmp al,0Ch / je 586D8Bh`, 8 bytes; AL = the state byte read at
+0x4EC760, ESI = the action, EBX and EDI the saved registers still on the stack) a jump to
+`UhcBuildingGatherHook` (`hooks/buildgather_hooks.asm`), which redoes the compare (0Ch → 0x586D8B) and, for state 0 or
+FFh, calls `UhcBuildingGatherApproach(action)` with every register saved (`pushad`), then continues at 0x4EC773
+(`pop ebx / pop edi / pop esi / pop ebp / add esp,0Ch / ret`). That function returns at once unless the gatherer's
+proto (the player's copy `[unit+5Ch]`) has MaxVelocity `[proto+80h]` ≤ 0 and the target is alive in the unit table; then
+it makes the event 9 test, `vtbl[+CCh](gatherer, target, [action+24h])`, and calls the action's own setState
+(`vtbl[+34h]`) with 5 when in range, 9 when not.
+
+**What follows is stock.** In state 5 the gather tick runs as for a villager: the resources go to the stockpile at the
+action's rate (a Market's held amount stayed 0; the player's gold rose 1 a second from a Mine at rate 1), a used-up
+target is replaced by the next of its kind nearby (three crates in a row), and a standing tree gives wood with no chop.
+Saved games keep the state byte (the Gather save, vtable `+5Ch` 0x9DD0B6); after a load the Market kept gathering.
+
+**Why it is safe.** Only an action that waits for a walk, of a gatherer that cannot walk, changes; units that move
+never do (the MaxVelocity test comes first). The change is the game's own transition with its own range test, made in
+the world update on every machine; nothing reads the local player or a clock. No branch lands inside the 8 bytes
+(checked over the whole `.text`), every register is restored (`popad`), neither continuation reads the flags before
+setting them, and both are the ones the stolen `je` had. Cost: a byte compare in every Gather update. A/B (60 s, 30 settlers and two Markets gathering): 576 / 551 fps, main
+thread 83.6 / 79.3 %, update 0.19 / 0.18 ms, no frame over 50 ms either way (other games ran beside it).
 
 ### herdWalkAwayFix
 

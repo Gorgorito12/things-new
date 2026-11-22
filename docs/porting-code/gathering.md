@@ -18,6 +18,7 @@ Contents:
 - [resourceDebt](#resourcedebt)
 - [truckAttackResourceFix](#truckattackresourcefix)
 - [autoGatherFrom](#autogatherfrom)
+- [buildingGather](#buildinggather)
 - [herdWalkAwayFix](#herdwalkawayfix)
 - [deadReplacementAtZeroInventory](#deadreplacementatzeroinventory)
 
@@ -733,9 +734,9 @@ END
 
 Contract: [displayedRange](../porting-to-another-dll.md#displayedrange).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`ghostobservers.h`](helpers.md#placement-ghost-observers), [`prototags.h`](helpers.md#proto-tags), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `UnitById` `0x44CC6D` (58 B), `AltQuery` `0x452EA0` (24 B), `CurrentSelectionGroup` `0x453B28` (33 B), `ActionRangeByKey` `0x4946D6` (10 B), `ProtoFlagLastCompare` `0x5F7269` (26 B).
+Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `AltQuery` `0x452EA0` (24 B), `PlayerProtoEntry` `0x45311B` (8 B), `CurrentSelectionGroup` `0x453B28` (33 B), `ActionRangeByKey` `0x4946D6` (10 B), `ProtoFlagLastCompare` `0x5F7269` (26 B).
 
 ### src/features/displayrange.cpp
 
@@ -758,6 +759,16 @@ Sites: `UnitById` `0x44CC6D` (58 B), `AltQuery` `0x452EA0` (24 B), `CurrentSelec
 // count [group+14h]) and the Alt state with the rings the units hold. Display only: a model is a visual of the unit,
 // the selection and the keyboard are this machine's, and nothing here reaches the simulation.
 //
+// Placement: while a building is being placed, its ghost shows the rings of its proto's ranged attacks (every tactic's,
+// from the local player's copy) or its <DisplayedRange>, with no tag needed (option noPlacement turns it off). The
+// shared ghost update (ghostobservers.h, 0x96E4E7) hangs them on the ghost's model [[[0xC67300]+200h]+34h], of a unit
+// visual's class, through the stock model functions, which read only a unit's visual (unitmodels.h); a new proto or a
+// new model starts again, and the model takes its rings with it when the placement ends.
+//
+// Player colour: the rings are aoe3-blender-tools' range meshes (make_rings.py), whose texture marks player colour as a
+// unit's does; the engine tints a model hung on a unit with the unit's owner's colour, and on the ghost with the local
+// player's. Nothing here picks a colour.
+//
 // <Flag>: the proto flag parser 0x5F640A (stdcall(proto, name)) compares the name with each flag it knows and
 // returns with nothing for any other name. Its last compare, the call 0x5F726F of the string compare 0x4028B4, is
 // redirected: the compare runs, and a name it does not match is offered to this key.
@@ -773,6 +784,7 @@ Sites: `UnitById` `0x44CC6D` (58 B), `AltQuery` `0x452EA0` (24 B), `CurrentSelec
 #include <vector>
 
 #include "../features.h"
+#include "../ghostobservers.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -789,6 +801,7 @@ std::uint32_t g_uhcStringCompare = 0x004028B4;
 namespace {
 
 constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr std::uint32_t kUiGlobal = 0x00C67300;     // the placement ghost: +1FCh the proto ID, +200h its visual
 constexpr std::uint32_t kInputGlobal = 0x00C66244;  // [[+74h]+2Ch]: the object the Alt query asks
 constexpr std::uint32_t kTickMs = 100;
 constexpr std::uint32_t kRangedFlag = 0x0A;  // <RangedLogic> (0x5FAC6D), the bit the stat panel tests for a range
@@ -804,10 +817,14 @@ using SelectionFn = const char*(__cdecl*)();
 using UnitByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
 using RangeFn = float(__thiscall*)(const char* action, std::int32_t key);
 using KeyQueryFn = bool(__thiscall*)(void* input, std::int32_t key);
+using PlayerByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
+using PlayerProtoFn = const char*(__thiscall*)(const char* player, std::int32_t id);
 
 const auto kSelection = reinterpret_cast<SelectionFn>(0x00453B28);
 const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
 const auto kRange = reinterpret_cast<RangeFn>(0x004946D6);
+const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
+const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
 
 struct Range {
   bool show = false;    // <DisplayRange>
@@ -816,13 +833,21 @@ struct Range {
 };
 
 std::unordered_map<std::int32_t, Range> g_protos;  // by proto ID; the load fills it
-std::map<std::int32_t, std::int32_t> g_models;     // by radius; -1: not in the game
+std::map<std::int32_t, std::int32_t> g_models;     // by radius
 std::map<std::int32_t, std::vector<std::int32_t>> g_hung;  // by unit ID: the models on it
 std::int32_t g_bone = -2;
 const char* g_world = nullptr;
 std::uint32_t g_nextTick = 0;
 bool g_lastAlt = false;
 bool g_log = false;
+bool g_placement = true;      // the ghost's rings (option noPlacement: off)
+
+struct Ghost {
+  char* visual = nullptr;
+  std::int32_t proto = -2;
+  std::vector<std::int32_t> models;  // what the observer hung on this visual
+};
+Ghost g_ghost;
 int g_logLines = 0;
 constexpr int kMaxLogLines = 200;
 
@@ -870,6 +895,7 @@ void NewDatabase(char*) {
   g_hung.clear();
   g_bone = -2;
   g_logLines = 0;
+  g_ghost = Ghost{};
 }
 
 bool AltHeld() {
@@ -893,6 +919,7 @@ std::int32_t RingRadius(float metres) {
   return radius;
 }
 
+// The model of a ring of `radius` metres, effects\uhc_rings\range_<N>.xml.
 std::int32_t ModelFor(std::int32_t radius) {
   const auto found = g_models.find(radius);
   if (found != g_models.end()) {
@@ -904,7 +931,9 @@ std::int32_t ModelFor(std::int32_t radius) {
   if (g_log) {
     uhc::Log(L"displayedRange: %ls is model %d", path, model);
   }
-  g_models[radius] = model;
+  if (model != -1) {  // -1: the table does not exist yet
+    g_models[radius] = model;
+  }
   return model;
 }
 
@@ -938,6 +967,15 @@ void TacticRadii(const char* tactic, std::vector<std::int32_t>& radii) {
 // attacks of its current tactic ([mgr+0A8h], an index into the player's proto's tactics [[proto+44h]+10h], count
 // +14h); a tactic with none (an artillery piece limbered to move) takes those of all its tactics, the attacks it
 // unlimbers to.
+// Largest first, each size once, at most kMaxRingsPerUnit.
+void Trim(std::vector<std::int32_t>& radii) {
+  std::sort(radii.begin(), radii.end(), [](std::int32_t a, std::int32_t b) { return a > b; });
+  radii.erase(std::unique(radii.begin(), radii.end()), radii.end());
+  if (radii.size() > kMaxRingsPerUnit) {
+    radii.resize(kMaxRingsPerUnit);
+  }
+}
+
 std::vector<std::int32_t> WantedRadii(const char* unit, const Range& range) {
   std::vector<std::int32_t> radii;
   if (!range.fixed.empty()) {
@@ -962,11 +1000,29 @@ std::vector<std::int32_t> WantedRadii(const char* unit, const Range& range) {
       }
     }
   }
-  std::sort(radii.begin(), radii.end(), [](std::int32_t a, std::int32_t b) { return a > b; });
-  radii.erase(std::unique(radii.begin(), radii.end()), radii.end());
-  if (radii.size() > kMaxRingsPerUnit) {
-    radii.resize(kMaxRingsPerUnit);
+  Trim(radii);
+  return radii;
+}
+
+// The rings of a proto with no unit (the placement ghost): its <DisplayedRange> values, or the ranged attacks of every
+// tactic of the player's copy (a building has no current tactic before it stands).
+std::vector<std::int32_t> ProtoRadii(const char* proto, const Range* range) {
+  std::vector<std::int32_t> radii;
+  if (range != nullptr && !range->fixed.empty()) {
+    for (const float metres : range->fixed) {
+      radii.push_back(RingRadius(metres));
+    }
+  } else {
+    const char* set = Field<const char*>(proto, 0x44);
+    const auto* tactics = set == nullptr ? nullptr : Field<const char* const*>(set, 0x10);
+    const std::int32_t count = set == nullptr ? 0 : Field<std::int32_t>(set, 0x14);
+    for (std::int32_t i = 0; tactics != nullptr && i < count; ++i) {
+      if (tactics[i] != nullptr) {
+        TacticRadii(tactics[i], radii);
+      }
+    }
   }
+  Trim(radii);
   return radii;
 }
 
@@ -1097,6 +1153,62 @@ void Tick(char* world, std::int32_t) {
   }
 }
 
+// From the shared ghost update (ghostobservers.h), each frame while a building is placed: the rings of its proto on
+// the ghost's model. The ghost object [[0xC67300]+200h] holds its transform; the model drawn is [ghost+34h], an object
+// of the class of a unit's visual [unit+60h] (in game both start with the same word, and the ghost's code calls three
+// of that class's functions on it: 0x40431B, 0xA3FEF8, 0xADA24B), so the stock model functions take it.
+void __stdcall OnGhost(char* ghost) {
+  const char* ui = *reinterpret_cast<const char* const*>(kUiGlobal);
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  if (ui == nullptr || game == nullptr || ghost == nullptr || Field<char*>(ui, 0x200) != ghost) {
+    return;
+  }
+  char* visual = Field<char*>(ghost, 0x34);
+  if (visual == nullptr || Field<const char*>(visual, 0xA8) == nullptr) {  // the model functions read its +0A8h
+    return;
+  }
+  const std::int32_t protoId = Field<std::int32_t>(ui, 0x1FC);
+  if (visual != g_ghost.visual) {
+    g_ghost = Ghost{visual};  // another visual: what was hung on the old one went with it
+  }
+  if (protoId != g_ghost.proto) {
+    for (const std::int32_t model : g_ghost.models) {
+      uhc::RemoveVisualModel(visual, model);
+    }
+    g_ghost.models.clear();
+    g_ghost.proto = protoId;
+    const char* world = Field<const char*>(game, 0x13C);
+    const std::int32_t playerId = Field<std::int32_t>(game, 0x3C0);
+    const char* player = world == nullptr || protoId < 0 ? nullptr : kPlayerById(world, playerId);
+    const char* proto = player == nullptr ? nullptr : kPlayerProto(player, protoId);
+    if (proto != nullptr) {
+      const auto found = g_protos.find(Field<std::int32_t>(proto, 0x04));
+      for (const std::int32_t radius : ProtoRadii(proto, found == g_protos.end() ? nullptr : &found->second)) {
+        const std::int32_t model = ModelFor(radius);
+        if (model != -1) {
+          g_ghost.models.push_back(model);
+          if (g_log && g_logLines < kMaxLogLines) {
+            ++g_logLines;
+            uhc::Log(L"displayedRange: ring of %d m on the placement ghost (%hs)", radius,
+                     Field<const char*>(proto, 0x10));
+          }
+        }
+      }
+    }
+  }
+  if (g_ghost.models.empty()) {
+    return;
+  }
+  if (g_bone == -2) {
+    g_bone = uhc::NoBone();
+  }
+  for (const std::int32_t model : g_ghost.models) {
+    if (!uhc::VisualHasModel(visual, model)) {
+      uhc::HangVisualModel(visual, model, g_bone);
+    }
+  }
+}
+
 }  // namespace
 
 extern "C" {
@@ -1121,14 +1233,19 @@ Outcome ApplyDisplayedRange(const Config& config) {
     return Outcome::kNotConfigured;
   }
   for (const std::string& arg : *args) {
-    if (_stricmp(arg.c_str(), "log") != 0) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(arg.c_str(), "noPlacement") == 0) {
+      g_placement = false;
+    } else {
       Log(L"displayedRange: unknown option %hs; feature not applied", arg.c_str());
       return Outcome::kFailed;
     }
-    g_log = true;
   }
   if (!VerifyAll("displayedRange", {&sites::kCurrentSelectionGroup, &sites::kUnitById, &sites::kAltQuery,
-                                    &sites::kActionRangeByKey, &sites::kProtoFlagLastCompare}) ||
+                                    &sites::kActionRangeByKey, &sites::kProtoFlagLastCompare, &sites::kPlayerById,
+                                    &sites::kPlayerProtoEntry}) ||
+      (g_placement && !AddGhostObserver(&OnGhost)) ||
       !VerifyUnitModels("displayedRange") || !AddProtoTagHandler("DisplayRange", &ReadShow) ||
       !AddProtoTagHandler("DisplayedRange", &ReadMetres) || !AddProtoTagHandler("AlwaysDisplayRange", &ReadAlways) ||
       !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick) ||
@@ -1136,7 +1253,7 @@ Outcome ApplyDisplayedRange(const Config& config) {
     return Outcome::kFailed;
   }
   Log(L"displayedRange: rings while Alt is held (<DisplayRange>) or always (<AlwaysDisplayRange>), one per ranged "
-      L"attack or <DisplayedRange>");
+      L"attack or <DisplayedRange>%ls", g_placement ? L"; on the placement ghost of a ranged building" : L"");
   return Outcome::kApplied;
 }
 
@@ -3884,7 +4001,7 @@ Contract: [autoGatherFrom](../porting-to-another-dll.md#autogatherfrom).
 
 Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `XmlText` `0x402733` (9 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `AutoScoutIdle` `0x44F1A7` (8 B), `PlayerIsEnemy` `0x484D2D` (32 B), `UnitsNearPoint` `0x4A1C55` (248 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `GatherWorkOrder` `0x4EFCB2` (14 B), `XmlAttribute` `0x598F37` (16 B), `UnitAliveSlot` `0xB9355C` (4 B).
+Sites: `XmlText` `0x402733` (9 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `AutoScoutIdle` `0x44F1A7` (8 B), `PlayerIsEnemy` `0x484D2D` (32 B), `UnitIsSeeable` `0x48A9EF` (59 B), `UnitsNearPoint` `0x4A1C55` (248 B), `MainResource` `0x4DBEC1` (16 B), `HeldAmount` `0x4E5979` (20 B), `GatherWorkOrder` `0x4EFCB2` (14 B), `XmlAttribute` `0x598F37` (16 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/autogatherfrom.cpp
 
@@ -3907,11 +4024,15 @@ Sites: `XmlText` `0x402733` (9 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA
 // - a unit idle for `delay` seconds of game time gets a work order (0x4EFCB2, the order the stock herdable search
 //   0x4C31EE gives: thiscall(mgr, targetId, 0, -1, 0)) on the nearest unit of a tagged type within the action's range
 //   (0x4A1C55; distance to the target's edge, its vtable +B8h), owned by the unit's player, an ally or Gaia, alive;
-//   the stock order code then picks the action and walks the unit as a right-click would;
+//   the stock order code then picks the action and walks the unit as a right-click would; a target the player cannot
+//   see (0x48A9EF, the test the Gather update makes before it drops such an order, 0x4EC753) is not picked;
 // - a unit that gained nothing (its held amount 0x4E5979 did not rise) from the last order to the same target is
 //   not sent there again until its amount changes: a fattened herdable, for one, is refused by the gather tick.
 // Inside a building or a transport ([unit+6Ch] != -1), not built (0x44DDB4), or without an inventory
 // ([[unit+B4h]+94h], which the gather start requires of the gatherer, 0x50DE89), a unit is skipped.
+// A unit that cannot move (MaxVelocity [proto+80h] at 0: a building) is ordered only while buildingGather is on, since
+// its Gather action never starts otherwise; its target must pass the gather's own range test (its vtable +CCh with the
+// action's range, which counts its size), as a building cannot walk closer.
 //
 // Everything read is simulation state (no local player, no clock but the game time [world+108h]); the per-unit table
 // is only a cache (idle-since time, last target, held amount): a loaded game rebuilds it, and a unit idle at the load
@@ -3975,6 +4096,9 @@ const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 const auto kHeldAmount = reinterpret_cast<HeldAmountFn>(0x004E5979);
 const auto kMainResource = reinterpret_cast<MainResourceFn>(0x004DBEC1);
 const auto kWorkOrder = reinterpret_cast<WorkOrderFn>(0x004EFCB2);
+using InRangeFn = bool(__thiscall*)(const char* unit, const char* target, float range);
+using SeeableFn = bool(__thiscall*)(const char* unit, std::int32_t player);
+const auto kIsSeeable = reinterpret_cast<SeeableFn>(0x0048A9EF);
 const auto kNameBucket = reinterpret_cast<NameBucketFn>(0x0058E685);
 const auto kNameFind = reinterpret_cast<NameFindFn>(0x0040295B);
 const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
@@ -4024,6 +4148,12 @@ std::uint32_t g_lastScan = 0;
 std::uint32_t g_lastTime = 0;
 const char* g_lastWorld = nullptr;
 IdList g_found = {nullptr, 0, 0};
+
+}  // namespace
+
+bool g_uhcBuildingGather = false;  // buildinggather.cpp sets it when that key is applied
+
+namespace {
 
 const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
 
@@ -4203,7 +4333,8 @@ void SetAnchor(char* unit) {
 
 // The nearest unit of a wanted type within its action's range, that the unit's player may gather from.
 std::int32_t PickTarget(const char* world, const char* unit, std::int32_t player, const std::vector<Want>& wants,
-                        const Unit& state, float* outDistance, std::int32_t* outDelay) {
+                        const Unit& state, bool immobile, float* outDistance, std::int32_t* outDelay) {
+  const auto inRange = Field<InRangeFn const*>(unit, 0)[0xCC / 4];
   const float* position = reinterpret_cast<const float*>(unit + 0x14);
   float radius = 0.0f;
   for (const Want& want : wants) {
@@ -4219,7 +4350,7 @@ std::int32_t PickTarget(const char* world, const char* unit, std::int32_t player
     const std::int32_t id = g_found.data[i];
     const char* other = id == selfId ? nullptr : UnitById(world, id);
     const char* proto = other == nullptr ? nullptr : Field<const char*>(other, 0x5C);
-    if (proto == nullptr || !Alive(other) || (state.refused && id == state.lastTarget)) {
+    if (proto == nullptr || !Alive(other) || (state.refused && id == state.lastTarget) || !kIsSeeable(other, player)) {
       continue;
     }
     const std::int32_t owner = OwnerId(other);
@@ -4228,7 +4359,8 @@ std::int32_t PickTarget(const char* world, const char* unit, std::int32_t player
     }
     const float distance = Field<DistanceFn const*>(other, 0)[0xB8 / 4](other, position);
     for (const Want& want : wants) {
-      if (distance <= want.range && kProtoIsType(proto, want.source->type) &&
+      if ((immobile ? inRange(unit, other, want.range) : distance <= want.range) &&
+          kProtoIsType(proto, want.source->type) &&
           (best < 0 || distance < bestDistance || (distance == bestDistance && id < best))) {
         best = id;
         bestDistance = distance;
@@ -4281,6 +4413,10 @@ void Scan(char* world, std::uint32_t now) {
       if (record == nullptr || Field<const char*>(record, 0x94) == nullptr) {
         continue;  // no inventory: the gather start refuses such a gatherer (0x50DE89, setState 9)
       }
+      const bool immobile = Field<float>(proto, 0x80) <= 0.0f;
+      if (immobile && !g_uhcBuildingGather) {
+        continue;  // a building's Gather action never starts without buildingGather
+      }
       auto old = g_units.find(id);
       Unit state = old == g_units.end() ? Unit{} : old->second;
       char* mgr = Field<char*>(unit, 0x58);
@@ -4299,8 +4435,8 @@ void Scan(char* world, std::uint32_t now) {
       }
       if (state.idleSince == 0) {
         state.idleSince = now;
-        if (state.lastTarget >= 0 && state.heldAtOrder >= 0.0f && held <= state.heldAtOrder) {
-          state.refused = true;  // the last order gained nothing
+        if (!immobile && state.lastTarget >= 0 && state.heldAtOrder >= 0.0f && held <= state.heldAtOrder) {
+          state.refused = true;  // the last order gained nothing (a building's gather goes to the stockpile: never)
           state.heldAtOrder = held;
         }
       }
@@ -4310,7 +4446,7 @@ void Scan(char* world, std::uint32_t now) {
       }
       float distance = 0.0f;
       std::int32_t delay = kDefaultDelayMs;
-      const std::int32_t target = PickTarget(world, unit, p, wants, state, &distance, &delay);
+      const std::int32_t target = PickTarget(world, unit, p, wants, state, immobile, &distance, &delay);
       if (target >= 0 && now - state.idleSince >= static_cast<std::uint32_t>(delay)) {
         const bool ok = kWorkOrder(mgr, target, 0, -1, 0);
         Note(L"autoGatherFrom: unit %d (player %d, proto %d) idle %.1f s -> unit %d, %.1f m: %ls", id, p,
@@ -4384,7 +4520,7 @@ Outcome ApplyAutoGatherFrom(const Config& config) {
   if (!VerifyAll("autoGatherFrom", {&sites::kGatherWorkOrder, &sites::kAutoScoutIdle, &sites::kUnitsNearPoint,
                                     &sites::kUnitById, &sites::kIsA, &sites::kIsBuilt, &sites::kPlayerIsEnemy,
                                     &sites::kHeldAmount, &sites::kMainResource, &sites::kUnitAliveSlot,
-                                    &sites::kXmlAttribute, &sites::kXmlText}) ||
+                                    &sites::kXmlAttribute, &sites::kXmlText, &sites::kUnitIsSeeable}) ||
       !AddActionTagHandler(&ActionTagRead) || !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick)) {
     return Outcome::kFailed;
   }
@@ -4393,6 +4529,192 @@ Outcome ApplyAutoGatherFrom(const Config& config) {
 }
 
 }  // namespace uhc
+```
+
+## buildingGather
+
+Contract: [buildingGather](../porting-to-another-dll.md#buildinggather).
+
+Sites: `GatherUpdateExit` `0x4EC76B` (16 B), `GatherSetState` `0x4ED249` (11 B), `GatherArrivedState` `0x4EDB4F` (56 B), `GatherVtableSlots` `0xB978B4` (12 B).
+
+### src/features/buildinggather.cpp
+
+```cpp
+// buildingGather [log]: a unit that cannot move (a building: MaxVelocity 0) gathers with its Gather action from a
+// target within the action's range, as a villager does once it has walked there.
+//
+// The Gather action (vtable 0xB97880; state byte [action+61h], gatherer +10h, target ID +14h, range float +24h) is
+// started by the start code, which calls setState(0) (0x4ED249, at 0x50DF3D) to walk the gatherer towards the target.
+// The walk reports its end to the action as event 9 (the action's event handler, vtable +44h, 0x4EC904 → 0x4EDA75):
+// when the gatherer is then in range (its vtable +CCh with the target and [action+24h]) and still in state 0, the
+// action goes to state 5, gathering (0x4EDB7B). A building never walks, so no event 9 comes and its Gather action waits
+// for ever, in state FFh (in game: a Market ordered to a Mine in range, 37,908 updates in a minute, no other state).
+//
+// The hook (hooks/buildgather_hooks.asm) sits where the Gather update 0x4EC4FA returns, at 0x4EC76B: for an action
+// in state 0 or FFh whose gatherer's proto has MaxVelocity [proto+80h] at 0 or below, it asks the same range test as
+// event 9 and sets state 5 when the target is in range; out of range it sets state 9 (the state the start code gives an
+// order it refuses), so the building drops the order and is idle again instead of waiting for ever. The update has
+// already dropped an order on a target the player cannot see (0x4EC753). A unit that moves is never touched.
+// Simulation state only, the same on every machine.
+#include <cmath>
+#include <cstdint>
+#include <string>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr std::uint8_t kStateApproach = 0;
+constexpr std::uint8_t kStateGather = 5;
+constexpr std::uint8_t kStateDone = 9;
+constexpr std::uint8_t kStateWaiting = 0xFF;
+constexpr int kMaxLogLines = 300;
+
+using InRangeFn = bool(__thiscall*)(const char* unit, const char* target, float range);
+using SetStateFn = void(__thiscall*)(char* action, std::int32_t state);
+
+bool g_log = false;
+int g_logLines = 0;
+
+template <typename T>
+T Field(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+const char* UnitById(std::int32_t id) {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  if (world == nullptr || id < 0 || (id & 0x3FFFF) >= Field<std::int32_t>(world, 0x10)) {
+    return nullptr;
+  }
+  const char* unit = Field<const char* const*>(world, 0x0C)[id & 0x3FFFF];
+  return unit != nullptr && Field<std::int32_t>(unit, 0x10) == id ? unit : nullptr;
+}
+
+const char* NameOf(const char* unit) {
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name == nullptr ? "?" : name;
+}
+
+}  // namespace
+
+extern bool g_uhcBuildingGather;  // autogatherfrom.cpp: orders buildings only while this key is on
+
+extern "C" {
+
+void UhcBuildingGatherHook();
+
+// From the Gather update's exit, for an action in state 0 (approach) or FFh (waiting).
+void __stdcall UhcBuildingGatherApproach(char* action) {
+  const std::uint8_t state = action == nullptr ? kStateGather : Field<std::uint8_t>(action, 0x61);
+  if (state != kStateApproach && state != kStateWaiting) {
+    return;
+  }
+  const char* gatherer = Field<const char*>(action, 0x10);
+  const char* proto = gatherer == nullptr ? nullptr : Field<const char*>(gatherer, 0x5C);
+  if (proto == nullptr || Field<float>(proto, 0x80) > 0.0f) {
+    return;  // it can walk there: stock
+  }
+  const char* target = UnitById(Field<std::int32_t>(action, 0x14));
+  if (target == nullptr) {
+    return;  // the stock update ends an action whose target is gone
+  }
+  const auto inRange = Field<InRangeFn const*>(gatherer, 0)[0xCC / 4];
+  const bool in = inRange(gatherer, target, Field<float>(action, 0x24));
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    const float dx = Field<float>(target, 0x14) - Field<float>(gatherer, 0x14);
+    const float dz = Field<float>(target, 0x1C) - Field<float>(gatherer, 0x1C);
+    uhc::Log(L"buildingGather: unit %d (%hs, state %d) -> unit %d (%hs), %.1f m between centres: %ls",
+             Field<std::int32_t>(gatherer, 0x10), NameOf(gatherer), state, Field<std::int32_t>(target, 0x10), NameOf(target),
+             static_cast<double>(std::sqrt(dx * dx + dz * dz)), in ? L"in range, gathers" : L"out of range, order dropped");
+  }
+  Field<SetStateFn const*>(action, 0)[0x34 / 4](action, in ? kStateGather : kStateDone);
+}
+
+}  // extern "C"
+
+namespace uhc {
+
+Outcome ApplyBuildingGather(const Config& config) {
+  const Config::Args* args = config.First("buildingGather");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+      continue;
+    }
+    Log(L"buildingGather: bad argument %hs (expected [log]); feature not applied", arg.c_str());
+    return Outcome::kFailed;
+  }
+  if (!VerifyAll("buildingGather", {&sites::kGatherUpdateExit, &sites::kGatherVtableSlots, &sites::kGatherSetState,
+                                    &sites::kGatherArrivedState}) ||
+      !WriteJmp(sites::kGatherUpdateExit.va, reinterpret_cast<const void*>(&UhcBuildingGatherHook), 8)) {
+    return Outcome::kFailed;
+  }
+  g_uhcBuildingGather = true;
+  Log(L"buildingGather: a building with a Gather action gathers from a target within the action's range%ls "
+      L"(multiplayer unverified)",
+      g_log ? L"; each start logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/buildgather_hooks.asm
+
+```asm
+; Hook for buildingGather. Entered through a jmp written over the Gather update's exit test at 0x4EC76B; leaves
+; through an explicit jmp to one of its two verified continuations (docs/engine-symbols.md, "Gather action").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcBuildingGatherApproach PROTO STDCALL action:DWORD   ; state 0 of an immobile gatherer: state 5 or 9
+
+.data
+stateCNext      dd 00586D8Bh    ; the stock branch for state 0Ch (je 586D8Bh)
+exitNext        dd 004EC773h    ; pop ebx / pop edi / pop esi / pop ebp / add esp,0Ch / ret
+
+.code
+
+; Replaces cmp al,0Ch / je 586D8Bh (8 bytes) at 0x4EC76B, in the Gather update FUN_004EC4FA (thiscall(action),
+; plain ret; vtable 0xB97880 +3Ch). On entry AL = the action's state byte [esi+61h] (just read at 0x4EC760 and
+; compared with 5), ESI = the action, EBX and EDI the update's saved registers on the stack. State 0Ch goes to the
+; stock branch with the flags of the same compare. State 0 (approach) asks UhcBuildingGatherApproach, with every
+; register kept; any other state leaves as stock. Both continuations only pop the saved registers (0x4EC773) or
+; read the world (0x586D8B): nothing reads the flags or EAX before writing them, but EAX is kept anyway (the
+; update's caller ignores it).
+UhcBuildingGatherHook PROC
+    TRACE_ONCE "buildingGather (0x4EC76B)"
+    cmp al, 0Ch                     ; stolen 0x4EC76B
+    jne notC
+    jmp stateCNext                  ; stolen je 586D8Bh, taken
+notC:
+    test al, al
+    je ask
+    cmp al, 0FFh
+    jne done
+ask:
+    pushad
+    push esi                        ; the action
+    call UhcBuildingGatherApproach
+    popad
+done:
+    jmp exitNext                    ; stolen je 586D8Bh, not taken
+UhcBuildingGatherHook ENDP
+
+END
 ```
 
 ## herdWalkAwayFix

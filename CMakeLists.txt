@@ -28,6 +28,7 @@ set(UHC_SOURCES
   src/canresearch.cpp
   src/techrollover.cpp
   src/deathobservers.cpp
+  src/ghostobservers.cpp
   src/killobservers.cpp
   src/unitpanel.cpp
   src/datarefs.cpp
@@ -50,6 +51,7 @@ set(UHC_SOURCES
   src/features/ai.cpp
   src/features/bounty.cpp
   src/features/broadside.cpp
+  src/features/broadsidesound.cpp
   src/features/bwrauras.cpp
   src/features/costescalation.cpp
   src/features/unittypetechs.cpp
@@ -64,6 +66,7 @@ set(UHC_SOURCES
   src/features/stealthtarget.cpp
   src/features/autoscout.cpp
   src/features/autogatherfrom.cpp
+  src/features/buildinggather.cpp
   src/features/herdwalkaway.cpp
   src/features/researchmove.cpp
   src/features/transformchecks.cpp
@@ -71,6 +74,7 @@ set(UHC_SOURCES
   src/features/directional.cpp
   src/features/snarevalues.cpp
   src/features/civfirsttc.cpp
+  src/features/scenariocivs.cpp
   src/features/datalint.cpp
   src/features/displayrange.cpp
   src/features/linkedresource.cpp
@@ -164,6 +168,7 @@ set(UHC_SOURCES
   src/features/resourcedebt.cpp
   src/hooks/abilityslot_hooks.asm
   src/hooks/actiontag_hooks.asm
+  src/hooks/buildgather_hooks.asm
   src/hooks/ai_hooks.asm
   src/hooks/armor_hooks.asm
   src/hooks/freeunit_hooks.asm
@@ -176,12 +181,14 @@ set(UHC_SOURCES
   src/hooks/team_hooks.asm
   src/hooks/unitlist_hooks.asm
   src/hooks/broadside_hooks.asm
+  src/hooks/broadsidesound_hooks.asm
   src/hooks/cheat_hooks.asm
   src/hooks/clothfill_hooks.asm
   src/hooks/lastinline_hooks.asm
   src/hooks/menuoptions_hooks.asm
   src/hooks/bwraura_hooks.asm
   src/hooks/civfirsttc_hooks.asm
+  src/hooks/scenariocivs_hooks.asm
   src/hooks/civ_hooks.asm
   src/hooks/ageup_hooks.asm
   src/hooks/politicianplaces_hooks.asm
@@ -247,6 +254,7 @@ set(UHC_SOURCES
   src/hooks/snarevalues_hooks.asm
   src/hooks/linkedresource_hooks.asm
   src/hooks/annexfacing_hooks.asm
+  src/hooks/ghostobservers_hooks.asm
   src/hooks/playericon_hooks.asm
   src/hooks/detonation_hooks.asm
   src/hooks/xslog_hooks.asm

@@ -69,6 +69,10 @@ Apply
 Files changed: data\protoy.xml, data\protounitcommands.xml, data\uhc\customprotounitcommands.xml,
 data\stringtabley.xml and translations\_originals\stringtabley.xml (English tooltips 690911..690915: name, cost,
 the kraal rule, the unit's description, in the style of WoL's string 76575). Translate them in the other tables.
+The kraal rule line ends with "(within a range of 20)", the distance of the placement rule (2026-11-22, your
+feedback: the game has no unit for distances; it said "(within 20 m)" before). A folder where an older version of the
+pack is applied keeps the old text: run --restore, then apply again. The pictures in final\ that show the tooltip
+(2, 3, 7, 9, 12) were taken again with the new text; picture 8 (beside WoL's DLL) was removed.
 Also the three anim files of "The dance" above (art\War of the Triple Alliance\...\maturing\maturing2.xml to 4).
 
 - AFRICANyouth: the four <Train> rows of AFRICAN*MATURING become <Command> rows in the same columns (with

@@ -489,6 +489,20 @@ def crash_report(proc, thread, exc, address, info, first_chance):
     if exc == 0xC0000005 and len(info) >= 2:
         report["access"] = {0: "read", 1: "write", 8: "execute"}.get(info[0], str(info[0]))
         report["target"] = f"{info[1]:#x}"
+    if address == 0x40C07C and regs.get("ebx"):
+        # FUN_0040C022, a model's animation update: GrannyGetSourceSkeleton returned NULL (2026-11-22, the
+        # Levant click hunt). EBX is the visual: [ebx+18h] its index in the model cache [0xC67318]
+        # (entries at +20h, 0Ch apart; [entry+4] the file name), [ebx+24h] the Granny model instance.
+        try:
+            index = proc.i32(regs["ebx"] + 0x18)
+            cache = proc.u32(0xC67318)
+            entry = proc.u32(proc.u32(cache + 0x20) + index * 0xC) if cache else 0
+            name = proc.u32(entry + 4) if entry else 0
+            report["model"] = {"index": index, "entry": f"{entry:#x}",
+                               "name": (proc.cstr(name, 260) if name else ""),
+                               "name_utf16": (proc.wstr(name, 260) if name else "")}
+        except Exception as e:  # noqa: BLE001 - a report must never fail
+            report["model"] = {"error": str(e)}
     return report
 
 
@@ -500,6 +514,8 @@ def format_report(r):
     if regs:
         lines.append("  " + " ".join(f"{k}={regs[k]}" for k in ("eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp")))
     lines.append("  call chain: " + " ".join(r["call_chain"]))
+    if "model" in r:
+        lines.append(f"  model: {r['model']}")
     return "\n".join(lines)
 
 

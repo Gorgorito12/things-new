@@ -13,10 +13,10 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Game files | `bufferedFileReads`, `fastVertexFill`, `fastLastInLine`, `rendererOption`, `xsErrorLog` | [game-files](porting-code/game-files.md) |
 | Population | `decimalPopulation` | [population](porting-code/population.md) |
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
-| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
+| Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `scenarioCivs`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `herdWalkAwayFix` | [gathering](porting-code/gathering.md) |
+| Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `buildingGather`, `herdWalkAwayFix` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon`, `autoScout` | [interface](porting-code/interface.md) |
@@ -162,7 +162,7 @@ says so:
 | `TechRenameTypeByName`, `TechRenameFactoryHead`, `TechRenameEffectParse`, `TechRenameEffectCtor`, `TechRenameEffectVtable`, `TechRenameApplyCall`, `TechRenameLocalTechNode` | `0x61FF1B`, `0x620535`, `0x6205C7`, `0x620B8F`, `0xB965C0`, `0x7F80FD`, `0x8D0005` | `0x10`, `0x0F`, `0x2D`, `0x1D`, `0x44`, `0x17`, `0x27` B | — | — | the type lookup, the factory head and the parse around the hook, the BEffect ctor and vtable (`.rdata`) the effect copies, the apply dispatcher's call and the player's tech node function |
 | `AnnexForwardSite` | `0x7D7CF1` | 7 B | 6 B at `0x7D7CF1` | `8D 87 A8 00 00 00` (`lea eax,[edi+0A8h]`) | the build command's executor FUN_007D79D6, before the right vector; annexFacing forward hook (continues at `0x7D7CF7`) |
 | `AnnexCreateCall` | `0x7D80CF` | 5 B | 5 B at `0x7D80CF` (a `call` to the wrapper) | `E8 F8 09 CC FF` (`call 498ACCh`) | the executor's unit creation; annexFacing link |
-| `AnnexGhostSite` | `0x96E4E7` | 11 B | 5 B at `0x96E4E7` | `A1 34 62 C6 00` (`mov eax,[0C66234h]`) | the placement ghost's update FUN_0096E062, before its placement test; annexFacing ghost hook (continues at `0x96E4EC`) |
+| `AnnexGhostSite` | `0x96E4E7` | 11 B | 5 B at `0x96E4E7` | `A1 34 62 C6 00` (`mov eax,[0C66234h]`) | the placement ghost's update FUN_0096E062, before its placement test; the shared ghost hook of annexFacing and displayedRange (continues at `0x96E4EC`) |
 | `AnnexAiPlaceSite` | `0x73D7D2` | 8 B | 5 B at `0x73D7D2` | `8D 5C 24 38 53` (`lea ebx,[esp+38h]; push ebx`) | an AI build plan's placement test FUN_0073D62B, before PLACE at `0x73D7E3`; annexFacing (continues at `0x73D7D7`) |
 | `AnnexAiScanSite` | `0x87DB9F` | 9 B | 6 B at `0x87DB9F` | `D9 E0 D9 5C 24 60` (`fchs; fstp [esp+60h]`) | the AI's scan of candidate spots, before its PLACE `call [esi+14h]`; annexFacing (continues at `0x87DBA5`) |
 | `DetonationKillCall` | `0x493D8F` | 5 B | 5 B at `0x493D8F` (a `call` to the wrapper) | `E8 DC 11 02 00` (`call 4B4F70h`) | the kill queue drain's call of the kill handler; the shared death observer (`deathobservers.cpp`: detonationDeath, annexFacing) |
@@ -186,6 +186,8 @@ says so:
 | `RmPlaceCall` | `0x925F45` | `0x0E` B | 5 B at `0x925F4C` (a `call` to the wrapper) | `E8 E5 F9 FF FF` (`call 925936h`) | the only call of objectDef::place, in FUN_00925F11, which every `rmPlaceObjectDef*` reaches; civFirstTC placement wrapper (returns to `0x925F51`) |
 | `TownStartQuery` | `0x679AC1` | `0x15` B | 6 B at `0x679AC8` (`jmp` + 1 NOP) | `8B 99 08 5E 00 00` (`mov ebx,[ecx+5E08h]`) | the TownCenter proto the town starting units' query (FUN_0049039A) looks for; civFirstTC town hook (continues at `0x679ACE`) |
 | `CivTagNextNode`, `CivById`, `CivOfPlayer`, `ProtoByName`, `ProtoById`, `RmPlace`, `RmItemFootprint`, `RmNomadStart`, `TownStartSpawn`, `TownStartColonyLoop` | `0x52B43D`, `0x405C2E`, `0x4539D3`, `0x5A2346`, `0x45316E`, `0x925936`, `0x924B1D`, `0x90B683`, `0x679B50`, `0x7C2407` | `0x14`, `0x18`, `0x10`, `0x20`, `0x1E`, `0x6F`, `0x9E`, `0x19`, `0x1A`, `0x31` B | — | — | the next-child step the tag hook jumps to, the civ by ID and a player's civ ID, the two proto lookups, the head of objectDef::place up to its `Special_StartingUnits` test, addItem's footprint, rmGetNomadStart, the spawn and request clear after the query, and the spawn's colony test the helper repeats; civFirstTC (also `ProtoFlag`, `FirstTcChunk`, `FirstTcProtoCheck` while it is stock, `FirstTcSet`, `PlayerById`, `UnitById`, `UnitAliveSlot`) |
+| `ScenarioCivsEnd` | `0x52B47A` | `0x14` B | 5 B at `0x52B485` (`jmp`) | `68 80 EE BC 00` (`push 0BCEE80h`) | the end of the civs.xml loader's walk over the root's elements (also the target of the `jle` at `0x52A68C`); scenarioCivs hook: loads `scenariocivs.xml` into the loader's reader and walks it again from `0x52A62B`, else re-executes the `push` and continues at `0x52B48A` |
+| `ScenarioCivsLoad`, `ScenarioCivsAppend`, `CivFlagVisible`, `CivFlagEditor`, `XmlReaderLoad` | `0x52A607`, `0x52A4DB`, `0x52D302`, `0x52BE78`, `0x599A7D` | `0x39`, `0x13`, `0x3E`, `0x40`, `0x25` B | — | — | the loader's own load of civs.xml and the root read the hook jumps back to, the civ append's list `[db+24h]`/`[db+28h]`, the two flag handlers (bits 0 and 1 of `[civ+128h]`) and the reader's load; scenarioCivs |
 | `TransformInvHook` | `0x9C7625` | `0x17` B | 7 B at `0x9C7625` (`jmp` + 2 NOP) | `8B 46 58 85 C0 74 10` (`mov eax,[esi+58h]; test eax,eax; je 9C763Ch`) | action manager test in the transform in place FUN_009C754C; transformInventory (continues at `0x9C762C` or `0x9C763C`) |
 | `TransformKbRemove`, `TransformKbReAdd`, `InventorySeed`, `InventoryRecreate`, `InventoryFree`, `ResListCopy`, `ResListScale`, `ResListTotal` | `0x9C75CF`, `0x9C766F`, `0x67DE0D`, `0x9BFE5A`, `0x4BA757`, `0x480A73`, `0x480B94`, `0x58EF02` | `0x56`, `0x23`, `0x1E`, `0x6E`, `0x50`, `0x49`, `0x7E`, `0x81` B | — | — | the knowledge-base remove and re-add around the hook, creation's inventory recipe, the engine functions the helper calls, and the list encoding it decodes; transformInventory (also `TransformProtoLookup`, `TransformPushProto`, `IsA`) |
 | `TrainUpdateTrainer`, `TrainRateScale`, `FirstTcRuleLoop`, `FirstTcRuleFilter`, `PlayerById`, `PlayerByIdNull`, `UnitById`, `UnitByIdNull`, `PlayerIsEnemy` | `0x9EA2B2`, `0x9EA424`, `0x8CE9BE`, `0x8CEB45`, `0x44CB21`, `0x4649E1`, `0x44CC6D`, `0x4E2A35`, `0x484D2D` | `0x0B`, `0x13`, `0x68`, `0x37`, `0x1E`, 5, `0x3A`, 5, `0x20` B | — | — | the Train action's registers, the code after the continuation, the placement rule's FirstTC loop and player filter the helper mirrors, and the three functions it calls; noTrainNearEnemyTC (also `WorkRateTrainCall`, `IsA`, `IsATrue`, `NoCorpseDoppleAliveCall`); `PlayerById(Null)` and `UnitById(Null)` are also verified by hcShipmentPointFallback when `FirstTC` is listed, and `PlayerById` and `UnitById` by civFirstTC |
@@ -1042,12 +1044,13 @@ Code: [techs](porting-code/techs.md#shipmentcounts). It needs the Player target 
   the proto into the field and `amount × count` into the amount, set EBP and `[esp+28h]` to 37h and EAX to 37h − 0Ah,
   and jump to `0x8D8444`: the stock `FreeHomeCityUnit` delivers the units. A count of 0: `mov al,1 / jmp 8D8D23h`.
 - **The parse:** the subtype's name goes through your subtype lookup; while the effect is read, keep its node (the
-  `call` at `0x6206B2` has it in EBP and the effect in ESI) to read `unittype`, `age` (one age or a range `N-M`) and
-  `includeself`, and pack them into the effect's `+10h`.
+  `call` at `0x6206B2` has it in EBP and the effect in ESI) to read `unittype`, `age` (one digit 0 to 4, Age I to V
+  as in a card's `<age>`, or two digits `NM` for a range, N <= M: `13` is Ages II to IV) and `includeself`, and pack
+  them into the effect's `+10h`.
 - **The syscalls:** `int xsGetShipmentCount(int playerID, int age)` and `int xsGetShipmentCountRange(int playerID, int
   firstAge, int lastAge)` in the XS group.
 - **Test:** a card with the effect and `includeself`: it brings one unit; a tech after two cards of Age I with
-  `age='1'`: two units; a card of Age II (`<age>1</age>`) sent in Age III counts in Age II; save, load in a new process:
+  `age='0'`: two units; `age='2-4'` (the old form): dropped, logged; a card of Age II (`<age>1</age>`) sent in Age III counts in Age II; save, load in a new process:
   the same counts.
 
 ### ageFiveShipments
@@ -1061,8 +1064,19 @@ Code: [techs](porting-code/techs.md#agefiveshipments). No shared hook.
   back to `0x9A5A27`), `0x9A0489` (`8B 46 18 3B F8`, the home city's deck builder, back to `0x9A048E`) and `0x9A77BE`
   (`8B 46 18 3B D8`, the `homeCityDeck` dialog, back to `0x9A77C3`). ESI is the card in all three. Leave
   `[card+18h]` alone: the panel greys the card and the send refuses it until the player's age reaches 4.
-- **Test:** a card given `<age>4</age>` in its home city file: fourth in the Age IV row of both panels, greyed until the
-  Imperial Age, refused before, sent in it.
+- **The columns (Age V at the right, 2026-11-22):** a second jump in each fill, once the row and column are set and
+  before the slot `row × 11 + column` is computed: `0x9A5A7C` (`8B 4C 24 28 8B 54 24 14`, 8 bytes, the panel; back to
+  `0x9A5A84`), `0x9A04B0` (`8B 54 24 14 8B 44 24 28`, 8 bytes, the deck builder; back to `0x9A04B8`) and `0x9A77E5`
+  (`8B 4C 24 30 8D 04 5B`, 7 bytes, the dialog; back to `0x9A77EC`). Entry: ESI the card; the card list at `[esp+2Ch]`
+  (panel) or in EBP (the two others), entries of 28h at `[list+1Ch]`, `[list+20h]` of them; the column at `[esp+28h]`,
+  `[esp+14h]`, `[esp+1Ch]`. When the list holds Age V cards (age 4), give an Age V card column 11 − (Age V cards) + its
+  rank among them, and an Age IV card its rank among the Age IV cards, or skip it when that column is the Age V
+  cards' (jump to `0x9A620B`, `0x9A076C`, `0x9A7A73`; in the panel also lower `[panel+4D0h+4×row]`, `[esp+14h]` = the
+  panel, which the fill raised for it). Write the column back and re-run the replaced instructions. Nothing else is
+  needed: the button, its card link (`+1F0h` / `+228h`) and its overlays all take the slot from that column.
+- **Test:** three cards given `<age>4</age>` in a deck with six Age IV cards: Age IV in columns 1 to 6 and Age V in 9 to
+  11, in both panels and the deck chooser; the rollover and a click (a send, a removal from the deck in "Build a
+  Deck") of each give the card shown; greyed until the Imperial Age, refused before, sent in it.
 
 ### orPrereqsQty
 
@@ -1338,10 +1352,27 @@ Code: [gathering](porting-code/gathering.md#autogatherfrom). It needs `AddWorldT
 
 - **Sites:** none written. Called functions, verify only: `0x4EFCB2` (the action manager's work order,
   `B8 01 00 00 00 84 05 5C F7 D6 00 56 8B F1`), `0x44F1A7` (idle), `0x4A1C55` (units near a point), `0x44D7FA` (is-a),
-  `0x44DDB4` (built), `0x484D2D` (enemy), `0x4E5979` (held amount), `0x598F37` / `0x402733` (XML attribute).
+  `0x44DDB4` (built), `0x484D2D` (enemy), `0x4E5979` (held amount), `0x598F37` / `0x402733` (XML attribute),
+  `0x48A9EF` (seeable). A building is ordered only while `buildingGather` is on (`g_uhcBuildingGather`).
 - **What it writes:** besides the orders, the leash anchor `[[unit+58h]+7Ch..84h]` of a tagged unit while it gathers.
 - **Test:** a villager with `<AutogatherFrom>AbstractMine</AutogatherFrom>` and `<maxrange>10</maxrange>` in its Gather,
   left idle 6 m from a mine: it mines 3 s later; one without the tag stays idle.
+
+### buildingGather
+
+Code: [gathering](porting-code/gathering.md#buildinggather).
+
+- **Site:** `0x4EC76B`, `3C 0C 0F 84 18 A6 09 00` (`cmp al,0Ch / je 586D8Bh`, the Gather update's exit test), replaced
+  by a jump to the hook, which redoes the compare and continues at `0x586D8B` (state 0Ch) or `0x4EC773` (`pop ebx`...
+  `ret`). On entry AL is the state byte `[esi+61h]` and ESI the action. Verified only: the Gather vtable slots at
+  `0xB978B4` (`+34h` setState `0x4ED249`, `+3Ch` the update `0x4EC4FA`) and the move-done event's tail `0x4EDB4F`.
+  Check that your DLL does not hook the update's exit.
+- **What it writes:** the Gather action's state, through its own setState: 5 for a gatherer with MaxVelocity 0 whose
+  action waits (state 0 or FFh) and whose target passes the gatherer's vtable `+CCh(target, [action+24h])`, 9 when it
+  does not.
+- **Test:** a Market with a Gather action (`<maxrange>15`, `<rate type="AbstractMine">1`) and `<CarryCapacity>` 1 of
+  gold, ordered by a trigger's `Unit Work` to a Mine 12 m from its centre: its player's gold rises 1 a second; without
+  the key nothing happens.
 
 ### herdWalkAwayFix
 
@@ -1657,6 +1688,32 @@ Code: [civs](porting-code/civs.md#civfirsttc).
     colony would use up the request with nothing spawned.
 - **Order:** after startingTC, as in `features.h`; or install the shared proto hook yourself, once.
 
+### scenarioCivs
+
+Code: [civs](porting-code/civs.md#scenariocivs).
+
+- **State** (`scenariocivs.cpp`): the `log` flag; `g_second`, true while the loader walks `scenariocivs.xml`;
+  `g_first`, the civ count when that walk began.
+- **Hook** at `0x52B485`, 5 bytes (`jmp`), in the civs.xml loader FUN_0052A590, where its walk over the
+  root's elements ends:
+  - entry state: `[esp+1Ch]` = the civ database (EDI too), `[esp+100h]` = the loader's XML reader;
+  - `pushad`, then `UhcScenarioCivsNext(reader = esp+120h, database = [esp+3Ch])` (stdcall, offsets
+    after `pushad`), with AL carried through `popad`;
+  - true → `mov edi,[esp+1Ch]` and `jmp 52A62Bh`: the stock code reads the reader's new root, checks it
+    is `Civs` and walks it, appending each `<civ>` with `0x52A4DB`;
+  - false → re-execute `push 0BCEE80h` and `jmp 52B48Ah`.
+- **`UhcScenarioCivsNext`:**
+  - when `g_second` is set and the count `[db+28h]` is above `g_first`: clear `g_second`, give each civ
+    from `g_first` on bit 1 and not bit 0 of the byte at `[civ+128h]` (`[[db+24h]+4·id]`), log, false;
+  - otherwise (the end of civs.xml): no `data\scenariocivs.xml` nor `.xmb` → false; else
+    `0x599A7D(reader, [0D6F510h], L"scenariocivs.xml", 0, 1)` (thiscall, `ret 10h`); false → log, false;
+  - check the document (root `[reader+8]`): its name is `civs` (any case), every child is `civ`, each
+    `<name>` is letters, digits and `_` and no civ of `[db+24h]` nor of the file has it (any case);
+    a failure → log, false;
+  - `g_first` = the count, `g_second` = true, true.
+- **Order:** none; the only key that writes `0x52B485`. The civ tag hook (`0x52BB07`) runs inside the
+  second walk too.
+
 ### ageUpBuildings
 
 Code: [civs](porting-code/civs.md#ageupbuildings).
@@ -1927,7 +1984,7 @@ Code: [buildings](porting-code/buildings.md#annexfacing). It needs `AddProtoTagH
 - **Link:** the `call` at `0x7D80CF` (`E8 F8 09 CC FF`, of the unit creation `0x498ACC`, thiscall on the world with 8
   arguments, `ret 20h`) goes to a `__fastcall` wrapper that calls it and keeps annex ID → parent ID. Verify only the
   creation's head (9 B).
-- **Ghost hook:** a 5-byte `jmp` at `0x96E4E7` (`A1 34 62 C6 00`: `mov eax,[0C66234h]`) in the placement ghost's update
+- **Ghost hook (shared with displayedRange since 2026-11-22, `ghostobservers.*`):** a 5-byte `jmp` at `0x96E4E7` (`A1 34 62 C6 00`: `mov eax,[0C66234h]`) in the placement ghost's update
   FUN_0096E062, before its placement test, ESI = the ghost's visual: the helper may turn the visual's axes (the local UI
   only); every register and the flags are kept, then the `mov`, and it continues at `0x96E4EC`.
 - **AI hooks:** a 5-byte `jmp` at `0x73D7D2` (`8D 5C 24 38 53`: `lea ebx,[esp+38h] / push ebx`) in an AI build plan's

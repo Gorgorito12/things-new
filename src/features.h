@@ -67,6 +67,7 @@ Outcome ApplyCantBeSlowed(const Config& config);
 Outcome ApplyStealthTargeting(const Config& config);
 Outcome ApplyAutoScout(const Config& config);
 Outcome ApplyAutoGatherFrom(const Config& config);
+Outcome ApplyBuildingGather(const Config& config);
 Outcome ApplyHerdWalkAwayFix(const Config& config);
 Outcome ApplyResearchOnTheMove(const Config& config);
 Outcome ApplyTransformChecks(const Config& config);
@@ -81,6 +82,7 @@ Outcome ApplyKothTimer(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
 Outcome ApplyBroadsideMuzzleLimit(const Config& config);
+Outcome ApplyBroadsideSoundSet(const Config& config);
 Outcome ApplyAbilitySlots(const Config& config);
 Outcome ApplyWonderPanelSkipAuras(const Config& config);
 Outcome ApplyNativePreview(const Config& config);
@@ -93,6 +95,7 @@ Outcome ApplyNoCorpseDopples(const Config& config);
 Outcome ApplyDanceBonusCivs(const Config& config);
 Outcome ApplyStartingTc(const Config& config);
 Outcome ApplyCivFirstTc(const Config& config);
+Outcome ApplyScenarioCivs(const Config& config);
 Outcome ApplyTransformInventory(const Config& config);
 Outcome ApplyTransformSpan(const Config& config);
 Outcome ApplyNoTrainNearEnemyTc(const Config& config);
@@ -224,6 +227,7 @@ inline constexpr Feature kFeatures[] = {
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
     {"broadsideMuzzleLimit", ApplyBroadsideMuzzleLimit},
+    {"broadsideSoundSet", ApplyBroadsideSoundSet},
     {"abilitySlots", ApplyAbilitySlots},
     {"wonderPanelSkipAuras", ApplyWonderPanelSkipAuras},
     {"nativePreview", ApplyNativePreview},
@@ -238,6 +242,8 @@ inline constexpr Feature kFeatures[] = {
     {"stealthTargeting", ApplyStealthTargeting},
     {"autoScout", ApplyAutoScout},
     {"autoGatherFrom", ApplyAutoGatherFrom},
+    // No order constraint: the only key that writes 0x4EC76B.
+    {"buildingGather", ApplyBuildingGather},
     // No order constraint: the only key that writes 0x6A8C9C or verifies 0x4E3A37.
     {"herdWalkAwayFix", ApplyHerdWalkAwayFix},
     // No order constraint: the only key that writes 0x487E1B or verifies 0x487D8B.
@@ -284,6 +290,9 @@ inline constexpr Feature kFeatures[] = {
     {"startingTC", ApplyStartingTc},
     // After startingTC: both use the FirstTC proto hook at 0x506B3B, which the first one writes.
     {"civFirstTC", ApplyCivFirstTc},
+    // No order constraint: the only key that writes 0x52B485. Its second walk of the civs.xml loader runs the civ tag
+    // handlers of civtags.h too, whichever key installed them.
+    {"scenarioCivs", ApplyScenarioCivs},
     {"transformInventory", ApplyTransformInventory},
     {"transformSpan", ApplyTransformSpan},
     // After liveBuildingWorkRate, which verifies the stock bytes of the site this one hooks.
@@ -347,11 +356,11 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "herdwalkawayfix", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
-    "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
+    "broadsidemuzzlelimit", "broadsidesoundset", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
-    "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
+    "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc", "scenariocivs",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory",

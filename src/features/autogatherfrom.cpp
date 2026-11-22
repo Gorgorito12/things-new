@@ -16,11 +16,15 @@
 // - a unit idle for `delay` seconds of game time gets a work order (0x4EFCB2, the order the stock herdable search
 //   0x4C31EE gives: thiscall(mgr, targetId, 0, -1, 0)) on the nearest unit of a tagged type within the action's range
 //   (0x4A1C55; distance to the target's edge, its vtable +B8h), owned by the unit's player, an ally or Gaia, alive;
-//   the stock order code then picks the action and walks the unit as a right-click would;
+//   the stock order code then picks the action and walks the unit as a right-click would; a target the player cannot
+//   see (0x48A9EF, the test the Gather update makes before it drops such an order, 0x4EC753) is not picked;
 // - a unit that gained nothing (its held amount 0x4E5979 did not rise) from the last order to the same target is
 //   not sent there again until its amount changes: a fattened herdable, for one, is refused by the gather tick.
 // Inside a building or a transport ([unit+6Ch] != -1), not built (0x44DDB4), or without an inventory
 // ([[unit+B4h]+94h], which the gather start requires of the gatherer, 0x50DE89), a unit is skipped.
+// A unit that cannot move (MaxVelocity [proto+80h] at 0: a building) is ordered only while buildingGather is on, since
+// its Gather action never starts otherwise; its target must pass the gather's own range test (its vtable +CCh with the
+// action's range, which counts its size), as a building cannot walk closer.
 //
 // Everything read is simulation state (no local player, no clock but the game time [world+108h]); the per-unit table
 // is only a cache (idle-since time, last target, held amount): a loaded game rebuilds it, and a unit idle at the load
@@ -84,6 +88,9 @@ const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 const auto kHeldAmount = reinterpret_cast<HeldAmountFn>(0x004E5979);
 const auto kMainResource = reinterpret_cast<MainResourceFn>(0x004DBEC1);
 const auto kWorkOrder = reinterpret_cast<WorkOrderFn>(0x004EFCB2);
+using InRangeFn = bool(__thiscall*)(const char* unit, const char* target, float range);
+using SeeableFn = bool(__thiscall*)(const char* unit, std::int32_t player);
+const auto kIsSeeable = reinterpret_cast<SeeableFn>(0x0048A9EF);
 const auto kNameBucket = reinterpret_cast<NameBucketFn>(0x0058E685);
 const auto kNameFind = reinterpret_cast<NameFindFn>(0x0040295B);
 const auto kXmlAttribute = reinterpret_cast<XmlAttributeFn>(0x00598F37);
@@ -133,6 +140,12 @@ std::uint32_t g_lastScan = 0;
 std::uint32_t g_lastTime = 0;
 const char* g_lastWorld = nullptr;
 IdList g_found = {nullptr, 0, 0};
+
+}  // namespace
+
+bool g_uhcBuildingGather = false;  // buildinggather.cpp sets it when that key is applied
+
+namespace {
 
 const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
 
@@ -312,7 +325,8 @@ void SetAnchor(char* unit) {
 
 // The nearest unit of a wanted type within its action's range, that the unit's player may gather from.
 std::int32_t PickTarget(const char* world, const char* unit, std::int32_t player, const std::vector<Want>& wants,
-                        const Unit& state, float* outDistance, std::int32_t* outDelay) {
+                        const Unit& state, bool immobile, float* outDistance, std::int32_t* outDelay) {
+  const auto inRange = Field<InRangeFn const*>(unit, 0)[0xCC / 4];
   const float* position = reinterpret_cast<const float*>(unit + 0x14);
   float radius = 0.0f;
   for (const Want& want : wants) {
@@ -328,7 +342,7 @@ std::int32_t PickTarget(const char* world, const char* unit, std::int32_t player
     const std::int32_t id = g_found.data[i];
     const char* other = id == selfId ? nullptr : UnitById(world, id);
     const char* proto = other == nullptr ? nullptr : Field<const char*>(other, 0x5C);
-    if (proto == nullptr || !Alive(other) || (state.refused && id == state.lastTarget)) {
+    if (proto == nullptr || !Alive(other) || (state.refused && id == state.lastTarget) || !kIsSeeable(other, player)) {
       continue;
     }
     const std::int32_t owner = OwnerId(other);
@@ -337,7 +351,8 @@ std::int32_t PickTarget(const char* world, const char* unit, std::int32_t player
     }
     const float distance = Field<DistanceFn const*>(other, 0)[0xB8 / 4](other, position);
     for (const Want& want : wants) {
-      if (distance <= want.range && kProtoIsType(proto, want.source->type) &&
+      if ((immobile ? inRange(unit, other, want.range) : distance <= want.range) &&
+          kProtoIsType(proto, want.source->type) &&
           (best < 0 || distance < bestDistance || (distance == bestDistance && id < best))) {
         best = id;
         bestDistance = distance;
@@ -390,6 +405,10 @@ void Scan(char* world, std::uint32_t now) {
       if (record == nullptr || Field<const char*>(record, 0x94) == nullptr) {
         continue;  // no inventory: the gather start refuses such a gatherer (0x50DE89, setState 9)
       }
+      const bool immobile = Field<float>(proto, 0x80) <= 0.0f;
+      if (immobile && !g_uhcBuildingGather) {
+        continue;  // a building's Gather action never starts without buildingGather
+      }
       auto old = g_units.find(id);
       Unit state = old == g_units.end() ? Unit{} : old->second;
       char* mgr = Field<char*>(unit, 0x58);
@@ -408,8 +427,8 @@ void Scan(char* world, std::uint32_t now) {
       }
       if (state.idleSince == 0) {
         state.idleSince = now;
-        if (state.lastTarget >= 0 && state.heldAtOrder >= 0.0f && held <= state.heldAtOrder) {
-          state.refused = true;  // the last order gained nothing
+        if (!immobile && state.lastTarget >= 0 && state.heldAtOrder >= 0.0f && held <= state.heldAtOrder) {
+          state.refused = true;  // the last order gained nothing (a building's gather goes to the stockpile: never)
           state.heldAtOrder = held;
         }
       }
@@ -419,7 +438,7 @@ void Scan(char* world, std::uint32_t now) {
       }
       float distance = 0.0f;
       std::int32_t delay = kDefaultDelayMs;
-      const std::int32_t target = PickTarget(world, unit, p, wants, state, &distance, &delay);
+      const std::int32_t target = PickTarget(world, unit, p, wants, state, immobile, &distance, &delay);
       if (target >= 0 && now - state.idleSince >= static_cast<std::uint32_t>(delay)) {
         const bool ok = kWorkOrder(mgr, target, 0, -1, 0);
         Note(L"autoGatherFrom: unit %d (player %d, proto %d) idle %.1f s -> unit %d, %.1f m: %ls", id, p,
@@ -493,7 +512,7 @@ Outcome ApplyAutoGatherFrom(const Config& config) {
   if (!VerifyAll("autoGatherFrom", {&sites::kGatherWorkOrder, &sites::kAutoScoutIdle, &sites::kUnitsNearPoint,
                                     &sites::kUnitById, &sites::kIsA, &sites::kIsBuilt, &sites::kPlayerIsEnemy,
                                     &sites::kHeldAmount, &sites::kMainResource, &sites::kUnitAliveSlot,
-                                    &sites::kXmlAttribute, &sites::kXmlText}) ||
+                                    &sites::kXmlAttribute, &sites::kXmlText, &sites::kUnitIsSeeable}) ||
       !AddActionTagHandler(&ActionTagRead) || !OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick)) {
     return Outcome::kFailed;
   }

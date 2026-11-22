@@ -1081,6 +1081,12 @@ void Line(const wchar_t* format, ...) {
 
 int AgeIndex(std::int32_t age) { return age < 0 ? 0 : (age >= kAges ? kAges - 1 : age); }
 
+// The name of an age index 0..4 in the log: Age I..Age V.
+const wchar_t* AgeName(int index) {
+  static const wchar_t* const kNames[kAges] = {L"I", L"II", L"III", L"IV", L"V"};
+  return kNames[AgeIndex(index)];
+}
+
 // --- Units and players --------------------------------------------------------------------------------------
 
 char* UnitById(const char* world, std::int32_t id) {
@@ -1371,26 +1377,20 @@ std::string Attribute(const char* node, const char* name) {
   return text == nullptr ? std::string() : std::string(text);
 }
 
-bool ParseAge(const char* text, const char** end, long* age) {
-  char* stop = nullptr;
-  *age = std::strtol(text, &stop, 10);
-  *end = stop;
-  return stop != text && *age >= 1 && *age <= kAges;
-}
-
-// age="N" or age="N-M": 1..5 (Age I to V), N <= M.
+// age="N": one age, 0..4 (Age I to V, the scale of a card's <age> and of cAge1..cAge5); age="NM": two digits, the
+// ages N to M, N <= M (age="13": Ages II to IV). Out: the first and last age, 1..5 (Age I to V), as packed.
 bool ParseAgeRange(const std::string& text, long* first, long* last) {
-  const char* end = nullptr;
-  if (!ParseAge(text.c_str(), &end, first)) {
+  const std::size_t n = text.size();
+  if (n < 1 || n > 2) {
     return false;
   }
-  if (*end == 0) {
-    *last = *first;
-    return true;
+  for (const char c : text) {
+    if (c < '0' || c > static_cast<char>('0' + kAges - 1)) {
+      return false;
+    }
   }
-  if (*end != '-' || !ParseAge(end + 1, &end, last) || *end != 0) {
-    return false;
-  }
+  *first = text[0] - '0' + 1;
+  *last = text[n - 1] - '0' + 1;
   return *first <= *last;
 }
 
@@ -1412,8 +1412,9 @@ bool ParseEffect(void* db, char* effect, const char* node) {
     long first = 0;
     long last = 0;
     if (!ParseAgeRange(age, &first, &last)) {
-      Line(L"shipmentCounts: age=\"%hs\" is not an age 1 to %d (Age I to V) or a range such as 2-4; effect dropped",
-           age.c_str(), kAges);
+      Line(L"shipmentCounts: age=\"%hs\" is not an age 0 to %d (Age I to V) or two of them for a range, first <= last, "
+           L"with no hyphen (13: Ages II to IV); effect dropped",
+           age.c_str(), kAges - 1);
       return false;
     }
     packed |= static_cast<std::uint32_t>(first) << kFirstAgeShift;
@@ -1431,7 +1432,7 @@ bool ParseEffect(void* db, char* effect, const char* node) {
 std::int32_t RunEffect(char* player, std::int32_t* field, float* amount) {
   const auto packed = static_cast<std::uint32_t>(*field);
   const std::int32_t proto = static_cast<std::int32_t>(packed & kProtoMask);
-  const int first = static_cast<int>((packed >> kFirstAgeShift) & 0x7);  // 0: every age, 1..5: Age I..V
+  const int first = static_cast<int>((packed >> kFirstAgeShift) & 0x7);  // 0: every age, 1..5: Age I..V (age="0".."4")
   const int last = first == 0 ? kAges : static_cast<int>((packed >> kLastAgeShift) & 0x7);
   const int lo = first == 0 ? 0 : first - 1;
   const int hi = last - 1;
@@ -1444,13 +1445,13 @@ std::int32_t RunEffect(char* player, std::int32_t* field, float* amount) {
   }
   const float units = *amount * static_cast<float>(count);
   if (g_log) {
-    wchar_t ages[32];
+    wchar_t ages[48];
     if (first == 0) {
       wcscpy_s(ages, L"every age");
     } else if (first == last) {
-      swprintf_s(ages, L"age %d", first);
+      swprintf_s(ages, L"age=\"%d\" (Age %ls)", lo, AgeName(lo));
     } else {
-      swprintf_s(ages, L"ages %d-%d", first, last);
+      swprintf_s(ages, L"age=\"%d%d\" (Ages %ls to %ls)", lo, hi, AgeName(lo), AgeName(hi));
     }
     Line(L"shipmentCounts: player %d, FreeHomeCityUnitByShipmentCount proto %d, %ls: %d shipment(s)%ls x %.2f = "
          L"%.2f unit(s)",
@@ -1500,9 +1501,9 @@ void __stdcall UhcShipBegin(const char* entry, const char* player, const char* h
     const char* def = entry == nullptr ? nullptr : Field<const char*>(entry, 0x00);
     const std::int32_t tech = def == nullptr ? -1 : Field<std::int32_t>(def, 0x00);
     const std::int32_t now = AgeIndex(Field<std::int32_t>(player, kPlayerAge));
-    Line(L"shipmentCounts: player %d ships tech %d (%ls), a card of age %d%ls, in age %d", g_shipPlayer, tech,
-         TechName(tech), g_shipAge + 1,
-         card == -1 ? L" (it has no <age>)" : (card < -1 ? L" (its card was not found)" : L""), now + 1);
+    Line(L"shipmentCounts: player %d ships tech %d (%ls), a card of Age %ls%ls, in Age %ls", g_shipPlayer, tech,
+         TechName(tech), AgeName(g_shipAge),
+         card == -1 ? L" (it has no <age>)" : (card < -1 ? L" (its card was not found)" : L""), AgeName(now));
   }
 }
 
@@ -1671,7 +1672,7 @@ END
 
 Contract: [ageFiveShipments](../porting-to-another-dll.md#agefiveshipments).
 
-Sites: `CardListAgePasses` `0x63022E` (7 B), `DeckBuilderAgeRow` `0x9A0489` (39 B), `CardPanelAgeRow` `0x9A5A22` (20 B), `DeckEditorAgeRow` `0x9A77BE` (39 B).
+Sites: `CardListAgePasses` `0x63022E` (7 B), `DeckBuilderAgeRow` `0x9A0489` (39 B), `DeckBuilderColumn` `0x9A04B0` (27 B), `CardPanelAgeRow` `0x9A5A22` (20 B), `CardPanelColumn` `0x9A5A7C` (27 B), `DeckEditorAgeRow` `0x9A77BE` (39 B), `DeckEditorColumn` `0x9A77E5` (24 B).
 
 ### src/features/agefiveshipments.cpp
 
@@ -1688,13 +1689,21 @@ Sites: `CardListAgePasses` `0x63022E` (7 B), `DeckBuilderAgeRow` `0x9A0489` (39 
 //   (FUN_009A7670) stop at the first card whose age is 4 or more (0x9A0489..0x9A04AA, 0x9A77BE..0x9A77DF).
 //
 // The key lets the list builder take five ages (the immediate 4 becomes 5) and shows a card of age 4 in the row of
-// age 3, after the age-3 cards (the list is in age order), in the three panels: the hooks at 0x9A5A22, 0x9A0489
-// and 0x9A77BE read the card's age as stock does and hand age 4 on as 3 for the row only. The card keeps its age: the panel
-// still greys it out until the player's age reaches it (FUN_009A5658 compares [card+18h] with the player's age),
-// and the send FUN_0085A724 refuses it before (0x85A90A). A fifth row needs room the panels' objects do not have
-// (their button arrays hold 4 x 11), so the cards share the Imperial row.
+// age 3 in the three panels: the hooks at 0x9A5A22, 0x9A0489 and 0x9A77BE read the card's age as stock does and hand
+// age 4 on as 3 for the row only. The card keeps its age: the panel still greys it out until the player's age
+// reaches it (FUN_009A5658 compares [card+18h] with the player's age), and the send FUN_0085A724 refuses it before
+// (0x85A90A). A fifth row needs room the panels' objects do not have (their button arrays hold 4 x 11), so the
+// cards share the Imperial row.
+//
+// In that row (JTMaston, #83, 2026-11-22) the Age IV cards stay packed at the left, as stock places them, and the
+// Age V cards are packed at the right: once a fill has set a card's row, the hooks at 0x9A5A7C, 0x9A04B0 and
+// 0x9A77E5 give it its column (UhcAgeFiveColumn). A fill computes the slot row x 11 + column only after that, and
+// stores both the card's button and its link (panel +1F0h, builder +228h) at that slot, so the click and rollover
+// of a button find the card the fill put there. Slots left between the two groups stay hidden: each fill hides the
+// 44 buttons and resets the links before it places a card.
 #include <windows.h>
 
+#include <cstdint>
 #include <string>
 
 #include "../features.h"
@@ -1706,6 +1715,94 @@ extern "C" {
 void UhcAgeFivePanelHook();  // hooks/agefive_hooks.asm
 void UhcAgeFiveDeckHook();
 void UhcAgeFiveBuilderHook();
+void UhcAgeFivePanelColumnHook();
+void UhcAgeFiveBuilderColumnHook();
+void UhcAgeFiveDeckColumnHook();
+}
+
+namespace {
+
+constexpr int kColumns = 11;              // buttons in a row of every deck panel
+constexpr std::uint32_t kCardAge = 0x18;  // [card+18h], the card's <age>, 0 = Age I
+constexpr std::int32_t kCardSize = 0x28;
+constexpr std::uint32_t kListData = 0x1C;   // a card list: its cards, 28h bytes each
+constexpr std::uint32_t kListCount = 0x20;  // and how many
+
+const wchar_t* const kWhere[] = {L"in-game shipment panel", L"deck builder", L"deck editor"};
+int g_lastAgeFour[3] = {-1, -1, -1};  // the counts last logged, per panel, so a fill that repeats logs nothing
+int g_lastAgeFive[3] = {-1, -1, -1};
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+}  // namespace
+
+// Called by the three column hooks once a fill has set the card's row and column, before it uses them. Returns the
+// column of the card, or -1 to leave the card out (the fill then goes on to the next card, as for a twelfth card of
+// a row). Only the row of Age IV changes, and only when the list holds an Age V card: an Age IV card keeps its
+// column (its rank among the Age IV cards) if it is left of the Age V cards, and an Age V card takes column
+// 11 - (Age V cards) + its rank among them. `counter` is the panel's count of the row's cards, or null.
+extern "C" int __stdcall UhcAgeFiveColumn(const char* list, const char* card, int column, int* counter, int where) {
+  if (list == nullptr || card == nullptr) {
+    return column;
+  }
+  const std::int32_t age = Field<std::int32_t>(card, kCardAge);
+  if (age != 3 && age != 4) {
+    return column;
+  }
+  const char* data = Field<const char*>(list, kListData);
+  const std::int32_t count = Field<std::int32_t>(list, kListCount);
+  if (data == nullptr || count <= 0 || card < data || card >= data + count * kCardSize ||
+      (card - data) % kCardSize != 0) {
+    return column;
+  }
+  const auto index = static_cast<std::int32_t>((card - data) / kCardSize);
+  int ageFour = 0;
+  int ageFive = 0;
+  int rank = 0;  // the card's rank among the cards of its age in the list
+  for (std::int32_t i = 0; i < count; ++i) {
+    const std::int32_t a = Field<std::int32_t>(data + i * kCardSize, kCardAge);
+    if (a == 3) {
+      ++ageFour;
+    } else if (a == 4) {
+      ++ageFive;
+    }
+    if (i < index && a == age) {
+      ++rank;
+    }
+  }
+  if (ageFive == 0) {
+    return column;  // as before: no Age V card, the stock layout
+  }
+  const int shown = ageFive < kColumns ? ageFive : kColumns;
+  const int first = kColumns - shown;  // the first column of the Age V cards
+  if (where >= 0 && where < 3 && (ageFour != g_lastAgeFour[where] || ageFive != g_lastAgeFive[where])) {
+    g_lastAgeFour[where] = ageFour;
+    g_lastAgeFive[where] = ageFive;
+    if (ageFour + ageFive > kColumns) {
+      uhc::Log(L"ageFiveShipments: the %ls's Age IV row gets %d Age IV and %d Age V cards, more than its %d buttons: "
+               L"the Age V cards keep the right side, and %d Age IV card(s)%ls are not shown",
+               kWhere[where], ageFour, ageFive, kColumns, ageFour - first > 0 ? ageFour - first : 0,
+               ageFive > kColumns ? L" and the Age V cards after the eleventh" : L"");
+    } else {
+      uhc::Log(L"ageFiveShipments: the %ls's Age IV row: %d Age IV card(s) at the left, %d Age V card(s) at the "
+               L"right (columns %d to %d)",
+               kWhere[where], ageFour, ageFive, first + 1, kColumns);
+    }
+  }
+  int result = age == 4 ? first + rank : rank;
+  if (age == 3 && result >= first) {
+    result = -1;  // its slot is the Age V cards'
+  }
+  if (result >= kColumns) {
+    result = -1;
+  }
+  if (result < 0 && counter != nullptr && *counter > 0) {
+    --*counter;  // the panel counted it in the row before the hook
+  }
+  return result;
 }
 
 namespace uhc {
@@ -1720,7 +1817,9 @@ Outcome ApplyAgeFiveShipments(const Config& config) {
     return Outcome::kFailed;
   }
   if (!VerifyAll("ageFiveShipments", {&sites::kCardListAgePasses, &sites::kCardPanelAgeRow,
-                                      &sites::kDeckEditorAgeRow, &sites::kDeckBuilderAgeRow})) {
+                                      &sites::kDeckEditorAgeRow, &sites::kDeckBuilderAgeRow,
+                                      &sites::kCardPanelColumn, &sites::kDeckBuilderColumn,
+                                      &sites::kDeckEditorColumn})) {
     return Outcome::kFailed;
   }
   const std::uint8_t five = 5;
@@ -1728,11 +1827,15 @@ Outcome ApplyAgeFiveShipments(const Config& config) {
   if (!WriteBytes(sites::kCardListAgePasses.va + 2, &five, 1) ||
       !WriteJmp(sites::kCardPanelAgeRow.va, reinterpret_cast<const void*>(&UhcAgeFivePanelHook), 5) ||
       !WriteJmp(sites::kDeckEditorAgeRow.va, reinterpret_cast<const void*>(&UhcAgeFiveDeckHook), 5) ||
-      !WriteJmp(sites::kDeckBuilderAgeRow.va, reinterpret_cast<const void*>(&UhcAgeFiveBuilderHook), 5)) {
+      !WriteJmp(sites::kDeckBuilderAgeRow.va, reinterpret_cast<const void*>(&UhcAgeFiveBuilderHook), 5) ||
+      !WriteJmp(sites::kCardPanelColumn.va, reinterpret_cast<const void*>(&UhcAgeFivePanelColumnHook), 8) ||
+      !WriteJmp(sites::kDeckBuilderColumn.va, reinterpret_cast<const void*>(&UhcAgeFiveBuilderColumnHook), 8) ||
+      !WriteJmp(sites::kDeckEditorColumn.va, reinterpret_cast<const void*>(&UhcAgeFiveDeckColumnHook), 7)) {
     return Outcome::kFailed;
   }
-  Log(L"ageFiveShipments: cards of the fifth age (<age>4</age>) are in the game's deck, shown in the fourth age's "
-      L"row of the shipment panel and the deck editor, and sendable in the fifth age (multiplayer unverified)");
+  Log(L"ageFiveShipments: cards of the fifth age (<age>4</age>) are in the game's deck, shown at the right of the "
+      L"fourth age's row of the shipment panel and the deck panels (the Age IV cards at the left), and sendable in "
+      L"the fifth age (multiplayer unverified)");
   return Outcome::kApplied;
 }
 
@@ -1742,19 +1845,28 @@ Outcome ApplyAgeFiveShipments(const Config& config) {
 ### src/hooks/agefive_hooks.asm
 
 ```asm
-; Hooks for ageFiveShipments: the row of a card in the in-game shipment panel and in the deck editor. A card of the
-; fifth age (age 4) takes the row of age 3; its own age [card+18h] is left alone. Each leaves through an explicit
-; jmp to its verified continuation.
+; Hooks for ageFiveShipments: the row and the column of a card in the in-game shipment panel, the deck builder and
+; the deck editor. A card of the fifth age (age 4) takes the row of age 3; its own age [card+18h] is left alone.
+; In that row the Age IV cards stay at the left and the Age V cards go to the right (UhcAgeFiveColumn). Each hook
+; leaves through an explicit jmp to its verified continuation.
 .686
 .model flat, c
 option casemap :none
 
 include common.inc
 
+UhcAgeFiveColumn PROTO STDCALL list:DWORD, card:DWORD, column:DWORD, counter:DWORD, where:DWORD
+
 .data
 panelContinue   dd 009A5A27h    ; FUN_009A5658: jl 9A620Bh, after the replaced mov / cmp
 deckContinue    dd 009A77C3h    ; FUN_009A7670: jge 9A77D1h, after the replaced mov / cmp
 builderContinue dd 009A048Eh    ; the deck builder's fill: jge 9A049Ch, after the replaced mov / cmp
+panelColContinue   dd 009A5A84h ; FUN_009A5658: lea eax,[ebx+ebx*2], after the replaced mov ecx / mov edx
+panelColSkip       dd 009A620Bh ; FUN_009A5658: the next card, as for a twelfth card of a row
+builderColContinue dd 009A04B8h ; the deck builder's fill: lea ecx,[edi+edi*2], after the replaced mov edx / mov eax
+builderColSkip     dd 009A076Ch ; the deck builder's fill: the next card
+deckColContinue    dd 009A77ECh ; FUN_009A7670: add eax,eax, after the replaced mov ecx / lea eax
+deckColSkip        dd 009A7A73h ; FUN_009A7670: the next card
 
 .code
 
@@ -1797,6 +1909,82 @@ builderRow:
     cmp edi, eax
     jmp builderContinue
 UhcAgeFiveBuilderHook ENDP
+
+; Replaces mov ecx,[esp+28h] / mov edx,[esp+14h] (8 bytes) at 0x9A5A7C in the panel fill FUN_009A5658, once the
+; card's row is set: ESI = the card, EBX = its row, [esp+28h] = its column, [esp+14h] = the panel, [esp+2Ch] = the
+; card list. UhcAgeFiveColumn gives the column (written back to [esp+28h]) or -1: the card is left out and its
+; count in the row's counter [panel+4D0h+4*row] is taken back. EAX and the flags are free (the code after it sets
+; them); the other registers are kept.
+UhcAgeFivePanelColumnHook PROC
+    TRACE_ONCE "ageFiveShipments panel column (0x9A5A7C)"
+    pushad
+    mov eax, dword ptr [esp+20h+14h]        ; the panel
+    lea eax, [eax+ebx*4+4D0h]               ; the row's counter
+    push 0                                  ; where: the in-game panel
+    push eax
+    push dword ptr [esp+20h+8+28h]          ; the column
+    push esi                                ; the card
+    push dword ptr [esp+20h+10h+2Ch]        ; the card list
+    call UhcAgeFiveColumn
+    mov dword ptr [esp+1Ch], eax            ; EAX after the popad
+    popad
+    cmp eax, -1
+    je panelColLeftOut
+    mov dword ptr [esp+28h], eax
+    mov ecx, eax
+    mov edx, dword ptr [esp+14h]
+    jmp panelColContinue
+panelColLeftOut:
+    jmp panelColSkip
+UhcAgeFivePanelColumnHook ENDP
+
+; Replaces mov edx,[esp+14h] / mov eax,[esp+28h] (8 bytes) at 0x9A04B0 in the deck builder's fill: ESI = the card,
+; EBP = the deck's card list, [esp+14h] = the column, [esp+28h] = the builder. -1 leaves the card out. ECX and the
+; flags are free (lea ecx follows); EAX and EDX get the replaced loads.
+UhcAgeFiveBuilderColumnHook PROC
+    TRACE_ONCE "ageFiveShipments deck builder column (0x9A04B0)"
+    pushad
+    push 1                                  ; where: the deck builder
+    push 0                                  ; no row counter
+    push dword ptr [esp+20h+8+14h]          ; the column
+    push esi                                ; the card
+    push ebp                                ; the card list
+    call UhcAgeFiveColumn
+    mov dword ptr [esp+1Ch], eax
+    popad
+    cmp eax, -1
+    je builderColLeftOut
+    mov dword ptr [esp+14h], eax
+    mov edx, eax
+    mov eax, dword ptr [esp+28h]
+    jmp builderColContinue
+builderColLeftOut:
+    jmp builderColSkip
+UhcAgeFiveBuilderColumnHook ENDP
+
+; Replaces mov ecx,[esp+30h] / lea eax,[ebx+ebx*2] (7 bytes) at 0x9A77E5 in the deck editor fill FUN_009A7670:
+; ESI = the card, EBP = the deck's card list, EBX = the row, [esp+1Ch] = the column (added at 0x9A77F2). -1 leaves
+; the card out. EAX, ECX and the flags get the replaced instructions' values.
+UhcAgeFiveDeckColumnHook PROC
+    TRACE_ONCE "ageFiveShipments deck editor column (0x9A77E5)"
+    pushad
+    push 2                                  ; where: the deck editor
+    push 0                                  ; no row counter
+    push dword ptr [esp+20h+8+1Ch]          ; the column
+    push esi                                ; the card
+    push ebp                                ; the card list
+    call UhcAgeFiveColumn
+    mov dword ptr [esp+1Ch], eax
+    popad
+    cmp eax, -1
+    je deckColLeftOut
+    mov dword ptr [esp+1Ch], eax
+    mov ecx, dword ptr [esp+30h]
+    lea eax, [ebx+ebx*2]
+    jmp deckColContinue
+deckColLeftOut:
+    jmp deckColSkip
+UhcAgeFiveDeckColumnHook ENDP
 
 END
 ```

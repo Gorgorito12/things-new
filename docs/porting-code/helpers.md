@@ -23,6 +23,7 @@ Contents:
 - [Modify types](#modify-types)
 - [Floating text](#floating-text)
 - [Death observers](#death-observers)
+- [Placement ghost observers](#placement-ghost-observers)
 - [Kill observers](#kill-observers)
 - [Modifier walk](#modifier-walk)
 - [Unit panel row (the minimized interface)](#unit-panel-row-the-minimized-interface)
@@ -1524,6 +1525,15 @@ inline constexpr Site kDeckEditorAgeRow{"DeckEditorAgeRow", 0x009A77BE, kDeckEdi
 inline constexpr std::uint8_t kDeckBuilderAgeRowBytes[] = {0x8B, 0x46, 0x18, 0x3B, 0xF8, 0x7D, 0x0C, 0x89, 0x44, 0x24, 0x18, 0x89, 0x5C, 0x24, 0x14, 0x8B, 0xF8, 0xEB, 0x0B, 0x83, 0x7C, 0x24, 0x14, 0x0B, 0x0F, 0x8D, 0xC5, 0x02, 0x00, 0x00, 0x83, 0xFF, 0x04, 0x0F, 0x8D, 0xD5, 0x02, 0x00, 0x00};
 inline constexpr Site kDeckBuilderAgeRow{"DeckBuilderAgeRow", 0x009A0489, kDeckBuilderAgeRowBytes, sizeof(kDeckBuilderAgeRowBytes)};
 
+inline constexpr std::uint8_t kCardPanelColumnBytes[] = {0x8B, 0x4C, 0x24, 0x28, 0x8B, 0x54, 0x24, 0x14, 0x8D, 0x04, 0x5B, 0x03, 0xC0, 0x03, 0xC0, 0x2B, 0xC3, 0x8D, 0x3C, 0x08, 0x8B, 0x84, 0xBA, 0x40, 0x01, 0x00, 0x00};
+inline constexpr Site kCardPanelColumn{"CardPanelColumn", 0x009A5A7C, kCardPanelColumnBytes, sizeof(kCardPanelColumnBytes)};
+
+inline constexpr std::uint8_t kDeckBuilderColumnBytes[] = {0x8B, 0x54, 0x24, 0x14, 0x8B, 0x44, 0x24, 0x28, 0x8D, 0x0C, 0x7F, 0x03, 0xC9, 0x03, 0xC9, 0x2B, 0xCF, 0x8D, 0x2C, 0x11, 0x8B, 0x9C, 0xA8, 0x78, 0x01, 0x00, 0x00};
+inline constexpr Site kDeckBuilderColumn{"DeckBuilderColumn", 0x009A04B0, kDeckBuilderColumnBytes, sizeof(kDeckBuilderColumnBytes)};
+
+inline constexpr std::uint8_t kDeckEditorColumnBytes[] = {0x8B, 0x4C, 0x24, 0x30, 0x8D, 0x04, 0x5B, 0x03, 0xC0, 0x03, 0xC0, 0x2B, 0xC3, 0x03, 0x44, 0x24, 0x1C, 0x8B, 0xAC, 0x81, 0x54, 0x01, 0x00, 0x00};
+inline constexpr Site kDeckEditorColumn{"DeckEditorColumn", 0x009A77E5, kDeckEditorColumnBytes, sizeof(kDeckEditorColumnBytes)};
+
 inline constexpr std::uint8_t kKothTotalTimeBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x90, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x81, 0x04, 0x01, 0x00, 0x00, 0x56, 0x8B, 0xB1, 0x08, 0x01, 0x00, 0x00, 0x85, 0xF6, 0x7E, 0x11, 0x85, 0xD2, 0x74, 0x26, 0x57, 0x8B, 0x7A, 0x5C, 0x83, 0xEF, 0x01, 0x0F, 0xAF, 0xFE, 0x03, 0xC7, 0x5F, 0x85, 0xD2, 0x74, 0x15, 0x8B, 0x92, 0x8C, 0x01, 0x00, 0x00, 0x2B, 0x91, 0x0C, 0x01, 0x00, 0x00, 0x0F, 0xAF, 0x91, 0x10, 0x01, 0x00, 0x00, 0x2B, 0xC2, 0x5E, 0xC3};
 inline constexpr Site kKothTotalTime{"KothTotalTime", 0x009F02DD, kKothTotalTimeBytes, sizeof(kKothTotalTimeBytes)};
 
@@ -1571,6 +1581,24 @@ inline constexpr Site kCivByName{"CivByName", 0x0052D6FF, kCivByNameBytes, sizeo
 
 inline constexpr std::uint8_t kCivOfPlayerBytes[] = {0x83, 0x79, 0x24, 0x00, 0x0F, 0x8E, 0x22, 0x5B, 0x22, 0x00, 0x8B, 0x41, 0x20, 0x8B, 0x00, 0xC3};
 inline constexpr Site kCivOfPlayer{"CivOfPlayer", 0x004539D3, kCivOfPlayerBytes, sizeof(kCivOfPlayerBytes)};
+
+inline constexpr std::uint8_t kScenarioCivsLoadBytes[] = {0x8B, 0x0D, 0x10, 0xF5, 0xD6, 0x00, 0x6A, 0x01, 0x6A, 0x00, 0x68, 0x24, 0x11, 0xBD, 0x00, 0x51, 0x8D, 0x8C, 0x24, 0x10, 0x01, 0x00, 0x00, 0xE8, 0x5A, 0xF4, 0x06, 0x00, 0x84, 0xC0, 0x0F, 0x84, 0xEF, 0xF2, 0x12, 0x00, 0x8B, 0x8C, 0x24, 0x08, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x8B, 0xF1, 0x89, 0x74, 0x24, 0x2C, 0x0F, 0x84, 0xEB, 0x1C, 0x00, 0x00};
+inline constexpr Site kScenarioCivsLoad{"ScenarioCivsLoad", 0x0052A607, kScenarioCivsLoadBytes, sizeof(kScenarioCivsLoadBytes)};
+
+inline constexpr std::uint8_t kScenarioCivsEndBytes[] = {0x0F, 0x8C, 0x12, 0xF2, 0xFF, 0xFF, 0xBB, 0x02, 0x00, 0x00, 0x00, 0x68, 0x80, 0xEE, 0xBC, 0x00, 0x8D, 0x4C, 0x24, 0x30};
+inline constexpr Site kScenarioCivsEnd{"ScenarioCivsEnd", 0x0052B47A, kScenarioCivsEndBytes, sizeof(kScenarioCivsEndBytes)};
+
+inline constexpr std::uint8_t kScenarioCivsAppendBytes[] = {0x53, 0x55, 0x57, 0x8B, 0xF9, 0x8B, 0x5F, 0x28, 0x6A, 0x00, 0x8D, 0x43, 0x01, 0x8D, 0x6F, 0x24, 0x50, 0x8B, 0xCD};
+inline constexpr Site kScenarioCivsAppend{"ScenarioCivsAppend", 0x0052A4DB, kScenarioCivsAppendBytes, sizeof(kScenarioCivsAppendBytes)};
+
+inline constexpr std::uint8_t kCivFlagVisibleBytes[] = {0x8D, 0x54, 0x24, 0x14, 0x52, 0xC7, 0x44, 0x24, 0x18, 0x01, 0x00, 0x00, 0x00, 0xE8, 0x12, 0xE2, 0x06, 0x00, 0x83, 0x7C, 0x24, 0x14, 0x00, 0x8B, 0x4C, 0x24, 0x10, 0x0F, 0x95, 0xC0, 0x50, 0x6A, 0x00, 0x83, 0xEC, 0x04, 0x8B, 0xC1, 0x8B, 0x4C, 0x24, 0x04, 0x8B, 0x80, 0x28, 0x01, 0x00, 0x00, 0x8B, 0xD1, 0xC1, 0xEA, 0x03, 0x03, 0xC2, 0x83, 0xE1, 0x07, 0xB2, 0x01, 0xD2, 0xE2};
+inline constexpr Site kCivFlagVisible{"CivFlagVisible", 0x0052D302, kCivFlagVisibleBytes, sizeof(kCivFlagVisibleBytes)};
+
+inline constexpr std::uint8_t kCivFlagEditorBytes[] = {0x8D, 0x4C, 0x24, 0x14, 0x51, 0x8B, 0xCE, 0xC7, 0x44, 0x24, 0x18, 0x01, 0x00, 0x00, 0x00, 0xE8, 0x9A, 0xF6, 0x06, 0x00, 0x83, 0x7C, 0x24, 0x14, 0x00, 0x8B, 0x4C, 0x24, 0x10, 0x0F, 0x95, 0xC2, 0x52, 0x6A, 0x01, 0x83, 0xEC, 0x04, 0x8B, 0xC1, 0x8B, 0x4C, 0x24, 0x04, 0x8B, 0x80, 0x28, 0x01, 0x00, 0x00, 0x8B, 0xD1, 0xC1, 0xEA, 0x03, 0x03, 0xC2, 0x83, 0xE1, 0x07, 0xB2, 0x01, 0xD2, 0xE2};
+inline constexpr Site kCivFlagEditor{"CivFlagEditor", 0x0052BE78, kCivFlagEditorBytes, sizeof(kCivFlagEditorBytes)};
+
+inline constexpr std::uint8_t kXmlReaderLoadBytes[] = {0x83, 0xEC, 0x2C, 0x53, 0x55, 0x56, 0x8B, 0xF1, 0x57, 0x8D, 0x4C, 0x24, 0x10, 0x8B, 0xC1, 0xC7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 0xBE, 0x64, 0x18, 0x00, 0x00, 0x00, 0x74, 0x07, 0x8B, 0xCE, 0xE8, 0x89, 0xF3, 0xFF, 0xFF};
+inline constexpr Site kXmlReaderLoad{"XmlReaderLoad", 0x00599A7D, kXmlReaderLoadBytes, sizeof(kXmlReaderLoadBytes)};
 
 inline constexpr std::uint8_t kProtoByNameBytes[] = {0x53, 0x8B, 0x5C, 0x24, 0x08, 0x85, 0xDB, 0x57, 0x8B, 0xF9, 0x0F, 0x84, 0xD0, 0x6E, 0x0B, 0x00, 0x56, 0x33, 0xF6, 0x39, 0x77, 0x58, 0x7E, 0x2A, 0x8D, 0x24, 0x24, 0x8B, 0x47, 0x54, 0x8B, 0x04};
 inline constexpr Site kProtoByName{"ProtoByName", 0x005A2346, kProtoByNameBytes, sizeof(kProtoByNameBytes)};
@@ -1856,6 +1884,12 @@ inline constexpr Site kShotsReloadAnim{"ShotsReloadAnim", 0x004976CB, kShotsRelo
 
 inline constexpr std::uint8_t kShotsAnimVariantBytes[] = {0x8B, 0x49, 0x60, 0x85, 0xC9, 0x0F, 0x84, 0xD8, 0xC8, 0x07, 0x00};
 inline constexpr Site kShotsAnimVariant{"ShotsAnimVariant", 0x00471D24, kShotsAnimVariantBytes, sizeof(kShotsAnimVariantBytes)};
+
+inline constexpr std::uint8_t kBroadsideSoundBytes[] = {0x68, 0x5C, 0x1D, 0xBA, 0x00, 0x83, 0xC2, 0x14};
+inline constexpr Site kBroadsideSound{"BroadsideSound", 0x004CECBD, kBroadsideSoundBytes, sizeof(kBroadsideSoundBytes)};
+
+inline constexpr std::uint8_t kBroadsideSoundNameBytes[] = {0x53, 0x68, 0x69, 0x70, 0x43, 0x61, 0x6E, 0x6E, 0x6F, 0x6E, 0x53, 0x68, 0x6F, 0x6F, 0x74, 0x00};
+inline constexpr Site kBroadsideSoundName{"BroadsideSoundName", 0x00BA1D5C, kBroadsideSoundNameBytes, sizeof(kBroadsideSoundNameBytes)};
 
 inline constexpr std::uint8_t kUnitResourceAuraEntryBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x10};
 inline constexpr Site kUnitResourceAuraEntry{"UnitResourceAuraEntry", 0x009D033E, kUnitResourceAuraEntryBytes, sizeof(kUnitResourceAuraEntryBytes)};
@@ -2589,6 +2623,18 @@ inline constexpr Site kLanBrowserCountdown{"LanBrowserCountdown", 0x008BA87A, kL
 inline constexpr std::uint8_t kGatherWorkOrderBytes[] = {0xB8, 0x01, 0x00, 0x00, 0x00, 0x84, 0x05, 0x5C, 0xF7, 0xD6, 0x00, 0x56, 0x8B, 0xF1};
 inline constexpr Site kGatherWorkOrder{"GatherWorkOrder", 0x004EFCB2, kGatherWorkOrderBytes, sizeof(kGatherWorkOrderBytes)};
 
+inline constexpr std::uint8_t kGatherUpdateExitBytes[] = {0x3C, 0x0C, 0x0F, 0x84, 0x18, 0xA6, 0x09, 0x00, 0x5B, 0x5F, 0x5E, 0x5D, 0x83, 0xC4, 0x0C, 0xC3};
+inline constexpr Site kGatherUpdateExit{"GatherUpdateExit", 0x004EC76B, kGatherUpdateExitBytes, sizeof(kGatherUpdateExitBytes)};
+
+inline constexpr std::uint8_t kGatherVtableSlotsBytes[] = {0x49, 0xD2, 0x4E, 0x00, 0x14, 0x89, 0x9C, 0x00, 0xFA, 0xC4, 0x4E, 0x00};
+inline constexpr Site kGatherVtableSlots{"GatherVtableSlots", 0x00B978B4, kGatherVtableSlotsBytes, sizeof(kGatherVtableSlotsBytes)};
+
+inline constexpr std::uint8_t kGatherSetStateBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x90, 0x3C, 0x01, 0x00, 0x00};
+inline constexpr Site kGatherSetState{"GatherSetState", 0x004ED249, kGatherSetStateBytes, sizeof(kGatherSetStateBytes)};
+
+inline constexpr std::uint8_t kGatherArrivedStateBytes[] = {0x8B, 0x44, 0x24, 0x14, 0x8B, 0x4F, 0x10, 0x8B, 0x11, 0x50, 0x56, 0x8B, 0x82, 0xCC, 0x00, 0x00, 0x00, 0xE8, 0x7C, 0xE8, 0xF9, 0xFF, 0x84, 0xC0, 0x5B, 0x0F, 0x84, 0xE7, 0x54, 0xFF, 0xFF, 0x8A, 0x47, 0x61, 0x84, 0xC0, 0x0F, 0x85, 0xF8, 0xAE, 0x1B, 0x00, 0x8B, 0x17, 0x6A, 0x05, 0x8B, 0xCF, 0x8B, 0x42, 0x34, 0xE8, 0x3A, 0x7E, 0x00, 0x00};
+inline constexpr Site kGatherArrivedState{"GatherArrivedState", 0x004EDB4F, kGatherArrivedStateBytes, sizeof(kGatherArrivedStateBytes)};
+
 inline constexpr std::uint8_t kHerdWalkAwayCallBytes[] = {0x6A, 0x00, 0x68, 0x00, 0x00, 0xC0, 0x40, 0x52, 0xE8, 0x96, 0xAD, 0xE3, 0xFF};
 inline constexpr Site kHerdWalkAwayCall{"HerdWalkAwayCall", 0x006A8C94, kHerdWalkAwayCallBytes, sizeof(kHerdWalkAwayCallBytes)};
 
@@ -3140,6 +3186,7 @@ Outcome ApplyCantBeSlowed(const Config& config);
 Outcome ApplyStealthTargeting(const Config& config);
 Outcome ApplyAutoScout(const Config& config);
 Outcome ApplyAutoGatherFrom(const Config& config);
+Outcome ApplyBuildingGather(const Config& config);
 Outcome ApplyHerdWalkAwayFix(const Config& config);
 Outcome ApplyResearchOnTheMove(const Config& config);
 Outcome ApplyTransformChecks(const Config& config);
@@ -3154,6 +3201,7 @@ Outcome ApplyKothTimer(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
 Outcome ApplyBroadsideMuzzleLimit(const Config& config);
+Outcome ApplyBroadsideSoundSet(const Config& config);
 Outcome ApplyAbilitySlots(const Config& config);
 Outcome ApplyWonderPanelSkipAuras(const Config& config);
 Outcome ApplyNativePreview(const Config& config);
@@ -3166,6 +3214,7 @@ Outcome ApplyNoCorpseDopples(const Config& config);
 Outcome ApplyDanceBonusCivs(const Config& config);
 Outcome ApplyStartingTc(const Config& config);
 Outcome ApplyCivFirstTc(const Config& config);
+Outcome ApplyScenarioCivs(const Config& config);
 Outcome ApplyTransformInventory(const Config& config);
 Outcome ApplyTransformSpan(const Config& config);
 Outcome ApplyNoTrainNearEnemyTc(const Config& config);
@@ -3297,6 +3346,7 @@ inline constexpr Feature kFeatures[] = {
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
     {"broadsideMuzzleLimit", ApplyBroadsideMuzzleLimit},
+    {"broadsideSoundSet", ApplyBroadsideSoundSet},
     {"abilitySlots", ApplyAbilitySlots},
     {"wonderPanelSkipAuras", ApplyWonderPanelSkipAuras},
     {"nativePreview", ApplyNativePreview},
@@ -3311,6 +3361,8 @@ inline constexpr Feature kFeatures[] = {
     {"stealthTargeting", ApplyStealthTargeting},
     {"autoScout", ApplyAutoScout},
     {"autoGatherFrom", ApplyAutoGatherFrom},
+    // No order constraint: the only key that writes 0x4EC76B.
+    {"buildingGather", ApplyBuildingGather},
     // No order constraint: the only key that writes 0x6A8C9C or verifies 0x4E3A37.
     {"herdWalkAwayFix", ApplyHerdWalkAwayFix},
     // No order constraint: the only key that writes 0x487E1B or verifies 0x487D8B.
@@ -3357,6 +3409,9 @@ inline constexpr Feature kFeatures[] = {
     {"startingTC", ApplyStartingTc},
     // After startingTC: both use the FirstTC proto hook at 0x506B3B, which the first one writes.
     {"civFirstTC", ApplyCivFirstTc},
+    // No order constraint: the only key that writes 0x52B485. Its second walk of the civs.xml loader runs the civ tag
+    // handlers of civtags.h too, whichever key installed them.
+    {"scenarioCivs", ApplyScenarioCivs},
     {"transformInventory", ApplyTransformInventory},
     {"transformSpan", ApplyTransformSpan},
     // After liveBuildingWorkRate, which verifies the stock bytes of the site this one hooks.
@@ -3420,11 +3475,11 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "herdwalkawayfix", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
-    "broadsidemuzzlelimit", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
+    "broadsidemuzzlelimit", "broadsidesoundset", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
-    "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc",
+    "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc", "scenariocivs",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory",
@@ -5545,6 +5600,118 @@ bool AddDestroyObserver(DeathObserver observer) {
 }  // namespace uhc
 ```
 
+## Placement ghost observers
+
+### src/ghostobservers.h
+
+```cpp
+// The placement ghost's update, shared by the keys that act on it (annexFacing, displayedRange). FUN_0096E062 moves
+// the ghost of the building being placed to the pointer and then tests the placement at 0x96E531; its line 0x96E4E7
+// (mov eax,[0C66234h], the first of that test's arguments) is replaced once by a jump, whichever keys are on, and the
+// hook runs every observer there, in the order the keys add them (their kFeatures order).
+#pragma once
+
+namespace uhc {
+
+// Called on every update of the ghost (each frame while a building is being placed, the game paused too), with
+// ESI of the update: the ghost's visual, [[0xC67300]+200h] (its axes from +4: position, forward +10h, up +1Ch,
+// right +28h; +7Dh marks them changed). The proto being placed is [[0xC67300]+1FCh]. Local view only: the ghost is
+// this machine's, and the build command carries its own transform.
+using GhostObserver = void(__stdcall*)(char* visual);
+
+// Writes the jump the first time (after checking the site's stock bytes) and adds the observer.
+bool AddGhostObserver(GhostObserver observer);
+
+}  // namespace uhc
+```
+
+### src/ghostobservers.cpp
+
+```cpp
+#include "ghostobservers.h"
+
+#include <cstddef>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcGhostUpdateHook();
+
+namespace {
+
+constexpr std::size_t kMaxObservers = 8;
+
+uhc::GhostObserver g_observers[kMaxObservers] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+extern "C" void __stdcall UhcGhostUpdate(char* visual) {
+  for (std::size_t i = 0; i < g_count; ++i) {
+    g_observers[i](visual);
+  }
+}
+
+namespace uhc {
+
+bool AddGhostObserver(GhostObserver observer) {
+  if (g_count == kMaxObservers) {
+    Log(L"placement ghost: more than %u observers", static_cast<unsigned>(kMaxObservers));
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("placement ghost", {&sites::kAnnexGhostSite}) ||
+        !WriteJmp(sites::kAnnexGhostSite.va, reinterpret_cast<const void*>(&UhcGhostUpdateHook), 5)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_observers[g_count++] = observer;
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/ghostobservers_hooks.asm
+
+```asm
+; The placement ghost's update (src/ghostobservers.cpp), shared by annexFacing and displayedRange. The hook is entered
+; through a jmp written over the stock code, re-executes the instruction it replaced, and leaves through an explicit jmp
+; to the verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcGhostUpdate PROTO STDCALL visual:DWORD
+
+.data
+ghostNext   dd 0096E4ECh    ; mov ecx,[eax+13Ch]
+
+.code
+
+; Replaces 0x96E4E7 (mov eax,[0C66234h]) in the placement ghost's update FUN_0096E062, before its placement test:
+; ESI = the ghost's visual. The observers may turn the visual's axes or hang models on it; every register and the
+; flags are kept, then the replaced line writes EAX, which 0x96E4EC reads.
+UhcGhostUpdateHook PROC
+    TRACE_ONCE "placement ghost update (0x96E4E7)"
+    pushfd
+    pushad
+    push esi
+    call UhcGhostUpdate
+    popad
+    popfd
+    mov eax, dword ptr ds:[0C66234h]
+    jmp ghostNext
+UhcGhostUpdateHook ENDP
+
+END
+```
+
 ## Kill observers
 
 ### src/killobservers.h
@@ -6459,6 +6626,13 @@ ModelHang HangUnitModel(char* unit, std::int32_t model, std::int32_t bone);
 bool UnitHasModel(const char* unit, std::int32_t model);
 void RemoveUnitModel(char* unit, std::int32_t model);
 
+// The same on a visual that has no unit, such as the placement ghost's [[0xC67300]+200h]: the three stock functions
+// (0x9C04F3, 0x9C28DE, 0x9C2885) read nothing of the unit but its visual [unit+60h], so they run on a block whose
+// +60h is the visual. The visual must be of a unit visual's class (the caller checks its vtable).
+ModelHang HangVisualModel(char* visual, std::int32_t model, std::int32_t bone);
+bool VisualHasModel(char* visual, std::int32_t model);
+void RemoveVisualModel(char* visual, std::int32_t model);
+
 }  // namespace uhc
 ```
 
@@ -6466,6 +6640,8 @@ void RemoveUnitModel(char* unit, std::int32_t model);
 
 ```cpp
 #include "unitmodels.h"
+
+#include <cstddef>
 
 #include "generated/sites.h"
 #include "patch.h"
@@ -6488,6 +6664,13 @@ const auto kModelById = reinterpret_cast<ModelByIdFn>(0x00405E83);
 const auto kHasModel = reinterpret_cast<HasModelFn>(0x009C28DE);
 const auto kAttachModel = reinterpret_cast<AttachModelFn>(0x009C04F3);
 const auto kRemoveModel = reinterpret_cast<RemoveModelFn>(0x009C2885);
+
+// A stand-in unit: only its visual, at +60h, as the three functions read it.
+struct VisualHolder {
+  char pad[0x60] = {};
+  char* visual = nullptr;
+};
+static_assert(offsetof(VisualHolder, visual) == 0x60);
 
 }  // namespace
 
@@ -6523,6 +6706,29 @@ ModelHang HangUnitModel(char* unit, std::int32_t model, std::int32_t bone) {
 bool UnitHasModel(const char* unit, std::int32_t model) { return kHasModel(unit, model); }
 
 void RemoveUnitModel(char* unit, std::int32_t model) { kRemoveModel(unit, model); }
+
+ModelHang HangVisualModel(char* visual, std::int32_t model, std::int32_t bone) {
+  if (visual == nullptr) {
+    return ModelHang::kRetry;
+  }
+  VisualHolder holder;
+  holder.visual = visual;
+  return HangUnitModel(reinterpret_cast<char*>(&holder), model, bone);
+}
+
+bool VisualHasModel(char* visual, std::int32_t model) {
+  VisualHolder holder;
+  holder.visual = visual;
+  return visual != nullptr && kHasModel(reinterpret_cast<const char*>(&holder), model);
+}
+
+void RemoveVisualModel(char* visual, std::int32_t model) {
+  if (visual != nullptr) {
+    VisualHolder holder;
+    holder.visual = visual;
+    kRemoveModel(reinterpret_cast<char*>(&holder), model);
+  }
+}
 
 }  // namespace uhc
 ```

@@ -1,31 +1,42 @@
 """Gives Wars of Liberty's Chasseur a Cheval a second stance, Dismounted: the rider gets off on the horse's left
-side, fights on foot beside it with the infantry's own animations, and mounts again; no DLL key is needed.
+side, fights on foot with the infantry's own animations (the horse hidden, or kept beside him), and mounts again;
+no DLL key is needed.
 
-    python apply_fix.py <WoL folder>              apply (a backup of every file it changes goes to
+    python apply_fix.py <WoL folder> [--horse hide|keep] [--test]
+                                                  apply (a backup of every file it changes goes to
                                                   <WoL folder>\\dismount-backup\\ first)
     python apply_fix.py <WoL folder> --restore    put the backed-up files back and delete the files it added
     python apply_fix.py <WoL folder> --check      say what is applied, change nothing
     (a folder under steamapps is refused unless --force is given)
 
+--horse hide (the default): the horse is drawn while the rider gets off and on, and not while he is on foot.
+--horse keep: the horse stays beside him on foot.
+--test: also a TEST unit, ChasseuraChevalDismountTest (a copy of the Chasseur with a build and a heal action on
+foot), to see those animations in a test copy of the game. Not for a release: WoL's Chasseur builds and heals
+nothing.
+
 What it changes (README.txt has the why and the recipe for another unit):
 - data\\tactics\\wolChasseurDismount.tactics (new, made from the folder's own musketCavalry.tactics): the same
-  actions and tactics, plus the actions DismountedRangedAttack and DismountedHandAttack (copies of
-  DefendRangedAttack and MeleeHandAttack with the animations on foot), a tactic "Dismounted" (speed x0.67) and a
-  transition from every mounted tactic to it (animation Dismount, 2 s) and back (Mount, 2 s);
-- data\\protoy.xml: ChasseuraCheval uses that file and gets the ProtoActions DismountedRangedAttack and
-  DismountedHandAttack (copies of its DefendRangedAttack and MeleeHandAttack) and the buttons DismountStance and
-  MountStance on its command row (page 10, the first free columns);
+  actions and tactics, plus the actions DismountedRangedAttack, DismountedHandAttack and DismountedBuildingAttack
+  (copies of DefendRangedAttack, MeleeHandAttack and BuildingAttack with the animations on foot), a tactic
+  "Dismounted" (speed x0.67) and a transition from every mounted tactic to it (animation Dismount, 2.5 s; 3.5 s
+  with the horse hidden, the rider then stepping to the unit's centre) and back (Mount, the same); with --test, the file's Build and Heal actions are active and in the stance on foot only;
+- data\\protoy.xml: ChasseuraCheval uses that file and gets the ProtoActions of the three new attacks (copies of
+  its own) and the buttons DismountStance and MountStance on its command row (page 10, the first free columns);
+  with --test, the unit ChasseuraChevalDismountTest;
 - data\\protounitcommands.xml: those buttons, unitSetTactic("Dismounted") and unitSetTactic("Stagger");
 - data\\uhc\\customprotounitcommands.xml: their names, which the game must know to keep the buttons (DLL key
   customProtoUnitCommands);
-- data\\techtreey.xml: every effect on DefendRangedAttack or MeleeHandAttack gets a twin on the new action, so
-  upgrades and cards reach the attacks on foot too;
+- data\\techtreey.xml: every effect on DefendRangedAttack, MeleeHandAttack or BuildingAttack gets a twin on the
+  new action, so upgrades and cards reach the attacks on foot too;
 - data\\battle.xml: the squad mode CavalryDismounted (the stance button) for AbstractWoLRangedCavalry;
 - data\\stringtabley.xml and translations\\_originals\\stringtabley.xml: the tooltips (IDs 690911, 690912);
 - art\\WoL\\units\\cavalry\\chasseur_a_cheval\\chasseur_a_cheval_horse.xml and chasseur_a_cheval_rider.xml: the
-  animations Dismounted_* (idle, bored, walk, jog, run, attack, reload, melee, death), Dismount and Mount;
+  animations Dismounted_* (idle, bored, walk, jog, run, attack, reload, melee, death, raze idle and attack),
+  Dismount and Mount; with the horse hidden, the clips chasseur_hidden_* (the rider on the unit's centre on foot)
+  and chasseur_horse_hidden_* (the horse under the ground while he is on foot);
 - art\\WoL\\units\\cavalry\\chasseur_a_cheval\\dismount\\*.gr2 (new): the rider's animations and the horse clips
-  that go with them (made with aoe3-blender-tools' tools/make_dismount.py).
+  that go with them, the ones the chosen blocks name (made with aoe3-blender-tools' tools/make_dismount.py).
 """
 import json
 import pathlib
@@ -44,10 +55,35 @@ TACTICS = "wolChasseurDismount.tactics"
 MOUNTED = ["Stagger", "Defend", "Melee"]
 STANCE = "Dismounted"
 SPEED = "0.67"
+# the transitions' <length>, as long as their animations: hidden, the rider also steps between the horse's side and
+# the unit's centre (make_dismount.py's step_length, 1 s)
+LENGTH = {"keep": "2.5", "hide": "3.5"}
 ART = "art/WoL/units/cavalry/chasseur_a_cheval"
 HORSE_XML = ART + "/chasseur_a_cheval_horse.xml"
 RIDER_XML = ART + "/chasseur_a_cheval_rider.xml"
-ACTIONS = {"DefendRangedAttack": "DismountedRangedAttack", "MeleeHandAttack": "DismountedHandAttack"}
+# mounted action -> (action on foot, its animations); each has a ProtoAction on the unit, copied, and tech twins
+ACTIONS = {
+    "DefendRangedAttack": ("DismountedRangedAttack", {"anim": "Dismounted_Attack", "reloadanim": "Dismounted_Reload",
+                                                      "idleanim": "Dismounted_Idle"}),
+    "MeleeHandAttack": ("DismountedHandAttack", {"anim": "Dismounted_Melee", "idleanim": "Dismounted_Idle"}),
+    "BuildingAttack": ("DismountedBuildingAttack", {"anim": "Dismounted_Raze_attack",
+                                                    "idleanim": "Dismounted_Raze_idle"}),
+}
+PRIORITY = {"DismountedRangedAttack": 100, "DismountedHandAttack": 90, "DismountedBuildingAttack": 75}
+# --test only: the Build and Heal actions of the tactics file (which the Chasseur has no ProtoAction for) are made
+# active and are in the stance on foot only; the test unit gets the ProtoActions. Measured in game (2026-11-22):
+# copies named DismountedHeal / DismountedBuild never healed or built, and with <anim>Dismounted_Heal / _Build the
+# unit healed and built in its idle pose; the anim files' Heal and Build (files\anims-*-test*.xml) are what plays.
+TEST_ACTIONS = {"Build": {}, "Heal": {}}
+TEST_UNIT = "ChasseuraChevalDismountTest"
+TEST_PROTO_ACTIONS = ("\t\t<ProtoAction>\r\n\t\t\t<Name>Build</Name>\r\n"
+                      "\t\t\t<Rate type=\"Building\">1.000000</Rate>\r\n\t\t</ProtoAction>\r\n"
+                      "\t\t<ProtoAction>\r\n\t\t\t<Name>Heal</Name>\r\n\t\t\t<Type>Heal</Type>\r\n"
+                      "\t\t\t<Rate type=\"LogicalTypeHealed\">20.000000</Rate>\r\n\t\t</ProtoAction>\r\n"
+                      # heals damaged units nearby on its own, as the Surgeon has the flag; a house in its build list,
+                      # so a trigger (trUnitBuildUnit) can have it place and build one
+                      "\t\t<Flag>CanAutoHeal</Flag>\r\n"
+                      "\t\t<Train column=\"0\" page=\"6\" row=\"0\">House</Train>\r\n")
 STRING_ID = 690911
 STRINGS = {
     690911: "Dismount: the rider gets off and fights on foot beside his horse. Slower on foot; the same attacks.",
@@ -132,44 +168,61 @@ def block(text, tag, name, what):
     return m
 
 
-def tactics_file(text):
+def action_block(text, name):
+    """The <action> whose <name> is exactly `name` (BuildingAttack is not a Build)."""
+    m = re.search(r"\n\t<action>\s*<name[^>]*>\s*%s\s*</name>.*?\n\t</action>\r?\n" % re.escape(name), text, re.S)
+    if m is None:
+        sys.exit(f"apply_fix: {SOURCE_TACTICS} has no action {name}")
+    return m
+
+
+def tactics_file(text, test=False, horse="hide"):
     """The source tactics with the stance on foot (see the module's note)."""
     if re.search(r"<tactic>\s*%s\b" % STANCE, text):
         sys.exit(f"apply_fix: {SOURCE_TACTICS} has a tactic {STANCE} already")
-    # 1. the two actions on foot, after the last action
+    actions = dict(ACTIONS)
+    # 1. the actions on foot, after the last action: copies with their animations on foot, always active
     new_actions = ""
-    for old, new in ACTIONS.items():
-        a = block(text, "action", old, SOURCE_TACTICS).group(0)
+    for old, (new, anims) in actions.items():
+        a = action_block(text, old).group(0)
         a = re.sub(r"(<name[^>]*>)\s*%s\s*(</name>)" % old, r"\g<1>%s\2" % new, a, count=1)
-        if "Ranged" in old:
-            a = re.sub(r"<anim>[^<]*</anim>", "<anim>Dismounted_Attack</anim>", a, count=1)
-            a = re.sub(r"<reloadanim>[^<]*</reloadanim>", "<reloadanim>Dismounted_Reload</reloadanim>", a, count=1)
-        else:
-            a = re.sub(r"<anim>[^<]*</anim>", "<anim>Dismounted_Melee</anim>", a, count=1)
-        a = re.sub(r"<idleanim>[^<]*</idleanim>", "<idleanim>Dismounted_Idle</idleanim>", a, count=1)
+        for tag, value in anims.items():
+            a = re.sub(r"<%s>[^<]*</%s>" % (tag, tag), f"<{tag}>{value}</{tag}>", a, count=1)
         a = re.sub(r"[ \t]*<active>0</active>\r?\n", "", a)
         new_actions += a.lstrip("\r\n")
     last = list(re.finditer(r"\n\t</action>\r?\n", text))[-1]
     text = text[:last.end()] + new_actions + text[last.end():]
-    # 2. every mounted tactic gets the way to the stance on foot
+    # 1b. --test: Build and Heal play the animations on foot and are active (see TEST_ACTIONS)
+    if test:
+        for name, anims in TEST_ACTIONS.items():
+            m = action_block(text, name)
+            a = m.group(0)
+            for tag, value in anims.items():
+                a = re.sub(r"<%s>[^<]*</%s>" % (tag, tag), f"<{tag}>{value}</{tag}>", a, count=1)
+            a = re.sub(r"[ \t]*<active>0</active>\r?\n", "", a)
+            text = text[:m.start()] + a + text[m.end():]
+    # 2. every mounted tactic gets the way to the stance on foot (and, --test, loses Build and Heal)
     for t in MOUNTED:
         m = block(text, "tactic", t, SOURCE_TACTICS)
         b = m.group(0)
+        if test:
+            b = re.sub(r"(?m)^\t\t<action>\s*(?:%s)\s*</action>\r?\n" % "|".join(TEST_ACTIONS), "", b)
         i = b.index("\t\t<attacktype>") if "\t\t<attacktype>" in b else b.rindex("\t</tactic>")
         trans = (f"\t\t<transition>\n\t\t\t<tactic>{STANCE}</tactic>\n\t\t\t<action>Limber</action>\n\t\t\t<anim>Dismount</anim>\n"
-                 f"\t\t\t<length>2.5</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n")
+                 f"\t\t\t<length>{LENGTH[horse]}</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n")
         text = text[:m.start()] + b[:i] + trans + b[i:] + text[m.end():]
     # 3. the stance on foot, after the last tactic: the name and the first child on one line (a line break after
     #    the name defines the tactic's XS constant twice)
     first = block(text, "tactic", MOUNTED[1], SOURCE_TACTICS).group(0)
-    keep = [line for line in re.findall(r"\t\t<action[^>]*>[^<]*</action>", first)
-            if not any(old in line for old in ACTIONS) and "BuildingAttack" not in line
-            and "JezailRangedAttack" not in line]
+    # the tactic's own actions only (two tabs in), not the <action>Limber</action> of its transitions
+    keep = [line.group(0) for line in re.finditer(r"(?m)^\t\t<action[^>]*>\s*([^<]*?)\s*</action>", first)
+            if line.group(1) not in actions and line.group(1) != "JezailRangedAttack"]
     back = "".join(f"\t\t<transition>\n\t\t\t<tactic>{t}</tactic>\n\t\t\t<action>Limber</action>\n\t\t\t<anim>Mount</anim>\n"
-                   f"\t\t\t<length>2.5</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n" for t in MOUNTED)
-    stance = (f"\t<tactic>{STANCE}\n" + "\n".join(keep) + "\n"
-              f"\t\t<action priority=\"100\">{ACTIONS['DefendRangedAttack']}</action>\n"
-              f"\t\t<action priority=\"90\">{ACTIONS['MeleeHandAttack']}</action>\n"
+                   f"\t\t\t<length>{LENGTH[horse]}</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n" for t in MOUNTED)
+    on_foot = "".join(f"\t\t<action priority=\"{PRIORITY[new]}\">{new}</action>\n" for new, _a in actions.values())
+    if test:
+        on_foot += "".join(f"\t\t<action>{name}</action>\n" for name in TEST_ACTIONS)
+    stance = (f"\t<tactic>{STANCE}\n" + "\n".join(keep) + "\n" + on_foot +
               f"\t\t<speedmodifier>{SPEED}</speedmodifier>\n" + back +
               "\t\t<attacktype>LogicalTypeRangedUnitsAttack</attacktype>\n"
               "\t\t<autoattacktype>LogicalTypeRangedUnitsAutoAttack</autoattacktype>\n"
@@ -198,7 +251,7 @@ def unit_block(text, name):
     return m.start(), text.index("</Unit>", m.end())
 
 
-def edit_proto(text):
+def edit_proto(text, test=False):
     start, end = unit_block(text, UNIT)
     b = text[start:end]
     if TACTICS in b:
@@ -207,7 +260,7 @@ def edit_proto(text):
     if n != 1:
         sys.exit(f"apply_fix: unit {UNIT} has no <Tactics>")
     add = ""
-    for old, new in ACTIONS.items():
+    for old, (new, _anims) in ACTIONS.items():
         m = re.search(r"([ \t]*)<ProtoAction>\s*<Name>%s</Name>.*?</ProtoAction>\r?\n" % old, b, re.S)
         if m is None:
             sys.exit(f"apply_fix: unit {UNIT} has no ProtoAction {old}")
@@ -223,27 +276,63 @@ def edit_proto(text):
                     for c, cmd in zip(free, (DISMOUNT_CMD, MOUNT_CMD)))
     i = b.index("\t\t<Tactics>")
     b = b[:i] + lines + b[i:]
-    return text[:start] + b + text[end:]
+    text = text[:start] + b + text[end:]
+    if test and f'name="{TEST_UNIT}"' not in text:
+        # a TEST copy of the unit with a build and a heal action on foot, after the last unit; a new id
+        ids = [int(x) for x in re.findall(r'<Unit\b[^>]*\bid="(\d+)"', text)]
+        copy_ = re.sub(r'\bid="\d+"', f'id="{max(ids) + 1}"', b, count=1)
+        copy_ = copy_.replace(f'name="{UNIT}"', f'name="{TEST_UNIT}"', 1)
+        i = copy_.rindex("\n") + 1                    # before the line of </Unit>
+        copy_ = copy_[:i] + TEST_PROTO_ACTIONS + copy_[i:] + "</Unit>\r\n"
+        indent = re.match(r"[ \t]*", text[text.rindex("\n", 0, start) + 1:]).group(0)
+        last = text.index("\n", text.rindex("</Unit>")) + 1
+        text = text[:last] + indent + copy_ + text[last:]
+    return text
+
+
+def snippets(horse, test):
+    """The anim blocks to add, per anim file: the horse's for the choice (hidden: its clips on foot keep the horse
+    under the ground), and the test unit's with --test."""
+    hidden = "-hidden" if horse == "hide" else ""
+    return {HORSE_XML: [f"anims-horse{hidden}.xml"] + ([f"anims-horse-test{hidden}.xml"] if test else []),
+            RIDER_XML: [f"anims-rider{hidden}.xml"] + ([f"anims-rider-test{hidden}.xml"] if test else [])}
+
+
+def needed_art(horse, test):
+    """The names (without .gr2) of the files of files\\art the chosen blocks name."""
+    names = set()
+    for parts in snippets(horse, test).values():
+        for s in parts:
+            for f in re.findall(r"<file>([^<]+)</file>", (FILES / s).read_text(encoding="utf-8")):
+                names.add(f.strip().split("\\")[-1].lower())
+    return names
 
 
 def edit_techtree(text):
-    """Every effect on an old action gets a twin on the new one, right after it."""
+    """Every effect on an old action gets a twin on the new one, right after it (on its own line). An effect ends
+    at its own </Effect>, never past the next <Effect> or </Effects>: WoL writes some as `</Effect></Effects>` on
+    one line, and a match that ran on to a later line duplicated whole techs (7 of them, 2026-11-22: the AI then
+    failed to compile, "Error 0172: 'cTechypConsulateBritishBrigade' is not a valid operator")."""
     count = 0
-    for old, new in ACTIONS.items():
-        pat = re.compile(r"([ \t]*)(<Effect\b[^>]*\baction\s*=\s*(['\"])%s\3[^>]*>.*?</Effect>)(\r?\n)" % old, re.S)
+    techs = len(re.findall(r"<Tech\b", text))
+    for old, (new, _anims) in ACTIONS.items():
+        pat = re.compile(r"([ \t]*)(<Effect\b[^>]*?\baction\s*=\s*(['\"])%s\3[^>]*?"
+                         r"(?:/>|>(?:(?!</?Effects?\b).)*?</Effect>))" % old, re.S)
 
         def twin(m):
             nonlocal count
             count += 1
             copy = re.sub(r"(\baction\s*=\s*['\"])%s(['\"])" % old, r"\g<1>%s\2" % new, m.group(2), count=1)
-            return m.group(0) + m.group(1) + copy + m.group(4)
+            return m.group(0) + "\r\n" + m.group(1) + copy
         if f"'{new}'" in text or f'"{new}"' in text:
             continue
         text = pat.sub(twin, text)
+    if len(re.findall(r"<Tech\b", text)) != techs:
+        sys.exit("apply_fix: twinning the tech effects would change the number of techs; nothing changed")
     return text, count
 
 
-def apply(root):
+def apply(root, horse="hide", test=False):
     backup = root / BACKUP
     if (backup / "manifest.json").exists():
         sys.exit(f"apply_fix: already applied ({backup} exists); run --restore first")
@@ -256,9 +345,19 @@ def apply(root):
         if (root / rel).exists():
             sys.exit(f"apply_fix: {root / rel} exists: the game would read it instead of the edited XML")
     # Made and checked before anything is written.
-    tactics = tactics_file((root / "data/tactics" / SOURCE_TACTICS).read_text(encoding="utf-8"))
+    tactics = tactics_file((root / "data/tactics" / SOURCE_TACTICS).read_text(encoding="utf-8"), test, horse)
+    rider_text, _ = read_text(root / RIDER_XML)
+    if not re.search(r"<attachment>\s*torch\b", rider_text):
+        sys.exit(f"apply_fix: {RIDER_XML} defines no attachment torch (the attack on buildings on foot holds it)")
+    needed = needed_art(horse, test)
+    techtree, techtree_enc = read_text(root / "data/techtreey.xml")
+    techtree, twins = edit_techtree(techtree)
+    try:
+        ElementTree.fromstring(techtree.encode("utf-8"))
+    except ElementTree.ParseError as error:
+        sys.exit(f"apply_fix: the edited techtreey.xml would not be valid XML ({error}); nothing changed")
     backup.mkdir()
-    manifest = {"changed": [], "added": []}
+    manifest = {"changed": [], "added": [], "horse": horse, "test": test}
     for rel in CHANGED:
         if (root / rel).exists():
             (backup / rel).parent.mkdir(parents=True, exist_ok=True)
@@ -271,6 +370,8 @@ def apply(root):
     dst.write_bytes(tactics.encode("utf-8"))
     manifest["added"].append("data/tactics/" + TACTICS)
     for src in sorted((FILES / "art").rglob("*.gr2")):
+        if src.stem.lower() not in needed:
+            continue
         rel = src.relative_to(FILES).as_posix()
         if (root / rel).exists():
             sys.exit(f"apply_fix: {root / rel} exists already")
@@ -280,13 +381,10 @@ def apply(root):
 
     path = root / "data/protoy.xml"
     text, enc = read_text(path)
-    write_text(path, edit_proto(text), enc)
+    write_text(path, edit_proto(text, test), enc)
 
-    path = root / "data/techtreey.xml"
-    text, enc = read_text(path)
-    text, n = edit_techtree(text)
-    write_text(path, text, enc)
-    print(f"techtreey.xml: {n} effects twinned")
+    write_text(root / "data/techtreey.xml", techtree, techtree_enc)
+    print(f"techtreey.xml: {twins} effects twinned")
 
     path = root / "data/battle.xml"
     text, enc = read_text(path)
@@ -328,12 +426,12 @@ def apply(root):
             text = text[:i] + f"    <CommandType>{name}</CommandType>\r\n" + text[i:]
     write_text(path, text, enc)
 
-    for rel, snippet in ((HORSE_XML, "anims-horse.xml"), (RIDER_XML, "anims-rider.xml")):
+    for rel, parts in snippets(horse, test).items():
         path = root / rel
         text, enc = read_text(path)
         if "<anim>Dismounted_Idle" in text:
             continue
-        add = crlf((FILES / snippet).read_text(encoding="utf-8"))
+        add = crlf("".join((FILES / s).read_text(encoding="utf-8") for s in parts))
         i = text.rindex("</animfile>")
         text = text[:i] + add + text[i:]
         try:
@@ -368,12 +466,22 @@ def check(root):
     start, end = unit_block(text, UNIT)
     print(f"{UNIT}: {'applied' if TACTICS in text[start:end] else 'not applied'}")
     print(f"data/tactics/{TACTICS}: {'present' if (root / 'data/tactics' / TACTICS).exists() else 'missing'}")
+    manifest = root / BACKUP / "manifest.json"
+    if manifest.exists():
+        m = json.loads(manifest.read_text(encoding="utf-8"))
+        print(f"horse on foot: {m.get('horse', 'keep')}; test unit {TEST_UNIT}: {'yes' if m.get('test') else 'no'}")
 
 
 def main():
     if len(sys.argv) < 2:
         sys.exit(__doc__)
     root = pathlib.Path(sys.argv[1])
+    horse = "hide"
+    if "--horse" in sys.argv:
+        i = sys.argv.index("--horse")
+        horse = sys.argv[i + 1] if i + 1 < len(sys.argv) else ""
+        if horse not in ("hide", "keep"):
+            sys.exit("apply_fix: --horse takes hide or keep")
     if "steamapps" in str(root).lower() and "--force" not in sys.argv:
         sys.exit("apply_fix: this is a Steam folder; work on a copy, or add --force to change it anyway")
     if "--restore" in sys.argv:
@@ -381,7 +489,7 @@ def main():
     elif "--check" in sys.argv:
         check(root)
     else:
-        apply(root)
+        apply(root, horse, "--test" in sys.argv)
 
 
 if __name__ == "__main__":

@@ -129,6 +129,12 @@ void Line(const wchar_t* format, ...) {
 
 int AgeIndex(std::int32_t age) { return age < 0 ? 0 : (age >= kAges ? kAges - 1 : age); }
 
+// The name of an age index 0..4 in the log: Age I..Age V.
+const wchar_t* AgeName(int index) {
+  static const wchar_t* const kNames[kAges] = {L"I", L"II", L"III", L"IV", L"V"};
+  return kNames[AgeIndex(index)];
+}
+
 // --- Units and players --------------------------------------------------------------------------------------
 
 char* UnitById(const char* world, std::int32_t id) {
@@ -419,26 +425,20 @@ std::string Attribute(const char* node, const char* name) {
   return text == nullptr ? std::string() : std::string(text);
 }
 
-bool ParseAge(const char* text, const char** end, long* age) {
-  char* stop = nullptr;
-  *age = std::strtol(text, &stop, 10);
-  *end = stop;
-  return stop != text && *age >= 1 && *age <= kAges;
-}
-
-// age="N" or age="N-M": 1..5 (Age I to V), N <= M.
+// age="N": one age, 0..4 (Age I to V, the scale of a card's <age> and of cAge1..cAge5); age="NM": two digits, the
+// ages N to M, N <= M (age="13": Ages II to IV). Out: the first and last age, 1..5 (Age I to V), as packed.
 bool ParseAgeRange(const std::string& text, long* first, long* last) {
-  const char* end = nullptr;
-  if (!ParseAge(text.c_str(), &end, first)) {
+  const std::size_t n = text.size();
+  if (n < 1 || n > 2) {
     return false;
   }
-  if (*end == 0) {
-    *last = *first;
-    return true;
+  for (const char c : text) {
+    if (c < '0' || c > static_cast<char>('0' + kAges - 1)) {
+      return false;
+    }
   }
-  if (*end != '-' || !ParseAge(end + 1, &end, last) || *end != 0) {
-    return false;
-  }
+  *first = text[0] - '0' + 1;
+  *last = text[n - 1] - '0' + 1;
   return *first <= *last;
 }
 
@@ -460,8 +460,9 @@ bool ParseEffect(void* db, char* effect, const char* node) {
     long first = 0;
     long last = 0;
     if (!ParseAgeRange(age, &first, &last)) {
-      Line(L"shipmentCounts: age=\"%hs\" is not an age 1 to %d (Age I to V) or a range such as 2-4; effect dropped",
-           age.c_str(), kAges);
+      Line(L"shipmentCounts: age=\"%hs\" is not an age 0 to %d (Age I to V) or two of them for a range, first <= last, "
+           L"with no hyphen (13: Ages II to IV); effect dropped",
+           age.c_str(), kAges - 1);
       return false;
     }
     packed |= static_cast<std::uint32_t>(first) << kFirstAgeShift;
@@ -479,7 +480,7 @@ bool ParseEffect(void* db, char* effect, const char* node) {
 std::int32_t RunEffect(char* player, std::int32_t* field, float* amount) {
   const auto packed = static_cast<std::uint32_t>(*field);
   const std::int32_t proto = static_cast<std::int32_t>(packed & kProtoMask);
-  const int first = static_cast<int>((packed >> kFirstAgeShift) & 0x7);  // 0: every age, 1..5: Age I..V
+  const int first = static_cast<int>((packed >> kFirstAgeShift) & 0x7);  // 0: every age, 1..5: Age I..V (age="0".."4")
   const int last = first == 0 ? kAges : static_cast<int>((packed >> kLastAgeShift) & 0x7);
   const int lo = first == 0 ? 0 : first - 1;
   const int hi = last - 1;
@@ -492,13 +493,13 @@ std::int32_t RunEffect(char* player, std::int32_t* field, float* amount) {
   }
   const float units = *amount * static_cast<float>(count);
   if (g_log) {
-    wchar_t ages[32];
+    wchar_t ages[48];
     if (first == 0) {
       wcscpy_s(ages, L"every age");
     } else if (first == last) {
-      swprintf_s(ages, L"age %d", first);
+      swprintf_s(ages, L"age=\"%d\" (Age %ls)", lo, AgeName(lo));
     } else {
-      swprintf_s(ages, L"ages %d-%d", first, last);
+      swprintf_s(ages, L"age=\"%d%d\" (Ages %ls to %ls)", lo, hi, AgeName(lo), AgeName(hi));
     }
     Line(L"shipmentCounts: player %d, FreeHomeCityUnitByShipmentCount proto %d, %ls: %d shipment(s)%ls x %.2f = "
          L"%.2f unit(s)",
@@ -548,9 +549,9 @@ void __stdcall UhcShipBegin(const char* entry, const char* player, const char* h
     const char* def = entry == nullptr ? nullptr : Field<const char*>(entry, 0x00);
     const std::int32_t tech = def == nullptr ? -1 : Field<std::int32_t>(def, 0x00);
     const std::int32_t now = AgeIndex(Field<std::int32_t>(player, kPlayerAge));
-    Line(L"shipmentCounts: player %d ships tech %d (%ls), a card of age %d%ls, in age %d", g_shipPlayer, tech,
-         TechName(tech), g_shipAge + 1,
-         card == -1 ? L" (it has no <age>)" : (card < -1 ? L" (its card was not found)" : L""), now + 1);
+    Line(L"shipmentCounts: player %d ships tech %d (%ls), a card of Age %ls%ls, in Age %ls", g_shipPlayer, tech,
+         TechName(tech), AgeName(g_shipAge),
+         card == -1 ? L" (it has no <age>)" : (card < -1 ? L" (its card was not found)" : L""), AgeName(now));
   }
 }
 

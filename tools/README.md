@@ -19,13 +19,15 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | `make_avatar_table.py` | `make_avatar_table.py <WoL folder> [--out <file>]` writes the avatar table of `playerIcon` (default `<WoL>\data\avatar_wol.xml`) from pictures WoL already ships: its player avatars `art\spec\avatars\*.ddt` (ID: the file name in lower case) and the `cpai_avatar_*` portrait of each public civ in `civs.xml` (ID: `civ_<name>`). A missing texture (not loose, not in `art\*.bar`) is skipped; prints the IDs; copies no art and changes nothing else in the WoL folder; refuses to overwrite a table it did not write. Its output stays out of git. |
 | `sharedlimit_testdata.py` | `<bed> [--restore]`: a real `OutpostWagon` at the Town Center and a team's `ypGoat` limit in a WoL bed, for `sharedBuildLimit`. |
 | `monastery_testdata.py` | `<bed> [--model\|--ai\|--restore]`: `UhcMonastery` and `UhcSmallMine` in a WoL bed, for `linkedResource`; buildable with a monastery's model, and an AI rule that builds one. |
-| `torp_testdata.py` | `<bed> [--restore]`: the Torp's auras on `WOLSawmill` in a WoL bed, a panel row and two test techs, for `unitResourceAuras`. |
+| `torp_testdata.py` | `<bed> [--restore]`: the Torp's auras on `WOLSawmill` in a WoL bed, one `UnitResource` aura per resource, each with its marker (mine, bush, hunt, sheep, cow as fish, Mill, and the Trade, XP and Fame crates for export, xp and oil), a panel row and two test techs, for `unitResourceAuras`. |
+| `ring_testdata.py` | `<bed> [--restore]`: display-only auras (Damage x1.0) on the Explorer in a WoL bed, one aura ring per proto (gold, rof, work, damage, heal, speed and the damage and HP anti-rings) on Settlers, Skirmishers, Grenzers, Jaegers, Hussars, a Town Center, a Barracks and a House, to see every ring and size. |
 | `grant_testdata.py` | `<bed> [--restore]`: grant tags on the `Market` in a WoL bed (interval 20, cap 3, cost 0, scope `self`) and four test techs of 300 wood on its buttons, for `researchGrants`. |
 | [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, timed trigger effects, console commands, units, log, screenshots, videos. |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
 | [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
 | [`mapsweep.py`](#mapsweeppy) | Plays every random map of a test copy for 30 s of game time and writes a CSV row per run: ok, crash (code, EIP, module), hang, XS error or timeout. Resumable; shards for parallel copies. |
+| [`clicksweep.py`](#clicksweeppy) | Plays a skirmish and clicks every kind of unit (select, double click, right click with own units), a Trading Post built first so trade units exist, with the crash watch on. |
 | [`mapstarts.py`](#mapstartspy) | Generates one random map many times in the editor (players × seeds, about 10 s a run) and lists the players the map left with no Town Center and no units. |
 | [`mapfacts.py`](#mapfactspy) | Reads every random map script of a copy (read only) and writes a table of its facts for the map descriptions: trade route, natives, hunt, herd, mines, berries, fish, whales, outlaws, region, King of the Hill; `--check` compares them with the units `mapsweep.py` saw. |
 | [`kothcheck.py`](#kothcheckpy) | Generates random maps in a test copy's editor in a real King of the Hill game (it writes the GameKOTH setting in memory) and writes a CSV row per map: the hill, its distance to every Town Center by team, a minimap crop with the hill marked; also the normal map unchanged and whether every player's units reach the hill. |
@@ -367,6 +369,47 @@ Rules list; the setup shot in `<evidence>/shots/` shows what was set. The seed g
 configuration in the route column (`skirmish:<label>`), so one CSV can hold the same map, players and
 seed with other AIs or modes. Isolated profiles (`testbed.py profile isolate`) make the skirmish
 route safe beside other copies.
+
+`--difficulty N` writes the AI difficulty (0 Sandbox to 4 Expert) and `--set name=value` any other
+setting of the profile's `RandomMapGameSettings` before the skirmish, e.g. `--set gamecampaignshownhcnote=true`:
+setting 37h, which WoL's `uhc.dll` reads as the lobby's Observer mode box (`rmIsObserverMode`), so an observer
+map can be played in a single-player skirmish (2026-11-22, #81).
+
+## clicksweep.py
+
+```
+python -I tools/clicksweep.py --bed <copy> --out <dir> --map <file> [--players 6] [--teams | --ffa]
+       [--ai wolOtto,...] [--difficulty 3] [--minutes 12] [--per-proto 3] [--label TEXT]
+       [--no-trading-post] [--no-debugger]
+```
+
+Clicks every kind of unit of a skirmish as a player would, with the crash watch attached (made for the "NEW"
+Levant crash hunt, #78, where players reported crashes "after or when clicking on trade units or guardians").
+It uses `mapsweep.py`'s skirmish route (profile, home cities and AI personalities backed up and restored), reveals
+the map (`fog()`, `blackmap()`), builds a Trading Post on the socket nearest player 1's Town Center (a villager in
+build mode, `tis("TradingPost")`, a posted click; its villagers gather wood first when it is short), puts player 1's
+villagers and explorer in number group 8, then clicks in passes until `--minutes` of game time: per unit the camera
+on it (`uiLookAtUnit`), a posted left click (select), a posted double click and `uiDoubleClickSelect(0)`, then group 8
+and a posted right click on it (gather, attack, garrison, trade, build); about 2 s a unit. A pass takes every unit
+whose proto looks special (trade, camel, caravan, nugget, guard, socket, native, wagon, Trading Post, village, merc)
+and up to `--per-proto` of each other proto and player (trees and props 2), specials and the others interleaved, the
+others round robin over player and proto. Writes `<tag>.clicks.csv`,
+`<tag>.summary.json` (result, clicks per proto and player, XS errors, the crash report) and shots. A copy with
+`multipleInstances background` and an isolated profile runs it beside other copies. Posted clicks reach the
+game's world in a background copy: a posted left click selected a Trading Post site, a posted right click sent
+villagers to gather (2026-11-22).
+
+`--no-console --map-size <metres>` runs the same clicks with no engine-ext DLL (the control with only the mod's own
+`UHC.dll`): the game starts with `+noIntroCinematics +DontPauseWhenLosingFocus`, the map is revealed by the setup
+(`gamemapvisibility` 1, Revealed; fog stays), and the camera moves by a posted click on the minimized UI's
+minimap (`PlainRun`: centre 213.9, 930.8 and radius 189.5 at 1920 x 1080 for a map of side S, the square turned by
+45 degrees; measured on six Town Centers). Player 1's explorer is clicked before each right click. Not yet run
+to the end (2026-11-22).
+
+`re/trace_frees.py <prefix>` (set `UHC_GAME_DIR`): a crash watch that also logs every model unload of the game's
+model cache (with the file name), every reload of a loaded model and the model instances freed, and at a crash
+writes `<prefix>.crash.json` with the registers and stack words that match a freed pointer and the last unloads
+(#78). Run `clicksweep.py --no-debugger` beside it, since one process takes one debugger.
 
 ## mapstarts.py
 

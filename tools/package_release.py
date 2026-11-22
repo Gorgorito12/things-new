@@ -201,7 +201,10 @@ art\\effects\\uhc_rings holds coloured rings that show which units an aura is wo
 are data: copy that folder to the game's art\\effects and name one in an aura, with
 <modelattachment>effects\\uhc_rings\\ring_gold.xml</modelattachment> and
 <modelattachmentbone>bonethatdoesntexist</modelattachmentbone>. Every player needs the folder.
-aura_wood.xml, aura_food.xml and aura_gold.xml add a floating icon, for gathering auras.
+aura_<name>.xml adds a floating icon, for gathering auras (gold, wood, food, hunt, berry, farm, fish,
+export, xp, oil, work). The colours: wood, food, gold, work (work rate), export, xp, oil, damage, rof
+(rate of fire), hp (max hit points), heal and speed. displayedRange shows range_<metres>.xml, a line in
+the owner's colour. These rings are the defaults: an aura with a model of its own keeps it.
 veterancyBonus shows rank_1.xml to rank_5.xml over a unit with a rank when the folder is there.
 art\\ui\\uhc\\health_overheal.ddt is the orange end of the HP bar under the portrait, which
 overhealHitpointBars segment shows for units above their 100 %: copy it to the game's art\\ui\\uhc
@@ -281,8 +284,8 @@ techPrereqRecheck [N] [log]   <TypeCount> tech prerequisites react when units ar
                               created or die, not only at the next house or age-up
 orPrereqsQty [log]            <Flag qty="N">OrPrereqs</Flag>: a tech needs N of its
                               prerequisites instead of one
-ageFiveShipments              cards of <age>4</age> (Imperial Age) in the deck, in the Age IV row,
-                              sendable in the Imperial Age
+ageFiveShipments              cards of <age>4</age> (Imperial Age) in the deck, at the right end of
+                              the Age IV row, sendable in the Imperial Age
 shipmentCounts [log]          cards shipped per player and card age, kept in saved games; Data
                               subtype FreeHomeCityUnitByShipmentCount, XS
                               xsGetShipmentCount and xsGetShipmentCountRange
@@ -292,6 +295,8 @@ maintainWaitForPop [UnitType] [log]  marked buildings keep a finished auto-produ
 transformUpdatesLOS [log]     units transformed by a tech or revolution get the new LOS
 broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles per side (stock 6);
                               <NumberProjectiles> P: P shots per side over the muzzles
+broadsideSoundSet [log]       a BroadsideAttack action's <BroadsideSoundSet> sound set at each
+                              shot instead of ShipCannonShoot (rocket ships)
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
 displayedRange [log]          a selected unit shows a ring per ranged attack while Alt is held
 steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit
@@ -316,6 +321,8 @@ startingTC [UnitType] [log]   marked buildings count as a player's first town ce
 civFirstTC [log]              a civ's <firstTC> in civs.xml replaces the TownCenter maps
                               place for its players (not Nomad); it is their FirstTC
 firstTC [UnitType] [log]      civFirstTC, and startingTC when a type is named, in one line
+scenarioCivs [log]            data\\scenariocivs.xml: more civs after civs.xml, for scenarios
+                              and campaigns, not in the skirmish list, in the editor's
 transformInventory [all] [scale] [UnitType] [log]   units transformed by a tech get the
                               resources (InitialResource) of their new proto
 noTrainNearEnemyTC M [UnitType] [near UnitType]... [nowarn | warn=Text] [refuse] [log]   marked units
@@ -346,7 +353,8 @@ autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather act
 containedUnitsROF [log]       ScaleByContainedUnits target="ROF": an attack fires faster with
                               the units inside (ROF / count, at most DamageFactorCap)
 numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart before the
-                              reload, aiming between them; projectiles: <NumberProjectiles> per shot
+                              reload, the firing pose kept between them (<BurstPose>);
+                              projectiles: <NumberProjectiles> per shot
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
 auraStacking [log]            <ForbidUnitType> on any aura
@@ -387,6 +395,7 @@ autoScout [Tactic [Return]] [noAvoid] [noBack] [log]  units in that tactic explo
                               away from enemy towers, backing off when hit; an order switches it off
 autoGatherFrom [log]          a unit idle for a few seconds gathers from what its gather action's
                               <AutogatherFrom> names, if one is within the action's range
+buildingGather [log]          a building with a Gather action gathers from what is within its range
 herdWalkAwayFix [log]         a fattened herdable that walks away from its pen or nomad stays there
 transformChecks [log]         transform buttons grey out with the reason; a transform respects BuildLimit
 lanAutoStart [host [rules=N] | join <address>]   from the main menu straight to hosting or joining

@@ -1584,6 +1584,8 @@ def record(path, seconds=30.0, fps=10, width=1280, overlay=None, crop=None, mast
     proc = process()
     game_start = game_time(proc) if proc else None
     t0 = time.perf_counter()
+    # The wall clock of the first frame, to line up a sound track recorded beside it (a loopback capture).
+    print(f"testbed: capture began at {time.time():.3f}", flush=True)
     try:
         while written < total:
             delay = t0 + written / fps - time.perf_counter()

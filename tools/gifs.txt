@@ -9,11 +9,15 @@ basePop-wol 2 8 2
 basePop-wol-control 2 8 2
 betterfreedynamicunit-wol 2 22 2
 betterfreedynamicunit-wol-control 2 22 2
+buildingGather-wol 30 36 3
+buildingGather-wol-control 30 36 3
 buildingRotation-wol 6 12 1
 broadsideMuzzleLimit-wol 18 24 2
 broadsideMuzzleLimit-wol-control 18 24 2
 broadsideMuzzleLimit-ability-wol 4 14 2
 broadsideMuzzleLimit-ability-wol-control 4 14 2
+broadsideSoundSet-wol 0 12 1
+broadsideSoundSet-wol-control 0 12 1
 buildingWorkRateAuras-wol 2 36 2
 buildingWorkRateAuras-wol-control 2 36 2
 civFirstTC-wol 2 16 2
@@ -32,6 +36,8 @@ damageOverTime-wol 4 20 2
 damageOverTime-wol-control 4 20 2
 danceBonusCivs-wol 2 40 3
 danceBonusCivs-wol-control 2 40 3
+deadReplacementAtZeroInventory-crate-wol 3 22 2
+deadReplacementAtZeroInventory-crate-wol-control 3 22 2
 decimalPopulation-wol 2 40 3
 decimalPopulation-wol-control 2 40 3
 dodge-wol 3 30 2
@@ -177,6 +183,10 @@ unitResourceAuras-torp-wol 4 12 1
 unitResourceAuras-torp-wol-control 4 12 1
 displayedRange-wol 3 36 3
 displayedRange-wol-control 5 33 3
+displayedRange-wol-ally 2 12 1
+displayedRange-wol-enemy 1 18 1.5
+displayedRange-wol-placement 2 24 2
+displayedRange-wol-placement-control 2 16 2
 linkedResource-wol 2 12 1
 linkedResource-wol-control 2 12 1
 linkedResource-model-wol 4 84 7
@@ -261,9 +271,11 @@ directionalAttack-wol 3 22 2
 directionalAttack-wol-control 3 22 2
 inventoryBars-wol 8 32 3 480:320:280:230
 inventoryBars-wol-control 8 32 3 480:320:280:230
-numberOfShots-wol 4 12 1
+numberOfShots-wol 0 12 1
 numberOfShots-wol-control 4 12 1
 numberOfShots-before-wol 4 12 1
+numberOfShots-idle-wol 4 12 1
+numberOfShots-sarbaz-wol 0 12 1
 numberOfShots-projectiles-wol 9 12 1
 numberOfShots-projectiles-wol-control 9 12 1
 ageUpBuildings-wol 1 12 2
@@ -271,10 +283,12 @@ ageUpBuildings-wol-control 1 12 1
 useBigHugeButton-wol 3 12 1
 orPrereqsQty-wol 2 24 2
 orPrereqsQty-wol-control 0 24 2
-shipmentCounts-wol 30 90 8
+shipmentCounts-wol 18 70 8
 shipmentCounts-wol-control 30 90 8
-shipmentCounts-reward-wol 6 20 2
+shipmentCounts-reward-wol 20 24 2
 shipmentCounts-reward-wol-control 2 20 2
+ageFiveShipments-wol 0 24 2
+ageFiveShipments-wol-control 0 16 2
 kothTimer-wol 4 24 2
 kothTimer-wol-control 4 24 2
 politicianPlacesFix-wol 4 12 1
@@ -299,7 +313,7 @@ researchOnTheMove-wol 0 20 2 800:80:0:0+800:480:700:200+800:80:1120:850
 researchOnTheMove-wol-control 0 20 2 800:80:0:0+800:480:700:200+800:80:1120:850
 truckAttackResourceFix-wol 0 24 2
 truckAttackResourceFix-wol-control 0 24 2
-paraguayanWorks-smoke-wol 4 84 7
+paraguayanWorks-smoke-wol 4 120 10
 paraguayanWorks-smoke-wol-steady 4 84 7
 paraguayanWorks-smoke-wol-control 4 36 3
 paraguayanWorks-damage-wol 32 24 2
@@ -308,8 +322,8 @@ paraguayanWorks-collapse-wol 62 4 0.5
 paraguayanWorks-collapse-wol-control 67 4 0.5
 shipTechLimit-wol 2 36 3 800:70:0:375+800:240:480:480
 shipTechLimit-wol-control 3 30 3 800:240:480:320
-transformChecks-wol 4.5 12 1 800:640:560:290+800:175:1110:945
-transformChecks-wol-control 2 12 1 800:640:560:290+800:175:1110:945
+transformChecks-wol 6 42 3.5 800:640:560:290+800:175:1040:945
+transformChecks-wol-control 6 42 3.5 800:640:560:290+800:175:1040:945
 autoScout-back-wol 8 24 2
 autoScout-back-wol-control 8 24 2
 autoGatherFrom-wol 8 24 2
@@ -333,3 +347,11 @@ editorSearch-forbid-wol-control 1 16 2 800:920:0:0
 dismount-wol 0 24 2
 dismount-wol-control 0 24 2
 dismount-transitions-wol 0 20 1.6
+dismount-hidden-wol 0 22 2
+dismount-hidden-wol-control 0 18 2
+dismount-hidden-transitions-wol 0 19 1.6
+dismount-hidden-torch-wol 0 22 2
+dismount-hidden-heal-build-test-wol 2 24 2
+auraRings-pack-wol 2 18 1.5
+auraRings-pack-units-wol 2 12 1 1160:653:600:280
+auraRings-pack-wol-control 2 18 1.5
