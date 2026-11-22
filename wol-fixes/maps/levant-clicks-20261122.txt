@@ -1,0 +1,141 @@
+"NEW" Levant: clicking everything, 6 and 8 players (2026-11-22)
+================================================================
+
+JTMaston (2026-11-22): "try to make a player or all players click on anything clickable on the map; some maps
+used to crash after or when clicking on trade units or guardians; do it with 6+ players".
+
+Short answer
+------------
+We made the game crash: 3 times in 6 games on "NEW" Levant with 6 and 8 players, while one player clicked every
+kind of unit (trade caravans, trade route sockets, guardians, treasures, native villages, animals, buildings, other
+players' units), after 9 to 13 minutes and 170 to 250 clicks. The two other maps tested the same way ("NEW" Iranian
+Plateau and "NEW" Ferghana, 6 players) did not crash, nor did 3 of the Levant games (6 players in teams, 8 players
+free for all, and a second 6-player free for all).
+
+The crashes are in Granny, the game's library for 3D models and animations, which is handed model or animation
+data that is no longer valid:
+  - twice at age3y.exe+0xC07C, while a model is drawn: the game asks Granny for the model's skeleton and gets
+    nothing (0) or a garbage address;
+  - once inside granny2.dll+0x3A02A, called by the game's unit update (age3y.exe 0x4B6F1F,
+    GrannyFindTrackGroupForModel): looking a model up in an animation that points to freed memory.
+So the same kind of fault shows at two places: a model or an animation that the game had loaded is gone (freed, or
+replaced in memory) while units still use it. We have not yet found which model or animation, nor why it goes; see
+"The crash in detail".
+
+This fits what your players report: it happens in big games, after some minutes, around the moment of a click. In
+our tests a click moves the camera to a unit somewhere on the map and selects it, so new models and animations get
+loaded all the time. The last units clicked before each crash: a Gaia unit near the native villages (crash 1), a
+player's JavaneseLabourer with player 1's villagers ordered onto it (crash 2), and the Sufi village temple
+(ypNativeTempleSufi, the third Sufi temple clicked in a row; crash 3). Two of the three are next to the Bhakti and
+Sufi villages, but this is not proven to be the cause.
+
+What this means for you
+-----------------------
+- It is not the map script, the AI or the trigger code: the map generates and plays, no XS error was logged; the
+  game falls inside the model and animation code.
+- We did not see it in the 11 games of yesterday (no clicking, the camera at home), which fits.
+- It is not our own test DLL's display statistics: crash 3 happened with them switched off.
+- Levant is the map where it showed; with only 2 games on each other map that is not proof the other maps are
+  safe.
+- Next step on our side: our crash watch now writes the name of the model when the drawing crash happens again, and
+  the click tool writes the unit at hand before each click; with the name, the model file can be checked with the
+  game's own Granny library (aoe3-blender-tools' gr2_check.py). If you have a crash log (Age3Log.txt) or a dump from
+  a player, the model or animation named last in it would help.
+
+
+How it was tested
+-----------------
+- A copy of WoL 1.0.15c with WoL's own uhc.dll (c070d138, the one players have) and our dinput8.dll beside it, only
+  to drive the game with no mouse (console commands from a file, a window that stays in the background) and to log
+  XS errors. Single player skirmishes, English text, the copy's own profile. The fixed RM4\NEWLevant.xs of
+  2026-11-21 (levant\RM4\), which places a Town Center for every player.
+- A debugger watched every game for a crash (tools\re\debugger.py crash: any unhandled exception is written down
+  with its address, registers and stack, then the game ends as it would have).
+- The human player is player 1 (Dutch, idle apart from the clicks). The AIs are European: Otto, Victoria, Isabel,
+  Alexander and Carlos (6 players), plus Oscar and Frederick (8 players, teams), or Maria Theresa, Leopold, Victor
+  Emmanuel, Theodoros, Carol, Petar and Ferdinand (8 players, free for all); Hard, or Expert once.
+- The whole map was revealed (console fog() and blackmap()), so that every unit is drawn and can be clicked.
+- The clicks (tools\clicksweep.py), for each unit in turn: the camera on it, a left click on it (select), a double
+  click on it (select all of its kind on screen), then player 1's explorer and villagers selected and a right click
+  on it (the order a player gives: gather, attack, garrison, trade, build...). The mouse messages are the ones a
+  real mouse sends to the game window, posted to the window. Each pass takes first every trade unit, trade route
+  socket, Trading Post, guardian, treasure, native village and wagon, then up to 3 units of every other kind per
+  player (trees and props 2), over every player, Gaia included; passes repeat until 12-13 minutes of game time.
+- Player 1 also tried to build a Trading Post on a free socket; it never had the wood in time (the AIs took the
+  sockets near it first), so the Trading Posts clicked were the AIs'.
+
+  map              players  mode, AI level                 result                            game time  clicks (special)
+  "NEW" Levant     6        3v3 teams, Hard                ok                                12.5 min   105 (65)
+  "NEW" Levant     6        free for all, Hard             CRASH age3y.exe+0xC07C            ~10.8 min  200 (94)
+  "NEW" Levant     8        4v4 teams, Expert              CRASH age3y.exe+0xC07C            ~9.5 min   172 (86)
+  "NEW" Levant     8        free for all, Hard             ok                                13.5 min   259 (143)
+  "NEW" Levant     6        free for all, Hard (again)     ok                                13.5 min   251 (137)
+  "NEW" Levant     6        free for all, Hard, without    CRASH granny2.dll+0x3A02A         ~13.0 min  254 (123)
+                            our display statistics
+  "NEW" Iranian    6        3v3 teams, Hard                ok                                13.5 min   244 (126)
+    Plateau
+  "NEW" Ferghana   6        3v3 teams, Hard                ok                                13.6 min   254 (137)
+
+  "special" = trade units and sockets, Trading Posts, guardians, treasures, native villages, wagons. The first run
+  clicked more slowly (4 s a unit; 2 s from the second on). In total 1,739 clicks in 8 games.
+
+
+What was clicked (all runs)
+---------------------------
+Each unit was selected, double-clicked, and right-clicked with player 1's villagers and explorer (counts are
+units, each with all three clicks):
+  guardians (GuardianCapusuz, GuardianJelali, GuardianMulhid ...)    329
+  native villages, their buildings and people (Bhakti, Sufi ...)     256
+  treasures (nuggets, robber camps, kidnap, wagons)                  194
+  animals (nilgai, wild elephants, goats, hyenas, leopards ...)      181
+  mines and trees                                                     160
+  villagers of every player                                           158
+  Town Centers and other buildings of every player                    137
+  other Gaia units                                                    107
+  other players' units (military, wagons, mercenaries)                 80
+  trade route sockets                                                  55
+  explorers and heroes                                                 48
+  trade caravans (TRADECamel, TRADECameleer)                           27
+  the AIs' Trading Posts                                                7
+
+
+The crash in detail (for whoever can debug it)
+----------------------------------------------
+  EIP 0x40C07C (age3y.exe+0xC07C), access violation (read); the same address in every crash.
+  Crashes 1 and 2: EIP 0x40C07C (age3y.exe+0xC07C), access violation (read). The function (0x40C022) takes the
+  visual's entry in the game's model cache (global 0xC67318, entry index at [visual+18h]), then calls
+  GrannyGetSourceSkeleton([visual+24h], the model instance) and reads the skeleton's bone count at
+  [skeleton+4]. The call returned 0 (crash 1: read of address 4) or a garbage pointer (crash 2: read of
+  0xC05529A7): the model instance points at model data that is gone. The stack holds the per-model draw
+  (0x44EA4B) and the frame's draw (0x451446).
+  Crash 3: EIP granny2.dll+0x3A02A, read of 0xA103CF84, in GrannyFindTrackGroupForModel called at 0x4B6F1F with
+  the animation of a cache entry ([entry+8], its track groups at +50h) and the model's name: the animation data is
+  gone. The stack holds the world update (0x481E07, 0x482049).
+  Crash 1: 6 players free for all, Hard, about 10.8 minutes, after 200 clicks; the last unit looked at was a Gaia
+  unit (ID 254, kind not recorded by that version of the tool), next in line after the Bhakti village's props.
+  Crash 2: 8 players in two teams, Expert, about 9.5 minutes, after 172 clicks; it fell just after player 1's
+  villagers were ordered onto a JavaneseLabourer of its own.
+  Crash 3: 6 players free for all, Hard, about 13 minutes, after 254 clicks; the last unit was a Sufi village
+  temple (ypNativeTempleSufi), the third clicked in a row.
+  Read with REA (evidence in our repository, rea/evidence/levant-clicks-20261122/): the cache's loader frees a
+  Granny file only on its own error path (0x46E8D4) and frees its vertex section after upload (0x46D297); who
+  frees or replaces the data these units still use was not found. [Inference] a model or animation is unloaded
+  or reloaded while visuals keep pointers into it; loading many models (a revealed 6-8 player map, the camera
+  jumping) makes it more likely. Not established: which file, and whether memory runs short at that moment.
+
+
+Not tested
+----------
+Multiplayer; our King of the Hill version of Levant; a human civ other than Dutch; games longer than 13 minutes;
+the same clicks with WoL's uhc.dll alone (our dinput8.dll is needed to drive the game with no mouse; with its
+display statistics off the game still crashed); the original NEWLevant.xs (we used the fixed one, which only
+changes the Town Center placement); a game with the map not revealed (we revealed it so every unit could be
+clicked: that makes the game draw more of the map than a player normally would).
+
+Questions
+---------
+1. Do your players' crashes show "age3y.exe" with offset 0000c07c, or "granny2.dll" with offset 0003a02a, in the
+   Windows crash report (Event Viewer > Windows Logs > Application, "Application Error")? That would confirm it is
+   this crash.
+2. Do they happen in games with many players (6 to 8), after several minutes? Near native villages?
+3. Can you send an Age3Log.txt from right after such a crash?
