@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Sunday 2026-11-22 11:56 | [`scenarioCivs`](#scenariocivs) | Added. Reads a second civ file, `data\scenariocivs.xml`, after `civs.xml`: its civs come after the others (no ID moves), show in the scenario editor's list and not in the skirmish and lobby lists. | The file, with `<civ>` elements in `civs.xml`'s format. |
 | Saturday 2026-11-21 16:01 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Saturday 2026-11-21 15:50 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Saturday 2026-11-21 15:50 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
@@ -2101,6 +2102,8 @@ crates come to the Market, and a card's workers arrive there. [Full video (MP4)]
 #### scenarioCivs
 
 *A second civ file for the civs of scenarios and campaigns: they show in the scenario editor, not in the skirmish lists.*
+
+**Added:** Sunday 2026-11-22 11:56
 
 ```
 scenarioCivs [log]
