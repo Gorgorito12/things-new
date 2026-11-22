@@ -2814,7 +2814,7 @@ Attacks, armor, and what a hit does.
 | [`containedUnitsROF`](#containedunitsrof) | An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | **new** | The attribute on the attacks that want it (none has it today). | confirmed |
 | [`numberOfShots`](#numberofshots) | An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, keeping its firing pose between them (`<BurstPose>`), before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | **new** | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. | confirmed (single player) |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
-| [`broadsideSoundSet`](#broadsidesoundset) | A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | **new** | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). | confirmed (single player, from the log) |
+| [`broadsideSoundSet`](#broadsidesoundset) | A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | **new** | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). | confirmed (single player) |
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | **new** | The type on the protos that want it. | confirmed |
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
 | [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
@@ -4108,12 +4108,12 @@ cannons, one after another, and the log shows the 15 slots per side. [Full video
 attacks for `RangedAttackRocket` and `BroadsideAttackRocket`, both tagged `<BroadsideSoundSet>DERocketShoot</BroadsideSoundSet>`
 in `frigate.tactics`, test data; against player 2's 2 cannon Frigates, on water):* each rocket volley logs
 `fires: sound set DERocketShoot` (bottom). **The GIF has no sound: the MP4 has it**, the rocket shots of player 1 and the cannon
-shots of player 2. [Full video with sound (MP4)](media/broadsideSoundSet-wol.mp4).
+shots of player 2 (confirmed by listening: the rockets and the cannon sound different). [Full video with sound (MP4)](media/broadsideSoundSet-wol.mp4).
 
 ![broadsideSoundSet in WoL, key off](media/broadsideSoundSet-wol-control.gif)
 
-*In WoL, key off (the same scene and data):* the rockets fly as before, but every shot plays `ShipCannonShoot`. The GIF has no
-sound. [Full video with sound (MP4)](media/broadsideSoundSet-wol-control.mp4).
+*In WoL, key off (the same scene and data):* the rockets fly as before, but every shot plays `ShipCannonShoot` (confirmed by
+listening). The GIF has no sound. [Full video with sound (MP4)](media/broadsideSoundSet-wol-control.mp4).
 
 ```
 broadsideSoundSet [log]
@@ -4156,7 +4156,7 @@ broadsideSoundSet [log]
 - **Tested in WoL (2026-11-22, single player, `C:\AoE3-UHC-WoLReal7`):** the videos above: player 1's rocket Frigates logged
   `DERocketShoot` for their shots, player 2's cannon Frigates (untagged) played `ShipCannonShoot`. The bad names above: both
   lines logged, the cannon ships kept firing with `ShipCannonShoot`, no crash. The sound was recorded from the speakers'
-  loopback beside the video; it is in the MP4s to be listened to (the recording was not checked by ear here). Not tested:
+  loopback beside the video and checked by listening: rockets with the key, cannon in the control. Not tested:
   multiplayer, the `PowerBroadside` ability (same fire step, so the same hook), a game beside WoL's DLL.
 
 #### cantBeSlowed
