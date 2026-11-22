@@ -1,0 +1,230 @@
+Reply to JTMaston, round of 2026-11-22 (answers to the comments posted on 2026-11-22)
+=====================================================================================
+
+Every item below was tested in single player in a copy of WoL and filmed with a control where it shows on
+screen. The guide sections and the request rows (docs/wol-requests.md) have the details and the videos.
+
+
+#76 shipmentCounts: age syntax
+------------------------------
+Done. `age` now takes one digit from 0 to 4, the same numbers as a card's <age> and the XS cAge1..cAge5
+(0 = Age I, 4 = Age V), or two digits with no hyphen for a range, first age then last: age='13' is National
+to Industrial, age='04' every age. The old forms ('2-4', '5') are now refused with a log line, so please
+rewrite existing effects ('2' becomes '1', '2-4' becomes '13').
+
+About the note on uiDeleteSelectedUnit(): that is the command behind the Delete key. Typed into the console it
+crashes the stock game, with or without our DLL, because it first reads the in-game interface, which a console
+call does not set up. It has nothing to do with shipmentCounts; our test needed a unit removed, so we deleted
+it with an AI rule instead.
+
+
+#83 Age V shipments in the fourth row
+-------------------------------------
+Done. In the Age IV row the Age IV cards stay at the left and the Age V cards line up at the right end, with
+empty slots between them. This works in the in-game shipment panel, in Build a Deck and in the in-game
+"Select a Deck" chooser. Every card's rollover, a send, and a removal in Build a Deck act on the card shown.
+If Age IV and Age V cards together are more than 11, the Age V cards keep the right side and the last Age IV
+cards are not shown (as the game already does with a twelfth card), so we suggest keeping Age IV + Age V at
+11 or fewer per deck. Pictures are in wol-fixes/age5-shipments.
+Question: is that the priority you want when a row is full, or should the Age IV cards win?
+
+
+#73 Special transforms: the distance text
+-----------------------------------------
+Done: the tooltips now say "(within a range of 20)". If the pack is already applied in a folder, run
+apply_fix.py --restore and apply it again to get the new text.
+Question: the map descriptions also give distances in metres (e.g. "within 65 m"); should those use the same
+wording?
+
+
+#69 Paraguayan works: smoke off 1.5 times the on time
+-----------------------------------------------------
+Done: the works' chimneys now pause 1.5 times as long as they puff. A pause is 14 to 28 s (21 s on average)
+and a puff 8 to 20 s (14 s on average), so each chimney smokes about 40 % of the time. A works with two
+chimneys has at least one smoking about two thirds of the time, and an age 3 works about four fifths. Only
+works_smoke.particle (and its .xmb) changed (dormanttime 21). Measured in game: one chimney over seven minutes
+puffed 8-23 s (13.9 s on average) and paused 13-26 s (20.1 s on average). If you want it lighter still, raise
+dormanttime; keep dormanttime x (1 - dormanttimevar) at 12 s or more, so a pause always outlasts the smoke.
+
+
+#79 Middle East herdables: 6 instead of 3
+-----------------------------------------
+Done: the nomads' typed range is 6 now. Herdables gather about 6 m from the nomad's edge (7.4 m centre to
+centre), follow it when it walks, fatten, and walk away to 9-13 m, where they stay, with or without
+herdWalkAwayFix in our test (keep it on anyway). apply_fix.py --check shows the distance; if you applied the
+3 m version, run --restore and then apply again.
+Question: is 6 right for all six nomads, and should the CattleFatteningAura stay?
+
+
+#77 Dead replacement: the cow's coin crate
+------------------------------------------
+Tested the cow with <DeadReplacement>CrateofCoin</DeadReplacement>. The crate appears where the cow lay once
+its body is eaten (without the key, at the kill), holds its own 100 gold (the crate's InitialResource, not the
+cow's food), and villagers gather it to the end. It belongs to Gaia, the same as without the key, because the
+body is Gaia's when the game places it. That doesn't stop your villagers gathering it, but any player's
+villagers could take it.
+Question: do you want the crate to belong to the player who owned the cow? That would be a small change.
+
+
+#80 Ranged gathering with buildings
+-----------------------------------
+Buildings can gather now, with a new key, buildingGather. The game never started a building's gather: a Gather
+action only begins gathering once the unit has walked to its target, and a building never walks, so it waited
+for ever. With the key on, a building whose Gather action has the target within range gathers straight into
+your stockpile at the action's rate, and drops the order if the target is out of range. Two things in the
+data: a Gather action in the building's tactics, and a <CarryCapacity> in its proto for each resource it
+gathers (any amount, because the game refuses a gatherer without one). Add
+<AutogatherFrom delay="3">AbstractMine</AutogatherFrom> to the action and the building starts on its own when
+idle. Tested with a Market on a mine, a berry bush, a tree and coin crates (three in a row), out of range,
+save/load, and against the AI.
+Questions:
+1. A right-click with a building selected still sets its gather point, so the ways to start it are the tag, a
+   trigger, or XS. Is that enough, or do you want a command button?
+2. A building only gathers what its player can see, and a Market sees little, so a crate 12 m from its centre
+   was ignored until something revealed it. Should a gathering building ignore fog of war, or will you raise
+   its LOS?
+3. A building gathers wood from a standing tree without cutting it. Is that what you want, or should trees be
+   excluded?
+4. Which buildings and targets do you have in mind? We'd test with your real data.
+
+
+#87 numberOfShots: no idle between the shots of a burst
+-------------------------------------------------------
+Thanks, you were right. The "rifle back to idle" came from our previous fix: between quick shots it played the
+action's <idleanim>, and for WoL's ranged infantry that is Volley_standing_idle, the rifle at rest. Now a new
+action tag <BurstPose> decides what the unit shows between the shots of a burst. hold is the default: the end
+of the attack animation is stretched to fill the interval, so the soldier keeps his rifle at the shoulder from
+shot to shot, with no idle and no reload. idle and reload keep the two older behaviours for actions where you
+want them. Shot timing is unchanged (0.40 / 0.67 s inside a burst, then the ROF). New videos: the Skirmisher
+and the Persian Sarbaz.
+Question: each shot still plays the very start of the attack animation (about 40 ms at a 0.4 s interval), as
+the stock attack does. Is that acceptable, or should we look at skipping the raise for the 2nd and later
+shots?
+
+
+#96 Warship fire sound (new request)
+------------------------------------
+Done with a new key, broadsideSoundSet. You remembered right: the exe hardcodes "ShipCannonShoot" for every
+broadside shot of every ship. Your British rocket ships are Frigates whose broadside actions the HCRocketShips
+card swaps (RangedAttackRocket / BroadsideAttackRocket in frigate.tactics), so the sound goes on the action:
+add <BroadsideSoundSet>DERocketShoot</BroadsideSoundSet> (or RocketShoot) to those two actions, after their
+<name>. Untagged actions keep the cannon sound, and a sound set name that does not exist is logged and falls
+back to the cannon. Checked by ear: rockets with the tag, cannon in the control. The MP4s have sound; the GIFs
+do not.
+Questions: should both rocket actions use DERocketShoot, or RocketShoot? Do you want the same for the ability
+broadsides (PowerBroadside), which already go through the same code if their action has the tag?
+
+
+#84 Dismount: hiding the horse
+------------------------------
+The horse can now be hidden, and you choose that per unit (hide or keep in make_dismount's recipe, or --horse
+in the pack). With hide, the horse is there while the rider gets off and back on and is gone while he is on
+foot. On foot the rider stands at the unit's centre, on his selection circle and under his HP bar. When he
+dismounts he takes a short step from the horse's side to the centre once the horse is gone, and when he mounts
+he steps back before the horse reappears, so each transition is 3.5 s. With keep, the horse stays beside him.
+Tested in game with the horse hidden: both transitions, standing and walking, volley fire, bayonet, a new torch
+attack against buildings on foot, deaths on foot, a game saved and loaded while dismounted, and the AI still
+plays. A test-only copy of the Chasseur also heals and builds on foot, and both animations play (the game
+always uses the anim names Heal and Build for those actions, whatever the action's own <anim> says). We also
+fixed a bug in the pack's script that had copied 7 techs by mistake and broke the AI's compile.
+Questions:
+1. The horse appears and disappears instantly, like the stock artillery's limber. Fine, or would you like
+   something to cover it, such as a dust puff?
+2. Should hidden be the default for the Chasseur, and which other units should get the stance, each with keep
+   or hide?
+
+
+#92 displayedRange: your four questions
+---------------------------------------
+1. Player colour: done with alpha, as you suggested. The range ring is now a flat ring mesh, so its shape comes
+   from the geometry and the texture's alpha marks player colour the way unit textures do. The rings take the
+   owner's colour: yours, an ally's or an enemy's, and your own colour on a building you are placing.
+2. Yes: select an enemy's or an ally's unit and hold Alt, and you see its rings, with the same tags as your own
+   units. A unit under fog shows none.
+3. Done: while you place a building with a ranged attack, its ghost shows a ring for each ranged attack (no tag
+   needed). The rings follow the ghost and go away when you place or cancel. The option noPlacement turns it
+   off.
+4. No lag: Alt on 108 selected ranged units costs nothing measurable, because we draw at most 4 rings per unit
+   and 60 in total. Without that cap, 138 rings cost about 1.2 ms per frame and cover the screen, so the cap
+   stays.
+
+
+Aura rings
+----------
+They now use the Indian (Karni Mata) aura's own texture in our colours: wood copper, gold orange-gold, food
+red, work rate cyan, export lime, XP violet, oil black, damage magenta, rate of fire lemon, max HP rose, heal
+over time white, speed blue. There are also "anti" rings with inward teeth for negative auras
+(ring_damage_neg.xml, ring_rof_neg.xml, ring_hp_neg.xml, ring_heal_neg.xml, ring_speed_neg.xml). They keep
+their colours with a Town Center in the scene, which the old recolour did not. Civs with their own aura model
+keep it; these are the defaults when nothing has more personality. They are in wol-fixes/aura-rings with an
+install note.
+
+
+#93 The marker of a gathered resource
+-------------------------------------
+Done with the new icons: the pickaxe (without the nugget), the axe, meat for food, hunts and herds, berries, a
+hoe for farms, fish, and new markers for export (ship), XP (leaves) and oil (drop), each with its own ring
+colour. A gathering aura pays whatever resource its target holds, and crates of Trade (export), XP and Fame
+(oil) tested fine.
+Question: your ProspectedOil holds XP 800, not Fame. Is that intended, or should oil wells pay Oil (Fame)?
+
+
+#95 Scenario civ file (new request)
+-----------------------------------
+Done as a new key, scenarioCivs. Put the scenario and campaign civs in data\scenariocivs.xml, in the same format
+as civs.xml (<civs> with <civ> entries only). The game reads it right after civs.xml and adds its civs at the
+end of the list, so no existing civ ID changes. These civs never appear in the skirmish or lobby civ lists, and
+they do appear in the scenario editor's Player Data civ list. Tested: a scenario with two such civs loaded and
+played, a saved game reloaded, the AI compiles.
+Questions:
+1. Scenarios store a player's civ as a number. A scenario civ moves up by one each time civs.xml gets a new civ,
+   and such a scenario must always be played with the key and the file. Is that acceptable, or should we add a
+   way to pin these IDs?
+2. Should the file also accept civs.xml's other top-level settings (for example <subcivalliancecost>), or only
+   <civ> entries as now?
+3. Do you want the campaign's hidden civs (Tripoli, Farrapos, and so on) moved from civs.xml into this file?
+
+
+#81 Observer UI
+---------------
+We built step 1 and fixed the icons. A script (wol-fixes/observer/observer_maps.py) repairs the 36 maps with
+ESOC's panel: the switch now reads the Observer box, the name clash with wolai.upl's kbGetTechID is gone, and
+the panel's tables now look units and techs up by name. ESOC wrote them with the original game's numbers, and
+none of WoL's techs keep those numbers; that was your "icons not correlating with the actual units/techs".
+Tech icons now match what was researched, and villagers count as economic instead of military. With the box
+unticked the maps play as before. Still to do: oil, the Great War age, civ flags, WoL's own units in the unit
+rows. For all maps: the ESOC maps already size the map for the real players only; other maps need either a
+small change in each map plus the panel as an include (193 maps already use WoL's trigger loader), or a DLL
+that hides observers from the map script, which every player would need. The UI files for 720p-4K are listed
+in the README.
+Questions:
+1. Should the repaired 36 maps go into your next patch? The script must be re-run whenever techtreey.xml
+   changes; we can do it for you.
+2. Which WoL units should the unit rows show per group? And is reusing ESOC's panel on every map fine with its
+   authors?
+3. For the other 177 maps: a per-map change written by script, or a DLL?
+4. ESOC's panel supports 1v1, 2v2 and 3v3 with observers in the last slots. Is that enough?
+5. Is this resolution list right: 1280x720, 1366x768, 1600x900, 1920x1080, 1920x1200, 2560x1080, 2560x1440,
+   3440x1440, 3840x2160? The new ones also have to be added to WoL's uhc.dll's list; can you do that, or should
+   the file swap move to another DLL?
+
+
+#78 Levant: clicking everything with 6+ players
+-----------------------------------------------
+We did what you asked: one player clicked every kind of unit (trade caravans, trade sockets, guardians,
+treasures, native villages, animals, buildings, other players' units) in 6- and 8-player games, with a crash
+watcher. We made the game crash 4 times on "NEW" Levant, after 9 to 13 minutes; there was no crash on "NEW"
+Iranian Plateau or "NEW" Ferghana. All crashes are in the 3D model and animation code (Granny): a model the
+game had loaded is gone while a unit still uses it.
+What we found so far: the game keeps its loaded models under a fixed 30 MB budget and, while over it, unloads
+the least recently used model every frame. WoL's art keeps it over that budget the whole game (584 unloads in
+9.4 minutes in one test), and big games make it worse; the last crash came one second after 8 models were
+unloaded. A smaller second source: a model whose part declaration names a bone that doesn't exist is reloaded
+while in use (6 times in one game; we have not named that model yet). The likely fix is to raise or remove the
+budget (a key, or a 4-byte patch in the exe); we will test it in the next round, together with a run with only
+your uhc.dll, and name the model with the bad bone.
+Questions:
+1. Do your players' crash reports (Event Viewer > Application > "Application Error") show age3y.exe at offset
+   0000c07c or 0000cc7b, or granny2.dll at offset 0003a02a?
+2. Do the crashes happen in big games (6-8 players) after several minutes, near native villages?
+3. Could you send an Age3Log.txt from right after such a crash?
