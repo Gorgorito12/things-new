@@ -13,11 +13,18 @@
 // animation and waits the ROF: N - 1 quick shots, then a normal one and its reload. The count belongs to the unit
 // action, which a new target replaces, so a new target starts a new burst.
 //
-// No reload between the burst's shots: an attack with a <reloadanim> plays its attack animation, then the reload
-// animation (started by FUN_004976CB once the attack animation has played), the two together paced to last the cycle
-// (0x4A11C2..0x4A120A adds the reload's length). After a shot that does not end its burst the reload hook
-// (hooks/shots_hooks.asm, 0x4976CB) runs that function on the action's idle animation instead, the aiming pose, so the
-// unit aims until its next shot; the states and the timing stay the stock ones. Only the burst's last shot reloads.
+// Between the burst's shots (<BurstPose>, per action): an attack with a <reloadanim> plays its attack animation, then the
+// reload animation (started by FUN_004976CB once the attack animation has played), the two together paced to last the
+// cycle (0x4A11C2..0x4A120A adds the reload's length), and the next cycle begins when that animation ends.
+// - "hold" (the default): at a quick shot (the after-shot ROF read, the attack animation's Attack tag) the rest of the
+//   attack animation is slowed so that it ends kHoldLeadMs before the cycle's wait; then the reload hook
+//   (hooks/shots_hooks.asm, 0x4976CB) runs that function on the attack animation itself, which is still shown, so it
+//   is not restarted and only paced over the lead, and marks [ua+70h] as no longer shown, as after a stock reload start.
+//   The unit keeps the attack animation's last pose, its aim, until its next shot.
+// - "idle": the reload hook runs the function on the action's idle animation instead (2026-11-21).
+// - "reload": the stock reload, squeezed into the interval.
+// The shot times stay the stock ones within a few ms: the animations still end where the waits do. Only the burst's last
+// shot reloads, and an attack without a reload animation is left alone (the stock idle state between its shots).
 //
 // The projectiles: a jmp over the launch call at 0x48F88D (hooks/shots_hooks.asm) calls the launch N times with
 // the same four arguments; each projectile rolls its own accuracy and spread and deals the action's damage.
@@ -97,10 +104,14 @@ struct ActionKey {
   auto operator<=>(const ActionKey&) const = default;
 };
 
+// What the unit shows between two shots of a burst (<BurstPose>); the values are what the reload hook expects.
+enum class Pose : std::int32_t { kReload = 0, kIdle = 1, kHold = 2 };
+
 struct Entry {
   std::int32_t shots = 1;
   std::int32_t intervalMs = kDefaultIntervalMs;
   std::int32_t projectiles = 1;
+  Pose pose = Pose::kHold;
   unsigned shotLines = 0;  // "log": shots logged for this action
 };
 
@@ -115,6 +126,7 @@ unsigned g_invalidLines = 0;
 unsigned g_shotLines = 0;
 unsigned g_reloadLines = 0;
 constexpr unsigned kMaxReloadLines = 6;
+unsigned g_holdLines = 0;  // "log": the first hold lines
 
 std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::RofRead read);
 
@@ -142,6 +154,7 @@ void ResetForDataLoad(char*) {
   g_invalidLines = 0;
   g_shotLines = 0;
   g_reloadLines = 0;
+  g_holdLines = 0;
 }
 
 const Entry* Find(const char* unitAction, const char** unitOut) {
@@ -161,6 +174,46 @@ const Entry* Find(const char* unitAction, const char** unitOut) {
   return &found->second;
 }
 
+using AnimLengthFn = float(__thiscall*)(const char* unit);  // 0x4939BD: the length of the unit's current animation, s
+const auto kAnimLength = reinterpret_cast<AnimLengthFn>(0x004939BD);
+constexpr std::int32_t kHoldLeadMs = 30;  // the attack's tail ends this long before the wait
+constexpr std::int32_t kMinLeadMs = 10;   // the reload start's animation ends at least this soon
+
+// "hold", at a quick shot (the attack animation's Attack tag): the rest of the attack animation is slowed so that it
+// ends kHoldLeadMs before the cycle's wait does, instead of ending early in the cycle and leaving the unit to the
+// reload slot's animation for the rest of it. The unit keeps the attack animation's tail, its firing pose.
+void StretchTail(const char* unitAction, const char* unit, std::int32_t intervalMs) {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const char* visual = unit == nullptr ? nullptr : Field<const char*>(unit, 0x60);
+  const char* playing = visual == nullptr ? nullptr : Field<const char*>(visual, 0x00);
+  // Only an attack with a reload animation ([ua+84h], whose start the reload hook handles), while the unit shows its
+  // attack animation ([[unit+60h]]+14h, as 0x482771 reads it, against [ua+7Ch]).
+  if (world == nullptr || playing == nullptr || Field<std::int32_t>(unitAction, 0x84) < 0 ||
+      Field<std::int32_t>(playing, 0x14) != Field<std::int32_t>(unitAction, 0x7C)) {
+    return;
+  }
+  const std::int32_t now = Field<std::int32_t>(world, 0x108);
+  const std::int32_t elapsed = now - Field<std::int32_t>(unitAction, 0x78);
+  const float rate = Field<float>(unit, 0xB0);
+  const float lengthMs = kAnimLength(unit) * 1000.0f;
+  const float left = lengthMs - static_cast<float>(elapsed) * rate;
+  const std::int32_t target = intervalMs - kHoldLeadMs - elapsed;
+  if (!(rate > 0.0f) || !(left > 0.0f) || target <= 0) {
+    return;
+  }
+  const float slow = left / static_cast<float>(target);
+  if (slow < rate) {
+    *reinterpret_cast<float*>(const_cast<char*>(unit) + 0xB0) = slow;
+  }
+  if (g_log && g_holdLines < 12) {
+    ++g_holdLines;
+    uhc::Log(L"numberOfShots: hold, unit %d at %d ms: %d ms into the cycle, animation %.0f ms at rate %.3f, %.0f ms "
+             L"left -> rate %.3f over %d ms",
+             Field<std::int32_t>(unit, 0x10), now, elapsed, lengthMs, rate, left, slow, target);
+  }
+}
+
 // From the shared ROF reads: the attack-start and after-shot reads of an action with a burst.
 std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::RofRead read) {
   if (read != uhc::RofRead::kAttackStart && read != uhc::RofRead::kAfterShot) {
@@ -175,6 +228,9 @@ std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::R
   const std::int32_t inBurst = count < 0 ? 0 : count % entry->shots;
   const bool quick = read == uhc::RofRead::kAttackStart ? inBurst < entry->shots - 1 : inBurst != 0;
   const std::int32_t result = quick ? entry->intervalMs : rof;
+  if (quick && read == uhc::RofRead::kAfterShot && entry->pose == Pose::kHold) {
+    StretchTail(unitAction, unit, result);
+  }
   if (g_log && read == uhc::RofRead::kAfterShot && g_shotLines < kMaxShotLines &&
       entry->shotLines < 4u * static_cast<unsigned>(entry->shots)) {
     ++g_shotLines;
@@ -224,10 +280,35 @@ bool ParseSeconds(const wchar_t* text, std::int32_t* outMs) {
   return true;
 }
 
+bool ParsePose(const wchar_t* text, std::int32_t* out) {
+  if (text == nullptr) {
+    return false;
+  }
+  while (*text == L' ' || *text == L'\t' || *text == L'\r' || *text == L'\n') {
+    ++text;
+  }
+  std::wstring word(text);
+  while (!word.empty() && (word.back() == L' ' || word.back() == L'\t' || word.back() == L'\r' || word.back() == L'\n')) {
+    word.pop_back();
+  }
+  if (_wcsicmp(word.c_str(), L"hold") == 0) {
+    *out = static_cast<std::int32_t>(Pose::kHold);
+  } else if (_wcsicmp(word.c_str(), L"idle") == 0) {
+    *out = static_cast<std::int32_t>(Pose::kIdle);
+  } else if (_wcsicmp(word.c_str(), L"reload") == 0) {
+    *out = static_cast<std::int32_t>(Pose::kReload);
+  } else {
+    return false;
+  }
+  return true;
+}
+
 void ActionTagRead(const uhc::ActionTag& tag) {
-  enum class Kind { kShots, kInterval, kProjectiles } kind;
+  enum class Kind { kShots, kInterval, kProjectiles, kPose } kind;
   if (_wcsicmp(tag.name, L"NumberOfShots") == 0) {
     kind = Kind::kShots;
+  } else if (_wcsicmp(tag.name, L"BurstPose") == 0) {
+    kind = Kind::kPose;
   } else if (_wcsicmp(tag.name, L"ShotInterval") == 0) {
     kind = Kind::kInterval;
   } else if (_wcsicmp(tag.name, L"NumberProjectiles") == 0 || _wcsicmp(tag.name, L"NumberOfProjectiles") == 0) {
@@ -258,6 +339,9 @@ void ActionTagRead(const uhc::ActionTag& tag) {
     case Kind::kProjectiles:
       valid = ParseInt(text, 1, kMaxProjectiles, &value);
       break;
+    case Kind::kPose:
+      valid = ParsePose(text, &value);
+      break;
   }
   if (!valid) {
     if (g_invalidLines < kMaxInvalidLines) {
@@ -266,6 +350,7 @@ void ActionTagRead(const uhc::ActionTag& tag) {
                ActionName(key.name), source, tag.name, text, tag.name,
                kind == Kind::kInterval      ? L"a number of seconds above 0 and at most 60"
                : kind == Kind::kShots       ? L"a whole number from 1 to 50"
+               : kind == Kind::kPose        ? L"hold, idle or reload"
                                             : L"a whole number from 1 to 32");
     }
     return;
@@ -280,6 +365,9 @@ void ActionTagRead(const uhc::ActionTag& tag) {
       break;
     case Kind::kProjectiles:
       entry.projectiles = value;
+      break;
+    case Kind::kPose:
+      entry.pose = static_cast<Pose>(value);
       break;
   }
   SyncGates();
@@ -306,24 +394,56 @@ bool EnsureReader() {
 
 extern "C" {
 
-// From the reload hook (0x4976CB), while some action has a burst: true after a shot that does not end its burst
-// (the same test as the after-shot ROF read): the idle animation plays instead of the reload.
-bool __stdcall UhcShotsSkipReload(const char* unitAction) {
+// From the reload hook (0x4976CB), while some action has a burst: after a shot that does not end its burst (the same
+// test as the after-shot ROF read), the action's <BurstPose> (2 hold: the attack animation stays, 1 idle: the idle
+// animation, 0 reload: the stock reload); 0 after any other shot.
+std::int32_t __stdcall UhcShotsBurstPose(const char* unitAction) {
   const char* unit = nullptr;
   const Entry* entry = unitAction == nullptr ? nullptr : Find(unitAction, &unit);
   if (entry == nullptr || entry->shots <= 1) {
-    return false;
+    return 0;
   }
   const std::int32_t count = Field<std::int32_t>(unitAction, 0x68);
   if ((count < 0 ? 0 : count % entry->shots) == 0) {
-    return false;
+    return 0;
   }
   if (g_log && g_reloadLines < kMaxReloadLines) {
     ++g_reloadLines;  // its own budget, so the shots' lines still show whole bursts
-    uhc::Log(L"numberOfShots: unit %d (%hs) shot %d of its burst of %d: the idle animation, no reload",
-             Field<std::int32_t>(unit, 0x10), ProtoName(Field<const char*>(unit, 0x5C)), count % entry->shots, entry->shots);
+    uhc::Log(L"numberOfShots: unit %d (%hs) shot %d of its burst of %d: %ls",
+             Field<std::int32_t>(unit, 0x10), ProtoName(Field<const char*>(unit, 0x5C)), count % entry->shots, entry->shots,
+             entry->pose == Pose::kHold   ? L"holds its firing pose, no reload"
+             : entry->pose == Pose::kIdle ? L"the idle animation, no reload"
+                                          : L"the reload animation (BurstPose reload)");
   }
-  return true;
+  return static_cast<std::int32_t>(entry->pose);
+}
+
+// From the reload hook with "hold", after the stock reload start ran in the lead the attack's tail left it: when the
+// unit reached that point late (the lead gone or nearly), the stock start paces the reload animation over a wait of 0
+// (rate 1, the whole animation) or a negative one (read unsigned: it never ends), and the next cycle waits for it.
+// Then the rate that ends it within kMinLeadMs.
+void __stdcall UhcShotsHoldLead(const char* unitAction) {
+  const char* unit = unitAction == nullptr ? nullptr : Field<const char*>(unitAction, 0x10);
+  const char* timer = unit == nullptr ? nullptr : Field<const char*>(unit, 0x58);
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  if (timer == nullptr || world == nullptr || Field<const char*>(unit, 0x60) == nullptr) {
+    return;
+  }
+  const std::int32_t left = Field<std::int32_t>(timer, 0xB8) + Field<std::int32_t>(timer, 0xBC) -
+                            Field<std::int32_t>(world, 0x108);
+  if (left >= kMinLeadMs) {
+    return;
+  }
+  const float lengthMs = kAnimLength(unit) * 1000.0f;
+  if (lengthMs > 0.0f) {
+    *reinterpret_cast<float*>(const_cast<char*>(unit) + 0xB0) = lengthMs / static_cast<float>(kMinLeadMs);
+  }
+  if (g_log && g_holdLines < 24) {
+    ++g_holdLines;
+    uhc::Log(L"numberOfShots: hold, unit %d: the reload start came %d ms before the wait's end; its animation ends "
+             L"within %d ms", Field<std::int32_t>(unit, 0x10), left, kMinLeadMs);
+  }
 }
 
 // From the launch hook (0x48F88D), while some action has projectiles: how many times to call the launch for this
@@ -401,8 +521,8 @@ Outcome ApplyNumberOfShots(const Config& config) {
     return Outcome::kFailed;
   }
   g_combat = true;  // before the data loads, which runs after every key is applied
-  Log(L"numberOfShots: attacks read <NumberOfShots> and <ShotInterval> (default %.2f s), no reload animation between "
-      L"a burst's shots%ls%ls (multiplayer unverified)",
+  Log(L"numberOfShots: attacks read <NumberOfShots>, <ShotInterval> (default %.2f s) and <BurstPose> (default hold: "
+      L"the firing pose between a burst's shots)%ls%ls (multiplayer unverified)",
       kDefaultIntervalMs / 1000.0,
       g_projectiles ? L", and <NumberProjectiles> projectiles per shot" : L"",
       g_log ? L"; tags and the first shots logged" : L"");
