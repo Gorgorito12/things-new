@@ -50,6 +50,7 @@ set(UHC_SOURCES
   src/features/ai.cpp
   src/features/bounty.cpp
   src/features/broadside.cpp
+  src/features/broadsidesound.cpp
   src/features/bwrauras.cpp
   src/features/costescalation.cpp
   src/features/unittypetechs.cpp
@@ -176,6 +177,7 @@ set(UHC_SOURCES
   src/hooks/team_hooks.asm
   src/hooks/unitlist_hooks.asm
   src/hooks/broadside_hooks.asm
+  src/hooks/broadsidesound_hooks.asm
   src/hooks/cheat_hooks.asm
   src/hooks/clothfill_hooks.asm
   src/hooks/lastinline_hooks.asm

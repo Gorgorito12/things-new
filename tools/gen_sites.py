@@ -1417,6 +1417,10 @@ SITES = [
     # inside); and the model index lookup 0x471D24 (mov ecx,[ecx+60h] / test ecx,ecx / je), which the hook calls.
     ("ShotsReloadAnim", 0x4976CB, 9),
     ("ShotsAnimVariant", 0x471D24, 0xB),
+    # broadsideSoundSet: in FUN_004CEB37 (the broadside fire step's effect of one shot), push 0BA1D5Ch (replaced, 5 B)
+    # / add edx,14h (the continuation; no branch lands inside), and the name it pushes, "ShipCannonShoot" with its NUL
+    ("BroadsideSound", 0x4CECBD, 8),
+    ("BroadsideSoundName", 0xBA1D5C, 0x10),
     # unitResourceAuras: the aura update's mov eax,[0C66234h] and the sub esp,10h it continues at
     ("UnitResourceAuraEntry", 0x9D033E, 8),
     # unitResourceAuras, verify only: the aura's scan (thiscall(action, IdList*)), inventory add
