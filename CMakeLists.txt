@@ -64,6 +64,7 @@ set(UHC_SOURCES
   src/features/stealthtarget.cpp
   src/features/autoscout.cpp
   src/features/autogatherfrom.cpp
+  src/features/buildinggather.cpp
   src/features/herdwalkaway.cpp
   src/features/researchmove.cpp
   src/features/transformchecks.cpp
@@ -165,6 +166,7 @@ set(UHC_SOURCES
   src/features/resourcedebt.cpp
   src/hooks/abilityslot_hooks.asm
   src/hooks/actiontag_hooks.asm
+  src/hooks/buildgather_hooks.asm
   src/hooks/ai_hooks.asm
   src/hooks/armor_hooks.asm
   src/hooks/freeunit_hooks.asm

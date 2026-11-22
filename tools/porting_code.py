@@ -118,6 +118,7 @@ PAGES = {
         "resourceDebt": ["src/features/resourcedebt.cpp", "src/hooks/resourcedebt_hooks.asm"],
         "truckAttackResourceFix": ["src/features/truckattack.cpp", "src/hooks/truckattack_hooks.asm"],
         "autoGatherFrom": ["src/features/autogatherfrom.cpp"],
+        "buildingGather": ["src/features/buildinggather.cpp", "src/hooks/buildgather_hooks.asm"],
         "herdWalkAwayFix": ["src/features/herdwalkaway.cpp"],
         "deadReplacementAtZeroInventory": ["src/features/deadreplacement.cpp", "src/hooks/deadrepl_hooks.asm"],
     }),

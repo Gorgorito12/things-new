@@ -16,7 +16,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `scenarioCivs`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `herdWalkAwayFix` | [gathering](porting-code/gathering.md) |
+| Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `buildingGather`, `herdWalkAwayFix` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon`, `autoScout` | [interface](porting-code/interface.md) |
@@ -1352,10 +1352,27 @@ Code: [gathering](porting-code/gathering.md#autogatherfrom). It needs `AddWorldT
 
 - **Sites:** none written. Called functions, verify only: `0x4EFCB2` (the action manager's work order,
   `B8 01 00 00 00 84 05 5C F7 D6 00 56 8B F1`), `0x44F1A7` (idle), `0x4A1C55` (units near a point), `0x44D7FA` (is-a),
-  `0x44DDB4` (built), `0x484D2D` (enemy), `0x4E5979` (held amount), `0x598F37` / `0x402733` (XML attribute).
+  `0x44DDB4` (built), `0x484D2D` (enemy), `0x4E5979` (held amount), `0x598F37` / `0x402733` (XML attribute),
+  `0x48A9EF` (seeable). A building is ordered only while `buildingGather` is on (`g_uhcBuildingGather`).
 - **What it writes:** besides the orders, the leash anchor `[[unit+58h]+7Ch..84h]` of a tagged unit while it gathers.
 - **Test:** a villager with `<AutogatherFrom>AbstractMine</AutogatherFrom>` and `<maxrange>10</maxrange>` in its Gather,
   left idle 6 m from a mine: it mines 3 s later; one without the tag stays idle.
+
+### buildingGather
+
+Code: [gathering](porting-code/gathering.md#buildinggather).
+
+- **Site:** `0x4EC76B`, `3C 0C 0F 84 18 A6 09 00` (`cmp al,0Ch / je 586D8Bh`, the Gather update's exit test), replaced
+  by a jump to the hook, which redoes the compare and continues at `0x586D8B` (state 0Ch) or `0x4EC773` (`pop ebx`...
+  `ret`). On entry AL is the state byte `[esi+61h]` and ESI the action. Verified only: the Gather vtable slots at
+  `0xB978B4` (`+34h` setState `0x4ED249`, `+3Ch` the update `0x4EC4FA`) and the move-done event's tail `0x4EDB4F`.
+  Check that your DLL does not hook the update's exit.
+- **What it writes:** the Gather action's state, through its own setState: 5 for a gatherer with MaxVelocity 0 whose
+  action waits (state 0 or FFh) and whose target passes the gatherer's vtable `+CCh(target, [action+24h])`, 9 when it
+  does not.
+- **Test:** a Market with a Gather action (`<maxrange>15`, `<rate type="AbstractMine">1`) and `<CarryCapacity>` 1 of
+  gold, ordered by a trigger's `Unit Work` to a Mine 12 m from its centre: its player's gold rises 1 a second; without
+  the key nothing happens.
 
 ### herdWalkAwayFix
 

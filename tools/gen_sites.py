@@ -2027,6 +2027,15 @@ SITES = [
     # ret 10h (mov eax,1 / test [0D6F75Ch],al / push esi / mov esi,ecx), the call the stock idle-herdable search
     # 0x4C31EE gives to a pen or magnet within 10 m, and the command execute's unit-order path (0x944D3F, 0x944E0D).
     ("GatherWorkOrder", 0x4EFCB2, 0x0E),
+    # buildingGather: the Gather update 0x4EC4FA (vtable 0xB97880 +3Ch) returns through cmp al,0Ch / je 586D8Bh /
+    # pop ebx / pop edi / pop esi / pop ebp / add esp,0Ch / ret at 0x4EC76B (AL = the state byte [esi+61h], ESI = the
+    # action); the first 8 bytes jump to the hook, which continues at 0x586D8B or 0x4EC773. Verified only: the vtable
+    # slots +34h setState 0x4ED249, +38h, +3Ch the update; setState's head; and the end of the move-done event (9),
+    # whose in-range test (the gatherer's vtable +CCh with the target and [action+24h]) and setState(5) the hook repeats.
+    ("GatherUpdateExit", 0x4EC76B, 0x10),
+    ("GatherVtableSlots", 0xB978B4, 0x0C),
+    ("GatherSetState", 0x4ED249, 0x0B),
+    ("GatherArrivedState", 0x4EDB4F, 0x38),
     # herdWalkAwayFix: the gather tick's walk-away of a full herdable from a pen, the paddy or an
     # AbstractTypeHerdableMagnet target: push 0 / push 40C00000h (6.0f) / push edx (the target's ID) / call 4E3A37h
     # (the flee move, thiscall(mgr, targetId, distance, flag), ret 0Ch). The call at +8 is redirected; the flee's head

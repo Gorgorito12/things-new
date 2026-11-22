@@ -35,6 +35,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Sunday 2026-11-22 12:08 | [`ageFiveShipments`](#agefiveshipments) | Filmed in WoL, with a control. Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown at the right end of the Age IV row (the Age IV cards stay at the left), greyed until the Imperial Age, then sent like the others. | `<age>4</age>` on the cards that want it. |
 | Sunday 2026-11-22 12:08 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Sunday 2026-11-22 12:08 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
+| Sunday 2026-11-22 12:23 | [`buildingGather`](#buildinggather) | Added. A building with a Gather action gathers from a mine, a bush, a tree or a crate within the action's range, straight into its owner's stockpile. | A Gather action in the building's tactics and a `<CarryCapacity>` per resource; `<AutogatherFrom>` for it to start on its own. |
+| Sunday 2026-11-22 12:23 | [`deadReplacementAtZeroInventory`](bug-fixes.md#deadreplacementatzeroinventory) | Filmed in WoL, with a control. A hunt, a herdable or any unit that leaves a body to gather drops its `<DeadReplacement>` when the body is used up, not when it falls. | `<DeadReplacement>` on the protos that want one (none has it today). |
 | Saturday 2026-11-21 16:01 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Saturday 2026-11-21 15:50 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
 | Saturday 2026-11-21 15:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
@@ -48,7 +50,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
 | Saturday 2026-11-21 11:35 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | The tag on the civ in `civs.xml`. |
 | Saturday 2026-11-21 11:31 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
-| Saturday 2026-11-21 11:07 | [`deadReplacementAtZeroInventory`](bug-fixes.md#deadreplacementatzeroinventory) | Added. A hunt, a herdable or any unit that leaves a body to gather drops its `<DeadReplacement>` when the body is used up, not when it falls. | `<DeadReplacement>` on the protos that want one (none has it today). |
 | Saturday 2026-11-21 11:03 | [`auraStacking`](#aurastacking) | Filmed in WoL, with a control. `<ForbidUnitType>` on any aura: the aura leaves units of a type or proto alone; that an aura does not stack is the game's own `<ModifyExclusive>`. | The tags on the aura. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
 | Friday 2026-11-20 15:39 | [`steadyHitpointBars`](bug-fixes.md#steadyhitpointbars) | Filmed in WoL, with a control. The floating HP bars stay at one height over each unit instead of jumping when it attacks, gallops or idles. | Nothing. |
@@ -4962,6 +4963,7 @@ Resources, gatherers, and what pays for them.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`autoGatherFrom`](#autogatherfrom) | A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | **new** | `<AutogatherFrom>` in the gather action of the units that want it. | confirmed (single player) |
+| [`buildingGather`](#buildinggather) | A building with a Gather action gathers from a mine, a bush, a tree or a crate within the action's range, straight into its owner's stockpile. | **new** | A Gather action in the building's tactics and a `<CarryCapacity>` per resource; `<AutogatherFrom>` for it to start on its own. | confirmed (single player) |
 | [`linkedResource`](#linkedresource) | A resource building gathers the stock of a mine beside it. | **new** | The tags on a resource building of your own. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget. | confirmed (single player, UI) |
 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
@@ -5020,16 +5022,18 @@ autoGatherFrom [log]
   in WoL's data: they have hit points, and the villager must cut one down first with `ChopAttack` (`<maxrange>2</maxrange>`);
   with the Hunting action's `<typedmaxrange type="Tree">` raised to 10, the villager stopped 13.8 m away and never
   cut the tree. Raise `ChopAttack`'s range too, or keep trees close.
-- **Buildings do not gather:** a building ordered to gather (a Mill with a Gather action, by a trigger or by this
-  key) gets a Gather action that never starts: it stayed in its waiting state with the target in range (2026-11-21),
-  with or without a `<CarryCapacity>`. That would take a key of its own.
+- **Buildings:** the stock game never starts a building's Gather action (it waits for a walk that never comes). With
+  [`buildingGather`](#buildinggather) on, a building with a Gather action and this tag gathers on its own from what is
+  in its range; without that key, the tag leaves buildings alone. For a building, the range is the gather's own test,
+  which counts the building's size: a Market with `<maxrange>15</maxrange>` gathered a Mine 18 m from its centre.
 - **Effect:** every 500 ms of game time, each unit of a proto with the tag that has been idle for `delay` seconds gets
   the order the game itself gives an idle herdable near a pen: work on the nearest unit of a named type within the
-  range, owned by its player, an ally or Gaia. The game then picks the action and walks the unit as a right-click
-  would. Any order of the player, a fight or a gather in progress is left alone: the key waits until the unit is idle
-  again. A unit that gained nothing from its last order to a target (a fattened herdable, a full gatherer) is not
-  sent there again until what it holds changes. Units inside a building or a ship, and units without an inventory,
-  are skipped.
+  range, owned by its player, an ally or Gaia, that its player can see (the game drops a gather order on a target it
+  cannot see, so such a target is not picked; since 2026-11-22). The game then picks the action and walks the unit as
+  a right-click would. Any order of the player, a fight or a gather in progress is left alone: the key waits until the
+  unit is idle again. A unit that gained nothing from its last order to a target (a fattened herdable, a full gatherer)
+  is not sent there again until what it holds changes; a building is exempt, since what it gathers goes to the
+  stockpile. Units inside a building or a ship, and units without an inventory (a `<CarryCapacity>`), are skipped.
 - **Moving targets:** the game's Gather action follows a target that moves (a nomad, a Llanero): see
   [`herdWalkAwayFix`](bug-fixes.md#herdwalkawayfix) and the pack `wol-fixes/me-herdables`. While a tagged unit
   gathers, its leash anchor follows it, so it does not walk back to where it stood before when it stops.
@@ -5049,7 +5053,86 @@ autoGatherFrom [log]
   before a trigger's move: the native Settler moved there was ordered 3.0 s later. A skirmish as Persians against a
   German AI (`wolOtto`) with the tag on `settler.tactics`: the AI went from 12 to 18 units in 2.5 minutes, built a
   Manor, no XS error. Beside the other gathering keys of the test copy (`gatherFix`, `showGatherRate`,
-  `resourceGatherAuras`, `nowalkfarm`, `farmingRadius`): 43 applied, 0 failed.
+  `resourceGatherAuras`, `nowalkfarm`, `farmingRadius`): 43 applied, 0 failed. With buildings (2026-11-22, with
+  `buildingGather`): see that key.
+
+#### buildingGather
+
+*A building with a Gather action gathers from a mine, a bush, a tree or a crate within the action's range, straight into its owner's stockpile.*
+
+**Added:** Sunday 2026-11-22 12:23 · **Filmed in WoL:** Sunday 2026-11-22 12:23
+
+![buildingGather in WoL](media/buildingGather-wol.gif)
+
+*In WoL, with `buildingGather log` and `autoGatherFrom log` (a scenario, player 1 Ethiopian; test data: the `Market`'s
+`autogatherer.tactics` gets the Gather action below, with `<rate type="AbstractResourceCrate">5.0</rate>` and the tags
+`<AutogatherFrom delay="3">AbstractMine</AutogatherFrom>` and `<AutogatherFrom delay="3">AbstractResourceCrate</AutogatherFrom>`,
+and `<CarryCapacity>` 1 of food, wood and gold in `protoy.xml`; the Market selected):* a trigger places three coin
+crates beside the Market at 24 s and a gold mine 12 m south at 27 s. The Market takes the crates one after the other,
+5 gold a second, and they vanish; when the last is gone it turns to the mine, 1 gold a second (log lines at the
+bottom, the gold at the top left). [Full video (MP4)](media/buildingGather-wol.mp4).
+
+![buildingGather in WoL, key off](media/buildingGather-wol-control.gif)
+
+*The same scene and data, key off (`buildingGather bogus`, which also checks a bad argument: `FAILED`):* `autoGatherFrom`
+leaves the Market alone, the crates stay and the gold stays at 0. [Full video (MP4)](media/buildingGather-wol-control.mp4).
+
+```
+buildingGather [log]
+```
+
+- **What a modder writes:** a Gather action in the building's tactics file, with the ranges and rates it needs, and a
+  `<CarryCapacity>` in its proto for each resource it gathers (any amount: the stock gather refuses a gatherer without
+  an inventory, and the resources still go straight to the stockpile):
+
+  ```xml
+  <action>
+      <name>MarketGather</name>
+      <type>Gather</type>
+      <maxrange>15</maxrange>
+      <rate type="AbstractMine">1.0</rate>
+      <rate type="BerryBush">1.0</rate>
+      <rate type="Tree">1.0</rate>
+      <AutogatherFrom delay="3">AbstractMine</AutogatherFrom>   <!-- optional: autoGatherFrom -->
+  </action>
+  ```
+
+  ```xml
+  <CarryCapacity resourcetype="Gold">1.0000</CarryCapacity>   <!-- in the building's <Unit>, one per resource -->
+  ```
+
+  Then the building gathers when it is ordered to (tested with a trigger's `Unit Work`; a right click with a building
+  selected sets its gather point instead, as stock), or on its own with [`autoGatherFrom`](#autogatherfrom)'s tag.
+- **Why stock buildings do not gather:** a Gather action starts by walking the gatherer to its target; the walk's end
+  is what switches it to gathering. A building never walks, so its action waits for ever (found 2026-11-22). The key
+  does that switch for a gatherer whose `MaxVelocity` is 0, with the game's own range test, which counts the
+  building's size. A target out of range drops the order, and the building is idle again. Units that walk are never
+  touched.
+- **Effect:** at the action's rate, as for any gatherer, into the stockpile; what it holds stays at 0. A Market at rate
+  1 took 26 gold in 26 s from a Mine, 47.5 food in about 56 s from a bush and 54.5 wood from a tree (a standing one,
+  6 HP: a building does not chop), and 5 gold a second from a crate at rate 5. A target used up goes as when villagers finish it; the gather moves on to
+  another target of the kind nearby, as stock (three crates in a row), or `autoGatherFrom` picks the next.
+- **What it can gather:** what its player can see (the stock gather drops an order on a target the player does not
+  see; a Market's own line of sight is short, so a crate 12 m from its centre was refused until it was seen), within
+  the range, below the target's `<GathererLimit>`.
+- **Simulation:** yes. Everyone needs the key and the data; the state change is the game's own, at a point every machine
+  reaches. Not tested in multiplayer.
+- **Saved games:** nothing of its own: a Market saved while gathering kept gathering after the load (tested).
+- **Cost:** one compare in each Gather update; the range test only for a building's action that waits. A/B with
+  `perfprobe.py` (60 s, 30 settlers and two Markets gathering, other games running): key on 576 fps, main thread 83.6 %,
+  update 0.19 ms, no frame over 50 ms; key off 551 fps, 79.3 %, 0.18 ms, none over 50 ms (the two Markets only gather
+  with the key on).
+- **Log:** `buildingGather: a building with a Gather action gathers from a target within the action's range`; with
+  `log`, a line per start: `unit 0 (Market, state 255) -> unit 1 (Mine), 11.7 m between centres: in range, gathers` or
+  `... 27.8 m between centres: out of range, order dropped`.
+- **Status:** confirmed (2026-11-22, single player, WoL, scenario route, player 1 Ethiopian): Markets ordered by a trigger
+  gathered a Mine (11.7 m between centres), a berry bush (7.2 m) and a tree (10.2 m); a Market ordered to a Mine 27.8 m
+  away dropped the order; with `autoGatherFrom`, Markets picked a mine and coin crates after 3 s, took three crates in a
+  row, and left a mine and a crate they could not see; saved and loaded while gathering; key off: the Market stays idle
+  (with a trigger's order, its Gather action waits for ever, as before). A skirmish as Persians against a German AI
+  (`wolOtto`) with the key and the Market's data: the AI went from 16 to 18 units in 2.5 minutes with 12 settlers and a
+  Manor, no XS error; 39 keys applied, 0 failed. Not tested: multiplayer, the AI's own use (it never orders a building
+  to gather).
 
 #### showGatherRate
 
