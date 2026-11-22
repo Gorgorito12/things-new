@@ -2097,7 +2097,7 @@ The ring is a model of the table the tactics parser fills: 0x58F68F gives the ID
 it at the unit's feet. A world tick, ten times a second of game time, compares the selection of 0x453B28 and the Alt state
 with the units that hold rings, and hangs or removes them through the functions of the stock aura update.
 
-**Ring size:** the model's flat particle is drawn `<scale>` metres wide in all, not twice that: `range_<N>.particle` has
+**Ring size:** a range ring is a mesh since 2026-11-22, its outer edge at N m in `range_<N>.gr2`'s own vertices (in metres through the file's units per metre). Before, with the white particle rings (`make_rings.py --range-particles`), the model's flat particle is drawn `<scale>` metres wide in all, not twice that: `range_<N>.particle` has
 a scale of 2 × N / 0.97, the texture's line ending at 0.97 of its half width (measured in game, 2026-11-21: with the
 half width as the scale every ring showed half its radius).
 
@@ -2124,11 +2124,13 @@ all its tactics) and are worked out once per proto; each frame only checks that 
 takes the old rings off first; a new model object means the old one went with its rings. When the placement ends, the
 ghost's model goes, rings included (tested: Escape, a placed Outpost, `uiSetProtoCursorID(-1)`).
 
-**Player colour (`playerColor`, waiting for the art review).** A particle's colour fields are `UsePalette`,
-`NumPaletteColors`, `PaletteColors`, `ColorStages`, `fWorldLightingInfluence` and the fixed `Color` (the exe's
-particle tag names, 0xBA41D0): nothing takes the owner's colour, and a texture's alpha cannot both cut the ring out and mark
-player colour. So the key names `range_<N>_p<k>.xml` for owner `k` (`[[unit+44h]+0]`; the local player for a ghost),
-whose particle carries `Color` = colour 1 of player `k` in `playercolors.xml` over the same near-white texture.
+**Player colour.** A particle's colour fields are `UsePalette`, `NumPaletteColors`, `PaletteColors`, `ColorStages`,
+`fWorldLightingInfluence` and the fixed `Color` (the exe's particle tag names, 0xBA41D0): nothing takes the owner's
+colour. So a range ring is a mesh (aoe3-blender-tools' `make_rings.py`): a flat annulus whose cut-out is the geometry,
+on an alpha-1 texture with the units' shader `bumpspec_mask_pixelxform` (`pixelxformColor = playerColor`). Its texels of
+alpha 0 take the colour of the player of the visual the model hangs on: measured 2026-11-22 with a half-and-half test
+texture, blue on player 1's Skirmisher, red on player 2's Outpost, and the local player's blue on a placement ghost. The
+key needs nothing for it.
 
 **`<Flag>AlwaysDisplayRange</Flag>`.** The proto flag parser 0x5F640A (`stdcall(proto, name)`) compares the name with each
 flag it knows, through the string compare 0x4028B4, and returns with nothing for any other name. The key replaces the call of
@@ -3700,6 +3702,7 @@ targets that paid, and keeps per owner what it hung and per target how many aura
 once a second, because a dead owner has no more updates. A model that is not in the game is accepted by 0x9C04F3, returns
 true and is never found by 0x9C28DE: the helper treats it as hung and logs it once, or it would hang it on every update.
 
+The private pack `wol-fixes/aura-rings` (`make_aura_rings.py`) gives the same file names the game's own ring instead: the Indian economic aura's texture recoloured per colour, and per colour and size a copy of its mesh (`effects\ypack_auras\aura_econ`, a 2.79 m alpha-tested quad 0.5 m over the bone) scaled and naming its own texture, its stored texture name rewritten at the same length; with no `<replacetexture>`, a Town Center in the scene changes nothing (tested 2026-11-22). <!-- private -->
 The rings of `tools/rings` (drawn by `tools/make_rings.py` of aoe3-blender-tools) need no code. A ring's `.xml` hangs one flat particle, chosen by `<logic type="UnitType">`:
 `appearancetype` 2 lies on the ground, 0 faces the camera, and `materialtype` 0 with `material` 0 honours the texture's alpha;
 `scale` is the full width of the square in metres (measured on the range rings, 2026-11-21). The particle lives 2 s, `emissionrate` 100 with `maxparticles` 1 replaces it

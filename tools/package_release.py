@@ -201,7 +201,10 @@ art\\effects\\uhc_rings holds coloured rings that show which units an aura is wo
 are data: copy that folder to the game's art\\effects and name one in an aura, with
 <modelattachment>effects\\uhc_rings\\ring_gold.xml</modelattachment> and
 <modelattachmentbone>bonethatdoesntexist</modelattachmentbone>. Every player needs the folder.
-aura_wood.xml, aura_food.xml and aura_gold.xml add a floating icon, for gathering auras.
+aura_<name>.xml adds a floating icon, for gathering auras (gold, wood, food, hunt, berry, farm, fish,
+export, xp, oil, work). The colours: wood, food, gold, work (work rate), export, xp, oil, damage, rof
+(rate of fire), hp (max hit points), heal and speed. displayedRange shows range_<metres>.xml, a line in
+the owner's colour. These rings are the defaults: an aura with a model of its own keeps it.
 veterancyBonus shows rank_1.xml to rank_5.xml over a unit with a rank when the folder is there.
 art\\ui\\uhc\\health_overheal.ddt is the orange end of the HP bar under the portrait, which
 overhealHitpointBars segment shows for units above their 100 %: copy it to the game's art\\ui\\uhc

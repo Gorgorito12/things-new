@@ -9,8 +9,8 @@
 			<notshadowcaster/>
 			<logic type="UnitType">
 				<none>
-					<assetreference type="ParticleSystem">
-						<file>effects\uhc_rings\range_28.particle</file>
+					<assetreference type="GrannyModel">
+						<file>effects\uhc_rings\range_28</file>
 					</assetreference>
 				</none>
 			</logic>

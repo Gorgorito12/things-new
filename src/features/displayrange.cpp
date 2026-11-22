@@ -22,10 +22,9 @@
 // visual's class, through the stock model functions, which read only a unit's visual (unitmodels.h); a new proto or a
 // new model starts again, and the model takes its rings with it when the placement ends.
 //
-// Player colour (option playerColor): the ring is range_<N>_p<k>.xml, its particle tinted (<color>) with player k's
-// colour, k the owner's player ID (the local player's for a ghost). A particle has no player colour of its own (its
-// colour fields are UsePalette, NumPaletteColors, PaletteColors, ColorStages and the fixed Color), so make_rings.py
-// writes one tinted copy per player of the colour table.
+// Player colour: the rings are aoe3-blender-tools' range meshes (make_rings.py), whose texture marks player colour as a
+// unit's does; the engine tints a model hung on a unit with the unit's owner's colour, and on the ghost with the local
+// player's. Nothing here picks a colour.
 //
 // <Flag>: the proto flag parser 0x5F640A (stdcall(proto, name)) compares the name with each flag it knows and
 // returns with nothing for any other name. Its last compare, the call 0x5F726F of the string compare 0x4028B4, is
@@ -68,7 +67,6 @@ constexpr std::uint32_t kRangedFlag = 0x0A;  // <RangedLogic> (0x5FAC6D), the bi
 // readable: at most 4 rings a unit and 60 in all, the units with the longest ranges first.
 constexpr std::size_t kMaxRingsPerUnit = 4;
 constexpr std::size_t kMaxRings = 60;
-constexpr std::int32_t kMaxPlayerColour = 9;  // the colour table's players 0 to 9 (make_rings.py, RANGE_PLAYERS)
 // The sizes aoe3-blender-tools' make_rings.py writes (RANGES).
 constexpr std::int32_t kRadii[] = {4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 45, 50, 60, 70, 80, 100};
 
@@ -92,7 +90,7 @@ struct Range {
 };
 
 std::unordered_map<std::int32_t, Range> g_protos;  // by proto ID; the load fills it
-std::map<std::int32_t, std::int32_t> g_models;     // by radius x 16 + colour (15: none)
+std::map<std::int32_t, std::int32_t> g_models;     // by radius
 std::map<std::int32_t, std::vector<std::int32_t>> g_hung;  // by unit ID: the models on it
 std::int32_t g_bone = -2;
 const char* g_world = nullptr;
@@ -100,7 +98,6 @@ std::uint32_t g_nextTick = 0;
 bool g_lastAlt = false;
 bool g_log = false;
 bool g_placement = true;      // the ghost's rings (option noPlacement: off)
-bool g_playerColour = false;  // option playerColor
 
 struct Ghost {
   char* visual = nullptr;
@@ -179,26 +176,20 @@ std::int32_t RingRadius(float metres) {
   return radius;
 }
 
-// The model of a ring: range_<N>.xml, or with playerColor range_<N>_p<k>.xml for player `player`.
-std::int32_t ModelFor(std::int32_t radius, std::int32_t player) {
-  const std::int32_t colour = g_playerColour && player >= 0 && player <= kMaxPlayerColour ? player : 15;
-  const std::int32_t key = radius * 16 + colour;
-  const auto found = g_models.find(key);
+// The model of a ring of `radius` metres, effects\uhc_rings\range_<N>.xml.
+std::int32_t ModelFor(std::int32_t radius) {
+  const auto found = g_models.find(radius);
   if (found != g_models.end()) {
     return found->second;
   }
   wchar_t path[64];
-  if (colour == 15) {
-    swprintf_s(path, L"effects\\uhc_rings\\range_%d.xml", radius);
-  } else {
-    swprintf_s(path, L"effects\\uhc_rings\\range_%d_p%d.xml", radius, colour);
-  }
+  swprintf_s(path, L"effects\\uhc_rings\\range_%d.xml", radius);
   const std::int32_t model = uhc::ModelOfPath(path);
   if (g_log) {
     uhc::Log(L"displayedRange: %ls is model %d", path, model);
   }
   if (model != -1) {  // -1: the table does not exist yet
-    g_models[key] = model;
+    g_models[radius] = model;
   }
   return model;
 }
@@ -292,11 +283,6 @@ std::vector<std::int32_t> ProtoRadii(const char* proto, const Range* range) {
   return radii;
 }
 
-std::int32_t OwnerId(const char* unit) {
-  const char* owner = Field<const char*>(unit, 0x44);
-  return owner == nullptr ? -1 : Field<std::int32_t>(owner, 0);
-}
-
 void Release(const char* world, std::int32_t id, const std::vector<std::int32_t>& models) {
   if (char* unit = const_cast<char*>(kUnitById(world, id))) {
     for (const std::int32_t model : models) {
@@ -355,7 +341,7 @@ void Tick(char* world, std::int32_t) {
     }
     Want want{ids[i], unit, {}, {}, 0};
     for (const std::int32_t radius : WantedRadii(unit, found->second)) {
-      const std::int32_t model = ModelFor(radius, OwnerId(unit));
+      const std::int32_t model = ModelFor(radius);
       if (model != -1) {
         want.models.push_back(model);
         want.radii.push_back(radius);
@@ -455,7 +441,7 @@ void __stdcall OnGhost(char* ghost) {
     if (proto != nullptr) {
       const auto found = g_protos.find(Field<std::int32_t>(proto, 0x04));
       for (const std::int32_t radius : ProtoRadii(proto, found == g_protos.end() ? nullptr : &found->second)) {
-        const std::int32_t model = ModelFor(radius, playerId);
+        const std::int32_t model = ModelFor(radius);
         if (model != -1) {
           g_ghost.models.push_back(model);
           if (g_log && g_logLines < kMaxLogLines) {
@@ -508,8 +494,6 @@ Outcome ApplyDisplayedRange(const Config& config) {
       g_log = true;
     } else if (_stricmp(arg.c_str(), "noPlacement") == 0) {
       g_placement = false;
-    } else if (_stricmp(arg.c_str(), "playerColor") == 0) {
-      g_playerColour = true;
     } else {
       Log(L"displayedRange: unknown option %hs; feature not applied", arg.c_str());
       return Outcome::kFailed;
@@ -526,8 +510,7 @@ Outcome ApplyDisplayedRange(const Config& config) {
     return Outcome::kFailed;
   }
   Log(L"displayedRange: rings while Alt is held (<DisplayRange>) or always (<AlwaysDisplayRange>), one per ranged "
-      L"attack or <DisplayedRange>%ls%ls", g_placement ? L"; on the placement ghost of a ranged building" : L"",
-      g_playerColour ? L"; in the owner's colour" : L"");
+      L"attack or <DisplayedRange>%ls", g_placement ? L"; on the placement ghost of a ranged building" : L"");
   return Outcome::kApplied;
 }
 
