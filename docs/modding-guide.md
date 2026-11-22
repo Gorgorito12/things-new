@@ -31,7 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Saturday 2026-11-21 16:01 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
+| Sunday 2026-11-22 12:09 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Saturday 2026-11-21 15:50 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Saturday 2026-11-21 15:50 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
 | Saturday 2026-11-21 15:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
@@ -7194,8 +7194,8 @@ annexFacing [log]
     in the `Normal` tactic (the test data) the Barracks builds it;
   - a Barracks that built one Torp is refused a second build order (the game keeps the building's last build target), so
     the other Torps of the test were placed by a villager.
-- **Log:** `annexFacing: the proto tags AnnexOf and AnnexRange are on (multiplayer unverified)`, `hook reached: annexFacing
-  ghost (0x96E4E7)`, `hook reached: annexFacing build command (0x7D7CF1)`, `hook reached: annexFacing AI placement
+- **Log:** `annexFacing: the proto tags AnnexOf and AnnexRange are on (multiplayer unverified)`, `hook reached: placement
+  ghost update (0x96E4E7)`, `hook reached: annexFacing build command (0x7D7CF1)`, `hook reached: annexFacing AI placement
   (0x73D7D2)`, `hook reached: annexFacing AI spot scan (0x87DB9F)`, `hook reached: unit deaths (0x493D8F)` (a kill) and
   `hook reached: unit destroys (0x9828E7)` (a trigger's `Destroy`), and with `log`: `annexFacing: proto 2814 at 37.2, 38.7,
   player 1: faces unit 0 (its builder), forward -1.000, 0.000 -> -1.000, 0.000`, `annexFacing: unit 6 (proto 2814) is the
@@ -7827,7 +7827,7 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 *A selected unit shows its range on the ground while Alt is held: one ring per ranged attack.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Saturday 2026-11-21 16:01
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Sunday 2026-11-22 12:09
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
@@ -7839,8 +7839,33 @@ the Fort and the Crossbowman, `<Flag>AlwaysDisplayRange</Flag>` on the Outpost):
 *In WoL, key off (Swedes, a skirmish, with that data and the Falconet's `<DisplayRange>`, and the same Alt):* no ring; Alt only shows the HP bars, as in stock.
 [Full video (MP4)](media/displayedRange-wol-control.mp4).
 
+![displayedRange on the placement ghost](media/displayedRange-wol-placement.gif)
+
+*In WoL, the ghost of a building being placed (Dutch, a skirmish against the German AI; no tag on the Outpost, only its
+attacks):* a Settler starts placing an Outpost (build mode, `uiBuildMode`): its ghost carries the 40 m anti-ship and the
+24 m ranged rings and they follow it; Escape ends the placement and both rings go with the ghost; placed again, the
+rings come back, also on a red ghost where the Outpost does not fit. The log names each ring. [Full video
+(MP4)](media/displayedRange-wol-placement.mp4).
+
+![displayedRange on the placement ghost, key off](media/displayedRange-wol-placement-control.gif)
+
+*In WoL, key off (Dutch, a skirmish, the same steps):* the ghost has no ring. [Full video
+(MP4)](media/displayedRange-wol-placement-control.mp4).
+
+![displayedRange on an enemy's units](media/displayedRange-wol-enemy.gif)
+
+*In WoL, another player's units (a scenario, player 3, an enemy of player 1: its diplomacy slot reads 2; test data
+`<DisplayRange>1</DisplayRange>` on the Outpost and the Grenzer, fog off):* the enemy Outpost selected with Alt shows its
+40 and 24 m rings, then an enemy Grenzer its 20 and 6 m; Alt released, none. [Full video
+(MP4)](media/displayedRange-wol-enemy.mp4).
+
+![displayedRange on an ally's units](media/displayedRange-wol-ally.gif)
+
+*In WoL, an ally's Outpost (the same scenario, player 2, an ally of player 1: its slot reads 1):* with Alt its 40 and 24 m
+rings. [Full video (MP4)](media/displayedRange-wol-ally.mp4).
+
 ```
-displayedRange [log]
+displayedRange [log] [noPlacement] [playerColor]
 ```
 
 ```xml
@@ -7861,6 +7886,19 @@ displayedRange [log]
   2026-11-21), the key that already shows every HP bar; they go when Alt is released or the unit is deselected.
   `<AlwaysDisplayRange>1</AlwaysDisplayRange>`, or `<Flag>AlwaysDisplayRange</Flag>`, shows them whenever the unit is
   selected, Alt or not (the stock flag parser drops a name it does not know; the key catches it).
+- **Any player's units:** the rings show on whatever is selected, yours, an ally's or an enemy's, with the same tags
+  and Alt (JTMaston, 2026-11-22). An enemy you select is one you see; a unit under the fog draws no model, so its rings
+  show only when it is in sight (one seen with the fog off kept rings from before for a moment: a particle of a unit
+  out of sight does not age).
+- **While placing a building** (JTMaston, 2026-11-22): the ghost of a building whose proto has a ranged attack shows
+  its rings, with no tag needed: the ranged attacks of every tactic of your copy of the proto (so a range tech shows),
+  or its `<DisplayedRange>` values. They follow the ghost, change when you pick another building, and go when the
+  placement ends (tested: placed, and cancelled with Escape; a right click runs the same `editMode("none")`).
+  `noPlacement` turns this part off.
+- **`playerColor`:** waiting for the art review (2026-11-22). The rings would take the owner's colour, through one
+  tinted copy of each ring per player colour (`range_<N>_p<k>.xml`, aoe3-blender-tools' `make_rings.py
+  --player-colours`): a particle has no player colour of its own. Not in `tools/rings` and not tested in game yet: keep
+  the option off.
 - **Which rings:** one per ranged attack (`<RangedLogic>1</RangedLogic>`) of the unit's current tactic, at that attack's
   `MaxRange` as the player has it now: a tech that adds range moves the ring at once (`Revetment`: the Fort's 26 m ring
   became 32 m). A Fort shows its 40 m anti-ship attack and its 26 m cannon, an Outpost 40 and 24, a Crossbowman 16 and the
@@ -7896,6 +7934,21 @@ displayedRange [log]
 
   So the rings cost nothing measurable. A selection still shows at most 4 rings a unit and 60 in all, the units
   with the longest ranges first, so that a big selection stays readable.
+
+  **Big selections, Alt held (2026-11-22, JTMaston: "do they lag if you have 75 ranged units selected?"):** Skirmishers
+  (2 rings each, 20 and 6 m), selected on screen, 40 s a case with `perfprobe.py`, five other games running on the PC,
+  `selectionLimit` raised to 150 for the test:
+
+  | Selected | Alt | Rings | fps | Render a frame | GPU | Frames over 50 ms |
+  |---|---|---|---|---|---|---|
+  | 108 | no | 0 | 244 | 3.9 ms | 10.7 % | 0 |
+  | 108 | held | 60, the cap | 240 | 3.9 ms | 12.1 % | 0 |
+  | 69 | no | 0 | 254 | 3.7 ms | 10.7 % | 0 |
+  | 69 | held | 138, a test build with no cap | 200 | 4.9 ms | 18.2 % | 0 |
+
+  With the cap, Alt on 108 units costs nothing measurable. With no cap, 138 rings cost about 1.2 ms a frame and 7 % of
+  the GPU (their large particles drawn over each other), and the screen is a white mesh of rings. The cap stays at 60.
+  The camera could not hold all 150 units at once, so 150 was not measured; with the cap it shows 60 rings anyway.
 - **Multiplayer:** display only: the selection and the keyboard are this machine's, and a model is a visual. Every player
   can have it or not.
 - **Log:** `displayedRange: applied`, `hook reached: displayedRange: proto flag parser's last compare (0x5F726F)`, and
@@ -7910,6 +7963,12 @@ displayedRange [log]
   and 4 rings each (the table); a game saved and loaded: the Outpost's and the Fort's rings came back; key off: no
   ring, Alt shows the HP bars only. Not tested: multiplayer, a selection of a building with units (the console
   route selects one kind at a time).
+- **Tested in WoL (2026-11-22):** an enemy's Outpost (2 players, and player 3 of 3) and an ally's (player 2 of 3) with
+  Alt, their rings as on your own; the placement ghost of the Outpost (Dutch, a skirmish; Ethiopians, a scenario,
+  through `uiSetProtoCursor`) with 40 and 24 m, of the Fort with 40 and 26 m, of a House with none; the rings follow the
+  ghost, change with the proto, go on Escape and when the Outpost is placed, and never stay on the foundation; key off,
+  no ring on the ghost; `annexFacing` on the same shared ghost hook still `applied` and reached. Log:
+  `hook reached: placement ghost update (0x96E4E7)`, `ring of 40 m on the placement ghost (Outpost)`.
 
 #### abilitySlots
 

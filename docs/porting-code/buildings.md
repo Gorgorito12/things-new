@@ -7003,9 +7003,9 @@ END
 
 Contract: [annexFacing](../porting-to-another-dll.md#annexfacing).
 
-Besides the core helpers, it needs: [`deathobservers.h`](helpers.md#death-observers), [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`deathobservers.h`](helpers.md#death-observers), [`ghostobservers.h`](helpers.md#placement-ghost-observers), [`prototags.h`](helpers.md#proto-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `UnitCreate` `0x498ACC` (9 B), `UnitsNearPoint` `0x4A1C55` (248 B), `KillQueueAsk` `0x4B4DC2` (8 B), `AnnexAiPlaceSite` `0x73D7D2` (8 B), `AnnexForwardSite` `0x7D7CF1` (7 B), `AnnexCreateCall` `0x7D80CF` (5 B), `AnnexAiScanSite` `0x87DB9F` (9 B), `AnnexGhostSite` `0x96E4E7` (11 B), `UnitAliveSlot` `0xB9355C` (4 B).
+Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `UnitCreate` `0x498ACC` (9 B), `UnitsNearPoint` `0x4A1C55` (248 B), `KillQueueAsk` `0x4B4DC2` (8 B), `AnnexAiPlaceSite` `0x73D7D2` (8 B), `AnnexForwardSite` `0x7D7CF1` (7 B), `AnnexCreateCall` `0x7D80CF` (5 B), `AnnexAiScanSite` `0x87DB9F` (9 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
 ### src/features/annexfacing.cpp
 
@@ -7024,8 +7024,8 @@ Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `UnitCreate` `0x4
 // their opposites) that points most toward the parent. So the annex faces the parent and lines up with it, whatever
 // the parent's own angle. Every machine runs the same command on the same state, so all get the same forward.
 //
-// The placement ghost turns the same way before the click (the hook at 0x96E4E7, before the ghost's placement test
-// in 0x96E062): only the local player's view and its green or red test change, never the game.
+// The placement ghost turns the same way before the click (the shared hook at 0x96E4E7, ghostobservers.h, before the
+// ghost's placement test in 0x96E062): only the local player's view and its green or red test change, never the game.
 //
 // The AI chooses a spot with the world's axes, in two tests: the scan of candidate spots (the hook at 0x87DB9F,
 // before its PLACE at 0x87DBA5) and a build plan's own test FUN_0073D62B (the hook at 0x73D7D2, before PLACE at
@@ -7052,6 +7052,7 @@ Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `UnitCreate` `0x4
 
 #include "../deathobservers.h"
 #include "../features.h"
+#include "../ghostobservers.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -7061,7 +7062,6 @@ Sites: `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `UnitCreate` `0x4
 
 extern "C" {
 void UhcAnnexForwardHook();  // hooks/annexfacing_hooks.asm
-void UhcAnnexGhostHook();
 void UhcAnnexAiPlaceHook();
 void UhcAnnexAiScanHook();
 }
@@ -7508,7 +7508,7 @@ void __stdcall UhcAnnexForward(char* command, const char* proto, const char* pla
   g_pending = {command, parent};
 }
 
-// From the hook at 0x96E4E7: the placement ghost's update, before its placement test. ESI = the ghost's visual, whose
+// From the shared hook at 0x96E4E7 (ghostobservers.h): the placement ghost's update, before its placement test. ESI = the ghost's visual, whose
 // axes start at +4: position, forward +10h, up +1Ch, right +28h; +7Dh marks them changed. The local view only.
 void __stdcall UhcAnnexGhost(char* visual) {
   const char* ui = *reinterpret_cast<char* const*>(kUiGlobal);
@@ -7621,7 +7621,7 @@ Outcome ApplyAnnexFacing(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("annexFacing", {&sites::kAnnexForwardSite, &sites::kAnnexCreateCall, &sites::kAnnexGhostSite,
+  if (!VerifyAll("annexFacing", {&sites::kAnnexForwardSite, &sites::kAnnexCreateCall,
                                  &sites::kUnitCreate, &sites::kUnitsNearPoint, &sites::kUnitById, &sites::kIsA,
                                  &sites::kKillQueueAsk, &sites::kUnitAliveSlot, &sites::kAnnexAiPlaceSite,
                                  &sites::kAnnexAiScanSite}) ||
@@ -7631,8 +7631,7 @@ Outcome ApplyAnnexFacing(const Config& config) {
       !WriteJmp(sites::kAnnexAiPlaceSite.va, reinterpret_cast<const void*>(&UhcAnnexAiPlaceHook), 5) ||
       !WriteJmp(sites::kAnnexAiScanSite.va, reinterpret_cast<const void*>(&UhcAnnexAiScanHook), 6) ||
       !WriteJmp(sites::kAnnexForwardSite.va, reinterpret_cast<const void*>(&UhcAnnexForwardHook), 6) ||
-      !WriteCall(kCreateCall, reinterpret_cast<const void*>(&Create)) ||
-      !WriteJmp(sites::kAnnexGhostSite.va, reinterpret_cast<const void*>(&UhcAnnexGhostHook), 5)) {
+      !WriteCall(kCreateCall, reinterpret_cast<const void*>(&Create)) || !AddGhostObserver(&UhcAnnexGhost)) {
     return Outcome::kFailed;
   }
   Log(L"annexFacing: the proto tags AnnexOf and AnnexRange are on (multiplayer unverified)");
@@ -7654,13 +7653,11 @@ option casemap :none
 include common.inc
 
 UhcAnnexForward PROTO STDCALL command:DWORD, unitProto:DWORD, player:DWORD
-UhcAnnexGhost PROTO STDCALL visual:DWORD
 UhcAnnexAiPlace PROTO STDCALL fwd:DWORD, rightVec:DWORD, point:DWORD, protoId:DWORD, playerId:DWORD
 UhcAnnexAiScan PROTO STDCALL fwd:DWORD, rightVec:DWORD, point:DWORD, protoId:DWORD, playerId:DWORD
 
 .data
 forwardNext dd 007D7CF7h    ; push eax: the forward's address, for the right vector 0x423792
-ghostNext   dd 0096E4ECh    ; mov ecx,[eax+13Ch]
 aiPlaceNext dd 0073D7D7h    ; lea edi,[ebp+50h]
 aiScanNext  dd 0087DBA5h    ; call [esi+14h], the PLACE of the scan
 
@@ -7682,20 +7679,6 @@ UhcAnnexForwardHook PROC
     lea eax, [edi+0A8h]
     jmp forwardNext
 UhcAnnexForwardHook ENDP
-
-; Replaces 0x96E4E7 (mov eax,[0C66234h]) in the placement ghost's update, before its placement test: ESI = the ghost's
-; visual. The helper may turn the visual's axes; every register and the flags are kept, then the replaced line.
-UhcAnnexGhostHook PROC
-    TRACE_ONCE "annexFacing ghost (0x96E4E7)"
-    pushfd
-    pushad
-    push esi
-    call UhcAnnexGhost
-    popad
-    popfd
-    mov eax, dword ptr ds:[0C66234h]
-    jmp ghostNext
-UhcAnnexGhostHook ENDP
 
 ; Replaces 0x73D7D2 (lea ebx,[esp+38h] / push ebx) in an AI build plan's placement test, before PLACE at 0x73D7E3:
 ; EBX becomes the forward's address, [esp] holds the right vector's (pushed first), EBP = the plan's data (position

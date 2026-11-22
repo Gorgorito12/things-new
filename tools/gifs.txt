@@ -177,6 +177,10 @@ unitResourceAuras-torp-wol 4 12 1
 unitResourceAuras-torp-wol-control 4 12 1
 displayedRange-wol 3 36 3
 displayedRange-wol-control 5 33 3
+displayedRange-wol-ally 9 12 1
+displayedRange-wol-enemy 3 12 1
+displayedRange-wol-placement 2 24 2
+displayedRange-wol-placement-control 2 16 2
 linkedResource-wol 2 12 1
 linkedResource-wol-control 2 12 1
 linkedResource-model-wol 4 84 7

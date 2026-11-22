@@ -162,7 +162,7 @@ says so:
 | `TechRenameTypeByName`, `TechRenameFactoryHead`, `TechRenameEffectParse`, `TechRenameEffectCtor`, `TechRenameEffectVtable`, `TechRenameApplyCall`, `TechRenameLocalTechNode` | `0x61FF1B`, `0x620535`, `0x6205C7`, `0x620B8F`, `0xB965C0`, `0x7F80FD`, `0x8D0005` | `0x10`, `0x0F`, `0x2D`, `0x1D`, `0x44`, `0x17`, `0x27` B | — | — | the type lookup, the factory head and the parse around the hook, the BEffect ctor and vtable (`.rdata`) the effect copies, the apply dispatcher's call and the player's tech node function |
 | `AnnexForwardSite` | `0x7D7CF1` | 7 B | 6 B at `0x7D7CF1` | `8D 87 A8 00 00 00` (`lea eax,[edi+0A8h]`) | the build command's executor FUN_007D79D6, before the right vector; annexFacing forward hook (continues at `0x7D7CF7`) |
 | `AnnexCreateCall` | `0x7D80CF` | 5 B | 5 B at `0x7D80CF` (a `call` to the wrapper) | `E8 F8 09 CC FF` (`call 498ACCh`) | the executor's unit creation; annexFacing link |
-| `AnnexGhostSite` | `0x96E4E7` | 11 B | 5 B at `0x96E4E7` | `A1 34 62 C6 00` (`mov eax,[0C66234h]`) | the placement ghost's update FUN_0096E062, before its placement test; annexFacing ghost hook (continues at `0x96E4EC`) |
+| `AnnexGhostSite` | `0x96E4E7` | 11 B | 5 B at `0x96E4E7` | `A1 34 62 C6 00` (`mov eax,[0C66234h]`) | the placement ghost's update FUN_0096E062, before its placement test; the shared ghost hook of annexFacing and displayedRange (continues at `0x96E4EC`) |
 | `AnnexAiPlaceSite` | `0x73D7D2` | 8 B | 5 B at `0x73D7D2` | `8D 5C 24 38 53` (`lea ebx,[esp+38h]; push ebx`) | an AI build plan's placement test FUN_0073D62B, before PLACE at `0x73D7E3`; annexFacing (continues at `0x73D7D7`) |
 | `AnnexAiScanSite` | `0x87DB9F` | 9 B | 6 B at `0x87DB9F` | `D9 E0 D9 5C 24 60` (`fchs; fstp [esp+60h]`) | the AI's scan of candidate spots, before its PLACE `call [esi+14h]`; annexFacing (continues at `0x87DBA5`) |
 | `DetonationKillCall` | `0x493D8F` | 5 B | 5 B at `0x493D8F` (a `call` to the wrapper) | `E8 DC 11 02 00` (`call 4B4F70h`) | the kill queue drain's call of the kill handler; the shared death observer (`deathobservers.cpp`: detonationDeath, annexFacing) |
@@ -1927,7 +1927,7 @@ Code: [buildings](porting-code/buildings.md#annexfacing). It needs `AddProtoTagH
 - **Link:** the `call` at `0x7D80CF` (`E8 F8 09 CC FF`, of the unit creation `0x498ACC`, thiscall on the world with 8
   arguments, `ret 20h`) goes to a `__fastcall` wrapper that calls it and keeps annex ID → parent ID. Verify only the
   creation's head (9 B).
-- **Ghost hook:** a 5-byte `jmp` at `0x96E4E7` (`A1 34 62 C6 00`: `mov eax,[0C66234h]`) in the placement ghost's update
+- **Ghost hook (shared with displayedRange since 2026-11-22, `ghostobservers.*`):** a 5-byte `jmp` at `0x96E4E7` (`A1 34 62 C6 00`: `mov eax,[0C66234h]`) in the placement ghost's update
   FUN_0096E062, before its placement test, ESI = the ghost's visual: the helper may turn the visual's axes (the local UI
   only); every register and the flags are kept, then the `mov`, and it continues at `0x96E4EC`.
 - **AI hooks:** a 5-byte `jmp` at `0x73D7D2` (`8D 5C 24 38 53`: `lea ebx,[esp+38h] / push ebx`) in an AI build plan's
