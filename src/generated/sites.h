@@ -1817,6 +1817,12 @@ inline constexpr Site kShotsReloadAnim{"ShotsReloadAnim", 0x004976CB, kShotsRelo
 inline constexpr std::uint8_t kShotsAnimVariantBytes[] = {0x8B, 0x49, 0x60, 0x85, 0xC9, 0x0F, 0x84, 0xD8, 0xC8, 0x07, 0x00};
 inline constexpr Site kShotsAnimVariant{"ShotsAnimVariant", 0x00471D24, kShotsAnimVariantBytes, sizeof(kShotsAnimVariantBytes)};
 
+inline constexpr std::uint8_t kBroadsideSoundBytes[] = {0x68, 0x5C, 0x1D, 0xBA, 0x00, 0x83, 0xC2, 0x14};
+inline constexpr Site kBroadsideSound{"BroadsideSound", 0x004CECBD, kBroadsideSoundBytes, sizeof(kBroadsideSoundBytes)};
+
+inline constexpr std::uint8_t kBroadsideSoundNameBytes[] = {0x53, 0x68, 0x69, 0x70, 0x43, 0x61, 0x6E, 0x6E, 0x6F, 0x6E, 0x53, 0x68, 0x6F, 0x6F, 0x74, 0x00};
+inline constexpr Site kBroadsideSoundName{"BroadsideSoundName", 0x00BA1D5C, kBroadsideSoundNameBytes, sizeof(kBroadsideSoundNameBytes)};
+
 inline constexpr std::uint8_t kUnitResourceAuraEntryBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x10};
 inline constexpr Site kUnitResourceAuraEntry{"UnitResourceAuraEntry", 0x009D033E, kUnitResourceAuraEntryBytes, sizeof(kUnitResourceAuraEntryBytes)};
 

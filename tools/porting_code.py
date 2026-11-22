@@ -92,6 +92,7 @@ PAGES = {
         "numberOfShots": ["src/features/shots.cpp", "src/hooks/shots_hooks.asm"],
         "accuracyTechs": ["src/features/accuracy.cpp"],
         "broadsideMuzzleLimit": ["src/features/broadside.cpp", "src/hooks/broadside_hooks.asm"],
+        "broadsideSoundSet": ["src/features/broadsidesound.cpp", "src/hooks/broadsidesound_hooks.asm"],
         "snareOnlyHitUnit": ["src/features/snare.cpp", "src/hooks/snare_hooks.asm"],
         "cantBeSlowed": ["src/features/cantslow.cpp", "src/hooks/cantslow_hooks.asm"],
         "snareValues": ["src/features/snarevalues.cpp", "src/hooks/snarevalues_hooks.asm"],

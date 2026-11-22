@@ -8,7 +8,8 @@ option casemap :none
 include common.inc
 
 UhcShotsProjectiles PROTO STDCALL :DWORD
-UhcShotsSkipReload PROTO STDCALL :DWORD
+UhcShotsBurstPose PROTO STDCALL :DWORD
+UhcShotsHoldLead PROTO STDCALL :DWORD
 
 EXTERNDEF g_uhcShotsProjectiles:DWORD      ; above 0 while some action has more than one projectile
 EXTERNDEF g_uhcShotsBurst:DWORD            ; above 0 while some action has a burst (the reload hook asks only then)
@@ -59,31 +60,40 @@ UhcShotsLaunchHook ENDP
 ; once the attack animation of a shot has played it starts the reload animation ([ua+84h], its model index [ua+88h]),
 ; paced to end with the wait before the next cycle, and returns AL 1 (0 without a reload animation). Called from
 ; setState(15h)'s case (0x497813) and from the update in state 19h (0x49A3E6); both go on as stock with either result.
-; After a shot that does not end its burst (UhcShotsSkipReload) the function runs on the action's idle animation
-; ([tactics action+60h], the aiming pose) instead: [ua+84h] and [ua+88h] are swapped for the call and put back, so the
-; action's states, its timing and the cycle that follows are the stock ones, and the unit aims instead of reloading.
-; Without an idle animation, or when the model lacks it, the reload plays as stock.
+; After a shot that does not end its burst, UhcShotsBurstPose gives the pose of the action's <BurstPose>:
+;   0 the reload (stock), 1 the action's idle animation ([tactics action+60h], its model index from 0x471D24),
+;   2 "hold": the attack animation itself ([ua+7Ch] / [ua+80h]), which the after-shot ROF filter slowed to end just
+;     before the wait (shots.cpp, StretchTail). The function finds it still shown (0x497767, 0x6A78D0), so it does not
+;     restart it: it sets its owner and paces it over the short lead left. [ua+70h] is then set to -1, so the update in
+;     state 19h (0x49A3DB) no longer sees the cycle's animation and goes on as after a stock reload start (it would
+;     call the function again at every update otherwise). UhcShotsHoldLead then ends an animation whose lead is gone.
+; [ua+84h] and [ua+88h] are swapped for that animation for the call and put back, so the action's states and the cycle
+; that follows are the stock ones. An attack without a reload animation ([ua+84h] < 0) keeps the stock path; without the
+; idle animation, or when the model lacks it, the reload plays as stock.
 UhcShotsReloadHook PROC
     TRACE_ONCE "numberOfShots reload (0x4976CB)"
     cmp g_uhcShotsBurst, 0
     je stockReload
     push ecx
     push ecx
-    call UhcShotsSkipReload             ; true: the burst goes on
+    call UhcShotsBurstPose              ; 0 reload, 1 idle, 2 hold
     pop ecx
-    test al, al
-    je stockReload
-    mov eax, [ecx+4]                    ; the tactics action
     test eax, eax
     je stockReload
-    mov eax, [eax+60h]                  ; its idle animation
-    test eax, eax
-    jl stockReload
     push ebx
     push esi
     push edi
     mov esi, ecx
-    mov ebx, eax
+    cmp dword ptr [esi+84h], 0          ; no reload animation: the stock path (returns 0, the idle state)
+    jl giveUp
+    cmp eax, 2
+    je holdPose
+    mov eax, [esi+4]                    ; the tactics action
+    test eax, eax
+    je giveUp
+    mov ebx, [eax+60h]                  ; its idle animation
+    test ebx, ebx
+    jl giveUp
     mov ecx, [esi+10h]                  ; the unit
     test ecx, ecx
     je giveUp
@@ -92,12 +102,38 @@ UhcShotsReloadHook PROC
     test eax, eax
     jl giveUp
     mov edi, eax
+    jmp swapped
+holdPose:
+    mov ebx, [esi+7Ch]                  ; the attack animation
+    mov edi, [esi+80h]                  ; its model index
+    test ebx, ebx
+    jl giveUp
+    test edi, edi
+    jl giveUp
     push dword ptr [esi+88h]
     push dword ptr [esi+84h]
     mov [esi+84h], ebx
     mov [esi+88h], edi
     mov ecx, esi
-    call reloadStart                    ; the stock function on the idle animation; AL its result
+    call reloadStart                    ; the stock reload start, in the short lead the attack's tail left it
+    pop dword ptr [esi+84h]
+    pop dword ptr [esi+88h]
+    mov dword ptr [esi+70h], -1         ; the cycle's animation: no longer the one shown, as after a stock reload start
+    push eax                            ; AL its result
+    push esi
+    call UhcShotsHoldLead               ; a lead already gone: the rate that ends it at once
+    pop eax
+    pop edi
+    pop esi
+    pop ebx
+    ret
+swapped:
+    push dword ptr [esi+88h]
+    push dword ptr [esi+84h]
+    mov [esi+84h], ebx
+    mov [esi+88h], edi
+    mov ecx, esi
+    call reloadStart                    ; the stock function on that animation; AL its result
     pop dword ptr [esi+84h]
     pop dword ptr [esi+88h]
     pop edi

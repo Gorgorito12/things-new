@@ -82,6 +82,7 @@ Outcome ApplyKothTimer(const Config& config);
 Outcome ApplyMaintainWaitForPop(const Config& config);
 Outcome ApplyTransformUpdatesLos(const Config& config);
 Outcome ApplyBroadsideMuzzleLimit(const Config& config);
+Outcome ApplyBroadsideSoundSet(const Config& config);
 Outcome ApplyAbilitySlots(const Config& config);
 Outcome ApplyWonderPanelSkipAuras(const Config& config);
 Outcome ApplyNativePreview(const Config& config);
@@ -226,6 +227,7 @@ inline constexpr Feature kFeatures[] = {
     {"maintainWaitForPop", ApplyMaintainWaitForPop},
     {"transformUpdatesLOS", ApplyTransformUpdatesLos},
     {"broadsideMuzzleLimit", ApplyBroadsideMuzzleLimit},
+    {"broadsideSoundSet", ApplyBroadsideSoundSet},
     {"abilitySlots", ApplyAbilitySlots},
     {"wonderPanelSkipAuras", ApplyWonderPanelSkipAuras},
     {"nativePreview", ApplyNativePreview},

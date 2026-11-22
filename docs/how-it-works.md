@@ -2095,6 +2095,30 @@ side's count, which is what the schedule can time.
   set-up. It adds projectiles (each with its accuracy roll) and sync-RNG draws, so every machine
   needs the same cfg.
 
+### broadsideSoundSet
+
+**Stock.** The broadside fire step (FUN_004C1290's step, the action type `BroadsideAttack`) calls FUN_004CEB37 at 0x4CEA02,
+its only caller (an `E8` scan of `.text`), just before each launch `call 499422h` (0x4CEA43). FUN_004CEB37,
+`thiscall(unitAction, ...)`, `ret 14h`, with EDI = the unit action and `[edi+10h]` the unit (checked at its head): it
+places the muzzle effect `L"NavelCannon"` (0xBA1D6C) through 0x4828E6 on `[[0C66240h]+0C1A0h]`, then at 0x4CECAF..0x4CECC6
+loads EDX = the unit, pushes a local, loads ECX = the game `[0C66234h]`, pushes `0BA1D5Ch` (`"ShipCannonShoot"`), adds 14h to
+EDX (the unit's position) and pushes it, and calls 0x4AA24C, the play of a sound set by name. 0xBA1D5C is pushed nowhere
+else (an `imm32` scan), so every broadside shot of every ship plays that set. An action of type `Attack` plays its shot
+sound from its animation's `SpecificSoundSet` tags.
+
+**The hook** (`hooks/broadsidesound_hooks.asm`) replaces the 5-byte push at 0x4CECBD with a jmp: it saves ECX and EDX, calls
+`UhcBroadsideSoundName(EDI)`, restores them, pushes the returned name and goes on at 0x4CECC2 (`add edx,14h`). The name is
+the action's `<BroadsideSoundSet>` (the shared action tag hook, keyed by `{[[ua+10h]+5Ch]+4, [[ua+4]+4]}`, the proto ID and
+the action's name index, which every player's copy keeps), or the stock pointer. The first shot of each tagged action checks
+the name as 0x597C56 looks a set up: the manager `[game+950h]`, its table `[+4]`, a `BString` of the name (0x401ECA,
+`thiscall(this, const char*)`, `ret 4`; freed by 0x4010CA) and 0x468E7D (`thiscall(table, const BString*)`, `ret 4`: the set,
+or 0). A name the table lacks is logged once and its shots push the stock name.
+
+**Why it is safe.** No branch lands in 0x4CECBE..0x4CECC1 (scan). At 0x4CECBD EAX is dead (written by the call before it is
+read), no x87 value is live (the angle was stored at 0x4CEC0D, the coordinates at 0x4CEBFF), and ECX and EDX are restored;
+EBX, ESI and EDI are callee-saved in the C function. The names are `std::string`s that only change during a data load. The
+hook chooses a sound only: nothing in the simulation reads it.
+
 ### abilitySlots
 
 **Abilities.** `data\abilities\abilities.xml` is loaded into the ability manager `[world+56Ch]`,
@@ -3749,6 +3773,33 @@ attack animation alone over the interval (it moved the quick shots later in thei
 a Skirmisher's second and third shot). [O] A Falconet against Settlers starts a new burst after one or two shots with the
 reload fix and without it alike (a new target, a new unit action): that is the stock retargeting, not the hook.
 
+**The firing pose between the shots (`<BurstPose>`, 2026-11-22).** [O, frames at 30 fps] the idle animation of a mod's ranged
+infantry (`Volley_standing_idle`, the granny file `idle_rifleman_A`) is the rifle at rest, so the 2026-11-21 fix lowered the
+rifle after every quick shot. The tag now picks the reload slot's animation per action: `reload` (the stock path, hook not
+taken), `idle` (the swap above) or `hold`, the default:
+1. At a quick shot, the after-shot ROF read (0x48F8B5, which runs at the attack animation's Attack tag) also slows the rest
+   of the attack animation (`StretchTail` in `shots.cpp`): with the unit showing `[ua+7Ch]` (`[[[unit+60h]]+14h]`, as
+   0x482771 reads it) and a reload animation in `[ua+84h]`, the time left is the animation's length (0x4939BD,
+   `float thiscall(unit)`, seconds) minus (now − `[ua+78h]`) × the rate `[unit+0B0h]`; the rate becomes that over the interval
+   minus the elapsed time minus a 30 ms lead. [O] Writing `[unit+0B0h]` mid-animation takes effect at once (a Skirmisher: 1000 ms
+   animation at rate 11.25, 528 ms left, rate 1.61 over 328 ms).
+2. The animation then ends 30 ms before the wait, and FUN_004976CB runs from the hook with `[ua+84h]` / `[ua+88h]` = the
+   attack animation. The unit still shows it, so 0x497767 / 0x6A78D0 do not restart it: the function sets its owner (0x4A2320)
+   and paces it over the lead, and returns 1. [ua+70h] is set to −1 after the call: the update in state 19h (0x49A3DB) calls
+   the function while the visual shows `[ua+70h]`, which is the case after a stock reload start no more (the reload animation
+   shows) but would be after this one; [O] without the write the function ran at every update, the lead shrank to 0 and below,
+   and the cycles came early (0.388 s). The next cycle copies `[ua+7Ch]` into `[ua+70h]` again (0x4A115C).
+3. `UhcShotsHoldLead` then checks the wait left (`[[unit+58h]+0B8h] + [+0BCh]` − now): under 10 ms (a reload start that came
+   late), the rate becomes the animation's length / 10 ms. The stock function paces over a wait of 0 at rate 1 (the whole
+   animation) and over a negative one read unsigned (0x4B92E9 adds 2³², so it never ends): either holds the next cycle.
+   [O] It fired once in a test where the target died (`came -658 ms before the wait's end`).
+[O] The next cycle begins when the reload slot's animation ends, not at the wait alone: a reload animation frozen at rate 0.001
+stopped the unit after its first shot, and an animation ended 10 ms early began the next cycle 10 ms early. So every pose keeps
+an animation that ends with the wait. The shot times stay stock within one update (0.403 / 0.665 / 2.735 s against 0.402 /
+0.665 / 2.734 s). What shows: the attack animation's last pose (the aim) from the shot to the lead, then the start of the next
+attack animation (about 40 ms, the raise from frame 0 at the quick pace). An attack without a reload animation keeps the stock
+path for every pose (state 0Ch, its idle animation), as the hook returns to the stock head when `[ua+84h]` < 0.
+
 **The projectiles** (option `projectiles`): `hooks/shots_hooks.asm` replaces the attack step's `call 499422h` (5 B at
 0x48F88D, ECX = EBP = the unit action, the five arguments pushed) with a jmp. While some action has
 `<NumberProjectiles>` above 1 (`g_uhcShotsProjectiles`), `UhcShotsProjectiles(ua)` gives N, and the hook calls the
@@ -3765,9 +3816,11 @@ before reading them. The broadside fire step (0x4CEA43) and melee (0x4DCFE2) are
 - The ROF sites are those of `containedUnitsROF` (above). The launch site: no branch lands in 0x48F88E..0x48F891 (`cs`
   scan); the stack is the stock one at 0x48F892, since each extra launch pops its own copies (`ret 14h`).
 - Deterministic: the count, the tags and the interval are simulation state or data; the extra launches use the stock
-  launch and its synced random draws, the same on every machine. Every player needs the same line and data.
+  launch and its synced random draws, the same on every machine. Every player needs the same line and data. `hold` writes
+  the unit's animation rate from game time, the data's animation length and the stock rate: the same on every machine, as
+  the stock cycle's rate is; that the cycle waits for the animation's end makes it simulation state.
 - Cost: one map lookup per ROF read of an action with a burst while some action has one, one per shot with projectiles;
-  with no tag in the data, the gates are closed and the hooks only compare.
+  with no tag in the data, the gates are closed and the hooks only compare. `hold` adds a call of 0x4939BD per quick shot.
 
 ### unitResourceAuras
 
