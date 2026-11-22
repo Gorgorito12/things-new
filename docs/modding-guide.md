@@ -31,8 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Sunday 2026-11-22 13:53 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
-| Sunday 2026-11-22 13:53 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
+| Sunday 2026-11-22 14:03 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
+| Sunday 2026-11-22 13:54 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Saturday 2026-11-21 15:50 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Saturday 2026-11-21 15:50 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
 | Saturday 2026-11-21 15:25 | [`overhealDecay`](#overhealdecay) | Filmed in WoL, with a control. The HP of those units above `InitialHitpoints` goes back down to it over time, at each proto's `<OverhealDecay>` rate (2 % a second by default), except while an own unit of a chosen type is near. | `overhealHitpointBars`; `<OverhealDecay>` where the default does not fit. |
@@ -5089,7 +5089,7 @@ autoGatherScaleByContained
 
 *An aura earns resources from the units in its range, such as nearby trees.*
 
-**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Sunday 2026-11-22 13:53
+**Added:** Wednesday 2026-11-04 17:21 · **Filmed in WoL:** Sunday 2026-11-22 13:54
 
 ![unitResourceAuras in WoL](media/unitResourceAuras-wol.gif)
 
@@ -7831,7 +7831,7 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 *A selected unit shows its range on the ground while Alt is held: one ring per ranged attack.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Sunday 2026-11-22 13:53
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Sunday 2026-11-22 14:03
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
@@ -7850,8 +7850,8 @@ videos below.*
 *In WoL, the ghost of a building being placed (Dutch, a skirmish against the German AI; no tag on the Outpost, only its
 attacks):* a Settler starts placing an Outpost (build mode, `uiBuildMode`): its ghost carries the 40 m anti-ship and the
 24 m ranged rings in the player's blue, and they follow it; Escape ends the placement and both rings go with the ghost;
-placing again brings them back, also on a red ghost where the Outpost does not fit (unexplored ground). The log names each
-ring. [Full video (MP4)](media/displayedRange-wol-placement.mp4).
+placing again brings them back, and a click places the Outpost: the rings go with the ghost and the foundation has none.
+The log names each ring. [Full video (MP4)](media/displayedRange-wol-placement.mp4).
 
 ![displayedRange on the placement ghost, key off](media/displayedRange-wol-placement-control.gif)
 
@@ -9089,7 +9089,9 @@ auras on the Explorer, Damage x1.0, one ring per proto):* the Town Center's work
 ring (magenta, 16 m), the House's heal ring (white, 9 m); on the units around the Explorer the rate-of-fire ring on the
 Skirmishers, the speed ring on the Hussars (cavalry size), and the anti-rings of damage and max HP (teeth pointing inward)
 on the Jaegers and the Grenzers. [Full video (MP4)](media/auraRings-pack-wol.mp4).
-The units up close: ![The pack's rings on units](media/auraRings-pack-units-wol.gif)
+The units up close (a scene of their own, `normalZoom` 30, the units spread and selected): the rate-of-fire ring on the
+Skirmishers, the damage and max HP anti-rings on the Jaegers and Grenzers, the speed ring on the Hussars at cavalry size,
+the gold ring on a Settler: ![The pack's rings on units](media/auraRings-pack-units-wol.gif)
 [Full video (MP4)](media/auraRings-pack-units-wol.mp4).
 
 ![The aura rings without the pack](media/auraRings-pack-wol-control.gif)
