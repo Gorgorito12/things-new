@@ -31,6 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Sunday 2026-11-22 12:35 | [`broadsideSoundSet`](#broadsidesoundset) | Filmed in WoL, with a control. A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). |
+| Sunday 2026-11-22 12:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, keeping its firing pose between them (`<BurstPose>`), before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Saturday 2026-11-21 16:01 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Saturday 2026-11-21 15:50 | [`shipmentCounts`](#shipmentcounts) | Filmed in WoL, with a control. Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | The effect in the cards or techs that want it. |
 | Saturday 2026-11-21 15:50 | [`autoScout`](#autoscout) | Filmed in WoL, with a control. A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. |
@@ -46,7 +48,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 11:54 | [`transformChecks`](#transformchecks) | Filmed in WoL, with a control. A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. |
 | Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
 | Saturday 2026-11-21 11:35 | [`shipTechLimit`](#shiptechlimit) | Filmed in WoL, with a control. `<ShipTechLimit>N</ShipTechLimit>` in a civ caps the techs that cost Ships (WoL's Mapuche council techs) a player of that civ researches per game, repeatable techs excepted. | The tag on the civ in `civs.xml`. |
-| Saturday 2026-11-21 11:31 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
 | Saturday 2026-11-21 11:07 | [`deadReplacementAtZeroInventory`](bug-fixes.md#deadreplacementatzeroinventory) | Added. A hunt, a herdable or any unit that leaves a body to gather drops its `<DeadReplacement>` when the body is used up, not when it falls. | `<DeadReplacement>` on the protos that want one (none has it today). |
 | Saturday 2026-11-21 11:03 | [`auraStacking`](#aurastacking) | Filmed in WoL, with a control. `<ForbidUnitType>` on any aura: the aura leaves units of a type or proto alone; that an aura does not stack is the game's own `<ModifyExclusive>`. | The tags on the aura. |
 | Friday 2026-11-20 18:41 | [`lanAutoStart`](#lanautostart) | Added. Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. |
@@ -2811,8 +2812,9 @@ Attacks, armor, and what a hit does.
 | [`spreadAnyAccuracy`](#spreadanyaccuracy) | Reads `<maxspread>` and `<spreadfactor>`, which 317 of WoL's tactics files have and the exe ignores, for every miss, and makes every shot of marked units, `InstantBallistics` included, scatter like that whatever their accuracy and hit what it lands on. | **new** | The tags are there; the unit type or proto name of the units that should always scatter, in the cfg. | confirmed (single player) |
 | [`accuracyTechs`](#accuracytechs) | A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`containedUnitsROF`](#containedunitsrof) | An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | **new** | The attribute on the attacks that want it (none has it today). | confirmed |
-| [`numberOfShots`](#numberofshots) | An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | **new** | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. | confirmed (single player) |
+| [`numberOfShots`](#numberofshots) | An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, keeping its firing pose between them (`<BurstPose>`), before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | **new** | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. | confirmed (single player) |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
+| [`broadsideSoundSet`](#broadsidesoundset) | A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | **new** | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). | confirmed (single player, from the log) |
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | **new** | The type on the protos that want it. | confirmed |
 | [`killBountyTechs`, `resourceBounty` and `teamKillBounty`](#killbountytechs-resourcebounty-and-teamkillbounty) | Techs change a proto's `<Bounty>`, `<Bounty resourcetype>` pays a resource, and the type `TeamKillBounty` pays the killer's whole team. | **new** | The effects and tags. Turning on `killBountyTechs` turns on WoL's 10 `subtype='Bounty'` effects. | confirmed |
 | [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
@@ -3843,20 +3845,33 @@ containedUnitsROF [log]
 
 *An attack can fire several quick shots before it reloads, and a shot can fire several projectiles, like a shotgun.*
 
-**Added:** Thursday 2026-11-12 18:11 · **Filmed in WoL:** Saturday 2026-11-21 11:31
+**Added:** Thursday 2026-11-12 18:11 · **Filmed in WoL:** Sunday 2026-11-22 12:35
 
 ![numberOfShots in WoL](media/numberOfShots-wol.gif)
 
-*In WoL, with `numberOfShots projectiles log` and `containedUnitsROF` (3 `Skirmisher`s, selected, whose ranged attacks have
-`<NumberOfShots>3</NumberOfShots><ShotInterval>0.4</ShotInterval>` in `protoy.xml`, test data; 6 enemy `Settler`s created
-in range at 16 s; the log at the bottom; filmed again on 2026-11-21):* each Skirmisher fires three shots 0.4 s apart,
-holding its aim between them, then reloads during its 3 s ROF. All six settlers are down by 41 s.
-[Full video (MP4)](media/numberOfShots-wol.mp4).
+*In WoL, with `numberOfShots log` (3 `Skirmisher`s, selected, whose ranged attacks have
+`<NumberOfShots>3</NumberOfShots><ShotInterval>0.4</ShotInterval>` in `protoy.xml`, test data, so the default
+`<BurstPose>` hold; 8 enemy `Settler`s; a close camera, so the rifles can be followed; the first shots of unit 1 at the
+bottom; filmed on 2026-11-22):* each Skirmisher fires three shots 0.4 and 0.67 s apart with its rifle at the shoulder
+the whole time, then lowers it and reloads during its 3 s ROF. [Full video (MP4)](media/numberOfShots-wol.mp4).
 
-![numberOfShots in WoL, before 2026-11-21](media/numberOfShots-before-wol.gif)
+![numberOfShots in WoL, Sarbaz](media/numberOfShots-sarbaz-wol.gif)
 
-*In WoL, the key as it was before 2026-11-21 (the same scene):* the same shot times, but between the quick shots each
-Skirmisher runs its whole reload animation in a fraction of a second. [Full video (MP4)](media/numberOfShots-before-wol.mp4).
+*In WoL, the same tags on the Persian `Sarbaz` (3, selected, against 8 Settlers, the camera following unit 1; filmed on
+2026-11-22):* the same bursts, the musket held at the shoulder between the shots. [Full video (MP4)](media/numberOfShots-sarbaz-wol.mp4).
+
+![numberOfShots in WoL, BurstPose idle](media/numberOfShots-idle-wol.gif)
+
+*Filmed on 2026-11-21, when the idle animation was the only pose between the shots; today it is
+`<BurstPose>idle</BurstPose>` (the same scene as the control below, `numberOfShots projectiles log` and `containedUnitsROF`
+on):* between the quick shots each Skirmisher drops its rifle to the idle pose (WoL's `Volley_standing_idle` is the rifle
+at rest) and raises it again. [Full video (MP4)](media/numberOfShots-idle-wol.mp4).
+
+![numberOfShots in WoL, BurstPose reload](media/numberOfShots-before-wol.gif)
+
+*Filmed before 2026-11-21, when the reload played between the shots; today it is `<BurstPose>reload</BurstPose>` (the same
+scene):* the same shot times, but between the quick shots each Skirmisher runs its whole reload animation in a fraction of a
+second. [Full video (MP4)](media/numberOfShots-before-wol.mp4).
 
 ![numberOfShots in WoL, key off](media/numberOfShots-wol-control.gif)
 
@@ -3865,7 +3880,8 @@ Skirmisher runs its whole reload animation in a fraction of a second. [Full vide
 
 ![numberOfShots projectiles in WoL](media/numberOfShots-projectiles-wol.gif)
 
-*Filmed on 2026-11-12, before the quick shots of a burst stopped playing the reload animation.* *In WoL, with `numberOfShots projectiles log` and `spreadAnyAccuracy Skirmisher` (the same Skirmishers with
+*Filmed on 2026-11-12, when the quick shots of a burst still played the reload animation (today's
+`<BurstPose>reload</BurstPose>`; the default now keeps the firing pose).* *In WoL, with `numberOfShots projectiles log` and `spreadAnyAccuracy Skirmisher` (the same Skirmishers with
 `<NumberProjectiles>4</NumberProjectiles><MaxSpread>2</MaxSpread><SpreadFactor>0.2</SpreadFactor>`, test data):* each shot
 is a fan of four tracers, each pellet landing where its own spread takes it. Three settlers fall in 57 s.
 [Full video (MP4)](media/numberOfShots-projectiles-wol.mp4).
@@ -3888,12 +3904,20 @@ numberOfShots [projectiles] [log]
   ROF's pace, so it comes a little later (the aim of the stock animation: 0.67 s after the one before for a 3 s
   Skirmisher), and waits the ROF: the reload. So a burst takes about (N − 1) × interval + ROF. Each shot is a full stock shot:
   its own accuracy roll, damage and projectile. Melee attacks take it too (N hits). A new target starts a new burst.
-- **No reload between the shots of a burst (2026-11-21, JTMaston's #87):** an attack whose tactics action has a
-  `<reloadanim>` plays it only after the burst's last shot. After a quick shot the unit holds the action's `<idleanim>` (its
-  aiming pose) until the next shot, instead of running the whole reload in a fraction of a second. The shot times do not
-  change (in the test 0.40 and 0.67 s between the shots and a 3.80 s burst, with and without it). An action with no
-  `<idleanim>` (or a model without that animation) still shows the reload; an attack with no `<reloadanim>` (melee, or an
-  animation that holds its own reload) plays its attack animation for each shot as before.
+- **The pose between the shots of a burst (`<BurstPose>`, JTMaston's #87, 2026-11-21 and 2026-11-22):** an attack whose
+  tactics action has a `<reloadanim>` plays it only after the burst's last shot. Between the quick shots the action's
+  `<BurstPose>` decides what the unit shows:
+  - `hold` (the default): the firing pose. After the shot, the end of the attack animation is slowed down to fill the
+    interval, so the unit keeps its weapon raised until the next shot, with no reload and no idle. Each shot still plays the
+    start of the attack animation (fast: about 40 ms of a 0.4 s interval for WoL's Skirmisher), as the stock attack does.
+  - `idle`: the action's `<idleanim>` between the shots (the behaviour of 2026-11-21). WoL's ranged infantry use
+    `Volley_standing_idle`, the rifle at rest, so the unit lowers its rifle and raises it again for each shot; useful for an
+    action whose idle animation is an aiming pose.
+  - `reload`: the reload animation, squeezed into the interval (the behaviour before 2026-11-21).
+
+  The shot times do not change (in the tests 0.40 and 0.66 s between the shots and a 3.80 s burst, with each pose, within
+  10 ms). An attack with no `<reloadanim>` (melee, or an animation that holds its own reload) plays its attack animation for
+  each shot as before, whatever the tag says.
 
   ```xml
   <action>
@@ -3902,11 +3926,12 @@ numberOfShots [projectiles] [log]
       <rof>3.0</rof>
       <numberofshots>3</numberofshots>
       <shotinterval>0.4</shotinterval>
+      <burstpose>hold</burstpose>   <!-- optional: hold (default), idle or reload -->
   </action>
   ```
 
   The tags also work in a `<ProtoAction>` of `protoy.xml` (the last one read wins). `NumberOfShots` 1 to 50, `ShotInterval`
-  above 0 and up to 60 s; another value is logged and ignored.
+  above 0 and up to 60 s, `BurstPose` `hold`, `idle` or `reload`; another value is logged and ignored.
 - **`projectiles`:** each shot of an action with `<NumberProjectiles>N</NumberProjectiles>` (or `<NumberOfProjectiles>`,
   1 to 32) launches N projectiles at once, each with its own accuracy roll and its own spread
   ([`spreadAnyAccuracy`](#spreadanyaccuracy)), and each dealing the action's damage: divide the damage by N for the same
@@ -3922,7 +3947,10 @@ numberOfShots [projectiles] [log]
 - **Log:** `numberOfShots: applied`, `hook reached: ROF read: attack start (0x4A1189)`, `ROF read: after a shot (0x48F8B5)`,
   `numberOfShots reload (0x4976CB)` and, with `projectiles`, `numberOfShots projectiles (0x48F88D)`. With `log`: each tag read
   (at most 200), the first six quick shots that skip the reload (`numberOfShots: unit 1 (Skirmisher) shot 1 of its burst of
-  3: the idle animation, no reload`), and the first shots of each action: `numberOfShots: 29731 ms, unit 0 (Skirmisher/VolleyRangedAttack) shot 1 of its burst of 3 (shots so
+  3: holds its firing pose, no reload`, or `the idle animation`), the first twelve slowed tails (`numberOfShots: hold, unit 1
+  at 28714 ms: 45 ms into the cycle, animation 1000 ms at rate 11.250, 494 ms left -> rate 1.674 over 295 ms`), a tail
+  whose lead was gone (`the reload start came -658 ms before the wait's end; its animation ends within 10 ms`), and the
+  first shots of each action: `numberOfShots: 29731 ms, unit 0 (Skirmisher/VolleyRangedAttack) shot 1 of its burst of 3 (shots so
   far 1): wait 400 ms (the interval)`, `... shot 3 of its burst of 3 ...: wait 3000 ms (the ROF: reload)`, `unit 2
   (Skirmisher/VolleyRangedAttack) launches 4 projectiles for one shot`.
 - **Simulation:** changes combat: every player needs the same line and data.
@@ -3945,6 +3973,18 @@ numberOfShots [projectiles] [log]
   0.1 ms, render 1.2 ms, main thread 84 %; key off 790 fps, 0.2 ms, 1.2 ms, 84 %; no frame over 50 ms in either. An AI
   skirmish of 100 s (`wolOtto`, Germans) with the key on: no XS error, the AI built a Manor and gathered. The hook's site is
   in none of the 287 ranges WoL's DLL patches (`wol-memdiff.txt`). Not tested: multiplayer, a game beside WoL's DLL.
+- **Tested in WoL (2026-11-22, `BurstPose`, `C:\AoE3-UHC-WoLReal7`):** frames filmed at 30 fps (close camera) of the 2026-11-21
+  build show where the "rifle back to idle" came from: after each quick shot the Skirmisher's `<idleanim>`
+  (`Volley_standing_idle` = `idle_rifleman_A`, the rifle at rest) brought the rifle down within 2 frames, and the next attack
+  animation raised it again. With `hold`: the rifle stays at the shoulder through the three shots; shot times 28.338,
+  28.741, 29.406 s and the next burst at 32.141 s (0.403 / 0.665 / 2.735 s), against 28.401, 28.803, 29.468 and 32.202 s
+  with `idle` (0.402 / 0.665 / 2.734 s). The same tags on the Persian `Sarbaz` (musketBayonet.tactics): bursts at 0.39 /
+  0.67 s, the pose held (video above). A `Falconet` (3 shots 0.6 s, `Bombard_reload`) kept firing (0.59 s between shots;
+  a new burst on each new target, as before) and two `Pikeman`s (3 hits 0.3 s, no reload animation) kept bursts of 3 hits
+  (0.29 s apart). A saved game loaded before the fight: the tags read again, bursts and held poses as before. Performance
+  (`perfprobe.py`, 60 s, 30 Skirmishers with 3-shot bursts against 30 Crossbowmen, two runs each, six other games running
+  on the machine): with the key 426 / 437 fps, update 0.18 / 0.17 ms, render 2.2 ms, no frame over 50 ms; key off 361 /
+  427 fps, update 0.22 / 0.21 ms, render 2.6 / 2.2 ms, one frame over 50 ms. Not tested: multiplayer.
 
 #### broadsideMuzzleLimit
 
@@ -4055,6 +4095,69 @@ cannons, one after another, and the log shows the 15 slots per side. [Full video
   log`: the Tekkousen got `10 right and 10 left muzzle slots` and fired from all of them. WoL's ironclad long-range
   attack has `SingleUsePlayer`, so it keeps 1. The projectile count of the data (`numberprojectiles`) was added on
   2026-11-21 (above).
+
+#### broadsideSoundSet
+
+*A ship's broadside can sound like rockets, or any other sound set, instead of the cannon every ship plays.*
+
+**Added:** Sunday 2026-11-22 12:35 · **Filmed in WoL:** Sunday 2026-11-22 12:35
+
+![broadsideSoundSet in WoL](media/broadsideSoundSet-wol.gif)
+
+*In WoL, with `broadsideSoundSet log` (player 1's 2 `Frigate`s with `HCRocketShips` active, the British card that swaps their
+attacks for `RangedAttackRocket` and `BroadsideAttackRocket`, both tagged `<BroadsideSoundSet>DERocketShoot</BroadsideSoundSet>`
+in `frigate.tactics`, test data; against player 2's 2 cannon Frigates, on water):* each rocket volley logs
+`fires: sound set DERocketShoot` (bottom). **The GIF has no sound: the MP4 has it**, the rocket shots of player 1 and the cannon
+shots of player 2. [Full video with sound (MP4)](media/broadsideSoundSet-wol.mp4).
+
+![broadsideSoundSet in WoL, key off](media/broadsideSoundSet-wol-control.gif)
+
+*In WoL, key off (the same scene and data):* the rockets fly as before, but every shot plays `ShipCannonShoot`. The GIF has no
+sound. [Full video with sound (MP4)](media/broadsideSoundSet-wol-control.mp4).
+
+```
+broadsideSoundSet [log]
+```
+
+- **In WoL today (JTMaston's #96):** every shot of a `BroadsideAttack` action plays the sound set `ShipCannonShoot`. The exe
+  writes that name at the one place where a broadside shot makes its sound (the fire step's muzzle effect, which also shows
+  `NavelCannon`), whatever the ship or its projectile. The British card `HCRocketShips` ships 2 Frigates and swaps the attacks of
+  every Frigate of the player for `RangedAttackRocket` and `BroadsideAttackRocket` (`frigate.tactics`, both of type
+  `BroadsideAttack`, projectile `RocketShellMini`), so the rocket ships fly rockets with a cannon's sound. Attacks of type
+  `Attack` (the land `Rocket`, muskets) are not concerned: their shot sound is a `SpecificSoundSet` tag of their animation
+  (`rocket.xml` plays `DERocketShoot` and `RocketShoot`).
+- **The tag:** in a tactics `<action>` of type `BroadsideAttack` (after its `<name>`), or in a `<ProtoAction>` of
+  `protoy.xml` (the last one read wins):
+
+  ```xml
+  <action>
+      <name stringid="6000547">BroadsideAttackRocket</name>
+      <type>BroadsideAttack</type>
+      ...
+      <BroadsideSoundSet>DERocketShoot</BroadsideSoundSet>
+  </action>
+  ```
+
+  For WoL's rocket ships: the tag on `RangedAttackRocket` (the attack ships use on their own) and `BroadsideAttackRocket` (the
+  broadside order) in `frigate.tactics`. It is on the action, not on the proto, because the rocket ships are Frigates: only the
+  card's action swap tells them apart. The tactics file is shared by other ships (`Lorcha`, `PaddleSteamer`, `Baghlah` and
+  more): the tag reaches each proto with that action, and only the ships that have the rocket actions enabled use them.
+  `DERocketShoot` (WoL's `Sound\soundsetsy.xml`, the sound of the land Rocket) or the stock `RocketShoot` both fit.
+- **A bad name:** a name with spaces or longer than 63 characters is logged when the data loads and ignored
+  (`broadsideSoundSet: Frigate/BroadsideAttack (tactics): <BroadsideSoundSet>two words</BroadsideSoundSet> is not a sound
+  set name ...`). A name no sound set has is logged at the action's first shot, and its shots keep `ShipCannonShoot`
+  (`broadsideSoundSet: Frigate/RangedAttack: no sound set is named NoSuchSoundSet; its broadsides play ShipCannonShoot`).
+- **Log:** `broadsideSoundSet: applied`, `hook reached: broadsideSoundSet (0x4CECBD)` at the first broadside shot of the game.
+  With `log`: each tag read (at most 100) and the first 3 shots of each tagged action (at most 12):
+  `broadsideSoundSet: unit 0 (Frigate/RangedAttackRocket) fires: sound set DERocketShoot`.
+- **Simulation:** none: a sound only. Each player may have their own setting.
+- **Saved games:** nothing to keep: the tags are read again when the data loads.
+- **With other keys:** [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) (more muzzles, more shots, each with the tagged sound).
+- **Tested in WoL (2026-11-22, single player, `C:\AoE3-UHC-WoLReal7`):** the videos above: player 1's rocket Frigates logged
+  `DERocketShoot` for their shots, player 2's cannon Frigates (untagged) played `ShipCannonShoot`. The bad names above: both
+  lines logged, the cannon ships kept firing with `ShipCannonShoot`, no crash. The sound was recorded from the speakers'
+  loopback beside the video; it is in the MP4s to be listened to (the recording was not checked by ear here). Not tested:
+  multiplayer, the `PowerBroadside` ability (same fire step, so the same hook), a game beside WoL's DLL.
 
 #### cantBeSlowed
 

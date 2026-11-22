@@ -14,6 +14,7 @@ Contents:
 - [numberOfShots](#numberofshots)
 - [accuracyTechs](#accuracytechs)
 - [broadsideMuzzleLimit](#broadsidemuzzlelimit)
+- [broadsideSoundSet](#broadsidesoundset)
 - [snareOnlyHitUnit](#snareonlyhitunit)
 - [cantBeSlowed](#cantbeslowed)
 - [snareValues](#snarevalues)
@@ -3010,11 +3011,18 @@ Sites: `ShotsAnimVariant` `0x471D24` (11 B), `ShotsLaunchCall` `0x48F838` (93 B)
 // animation and waits the ROF: N - 1 quick shots, then a normal one and its reload. The count belongs to the unit
 // action, which a new target replaces, so a new target starts a new burst.
 //
-// No reload between the burst's shots: an attack with a <reloadanim> plays its attack animation, then the reload
-// animation (started by FUN_004976CB once the attack animation has played), the two together paced to last the cycle
-// (0x4A11C2..0x4A120A adds the reload's length). After a shot that does not end its burst the reload hook
-// (hooks/shots_hooks.asm, 0x4976CB) runs that function on the action's idle animation instead, the aiming pose, so the
-// unit aims until its next shot; the states and the timing stay the stock ones. Only the burst's last shot reloads.
+// Between the burst's shots (<BurstPose>, per action): an attack with a <reloadanim> plays its attack animation, then the
+// reload animation (started by FUN_004976CB once the attack animation has played), the two together paced to last the
+// cycle (0x4A11C2..0x4A120A adds the reload's length), and the next cycle begins when that animation ends.
+// - "hold" (the default): at a quick shot (the after-shot ROF read, the attack animation's Attack tag) the rest of the
+//   attack animation is slowed so that it ends kHoldLeadMs before the cycle's wait; then the reload hook
+//   (hooks/shots_hooks.asm, 0x4976CB) runs that function on the attack animation itself, which is still shown, so it
+//   is not restarted and only paced over the lead, and marks [ua+70h] as no longer shown, as after a stock reload start.
+//   The unit keeps the attack animation's last pose, its aim, until its next shot.
+// - "idle": the reload hook runs the function on the action's idle animation instead (2026-11-21).
+// - "reload": the stock reload, squeezed into the interval.
+// The shot times stay the stock ones within a few ms: the animations still end where the waits do. Only the burst's last
+// shot reloads, and an attack without a reload animation is left alone (the stock idle state between its shots).
 //
 // The projectiles: a jmp over the launch call at 0x48F88D (hooks/shots_hooks.asm) calls the launch N times with
 // the same four arguments; each projectile rolls its own accuracy and spread and deals the action's damage.
@@ -3094,10 +3102,14 @@ struct ActionKey {
   auto operator<=>(const ActionKey&) const = default;
 };
 
+// What the unit shows between two shots of a burst (<BurstPose>); the values are what the reload hook expects.
+enum class Pose : std::int32_t { kReload = 0, kIdle = 1, kHold = 2 };
+
 struct Entry {
   std::int32_t shots = 1;
   std::int32_t intervalMs = kDefaultIntervalMs;
   std::int32_t projectiles = 1;
+  Pose pose = Pose::kHold;
   unsigned shotLines = 0;  // "log": shots logged for this action
 };
 
@@ -3112,6 +3124,7 @@ unsigned g_invalidLines = 0;
 unsigned g_shotLines = 0;
 unsigned g_reloadLines = 0;
 constexpr unsigned kMaxReloadLines = 6;
+unsigned g_holdLines = 0;  // "log": the first hold lines
 
 std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::RofRead read);
 
@@ -3139,6 +3152,7 @@ void ResetForDataLoad(char*) {
   g_invalidLines = 0;
   g_shotLines = 0;
   g_reloadLines = 0;
+  g_holdLines = 0;
 }
 
 const Entry* Find(const char* unitAction, const char** unitOut) {
@@ -3158,6 +3172,46 @@ const Entry* Find(const char* unitAction, const char** unitOut) {
   return &found->second;
 }
 
+using AnimLengthFn = float(__thiscall*)(const char* unit);  // 0x4939BD: the length of the unit's current animation, s
+const auto kAnimLength = reinterpret_cast<AnimLengthFn>(0x004939BD);
+constexpr std::int32_t kHoldLeadMs = 30;  // the attack's tail ends this long before the wait
+constexpr std::int32_t kMinLeadMs = 10;   // the reload start's animation ends at least this soon
+
+// "hold", at a quick shot (the attack animation's Attack tag): the rest of the attack animation is slowed so that it
+// ends kHoldLeadMs before the cycle's wait does, instead of ending early in the cycle and leaving the unit to the
+// reload slot's animation for the rest of it. The unit keeps the attack animation's tail, its firing pose.
+void StretchTail(const char* unitAction, const char* unit, std::int32_t intervalMs) {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const char* visual = unit == nullptr ? nullptr : Field<const char*>(unit, 0x60);
+  const char* playing = visual == nullptr ? nullptr : Field<const char*>(visual, 0x00);
+  // Only an attack with a reload animation ([ua+84h], whose start the reload hook handles), while the unit shows its
+  // attack animation ([[unit+60h]]+14h, as 0x482771 reads it, against [ua+7Ch]).
+  if (world == nullptr || playing == nullptr || Field<std::int32_t>(unitAction, 0x84) < 0 ||
+      Field<std::int32_t>(playing, 0x14) != Field<std::int32_t>(unitAction, 0x7C)) {
+    return;
+  }
+  const std::int32_t now = Field<std::int32_t>(world, 0x108);
+  const std::int32_t elapsed = now - Field<std::int32_t>(unitAction, 0x78);
+  const float rate = Field<float>(unit, 0xB0);
+  const float lengthMs = kAnimLength(unit) * 1000.0f;
+  const float left = lengthMs - static_cast<float>(elapsed) * rate;
+  const std::int32_t target = intervalMs - kHoldLeadMs - elapsed;
+  if (!(rate > 0.0f) || !(left > 0.0f) || target <= 0) {
+    return;
+  }
+  const float slow = left / static_cast<float>(target);
+  if (slow < rate) {
+    *reinterpret_cast<float*>(const_cast<char*>(unit) + 0xB0) = slow;
+  }
+  if (g_log && g_holdLines < 12) {
+    ++g_holdLines;
+    uhc::Log(L"numberOfShots: hold, unit %d at %d ms: %d ms into the cycle, animation %.0f ms at rate %.3f, %.0f ms "
+             L"left -> rate %.3f over %d ms",
+             Field<std::int32_t>(unit, 0x10), now, elapsed, lengthMs, rate, left, slow, target);
+  }
+}
+
 // From the shared ROF reads: the attack-start and after-shot reads of an action with a burst.
 std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::RofRead read) {
   if (read != uhc::RofRead::kAttackStart && read != uhc::RofRead::kAfterShot) {
@@ -3172,6 +3226,9 @@ std::int32_t __stdcall ShotsRof(const char* unitAction, std::int32_t rof, uhc::R
   const std::int32_t inBurst = count < 0 ? 0 : count % entry->shots;
   const bool quick = read == uhc::RofRead::kAttackStart ? inBurst < entry->shots - 1 : inBurst != 0;
   const std::int32_t result = quick ? entry->intervalMs : rof;
+  if (quick && read == uhc::RofRead::kAfterShot && entry->pose == Pose::kHold) {
+    StretchTail(unitAction, unit, result);
+  }
   if (g_log && read == uhc::RofRead::kAfterShot && g_shotLines < kMaxShotLines &&
       entry->shotLines < 4u * static_cast<unsigned>(entry->shots)) {
     ++g_shotLines;
@@ -3221,10 +3278,35 @@ bool ParseSeconds(const wchar_t* text, std::int32_t* outMs) {
   return true;
 }
 
+bool ParsePose(const wchar_t* text, std::int32_t* out) {
+  if (text == nullptr) {
+    return false;
+  }
+  while (*text == L' ' || *text == L'\t' || *text == L'\r' || *text == L'\n') {
+    ++text;
+  }
+  std::wstring word(text);
+  while (!word.empty() && (word.back() == L' ' || word.back() == L'\t' || word.back() == L'\r' || word.back() == L'\n')) {
+    word.pop_back();
+  }
+  if (_wcsicmp(word.c_str(), L"hold") == 0) {
+    *out = static_cast<std::int32_t>(Pose::kHold);
+  } else if (_wcsicmp(word.c_str(), L"idle") == 0) {
+    *out = static_cast<std::int32_t>(Pose::kIdle);
+  } else if (_wcsicmp(word.c_str(), L"reload") == 0) {
+    *out = static_cast<std::int32_t>(Pose::kReload);
+  } else {
+    return false;
+  }
+  return true;
+}
+
 void ActionTagRead(const uhc::ActionTag& tag) {
-  enum class Kind { kShots, kInterval, kProjectiles } kind;
+  enum class Kind { kShots, kInterval, kProjectiles, kPose } kind;
   if (_wcsicmp(tag.name, L"NumberOfShots") == 0) {
     kind = Kind::kShots;
+  } else if (_wcsicmp(tag.name, L"BurstPose") == 0) {
+    kind = Kind::kPose;
   } else if (_wcsicmp(tag.name, L"ShotInterval") == 0) {
     kind = Kind::kInterval;
   } else if (_wcsicmp(tag.name, L"NumberProjectiles") == 0 || _wcsicmp(tag.name, L"NumberOfProjectiles") == 0) {
@@ -3255,6 +3337,9 @@ void ActionTagRead(const uhc::ActionTag& tag) {
     case Kind::kProjectiles:
       valid = ParseInt(text, 1, kMaxProjectiles, &value);
       break;
+    case Kind::kPose:
+      valid = ParsePose(text, &value);
+      break;
   }
   if (!valid) {
     if (g_invalidLines < kMaxInvalidLines) {
@@ -3263,6 +3348,7 @@ void ActionTagRead(const uhc::ActionTag& tag) {
                ActionName(key.name), source, tag.name, text, tag.name,
                kind == Kind::kInterval      ? L"a number of seconds above 0 and at most 60"
                : kind == Kind::kShots       ? L"a whole number from 1 to 50"
+               : kind == Kind::kPose        ? L"hold, idle or reload"
                                             : L"a whole number from 1 to 32");
     }
     return;
@@ -3277,6 +3363,9 @@ void ActionTagRead(const uhc::ActionTag& tag) {
       break;
     case Kind::kProjectiles:
       entry.projectiles = value;
+      break;
+    case Kind::kPose:
+      entry.pose = static_cast<Pose>(value);
       break;
   }
   SyncGates();
@@ -3303,24 +3392,56 @@ bool EnsureReader() {
 
 extern "C" {
 
-// From the reload hook (0x4976CB), while some action has a burst: true after a shot that does not end its burst
-// (the same test as the after-shot ROF read): the idle animation plays instead of the reload.
-bool __stdcall UhcShotsSkipReload(const char* unitAction) {
+// From the reload hook (0x4976CB), while some action has a burst: after a shot that does not end its burst (the same
+// test as the after-shot ROF read), the action's <BurstPose> (2 hold: the attack animation stays, 1 idle: the idle
+// animation, 0 reload: the stock reload); 0 after any other shot.
+std::int32_t __stdcall UhcShotsBurstPose(const char* unitAction) {
   const char* unit = nullptr;
   const Entry* entry = unitAction == nullptr ? nullptr : Find(unitAction, &unit);
   if (entry == nullptr || entry->shots <= 1) {
-    return false;
+    return 0;
   }
   const std::int32_t count = Field<std::int32_t>(unitAction, 0x68);
   if ((count < 0 ? 0 : count % entry->shots) == 0) {
-    return false;
+    return 0;
   }
   if (g_log && g_reloadLines < kMaxReloadLines) {
     ++g_reloadLines;  // its own budget, so the shots' lines still show whole bursts
-    uhc::Log(L"numberOfShots: unit %d (%hs) shot %d of its burst of %d: the idle animation, no reload",
-             Field<std::int32_t>(unit, 0x10), ProtoName(Field<const char*>(unit, 0x5C)), count % entry->shots, entry->shots);
+    uhc::Log(L"numberOfShots: unit %d (%hs) shot %d of its burst of %d: %ls",
+             Field<std::int32_t>(unit, 0x10), ProtoName(Field<const char*>(unit, 0x5C)), count % entry->shots, entry->shots,
+             entry->pose == Pose::kHold   ? L"holds its firing pose, no reload"
+             : entry->pose == Pose::kIdle ? L"the idle animation, no reload"
+                                          : L"the reload animation (BurstPose reload)");
   }
-  return true;
+  return static_cast<std::int32_t>(entry->pose);
+}
+
+// From the reload hook with "hold", after the stock reload start ran in the lead the attack's tail left it: when the
+// unit reached that point late (the lead gone or nearly), the stock start paces the reload animation over a wait of 0
+// (rate 1, the whole animation) or a negative one (read unsigned: it never ends), and the next cycle waits for it.
+// Then the rate that ends it within kMinLeadMs.
+void __stdcall UhcShotsHoldLead(const char* unitAction) {
+  const char* unit = unitAction == nullptr ? nullptr : Field<const char*>(unitAction, 0x10);
+  const char* timer = unit == nullptr ? nullptr : Field<const char*>(unit, 0x58);
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  if (timer == nullptr || world == nullptr || Field<const char*>(unit, 0x60) == nullptr) {
+    return;
+  }
+  const std::int32_t left = Field<std::int32_t>(timer, 0xB8) + Field<std::int32_t>(timer, 0xBC) -
+                            Field<std::int32_t>(world, 0x108);
+  if (left >= kMinLeadMs) {
+    return;
+  }
+  const float lengthMs = kAnimLength(unit) * 1000.0f;
+  if (lengthMs > 0.0f) {
+    *reinterpret_cast<float*>(const_cast<char*>(unit) + 0xB0) = lengthMs / static_cast<float>(kMinLeadMs);
+  }
+  if (g_log && g_holdLines < 24) {
+    ++g_holdLines;
+    uhc::Log(L"numberOfShots: hold, unit %d: the reload start came %d ms before the wait's end; its animation ends "
+             L"within %d ms", Field<std::int32_t>(unit, 0x10), left, kMinLeadMs);
+  }
 }
 
 // From the launch hook (0x48F88D), while some action has projectiles: how many times to call the launch for this
@@ -3398,8 +3519,8 @@ Outcome ApplyNumberOfShots(const Config& config) {
     return Outcome::kFailed;
   }
   g_combat = true;  // before the data loads, which runs after every key is applied
-  Log(L"numberOfShots: attacks read <NumberOfShots> and <ShotInterval> (default %.2f s), no reload animation between "
-      L"a burst's shots%ls%ls (multiplayer unverified)",
+  Log(L"numberOfShots: attacks read <NumberOfShots>, <ShotInterval> (default %.2f s) and <BurstPose> (default hold: "
+      L"the firing pose between a burst's shots)%ls%ls (multiplayer unverified)",
       kDefaultIntervalMs / 1000.0,
       g_projectiles ? L", and <NumberProjectiles> projectiles per shot" : L"",
       g_log ? L"; tags and the first shots logged" : L"");
@@ -3422,7 +3543,8 @@ option casemap :none
 include common.inc
 
 UhcShotsProjectiles PROTO STDCALL :DWORD
-UhcShotsSkipReload PROTO STDCALL :DWORD
+UhcShotsBurstPose PROTO STDCALL :DWORD
+UhcShotsHoldLead PROTO STDCALL :DWORD
 
 EXTERNDEF g_uhcShotsProjectiles:DWORD      ; above 0 while some action has more than one projectile
 EXTERNDEF g_uhcShotsBurst:DWORD            ; above 0 while some action has a burst (the reload hook asks only then)
@@ -3473,31 +3595,40 @@ UhcShotsLaunchHook ENDP
 ; once the attack animation of a shot has played it starts the reload animation ([ua+84h], its model index [ua+88h]),
 ; paced to end with the wait before the next cycle, and returns AL 1 (0 without a reload animation). Called from
 ; setState(15h)'s case (0x497813) and from the update in state 19h (0x49A3E6); both go on as stock with either result.
-; After a shot that does not end its burst (UhcShotsSkipReload) the function runs on the action's idle animation
-; ([tactics action+60h], the aiming pose) instead: [ua+84h] and [ua+88h] are swapped for the call and put back, so the
-; action's states, its timing and the cycle that follows are the stock ones, and the unit aims instead of reloading.
-; Without an idle animation, or when the model lacks it, the reload plays as stock.
+; After a shot that does not end its burst, UhcShotsBurstPose gives the pose of the action's <BurstPose>:
+;   0 the reload (stock), 1 the action's idle animation ([tactics action+60h], its model index from 0x471D24),
+;   2 "hold": the attack animation itself ([ua+7Ch] / [ua+80h]), which the after-shot ROF filter slowed to end just
+;     before the wait (shots.cpp, StretchTail). The function finds it still shown (0x497767, 0x6A78D0), so it does not
+;     restart it: it sets its owner and paces it over the short lead left. [ua+70h] is then set to -1, so the update in
+;     state 19h (0x49A3DB) no longer sees the cycle's animation and goes on as after a stock reload start (it would
+;     call the function again at every update otherwise). UhcShotsHoldLead then ends an animation whose lead is gone.
+; [ua+84h] and [ua+88h] are swapped for that animation for the call and put back, so the action's states and the cycle
+; that follows are the stock ones. An attack without a reload animation ([ua+84h] < 0) keeps the stock path; without the
+; idle animation, or when the model lacks it, the reload plays as stock.
 UhcShotsReloadHook PROC
     TRACE_ONCE "numberOfShots reload (0x4976CB)"
     cmp g_uhcShotsBurst, 0
     je stockReload
     push ecx
     push ecx
-    call UhcShotsSkipReload             ; true: the burst goes on
+    call UhcShotsBurstPose              ; 0 reload, 1 idle, 2 hold
     pop ecx
-    test al, al
-    je stockReload
-    mov eax, [ecx+4]                    ; the tactics action
     test eax, eax
     je stockReload
-    mov eax, [eax+60h]                  ; its idle animation
-    test eax, eax
-    jl stockReload
     push ebx
     push esi
     push edi
     mov esi, ecx
-    mov ebx, eax
+    cmp dword ptr [esi+84h], 0          ; no reload animation: the stock path (returns 0, the idle state)
+    jl giveUp
+    cmp eax, 2
+    je holdPose
+    mov eax, [esi+4]                    ; the tactics action
+    test eax, eax
+    je giveUp
+    mov ebx, [eax+60h]                  ; its idle animation
+    test ebx, ebx
+    jl giveUp
     mov ecx, [esi+10h]                  ; the unit
     test ecx, ecx
     je giveUp
@@ -3506,12 +3637,38 @@ UhcShotsReloadHook PROC
     test eax, eax
     jl giveUp
     mov edi, eax
+    jmp swapped
+holdPose:
+    mov ebx, [esi+7Ch]                  ; the attack animation
+    mov edi, [esi+80h]                  ; its model index
+    test ebx, ebx
+    jl giveUp
+    test edi, edi
+    jl giveUp
     push dword ptr [esi+88h]
     push dword ptr [esi+84h]
     mov [esi+84h], ebx
     mov [esi+88h], edi
     mov ecx, esi
-    call reloadStart                    ; the stock function on the idle animation; AL its result
+    call reloadStart                    ; the stock reload start, in the short lead the attack's tail left it
+    pop dword ptr [esi+84h]
+    pop dword ptr [esi+88h]
+    mov dword ptr [esi+70h], -1         ; the cycle's animation: no longer the one shown, as after a stock reload start
+    push eax                            ; AL its result
+    push esi
+    call UhcShotsHoldLead               ; a lead already gone: the rate that ends it at once
+    pop eax
+    pop edi
+    pop esi
+    pop ebx
+    ret
+swapped:
+    push dword ptr [esi+88h]
+    push dword ptr [esi+84h]
+    mov [esi+84h], ebx
+    mov [esi+88h], edi
+    mov ecx, esi
+    call reloadStart                    ; the stock function on that animation; AL its result
     pop dword ptr [esi+84h]
     pop dword ptr [esi+88h]
     pop edi
@@ -3995,6 +4152,304 @@ stock:
     mov dword ptr [esp+1Ch], eax    ; stolen 0x5034E4: the MuzzleL count, in the argument slot
     jmp clampLNext
 UhcBroadsideLogHook ENDP
+
+END
+```
+
+## broadsideSoundSet
+
+Contract: [broadsideSoundSet](../porting-to-another-dll.md#broadsidesoundset).
+
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `BroadsideSound` `0x4CECBD` (8 B), `BroadsideSoundName` `0xBA1D5C` (16 B).
+
+### src/features/broadsidesound.cpp
+
+```cpp
+// broadsideSoundSet [log]: an attack of the broadside class (a tactics <type>BroadsideAttack</type>, ships' cannon
+// volleys) plays the sound set its action names in <BroadsideSoundSet> at each shot, in place of "ShipCannonShoot".
+//
+// Stock: the broadside fire step calls FUN_004CEB37 (its only caller, 0x4CEA02) for the effect of each shot, just before
+// the launch 0x4CEA43: the muzzle effect "NavelCannon" (0xBA1D6C) through 0x4828E6, then 0x4AA24C(game, position
+// [unit+14h], "ShipCannonShoot" (0xBA1D5C, pushed at 0x4CECBD), extra), which plays a sound set by name. The name is
+// the only one pushed there: every broadside shot of every ship sounds the same, whatever its projectile.
+//
+// The hook (hooks/broadsidesound_hooks.asm) replaces that push: UhcBroadsideSoundName(unit action) finds the tag of
+// {[[ua+10h]+5Ch]+4 proto ID, [[ua+4]+4] action name index}, the pair every player's copy keeps, and gives its name,
+// or the stock one. A mod's rocket ships can be Frigates whose home city card swaps their broadside actions for
+// rocket ones (both of type BroadsideAttack): the action, not the proto, tells them apart, so the tag belongs to the
+// action.
+#include <windows.h>
+
+#include <compare>
+#include <cstdint>
+#include <cwchar>
+#include <map>
+#include <string>
+
+#include "../actiontags.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+
+extern "C" {
+void UhcBroadsideSoundHook();  // hooks/broadsidesound_hooks.asm
+}
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +140h database
+const char* const kStockSound = reinterpret_cast<const char*>(0x00BA1D5C);  // "ShipCannonShoot"
+constexpr std::size_t kMaxName = 63;
+constexpr unsigned kMaxTagLines = 100;
+constexpr unsigned kMaxInvalidLines = 50;
+constexpr unsigned kMaxShotLines = 12;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+const wchar_t* ActionName(std::int32_t index) {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  if (database == nullptr || index < 0 || index >= Field<std::int32_t>(database, 0x1FDC)) {
+    return L"?";
+  }
+  const wchar_t* name = Field<const wchar_t* const*>(database, 0x1FD8)[index];
+  return name != nullptr ? name : L"?";
+}
+
+const char* ProtoName(const char* proto) {
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name != nullptr ? name : "?";
+}
+
+struct ActionKey {
+  std::int32_t proto;
+  std::int32_t name;
+  auto operator<=>(const ActionKey&) const = default;
+};
+
+enum class Known { kUnchecked, kYes, kNo };
+
+struct Entry {
+  std::string sound;
+  Known known = Known::kUnchecked;
+  unsigned shotLines = 0;
+};
+
+// The sound manager's sets by name, as 0x597C56 (the play by name that 0x4AA24C reaches) looks one up: the manager
+// [game+950h], its set table [+4], a BString of the name (0x401ECA, thiscall(this, const char*), ret 4; freed by
+// 0x4010CA) and 0x468E7D (thiscall(table, const BString*), ret 4), the set or 0. kUnchecked when there is no table.
+struct BString {
+  void* text = nullptr;
+};
+using BStringFromFn = BString*(__thiscall*)(BString* self, const char* text);
+using BStringFreeFn = void(__thiscall*)(BString* self);
+using SoundSetFindFn = const void*(__thiscall*)(const void* table, const BString* name);
+const auto kBStringFrom = reinterpret_cast<BStringFromFn>(0x00401ECA);
+const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+const auto kSoundSetFind = reinterpret_cast<SoundSetFindFn>(0x00468E7D);
+
+Known SoundSetKnown(const char* name) {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* manager = game == nullptr ? nullptr : Field<const char*>(game, 0x950);
+  const char* table = manager == nullptr ? nullptr : Field<const char*>(manager, 0x04);
+  if (table == nullptr) {
+    return Known::kUnchecked;
+  }
+  BString text;
+  kBStringFrom(&text, name);
+  const void* set = kSoundSetFind(table, &text);
+  kBStringFree(&text);
+  return set != nullptr ? Known::kYes : Known::kNo;
+}
+
+// Filled while the data loads (a later tag of the same action wins), read on the game thread at each broadside shot.
+// The strings do not move while the game runs: the map only changes during a data load.
+std::map<ActionKey, Entry> g_entries;
+bool g_log = false;
+unsigned g_tagLines = 0;
+unsigned g_invalidLines = 0;
+unsigned g_shotLines = 0;
+
+void ResetForDataLoad(char*) {
+  g_entries.clear();
+  g_tagLines = 0;
+  g_invalidLines = 0;
+  g_shotLines = 0;
+}
+
+// A sound set name: printable ASCII, no spaces, as the sound set files write them.
+bool ParseName(const wchar_t* text, std::string* out) {
+  if (text == nullptr) {
+    return false;
+  }
+  while (*text == L' ' || *text == L'\t' || *text == L'\r' || *text == L'\n') {
+    ++text;
+  }
+  std::wstring word(text);
+  while (!word.empty() && (word.back() == L' ' || word.back() == L'\t' || word.back() == L'\r' || word.back() == L'\n')) {
+    word.pop_back();
+  }
+  if (word.empty() || word.size() > kMaxName) {
+    return false;
+  }
+  std::string name;
+  for (wchar_t c : word) {
+    if (c <= L' ' || c > L'~') {
+      return false;
+    }
+    name.push_back(static_cast<char>(c));
+  }
+  *out = name;
+  return true;
+}
+
+void ActionTagRead(const uhc::ActionTag& tag) {
+  if (_wcsicmp(tag.name, L"BroadsideSoundSet") != 0) {
+    return;
+  }
+  const wchar_t* source = tag.source == uhc::ActionSource::kTactics ? L"tactics" : L"protoy";
+  const wchar_t* text = tag.text == nullptr ? L"" : tag.text;
+  const ActionKey key{Field<std::int32_t>(tag.proto, 0x04), Field<std::int32_t>(tag.action, 0x04)};
+  if (key.name < 0) {
+    if (g_invalidLines < kMaxInvalidLines) {
+      ++g_invalidLines;
+      uhc::Log(L"broadsideSoundSet: %hs (%ls): <BroadsideSoundSet> before the action's <name>; ignored (put <name> "
+               L"first)", ProtoName(tag.proto), source);
+    }
+    return;
+  }
+  std::string name;
+  if (!ParseName(text, &name)) {
+    if (g_invalidLines < kMaxInvalidLines) {
+      ++g_invalidLines;
+      uhc::Log(L"broadsideSoundSet: %hs/%ls (%ls): <BroadsideSoundSet>%ls</BroadsideSoundSet> is not a sound set name "
+               L"(1 to %u characters, no spaces); ignored", ProtoName(tag.proto), ActionName(key.name), source, text,
+               static_cast<unsigned>(kMaxName));
+    }
+    return;
+  }
+  g_entries[key].sound = name;
+  if (g_log && g_tagLines < kMaxTagLines) {
+    ++g_tagLines;
+    uhc::Log(L"broadsideSoundSet: %hs/%ls (%ls): %hs", ProtoName(tag.proto), ActionName(key.name), source,
+             name.c_str());
+  }
+}
+
+}  // namespace
+
+extern "C" {
+
+// From the hook at 0x4CECBD: the sound set of this broadside shot.
+const char* __stdcall UhcBroadsideSoundName(const char* unitAction) {
+  if (unitAction == nullptr || g_entries.empty()) {
+    return kStockSound;
+  }
+  const char* action = Field<const char*>(unitAction, 0x04);
+  const char* unit = Field<const char*>(unitAction, 0x10);
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  if (action == nullptr || proto == nullptr) {
+    return kStockSound;
+  }
+  const auto found = g_entries.find(ActionKey{Field<std::int32_t>(proto, 0x04), Field<std::int32_t>(action, 0x04)});
+  if (found == g_entries.end()) {
+    return kStockSound;
+  }
+  Entry& entry = found->second;
+  if (entry.known == Known::kUnchecked) {
+    entry.known = SoundSetKnown(entry.sound.c_str());
+    if (entry.known == Known::kNo) {
+      uhc::Log(L"broadsideSoundSet: %hs/%ls: no sound set is named %hs; its broadsides play ShipCannonShoot",
+               ProtoName(proto), ActionName(Field<std::int32_t>(action, 0x04)), entry.sound.c_str());
+    }
+  }
+  if (entry.known == Known::kNo) {
+    return kStockSound;
+  }
+  if (g_log && g_shotLines < kMaxShotLines && entry.shotLines < 3) {
+    ++g_shotLines;
+    ++entry.shotLines;
+    uhc::Log(L"broadsideSoundSet: unit %d (%hs/%ls) fires: sound set %hs", Field<std::int32_t>(unit, 0x10),
+             ProtoName(proto), ActionName(Field<std::int32_t>(action, 0x04)), entry.sound.c_str());
+  }
+  return entry.sound.c_str();
+}
+
+}  // extern "C"
+
+namespace uhc {
+
+Outcome ApplyBroadsideSoundSet(const Config& config) {
+  const Config::Args* args = config.First("broadsideSoundSet");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else {
+      Log(L"broadsideSoundSet: unexpected argument %hs (expected: [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("broadsideSoundSet", {&sites::kBroadsideSound, &sites::kBroadsideSoundName}) ||
+      !OnDatabaseLoad(&ResetForDataLoad) || !AddActionTagHandler(&ActionTagRead)) {
+    return Outcome::kFailed;
+  }
+  // push 0BA1D5Ch (5 B) at 0x4CECBD, the name of the broadside shot's sound set.
+  if (!WriteJmp(sites::kBroadsideSound.va, reinterpret_cast<const void*>(&UhcBroadsideSoundHook), 5)) {
+    return Outcome::kFailed;
+  }
+  Log(L"broadsideSoundSet: broadside shots play their action's <BroadsideSoundSet> (default ShipCannonShoot)%ls",
+      g_log ? L"; tags and the first shots logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/broadsidesound_hooks.asm
+
+```asm
+; The hook of broadsideSoundSet (features/broadsidesound.cpp): the sound set of a broadside shot, entered through a jmp
+; written over the stock push of its name and left through an explicit jmp to the verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcBroadsideSoundName PROTO STDCALL :DWORD
+
+.data
+soundNext       dd 004CECC2h    ; add edx,14h: the unit's position, then push edx / call 4AA24Ch
+
+.code
+
+; Replaces push 0BA1D5Ch ("ShipCannonShoot", 5 bytes) at 0x4CECBD, in FUN_004CEB37, the broadside fire step's effect
+; of one shot (its only caller 0x4CEA02, before the launch 0x4CEA43): EDI = the unit action (the ECX of the call),
+; EDX = its unit [edi+10h], ECX = the game [0C66234h], the third argument of 0x4AA24C already pushed. The hook pushes
+; the name UhcBroadsideSoundName gives (the stock one when the action has no <BroadsideSoundSet>) and goes on at
+; 0x4CECC2, which writes EDX and pushes it, then calls 0x4AA24C(game, position, name, extra). EAX is not read before
+; that call writes it; no x87 value is live (the angle was stored at 0x4CEC0D).
+UhcBroadsideSoundHook PROC
+    TRACE_ONCE "broadsideSoundSet (0x4CECBD)"
+    push ecx
+    push edx
+    push edi
+    call UhcBroadsideSoundName          ; EAX = the set's name, ASCII
+    pop edx
+    pop ecx
+    push eax
+    jmp soundNext
+UhcBroadsideSoundHook ENDP
 
 END
 ```
