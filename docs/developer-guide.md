@@ -395,6 +395,10 @@ there:
   `record --background`: the window stays behind the others, takes no focus, and `PrintWindow` still
   films it. The camera does not ease to a new `normalZoom` in the background, hence setting it
   first. Only real clicks and keys (`rclick`, `rkey`) need the window in front.
+- **No sound effects in a background copy (2026-11-22):** with `multipleInstances background` the
+  window is never activated, and the game's sound effects stay silent (the music still plays). A
+  take that needs the sound (a sound set, a shot sound) runs with plain `multipleInstances` and the
+  window brought to the front, alone or with the other sessions' agreement.
 - **What works in a background copy, with no mouse (2026-11-05):**
 
   | Need | How |
