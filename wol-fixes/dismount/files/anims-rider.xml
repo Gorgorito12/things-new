@@ -52,6 +52,20 @@
 		</assetreference>
 		<component>ModelComp</component>
 	</anim>
+	<anim>Dismounted_Raze_idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_raze_idle</file>
+		</assetreference>
+		<component>ModelComp</component>
+		<attach a="torch" frombone="ATTACHPOINT" tobone="L HAND" syncanims="0"/>
+	</anim>
+	<anim>Dismounted_Raze_attack
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_raze_attack</file>
+		</assetreference>
+		<component>ModelComp</component>
+		<attach a="torch" frombone="ATTACHPOINT" tobone="L HAND" syncanims="0"/>
+	</anim>
 	<anim>Dismount
 		<assetreference type="GrannyAnim">
 			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_dismount</file>

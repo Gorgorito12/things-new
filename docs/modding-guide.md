@@ -9286,17 +9286,79 @@ matters:
 
 ### A stance on foot for a cavalry unit
 
-*A ranged horseman gets off and fights on foot beside his horse, and mounts again, with data only.*
+*A ranged horseman gets off and fights on foot, his horse hidden or kept beside him, and mounts again, with data only.*
 
 The pack `wol-fixes/dismount` (`apply_fix.py <WoL folder>`, `--restore` to undo; README in English and Spanish)
-does it for the Chasseur a Cheval, as request #84 asked: a tactic `Dismounted` with its own actions, speed and
-animations, `<transition>`s both ways as the artillery's Limber/Bombard, two buttons
-(`unitSetTactic("Dismounted")`, `unitSetTactic("Stagger")`) and the rider's animations on foot and getting off and
-on, made by aoe3-blender-tools' `tools/make_dismount.py` from the game's infantry animations.
+does it for the Chasseur a Cheval, as request #84 asked: a tactic `Dismounted` with its own actions (fire, bayonet,
+the torch against buildings), speed and animations, `<transition>`s both ways as the artillery's Limber/Bombard,
+two buttons (`unitSetTactic("Dismounted")`, `unitSetTactic("Stagger")`) and the rider's animations on foot and
+getting off and on, made by aoe3-blender-tools' `tools/make_dismount.py` from the game's infantry animations.
+
+**The horse, per unit** (2026-11-22, Maston: "the option to choose for different units if we want the horse kept or
+hidden"). `make_dismount.py`'s recipe has `"horse": "keep"` or `"hide"` (`--horse`), one recipe per unit, and the
+pack takes `--horse hide` (the default) or `--horse keep`:
+- **hide:** the horse is seen while the rider gets off and on, and not while he is on foot. The horse's animations
+  on foot are clips of their own (`chasseur_horse_hidden_<name>.gr2`) that put every bone the horse's mesh is
+  skinned to 30 m under the ground, and keep where they were the bones nothing is skinned to: the root, `bone
+  attachpoint` (the rider), `bone hitpointbar` and `bone_launchpoint`. On foot the rider stands on the unit's
+  centre, on the selection circle and under the hit point bar (his own files, `chasseur_hidden_<name>.gr2`; recipe
+  `"centre"`, default 0, 0). The dismount is the kept one (2.5 s) followed, once the horse is under the ground, by a
+  1 s step from the horse's side to the centre; the mount starts with the step back, and the horse comes up when he
+  stands beside it. A hidden transition so lasts 3.5 s, and the tactics' `<length>` is 3.5.
+- **keep:** the horse stays beside him and walks with him (the pack before 2026-11-22); the rider stands 0.85 m left
+  of the unit's centre, which the horse fills.
+- **Limits of hide:** the horse disappears and appears at once (no fade), as the stock cannons' limber does; the
+  unit keeps the horse's size and obstruction.
+- **First version of hide (2026-11-22, morning):** the rider stayed where he got off, so the selection circle and the
+  hit point bar were 0.85 m beside him; the user saw it in the first videos, which were filmed again.
+- **Tried first and dropped:** a second `<component>` in the horse's anim file, named by the animations on foot, with
+  a horse model that draws nothing (the way the stock cannons show a stripped model in their Bombard animations). In
+  game the rider hung on it vanished as well, or only his hats showed, on the ground; with the horse's own model in
+  that component nothing showed either. A rider hung with `syncanims="1"` does not follow such a switch.
+
+**Test only:** `apply_fix.py --test` adds `ChasseuraChevalDismountTest`, a copy of the Chasseur that builds and heals
+on foot (the tactics file's own `Build` and `Heal` actions made active and kept in the stance on foot, the
+ProtoActions `Build` and `Heal`, `CanAutoHeal`, a House in its build list) with the animations `Heal` and `Build`.
+WoL's Chasseur builds and heals nothing, so it is not for a release. Two findings with it: a copy of the Heal action
+under another name (`DismountedHeal`) healed nothing; and a heal or a construction plays the anim names `Heal` and
+`Build` (also `BuildLifting`, `BuildSaw`, `BuildStaking`), not the action's `<anim>`: with `Dismounted_Heal` there,
+the unit healed in its idle pose.
+
+![The horse hidden, a fight on foot](media/dismount-hidden-wol.gif)
+
+*`--horse hide`, a test scenario (its player is not French; the chasseurs show their Chasseur d'Afrique model, which
+the anim file picks for that player's techs), three chasseurs set to Dismounted by console and sent by a trigger
+against four Jaegers (filmed again 2026-11-22, the rider on the centre):* no horse on foot; each rider stands on his
+selection circle, fires and fights with the bayonet, and the dead lie on the ground without a horse.
+[Full video (MP4)](media/dismount-hidden-wol.mp4).
+
+![The horse kept, the same fight](media/dismount-hidden-wol-control.gif)
+
+*The control, `--horse keep`, same scenario (filmed 2026-11-22; the kept variant did not change since):* the horses
+stand beside the riders and fall with them. [Full video (MP4)](media/dismount-hidden-wol-control.mp4).
+
+![Dismount and mount, the horse hidden](media/dismount-hidden-transitions-wol.gif)
+
+*`--horse hide`, one chasseur, selected:* the dismount with the horse there, the horse gone at its end and the rider
+stepping onto the selection circle; on foot under the hit point bar; the mount: the step back to the side, the horse
+there again, the climb. [Full video (MP4)](media/dismount-hidden-transitions-wol.mp4).
+
+![The torch on foot](media/dismount-hidden-torch-wol.gif)
+
+*`--horse hide`, three dismounted chasseurs next to an enemy House, each on his selection circle:* they throw torches
+at it on foot (the attack on buildings, `DismountedBuildingAttack`), its hit points falling from 1042 to 646.
+[Full video (MP4)](media/dismount-hidden-torch-wol.mp4).
+
+![Heal and build on foot, test unit](media/dismount-hidden-heal-build-test-wol.gif)
+
+*TEST unit (`--test`), `--horse hide`:* on its selection circle, it heals a damaged Line Infantry (36 to 165 hit points)
+with the `Heal` animation, then places a House and builds it with the `Build` animation (hammering with the musket).
+[Full video (MP4)](media/dismount-hidden-heal-build-test-wol.mp4).
 
 ![Dismount in WoL](media/dismount-wol.gif)
 
-*In WoL, with `wol-fixes/dismount` (French against a German AI, four Chasseurs a Cheval, crossbowmen coming; the
+*In WoL, with `wol-fixes/dismount` and the horse kept (filmed 2026-11-21, before the hidden horse became the
+default; French against a German AI, four Chasseurs a Cheval, crossbowmen coming; the
 stance set by console, the command the buttons send):* the riders get off on the horses' left side and stand
 beside them, then walk and fire on foot with the horses beside them; read from the game, their tactic stays
 `Dismounted` through the fight. Filmed before the last tuning of the transitions (2 s, a higher leg): the
@@ -9309,8 +9371,10 @@ close video below shows the final ones. [Full video (MP4)](media/dismount-wol.mp
 
 ![Dismount and mount, close](media/dismount-transitions-wol.gif)
 
-*A test scenario (its player is not French), the camera close on one chasseur:* the dismount (the right leg over
-the croup, down the side) and, seconds later, the mount back. [Full video (MP4)](media/dismount-transitions-wol.mp4).
+*A test scenario (its player is not French), the camera close on one chasseur, the horse kept (2026-11-21):* the
+dismount (the right leg over the croup, down the side) and, seconds later, the mount back; with `--horse hide`
+these two animations are the same, and the horse is not drawn between them.
+[Full video (MP4)](media/dismount-transitions-wol.mp4).
 
 No DLL key: what the
 engine does with tactics was read with REA and checked in game ([engine-symbols.md](engine-symbols.md), "Transition
@@ -9323,9 +9387,19 @@ tags", "Tactic for an action", "Squad mode of a unit"):
   (tactic index 3, read from the game every 0.25 s) through a skirmish fight until they were told to mount.
 - **A rider hung on a horse** plays each animation name in both anim files (the horse's carries the tags); the new
   rider animations must keep their tracks sorted by name, as the stock files do, or only some bones move.
-- **Tested further:** the two buttons clicked (posted clicks on the command row) dismount and mount the selected
-  unit; a game saved while dismounted loads with the stance and the rider on foot (tactic index 3 kept); with the
-  pack applied the AI scripts compile (6 compiles, 0 errors, XS tracer on this copy's game).
+- **Tested further** (2026-11-21, horse kept): the two buttons clicked (posted clicks on the command row) dismount
+  and mount the selected unit; a game saved while dismounted loads with the stance and the rider on foot (tactic
+  index 3 kept); with the pack applied the AI scripts compile (6 compiles, 0 errors, XS tracer on this copy's game).
+- **The rider on the centre, measured** (2026-11-22, the same chasseur selected, mounted and then on foot, screenshots
+  at the game's camera): on foot his feet are on the middle of the selection decal and the hit point bar is right
+  above him, within a few pixels at the default zoom; mounted, the horse fills the same decal.
+- **Tested 2026-11-22** (`--horse hide`, test scenarios): the transitions, standing and walking on foot, the torch,
+  fire and bayonet, deaths on foot, the test unit's heal and build (videos above); a game saved dismounted and loaded
+  (still on foot, no horse), then mounted again (the horse back); the AI scripts compile with the pack (a French
+  skirmish against a German AI: 11 compiles, 0 errors, XS tracer; the AI trained settlers and built a Manor). A first
+  version of the tech twins copied seven whole techs (effects written `</Effect></Effects>` on one line) and the AI
+  did not compile (`'cTechypConsulateBritishBrigade' is not a valid operator`); `apply_fix.py` now ends each twin at
+  its own `</Effect>` and refuses an edit that changes the number of techs. Not seen: the run animation on foot.
 - **What a stance cannot change:** unit types, armour, hit points, obstruction, `<PhysicsInfo>`. On foot the unit
   still counts as cavalry; if it must count as infantry, the alternative is a transform (`uiTransformSelectedUnit`,
   [`transformChecks`](#transformchecks)).

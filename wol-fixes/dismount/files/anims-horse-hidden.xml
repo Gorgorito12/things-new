@@ -1,0 +1,86 @@
+	<anim>Dismounted_Idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_idle</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Bored
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_bored</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Walk
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_walk</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Jog
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_jog</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Run
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_run</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Attack
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_attack</file>
+			<tag type="Attack">0.46</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="RifleShot">0.46</tag>
+			<tag type="Particles" particlename="musketshot">0.46</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Reload
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_reload</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Melee
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_melee</file>
+			<tag type="Attack">0.51</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Swoosh">0.45</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Death
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_death</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.51</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Raze_idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_raze_idle</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Raze_attack
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_raze_attack</file>
+			<tag type="Attack">0.61</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="TorchSwing">0.52</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismount
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_dismount</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Mount
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_hidden_mount</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
