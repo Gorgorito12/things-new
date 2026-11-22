@@ -27,7 +27,38 @@ our tests a click moves the camera to a unit somewhere on the map and selects it
 loaded all the time. The last units clicked before each crash: a Gaia unit near the native villages (crash 1), a
 player's JavaneseLabourer with player 1's villagers ordered onto it (crash 2), and the Sufi village temple
 (ypNativeTempleSufi, the third Sufi temple clicked in a row; crash 3). Two of the three are next to the Bhakti and
-Sufi villages, but this is not proven to be the cause.
+Sufi villages, but this is not proven to be the cause. A fourth crash and the most likely cause (the game's 30 MB
+model cache unloading models that units still use) are in the section "Later the same day" below; that part is
+still being tested.
+
+Later the same day: the most likely cause (work stopped here; to be finished another day)
+-----------------------------------------------------------------------------------------
+A fourth game with a tracer on everything that frees model files crashed too (6 players free for all, 9.4 minutes,
+age3y.exe+0xCC7B, again in a model's draw). What we found in the game's code and in that game:
+
+- The game keeps its loaded 3D models in a cache with a memory budget of 30,000,000 bytes (30 MB), written into
+  the game's code. Every frame, while the cache holds more than that, the game unloads the model it used least
+  recently (frees its Granny file). In this 6-player Levant game that happened 584 times, from the first minutes on:
+  WoL's art is far larger than the original game's, so the cache is always over 30 MB.
+- An unloaded model can still be in use: a unit drawn or animated with it keeps pointing at the freed file. When
+  the game draws that unit again, it reloads the file into a new place but the unit's model still points at the old
+  one, and the game reads freed memory: exactly the three kinds of crash we saw.
+- The crash of the fourth game came less than one second after the cache unloaded eight models (at 563.1 and 563.9
+  s of game time; the crash at 564.9 s).
+- Clicking units all over the map (with the map revealed) makes the game draw many different models in a short
+  time, so the cache unloads a lot; that is why the click test finds it, and why big games with many civs and units
+  are worse.
+- A second, smaller source of the same fault, which is a data error: when a "part" declaration names a bone that
+  the model does not have ("Invalid bone name ... in part declaration for model ..., this probably means the bone
+  was not defined in the unit's anim XML"), the game reloads that model while it is in use. It happened 6 times in
+  that game. We have not yet logged which model and bone it is.
+
+The fix we will test next (not done yet): raise or remove the 30 MB budget. It is two numbers in the game's code:
+the immediate 30,000,000 (bytes 80 C3 C9 01) of two compares, at file offsets 0x6C043 and 0x2E017A of age3y.exe
+(addresses 0x46C043 and 0x6E017A). Written as FF FF FF FF, no model is ever unloaded for the budget. We will offer it
+as an option of our DLL (it also works beside your uhc.dll), test it on the games that crashed, and measure how much
+memory the game then uses. Still to do as well: the same click test with only your uhc.dll (to show our test DLL is
+not involved; it was started and stopped early), and the name of the model with the bad part declaration.
 
 What this means for you
 -----------------------
@@ -72,6 +103,8 @@ How it was tested
   "NEW" Levant     6        free for all, Hard (again)     ok                                13.5 min   251 (137)
   "NEW" Levant     6        free for all, Hard, without    CRASH granny2.dll+0x3A02A         ~13.0 min  254 (123)
                             our display statistics
+  "NEW" Levant     6        free for all, Hard, with the   CRASH age3y.exe+0xCC7B            ~9.4 min   163 (82)
+                            tracer of model frees
   "NEW" Iranian    6        3v3 teams, Hard                ok                                13.5 min   244 (126)
     Plateau
   "NEW" Ferghana   6        3v3 teams, Hard                ok                                13.6 min   254 (137)
@@ -117,11 +150,18 @@ The crash in detail (for whoever can debug it)
   villagers were ordered onto a JavaneseLabourer of its own.
   Crash 3: 6 players free for all, Hard, about 13 minutes, after 254 clicks; the last unit was a Sufi village
   temple (ypNativeTempleSufi), the third clicked in a row.
-  Read with REA (evidence in our repository, rea/evidence/levant-clicks-20261122/): the cache's loader frees a
-  Granny file only on its own error path (0x46E8D4) and frees its vertex section after upload (0x46D297); who
-  frees or replaces the data these units still use was not found. [Inference] a model or animation is unloaded
-  or reloaded while visuals keep pointers into it; loading many models (a revealed 6-8 player map, the camera
-  jumping) makes it more likely. Not established: which file, and whether memory runs short at that moment.
+  Read with REA (evidence in our repository, rea/evidence/levant-clicks-20261122/):
+  - FUN_0041CA8F, run every frame: while [mgr+306Ch] (the bytes of loaded models) > 30,000,000 and the LRU list
+    is not empty, unload its tail ([mgr+3068h]) through FUN_00AD9FD8 -> FUN_0046C210 (GrannyFreeFile at
+    0x588B30). The two compares are at 0x46C03D and 0x6E0174.
+  - FUN_0046D7C3, the model loader: on an entry that is already loaded it first unloads it (0x46E7ED, then
+    FUN_0046C210 at 0x46D80D). FUN_00405C49(index, 1) loads a missing model on demand, so a visual whose model was
+    evicted gets a fresh load while its model instance [visual+24h] still points into the freed file.
+  - FUN_004F0187 (a "part" declaration) calls the loader on a loaded model after its "Invalid bone name" error
+    (0x658C35): a reload of a model in use.
+  Fourth game, traced (tools\re\trace_frees.py): 584 budget unloads and 6 part-declaration reloads in 9.4
+  minutes; crash at 0x40CC7B 1 s after the budget unloaded 8 models. [Inference] the budget eviction frees models
+  still in use; not yet confirmed by a fix test.
 
 
 Not tested
@@ -134,8 +174,8 @@ clicked: that makes the game draw more of the map than a player normally would).
 
 Questions
 ---------
-1. Do your players' crashes show "age3y.exe" with offset 0000c07c, or "granny2.dll" with offset 0003a02a, in the
-   Windows crash report (Event Viewer > Windows Logs > Application, "Application Error")? That would confirm it is
-   this crash.
+1. Do your players' crashes show "age3y.exe" with offset 0000c07c or 0000cc7b, or "granny2.dll" with offset
+   0003a02a, in the Windows crash report (Event Viewer > Windows Logs > Application, "Application Error")? That
+   would confirm it is this crash.
 2. Do they happen in games with many players (6 to 8), after several minutes? Near native villages?
 3. Can you send an Age3Log.txt from right after such a crash?

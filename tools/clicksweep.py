@@ -258,6 +258,92 @@ class Run:
             w.writerow(row)
 
 
+# --- --no-console: the same clicks with no engine-ext DLL, so no console (the control of #78) -------------
+
+# The minimized UI's minimap (client coordinates at 1920 x 1080, measured 2026-11-22 from six Town Centers of a
+# 6-player Levant game and checked on a 2-player map): the square map is drawn turned by 45 degrees, its centre at
+# MM_CENTRE, and a world point (x, z) of a map of side S lies at
+# (cx + k (x - z), cy - k (x + z - S)) with k = MM_RADIUS / S. A posted left click there moves the camera to it.
+MM_CENTRE, MM_RADIUS = (213.9, 930.8), 189.5
+
+
+class PlainRun(Run):
+    """Clicks without the console: the camera is moved by a posted click on the minimap, and player 1's explorer
+    (or a villager) is selected by clicking it before each right click."""
+
+    def __init__(self, bed, out, tag, per_proto, size):
+        super().__init__(bed, out, tag, per_proto)
+        self.size = size
+
+    def minimap(self, x, z):
+        rc = T.RECT()
+        user32.GetClientRect(T.window(), ctypes.byref(rc))
+        k = MM_RADIUS / self.size
+        cx, cy = MM_CENTRE[0] + k * (x - z), MM_CENTRE[1] - k * (x + z - self.size)
+        return int(cx * rc.right / 1920), int(cy * rc.bottom / 1080)
+
+    def jump(self, u):
+        left_click(*self.minimap(u["x"], u["z"]))
+        time.sleep(0.35)
+
+    def click(self, proc, u, pass_no):
+        x, y = centre()
+        t0 = T.game_time(proc)
+        T.check_alive("the clicks")
+        if t0 != getattr(self, "last_ms", None):
+            self.last_ms, self.last_moved = t0, time.time()
+        elif time.time() - self.last_moved > 90:
+            T.hung("the clicks", f"the world clock stood at {t0} ms for 90 s")
+        self.current = dict(u, pass_no=pass_no, game_ms=t0)
+        mine = [v for v in live_units(proc) if v["player"] == 1
+                and ("explorer" in v["proto"].lower() or VILLAGER.search(v["proto"]))]
+        actor = next((v for v in mine if "explorer" in v["proto"].lower()), mine[0] if mine else None)
+        if actor:  # select player 1's unit that will get the order
+            self.jump(actor)
+            left_click(x, y)
+            time.sleep(0.2)
+        self.jump(u)
+        right_click(x, y)
+        time.sleep(0.25)
+        left_click(x, y)
+        time.sleep(0.3)
+        double_click(x, y)
+        time.sleep(0.3)
+        row = {"pass": pass_no, "game_ms": t0, "id": u["id"], "player": u["player"], "proto": u["proto"],
+               "hp": round(u["hp"], 1), "x": round(u["x"], 1), "z": round(u["z"], 1),
+               "special": int(bool(SPECIAL.search(u["proto"])))}
+        self.rows.append(row)
+        self.clicked.add(u["id"])
+        new = not self.csv.exists()
+        with open(self.csv, "a", newline="", encoding="utf-8") as f:
+            w = csv.DictWriter(f, list(row))
+            if new:
+                w.writeheader()
+            w.writerow(row)
+
+
+def start_plain(game, bed):
+    """Starts the copy's game with no help from engine-ext: the focus rule comes from the command line
+    (+DontPauseWhenLosingFocus, a config like +noIntroCinematics), and the crash watch attaches as usual."""
+    import subprocess
+    if T.bed_pid():
+        sys.exit("clicksweep: the copy already runs")
+    subprocess.Popen([str(bed / "age3y.exe"), "+noIntroCinematics", "+DontPauseWhenLosingFocus"], cwd=str(bed))
+    T.wait_until(lambda: T.window(required=False), 180, 1, "the game window")
+    game.pid = T.bed_pid()
+    T.place_window(T.window())
+    if game.debugger:
+        game.report = game.evidence / f"crash-{bed.name}-{game.pid}.jsonl"
+        import os
+        env = dict(os.environ, UHC_GAME_DIR=str(bed))
+        game.watch = subprocess.Popen(
+            [sys.executable, "-I", str(TOOLS / "re" / "debugger.py"), "crash", "--out", str(game.report),
+             "--log", str(game.report.with_suffix(".log"))], env=env,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    say(f"game started with no console, pid {game.pid}")
+    return True
+
+
 def main(argv):
     if "--bed" not in argv or "--out" not in argv or "--map" not in argv:
         sys.exit(__doc__)
@@ -270,6 +356,9 @@ def main(argv):
     ai = arg(argv, "--ai", "wolOtto").split(",")
     opts = {"mode": "teams" if "--teams" in argv else "ffa" if "--ffa" in argv else None,
             "difficulty": arg(argv, "--difficulty")}
+    plain = "--no-console" in argv
+    if plain:  # the map revealed by the setup (Revealed), since fog() and blackmap() need the console
+        opts["settings"] = {"gamemapvisibility": "1"}
     label = arg(argv, "--label", f"{opts['mode'] or 'setup'}-d{opts['difficulty'] or 'p'}")
     tag = re.sub(r"[^\w.-]+", "_", f"{map_name}-p{players}-{label}")
     if T.bed_pid():
@@ -280,13 +369,16 @@ def main(argv):
     log_at = MS.size(log)
     summary = {"map": map_name, "players": players, "mode": opts["mode"], "difficulty": opts["difficulty"],
                "ai": ai, "started": time.strftime("%Y-%m-%d %H:%M:%S"), "result": "?"}
-    run = Run(bed, out, tag, int(arg(argv, "--per-proto", "3")))
+    run = (PlainRun(bed, out, tag, int(arg(argv, "--per-proto", "3")), float(arg(argv, "--map-size", "0")))
+           if plain else Run(bed, out, tag, int(arg(argv, "--per-proto", "3"))))
+    if plain and not run.size:
+        sys.exit("clicksweep: --no-console needs --map-size <metres> (the map script's rmSetMapSize)")
     code = 1
     try:
         state.__enter__()
         MS.set_skirmish(bed, map_name, players, ai, opts)
         MS.wait_memory()
-        if not game.start():
+        if not (start_plain(game, bed) if plain else game.start()):
             summary["result"] = "launch-failed"
             return 1
         rc, msg = MS.start_skirmish(bed, map_name, out / "shots" / f"{tag}.setup.png", players, opts)
@@ -304,17 +396,19 @@ def main(argv):
         T.wait_game_time(5)
         # The whole map revealed (as performance.md's views do), so that a unit anywhere is drawn and
         # can be clicked: under the black map a click at a hidden unit selects nothing.
-        run.cmd("fog()", "blackmap()")
+        if not plain:
+            run.cmd("fog()", "blackmap()")
         units = live_units(proc)
         summary["units_at_start"] = {str(p): sum(1 for u in units if u["player"] == p)
                                      for p in sorted({u["player"] for u in units})}
         run.shot("start")
-        summary["trading_post"] = ("--no-trading-post" not in argv) and run.trading_post(proc)
-        run.group(proc)
+        summary["trading_post"] = ("--no-trading-post" not in argv) and not plain and run.trading_post(proc)
+        if not plain:
+            run.group(proc)
         pass_no = 0
         while minutes(proc) < total:
             pass_no += 1
-            run.group(proc) if pass_no > 1 else None
+            run.group(proc) if pass_no > 1 and not plain else None
             for u in run.pass_units(proc, pass_no):
                 if minutes(proc) >= total:
                     break
