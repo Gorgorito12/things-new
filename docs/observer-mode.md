@@ -127,6 +127,57 @@ only. Screenshots and the patch script: `wol-fixes/observer/`.
   the file swap, the "Your resolution is not supported" message at another resolution) was not run; a resolution test
   needs that observer too.
 
+## Round 2 (2026-11-22, #81): the repair, the icons, a single-player test, the generation
+
+JTMaston's answers: reuse ESOC's observer on every map, with a simple way into future maps; the broken part he
+remembers is "unit and tech icons not correlating"; yes to the two map edits; (b) if possible, but an observer slot
+"would affect the map generation and resource distribution"; 720p to 4K; always the minimized UI.
+Pack and pictures: `wol-fixes/observer/` (README, `observer_maps.py`). Evidence: `rea/evidence/observer-20261122/`
+(gitignored: the skirmish CSV, unit lists, trigger scripts, full-size shots, the capstone output).
+
+- [O] **The icons.** ESOC's tables (`ITT/ITS(tech,string,icon)`, `AEU/AMU/AWU/ARU(proto,"Name",...)`,
+  `ATT/ATTR(type,tech)`, `CKSUM`) use the stock TAD numbering: 2,056 of the 2,065 tech rows carry the name string of
+  the stock tech at that index (the 9 others are consulate rows labelled with the intervention string on purpose),
+  and all 460 unit rows carry the stock proto of their name. WoL has 10,542 techs and 3,634 protos (stock 2,549 and
+  1,463), and none of the 2,065 tech rows keeps its index (stock 260 `Gangsaw` is WoL's `ypPostImperialIndian`; stock
+  proto 284 `Settler` is WoL's `ypSMJesuitPeasants`). The panel's tech arrays and research scan stop at 2,550.
+- [O] The abstract types are right: ESOC adds `kbGetUnitTypeID("Unit") - 1463` (`UTcorrect`), and WoL's list keeps
+  the stock order after its protos (read in the running game with `tools/re/inspect_unittypes.py --list-abstract`:
+  3,634 protos and 250 abstract types; 1480 → Hero, 1485 → AbstractVillager, 1509 → All, 1594 → Wood, 1618 →
+  ValidIdleVillager ...).
+- [O] The population bar counts villagers with `kbUnitCount(player, <stock proto>, 2)`, so every WoL villager falls
+  into "Military Unit Population" (round 1's "villagers counted as military").
+- [O] **The repair** (`observer_maps.py apply`, in place with the originals kept, `revert`): the switch, the helper
+  removed so the map's calls reach `wolai.upl`'s `int kbGetTechID(string)`, the tables and the numbers in the trigger
+  code by name (`kbGetTechID`, `kbGetProtoUnitID`), the population bar by abstract type, `cNumAllTechs` 11,542. The
+  XS compiler refuses a string literal of 128 characters or more (`Token Error 0006`, seen on the first try), so
+  lengthened lines are cut into several `cEf` calls.
+- [O] **Observer mode in a single-player skirmish.** WoL's DLL reads setting 37h; in the profile's
+  `RandomMapGameSettings` the 56th setting (37h) is `gamecampaignshownhcnote` (the order matches `gamerandomseed` 13h
+  and `gamekoth` 27h of `tools/kothcheck.py`). With it true, a 3-player Free for All skirmish on a repaired
+  `ESOC_Arizona` generated in observer mode: players 1 and 2 got 14 units each on a 2-player map, player 3 only its bat
+  (then `CinematicBlock`), no XS error. With the round-1 test line, the host saw the panel: Hunting Dogs and Gang Saw
+  researched by player 1 showed their own icons (with step 1 only: two other techs' icons), and villagers were
+  counted as economic units (step 1 only: as military).
+- [O] **Where the map's player count comes from** (REA `ev_74f17ae0…`, FUN_008FFDFD, the random map script's
+  prelude; capstone `rm-constants-capstone.txt`; bundle `rea-rm-players-20261122.json`): it writes
+  `const int cNumberPlayers=%d;` from the world's player count `[[[0xC66234]+13Ch]+5Ch]`, `cNumberNonGaiaPlayers`
+  from the same minus 1 (0x8FFE2A-0x8FFE76), `cNumberTeams` from the generator's `[ecx+0F0h]`, then `cFilename`, the
+  culture and civ constants and the map constants, each through 0x4225F7 (format) and 0x62739F (add a line to the
+  script).
+- [O] `rmPlacePlayersCircular` (handler 0x90BA76 → 0x904642) gets its players from FUN_009010AB (REA
+  `ev_36f6770b…`): every member of every generator team (`[gen+0ECh]`, count `[gen+0F0h]`, member count `[team+4]`),
+  or only the team of `rmSetPlacementTeam` (`[gen+9Ch]`), **and only the players whose location record
+  (`[[gen+0B8h]+4*player]+10h..18h`) is still (-1, -1, -1)**; the list is shuffled.
+- [I] So a DLL could make any map generate for the real players only: write the two counts without the observers
+  (the pushes at 0x8FFE39 and 0x8FFE75) and give each observer a location before the script runs, so the circular
+  placement skips it; the map's own loops end at `cNumberNonGaiaPlayers` and give it nothing. The observer still
+  needs one unit to stay in the game (WoL's maps give it a bat; WoL's DLL turns it into a `Target`). [?] Not read:
+  `cNumberTeams` and team-based functions (an observers' team would still count), the line placement
+  (`rmPlacePlayersLine`) and `rmPlacePlayer`, player areas, the two other preludes that write `cNumberPlayers`
+  (0x719880, 0x9941B7: other script kinds), and what the world does with a player the map gave nothing to. Same DLL on
+  every player's PC (it decides the generation). Nothing built.
+
 ## What can be done in legacy
 
 **1. Observer as a peer, from the DLL.** Same model as WoL's, without the map. A lobby choice marks the observers; at the

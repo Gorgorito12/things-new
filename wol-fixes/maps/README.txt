@@ -3,6 +3,8 @@ Random maps: test results and one fix
 
 2026-11-21: "NEW" Levant has its own note, levant-20261121.txt (a player can start with nothing in
 6- and 8-player team games; the fixed script is in levant\RM4\NEWLevant.xs).
+2026-11-22: levant-clicks-20261122.txt: clicking every kind of unit with 6 and 8 players crashed the game in a
+model's draw (age3y.exe+0xC07C), twice on Levant.
 
 What was tested
 ---------------

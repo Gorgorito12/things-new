@@ -20,6 +20,11 @@ Options:
                         the setup screen by posted clicks; without either, the setup shows the human
                         in the profile's team and every AI as "Team ?"
   --koth                skirmish: King of the Hill (the Game Rules list, by posted clicks)
+  --difficulty N        skirmish: the AI difficulty written to the profile (gamedifficulty: 0 Sandbox,
+                        1 Easy, 2 Moderate, 3 Hard, 4 Expert); default: the profile's
+  --set name=value      skirmish: any other setting of the profile's RandomMapGameSettings (repeatable),
+                        e.g. --set gamecampaignshownhcnote=true, the setting 37h that WoL's uhc.dll reads
+                        as the lobby's Observer mode box (rmIsObserverMode)
   --save-load           skirmish: at half the game time, save the game from the console, load it back
                         and play the other half
   --label <text>        added to the route column (skirmish:<text>), so runs of the same map, players
@@ -533,6 +538,9 @@ def set_skirmish(bed, map_name, players, ai, opts=None, seed=None):
               "gamenumplayers": str(players)}
     if seed is not None:
         values["gamerandomseed"] = str(seed)
+    if opts.get("difficulty") is not None:  # 0 Sandbox, 1 Easy, 2 Moderate, 3 Hard, 4 Expert
+        values["gamedifficulty"] = str(opts["difficulty"])
+    values.update(opts.get("settings") or {})  # --set name=value
     if opts.get("mode"):  # the setup screen's clicks set the teams or tick Free for All (setup_clicks)
         values["gamefreeforall"] = "false"
         values["gameplayer1teamid"] = "0"
@@ -613,6 +621,8 @@ def main(argv):
     seconds = float(arg(argv, "--seconds", "30"))
     ai = arg(argv, "--ai", "wolOtto").split(",")
     opts = {"label": arg(argv, "--label"), "save_load": "--save-load" in argv,
+            "difficulty": arg(argv, "--difficulty"),
+            "settings": dict(argv[i + 1].split("=", 1) for i, a in enumerate(argv) if a == "--set"),
             "mode": "teams" if "--teams" in argv else "ffa" if "--ffa" in argv else None,
             "koth": True if "--koth" in argv else None}
     if route != "skirmish" and (opts["save_load"] or opts["mode"] or opts["koth"]):

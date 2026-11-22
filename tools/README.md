@@ -26,6 +26,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
 | [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
 | [`mapsweep.py`](#mapsweeppy) | Plays every random map of a test copy for 30 s of game time and writes a CSV row per run: ok, crash (code, EIP, module), hang, XS error or timeout. Resumable; shards for parallel copies. |
+| [`clicksweep.py`](#clicksweeppy) | Plays a skirmish and clicks every kind of unit (select, double click, right click with own units), a Trading Post built first so trade units exist, with the crash watch on. |
 | [`mapstarts.py`](#mapstartspy) | Generates one random map many times in the editor (players × seeds, about 10 s a run) and lists the players the map left with no Town Center and no units. |
 | [`mapfacts.py`](#mapfactspy) | Reads every random map script of a copy (read only) and writes a table of its facts for the map descriptions: trade route, natives, hunt, herd, mines, berries, fish, whales, outlaws, region, King of the Hill; `--check` compares them with the units `mapsweep.py` saw. |
 | [`kothcheck.py`](#kothcheckpy) | Generates random maps in a test copy's editor in a real King of the Hill game (it writes the GameKOTH setting in memory) and writes a CSV row per map: the hill, its distance to every Town Center by team, a minimap crop with the hill marked; also the normal map unchanged and whether every player's units reach the hill. |
@@ -367,6 +368,35 @@ Rules list; the setup shot in `<evidence>/shots/` shows what was set. The seed g
 configuration in the route column (`skirmish:<label>`), so one CSV can hold the same map, players and
 seed with other AIs or modes. Isolated profiles (`testbed.py profile isolate`) make the skirmish
 route safe beside other copies.
+
+`--difficulty N` writes the AI difficulty (0 Sandbox to 4 Expert) and `--set name=value` any other
+setting of the profile's `RandomMapGameSettings` before the skirmish, e.g. `--set gamecampaignshownhcnote=true`:
+setting 37h, which WoL's `uhc.dll` reads as the lobby's Observer mode box (`rmIsObserverMode`), so an observer
+map can be played in a single-player skirmish (2026-11-22, #81).
+
+## clicksweep.py
+
+```
+python -I tools/clicksweep.py --bed <copy> --out <dir> --map <file> [--players 6] [--teams | --ffa]
+       [--ai wolOtto,...] [--difficulty 3] [--minutes 12] [--per-proto 3] [--label TEXT]
+       [--no-trading-post] [--no-debugger]
+```
+
+Clicks every kind of unit of a skirmish as a player would, with the crash watch attached (made for the "NEW"
+Levant crash hunt, #78, where players reported crashes "after or when clicking on trade units or guardians").
+It uses `mapsweep.py`'s skirmish route (profile, home cities and AI personalities backed up and restored), reveals
+the map (`fog()`, `blackmap()`), builds a Trading Post on the socket nearest player 1's Town Center (a villager in
+build mode, `tis("TradingPost")`, a posted click; its villagers gather wood first when it is short), puts player 1's
+villagers and explorer in number group 8, then clicks in passes until `--minutes` of game time: per unit the camera
+on it (`uiLookAtUnit`), a posted left click (select), a posted double click and `uiDoubleClickSelect(0)`, then group 8
+and a posted right click on it (gather, attack, garrison, trade, build); about 2 s a unit. A pass takes every unit
+whose proto looks special (trade, camel, caravan, nugget, guard, socket, native, wagon, Trading Post, village, merc)
+and up to `--per-proto` of each other proto and player (trees and props 2), specials and the others interleaved, the
+others round robin over player and proto. Writes `<tag>.clicks.csv`,
+`<tag>.summary.json` (result, clicks per proto and player, XS errors, the crash report) and shots. A copy with
+`multipleInstances background` and an isolated profile runs it beside other copies. Posted clicks reach the
+game's world in a background copy: a posted left click selected a Trading Post site, a posted right click sent
+villagers to gather (2026-11-22).
 
 ## mapstarts.py
 

@@ -1669,3 +1669,15 @@ File I/O (confirmed the same way, 2026-10-28; `bufferedFileReads` replaces the f
 CreateFileW 0xB84304 · ReadFile 0xB8424C · SetFilePointer 0xB84244 · CloseHandle 0xB84330 ·
 DuplicateHandle 0xB843A0 · GetFileSize 0xB842A8 · GetFileType 0xB84218 · CreateFileMappingW 0xB8427C ·
 MapViewOfFile 0xB84278. The exe imports no `msvcrt`: its C runtime is static and uses these slots too.
+
+## Random map players and the Granny crashes (2026-11-22, WoL #81 and #78)
+
+| Name | Address | Status | Notes |
+|---|---|---|---|
+| Random map script prelude | FUN_008FFDFD | confirmed (REA `ev_74f17ae0…`) | Writes `const int cNumberPlayers=%d;` from the world's player count `[[[0xC66234]+13Ch]+5Ch]`, `cNumberNonGaiaPlayers` (the same minus 1), `cNumberTeams` from the generator's `[ecx+0F0h]`, `cFilename`, the culture, civ and map constants; each through 0x4225F7 (format) and 0x62739F (add a script line). |
+| Placement player list | FUN_009010AB | confirmed (REA `ev_36f6770b…`) | For `rmPlacePlayersCircular` (handler 0x90BA76 → 0x904642): every member of every generator team (`[gen+0ECh]`, count `[gen+0F0h]`), or the team of `rmSetPlacementTeam` (`[gen+9Ch]`), and only players whose location `[[gen+0B8h]+4*p]+10h..18h` is still (-1,-1,-1); shuffled. |
+| Model skeleton for drawing | FUN_0040C022 | confirmed (REA `ev_f3563577…`, capstone) | `[visual+18h]` index into the cache `[0xC67318]` (lookup 0x405C49), `GrannyGetSourceSkeleton([visual+24h])`, reads `[skeleton+4]` at 0x40C07C: the crash site of #78 (0 or garbage skeleton). Single caller 0x40C4B6. |
+| Cache entry lookup | FUN_00405C49 | confirmed (REA `ev_cdf7e5d0…`) | `(index, load)`: entries 0Ch apart at `[cache+20h]` (count `[cache+24h]`), `[entry+4]` the file name, `[entry+8]` the loaded data; with load = 1 it loads a missing file (0x46D7C3). |
+| Model file load | FUN_0046DA1A (part of the loader) | read (REA `ev_94c9b921…`) | Builds mesh bindings and deformers; frees the Granny file only on its error path (0x46E8D4, then `[entry+8]` = 0) and frees section 2 (vertices) after upload (0x46D297). |
+| Animation track lookup | call at 0x4B6F1F | capstone | `GrannyFindTrackGroupForModel([[edi+8]+50h][0], GrannyGetSourceModel([ebx+24h]) name, &index)`: the #78 crash in granny2.dll+0x3A02A read freed animation data here. |
+| Granny imports | 0xB847A8 `GrannyGetSourceSkeleton`, 0xB8482C `GrannyGetSourceModel`, 0xB84748 `GrannyFindTrackGroupForModel`, 0xB8478C `GrannyFreeModelInstance`, 0xB847F8 `GrannyFreeFileSection`, 0xB847FC `GrannyFreeFile` | confirmed (import table) | `GrannyFreeFile` is called at 0x43B607, 0x46E8D4 and 0x588B30. |
