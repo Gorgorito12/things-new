@@ -6,37 +6,52 @@ ENGLISH
 
 What it does
 - The Chasseur a Cheval gets two buttons on its command row: Dismount and Mount.
-- Dismount: the rider gets off on the horse's left side (a 2.5 s animation), then stands beside his horse and
-  fights with the infantry's own animations (volley fire and reload, bayonet, idle, walk, death). The horse stays
-  beside him and walks with him.
+- Dismount: the rider gets off on the horse's left side (a 2.5 s animation), then fights on foot with the
+  infantry's own animations: volley fire and reload, bayonet, the torch against buildings, idle, walk, run, death.
+- The horse, per unit (the --horse option, or the recipe of another unit):
+  - hide (the default): the horse is there while the rider gets off and on, and is not drawn while he is on foot.
+    It leaves at the end of the dismount and comes back at the start of the mount, as the stock cannons' limber
+    does when they unlimber;
+  - keep: the horse stays beside him and walks with him (the pack before 2026-11-22).
 - Mount: he climbs back on (2.5 s) and the unit is cavalry again, in the Stagger stance.
 - On foot the unit is slower (speed x0.67, the line infantry's 4.0 instead of 6.0). Its attacks keep the numbers
-  of the mounted attacks (DefendRangedAttack, MeleeHandAttack), and every tech effect on those reaches the attacks
-  on foot too. Its unit types, hit points, armour and obstruction do not change: a stance cannot change them
-  (see "What a stance cannot do" below).
+  of the mounted attacks (DefendRangedAttack, MeleeHandAttack, BuildingAttack), and every tech effect on those
+  reaches the attacks on foot too. Its unit types, hit points, armour and obstruction do not change: a stance
+  cannot change them (see "What a stance cannot do" below).
 - Nothing in the DLL: tactics, anim files and data only. The two buttons need the DLL key customProtoUnitCommands
   (already in Wars of Liberty's cfg), like every command type WoL adds.
 
 Install
-    python apply_fix.py "<Wars of Liberty folder>"            (backup in <folder>\dismount-backup)
-    python apply_fix.py "<Wars of Liberty folder>" --restore  (everything back as it was)
-    python apply_fix.py "<Wars of Liberty folder>" --check
+    python apply_fix.py "<Wars of Liberty folder>"                (horse hidden on foot; backup in
+                                                                   <folder>\dismount-backup)
+    python apply_fix.py "<Wars of Liberty folder>" --horse keep   (the horse stays beside him)
+    python apply_fix.py "<Wars of Liberty folder>" --restore      (everything back as it was)
+    python apply_fix.py "<Wars of Liberty folder>" --check        (what is applied, which horse choice)
 The script refuses a folder under steamapps unless --force is given. The docstring of apply_fix.py lists every
 file it changes.
 
+TEST ONLY: --test also adds ChasseuraChevalDismountTest, a copy of the Chasseur that builds and heals on foot (the
+tactics file's own Build and Heal actions, made active and kept in the stance on foot; the ProtoActions Build and
+Heal, the flag CanAutoHeal, a House in its build list) and the animations Heal and Build, to see a construction and
+a heal on foot in a test copy of the game. It is not WoL's Chasseur, which builds and heals nothing; do not ship it.
+
 How it is built (the recipe for another unit)
-1. Tactics. A copy of the unit's tactics file. Two new actions, copies of the mounted ranged and hand attacks with
-   other animation names (Dismounted_Attack, Dismounted_Reload, Dismounted_Melee, Dismounted_Idle). A new
+1. Tactics. A copy of the unit's tactics file. Three new actions, copies of the mounted ranged, hand and building
+   attacks with other animation names (Dismounted_Attack, Dismounted_Reload, Dismounted_Melee, Dismounted_Idle,
+   Dismounted_Raze_attack, Dismounted_Raze_idle). A new
    tactic "Dismounted" with those actions, <speedmodifier>, its own idle/bored/walk/jog/run/death animations, and
    one <transition> back to each mounted tactic (<action>Limber</action>, <anim>Mount</anim>, <length>2.5</length>,
    <exit>1</exit>). Every mounted tactic gets a <transition> to "Dismounted" (<anim>Dismount</anim>). This is how
    the artillery's Limber/Bombard works (falconet.tactics). <exit>1 is what lets a button's tactic change use the
    transition; <action>Limber</action> is the built-in transition action every stock artillery transition names.
    No <automatic>: with it the unit would switch on its own to reach an action of the other stance.
-2. Proto (protoy.xml). The unit points at the new tactics file and gets <ProtoAction>s for the two new actions
+2. Proto (protoy.xml). The unit points at the new tactics file and gets <ProtoAction>s for the three new actions
    (copies of the mounted ones: damage, range, ROF, bonuses).
 3. Techs (techtreey.xml). An action name is what a tech effect targets, so every effect on the mounted actions
-   gets a twin on the new ones (the script does it: 207 effects in WoL today).
+   gets a twin on the new ones (the script does it: 313 effects in WoL today). Mind the effects written as
+   `</Effect></Effects>` on one line: a twin must end at its own </Effect>. A first version ran on to the next
+   line's and copied seven whole techs; the AI then stopped compiling ('cTechypConsulateBritishBrigade' is not a
+   valid operator). The script now refuses an edit that changes the number of techs.
 4. Buttons. Two protounitcommands, unitSetTactic("Dismounted") and unitSetTactic("Stagger"), on the unit's command
    row (page 10), their names in data\uhc\customprotounitcommands.xml, tooltips 690911 and 690912. (A squad mode in
    battle.xml, CavalryDismounted, is added too, so that the stance has its entry like the other stances.)
@@ -56,10 +71,26 @@ How it is built (the recipe for another unit)
    clip the horse's bone_launchpoint follows the rider's muzzle, so the shot and its flash leave his musket.
    For another unit: a recipe JSON with its models (rider, horse, an infantry model of the same rig), the side, the
    mounted idle and the infantry animations to use. Do not add the new names to data\animtypes.xml: tried, the
-   unit then played its mounted attack while on foot; `--sheets` draws every animation as a contact sheet first.
+   unit then played its mounted attack while on foot; `--overview` draws every animation in one sheet first.
    A written animation keeps its tracks sorted by name, as the stock files do: the game looks a bone's track up by
    binary search, and an unsorted file moves only some bones.
-6. The stance holds in a fight. Measured: four dismounted chasseurs kept the stance (tactic index 3) through a
+   An animation's own <attach> lines go in the rider's block: the torch of the attack on buildings hangs on his
+   left hand (as the stock musketeer holds it), from the "torch" attachment his anim file already defines.
+6. The horse kept or hidden, per unit. The recipe's "horse": "keep" or "hide" (make_dismount.py --horse); this
+   pack's --horse. Hidden, the horse's animations on foot are clips of their own (chasseur_horse_hidden_<name>.gr2)
+   that put every bone the horse's mesh is skinned to 30 m under the ground and keep the bones nothing is skinned
+   to where they were: the root, "bone attachpoint" (the rider), "bone hitpointbar" and "bone_launchpoint". The
+   horse is not seen; the rider, written in the frame of his bone, is the same in both choices. Dismount and Mount
+   keep the visible horse. So a modder chooses per unit: a unit of the recipe with "hide", another with "keep".
+   Tried first and dropped: a second <component> in the horse's anim file (the way the stock cannons show a
+   stripped model in their Bombard animations), named by the animations on foot, with a horse model that draws
+   nothing. In game the rider hung on it vanished too (or only his hats showed, on the ground).
+   Limits: the horse appears and disappears at once, at the end of Dismount and at the start of Mount (no fade);
+   the rider stands where he got off, 0.85 m left of the unit's centre, and the selection circle and the hit point
+   bar stay on the unit's centre; the unit keeps the horse's size and obstruction.
+   A heal and a construction play the anim names Heal and Build (and BuildLifting, BuildSaw, BuildStaking), not
+   the name an action's <anim> gives (measured with the test unit: with Dismounted_Heal it healed in its idle).
+7. The stance holds in a fight. Measured: four dismounted chasseurs kept the stance (tactic index 3) through a
    skirmish fight until the Mount command; the engine only leaves a tactic on its own through a transition marked
    <automatic> (or <commandautomatic> for a command).
 
@@ -74,20 +105,29 @@ disappear with it. Cost: a second proto, its techs (every upgrade twice), and th
 experience, queued orders). We recommend the stance unless the infantry types matter for balance.
 
 Tested (single player)
-In a copy of Wars of Liberty: French skirmish against a German AI (crossbowmen) and test scenarios. The stance
-switch by the two buttons (posted clicks) and by console, the dismount and mount transitions, standing, walking and
-firing on foot beside the horse, the stance kept through the fight (read from the game every 0.25 s), mounting again,
-a game saved while dismounted and loaded (stance kept), the AI scripts compiling with the pack applied. Not tested:
-multiplayer.
+2026-11-21, with the horse kept: in a copy of Wars of Liberty, French skirmish against a German AI (crossbowmen)
+and test scenarios. The stance switch by the two buttons (posted clicks) and by console, the dismount and mount
+transitions, standing, walking and firing on foot beside the horse, the stance kept through the fight (read from
+the game every 0.25 s), mounting again, a game saved while dismounted and loaded (stance kept), the AI scripts
+compiling with the pack applied. Not tested: multiplayer.
+2026-11-22, the horse hidden (copy of Wars of Liberty, test scenarios, the stance set by console): the dismount
+(the horse there through it, gone after it) and the mount (back at its start); standing and walking on foot with
+no horse; the torch thrown at an enemy House (its hit points 912 to 588 in 20 s); fire and bayonet
+against four Jaegers, and deaths on foot; the test unit healing a Line Infantry from 17 to 150 hit points and
+placing and building a House, with the Heal and Build animations; a game saved dismounted and loaded (still on
+foot, horse hidden), then mounted again; the same fight with --horse keep (horses beside the riders, dying with
+them); the AI scripts compiling in a French skirmish against a German AI (11 compiles, 0 errors; it trained
+settlers and built a Manor).
 
 ESPAÑOL
 -------
 
 Qué hace
 - El Chasseur a Cheval tiene dos botones en su fila de comandos: Desmontar y Montar.
-- Desmontar: el jinete baja por el lado izquierdo del caballo (animación de 2,5 s), se queda de pie junto a él y
-  pelea con las animaciones de la infantería (fuego y recarga, bayoneta, reposo, marcha, muerte). El caballo se
-  queda a su lado y camina con él.
+- Desmontar: el jinete baja por el lado izquierdo del caballo (animación de 2,5 s) y pelea a pie con las
+  animaciones de la infantería (fuego y recarga, bayoneta, la antorcha contra edificios, reposo, marcha, muerte).
+- El caballo, por unidad (opción --horse, o la receta de otra unidad): hide (por defecto) lo muestra mientras baja
+  y sube y no lo dibuja a pie, como el armón de los cañones al desenganchar; keep lo deja a su lado y camina con él.
 - Montar: vuelve a subir (2,5 s) y la unidad es caballería otra vez, en la postura Stagger.
 - A pie es más lenta (velocidad x0,67: 4,0 en vez de 6,0). Sus ataques conservan los valores de los ataques montados
   (DefendRangedAttack, MeleeHandAttack) y todo efecto de técnica sobre ellos llega también a los de a pie. Sus tipos,
@@ -96,10 +136,13 @@ Qué hace
   en el cfg de Wars of Liberty), como todos los comandos que WoL añade.
 
 Instalar
-    python apply_fix.py "<carpeta de Wars of Liberty>"            (copia de seguridad en <carpeta>\dismount-backup)
-    python apply_fix.py "<carpeta de Wars of Liberty>" --restore  (todo como estaba)
+    python apply_fix.py "<carpeta de Wars of Liberty>"                (caballo oculto a pie; copia en <carpeta>\dismount-backup)
+    python apply_fix.py "<carpeta de Wars of Liberty>" --horse keep   (el caballo se queda a su lado)
+    python apply_fix.py "<carpeta de Wars of Liberty>" --restore      (todo como estaba)
     python apply_fix.py "<carpeta de Wars of Liberty>" --check
 Rechaza una carpeta dentro de steamapps salvo con --force. El docstring de apply_fix.py lista cada archivo que toca.
+SOLO PRUEBAS: --test añade ChasseuraChevalDismountTest, una copia del Chasseur con construir y curar a pie, para ver
+esas animaciones en una copia de prueba; no es el Chasseur de WoL y no se distribuye.
 
 Cómo está hecho (la receta para otra unidad)
 1. Tácticas: una copia del archivo de tácticas de la unidad, con dos acciones nuevas (copias de los ataques a
@@ -122,12 +165,21 @@ Cómo está hecho (la receta para otra unidad)
    Para otra unidad: un JSON de receta con sus modelos, el lado y las animaciones; --sheets dibuja cada animación.
    Una animación escrita guarda sus pistas ordenadas por
    nombre, como las del juego: si no, el juego solo mueve algunos huesos.
-6. La postura se mantiene en combate: medido, cuatro chasseurs desmontados siguieron a pie toda la pelea.
+6. El caballo, por unidad: con "hide" los clips del caballo a pie (chasseur_horse_hidden_*) dejan bajo tierra (30 m)
+   cada hueso con malla y dejan en su sitio la raíz, el hueso del jinete, la barra de vida y el punto de disparo; el
+   jinete no cambia. Límites: el caballo desaparece y aparece de golpe (al final de Dismount y al empezar Mount); el
+   jinete queda donde bajó, 0,85 m a la izquierda del centro de la unidad (círculo y barra de vida en el centro).
+   Curar y construir usan las animaciones Heal y Build (y BuildLifting, BuildSaw, BuildStaking), no el <anim> de la
+   acción.
+7. La postura se mantiene en combate: medido, cuatro chasseurs desmontados siguieron a pie toda la pelea.
 
 Probado (un jugador): escaramuza francesa contra una IA alemana y escenarios de prueba, cambio de postura por
 consola (el mismo comando que envían los botones), las transiciones, de pie, caminando y disparando junto al
 caballo, montar de nuevo, los dos botones (clics), guardar y cargar desmontado (la postura se conserva) y la IA
-compila. Sin probar: multijugador.
+compila. 2026-11-22, con el caballo oculto: transiciones, a pie sin caballo, antorcha contra una casa, fuego y
+bayoneta contra cuatro Jaegers y muertes a pie, la unidad de prueba curando (17 a 150) y construyendo una casa,
+guardar y cargar desmontado, montar de nuevo, el control con --horse keep y la IA compilando (11 compilaciones,
+0 errores). Sin probar: multijugador.
 
 Lo que una postura no puede hacer (pregunta para el equipo)
 Una táctica cambia acciones, animaciones y velocidad, no tipos de unidad, armadura, vida, radio de obstrucción ni

@@ -1,0 +1,42 @@
+	<anim>Heal
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_heal</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Build
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_build</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Build">0.36</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Build">0.66</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Build">1.00</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>BuildLifting
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_build</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Build">0.36</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Build">0.66</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Build">1.00</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>BuildSaw
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_build</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Build">0.36</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Build">0.66</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Build">1.00</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>BuildStaking
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_build</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Build">0.36</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Build">0.66</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="Build">1.00</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>

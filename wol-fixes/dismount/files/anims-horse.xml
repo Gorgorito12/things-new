@@ -58,6 +58,20 @@
 		</assetreference>
 		<component>ModelComp</component>
 	</anim>
+	<anim>Dismounted_Raze_idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_raze_idle</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Raze_attack
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_raze_attack</file>
+			<tag type="Attack">0.61</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="TorchSwing">0.52</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
 	<anim>Dismount
 		<assetreference type="GrannyAnim">
 			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_dismount</file>
