@@ -399,6 +399,18 @@ others round robin over player and proto. Writes `<tag>.clicks.csv`,
 game's world in a background copy: a posted left click selected a Trading Post site, a posted right click sent
 villagers to gather (2026-11-22).
 
+`--no-console --map-size <metres>` runs the same clicks with no engine-ext DLL (the control with only the mod's own
+`UHC.dll`): the game starts with `+noIntroCinematics +DontPauseWhenLosingFocus`, the map is revealed by the setup
+(`gamemapvisibility` 1, Revealed; fog stays), and the camera moves by a posted click on the minimized UI's
+minimap (`PlainRun`: centre 213.9, 930.8 and radius 189.5 at 1920 x 1080 for a map of side S, the square turned by
+45 degrees; measured on six Town Centers). Player 1's explorer is clicked before each right click. Not yet run
+to the end (2026-11-22).
+
+`re/trace_frees.py <prefix>` (set `UHC_GAME_DIR`): a crash watch that also logs every model unload of the game's
+model cache (with the file name), every reload of a loaded model and the model instances freed, and at a crash
+writes `<prefix>.crash.json` with the registers and stack words that match a freed pointer and the last unloads
+(#78). Run `clicksweep.py --no-debugger` beside it, since one process takes one debugger.
+
 ## mapstarts.py
 
 ```
