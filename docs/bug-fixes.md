@@ -562,7 +562,7 @@ herdWalkAwayFix [log]
 
 *A hunted or slaughtered animal leaves what its `<DeadReplacement>` names when its body is eaten up, not when it falls.*
 
-**Added:** Saturday 2026-11-21 11:07 · **Filmed in WoL:** Saturday 2026-11-21 11:07
+**Added:** Saturday 2026-11-21 11:07 · **Filmed in WoL:** Sunday 2026-11-22 12:23
 
 ![deadReplacementAtZeroInventory in WoL](media/deadReplacementAtZeroInventory-wol.gif)
 
