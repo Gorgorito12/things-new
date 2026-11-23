@@ -43,14 +43,6 @@
 		</assetreference>
 		<component>ModelComp</component>
 	</anim>
-	<anim>Dismounted_Melee
-		<assetreference type="GrannyAnim">
-			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_horse_melee</file>
-			<tag type="Attack">0.51</tag>
-			<tag type="SpecificSoundSet" checkvisible="1" set="Swoosh">0.45</tag>
-		</assetreference>
-		<component>ModelComp</component>
-	</anim>
 	<anim>Dismounted_Death
 		<assetreference type="GrannyAnim">
 			<file>animation_library\cavalry\horse_deathA</file>

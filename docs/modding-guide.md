@@ -9359,10 +9359,21 @@ matters:
 *A ranged horseman gets off and fights on foot, his horse hidden or kept beside him, and mounts again, with data only.*
 
 The pack `wol-fixes/dismount` (`apply_fix.py <WoL folder>`, `--restore` to undo; README in English and Spanish)
-does it for the Chasseur a Cheval, as request #84 asked: a tactic `Dismounted` with its own actions (fire, bayonet,
+does it for the Chasseur a Cheval, as request #84 asked: a tactic `Dismounted` with its own actions (the shot and
 the torch against buildings), speed and animations, `<transition>`s both ways as the artillery's Limber/Bombard,
 two buttons (`unitSetTactic("Dismounted")`, `unitSetTactic("Stagger")`) and the rider's animations on foot and
 getting off and on, made by aoe3-blender-tools' `tools/make_dismount.py` from the game's infantry animations.
+
+**No melee on foot** (2026-11-23; the user, after the fight video: a ranged unit keeps on foot the shot it has
+mounted). Until then the stance had a copy of the hand attack too (`DismountedHandAttack`, the rifleman's standing
+melee), and the shot kept the mounted `<minrange>2</minrange>` (written twice in `musketCavalry.tactics`): inside 2 m
+the shot could not fire and the unit turned to the bayonet with the musket in hand. Now the stance on foot has two
+attacks, `DismountedRangedAttack` (`DefendRangedAttack`'s damage, range, ROF and bonuses, its ProtoAction a copy)
+with every `<minrange>` at 0, and `DismountedBuildingAttack` (the torch, a throw at buildings only, kept). With no
+hand attack to turn to, the unit keeps firing with an enemy in contact. The tech twins now cover
+`DefendRangedAttack` and `BuildingAttack` only (220 effects, the tech count checked as before); the melee
+animation left the pack (its four `.gr2`, the `Dismounted_Melee` blocks), and `make_dismount.py` makes it only with
+the recipe's `"melee": true` (or `--melee`), for a unit that should fight hand to hand on foot.
 
 **The horse, per unit** (2026-11-22, Maston: "the option to choose for different units if we want the horse kept or
 hidden"). `make_dismount.py`'s recipe has `"horse": "keep"` or `"hide"` (`--horse`), one recipe per unit, and the
@@ -9394,18 +9405,30 @@ under another name (`DismountedHeal`) healed nothing; and a heal or a constructi
 `Build` (also `BuildLifting`, `BuildSaw`, `BuildStaking`), not the action's `<anim>`: with `Dismounted_Heal` there,
 the unit healed in its idle pose.
 
-![The horse hidden, a fight on foot](media/dismount-hidden-wol.gif)
+![The horse hidden, a fight on foot at point blank](media/dismount-hidden-wol.gif)
 
 *`--horse hide`, a test scenario (its player is not French; the chasseurs show their Chasseur d'Afrique model, which
-the anim file picks for that player's techs), three chasseurs set to Dismounted by console and sent by a trigger
-against four Jaegers (filmed again 2026-11-22, the rider on the centre):* no horse on foot; each rider stands on his
-selection circle, fires and fights with the bayonet, and the dead lie on the ground without a horse.
-[Full video (MP4)](media/dismount-hidden-wol.mp4).
+the anim file picks for that player's techs), five chasseurs set to Dismounted by console, three Scythemen (melee
+infantry) sent by a trigger to charge into them (filmed 2026-11-23):* the riders fire as the Scythemen come and keep
+firing with them in contact, muzzle flash and smoke at point blank; no bayonet, no melee animation. All three Scythemen
+die; two chasseurs are left. [Full video (MP4)](media/dismount-hidden-wol.mp4).
 
-![The horse kept, the same fight](media/dismount-hidden-wol-control.gif)
+![Mounted, the same fight](media/dismount-hidden-wol-control.gif)
 
-*The control, `--horse keep`, same scenario (filmed 2026-11-22; the kept variant did not change since):* the horses
-stand beside the riders and fall with them. [Full video (MP4)](media/dismount-hidden-wol-control.mp4).
+*The control: the same scenario with the chasseurs left mounted (the stock stance; filmed 2026-11-23):* in contact the
+mounted chasseurs turn to their hand attack (`MeleeHandAttack`) and fight with the sabre; all five fall and two
+Scythemen are left. [Full video (MP4)](media/dismount-hidden-wol-control.mp4).
+
+![On foot against cavalry](media/dismount-hidden-cavalry-wol.gif)
+
+*`--horse hide`, five dismounted chasseurs against three Hussars charging (filmed 2026-11-23):* they fire at the
+riders in contact (shot smoke among the horses) and never draw a blade; the Hussars, built to beat ranged cavalry,
+win with 278, 337 and 248 of their 352 hit points left. [Full video (MP4)](media/dismount-hidden-cavalry-wol.mp4).
+
+![The horse kept, the same fight](media/dismount-keep-wol.gif)
+
+*`--horse keep`, the Scythemen scenario (filmed 2026-11-23):* the horses stand beside the riders, who fire at point
+blank as in hide; the riders who die fall with their horses. [Full video (MP4)](media/dismount-keep-wol.mp4).
 
 ![Dismount and mount, the horse hidden](media/dismount-hidden-transitions-wol.gif)
 
@@ -9432,7 +9455,8 @@ default; French against a German AI, four Chasseurs a Cheval, crossbowmen coming
 stance set by console, the command the buttons send):* the riders get off on the horses' left side and stand
 beside them, then walk and fire on foot with the horses beside them; read from the game, their tactic stays
 `Dismounted` through the fight. Filmed before the last tuning of the transitions (2 s, a higher leg): the
-close video below shows the final ones. [Full video (MP4)](media/dismount-wol.mp4).
+close video below shows the final ones. The stance then still had a hand attack on foot, removed on 2026-11-23; no
+enemy reaches the chasseurs in this video, so it shows no melee. [Full video (MP4)](media/dismount-wol.mp4).
 
 ![Without the pack](media/dismount-wol-control.gif)
 
@@ -9470,6 +9494,13 @@ tags", "Tactic for an action", "Squad mode of a unit"):
   version of the tech twins copied seven whole techs (effects written `</Effect></Effects>` on one line) and the AI
   did not compile (`'cTechypConsulateBritishBrigade' is not a valid operator`); `apply_fix.py` now ends each twin at
   its own `</Effect>` and refuses an edit that changes the number of techs. Not seen: the run animation on foot.
+  The bayonet seen then is gone since 2026-11-23.
+- **Tested 2026-11-23** (no melee on foot; `--horse hide`, then `keep`, test scenarios in `C:\AoE3-UHC-WoLReal8`):
+  against Scythemen and Hussars charging into contact the dismounted chasseurs kept firing at point blank and played
+  no melee animation (videos above); the torch on an enemy House (1055 to 764 hit points in 26 s); a game saved on
+  foot and loaded (still on foot, still burning the House), then mounted by the command; `--check`, and `--restore`
+  byte for byte in both horse modes, with and without `--test`; the AI scripts compile (French skirmish against a
+  German AI: 11 compiles, 0 errors, XS tracer; it trained settlers and built a Manor).
 - **What a stance cannot change:** unit types, armour, hit points, obstruction, `<PhysicsInfo>`. On foot the unit
   still counts as cavalry; if it must count as infantry, the alternative is a transform (`uiTransformSelectedUnit`,
   [`transformChecks`](#transformchecks)).

@@ -347,8 +347,10 @@ editorSearch-forbid-wol-control 1 16 2 800:920:0:0
 dismount-wol 0 24 2
 dismount-wol-control 0 24 2
 dismount-transitions-wol 0 20 1.6
-dismount-hidden-wol 0 22 2
-dismount-hidden-wol-control 0 18 2
+dismount-hidden-wol 18 14 1.3
+dismount-hidden-wol-control 18 14 1.3
+dismount-hidden-cavalry-wol 22 15 1.3
+dismount-keep-wol 18 15 1.3
 dismount-hidden-transitions-wol 0 19 1.6
 dismount-hidden-torch-wol 0 22 2
 dismount-hidden-heal-build-test-wol 2 24 2
