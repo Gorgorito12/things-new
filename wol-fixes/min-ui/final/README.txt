@@ -1,5 +1,33 @@
-Minimized unit panel (minUIStats): version 7, for review
+Minimized unit panel (minUIStats): version 8, for review
 =======================================================
+
+Version 8 (2026-11-23), JTMaston's unit type icons: ..\note-for-team-v8.txt
+---------------------------------------------------------------------------
+- The four unit type icons of the multipliers are JTMaston's art, converted to the game's format (not redrawn):
+  Line (blue coat, musket upright in front), Skirmisher (green coat, musket diagonal; new in the pack), Standing
+  (purple coat, no weapon), Maneuver (the winged Minie, the bullet in copper #C75A21). Nothing else changed.
+
+    Check (2026-11-23, WoLReal2: our UHC.dll, minUIStats, multiplierDecimals,     Picture (minUIStats-v8-icons-...)  Result
+    showGatherRate, WoL's wol.cfg lines; the pack installed with apply_fix.py
+    and removed with --restore, every file byte for byte back; scenario
+    players, 1920x1080; 38 applied, 0 failed)
+    Escopetero: 1.5x Maneuver (Minie), 1.25x Line (blue), 0.75x Scout, the rows    min-escopetero, -tip,              pass
+      and the tooltip, both interfaces                                             big-escopetero, -tip
+    Falconet in Bombard: 3x Standing (purple), rows and tooltip, both interfaces   min-falconet, -tip,                pass
+                                                                                   big-falconet, -tip
+    Lancer: Hand ATK 2x Skirmisher (green), row and tooltip, minimized interface   min-lancero, -tip                  pass
+      (the big interface of WoL's layout shows only the first attack row, Siege)
+    Control: the same, the Skirmisher triple taken out of attackTypeIcons: no      min-lancero-control-tip            pass (the
+      2x and no tooltip line, so the exe has no icon of its own for                                                   cfg draws
+      AbstractRangedInfantry                                                                                          it)
+    The rows end where they ended with the version 7 icons (same icon size)        all                                pass
+
+  The version 7 pictures below were taken with version 7's icons (a winged arrow, a blue and a red soldier) or with
+  WoL's own (the crossed arrows, the purple soldier: the gather, Falconet and bigui pictures); they are kept for what
+  they test (the seconds, the armor percent, the speed, the gather rates), not for the icons. Version 7's
+  icons-min-* and icons-big-* pictures were replaced by version 8's.
+
+Version 7 follows.
 
 Version 7 (2026-11-21), after JTMaston's review of version 6: ..\note-for-team-v7.txt
 -------------------------------------------------------------------------------------
@@ -8,7 +36,7 @@ Version 7 (2026-11-21), after JTMaston's review of version 6: ..\note-for-team-v
 - The speed follows the tactic: the Falconet shows 4 in Limber and 1.60 in Bombard (4 x 0.4), in both UIs.
 - showGatherRate: wood rates now show (they did not); the optional "Holds:" item fixed for the Mill and placed mines.
 - New unit type icons in the pack: Line (blue coat), Standing (red coat), Maneuver (a winged arrow; the winged bullet
-  is in ..\review). apply_fix.py installs the pack and --restore puts WoL's files back.
+  was in ..\review). apply_fix.py installs the pack and --restore puts WoL's files back. (Replaced in version 8.)
 
     Check (2026-11-21, our UHC.dll unless said; minUIStats, multiplierDecimals,     Picture (minUIStats-v7-...)      Result
     showGatherRate, WoL's wol.cfg lines; scenario players, 1920x1080)
@@ -22,7 +50,7 @@ Version 7 (2026-11-21), after JTMaston's review of version 6: ..\note-for-team-v
     WoL's uhc.dll + our dinput8.dll: 5 applied, 0 failed, the same rates;         woluhcdll-*                      pass (armor
       resists in that DLL's text                                                                                   as WoL's)
     New unit type icons: Escopetero (arrow 1.5x, blue soldier 1.25x), Falconet    icons-min-*, icons-big-*       pass (rows
-      Bombard (red soldier 3x), rows and tooltips, both UIs                                                        as long)
+      Bombard (red soldier 3x), rows and tooltips, both UIs                       (replaced by version 8's)      as long)
 
 Version 6 follows.
 

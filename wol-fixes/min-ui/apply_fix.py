@@ -1,25 +1,29 @@
 """Installs the minimized unit panel of the DLL key `minUIStats` in a Wars of Liberty folder: the layout, the rows file,
-the drawn stat icons and the three redrawn unit type icons (Line, Standing, Maneuver).
+the drawn stat icons and the four unit type icons from JTMaston's art (Line, Skirmisher, Standing, Maneuver).
 
     python apply_fix.py <WoL folder>              apply (a backup of every file it replaces goes to
                                                   <WoL folder>\\min-ui-backup\\ first)
-    python apply_fix.py <WoL folder> --restore    put the backed-up files back and delete the files it added
-    python apply_fix.py <WoL folder> --check      say what is applied, change nothing
+    python apply_fix.py <WoL folder> --restore    put the backed-up files back, byte for byte, and delete the files
+                                                  it added
+    python apply_fix.py <WoL folder> --check      compare each file byte for byte with the pack, change nothing
     (a folder under steamapps is refused unless --force is given)
 
 What it writes (README.txt has the why):
 - data\\uiunitselectionmin.xml: proposed-uiunitselectionmin.xml (WoL's own file is backed up);
 - data\\uhc\\minuirows.xml: minuirows.xml;
 - art\\ui\\ingame\\stat_icon_rof, _traintime, _armor, _los, _speed, _projectiles .ddt (new): the six drawn stat icons;
-- the unit type icons of the multipliers, at the paths WoL's attackTypeIcons line already names, so no data changes
-  (WoL's own files are backed up):
-    art\\ui\\ingame\\stat_icon_heavy_infantry.ddt                Line (AbstractHeavyInfantry): blue coat, shako
-    art\\ui\\ingame\\stat_icon_infantry.ddt                       Standing (AbstractInfantry): red coat, shako; the
-                                                               panels draw this file for AbstractInfantry
+- the unit type icons of the multipliers (version 8, 2026-11-23: JTMaston's art, converted, not redrawn), at the
+  paths the panels draw, so no data changes (WoL's own files are backed up):
+    art\\ui\\ingame\\stat_icon_heavy_infantry.ddt                Line (AbstractHeavyInfantry): blue coat, the musket
+                                                               upright in front
+    art\\ui\\ingame\\stat_icon_skirmisher.ddt                    Skirmisher (AbstractRangedInfantry, the path WoL's
+                                                               attackTypeIcons line names): green coat, the musket
+                                                               held diagonally
+    art\\ui\\ingame\\stat_icon_infantry.ddt                       Standing (AbstractInfantry): purple coat, no weapon;
+                                                               the panels draw this file for AbstractInfantry
     art\\WoL\\ui\\ingame\\staticons\\stat_icon_standing_unit.ddt   the same picture, at the path wol.cfg names
-    art\\WoL\\ui\\ingame\\staticons\\stat_icon_ranged.ddt          Maneuver (AbstractRangedCavalry): a winged arrow
-  (review\\stat_icon_ranged-winged-bullet.ddt is the other Maneuver icon that was drawn; copy it over
-  stat_icon_ranged.ddt by hand to use it instead);
+    art\\WoL\\ui\\ingame\\staticons\\stat_icon_ranged.ddt          Maneuver (AbstractRangedCavalry): a winged Minie
+                                                               bullet, the bullet in copper (#C75A21);
 - Startup\\wol.cfg: the line `minUIStats`, when the file has no such line.
 """
 import json
