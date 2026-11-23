@@ -206,7 +206,8 @@ inline constexpr Feature kFeatures[] = {
     {"shipmentCounts", ApplyShipmentCounts},
     {"ageFiveShipments", ApplyAgeFiveShipments},
     // No order constraint: the only keys that write 0x630017 (the shared card tag hook), 0x8D502F, 0x710804 and
-    // 0x710909. quickArrivalCards reads its flag through the shared flag hook, after hcTargetTechs' flags.
+    // 0x710909. quickArrivalCards reads its flag through the shared flag hook (0x620C2F); each handler there takes
+    // only its own flag names, so its place relative to hcTargetTechs does not matter.
     {"resendableCards", ApplyResendableCards},
     {"quickArrivalCards", ApplyQuickArrivalCards},
     {"kothTimer", ApplyKothTimer},
