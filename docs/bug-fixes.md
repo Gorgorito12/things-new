@@ -45,6 +45,8 @@ compatMode
 
 *Keeps the game from unloading 3D models that units still use, which crashed big games (WoL #78).*
 
+**Added:** Monday 2026-11-23 08:05
+
 ```
 modelCacheLimit [MB] [log]
 ```
