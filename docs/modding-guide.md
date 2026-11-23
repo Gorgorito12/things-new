@@ -31,6 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Monday 2026-11-23 07:59 | [`resendableCards`](#resendablecards) | Added. `<resendeveryage>1</resendeveryage>` in a home city card: the card can be sent again each time its player reaches a new age (its `<maxcount>` back, no stacking across ages). | The tag on the cards that want it. |
+| Monday 2026-11-23 07:59 | [`quickArrivalCards`](#quickarrivalcards) | Added. `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a quick-arrival card.* to the card's rollover, after its *may be sent ... | The flag on the cards' techs; a string in the string table to translate the line. |
 | Sunday 2026-11-22 14:03 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Sunday 2026-11-22 13:54 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Sunday 2026-11-22 12:35 | [`broadsideSoundSet`](#broadsidesoundset) | Filmed in WoL, with a control. A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). |
@@ -877,6 +879,8 @@ ageFiveShipments
 
 *Lets a home city card be sent again each time its player reaches a new age.*
 
+**Added:** Monday 2026-11-23 07:59 · **Filmed in WoL:** Monday 2026-11-23 07:59
+
 ![resendableCards in WoL](media/resendableCards-wol.gif)
 
 *In WoL, with `resendableCards log` (2026-11-23, a skirmish on a test map, Dutch against a German AI, the ages set by
@@ -951,6 +955,8 @@ resendableCards [log]
 #### quickArrivalCards
 
 *Adds the line "This is a quick-arrival card." to the rollover of the cards whose tech has the QuickArrival flag.*
+
+**Added:** Monday 2026-11-23 07:59
 
 ![quickArrivalCards: an infinite card in the shipment panel](media/quickArrivalCards-panel-infinite.jpg)
 
