@@ -2200,6 +2200,18 @@ alpha 0 take the colour of the player of the visual the model hangs on: measured
 texture, blue on player 1's Skirmisher, red on player 2's Outpost, and the local player's blue on a placement ghost. The
 key needs nothing for it.
 
+**The look (2026-11-23).** The game's selection decal (`shadows_selections\selection_circle_64x64.ddt`) is a white line,
+2 texels of a 32-texel half width, alpha 255 on the line and 0 elsewhere, which the game draws flat in the owner's
+colour: about (48, 44, 213) for player 1's (45, 45, 245), 3 to 4 px wide at the default zoom. The range ring now matches
+it: `range_line.ddt` is white with alpha 0 across the whole line (until 2026-11-23 a 150-grey core between white edges of
+alpha 255), so the shader's `diffuse *= lerp(pixelxformColor, 1, diffuse.a)` gives the owner's colour itself. The line is
+0.5 m wide, +0.008 m per metre of radius. The ring used to look pale (in game a core of (195, 178, 250) for blue and
+(255, 179, 162) for red) because of its bump map. `BumpPS` in the game's `sm3_shaders.hlsl` reads the bump as
+(x, y, z, shine) = (A, G, B, R), and adds the sun's shine, scaled by R, over the colour. The old flat bump was
+(R 128, G 128, B 255, A 255): half shine on a normal tilted 45° along the ring. `range_line_bump.ddt` is now
+(0, 128, 255, 128), as the game's own `flat_normal_black_spec.ddt`. Measured after the change: the ring's core is
+(72, 66, 255) for blue, next to the selected Skirmisher's own decal.
+
 **`<Flag>AlwaysDisplayRange</Flag>`.** The proto flag parser 0x5F640A (`stdcall(proto, name)`) compares the name with each
 flag it knows, through the string compare 0x4028B4, and returns with nothing for any other name. The key replaces the call of
 its last compare, 0x5F726F, with a hook that runs the compare and, when it does not match, hands the name to the key.
