@@ -1647,7 +1647,8 @@ each target, with the team flag clear. applyEffects goes through its `call`; the
 a function with the same arguments and `ret`, and an asm stub re-executes the replaced head for the stock call.
 
 The flag name is read by FUN_00620C2F, a chain of string compares called once, at 0x620C23, which ignores what it does not
-know. The key hooks the head of that reader, not its call, so it still works when another DLL wraps the call, and keeps the
+know. The key reads its two flags through the shared hook on the head of that reader ("Tech flags", below; since
+2026-11-23, before that its own hook on the same head), so it still works when another DLL wraps the call, and keeps the
 tech's definition, the routines' `this`, in a set. The set is only written during the load, so the game's lookups are lock-free.
 
 The enemies come from 0x484D2D, the check the placement rules use, over the players of the world without Gaia.
@@ -1889,7 +1890,7 @@ stop at four ages (REA `ev_4c5c5b11…`, `ev_cb7f901b…`; capstone):
   stop at 0x9A77DC; buttons at `+154h`, hidden first at 0x9A76AC..0x9A76EB); it did not open in the tests (inferred:
   another deck dialog of the same screen).
 
-The panel greys a card whose age is above the player's (`[card+18h]` against `[player+50h]`, rollover string 8FA6h),
+The panel greys a card whose age is above the player's (`[card+18h]` against `[player+50h]`; its disabled reason is 8FA6h, and the rollover says *This Card cannot be sent until Age %d*, 9012h),
 and the send FUN_0085A724 refuses it (0x85A90A, string 8FFCh); neither stops at 3.
 
 **What the key does.** The immediate of `cmp eax,4` at 0x63022E becomes 5 (`CardListAgePasses`), so the game's list
@@ -1935,6 +1936,82 @@ slots, removal from the deck builder). The slots between the two groups stay hid
 and their overlays and resets the links before it places a card. The counts are read from the same list the fill
 walks, so they cannot disagree with it. Not in the hot path: the fills run when a panel is opened or changes, and the
 count is one pass over the list (25 cards in the decks tested) per card of the Age IV row.
+
+### resendableCards
+
+`src/features/resendcards.cpp`, `hooks/resendcards_hooks.asm`; the tag through the shared card tag hook (`cardtags.*`).
+
+**Stock (#97, 2026-11-23; REA `ev_d08f643f…`, `ev_8b93b70f…`, `ev_d2f7d77e…`; capstone).** A player's card list
+`hc+228h` holds copies (28h B) of the home city's cards, made by FUN_006301DE from the deck, each with its sends left in
+`[card+20h]`, set to `<maxcount>` `[card+4]` when the list is built. The send FUN_0085A724 refuses a card with a
+`<maxcount>` of 0 or more and no sends left (0x85A9B9, *You have already sent %s*, 8FFDh) and takes one with
+FUN_0085FBEA(card, −1) at 0x85ACF8 (`+20h` += delta, clamped to 0 .. `+4`); a cancel gives it back (+1, 0x85AE98). The
+in-game panel greys such a card (0x9A5AFC). The card's tech has the HomeCity flag, which the tech activation 0x94CF27
+never refuses as already active, so a card sent again runs its effects again. `<infiniteinlastage>` is the byte
+`[card+24h]`: when the age setter FUN_008D4E01 sets an age above 3, it calls FUN_0085650A(hc) (0x8D5053), which sets
+`+20h` = `+4` for each card whose byte is 1. So the stock feature is one refill of the card when the player reaches the
+Imperial Age, not unlimited sends. The field and the byte are in the saved game (the card's save 0x85FC40 and load
+0x8607C5).
+
+**The tag.** `<resendeveryage>` reaches the key through `AddCardTagHandler` (below, "Card tags"), once the card is in the
+home city's array: `1` or `true` sets bit 1 (02h) of the card's byte `+24h`, `0` or `false` clears it, anything else is
+logged. The deck build (10 dwords), the save and the load copy the byte whole, so every copy of the card carries the
+bit, in every player's list and in saved games, with no state in the DLL.
+
+**The reset.** A 5-byte `jmp` over `mov eax,[0C66234h]` at 0x8D502F, the join of the age setter after the new age is
+written: `UhcResendAgeUp(player = ESI, flag = byte [esp+13h])`, then the replaced load and `jmp 0x8D5034`. The setter's
+flag is 1 when the old age was the same or higher; on an advance, each card of the player's list (`[hc+244h]`, count
+`[hc+248h]`) with the bit, a `<maxcount>` of 0 or more and fewer sends than its `<maxcount>` gets `+20h` = `+4`. One
+reset per age-up, never added: an age with no send does not stack (sent in Age II, not in Age III: one send in Age IV).
+An `<infiniteinlastage>` card with the bit is refilled the same way when the Imperial Age comes, before the stock refill,
+whose `== 1` no longer matches it.
+
+**The rollover's cost.** The card rollover builder hides the card's cost line once its tech has been researched (the
+research count against `ResearchLimit`), unless the card is `<infiniteinlastage>` in age 4 with sends left. A 6-byte
+`jmp` over `cmp dword ptr [eax+50h],4 / jne 710863h` at 0x710804 (EAX = the player, EBP = the card, reached only when the
+byte `+24h` is not 0) keeps age 4 as stock and lets a card with the bit go on to the sends-left test (0x71080A) in any
+age; any other card goes to 0x710863 as stock. A card that costs only one shipment shows no cost line, so for such a card
+this changes nothing visible.
+
+**Why it is safe.**
+- The join is reached on every path once the age is written (0x8D4F49, 0x8D4F54, 0x8D4F5F and the fall-through after
+  the age-up message, no push outstanding); EAX, ECX and EDX are written there before they are read; the stdcall keeps
+  EBX, ESI, EDI and EBP. The setter's early return (nothing changed) does not reach it.
+- The reset writes only `+20h` of cards in the player's own list, as the stock refill and the cancel do, within
+  0 .. `<maxcount>`; the send, the panel, the AI (whose card checks read the same list) and the save see the same field.
+- Simulation: the age setter runs in the simulation (a tech effect, a trigger), the cards are the same on every machine,
+  and nothing depends on the local player. `CardRolloverAgeCheck` is display only.
+- The bit: no reader of the byte `+24h` other than the stock refill (`== 1`) and the rollover (`!= 0`) was found near
+  the card lookups (capstone over the callers of 0x85FFCE, 0x85FFEC, 0x8563EA and 0x860020). A save made with the key
+  and loaded without it keeps the bit: the cards are then neither reset each age nor refilled at the Imperial Age when
+  they also have `<infiniteinlastage>`.
+
+### quickArrivalCards
+
+`src/features/quickarrival.cpp`, `hooks/quickarrival_hooks.asm`; the flag through the shared flag hook (`techflags.*`).
+
+**Stock (#99, 2026-11-23; REA `ev_8b93b70f…`).** The rollover of a home city card is built by FUN_007103CE(out, hc,
+tech, …, list, pop) for the in-game shipment panel (0x9A61B7), "Build a Deck" (0x9A0714) and the deck dialog
+(0x9A7A1E), all in list mode. Its lines: the name, the population, the unit's text when the tech has no rollover text,
+*cannot be sent until Age N* (9012h), the cost, the tech's rollover text, the send limit (9001h / 9002h / 9003h), then,
+with the detailed help option on, the advanced info FUN_0071006D. Each line is added by FUN_004C5076(out, line, 1, 0),
+which appends `<ttf><ttb>` (a bullet) and the line.
+
+**The flag.** `<Flag>QuickArrival</Flag>` reaches the key through `AddTechFlagHandler` (below, "Tech flags"): it keeps
+the tech's ID (`[[record]+0]`) in a table and takes the flag, which stock would ignore.
+
+**The line.** A 6-byte `jmp` over `mov ecx,[0D6F6F0h]` at 0x710909, the join before the advanced info (reached from
+0x7108C3, 0x7108DB and the fall-through after the send-limit line, no push outstanding):
+`UhcQuickArrivalLine(out = [esp+44h], tech = [esp+4Ch], list = [esp+58h])`, then the replaced load and `jmp 0x71090F`.
+For a flagged tech it appends `<ttf><ttb>` and the text with the BString append 0x443960, as FUN_004C5076 does (a `\n`
+instead of the bullet in string mode). The text is *This is a quick-arrival card.*, or string N of the string table
+with `stringid N` (read at each rollover, so a language change follows; an empty string falls back to the English).
+So the line comes right after the send-limit line: after *This Card may be sent INFINITE times* for an infinite card,
+and between the card's rollover text (and its send limit) and the advanced info for the others.
+
+**Why it is safe.** Display only. The stdcall keeps EBX, ESI, EDI and EBP; ECX is reloaded by the replaced instruction,
+EDX at 0x71090F and EAX by the call at 0x710917. `CardRolloverHead` verifies the builder's frame (the offsets of its
+arguments), `CardBulletLine` the bullet helper the key copies.
 
 ### maintainWaitForPop
 
@@ -5450,6 +5527,28 @@ would also accept it inside `<Prereqs>` and `<Effects>` (0x6203A2), which is why
 **Why it is safe.** `pushad` / `popad` keep every register around the stdcall dispatch; the flags are written by the
 `cmp` that follows. No branch lands in the 7 bytes (they were dataLint's site; capstone scan). Data load only: once per
 `<Tech>`, a walk over its 10 to 30 children with a name compare each.
+
+### Tech flags (techflags.*)
+
+The tech parser reads each `<Flag>` through FUN_00620C2F `cdecl(record, name)`, a chain of string compares called once
+(0x620C23) that ignores a name it does not know. `techflags.cpp` owns a 5-byte `jmp` over its head (`push esi / mov
+esi,[esp+8]`, re-executed before `jmp 0x620C34`): `UhcTechFlagDispatch(record, name)` asks each handler added by
+`AddTechFlagHandler`, in `kFeatures` order, and returns for a flag one of them took; any other flag goes on to stock.
+The head, not the call, so a DLL that wraps the call still reaches it for the flags it does not know.
+`hcTargetTechs` (HCTargetEnemy, HCTargetAll) and `quickArrivalCards` (QuickArrival) use it; whichever applies first
+verifies the head and writes the jump. Data load only.
+
+### Card tags (cardtags.*)
+
+The home city loader FUN_0062E6C9 reads each `<card>`'s children in a loop over the card node (EBX, 0x62FD1D: children
+`[node+8]`, count `[node+0Ch]`), compares each name with its tags and reads past one it does not know (0x66B720), then
+commits the card built on its stack with `call 62FBC7h` at 0x630017 (ECX = the home city's card array `hc+204h`).
+`cardtags.cpp` redirects that call to `UhcCardCommitHook`: it calls the append with the same `this` and argument, then
+`UhcCardTagsDispatch(node = EBX, array, index = EAX)`, which walks the node's children (a child's name
+`[[child+4]+18h][[child+18h]]`, case ignored, its text the BString `[child+14h]`) and calls the handler added for that
+name by `AddCardTagHandler` with the home city, the card now in the array, and the text; it returns the index with
+`ret 4`, as the append does. The loader overwrites ECX and EDX after the call and does not read EAX again.
+`resendableCards` uses it for `<resendeveryage>`. Data load only, once per card.
 
 ### trainBatchSize
 

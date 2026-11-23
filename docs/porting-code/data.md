@@ -178,6 +178,8 @@ constexpr KnownTag kKnownTags[] = {
     {L"CanOverheal", "overhealSources"},
     {L"OverhealCap", "overhealSources"},
     {L"OverhealDecay", "overhealDecay"},
+    {L"ResendEveryAge", "resendableCards"},
+    {L"QuickArrival", "quickArrivalCards"},
 };
 
 std::map<std::wstring, Seen> g_seen[kKinds];

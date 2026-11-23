@@ -355,3 +355,5 @@ dismount-hidden-heal-build-test-wol 2 24 2
 auraRings-pack-wol 2 18 1.5
 auraRings-pack-units-wol 2 12 1 1160:653:600:280
 auraRings-pack-wol-control 2 18 1.5
+resendableCards-wol 20 66 6 800:520:0:0
+resendableCards-wol-control 26 66 6 800:520:0:0

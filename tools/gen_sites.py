@@ -2112,6 +2112,34 @@ SITES = [
     # editorSearch: a parameter's change (event 10, 0x829E29): the field's current index 0xAC0D1B, its entry's text
     # 0xAC0EEA, given to the parameter (0x82AC1C): the value is the text picked, not an index into the stock list.
     ("EditorParamPickText", 0x829E65, 0x24),
+    # card tags (cardtags.*): the home city loader FUN_0062E6C9 reads each <card>'s children in a loop over the card
+    # node EBX (mov eax,[esp+1Ch] / push eax / mov ecx,ebx at 0x62FD1D; the loop's end add eax,1 / cmp eax,[ebx+0Ch]
+    # at 0x62FF42), then commits the card it built on the stack: lea edx,[esp+0A8h] / push edx / add ecx,204h /
+    # mov [esp+0D0h],al / call 62FBC7h (the append to the home city's card array hc+204h, thiscall, ret 4, the new
+    # index in EAX). The call at 0x630017 is redirected; EBX is still the card node there.
+    ("CardChildLoop", 0x62FD1D, 7),
+    ("CardChildLoopEnd", 0x62FF42, 0x14),
+    ("CardCommitPrep", 0x630002, 0x15),
+    ("CardCommitCall", 0x630017, 5),
+    # resendableCards: the age setter FUN_008D4E01 thiscall(player, age, announce, tech), at the join 0x8D502F after
+    # the age is written (mov eax,[0C66234h]), before the stock refill of the InfiniteInLastAge cards (world+870h,
+    # age > 3, hc [esi+84h], call 85650Ah). The advance flag [esp+13h] (1 when the old age >= the new one) is written
+    # at 0x8D4EE3..0x8D4EF2 in the same frame.
+    ("AgeUpJoin", 0x8D502F, 5),
+    ("AgeUpStockRefill", 0x8D5034, 0x24),
+    ("SetAgeAdvanceFlag", 0x8D4EE3, 0x0F),
+    # resendableCards: the card rollover builder FUN_007103CE shows the card's cost line after it was sent only for
+    # an InfiniteInLastAge card in age 4 with sends left: test bl,bl / je / cmp [ebp+24h],al / je / mov eax,[edi+8]
+    # / test / je / cmp dword ptr [eax+50h],4 / jne 710863h (0x710804, 6 bytes replaced; EBP = the card).
+    ("CardRolloverAgeCheck", 0x7107F4, 0x16),
+    # quickArrivalCards: the same builder's head (its frame: four pushes after sub esp,30h, so the output list is
+    # [esp+44h], the tech ID [esp+4Ch], the list-mode byte [esp+58h] in the body), and its join before the advanced
+    # info, mov ecx,[0D6F6F0h] at 0x710909 (6 bytes), reached after the send-limit line (9001h/9002h/9003h).
+    ("CardRolloverHead", 0x7103CE, 0x26),
+    ("CardRolloverAdvanced", 0x710909, 6),
+    # quickArrivalCards: the bullet line helper FUN_004C5076(list, BString*, 1, 0) the builder uses for its lines
+    # (it appends <ttf><ttb> then the line, through 0x443960 and 0x4439E3); verify only, the key appends the same.
+    ("CardBulletLine", 0x4C5076, 0x2A),
 ]
 
 
