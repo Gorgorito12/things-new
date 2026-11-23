@@ -59,6 +59,8 @@ Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
 Outcome ApplyResearchGrants(const Config& config);
 Outcome ApplyShipTechLimit(const Config& config);
+Outcome ApplyResendableCards(const Config& config);
+Outcome ApplyQuickArrivalCards(const Config& config);
 Outcome ApplyHomeCityTechsInUnits(const Config& config);
 Outcome ApplyKillBountyTechs(const Config& config);
 Outcome ApplyTeamKillBounty(const Config& config);
@@ -199,6 +201,10 @@ inline constexpr Feature kFeatures[] = {
     {"randomCost", ApplyRandomCost},
     {"shipmentCounts", ApplyShipmentCounts},
     {"ageFiveShipments", ApplyAgeFiveShipments},
+    // No order constraint: the only keys that write 0x630017 (the shared card tag hook), 0x8D502F, 0x710804 and
+    // 0x710909. quickArrivalCards reads its flag through the shared flag hook, after hcTargetTechs' flags.
+    {"resendableCards", ApplyResendableCards},
+    {"quickArrivalCards", ApplyQuickArrivalCards},
     {"kothTimer", ApplyKothTimer},
     {"unitTypeTechs", ApplyUnitTypeTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
@@ -350,7 +356,7 @@ inline constexpr Feature kFeatures[] = {
 // Lowercase cfg keys read by the features above; any other key is logged as not implemented.
 inline constexpr const char* kHandledKeys[] = {
     "customabstracttypes",
-    "agefiveshipments",
+    "agefiveshipments", "resendablecards", "quickarrivalcards",
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "decimalpopulation",
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",

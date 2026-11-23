@@ -18,7 +18,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `buildingGather`, `herdWalkAwayFix` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
-| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
+| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs`, `resendableCards`, `quickArrivalCards` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon`, `autoScout` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
 
@@ -372,7 +372,7 @@ compiled.
 | `Config::First`, `All`, `Int` | The key's first line, every line, or an integer. | `IUHCConfig`. `broadsideMuzzleLimit`, `noTrainNearEnemyTC`, `danceBonusCivs` and the dodge sound keys read every line; `abilitySlots` an integer. |
 | `Apply…` returning `Outcome` | One function per key. | `BaseFeature`: put the body in the feature's install method. |
 | `RequestAbstractUnitType`, `OnDatabaseLoad` | Registers a type, and calls a feature on every data load. | [See below](#extra-abstract-unit-types). |
-| `AddWorldTick`, `AddActionTagHandler`, `FloatingText`, `AddUnitPanelRow`, `AddDeathObserver`, `AddDestroyObserver`, `AddKillObserver`, `AddResearchPayer` | The hooks several features share. | Nothing like them. Copy them once: never add a second `jmp` at their sites. |
+| `AddWorldTick`, `AddActionTagHandler`, `FloatingText`, `AddUnitPanelRow`, `AddDeathObserver`, `AddDestroyObserver`, `AddKillObserver`, `AddResearchPayer`, `AddTechFlagHandler`, `AddCardTagHandler` | The hooks several features share. | Nothing like them. Copy them once: never add a second `jmp` at their sites. |
 
 A `trackable_memory_patch` restores its bytes when it is destroyed, so keep the patch objects alive for the
 life of the game.
@@ -983,7 +983,9 @@ Code: [techs](porting-code/techs.md#transformspan). It needs `AddWorldTick`, in 
 
 Code: [techs](porting-code/techs.md#hctargettechs).
 
-- **Sites:** a 5-byte `jmp` at `0x620C2F` (`56 8B 74 24 08`), the head of the flag reader; a `call` at `0x94D0AE` (to
+- **Sites:** a 5-byte `jmp` at `0x620C2F` (`56 8B 74 24 08`), the head of the flag reader, through the shared
+  `AddTechFlagHandler` ([tech flags](porting-code/techs.md#tech-flags), since 2026-11-23: `quickArrivalCards` reads
+  its flag there too); a `call` at `0x94D0AE` (to
   `0x94DAE1`); a 6-byte `jmp` at `0x94DCB2` (`53 55 8B 6C 24 0C`) and a 7-byte one at `0x94DDEA`
   (`53 55 57 8B 7C 24 10`). Check them against your DLL first.
 - **Test:** a tech with the flag: the enemy's units change, the owner's do not.
@@ -1077,6 +1079,41 @@ Code: [techs](porting-code/techs.md#agefiveshipments). No shared hook.
 - **Test:** three cards given `<age>4</age>` in a deck with six Age IV cards: Age IV in columns 1 to 6 and Age V in 9 to
   11, in both panels and the deck chooser; the rollover and a click (a send, a removal from the deck in "Build a
   Deck") of each give the card shown; greyed until the Imperial Age, refused before, sent in it.
+
+### resendableCards
+
+Code: [techs](porting-code/techs.md#resendablecards). It needs `AddCardTagHandler`
+([card tags](porting-code/techs.md#card-tags)).
+
+- **The tag:** a `call` at `0x630017` (`E8 AB FB FF FF`, `call 62FBC7h`), the home city loader's commit of a card into
+  the home city's array (ECX = `hc+204h`, `[esp+4]` the card on the stack, `ret 4`, the new index in EAX; EBX = the
+  `<card>` node). Call the append, then walk the node's children (`[node+8]`, count `[node+0Ch]`; a child's name
+  `[[child+4]+18h][[child+18h]]`, its text `[child+14h]`) for `resendeveryage`, and set bit 1 (02h) of the new card's
+  byte `+24h` (`[array] + index × 28h`). The game copies the byte into each player's card list and into saved games.
+- **The reset:** a 5-byte `jmp` at `0x8D502F` (`A1 34 62 C6 00`, `mov eax,[0C66234h]`) in the age setter FUN_008D4E01,
+  the join after the new age is written. ESI = the player, the byte `[esp+13h]` = 1 when it is not an advance. On an
+  advance, for each card of `[player+84h]` + 228h (records `[hc+244h]`, count `[hc+248h]`, 28h each) with the bit and
+  `[card+4]` ≥ 0: `[card+20h]` = `[card+4]`. Then re-execute the load and `jmp 0x8D5034`.
+- **The rollover's cost:** a 6-byte `jmp` at `0x710804` (`83 78 50 04 75 59`): `[eax+50h]` = 4 → `0x71080A`; else the
+  card EBP with the bit → `0x71080A`; else `0x710863`.
+- **Check against your DLL first:** the three sites; if your DLL hooks the age setter or the home city loader, add to
+  that hook instead.
+- **Test:** a tagged card sent in Age II is sendable again in Age III; not sent in Age III, it has one send (not two)
+  in Age IV; an untagged card stays sent; a save loaded after a send keeps it sent until the next age-up.
+
+### quickArrivalCards
+
+Code: [techs](porting-code/techs.md#quickarrivalcards). It needs `AddTechFlagHandler`
+([tech flags](porting-code/techs.md#tech-flags)).
+
+- **The flag:** at the head of the flag reader `0x620C2F` (shared with `hcTargetTechs`): keep the tech ID
+  `[[record]+0]` of each `QuickArrival` and return without the stock reader.
+- **The line:** a 6-byte `jmp` at `0x710909` (`8B 0D F0 F6 D6 00`, `mov ecx,[0D6F6F0h]`) in the card rollover builder
+  FUN_007103CE, before the advanced info: the rollover is `[esp+44h]`, the tech `[esp+4Ch]`, the list mode `[esp+58h]`.
+  For a flagged tech append `<ttf><ttb>` and the text with the BString append `0x443960` (`thiscall(str, text, -1,
+  -1)`), then re-execute the load and `jmp 0x71090F`.
+- **Test:** the rollover of an infinite and a once card with the flag, in the shipment panel and in "Build a Deck": the
+  line after the send-limit line; a card without the flag unchanged.
 
 ### orPrereqsQty
 

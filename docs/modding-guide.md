@@ -31,6 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Monday 2026-11-23 07:59 | [`resendableCards`](#resendablecards) | Added. `<resendeveryage>1</resendeveryage>` in a home city card: the card can be sent again each time its player reaches a new age (its `<maxcount>` back, no stacking across ages). | The tag on the cards that want it. |
+| Monday 2026-11-23 07:59 | [`quickArrivalCards`](#quickarrivalcards) | Added. `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a quick-arrival card.* to the card's rollover, after its *may be sent ... | The flag on the cards' techs; a string in the string table to translate the line. |
 | Sunday 2026-11-22 14:03 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Sunday 2026-11-22 13:54 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Sunday 2026-11-22 12:35 | [`broadsideSoundSet`](#broadsidesoundset) | Filmed in WoL, with a control. A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). |
@@ -597,6 +599,8 @@ Caps that are fixed in the exe.
 | [`decimalPopulation`](#decimalpopulation) | Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | **new** | The decimals in `protoy` and `techtreey`. | confirmed (single player, also a skirmish vs AI) |
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | in WoL's DLL | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). | confirmed above the level table; see the section |
 | [`ageFiveShipments`](#agefiveshipments) | Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown at the right end of the Age IV row (the Age IV cards stay at the left), greyed until the Imperial Age, then sent like the others. | **new** | `<age>4</age>` on the cards that want it. | confirmed (single player) |
+| [`resendableCards`](#resendablecards) | `<resendeveryage>1</resendeveryage>` in a home city card: the card can be sent again each time its player reaches a new age (its `<maxcount>` back, no stacking across ages). | **new** | The tag on the cards that want it. | confirmed (single player) |
+| [`quickArrivalCards`](#quickarrivalcards) | `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a quick-arrival card.* to the card's rollover, after its *may be sent ... times* line. | **new** | The flag on the cards' techs; a string in the string table to translate the line. | confirmed (single player) |
 | [`selectionLimit`](#selectionlimit) | A selection holds up to N units (50 in the exe). `wol.cfg` sets 75. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`noAILimit`](#noailimit) | Shows every `AI4\*.personality` file in game setup. WoL uses `noAILimitV2` instead. | in WoL's DLL | The personality files. | confirmed |
 | [`noAILimitV2`](#noailimitv2) | Shows WoL's 52 `AI4\*.personality` files in game setup. Without it, a random AI crashes the game. | **in `wol.cfg`** | The personality files. | confirmed |
@@ -870,6 +874,143 @@ ageFiveShipments
   - key off: six Age IV cards, no Age V card, 25/25 (panel and deck builder).
   - Not tested: the AI with an Age V card, multiplayer, other resolutions (the panels' own buttons are used, so none
     expected).
+
+#### resendableCards
+
+*Lets a home city card be sent again each time its player reaches a new age.*
+
+**Added:** Monday 2026-11-23 07:59 · **Filmed in WoL:** Monday 2026-11-23 07:59
+
+![resendableCards in WoL](media/resendableCards-wol.gif)
+
+*In WoL, with `resendableCards log` (2026-11-23, a skirmish on a test map, Dutch against a German AI, the ages set by
+triggers at 1:00 and 2:00; in the copy's `homecitydutch.xml` `<resendeveryage>1</resendeveryage>` on "3 Dutch Workers"
+(Age I, which also has `<infiniteinlastage>`) and on "Cords of 600 wood" (Age II); "Chests of 700 coin" untagged; 6x
+speed):* "3 Dutch Workers", sent in Age I, is dark until the Age II comes, then it can be sent again. In Age II the 600
+wood and the 700 coin are sent and turn dark; when the Age III comes the 600 wood is lit again and the 700 coin stays
+dark. The log at the bottom: `player 1 reached Age III: card 715 (HCShipWoodCrates2) can be sent 1 time(s) again`.
+[Full video (MP4)](media/resendableCards-wol.mp4).
+
+![resendableCards in WoL, key off](media/resendableCards-wol-control.gif)
+
+*In WoL, key off (the same data, deck, map and clicks, in a new game; 6x speed):* the three cards stay dark after they
+are sent, through Age II and Age III. [Full video (MP4)](media/resendableCards-wol-control.mp4).
+
+```
+resendableCards [log]
+```
+
+- **In WoL today:** a card is sent at most `<maxcount>` times in a game. `<infiniteinlastage>1</infiniteinlastage>` is
+  the game's only reset: when the player reaches the Imperial Age, the card gets its sends back once (it does not become
+  unlimited). JTMaston's #97 (2026-11-23).
+- **What the key does:** a card with `<resendeveryage>1</resendeveryage>` gets its sends back each time its player
+  reaches a new age: it is sendable again as many times as its `<maxcount>` (once for `1`). The reset **sets** the sends
+  to `<maxcount>`, it never adds to them: a card sent in Age II and not in Age III has one send in Age IV, not two. A
+  card not sent since the last age-up is left as it is, and an infinite card (`-1`) is not touched. The panel lights the
+  card again at the age-up, its rollover shows it as sendable, and the AI's card list is the same list, so an AI with
+  such a card can send it again too.
+- **With `<infiniteinlastage>`:** the Imperial Age is one more age-up, so such a card gets its sends back then as well,
+  once (the game's own refill and this one are the same reset). Nothing else changes for the cards with only
+  `<infiniteinlastage>`.
+- **What a modder writes:** in the card of the home city file (`data\homecityxxx.xml`), next to the other tags, in lower
+  case like them (the name is not case sensitive):
+  ```xml
+  <card>
+      <name>HCShipWoodCrates2</name>
+      <maxcount>1</maxcount>
+      <level>0</level>
+      <prereqtech>HCShipWoodCrates1</prereqtech>
+      <age>1</age>
+      <displayunitcount>600</displayunitcount>
+      <infiniteinlastage>1</infiniteinlastage>
+      <resendeveryage>1</resendeveryage>
+  </card>
+  ```
+  `1` or `true` turns it on, `0` or `false` off; another value is logged and ignored. The tag belongs to that civ's card:
+  the same tech in another civ's home city file keeps its own setting.
+- **Off:** the game reads past the tag, as before.
+- **Saved games:** the card's sends and the tag are kept in the save by the game itself; a save loaded with the key goes
+  on as it was (a card sent in that age stays sent until the next age-up). A save made with the key and loaded without
+  it: those cards are no longer reset, and a card that also has `<infiniteinlastage>` loses its Imperial Age refill.
+- **Multiplayer:** every player needs the same setting (it changes what a player can send).
+- **Log:** `resendableCards: a card with <resendeveryage>1</resendeveryage> gets its sends back (its maxcount) each time
+  its player reaches a new age ... (multiplayer unverified)`; with `log`, each tagged card as its home city is read
+  (`card 715 (HCShipWoodCrates2) of home city ... is sent again in each new age (maxcount 1)`) and each reset (`player
+  1 reached Age III: card 715 (HCShipWoodCrates2) can be sent 1 time(s) again (it had 0 left)`); `hook reached: card tags
+  (0x630017)`, `... resendableCards age (0x8D502F)`, `... resendableCards rollover (0x710804)`.
+- **Tested in WoL (2026-11-23, single player, `C:\AoE3-UHC-WoLReal2`, Dutch skirmishes on a test map against a German AI
+  (`wolOtto`), XP granted at 0:03, the ages set by `trPlayerSetAge` triggers; the cards' sends read from memory):**
+  - "3 Dutch Workers" (Age I, tag and `<infiniteinlastage>`) sent in Age I: 0 sends left, 1 again at the Age II;
+  - "Cords of 600 wood" (Age II, tag) sent in Age II: back at the Age III; not sent in Age III: still 1 (not 2) in Age
+    IV; sent in Age IV: back at the Age V;
+  - "Chests of 700 coin" (untagged, with `<infiniteinlastage>`): sent in Age II, still 0 in Ages III and IV, 1 at the
+    Age V (the game's own refill);
+  - saved games: a save in Age III and one in Age IV, after a send, loaded in the same process: the sends as they were
+    when saved, the tag kept on the cards, and no reset at the load; a save in Age III after a send, loaded: the card
+    came back at the next age-up (Age IV);
+  - key off, the same clicks: no card comes back (the video above);
+  - the test AI resigned at about 4 to 5 minutes in every run, with and without the key (on a test map with only a Town
+    Center and settlers), so an AI sending a tagged card twice was not seen. Not tested: multiplayer.
+
+#### quickArrivalCards
+
+*Adds the line "This is a quick-arrival card." to the rollover of the cards whose tech has the QuickArrival flag.*
+
+**Added:** Monday 2026-11-23 07:59
+
+![quickArrivalCards: an infinite card in the shipment panel](media/quickArrivalCards-panel-infinite.jpg)
+
+*In WoL (2026-11-23, a Dutch skirmish, the in-game shipment panel; `<Flag>QuickArrival</Flag>` added to
+`HCShipFoodCrates1` and `HCShipCoinCrates3` in the copy's `techtreey.xml`):* the infinite card "Crates of 300 food" ends
+with *This Card may be sent INFINITE times* and then *This is a quick-arrival card.*, as its own bullet.
+
+![quickArrivalCards: a card sent once, in the shipment panel](media/quickArrivalCards-panel-once.jpg)
+
+*The same panel, "Chests of 700 coin" (sent once):* its rollover text, *This Card may be sent ONE time*, then the new
+line.
+
+![quickArrivalCards: the control card](media/quickArrivalCards-panel-control.jpg)
+
+*The same panel, "Cords of 700 wood" (no flag):* unchanged.
+
+![quickArrivalCards in Build a Deck](media/quickArrivalCards-deck-builder.jpg)
+
+*"Build a Deck" on the home city screen:* the same line on the card with the flag, after the game's red *This Card cannot
+be sent until Age 2*, its rollover text and its send limit. More: the infinite card and the control card in "Build a
+Deck", and the line taken from the string table (`stringid`), in `docs/media/quickArrivalCards-*.jpg`.
+
+```
+quickArrivalCards [stringid N] [log]
+```
+
+- **In WoL today:** nothing in a card's rollover says that it arrives quickly. JTMaston's #99 (2026-11-23).
+- **What the key does:** for a card whose tech has `<Flag>QuickArrival</Flag>`, the card's rollover gets one more bullet,
+  *This is a quick-arrival card.*, right after the line *This Card may be sent INFINITE times* (or *ONE time*, or the
+  *N times* line), so it sits between the card's own rollover text and the advanced information (the detailed help, when
+  that option is on). The line looks like the game's other lines of the card. The same rollover is used by the in-game
+  shipment panel, "Build a Deck" and the deck chooser. Nothing else about the card changes: the flag does not change
+  how fast a card arrives.
+- **`stringid N`:** the line is string N of the string table (`data\stringtabley.xml`), so it can be translated; an
+  empty or missing string falls back to the English text. Without it, the English text.
+- **What a modder writes:** in the card's tech in `techtreey.xml`:
+  ```xml
+  <Tech name ='HCShipFoodCrates1' type ='Normal'>
+      ...
+      <Flag>HomeCity</Flag>
+      <Flag>QuickArrival</Flag>
+  ```
+- **Off:** the game ignores the flag, as it ignores any name it does not know.
+- **Multiplayer:** display only; players may set it differently.
+- **Log:** `quickArrivalCards: the tech flag QuickArrival adds the line "This is a quick-arrival card." to a card's
+  rollover` (or `the line of string N`); with `log`, `tech 935 has the QuickArrival flag` per flagged tech and, once,
+  `the line was added to the rollover of tech 935`; `hook reached: tech flags (0x620C2F)`, `... quickArrivalCards
+  (0x710909)`.
+- **Tested in WoL (2026-11-23, single player, `C:\AoE3-UHC-WoLReal2`, Dutch, the flag on `HCShipFoodCrates1` (infinite)
+  and `HCShipCoinCrates3` (once), `HCShipWoodCrates3` as the control):** the line after the send-limit line on both
+  flagged cards, in the in-game panel (in Ages I to III, greyed or not) and in "Build a Deck"; none on the control card;
+  with `stringid 36865` the line read the text of that string. With `hcTargetTechs` on and `<Flag>HCTargetEnemy</Flag>`
+  on a test tech, both keys read their flags through the shared hook (`hcTargetTechs: HCTargetEnemy read`). Not tested:
+  the deck chooser (the same rollover builder), another language.
 
 #### selectionLimit
 
