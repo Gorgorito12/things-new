@@ -99,6 +99,10 @@ SITES = [
     # compares of it: FUN_0041CA8F's first test (then ja 0x6E014C) and the unload loop's test (then jbe 0x46C04D)
     ("ModelCacheBudget1", 0x46C03D, 10),
     ("ModelCacheBudget2", 0x6E0174, 10),
+    # dmgPartBoneFix: the part declaration FUN_004F0187 after "Invalid bone name ... in part declaration": test bl,bl /
+    # je 658C3Ah / the model loader's call 0x658C35 on the loaded entry (a reload while units draw it), up to the
+    # continuation 0x658C3A
+    ("PartBoneReload", 0x658C18, 0x22),
     # selectionLimit: mov eax,32h (the 50-unit selection cap), the getter 0x4E0BEE and seven compares
     ("SelectionCap1", 0x4E0BEE, 5),
     ("SelectionCap2", 0x4E0F5F, 5),
