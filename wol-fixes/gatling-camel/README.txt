@@ -27,6 +27,7 @@ Files it adds
                                             the gun's mount), with the launch point at the gun's muzzle
       gatling_camel_gun_A55.gr2, _B55.gr2   the gun (B: mirrored, the crank outside, for the gunner on foot)
       gatling_camel_camel_*.gr2, _gun_*.gr2, _rider_*.gr2    the clips of the camel, the gun and the rider
+      gatling_camel_camel_*.gr2.precomp    the tag files of the camel's clips (ATTACHPOINT, HEAD, ...)
       gatling_camel.xml (+ _gun, _rider)    the anim files of GatlingCamel
       gatling_camel_deployed.xml (+ _gun, _rider)   the anim files of GatlingCamelDeployed
   data\tactics\GatlingCamelSaddle.tactics   zamburakME.tactics with the gatling camel's attack action
@@ -51,6 +52,10 @@ Tested (2026-11-23, test copy of Wars of Liberty 1.0.15c, single player)
   selection circle and the health bar; a game saved and loaded; a skirmish (Saudis) against a German AI with
   the pack applied: the AI plays, no XS error. The current unit filmed as the control.
 - Not seen in game: the run (drawn in the previews), multiplayer.
+- Fixed on 2026-11-23 after the first films: the camel's left legs were drawn lifted (the stock clips' leg
+  mirrors were copied in the clips' own axes); on death the gun stayed in the air (it now falls with the
+  camel: the rider's bone follows the chest in the death clip). Known: while the corpse fades out (the last
+  half second) the gun turns on itself.
 
 ESPAÑOL
 -------
@@ -88,3 +93,7 @@ Probado (2026-11-23, copia de prueba de Wars of Liberty 1.0.15c, un jugador)
   el círculo de selección y la barra de vida; una partida guardada y cargada; una escaramuza (saudíes) contra
   una IA alemana con el paquete aplicado: la IA juega, sin errores XS. La unidad actual grabada como control.
 - No visto en el juego: el galope (dibujado en las vistas previas), multijugador.
+- Corregido el 2026-11-23 tras las primeras grabaciones: las patas izquierdas del camello se veían levantadas
+  (las simetrías de las patas de los clips del juego se copiaban en los ejes del propio clip); al morir el arma
+  quedaba en el aire (ahora cae con el camello). Conocido: mientras el cadáver se desvanece (el último medio
+  segundo) el arma gira sobre sí misma.

@@ -88,49 +88,28 @@
 	<anim>
 		Death
 		<assetreference type="GrannyAnim">
-			<file>animation_library\cavalry\sword_deathA</file>
-		</assetreference>
-		<assetreference type="GrannyAnim">
-			<file>animation_library\cavalry\sword_deathB</file>
-		</assetreference>
-		<assetreference type="GrannyAnim">
-			<file>animation_library\cavalry\sword_deathC</file>
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_rider_A55_fall</file>
 		</assetreference>
 		<component>ModelComp</component>
 	</anim>
 	<anim>
 		Death_by_melee
 		<assetreference type="GrannyAnim">
-			<file>animation_library\cavalry\sword_deathA</file>
-		</assetreference>
-		<assetreference type="GrannyAnim">
-			<file>animation_library\cavalry\sword_deathB</file>
-		</assetreference>
-		<assetreference type="GrannyAnim">
-			<file>animation_library\cavalry\sword_deathC</file>
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_rider_A55_fall</file>
 		</assetreference>
 		<component>ModelComp</component>
 	</anim>
 	<anim>
 		Death_by_range
 		<assetreference type="GrannyAnim">
-			<file>animation_library\cavalry\sword_deathA</file>
-		</assetreference>
-		<assetreference type="GrannyAnim">
-			<file>animation_library\cavalry\sword_deathB</file>
-		</assetreference>
-		<assetreference type="GrannyAnim">
-			<file>animation_library\cavalry\sword_deathC</file>
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_rider_A55_fall</file>
 		</assetreference>
 		<component>ModelComp</component>
 	</anim>
 	<anim>
 		Death_by_havoc
 		<assetreference type="GrannyAnim">
-			<file>animation_library\cavalry\rider_death_havoc_a</file>
-		</assetreference>
-		<assetreference type="GrannyAnim">
-			<file>animation_library\cavalry\rider_death_havoc_b</file>
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_rider_A55_fall</file>
 		</assetreference>
 		<component>ModelComp</component>
 	</anim>

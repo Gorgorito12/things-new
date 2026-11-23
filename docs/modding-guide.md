@@ -10050,14 +10050,24 @@ fire on foot until the Landwehr break; one is killed at its gun.* [Full video (M
 
 ![Today's gatling camel (the control)](media/gatlingCamel-wol-control.gif)
 
-*The same scene as the first, without the pack: today's `GatlingCamel` stops, sits down with its static gun and its
-gunner on foot.* [Full video (MP4)](media/gatlingCamel-wol-control.mp4).
+*The same scene as the first, without the pack: today's `GatlingCamel` (WoL's current KingsReturn model, with its own
+static gun at about the stock Gatling's full size) stops, sits down with its gun and its gunner on foot.* [Full video (MP4)](media/gatlingCamel-wol-control.mp4).
 
 - **Tested 2026-11-23** (WoLReal6, its own profile): both units: idle, walk, the attack (the shots and the muzzle
   flash from the muzzle), reload, deploy and undeploy, deaths, the selection circle and the health bar; a game saved
   and loaded (the deployed unit kept its pose); a skirmish as the Saudis against a German AI with the pack applied:
   the AI played (12 settlers, a manor at 3 min), no XS error. `--restore` gave back every file byte for byte.
 - **Not seen in game:** the run (the zamburak's gallop; drawn in the previews), multiplayer.
+- **Bugs found in the first films (2026-11-23) and fixed:** (1) the camel's left legs were drawn lifted, in every
+  clip: the stock camel clips are in other axes (inches, z up) and their constant scales mirror the left legs;
+  the tool copied those scales in the clip's axes, so the mirror landed on the wrong axis. Now each scale is
+  turned into the model's axes, every bone's scale is written as the runtime gives it, and the tool checks every
+  leg bone of its clips against the stock clip as the runtime draws them (1e-7 apart). (2) On death the gun
+  stayed in the air: the stock death moves the body away from the rider's bone the gun hangs on. The death is now
+  a clip of ours (the sowar camel's fall) with that bone kept on the chest, the gun's and the rider's death clips
+  of the same length; checked in game for both units. Left: while the corpse fades out (its last half second)
+  the gun turns on itself. (3) The "giant" Gatling is the control: today's WoL model, whose own static gun is
+  about the stock Gatling's full size; the new units show the 0.55 gun in every state.
 - **Fixes the tool needed in game:** a packed vertex stream must start 16-byte aligned (otherwise the camel is not
   drawn); the gun hung on `HS Bone Chest` by a `definebone` drew tipped up about 60 degrees, so it hangs on the rider's
   bone, which the tool keeps fixed on the chest; the game draws a mesh without tangents far too bright with the
