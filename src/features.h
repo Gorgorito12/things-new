@@ -34,6 +34,7 @@ Outcome ApplyWorkRateByAbstractType(const Config& config);
 Outcome ApplyAutoGatherScaleByContained(const Config& config);
 Outcome ApplyContainedUnitsROF(const Config& config);
 Outcome ApplyNumberOfShots(const Config& config);
+Outcome ApplyRetargetInAction(const Config& config);
 Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
@@ -193,6 +194,8 @@ inline constexpr Feature kFeatures[] = {
     {"containedUnitsROF", ApplyContainedUnitsROF},
     // After containedUnitsROF: its filter on the shared ROF reads (rofreads.h) runs on that key's result.
     {"numberOfShots", ApplyNumberOfShots},
+    // After numberOfShots: it asks that key whether a burst has shots left, and its "log" ROF filter runs after it.
+    {"retargetInAction", ApplyRetargetInAction},
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
@@ -356,6 +359,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
+    "retargetinaction",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "broadsidesoundset", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",

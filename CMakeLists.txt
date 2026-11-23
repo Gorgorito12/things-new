@@ -163,6 +163,7 @@ set(UHC_SOURCES
   src/features/containedrof.cpp
   src/features/shots.cpp
   src/features/inventorybars.cpp
+  src/features/retarget.cpp
   src/features/unitresource.cpp
   src/features/gatherauras.cpp
   src/features/resourcedebt.cpp
@@ -236,6 +237,7 @@ set(UHC_SOURCES
   src/hooks/rofreads_hooks.asm
   src/hooks/floatingbars_hooks.asm
   src/hooks/inventorybars_hooks.asm
+  src/hooks/retarget_hooks.asm
   src/hooks/shots_hooks.asm
   src/hooks/unitresource_hooks.asm
   src/hooks/gatherauras_hooks.asm

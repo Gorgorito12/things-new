@@ -15,7 +15,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `scenarioCivs`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots` | [combat](porting-code/combat.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots`, `retargetInAction` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `buildingGather`, `herdWalkAwayFix` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs` | [techs](porting-code/techs.md) |
@@ -768,6 +768,27 @@ Code: [combat](porting-code/combat.md#numberofshots). It needs the ROF filters o
   (0x497813, 0x49A3E6) go on as stock.
 - **Test:** Skirmishers with 3 shots: between the quick shots they hold the aiming pose; the third shot reloads; the shot
   times are those of the key without this hook.
+
+### retargetInAction
+
+Code: [combat](porting-code/combat.md#retargetinaction). It needs `AddActionTagHandler` for `<RetargetInAction>`, and
+`AddRofFilter` only for its `log`.
+
+- **Hook** at `0x487838`, in the attack unit action's update FUN_0048A330, 5 bytes (`8A 46 61 3C 19`: `mov al,[esi+61h] /
+  cmp al,19h`), the branch the update takes when its target `[esi+14h]` is no unit, dead or inside another unit (jumps
+  from 0x48A3D3 by way of 0x48782F, 0x48A3EA and 0x48A409; none lands inside). Entry: ESI = the unit action, EBX = 0, the
+  update's saved EDI on top of the stack.
+- **Retarget:** for a tagged action in state 1 (`[esi+61h]`, its attack animation) whose target ID is ≥ 0, pick the
+  nearest unit within `[esi+24h]` (the range, a float) that the update itself would accept (`0x489ECC(tactic, unit,
+  target, 1, !flag 0Dh, 0, 0, range)` equal to `[[esi+4]+0]`, in range by the unit's vtable `+CCh(target, range)`, seen by
+  `0x48A9EF(target, player)`, alive, not inside a unit, of the tactic's `[tactic+174h]` type when it has one), write its
+  ID to `[esi+14h]`, `pop edi` and `jmp 48A359h` (the update's target read, which checks it again). Otherwise re-execute
+  the two instructions and `jmp 48783Dh` (`je 48A40Fh`).
+- **Must preserve:** EAX, ECX and EDX on the stock path (the hook saves them around its call); one retarget per action
+  and game time, so a target the update refuses cannot loop.
+- **No range of WoL's DLL overlaps** 0x487838..0x48783C or 0x48A359 (its 287 patched ranges, `wol-memdiff.txt`).
+- **Test:** WoL's Maxim gun with the tag against a line of infantry: after a kill the next Attack tag of the same burst
+  hits another soldier (the log: `lost its target ... new target`); with the tag at 0 the burst stops at the kill.
 
 ### bufferedFileReads
 
