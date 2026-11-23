@@ -10007,6 +10007,64 @@ Line Infantry fall to their stones. The stones are too small to see at this zoom
   `files\skirmisher-anims.xml` (or `native-anims.xml`) and the sling's `<attach>` line in the model's component. For
   a model with other proportions or bone names, run `retarget_anims.py` with a recipe for it.
 
+### The gatling camel
+
+*WoL's new gatling camel: the zamburak's camel carrying the stock Gatling gun's barrels, casing, crank and magazine,
+cranked by its rider, in two units: one fires from the saddle, the other lies down and fires on foot.*
+
+Request #102 (JTMaston, 2026-11-24): "The current gatling camel model is very crude. Take the zamburak's model as the
+base, replace its weapon with the rotating part and the trunnion of the American gatling, and animate it." Today's
+`GatlingCamel` is a camel with a static gun and a wood frame (the gun never turns) and a gunner on foot who does not
+move; it lies down to fire with a sheep's clips. This replaces it.
+
+The pack `wol-fixes/gatling-camel` (`apply_fix.py <WoL folder>`, `--check`, `--restore` byte for byte; README in
+English and Spanish) delivers it:
+- **The model.** aoe3-blender-tools' `tools/make_gun_camel.py` (branch `claude/r1124-gatling-camel`) cuts the
+  zamburak camel's swivel gun out of its body (29 triangles; its forked post stays as the mount, nothing else of the
+  model changes), takes the Gatling's casing with its trunnion, barrel cluster, crank and magazine apart by bone and
+  writes them as one rigid part each on its own bone, at 0.55 of the Gatling's size (the size the user chose from
+  0.55 and 0.70), hung on the rider's bone (`ATTACHPOINT`) with `syncanims`, and adds `bone_launchpoint` and
+  `bone_muzzle` to the camel at the gun's muzzle. Every file went through the game's own `granny2.dll`.
+- **`GatlingCamel`** (the existing unit) gets the new anim file and `GatlingCamelSaddle.tactics` (the zamburak's
+  tactics with the gatling camel's own attack): it fires from the saddle and moves while it fights, like the
+  zamburak. The rider turns the crank with his right hand and holds the breech with his left; the barrels make three
+  turns a second (faster, their six barrels seemed to turn backward), the crank a third of that; six shots a volley;
+  on reload he lifts the magazine out, sets it down and seats a full one; the camel lowers its head out of the line
+  of fire. Stats, cost, cards and strings unchanged.
+- **`GatlingCamelDeployed`** (new, a copy of `GatlingCamel`, strings 690950 to 690952): keeps the deploy tactics
+  (`GatlingCamelDeployed.tactics`, the deploy 5.33 s and the undeploy 4.17 s, as long as their animations). The camel
+  lies down (the game's lying-down clips of its skeleton, the ones today's unit uses, turned upright and laid on the
+  ground), the gunner gets off step by step, stands at the gun and cranks it on foot, then gets back on before the
+  camel rises. Nothing trains it yet (see the questions in `reply-to-maston-20261124-gcamel.txt`).
+
+![The new gatling camel, from the saddle](media/gatlingCamel-wol.gif)
+
+*Two `GatlingCamel` (Saudi-style mercenaries, player 1) attack-move into six WoL Jägers (`WOLJaeger`): they fire from
+the saddle without stopping to deploy, the tracers leaving the Gatling's muzzle; one is killed at 40 s and falls with
+the gun on its back.* [Full video (MP4)](media/gatlingCamel-wol.mp4).
+
+![The new gatling camel, deployed](media/gatlingCamelDeployed-wol.gif)
+
+*Two `GatlingCamelDeployed` against eight WoL Landwehr (`WOLLandwehr`): the camels lie down, the gunners get off and
+fire on foot until the Landwehr break; one is killed at its gun.* [Full video (MP4)](media/gatlingCamelDeployed-wol.mp4).
+
+![Today's gatling camel (the control)](media/gatlingCamel-wol-control.gif)
+
+*The same scene as the first, without the pack: today's `GatlingCamel` stops, sits down with its static gun and its
+gunner on foot.* [Full video (MP4)](media/gatlingCamel-wol-control.mp4).
+
+- **Tested 2026-11-23** (WoLReal6, its own profile): both units: idle, walk, the attack (the shots and the muzzle
+  flash from the muzzle), reload, deploy and undeploy, deaths, the selection circle and the health bar; a game saved
+  and loaded (the deployed unit kept its pose); a skirmish as the Saudis against a German AI with the pack applied:
+  the AI played (12 settlers, a manor at 3 min), no XS error. `--restore` gave back every file byte for byte.
+- **Not seen in game:** the run (the zamburak's gallop; drawn in the previews), multiplayer.
+- **Fixes the tool needed in game:** a packed vertex stream must start 16-byte aligned (otherwise the camel is not
+  drawn); the gun hung on `HS Bone Chest` by a `definebone` drew tipped up about 60 degrees, so it hangs on the rider's
+  bone, which the tool keeps fixed on the chest; the game draws a mesh without tangents far too bright with the
+  bump shader, so the gun's vertices carry the Gatling's tangents.
+- **Previews** (approved by the user before the game): `_share\maston-20261124\` (model sheet, the two variants, the
+  move, where the rider looks).
+
 ### Aura rings
 
 A ring on the ground tells the player which units an aura is working on, as the one Karni Mata puts around the Indian

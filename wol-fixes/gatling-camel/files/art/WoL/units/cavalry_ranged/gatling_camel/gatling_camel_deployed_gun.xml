@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<animfile>
+	<component>
+		gatling
+		<assetreference type="GrannyModel">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55</file>
+		</assetreference>
+	</component>
+	<anim>
+		Idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_idle</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Bored
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_idle</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Cheer
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_idle</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Walk
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_walk</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Jog
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_jog</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Run
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_run</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Bombard_unlimber
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_deploy</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Bombard_limber
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_undeploy</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Bombard_ranged_idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_deployed</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Bombard_bored
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_deployed</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Bombard_melee_idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_deployed</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Bombard_aim
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_deployed</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Bombard_ranged_attack
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_fire</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Bombard_melee_attack
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_fire</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Bombard_reload
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_reload</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Bombard_death
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_death</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Death
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_idle</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Death_by_melee
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_idle</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Death_by_range
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_idle</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+	<anim>
+		Death_by_havoc
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_B55_idle</file>
+		</assetreference>
+		<component>gatling</component>
+	</anim>
+</animfile>
