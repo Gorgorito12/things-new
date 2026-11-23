@@ -1,5 +1,36 @@
-Minimized unit panel (minUIStats): version 8, for review
+Minimized unit panel (minUIStats): version 9, for review
 =======================================================
+
+Version 9 (2026-11-23), square icons: ..\note-for-team-v9.txt
+-------------------------------------------------------------
+- Every icon of the minimized panel is drawn square, at its true aspect (it was squeezed to 0.65 of its width): in
+  the markup <icon="(N)(texture)"> N is the icon's width and its height is the text line's, and the DLL now writes
+  N = line - 1 (16 on screens 960 px tall or more, 13 below). Our icons at their own aspect (the soldiers, the
+  Minie with its wings shortened so it fills the height, the six drawn stat icons round in the texture, the
+  cylinder filling the square), WoL's house (population, Buildings) enlarged 28 -> 32 texels. A row too long for
+  the panel counts an icon at its real width and drops its last multipliers with "(+N)".
+
+    Check (2026-11-23, WoLReal2: our UHC.dll, minUIStats, multiplierDecimals,     Picture (minUIStats-v9-...)        Result
+    showGatherRate, WoL's wol.cfg lines; the pack installed with apply_fix.py
+    and removed with --restore, every file byte for byte back, the profile's
+    video settings restored; scenario players; 38 applied, 0 failed)
+    1920x1080: icons (16), 17 x 17, square; every row in the panel, none          escopetero, falconet, lancero,     pass
+      dropped; the Villero's right-column row in its short form                    villero
+    Tooltips (unchanged, the game's (16) icons): Escopetero, Falconet, Lancer,     tip-*                              pass
+      Villero (both columns)
+    Big interface (the game's, unchanged): the new textures in its 17 x 22 icons   big-*                              pass
+    1280x960: large font, icons (16), 17 x 17; rows with "(+N)" where long         r960                               pass
+    1600x900: small font, icons (13), 14 x 14; every row fits                      r900                               pass
+    1024x768: icons (13), 14 x 14; Escopetero ranged "(+3)", Falconet "(+2)",      r768                               pass
+      Villero "(+3)"; nothing runs off the panel
+    2560x1440: large font, icons (16), 17 x 17; every row fits                     r1440                              pass
+    The font class: 1600x900 and 1024x768 small (14 px line), 1280x960, 1280x1024, 1920x1080, 2560x1440 large (17 px):
+    the threshold is a screen 960 px tall (fonts3.xml's ResX="1280" sizes).
+
+  Version 8's pictures of the icons (squeezed) were replaced by these; minUIStats-v8-icons-min-lancero-control-tip.jpg
+  is kept: what it shows (no 2x without the Skirmisher triple) is unchanged.
+
+Version 8 follows.
 
 Version 8 (2026-11-23), JTMaston's unit type icons: ..\note-for-team-v8.txt
 ---------------------------------------------------------------------------
@@ -22,6 +53,7 @@ Version 8 (2026-11-23), JTMaston's unit type icons: ..\note-for-team-v8.txt
       AbstractRangedInfantry                                                                                          it)
     The rows end where they ended with the version 7 icons (same icon size)        all                                pass
 
+  Version 8's pictures in this table were replaced by version 9's (square icons), the control excepted.
   The version 7 pictures below were taken with version 7's icons (a winged arrow, a blue and a red soldier) or with
   WoL's own (the crossed arrows, the purple soldier: the gather, Falconet and bigui pictures); they are kept for what
   they test (the seconds, the armor percent, the speed, the gather rates), not for the icons. Version 7's

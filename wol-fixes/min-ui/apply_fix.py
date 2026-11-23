@@ -11,9 +11,13 @@ the drawn stat icons and the four unit type icons from JTMaston's art (Line, Ski
 What it writes (README.txt has the why):
 - data\\uiunitselectionmin.xml: proposed-uiunitselectionmin.xml (WoL's own file is backed up);
 - data\\uhc\\minuirows.xml: minuirows.xml;
-- art\\ui\\ingame\\stat_icon_rof, _traintime, _armor, _los, _speed, _projectiles .ddt (new): the six drawn stat icons;
-- the unit type icons of the multipliers (version 8, 2026-11-23: JTMaston's art, converted, not redrawn), at the
-  paths the panels draw, so no data changes (WoL's own files are backed up):
+- art\\ui\\ingame\\stat_icon_rof, _traintime, _armor, _los, _speed, _projectiles .ddt (new): the six drawn stat icons
+  (version 9: drawn for square icons, round parts round in the texture);
+- art\\ui\\ingame\\stat_icon_building.ddt (version 9): WoL's own house (population, Buildings), its content enlarged
+  from 28 to 32 texels so it is as tall as the other icons (WoL's file is backed up);
+- the unit type icons of the multipliers (JTMaston's art, converted, not redrawn; version 9: at their own aspect,
+  since the DLL draws the minimized panel's icons square), at the paths the panels draw, so no data changes (WoL's
+  own files are backed up):
     art\\ui\\ingame\\stat_icon_heavy_infantry.ddt                Line (AbstractHeavyInfantry): blue coat, the musket
                                                                upright in front
     art\\ui\\ingame\\stat_icon_skirmisher.ddt                    Skirmisher (AbstractRangedInfantry, the path WoL's
@@ -23,7 +27,8 @@ What it writes (README.txt has the why):
                                                                the panels draw this file for AbstractInfantry
     art\\WoL\\ui\\ingame\\staticons\\stat_icon_standing_unit.ddt   the same picture, at the path wol.cfg names
     art\\WoL\\ui\\ingame\\staticons\\stat_icon_ranged.ddt          Maneuver (AbstractRangedCavalry): a winged Minie
-                                                               bullet, the bullet in copper (#C75A21);
+                                                               bullet, the bullet in copper (#C75A21), the wings
+                                                               shortened so it fills the icon's height;
 - Startup\\wol.cfg: the line `minUIStats`, when the file has no such line.
 """
 import json

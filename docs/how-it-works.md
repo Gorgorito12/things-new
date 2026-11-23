@@ -4586,7 +4586,14 @@ fill as the extra rows: the minimized block writes them each fill, then the pane
 fills the 250 ms refresh skips, from the last plan), with the attack style and help text of the fill's rows. Each
 attack row of the fill is matched, in order, with the action list it comes from (0x487EEE, every listed action) and its
 name checked against the action's (`[db+1FE4h]`); then:
-- the icons get the minimized panel's size (`(10)`, 0xC36508) instead of the stat panel's (`(16)`, 0xBA2100);
+- the icons are written square (since 2026-11-23): in the markup `<icon="(N)(texture)">` N sets the icon's **width**
+  (N + 1 px, at every resolution) and its **height** is always the text line's, which the font gives (`fonts3.xml`,
+  "Arial 12": a 17 px line on a screen 960 px tall or more, its `ResolutionOverride ResX="1280"` sizes, 14 px below;
+  measured at 1024 x 768, 1600 x 900, 1280 x 960, 1280 x 1024, 1920 x 1080 and 2560 x 1440). The game's minimized rows
+  write `(10)` (0xC36508): 11 x 17 at 1080p, every square icon squeezed to 0.65 of its width; the stat panel's `(16)`
+  (0xBA2100) is 17 x 22 in its 22 px line. The key writes N = line - 1 (`IconSize`: 16, or 13 below 960 lines, the
+  height `[[0C66044h]+608h]`), in the rows, the resists row and the top blocks, so every icon shows at its true aspect;
+  the pack's own icons are made for that (no pre-widening). The big interface is not the key's and keeps `(16)`;
 - with `rofIcon`, the action's ROF (`[action+34h]` ms) and that icon go right after the damage icon;
 - with `projectilesIcon`, the projectiles the action fires before its reload go after the ROF, when above 1: its
   `<NumberOfShots>` times its `<NumberProjectiles>` (or `<NumberOfProjectiles>`) as the data writes them
@@ -4613,7 +4620,8 @@ name checked against the action's (`[db+1FE4h]`); then:
 - an original attack row (its gadget spans the panel to the right edge) longer than that width over the font's
   character width drops its last multipliers (`, <n>x <icon>` parts, last first) and ends with ` (+N)`. The font does
   not shrink below 1080 lines (at 1024 x 768 a row is as wide in pixels as at 1920 x 1080), so the character width is
-  taken at 1080 lines at least;
+  taken at 1080 lines at least; an icon counts as the characters its width takes (N + 1 px over that width: about 3.5
+  at 1080p);
   A row too long for its column keeps the damage, ROF and projectiles in its short form when they fit (the explorers'
   `Sharpshooter ATK 750 <ranged> 4.50 <rof> 3 <cylinder>`);
 - an **ability attack the unit cannot use** is dropped. Such an action is listed active by its tactic on every unit of

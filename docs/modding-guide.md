@@ -8882,22 +8882,29 @@ attackTypeIcons <UnitType> <StringID> <IconPath> [<UnitType> <StringID> <IconPat
 
 **Added:** Tuesday 2026-11-17 08:07 · **Filmed in WoL:** Tuesday 2026-11-17 10:30
 
-![minUIStats version 8 on a unit in WoL](../wol-fixes/min-ui/final/minUIStats-v8-icons-min-escopetero.jpg)
+![minUIStats version 9 on a unit in WoL](../wol-fixes/min-ui/final/minUIStats-v9-escopetero.jpg)
 
-*In WoL, version 8 (2026-11-23, `minUIStats` and the layout of `wol-fixes/min-ui`, Ethiopians, an `Escopetero`, minimized
-interface):* cost and pop at the top left, LOS, speed and train time at the top right, armor as a percent (`20%`), and
-each attack in one row: damage, rate of fire (`3.50` and the clock icon), range, area, then the bonus multipliers with
-the team's unit type icons (`1.5x` Maneuver, the winged Minie; `1.25x` Line, the blue soldier).
-More pictures of version 8's icons (the tooltips, the big interface, the Falconet's `3x` Standing, the Lancer's `2x`
-Skirmisher and its control): `wol-fixes/min-ui/final/minUIStats-v8-icons-*.jpg`. Version 7's pictures (the Falconet
-limbered and deployed, gathering, beside WoL's own `uhc.dll`), taken with the earlier icons:
-`wol-fixes/min-ui/final/minUIStats-v7-*.jpg`.
+*In WoL, version 9 (2026-11-23, `minUIStats` and the layout of `wol-fixes/min-ui`, Ethiopians, an `Escopetero`, minimized
+interface, 1920 x 1080):* cost and pop at the top left, LOS, speed and train time at the top right, armor as a percent
+(`20%`), and each attack in one row: damage, rate of fire (`3.50` and the clock icon), range, area, then the bonus
+multipliers with the team's unit type icons (`1.5x` Maneuver, the winged Minie; `1.25x` Line, the blue soldier). Every
+icon is square, at its true aspect (17 x 17 px here; the game's own `(10)` icons were 11 x 17, squeezed).
+More pictures of version 9 (the tooltips, the big interface, the Falconet's `3x` Standing, the Lancer's `2x`
+Skirmisher, the Villero's long rows, and one picture per resolution: 1024 x 768, 1600 x 900, 1280 x 960,
+2560 x 1440): `wol-fixes/min-ui/final/minUIStats-v9-*.jpg`. Version 7's pictures (the Falconet limbered and deployed,
+gathering, beside WoL's own `uhc.dll`), taken with the earlier, squeezed icons: `wol-fixes/min-ui/final/minUIStats-v7-*.jpg`.
 
-![minUIStats version 8: the Lancer's 2x against Skirmisher](../wol-fixes/min-ui/final/minUIStats-v8-icons-min-lancero-tip.jpg)
+![minUIStats version 9: the Lancer's 2x against Skirmisher](../wol-fixes/min-ui/final/minUIStats-v9-tip-lancero.jpg)
 
-*In WoL, version 8 (a `Lancero`, the pointer on its hand attack):* `2x` and the green Skirmisher icon in the row, and the
+*In WoL, version 9 (a `Lancero`, the pointer on its hand attack):* `2x` and the green Skirmisher icon in the row, and the
 tooltip line `2X Bonus Damage against (icon) Skirmisher`. The icon comes from WoL's `attackTypeIcons` line
-(`AbstractRangedInfantry 42032 ui\ingame\stat_icon_skirmisher`): without that triple the `2x` is not shown at all.
+(`AbstractRangedInfantry 42032 ui\ingame\stat_icon_skirmisher`): without that triple the `2x` is not shown at all
+(`minUIStats-v8-icons-min-lancero-control-tip.jpg`, version 8).
+
+![minUIStats version 9 at 1024 x 768](../wol-fixes/min-ui/final/minUIStats-v9-r768.jpg)
+
+*Version 9 at 1024 x 768 (the Escopetero, the Falconet, the Lancer, the Villero):* the small font's 14 px line, the icons
+14 x 14; the longest rows end with `(+3)` and `(+2)` (the multipliers they drop are in the tooltip).
 
 ![minUIStats version 7 on a building in WoL](../wol-fixes/min-ui/final/minUIStats-v7-mill.jpg)
 
@@ -9082,7 +9089,31 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       every file byte for byte back, 1920 x 1080, 38 applied, 0 failed): the Escopetero's `1.5x` Maneuver, `1.25x`
       Line and the Falconet's Bombard `3x` Standing in the rows and tooltips of both interfaces, the Lancero's hand
       attack `2x` Skirmisher in the minimized one (WoL's big interface shows only the first attack row); the rows end
-      where they did (`wol-fixes/min-ui/final/minUIStats-v8-icons-*`).
+      where they did (pictures replaced by version 9's, the control kept).
+  - **Version 9 (2026-11-23), square icons (the team: "the icons look compressed"):**
+    - **Why they were squeezed:** in the game's text markup `<icon="(N)(texture)">`, N sets the icon's **width**
+      (N + 1 pixels, at every resolution) and its **height** is always the text line's, which the font gives
+      (`FONTSonts3.xml`). The game's minimized rows write `(10)` (0xC36508): 11 x 17 at 1920 x 1080, so every icon
+      there, the game's and WoL's too, showed at 0.65 of its width. Measured with a test build that changed only N, at
+      1024 x 768, 1600 x 900, 1280 x 960, 1280 x 1024, 1920 x 1080 and 2560 x 1440: the line is 17 px on a screen
+      960 px tall or more (the font's `ResolutionOverride ResX="1280"` sizes) and 14 px below; the width follows N
+      only. The big stat panel writes `(16)` into a 22 px line (17 x 22) and is the game's: not changed.
+    - **The key:** every icon it writes in the minimized panel (the rows, the resists row, the top blocks, the
+      `[icon:...]` of the data file) uses N = line - 1: `(16)` on screens 960 px tall or more, `(13)` below (the
+      height `[[0C66044h]+608h]`), so each icon is square. The row-width estimate counts an icon at its real width
+      (N + 1 pixels, about 3.5 characters at 1080p): a row too long for the panel drops its last multipliers with
+      `(+N)` instead of running off it. Log: `minUIStats: screen 1080 px tall: icons (16), 17 px square`.
+    - **The pack's icons at their true aspect:** the four type icons without the widening (the Minie's wings
+      shortened where they run straight, their stepped tips kept, at 0.75 and a little behind the bullet:
+      `import_icon.py --sides`), the six drawn stat icons round in the texture (`make_stat_icon.py --aspect 1`; the
+      cylinder fills the square), and WoL's house (`stat_icon_building`, population and Buildings) enlarged from 28
+      to 32 texels.
+    - **Tested in WoL (2026-11-23, copy 2, our `UHC.dll`, the pack installed with `apply_fix.py` and removed with
+      `--restore`, files and profile byte for byte back):** the Escopetero, the Falconet in Bombard, the Lancero and the
+      Villero (Koygua), rows and tooltips: at 1920 x 1080, 2560 x 1440 and 1600 x 900 every row fits; at 1280 x 960
+      and 1024 x 768 the longest rows end with `(+2)` / `(+3)`, nothing runs off the panel; the Villero's second ranged
+      row in the right column takes its short form. Before the width fix, at `(16)` that row lost its last icon at the
+      panel's edge. Pictures `wol-fixes/min-ui/final/minUIStats-v9-*`.
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.

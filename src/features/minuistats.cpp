@@ -74,9 +74,8 @@ constexpr std::uint32_t kStatRowValues = 0x198;
 constexpr int kStatRows = 9;
 constexpr std::uint32_t kGadgetTip = 0x68;         // a gadget's help text, a BString
 constexpr float kWholeEpsilon = 1e-6f;             // the panels' "%d" test (0xBA20B4)
-// The icon size of the minimized panel's own rows: its attack and resists rows use "(10)" (0xC36508, 0xC364C0), the
-// big stat panel "(16)" (0xBA2100). Every icon the key writes there uses the minimized panel's size.
-constexpr int kIconSize = 10;
+// The icon size of every icon the key writes in the minimized panel (IconSize, below the Field helper).
+int IconSize();
 
 struct BString {
   wchar_t* text;
@@ -122,6 +121,32 @@ Fn VirtualAt(const void* object, std::uint32_t offset) {
 }
 
 const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
+
+// The screen's height in pixels: [[0C66044h]+608h], an int (the divisor of every gadget's fractions, 0x402FCA).
+int ScreenHeight() {
+  const char* ui = *reinterpret_cast<const char* const*>(0x00C66044);
+  return ui == nullptr ? 0 : Field<std::int32_t>(ui, 0x608);
+}
+
+// An inline icon <icon="(N)(texture)"> is drawn N + 1 pixels wide and as tall as its text line (measured at 1024 x 768
+// to 2560 x 1440). The panel's font has a 17 px line on a screen kLargeFontHeight px tall or more (fonts3.xml's
+// ResolutionOverride ResX="1280" sizes; 1280 x 960 has it, 1600 x 900 not) and a 14 px one below, so N = line - 1
+// draws a square texture square. The game's own minimized rows write "(10)" (0xC36508, 0xC364C0): 11 x 17 at
+// 1920 x 1080, every icon squeezed to 0.65 of its width; the big stat panel writes "(16)" (0xBA2100), not the key's.
+constexpr int kLargeFontHeight = 960;
+constexpr int kIconSizeLarge = 16;
+constexpr int kIconSizeSmall = 13;
+
+int IconSize() {
+  static int logged = -1;
+  const int height = ScreenHeight();
+  const int size = height > 0 && height < kLargeFontHeight ? kIconSizeSmall : kIconSizeLarge;
+  if (height != logged && height > 0) {
+    logged = height;
+    uhc::Log(L"minUIStats: screen %d px tall: icons (%d), %d px square", height, size, size + 1);
+  }
+  return size;
+}
 
 const char* UnitById(std::int32_t id) {
   const char* game = Game();
@@ -229,7 +254,7 @@ std::wstring DamageIcon(std::uint8_t type) {
     return L"";
   }
   wchar_t tag[64];
-  swprintf_s(tag, L" <icon=\"(%d)(TextureID(%d))\">", kIconSize, Field<std::int32_t>(view, 0x1CC + 4u * type));
+  swprintf_s(tag, L" <icon=\"(%d)(TextureID(%d))\">", IconSize(), Field<std::int32_t>(view, 0x1CC + 4u * type));
   return tag;
 }
 
@@ -483,7 +508,7 @@ std::wstring TypeIcon(std::uint8_t type) {
     return L"";
   }
   wchar_t tag[64];
-  swprintf_s(tag, L" <icon=\"(%d)(TextureID(%d))\">", kIconSize, Field<std::int32_t>(view, 0x1CC + 4u * type));
+  swprintf_s(tag, L" <icon=\"(%d)(TextureID(%d))\">", IconSize(), Field<std::int32_t>(view, 0x1CC + 4u * type));
   return tag;
 }
 
@@ -636,7 +661,7 @@ bool AttackRow(const char* unit, const char* action, std::wstring* label, std::w
   scale *= DamageFactor(unit, 0x08);
   const float typed = DamageFactor(unit, type == 2 ? 0x10 : 0x14);
   wchar_t text[160];
-  swprintf_s(text, L"%d <icon=\"(%d)(TextureID(%d))\">", static_cast<int>(typed * scale * base), kIconSize,
+  swprintf_s(text, L"%d <icon=\"(%d)(TextureID(%d))\">", static_cast<int>(typed * scale * base), IconSize(),
              type <= 2 ? Field<std::int32_t>(view, 0x1CC + 4u * type) : 0);
   *value = text;
   if (ActionFlag(action, 0x0A)) {
@@ -645,7 +670,7 @@ bool AttackRow(const char* unit, const char* action, std::wstring* label, std::w
     for (std::int32_t i = 0; ranges != nullptr && i < count; ++i) {
       if (Field<std::int32_t>(ranges, 16u * i) == -1) {
         swprintf_s(text, L" %d <icon=\"(%d)(TextureID(%d))\">", static_cast<int>(Field<float>(ranges, 16u * i + 8)),
-                   kIconSize, Field<std::int32_t>(view, 0x218));
+                   IconSize(), Field<std::int32_t>(view, 0x218));
         *value += text;
         break;
       }
@@ -668,7 +693,7 @@ bool ItemCost(const char* unit, std::wstring* out) {
     const float cost = kResListGet(proto + 0x70, r);
     if (cost > 0.0f) {
       wchar_t text[96];
-      swprintf_s(text, L"%ls<icon=\"(%d)(%hs)\">%d", out->empty() ? L"" : L" ", kIconSize, kResourceIcon(database, r),
+      swprintf_s(text, L"%ls<icon=\"(%d)(%hs)\">%d", out->empty() ? L"" : L" ", IconSize(), kResourceIcon(database, r),
                  static_cast<int>(cost + 0.5f));
       *out += text;
     }
@@ -723,9 +748,9 @@ bool ItemInventory(const char* unit, std::wstring* out) {
   const int initial = static_cast<int>(kHeldInitial(unit, resource) + 0.5f);
   wchar_t text[96];
   if (initial > 0) {
-    swprintf_s(text, L"%d/%d <icon=\"(%d)(%hs)\">", amount, initial, kIconSize, kResourceIcon(database, resource));
+    swprintf_s(text, L"%d/%d <icon=\"(%d)(%hs)\">", amount, initial, IconSize(), kResourceIcon(database, resource));
   } else {
-    swprintf_s(text, L"%d <icon=\"(%d)(%hs)\">", amount, kIconSize, kResourceIcon(database, resource));
+    swprintf_s(text, L"%d <icon=\"(%d)(%hs)\">", amount, IconSize(), kResourceIcon(database, resource));
   }
   *out = text;
   return true;
@@ -1075,7 +1100,7 @@ std::wstring ExpandIcons(const std::wstring& text) {
     }
     out += text.substr(pos, open - pos);
     wchar_t size[16];
-    swprintf_s(size, L"(%d)", kIconSize);
+    swprintf_s(size, L"(%d)", IconSize());
     out += L"<icon=\"" + std::wstring(size) + L"(" + text.substr(open + 6, close - open - 6) + L")\">";
     pos = close + 1;
   }
@@ -1866,9 +1891,11 @@ bool GadgetBox(std::int32_t handle, Box* out) {
 // gadget's (measured at 1920 x 1080: 38 characters and two icons, an icon counting as two, in 210 px, 4.9 px each).
 // Below 1080 lines it does not shrink with it: at 1024 x 768 an attack row is as wide in pixels as at 1920 x 1080
 // (an Escopetero's ranged row, 61 characters in 314 px, 5.1 px each).
-float CharPixels(const Box& box) {
-  return box.screenHeight > 0.0f ? 0.00452f * (std::max)(box.screenHeight, 1080.0f) : 0.217f * 23.0f;
+float CharPixelsAt(float screenHeight) {
+  return screenHeight > 0.0f ? 0.00452f * (std::max)(screenHeight, 1080.0f) : 0.217f * 23.0f;
 }
+
+float CharPixels(const Box& box) { return CharPixelsAt(box.screenHeight); }
 
 // Shown, as the base show (0x447BBC) tests it before doing nothing: flag bits 0 and 1 of [gadget+0A4h] set, bit 7
 // clear.
@@ -2173,13 +2200,15 @@ std::wstring StripMarkup(const std::wstring& text) {
   return out;
 }
 
-// Characters on screen, an icon counting as two.
+// Characters on screen, an icon counting as the characters its width takes (IconSize + 1 pixels: 17 px, about three
+// and a half characters, at 1920 x 1080).
 size_t VisibleLength(const std::wstring& text) {
   size_t icons = 0;
   for (size_t at = text.find(L"<icon"); at != std::wstring::npos; at = text.find(L"<icon", at + 1)) {
     ++icons;
   }
-  return StripMarkup(text).size() + 2 * icons;
+  const float perIcon = static_cast<float>(IconSize() + 1) / CharPixelsAt(static_cast<float>(ScreenHeight()));
+  return StripMarkup(text).size() + static_cast<size_t>(std::ceil(perIcon * static_cast<float>(icons)));
 }
 
 // About how many characters of the stat font fit one line of the gadget (CharPixels, with 10 % to spare).
@@ -2220,7 +2249,7 @@ std::wstring NormaliseIcons(const std::wstring& text) {
     if (close == std::wstring::npos) {
       break;
     }
-    out.replace(start, close - start, std::to_wstring(kIconSize));
+    out.replace(start, close - start, std::to_wstring(IconSize()));
   }
   return out;
 }
@@ -2356,7 +2385,7 @@ void MarkAttacks(const char* unit, std::vector<std::uint32_t>* kinds) {
       continue;
     }
     wchar_t size[16];
-    swprintf_s(size, L"(%d)", kIconSize);
+    swprintf_s(size, L"(%d)", IconSize());
     size_t at = icon + 2;  // after the damage and its icon
     std::wstring tipLines;
     if (!g_big.rofIcon.empty() && rof > 0.0f) {

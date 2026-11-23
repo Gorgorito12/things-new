@@ -73,8 +73,16 @@ The layout (1024 x 768 layout units; the panel is x 342..700, its centre x 521)
     media\minui-preview-wol.png (WoL's current file), media\minui-preview-proposed-old.png (the first
     proposal, whose buttonArea put the portraits left of the centre).
 
-Icons (all at the size of the panel's own damage type icons, "(10)"; each row has a tooltip with its word)
-------------------------------------------------------------------------------------------------------------
+Icons (all square, as tall as the text line; each row has a tooltip with its word)
+-----------------------------------------------------------------------------------
+    Why square (version 9, 2026-11-23): in the game's text markup <icon="(N)(texture)">, N sets the icon's
+    WIDTH (N + 1 pixels, at every resolution) and its height is always the text line's, which the font gives
+    (FONTS\fonts3.xml: a 17 px line on screens 960 px tall or more, 14 px below). The game's own minimized
+    rows write (10): 11 x 17 at 1920x1080, so every icon there, the game's and WoL's too, was shown at 0.65 of
+    its width (squeezed). The DLL now writes N = line - 1 (16, or 13 below 960 lines) for every icon of the
+    minimized panel (rows, resists, the top blocks), so each one shows at its true aspect, and a row too long
+    for the panel counts an icon at its real width when it drops its last multipliers with " (+N)". The big
+    interface is the game's and keeps its (16) icons in a 22 px line.
     rate of fire      a stopwatch      drawn: art\ui\ingame\stat_icon_rof.ddt (in this pack)
     train time        an hourglass     drawn: art\ui\ingame\stat_icon_traintime.ddt
     resists           a shield         drawn: art\ui\ingame\stat_icon_armor.ddt
@@ -92,11 +100,14 @@ Icons (all at the size of the panel's own damage type icons, "(10)"; each row ha
     costs             resource icons   the game's, as the resource bar shows them
     The drawn icons (version 4, 2026-11-18) are made like WoL's own stat icons (stat_icon_ranged, _range,
     _attack, _building): 32x32 uncompressed BGRA, one level, solid shapes, hard edges (each pixel fully
-    shown or fully transparent), a black line around each part and a 2-pixel black outline; round parts
-    are drawn wider than tall, since the panel squeezes icons sideways. Made with aoe3-blender-tools
-    (tools/make_stat_icon.py --style bold); no pixel comes from another game. The first set (16x16
-    DXT3, 1-pixel strokes, soft edges) came out thin and blurred at the panel's size: final\
-    minUIStats-v4-icons-x4.png shows both, enlarged from the game.
+    shown or fully transparent), a black line around each part and a 2-pixel black outline. Made with
+    aoe3-blender-tools (tools/make_stat_icon.py --style bold --aspect 1); no pixel comes from another game.
+    Until version 8 their round parts were drawn wider than tall for the squeezed (10) icons; since version 9
+    they are round in the texture (the stopwatch, the eye, the cylinder, which now fills the square).
+    population, Buildings: art\ui\ingame\stat_icon_building.ddt (version 9) is WoL's own house, its content
+    enlarged from 28 to 32 texels (linear interpolation, tools/import_icon.py) so it is as tall as the others.
+    The first set (16x16 DXT3, 1-pixel strokes, soft edges) came out thin and blurred at the panel's size:
+    final\minUIStats-v4-icons-x4.png shows both, enlarged from the game.
 
 Files
 -----
@@ -139,15 +150,16 @@ art\WoL\ui\ingame\staticons\stat_icon_standing_unit.ddt and stat_icon_ranged.ddt
     42032 ui\ingame\stat_icon_skirmisher, AbstractRangedCavalry 42033 WoL\ui\ingame\staticons\stat_icon_ranged).
     Checked in game: with the Skirmisher triple taken out of that line, the Lancer's "2x" against Skirmisher
     disappears from its row and its tooltip, so the exe has no icon of its own for that type
-    (final\minUIStats-v8-icons-min-lancero-control-tip.jpg).
-    How they were made (aoe3-blender-tools' tools/import_icon.py): each picture is widened by 1/0.65, since the
-    panels draw a type icon 11 x 17 pixels at 1920x1080 (measured on the screenshots), and reduced by area
-    averaging to 32x32 (the art's pixel grid does not divide 32, so outlines become soft edges, as in WoL's own
-    icons); the three soldiers keep one scale (the Line soldier is drawn smaller in the art), on the bottom edge;
-    every icon is centred horizontally. 32x32 uncompressed BGRA, one level, as WoL's own. The Minie is wide, so it
-    shows about 11 x 6 pixels in game.
-    icons-v8-review.png: the review sheet (the icons before and after, the art, the textures x8, the size in game,
-    mock rows; the Minie in two tints, A chosen).
+    (final\minUIStats-v8-icons-min-lancero-control-tip.jpg, taken with version 8's squeezed icons).
+    How they were made (aoe3-blender-tools' tools/import_icon.py, version 9): each picture at its own aspect
+    (the panel draws them square since version 9), reduced by area averaging to 32x32 (the art's pixel grid does
+    not divide 32, so outlines become soft edges, as in WoL's own icons); the three soldiers keep one scale (the
+    Line soldier is drawn smaller in the art), on the bottom edge; every icon is centred horizontally. 32x32
+    uncompressed BGRA, one level, as WoL's own. The Minie (variant c of the review) has its wings shortened where
+    they run straight (their stepped tips kept), at 0.75 of their size and a little behind the bullet
+    (--sides 321,769 --sides-cut 186,904 --sides-scale 0.75 --sides-tuck 30), so it fills the icon's height.
+    icons-v8-review.png: the review sheet of the art (the icons before and after, the textures x8, mock rows; the
+    Minie in two tints, A chosen). Version 8 drew these icons widened by 1/0.65 for the squeezed (10) icons.
     Version 7's icons (a blue and a red soldier, a winged arrow, drawn by make_type_icon.py) are replaced;
     icons-v7-review.png is that round's sheet, kept for the record.
 
@@ -167,6 +179,8 @@ Install
                                                   <WoL folder>\min-ui-backup\ first
     python apply_fix.py <WoL folder> --restore    puts them back, byte for byte, and deletes the files it added
     python apply_fix.py <WoL folder> --check      compares each file with the pack, byte for byte
+    (version 9 adds art\ui\ingame\stat_icon_building.ddt: run --restore with the version 8 script first, or
+    restore by hand, if version 8 is installed)
 By hand:
 1. Copy proposed-uiunitselectionmin.xml to data\uiunitselectionmin.xml (keep a copy of yours).
 2. Copy minuirows.xml to data\uhc\minuirows.xml.
@@ -308,5 +322,5 @@ In media\ (JPG pictures of the panel at native pixels, with the health bar; PNG 
     minui-shot-min-*.png, minui-shot-big-*.png   WoL's UI before the key: a unit, a building, a villager
     minUIStats-test-hero-big.png      Menelik II in the big UI (it lists every attack, usable or not)
 The videos of the first proposal (2026-11-17) were removed on 2026-11-21: they showed a layout that version 7 has
-replaced. Version 7's pictures are in final\ (minUIStats-v7-*.jpg), version 8's unit type icons in
-final\minUIStats-v8-icons-*.jpg.
+replaced. Version 7's pictures are in final\ (minUIStats-v7-*.jpg), version 9's square icons in
+final\minUIStats-v9-*.jpg.

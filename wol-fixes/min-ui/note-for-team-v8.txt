@@ -1,6 +1,10 @@
 Minimized UI, version 8: your unit type icons
 =============================================
 
+(2026-11-23, later: version 9 draws every icon of the minimized panel square, so these icons are no longer widened
+and the Minie fills the icon's height; its pictures replace final\minUIStats-v8-icons-*.jpg, the control excepted.
+See note-for-team-v9.txt.)
+
 Your four icons are in the pack, converted to the game's format. They were not redrawn: the art is yours, pixel for
 pixel, only reduced to the icon's size.
 

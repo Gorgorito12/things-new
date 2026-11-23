@@ -121,15 +121,21 @@ text from your string table so you can translate it. Nothing else about the card
 Question: is it fine that the line comes after the "may be sent ONE time" line on non-infinite cards?
 
 
-Minimized UI: your new icons (version 8)
-----------------------------------------
+Minimized UI: your new icons, and every icon square (version 9)
+----------------------------------------------------------------
 Your four icons are in the min UI pack, converted to the game's format and not redrawn: Line (blue, musket
 upright in front), Skirmisher (green, musket diagonal; new in the pack, it replaces your current one), Standing
 (purple, no weapon) and Maneuver (the winged Minié with the bullet tinted #C75A21, the colour of the "Maneuver
-Unit" name). They go at the paths the panels already draw, so your attackTypeIcons line and your data do not
-change. Checked in game: Escopetero 1.5x Maneuver and 1.25x Line, Falconet in Bombard 3x Standing, Lancer 2x
-Skirmisher, in rows and tooltips. At 1920x1080 the panels draw these icons 11x17 px, so the wide Minié is about
-11x6 px. Details: wol-fixes/min-ui/note-for-team-v8.txt.
+Unit" name, its wings shortened so it is as tall as the soldiers). They go at the paths the panels already draw,
+so your attackTypeIcons line and your data do not change.
+The icons of the minimized panel no longer look squeezed, the game's and yours alike. In the game's markup
+<icon="(N)(texture)"> N is the icon's width and its height is the text line's; the game wrote (10), 11 px wide in a
+17 px line at 1920x1080. Our DLL now writes the width that matches the line (17x17 at 1080p, 14x14 at 1024x768 and
+1600x900), so every icon shows at its true aspect, and a long row still ends with "(+N)" instead of running off the
+panel. Our drawn icons are now round, and your house icon (population, Buildings) is enlarged to the others' height.
+The big interface does not change. Checked in game at 1024x768, 1600x900, 1280x960, 1920x1080 and 2560x1440: the
+Escopetero, the Falconet in Bombard, the Lancer and the Villero, rows and tooltips.
+Details: wol-fixes/min-ui/note-for-team-v9.txt (and note-for-team-v8.txt for the art).
 
 
 #100 Slinger animations on other models (for Punchline)
