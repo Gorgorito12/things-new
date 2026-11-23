@@ -1,6 +1,9 @@
 "NEW" Levant: clicking everything, 6 and 8 players (2026-11-22)
 ================================================================
 
+Update 2026-11-23: the cause is confirmed and fixed (the model cache's budget, plus two data errors in damage
+templates); the fix, its tests and the files are in levant-fix-20261123.txt.
+
 JTMaston (2026-11-22): "try to make a player or all players click on anything clickable on the map; some maps
 used to crash after or when clicking on trade units or guardians; do it with 6+ players".
 

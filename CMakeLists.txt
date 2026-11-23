@@ -121,6 +121,7 @@ set(UHC_SOURCES
   src/features/lastinline.cpp
   src/features/renderer.cpp
   src/features/selection.cpp
+  src/features/modelcache.cpp
   src/features/sharedlimit.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp

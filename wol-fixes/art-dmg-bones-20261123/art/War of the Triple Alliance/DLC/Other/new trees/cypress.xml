@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<animfile>
+	<definebone>birch a death</definebone>
+	<definebone>oak a</definebone>
+	<definebone>bone_master</definebone>
+	<definebone>birch b death</definebone>
+	<definebone>birch c death</definebone>
+	<definebone>pine a death</definebone>
+	<definebone>pine b death</definebone>
+	<definebone>pine c death</definebone>
+	<definebone>pine d death</definebone>
+	<definebone>lp birch a death</definebone>
+	<definebone>lp birch b death</definebone>
+	<definebone>lp birch c death</definebone>
+	<definebone>lp pine a death</definebone>
+	<definebone>lp pine b death</definebone>
+	<definebone>lp pine c death</definebone>
+	<component>
+		tree
+		<logic type="Variation">
+			<v1>
+				<assetreference type="GrannyModel">
+					<file>War of the Triple Alliance\DLC\Other\new trees\cypressA</file>
+				</assetreference>
+			</v1>
+			<v2>
+				<assetreference type="GrannyModel">
+					<file>War of the Triple Alliance\DLC\Other\new trees\cypressB</file>
+				</assetreference>
+			</v2>
+			<v3>
+				<assetreference type="GrannyModel">
+					<file>War of the Triple Alliance\DLC\Other\new trees\cypressC</file>
+				</assetreference>
+			</v3>
+		</logic>
+		<decal>
+			<effecttype>default</effecttype>
+			<selectedtexture>shadows_selections\selection_circle_64x64</selectedtexture>
+			<width>4.00</width>
+			<height>4.00</height>
+		</decal>
+	</component>
+	<component>
+		death
+		<logic type="Variation">
+			<v1>
+				<assetreference type="GrannyModel">
+					<file>War of the Triple Alliance\DLC\Other\new trees\cypressA</file>
+				</assetreference>
+			</v1>
+			<v2>
+				<assetreference type="GrannyModel">
+					<file>War of the Triple Alliance\DLC\Other\new trees\cypressB</file>
+				</assetreference>
+			</v2>
+			<v3>
+				<assetreference type="GrannyModel">
+					<file>War of the Triple Alliance\DLC\Other\new trees\cypressC</file>
+				</assetreference>
+			</v3>
+		</logic>
+		<decal>
+			<effecttype>default</effecttype>
+			<selectedtexture>shadows_selections\selection_circle_64x64</selectedtexture>
+			<width>4.00</width>
+			<height>4.00</height>
+		</decal>
+	</component>
+	<anim>
+		Idle
+		<component>tree</component>
+	</anim>
+	<anim>
+		Death
+		<component>death</component>
+	</anim>
+	<anim>
+		Recoil
+		<assetreference type="GrannyAnim">
+			<file>terrain\trees\tree_recoil</file>
+		</assetreference>
+		<component>tree</component>
+	</anim>
+</animfile>

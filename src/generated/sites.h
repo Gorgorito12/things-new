@@ -161,6 +161,12 @@ inline constexpr Site kTrainSingle1{"TrainSingle1", 0x009CE573, kTrainSingle1Byt
 inline constexpr std::uint8_t kTrainSingle2Bytes[] = {0xE8, 0x58, 0xE3, 0xA7, 0xFF};
 inline constexpr Site kTrainSingle2{"TrainSingle2", 0x009CE767, kTrainSingle2Bytes, sizeof(kTrainSingle2Bytes)};
 
+inline constexpr std::uint8_t kModelCacheBudget1Bytes[] = {0x81, 0xBE, 0x6C, 0x30, 0x00, 0x00, 0x80, 0xC3, 0xC9, 0x01};
+inline constexpr Site kModelCacheBudget1{"ModelCacheBudget1", 0x0046C03D, kModelCacheBudget1Bytes, sizeof(kModelCacheBudget1Bytes)};
+
+inline constexpr std::uint8_t kModelCacheBudget2Bytes[] = {0x81, 0xBE, 0x6C, 0x30, 0x00, 0x00, 0x80, 0xC3, 0xC9, 0x01};
+inline constexpr Site kModelCacheBudget2{"ModelCacheBudget2", 0x006E0174, kModelCacheBudget2Bytes, sizeof(kModelCacheBudget2Bytes)};
+
 inline constexpr std::uint8_t kSelectionCap1Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
 inline constexpr Site kSelectionCap1{"SelectionCap1", 0x004E0BEE, kSelectionCap1Bytes, sizeof(kSelectionCap1Bytes)};
 

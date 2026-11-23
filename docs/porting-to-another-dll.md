@@ -874,6 +874,22 @@ Code: [game-files](porting-code/game-files.md#rendereroption).
   word of the main thread stays as with stock Direct3D 9.
 - **The design:** [how-it-works.md](how-it-works.md#rendereroption).
 
+### modelCacheLimit
+
+Code: [game-files](porting-code/game-files.md#modelcachelimit).
+
+- **Sites:** the imm32 `1C9C380h` (30,000,000) of the two `cmp dword [esi+306Ch],1C9C380h`, at `0x46C043` (the
+  instruction at `0x46C03D`, then `ja`) and `0x6E017A` (the instruction at `0x6E0174`, then `jbe`). The DLL checks
+  the ten bytes of each instruction and writes the number of bytes (`MB × 1,000,000`), or `0FFFFFFFFh` for no limit.
+  No hook. In WoL's exe these are file offsets `0x6C043` and `0x2E017A` (the `.text` section, file offset = VA −
+  `0x400000`).
+- **Log option:** a world tick reads the cache's loaded bytes `[[0C66240h]+910Ch]` (`mgr+306Ch`, mgr =
+  `[0C66240h]+60A0h`, the `ecx` of FUN_0041CA8F's only call at `0x4056EA`) and logs each new 50 MB step.
+- **Must preserve:** the compares stay unsigned; a budget below 30 MB is refused.
+- **Why it can differ between players:** what the cache holds already differs between players in the stock game (it
+  follows each one's camera); the key only changes when the local machine frees a model file.
+- **The design:** [how-it-works.md](how-it-works.md#modelcachelimit).
+
 ### xsErrorLog
 
 Code: [game-files](porting-code/game-files.md#xserrorlog).
