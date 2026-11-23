@@ -1885,6 +1885,12 @@ inline constexpr Site kShotsReloadAnim{"ShotsReloadAnim", 0x004976CB, kShotsRelo
 inline constexpr std::uint8_t kShotsAnimVariantBytes[] = {0x8B, 0x49, 0x60, 0x85, 0xC9, 0x0F, 0x84, 0xD8, 0xC8, 0x07, 0x00};
 inline constexpr Site kShotsAnimVariant{"ShotsAnimVariant", 0x00471D24, kShotsAnimVariantBytes, sizeof(kShotsAnimVariantBytes)};
 
+inline constexpr std::uint8_t kRetargetNoTargetBytes[] = {0x8A, 0x46, 0x61, 0x3C, 0x19, 0x0F, 0x84, 0xCC, 0x2B, 0x00, 0x00, 0x39, 0x5E, 0x0C, 0x0F, 0x8D, 0x22, 0xF7, 0x06, 0x00, 0x3C, 0x01, 0x0F, 0x85, 0x07, 0x00, 0x01};
+inline constexpr Site kRetargetNoTarget{"RetargetNoTarget", 0x00487838, kRetargetNoTargetBytes, sizeof(kRetargetNoTargetBytes)};
+
+inline constexpr std::uint8_t kRetargetUpdateTargetBytes[] = {0x8B, 0x4E, 0x14, 0x3B, 0xCB, 0x8B, 0x15, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x92, 0x3C, 0x01, 0x00, 0x00, 0x57, 0x0F, 0x8C, 0xCF, 0x03, 0x00, 0x00, 0x8B, 0xC1, 0x25, 0xFF, 0xFF, 0x03, 0x00};
+inline constexpr Site kRetargetUpdateTarget{"RetargetUpdateTarget", 0x0048A359, kRetargetUpdateTargetBytes, sizeof(kRetargetUpdateTargetBytes)};
+
 inline constexpr std::uint8_t kBroadsideSoundBytes[] = {0x68, 0x5C, 0x1D, 0xBA, 0x00, 0x83, 0xC2, 0x14};
 inline constexpr Site kBroadsideSound{"BroadsideSound", 0x004CECBD, kBroadsideSoundBytes, sizeof(kBroadsideSoundBytes)};
 
@@ -3186,6 +3192,7 @@ Outcome ApplyWorkRateByAbstractType(const Config& config);
 Outcome ApplyAutoGatherScaleByContained(const Config& config);
 Outcome ApplyContainedUnitsROF(const Config& config);
 Outcome ApplyNumberOfShots(const Config& config);
+Outcome ApplyRetargetInAction(const Config& config);
 Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
@@ -3347,6 +3354,8 @@ inline constexpr Feature kFeatures[] = {
     {"containedUnitsROF", ApplyContainedUnitsROF},
     // After containedUnitsROF: its filter on the shared ROF reads (rofreads.h) runs on that key's result.
     {"numberOfShots", ApplyNumberOfShots},
+    // After numberOfShots: it asks that key whether a burst has shots left, and its "log" ROF filter runs after it.
+    {"retargetInAction", ApplyRetargetInAction},
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
@@ -3514,6 +3523,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
+    "retargetinaction",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "broadsidesoundset", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",

@@ -1443,6 +1443,14 @@ SITES = [
     # inside); and the model index lookup 0x471D24 (mov ecx,[ecx+60h] / test ecx,ecx / je), which the hook calls.
     ("ShotsReloadAnim", 0x4976CB, 9),
     ("ShotsAnimVariant", 0x471D24, 0xB),
+    # retargetInAction: the attack update's "no live target" branch 0x487838, reached from 0x48A3D3 (no unit),
+    # 0x48A3EA (vtable +A4h: not alive) and 0x48A409 (0x48A3F9: inside another unit): mov al,[esi+61h] / cmp al,19h
+    # (replaced, 5 B; no branch lands inside) / je 48A40Fh (the continuation) / cmp [esi+0Ch],ebx / jge / cmp al,1 /
+    # jne 49785Bh / setState(19h). The update's head from the target read, where the hook goes back with a new target:
+    # mov ecx,[esi+14h] / cmp ecx,ebx / mov edx,[0C66234h] / mov edx,[edx+13Ch] / push edi / jl / mov eax,ecx / and
+    # eax,3FFFFh.
+    ("RetargetNoTarget", 0x487838, 0x1B),
+    ("RetargetUpdateTarget", 0x48A359, 0x1F),
     # broadsideSoundSet: in FUN_004CEB37 (the broadside fire step's effect of one shot), push 0BA1D5Ch (replaced, 5 B)
     # / add edx,14h (the continuation; no branch lands inside), and the name it pushes, "ShipCannonShoot" with its NUL
     ("BroadsideSound", 0x4CECBD, 8),

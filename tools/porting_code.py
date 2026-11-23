@@ -91,6 +91,7 @@ PAGES = {
         "spreadAnyAccuracy": ["src/features/spread.cpp", "src/hooks/spread_hooks.asm"],
         "containedUnitsROF": ["src/features/containedrof.cpp", "src/hooks/containedrof_hooks.asm"],
         "numberOfShots": ["src/features/shots.cpp", "src/hooks/shots_hooks.asm"],
+        "retargetInAction": ["src/features/retarget.cpp", "src/hooks/retarget_hooks.asm"],
         "accuracyTechs": ["src/features/accuracy.cpp"],
         "broadsideMuzzleLimit": ["src/features/broadside.cpp", "src/hooks/broadside_hooks.asm"],
         "broadsideSoundSet": ["src/features/broadsidesound.cpp", "src/hooks/broadsidesound_hooks.asm"],

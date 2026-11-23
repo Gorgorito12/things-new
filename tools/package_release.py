@@ -359,6 +359,8 @@ containedUnitsROF [log]       ScaleByContainedUnits target="ROF": an attack fire
 numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart before the
                               reload, the firing pose kept between them (<BurstPose>);
                               projectiles: <NumberProjectiles> per shot
+retargetInAction [log]        an attack with <RetargetInAction>1 whose target dies during its
+                              attack animation fires the rest of its shots at a new target
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
 auraStacking [log]            <ForbidUnitType> on any aura

@@ -3919,6 +3919,66 @@ before reading them. The broadside fire step (0x4CEA43) and melee (0x4DCFE2) are
 - Cost: one map lookup per ROF read of an action with a burst while some action has one, one per shot with projectiles;
   with no tag in the data, the gates are closed and the hooks only compare. `hold` adds a call of 0x4939BD per quick shot.
 
+### retargetInAction
+
+**What the attack does when its target dies (2026-11-23, capstone on the stock exe, REA `ev_c3f18d0017…` for the unit
+query FUN_00499CE4, hardware write breakpoints and the key's own log in game).** The attack unit action (vtable 0xB96278)
+keeps its target's ID in `[ua+14h]`, its range in the float `[ua+24h]` and its state in the byte `[ua+61h]`.
+- **A shot per Attack tag.** The event handler (vtable `+44h`, 0x48CED0) resolves `[ua+14h]` (EDI, 0 when it is no unit)
+  and switches on the event type − 5 (0x48CF65): event 5, an animation's `Attack` tag, goes to 0x48F739, which fires the
+  shot block (0x48F7F0..0x48F8E9: launch, `[ua+68h]` + 1, the wait 0x48FA69) when the attack is in state 1 or its tactic
+  has flag bit 4 (0x48F75F..0x48F7DE). The shot changes no state, so every Attack tag of the animation fires while the
+  state stays 1: [O] a machine gun with six Attack tags fired six shots a cycle, 0.10 to 0.24 s apart. The other events the attack does not
+  take (TargetDied 13h among them) go to the base handler 0x48CF88, which ignores 13h (0x48CFC4).
+- **The update finds the dead target.** The update (vtable `+3Ch`, FUN_0048A330) reads `[ua+14h]` at 0x48A359; no unit
+  (0x48A3D3 by way of 0x48782F, unless the ID is below 0, a point attack), not alive (vtable `+A4h`, 0x48A3EA) or inside
+  another unit (0x48A3F9, the current action of type 2Bh; 0x48A409) all go to 0x487838: in state 19h it goes on (0x48A40F,
+  where state 19h returns at once, 0x48A413); with `[ua+0Ch]` ≥ 0 its own branch (0x4F6F6E); in state 1 or 15h
+  setState(19h) (0x487854); otherwise setState(0Ah) (0x497863). In state 19h the Attack tags fire nothing, so the rest of
+  the animation is lost. [O, trace] When the wait is over the unit reuses the same unit action for its next target:
+  `[ua+14h]` = −1 (0x4719F3) and `[ua+68h]` = 0 (0x472CE8) under 0x472CCD (vtable `+8`), then the new target, and a new
+  cycle from the start of the animation.
+- **What the update checks on a live target** (each update): the attack the tactic gives for it, 0x489ECC(tactic, unit,
+  target, 1, !flag 0Dh, 0, 0, `[ua+24h]`) at 0x48A570, against the tactics action's ID `[[ua+4]+0]` (another one →
+  0x4E5346); the range, the unit's vtable `+CCh(target, [ua+24h])` (0x48A5C8); the visibility, 0x48A9EF(target, player)
+  (0x48A605); then `[ua+18h]` = the target's position. The tactic is the unit's current one: `[[[unit+5Ch]+44h]+10h]`
+  indexed by `[[unit+58h]+0A8h]` (0x48A533..0x48A56E).
+
+**The hook.** `hooks/retarget_hooks.asm` replaces `mov al,[esi+61h] / cmp al,19h` (5 B at 0x487838; reached only by the
+three jumps above, `cs` scan) with a jmp. ESI = the unit action, EBX = 0, the update's saved EDI on top of the stack. While
+some action has the tag (`g_uhcRetargetOn`), `UhcRetargetAction(ua)` runs with EAX, ECX and EDX saved. For a tagged
+action (`{proto ID, action name index}` of the unit's proto and `[ua+4]`) in state 1 with a target ID ≥ 0, it searches:
+the units within `[ua+24h]` + 12 m of the unit (FUN_004A1C55, the world's spatial query), each one not the unit or the
+lost target, alive, not inside another unit, of the tactic's `<autoattacktype>` `[tactic+174h]` when it has one
+(0x44D7FA, the test of the automatic search 0x4A1A0E), given this attack by 0x489ECC with the update's arguments, in
+range by vtable `+CCh` and seen (0x48A9EF); the nearest by vtable `+BCh` (the distance the update reads at 0x48A59B), then
+the lowest ID. It writes the ID to `[ua+14h]` and returns 1; the hook pops EDI and jumps to 0x48A359, so the update
+reads the new target and runs all its own checks on it, as at any update. Otherwise (no tag, another state, no target)
+the hook redoes the compare and goes on at 0x48783D (`je 48A40Fh`), the stock path. A second call for the same action
+in the same game time returns 0, so a target the update refuses cannot loop. The shot count, the cycle start `[ua+78h]`,
+the wait and the animation are the action's own and stay: the next Attack tag fires at the new target.
+
+**numberOfShots.** A burst's quick shots wait the interval in state 1 with `<BurstPose>` hold (the attack animation's
+tail is stretched to the wait), so a kill by a quick shot is seen in state 1 and the burst goes on. [O] A target swapped in
+state 19h (an earlier version did it while a burst had shots left) did not keep the burst: the action was reset at the
+wait's end as above and the count started again, so the key leaves state 19h alone.
+
+**Tags.** Read through the shared action tag hook (`actiontags.h`) from a tactics `<action>` or a `<ProtoAction>`:
+`RetargetInAction` 1 (retarget) or 0 (stock, logged with `log`); cleared on every data load. With `log` a third ROF filter
+(`rofreads.h`, after numberOfShots') logs each shot and cycle start of a tagged action; it changes no value.
+
+**Why it is safe.**
+- The site: no branch lands in 0x487839..0x48783C; 0x48783D is the stock `je`, entered with the flags of the re-executed
+  `cmp`. 0x48A359 is the head the update reaches from its own start (and 0x49E056), with the stack the hook leaves after
+  `pop edi`, EBX = 0 and the update's locals already written (0x48A34F). Both sites are verified (`RetargetNoTarget`,
+  `RetargetUpdateTarget`).
+- Deterministic: the search reads simulation state only (positions, the spatial query, the attack's data, the player's
+  visibility, which is simulation state), picks by distance then unit ID, and runs in the update on every machine. No
+  container keyed by pointer decides anything. Every player needs the same line and data.
+- Cost: with no tag in the data the hook compares one global. A tagged action pays one map lookup when its target is lost,
+  and one spatial query over its range when that happens in its animation: once per kill, not per frame (the state is 19h
+  right after a search that found nothing).
+
 ### unitResourceAuras
 
 An `AutoRangedModify` action's update is FUN_009D033E, `void thiscall(action)`, a vtable slot with no direct caller.

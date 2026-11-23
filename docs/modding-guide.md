@@ -33,6 +33,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 |---|---|---|---|
 | Monday 2026-11-23 07:59 | [`resendableCards`](#resendablecards) | Added. `<resendeveryage>1</resendeveryage>` in a home city card: the card can be sent again each time its player reaches a new age (its `<maxcount>` back, no stacking across ages). | The tag on the cards that want it. |
 | Monday 2026-11-23 07:59 | [`quickArrivalCards`](#quickarrivalcards) | Added. `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a quick-arrival card.* to the card's rollover, after its *may be sent ... | The flag on the cards' techs; a string in the string table to translate the line. |
+| Monday 2026-11-23 07:56 | [`retargetInAction`](#retargetinaction) | Added. An attack with `<RetargetInAction>1</RetargetInAction>` whose target dies before the last shot of its attack animation (a machine gun's Attack tags, a burst's quick shot) fires the rest at a new target in range, instead of losing them. | The tag on the attacks that want it (the machine guns' `CannonAttack` in `organGun.tactics`). |
 | Sunday 2026-11-22 14:03 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Sunday 2026-11-22 13:54 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Sunday 2026-11-22 12:35 | [`broadsideSoundSet`](#broadsidesoundset) | Filmed in WoL, with a control. A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). |
@@ -3081,6 +3082,7 @@ Attacks, armor, and what a hit does.
 | [`accuracyTechs`](#accuracytechs) | A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`containedUnitsROF`](#containedunitsrof) | An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | **new** | The attribute on the attacks that want it (none has it today). | confirmed |
 | [`numberOfShots`](#numberofshots) | An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, keeping its firing pose between them (`<BurstPose>`), before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | **new** | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. | confirmed (single player) |
+| [`retargetInAction`](#retargetinaction) | An attack with `<RetargetInAction>1</RetargetInAction>` whose target dies before the last shot of its attack animation (a machine gun's Attack tags, a burst's quick shot) fires the rest at a new target in range, instead of losing them. | **new** | The tag on the attacks that want it (the machine guns' `CannonAttack` in `organGun.tactics`). | confirmed (single player) |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
 | [`broadsideSoundSet`](#broadsidesoundset) | A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | **new** | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). | confirmed (single player) |
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | **new** | The type on the protos that want it. | confirmed |
@@ -4255,6 +4257,97 @@ numberOfShots [projectiles] [log]
   (`perfprobe.py`, 60 s, 30 Skirmishers with 3-shot bursts against 30 Crossbowmen, two runs each, six other games running
   on the machine): with the key 426 / 437 fps, update 0.18 / 0.17 ms, render 2.2 ms, no frame over 50 ms; key off 361 /
   427 fps, update 0.22 / 0.21 ms, render 2.6 / 2.2 ms, one frame over 50 ms. Not tested: multiplayer.
+
+#### retargetInAction
+
+*A machine gun whose target falls in the middle of its burst keeps shooting at the next enemy instead of wasting the rest.*
+
+**Added:** Monday 2026-11-23 07:56 · **Filmed in WoL:** Monday 2026-11-23 07:56
+
+![retargetInAction in WoL](media/retargetInAction-wol.gif)
+
+*In WoL, with `retargetInAction log` (2 `WOLMercMaximGun`, selected, whose `CannonAttack` in `organGun.tactics` has
+`<retargetinaction>1</retargetinaction>`, test data; 16 enemy `WOLRegular`s, 200 HP, that walk up to them; filmed on
+2026-11-23):* the tracers of each burst fan out over the line: when a soldier falls, the next Attack tags of the same
+animation hit the soldier beside him (the log lines at the bottom: `lost its target 3 ... after 3 shots: new target 16`).
+All 16 fall in 21 s of game time and the guns survive. [Full video (MP4)](media/retargetInAction-wol.mp4).
+
+![retargetInAction in WoL, tag off](media/retargetInAction-wol-control.gif)
+
+*The same scene with `<retargetinaction>0</retargetinaction>` (the stock behaviour, logged):* when the target falls, the
+rest of the animation fires nothing and the gun waits out its 4 s ROF before it takes the next soldier. Both guns are
+destroyed and 6 Regulars are left. [Full video (MP4)](media/retargetInAction-wol-control.mp4).
+
+```
+retargetInAction [log]
+```
+
+- **In WoL today (WoL #98):** an attack fires one shot at each `Attack` tag of its attack animation, while the attack is
+  in its firing state (state 1). WoL's Maxim gun (`WOLMercMaximGun`, and the six other protos of `organGun.tactics`:
+  OrganGun, xpGatlingGun, Mitrailleuse, ConsulateGatlingGun, WOLNordenfeltGun, ConsulateRabauld) has six in
+  `Bombard_ranged_attack` (0.27 to 0.81 of the animation), so it fires six shots a cycle, each with the action's full
+  damage. When the target dies, the attack notices it at its next update and goes to its wait: the tags left in the
+  animation fire nothing, and only when the wait is over (the ROF, 4 s for the Maxim) does the unit take its next target
+  and start a new animation. In the tests, with 130 HP targets, the Maxims lost one to five of their six shots that way,
+  and all six when another gun made the kill before the first tag.
+- **The tag:** an attack with `<RetargetInAction>1</RetargetInAction>` (in its tactics `<action>` or its `<ProtoAction>`;
+  the last one read wins) whose target dies, or goes away (garrisoned, deleted), while it is still in its attack
+  animation takes a new target on the spot and keeps going: the same attack, so the next Attack tag of the same animation
+  fires at the new target, the shot count goes on and the cycle and the ROF are not restarted. Projectiles already in
+  the air keep flying to the old target; the ones launched afterwards fly to the new one.
+
+  ```xml
+  <action>
+      <name stringid="38119">CannonAttack</name>
+      ...
+      <retargetinaction>1</retargetinaction>
+  </action>
+  ```
+
+  `0` is the stock behaviour (and logs it with `log`, useful for a comparison); any other value is logged and ignored.
+- **The new target** is one the unit could shoot right now without moving: the nearest unit within the attack's range
+  that the attack can target (the game's own test of which attack a unit uses on a target: enemies only, the action's
+  target types), of the tactic's `<autoattacktype>` when the tactic has one (what the unit attacks on its own), alive,
+  not inside a building or a ship, and seen by the unit's player. Ties go to the lowest unit ID. With none, the stock
+  behaviour: the wait, then the unit's own search.
+- **With [`numberOfShots`](#numberofshots):** a burst's quick shots keep the unit in its attack animation until the next
+  shot (`<BurstPose>` hold), so a target that dies after a quick shot is replaced and the burst goes on: 3 shots, the
+  last on the new target, then the reload. A target lost during the reload wait (between bursts, or after a burst's last
+  shot with another pose) is not replaced: the next burst starts on the unit's next target, as without the tag.
+- **Not covered:** the target the unit was ordered to attack (a player's right-click) is replaced by any enemy in range
+  when it dies, like the automatic targets. An attack with a single Attack tag gains no shot: its next one comes after
+  the ROF anyway, and the tag only picks that next target sooner (the nearest in range rather than the unit's own
+  search).
+- **Balance:** the six tags now all hit. In the tests the tagged Maxims killed 12 `WOLLandwehr` in 5.3 s, against 13 s
+  with the tag at 0, and 2 of them beat 16 `WOLRegular`s that win the same fight without the tag. Check the Maxim's
+  damage (100 a tag, `DamageArea` 2) against groups.
+- **Log:** `retargetInAction: applied`, `hook reached: retargetInAction (0x487838)`. With `log`: each tag read (at most
+  200), every shot of a tagged attack with its target and that target's state (`unit 0 shot 2 of action 4731A8C0 at 9
+  (WOLLandwehr, alive, 130 HP), state 01h`; at most 200), each cycle start, and each lost target (at most 300): `lost its
+  target 10 in state 01h after 1 shots: new target 9 (WOLLandwehr, 130 HP) at 18.8 m`, or `no other target in range, the
+  stock code (45 units around: ... 3 out of range 22.0, 0 unseen)` with why each unit around was refused.
+- **Simulation:** changes combat: every player needs the same line and data.
+- **Saved games:** nothing to keep: the tags are read with the data, and the target is the attack's own.
+- **Tested in WoL (2026-11-23, single player, `C:\AoE3-UHC-WoLReal4`):**
+  - 3 `WOLMercMaximGun` against 12 `WOLLandwehr` (130 HP): six shots a cycle, 16 new targets, every shot logged at a
+    living target (none at a body); with the tag at 0, the shots left in each cycle lost after a kill and the next
+    attack 4 s later.
+  - The video scenes above (2 Maxims, 16 `WOLRegular`s): 16 new targets, the last loss with nobody left in range: stock.
+  - The Merina rifleman `WOLAURMerinaRifleman` (`carabinero.tactics`, test data: `<numberofshots>3`, `<shotinterval>0.4`
+    and the tag on its three ranged attacks) against 12 `Seimen` brought to 25 HP by a trigger: a kill after the first or
+    second shot of a burst moved the rest of the burst to a new target (`shot 3 of its burst of 3` at the new one); the
+    targets further than its 12 m range were refused (logged as out of range), as they should.
+  - Untagged units (the enemies, the other protos of the scenes) log nothing and fight as before.
+  - A saved game (`saveGame` / `loadGame` from the console, before the fight): Maxims and Merinas changed targets as before.
+  - A 100 s skirmish as the Mapuche against `wolOtto` (Germans) with the tagged data: no XS error, the AI grew to 10
+    settlers and scouted.
+  - Performance (`perfprobe.py`, 70 s, 30 Maxims and 10 Merina riflemen against 50 `Jawan`s and 50 `Seimen`s, other
+    sessions' games running on the machine): with the key, update 0.36 ms a frame, render 3.5 ms, 273 fps, main thread
+    92 %, no frame over 50 ms; key off (`numberOfShots` alone), update 0.35 ms, render 3.3 ms, 330 fps, 91 %, one frame
+    of 52 ms. The frame rates differ with the fight (the tagged guns kill faster, so the scenes are not the same) and
+    with the other games; the simulation's update time is the same. The search runs only when a tagged attack loses its
+    target in its animation.
+  - Not tested: multiplayer, beside WoL's DLL.
 
 #### broadsideMuzzleLimit
 
