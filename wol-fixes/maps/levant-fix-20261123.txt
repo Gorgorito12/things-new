@@ -127,6 +127,21 @@ fewer models, so the cache would grow less); the King of the Hill version; a lim
 same compares); the key in our UHC.dll instead of dinput8.dll (the same code). Which of the 435 other listed
 templates a Levant game meets was not checked; the two we saw are fixed.
 
+Follow-up, later the same day: every damage template, and a key
+-------------------------------------------------------------
+- Data: wol-fixes/art-dmg-bones-20261123/ now fixes all 253 "not defined" pairs (1533 <definebone> lines in 131
+  anim files, plus the cypress), as WoL-dmg-bones-fix.zip with apply_fix.py (--check / --restore). After it,
+  dmg_bones.py reports 0 "not defined"; the 179 "missing bones" pairs left are listed by template there.
+- DLL: the new key `dmgPartBoneFix [log]` (docs/bug-fixes.md) removes the reload itself: the game takes the path
+  it already takes when the bone name was known, so that part is not drawn on that model and nothing is freed.
+  It covers every case (the 182 + 253 of WoL, the original game's 19 + 40, future art). Without the DLL: one
+  byte, file offset 0x258C1A of age3y.exe, 74 -> EB (check 84 DB 74 1E at 0x258C18 first).
+- Tests (our UHC.dll in a WoL 1.0.15c copy, single player): a 6-player free for all, Hard, 14 minutes of clicks
+  with WoL's data as shipped, modelCacheLimit 0 log + dmgPartBoneFix log: ok, no crash; the West market's five
+  bones (9:09) and a cypress's "oak a death" (13:34, the reload that crashed a game this morning) were met, their
+  6 reloads skipped, and no model was unloaded or reloaded during play (tools/re/trace_frees.py --parts). With the
+  data pack applied, a 6.5-minute game met no invalid part. Details: docs/bug-fixes.md, dmgPartBoneFix.
+
 Reply for JTMaston (#78)
 ------------------------
 #78 "NEW" Levant crash: found and fixed (tested).
