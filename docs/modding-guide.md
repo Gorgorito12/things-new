@@ -8587,13 +8587,22 @@ attackTypeIcons <UnitType> <StringID> <IconPath> [<UnitType> <StringID> <IconPat
 
 **Added:** Tuesday 2026-11-17 08:07 · **Filmed in WoL:** Tuesday 2026-11-17 10:30
 
-![minUIStats version 7 on a unit in WoL](../wol-fixes/min-ui/final/minUIStats-v7-icons-min-escopetero.jpg)
+![minUIStats version 8 on a unit in WoL](../wol-fixes/min-ui/final/minUIStats-v8-icons-min-escopetero.jpg)
 
-*In WoL, version 7 (2026-11-21, `minUIStats` and the layout of `wol-fixes/min-ui`, Ethiopians, an `Escopetero`, minimized
+*In WoL, version 8 (2026-11-23, `minUIStats` and the layout of `wol-fixes/min-ui`, Ethiopians, an `Escopetero`, minimized
 interface):* cost and pop at the top left, LOS, speed and train time at the top right, armor as a percent (`20%`), and
-each attack in one row: damage, rate of fire (`3.50` and the clock icon), range, area, then the bonus multipliers.
-More pictures of version 7 (the big interface, the Falconet limbered and deployed, gathering, beside WoL's own
-`uhc.dll`): `wol-fixes/min-ui/final/minUIStats-v7-*.jpg`.
+each attack in one row: damage, rate of fire (`3.50` and the clock icon), range, area, then the bonus multipliers with
+the team's unit type icons (`1.5x` Maneuver, the winged Minie; `1.25x` Line, the blue soldier).
+More pictures of version 8's icons (the tooltips, the big interface, the Falconet's `3x` Standing, the Lancer's `2x`
+Skirmisher and its control): `wol-fixes/min-ui/final/minUIStats-v8-icons-*.jpg`. Version 7's pictures (the Falconet
+limbered and deployed, gathering, beside WoL's own `uhc.dll`), taken with the earlier icons:
+`wol-fixes/min-ui/final/minUIStats-v7-*.jpg`.
+
+![minUIStats version 8: the Lancer's 2x against Skirmisher](../wol-fixes/min-ui/final/minUIStats-v8-icons-min-lancero-tip.jpg)
+
+*In WoL, version 8 (a `Lancero`, the pointer on its hand attack):* `2x` and the green Skirmisher icon in the row, and the
+tooltip line `2X Bonus Damage against (icon) Skirmisher`. The icon comes from WoL's `attackTypeIcons` line
+(`AbstractRangedInfantry 42032 ui\ingame\stat_icon_skirmisher`): without that triple the `2x` is not shown at all.
 
 ![minUIStats version 7 on a building in WoL](../wol-fixes/min-ui/final/minUIStats-v7-mill.jpg)
 
@@ -8750,15 +8759,35 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       at `uhcRow2`'s place: `Gathers: Wood 0.50/s`, the same value as the stock rate row.
     - Three unit type icons redrawn at the team's request, approved in review: Line (`AbstractHeavyInfantry`, an
       infantryman in a shako with a blue coat), Standing (`AbstractInfantry`, the same in a red coat) and Maneuver
-      (`AbstractRangedCavalry`, a winged arrow; a winged bullet was the alternative, kept in the pack's `review`
-      folder). They replace WoL's files at the paths the panels draw (`ui\ingame\stat_icon_heavy_infantry`,
+      (`AbstractRangedCavalry`, a winged arrow; a winged bullet was the alternative). They replace WoL's files at the
+      paths the panels draw (`ui\ingame\stat_icon_heavy_infantry`,
       `WoL\ui\ingame\staticons\stat_icon_ranged`; for Standing `ui\ingame\stat_icon_infantry`, the stock icon of
       `AbstractInfantry`, which wins over the `WoL\...\stat_icon_standing_unit` of `attackTypeIcons`, so both get it),
       32x32 BGRA, soft edges and shading like WoL's own, drawn by aoe3-blender-tools' `make_type_icon.py`. The pack
       now has an `apply_fix.py` (install, `--restore`, `--check`). Checked in WoL (1920 x 1080, installed and removed
       with it, files byte for byte back): the Escopetero's rows and tooltips show the arrow and the blue soldier, the
-      Falconet's Bombard row the red soldier, in both interfaces, rows as long as with WoL's icons
-      (`wol-fixes/min-ui/final/minUIStats-v7-icons-*`).
+      Falconet's Bombard row the red soldier, in both interfaces, rows as long as with WoL's icons. Replaced in
+      version 8, with their pictures.
+  - **Version 8 (2026-11-23), the team's own unit type icons:** JTMaston sent four pictures (pixel art) and they are
+    in the pack, converted, not redrawn: Line (a blue coat, the musket upright in front,
+    `ui\ingame\stat_icon_heavy_infantry`), Skirmisher (a green coat, the musket held diagonally,
+    `ui\ingame\stat_icon_skirmisher`, new in the pack), Standing (a purple coat, no weapon, `ui\ingame\stat_icon_infantry`
+    and `WoL\ui\ingame\staticons\stat_icon_standing_unit`) and Maneuver (the winged Minie, the bullet tinted to
+    `#C75A21`, the colour of the "Maneuver Unit" name, with its shading kept; `WoL\ui\ingame\staticons\stat_icon_ranged`).
+    - Conversion (aoe3-blender-tools' `tools/import_icon.py`): the panels draw a type icon 11 x 17 pixels at
+      1920 x 1080, so each picture is widened by 1/0.65 and reduced by area averaging to 32x32 BGRA, one level; the
+      three soldiers keep one scale on the bottom edge, each icon centred. The review sheet is the pack's
+      `icons-v8-review.png`.
+    - Skirmisher's file: the exe has no icon of its own for `AbstractRangedInfantry`. With WoL's `attackTypeIcons`
+      triple `AbstractRangedInfantry 42032 ui\ingame\stat_icon_skirmisher` taken out, the `Lancero`'s `2x` against
+      Skirmisher disappears from its row and its tooltip; with it, the new green soldier shows. Line and Standing use
+      the exe's own files, Skirmisher and Maneuver only the cfg's.
+    - Tested in WoL (2026-11-23, single player, our `UHC.dll` with `minUIStats`, `multiplierDecimals`,
+      `showGatherRate`, WoL's `wol.cfg` lines, the pack installed with `apply_fix.py` and removed with `--restore`,
+      every file byte for byte back, 1920 x 1080, 38 applied, 0 failed): the Escopetero's `1.5x` Maneuver, `1.25x`
+      Line and the Falconet's Bombard `3x` Standing in the rows and tooltips of both interfaces, the Lancero's hand
+      attack `2x` Skirmisher in the minimized one (WoL's big interface shows only the first attack row); the rows end
+      where they did (`wol-fixes/min-ui/final/minUIStats-v8-icons-*`).
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.

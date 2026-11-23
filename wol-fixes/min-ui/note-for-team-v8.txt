@@ -1,0 +1,41 @@
+Minimized UI, version 8: your unit type icons
+=============================================
+
+Your four icons are in the pack, converted to the game's format. They were not redrawn: the art is yours, pixel for
+pixel, only reduced to the icon's size.
+
+    Line         (AbstractHeavyInfantry)   blue coat, the musket upright in front
+                 art\ui\ingame\stat_icon_heavy_infantry.ddt
+    Skirmisher   (AbstractRangedInfantry)  green coat, the musket held diagonally (new in the pack; it replaces
+                 your current green skirmisher)
+                 art\ui\ingame\stat_icon_skirmisher.ddt
+    Standing     (AbstractInfantry)        purple coat, no weapon
+                 art\ui\ingame\stat_icon_infantry.ddt and art\WoL\ui\ingame\staticons\stat_icon_standing_unit.ddt
+    Maneuver     (AbstractRangedCavalry)   the winged Minie; the bullet tinted to #C75A21 (the colour of the
+                 "Maneuver Unit" name), keeping its shading: the lit face is #C75A21, the shaded side and the bands
+                 darker, the highlight lighter; the white wings and the dark outline as you drew them
+                 art\WoL\ui\ingame\staticons\stat_icon_ranged.ddt
+
+They go at the paths the panels already draw, so your attackTypeIcons line and your data do not change. All are
+32x32 uncompressed BGRA, like your own icons. apply_fix.py installs them with the rest of the pack (and keeps your
+files for --restore).
+
+How they were fitted:
+- The panels draw these icons 11 x 17 pixels at 1920x1080 (narrower than they are tall), so each picture was widened
+  first: in game it keeps the proportions you drew.
+- The three soldiers have the same scale, standing on the bottom edge (the Line soldier is drawn a little smaller
+  in your art, so it stays a little smaller). Each icon is centred.
+- The Minie is wide, so in game it is about 11 x 6 pixels: you see a copper bullet with white wings.
+
+Which file is the Skirmisher: for AbstractInfantry and AbstractHeavyInfantry the game uses its own icon files
+(ui\ingame\stat_icon_infantry, ui\ingame\stat_icon_heavy_infantry), whatever attackTypeIcons says; that is why
+Standing goes in both files. For Skirmisher it uses only your line (AbstractRangedInfantry 42032
+ui\ingame\stat_icon_skirmisher): with that triple taken out, the Lancer's "2x" against Skirmisher is not shown at all.
+
+Checked in game (1920x1080, our UHC.dll, the pack installed with apply_fix.py and removed with --restore):
+- Escopetero: 1.5x Maneuver (the Minie), 1.25x Line, 0.75x Scout, in the rows and the tooltip, both interfaces;
+- Falconet in Bombard: 3x Standing, both interfaces;
+- Lancer: Hand ATK 2x Skirmisher, row and tooltip (minimized interface; your big interface shows only the first
+  attack row, Siege, so the hand row is not there);
+- the rows end where they ended before (the icons have the same size).
+Pictures: final\minUIStats-v8-icons-*.jpg. The comparison sheet: icons-v8-review.png.
