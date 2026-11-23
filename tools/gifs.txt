@@ -355,3 +355,5 @@ dismount-hidden-heal-build-test-wol 2 24 2
 auraRings-pack-wol 2 18 1.5
 auraRings-pack-units-wol 2 12 1 1160:653:600:280
 auraRings-pack-wol-control 2 18 1.5
+slinger-anims-wol 0 28 2.4
+slinger-anims-attack-wol 3 13 1.2

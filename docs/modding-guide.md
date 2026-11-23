@@ -9476,6 +9476,69 @@ tags", "Tactic for an action", "Squad mode of a unit"):
 - **Do not add the new animation names to `data\animtypes.xml`:** tried, the unit then played its mounted attack
   while on foot.
 
+### Slinger animations on other models
+
+*The Aztec Macehualtin's slinger animations (idle, walk, run, the sling, melee, torch, deaths) made to play on any
+standard infantry body, so a new slinger unit can use its own model.*
+
+Request #100 (Punchline, 2026-11-23): "the Macehualtin animations only work with that model". WoL's two slingers
+(`POLYMarauder`, `units\polynesia\shared\slinger.xml`) reuse the Macehualtin's model with another texture for that
+reason.
+
+**Why they only play on that model** (read in the game's code, then seen in game): the game starts an animation on a
+model only if the animation has a track group named after that model (`GrannyFindTrackGroupForModel` at 0x426A5F and
+0x4B6F1F; no match, no animation). The Macehualtin's model and its 35 animations
+(`animation_library\natives\macehuatlin\*`) are named `bone_master`, a master bone above the biped; every standard
+infantry model (WoL's skirmisher and `redolero_2age`, the game's native rifleman and Holcan spearman) is named
+`Bip01`. Played on such a model, the clips do nothing and the body stays in its bind pose, also while it walks (the
+control below). The skeletons are otherwise the same biped: same bones, axes and lengths. The sling is an attachment
+with its own animations (`macehuatlin_sling01.xml`, hung on `PROP1` with `syncanims="1"`); its model is also
+`bone_master`, so it plays on any body and needs no change.
+
+**The fix, art only, no DLL key:** aoe3-blender-tools' `tools/retarget_anims.py` puts each clip on the new model:
+each bone copies the original's movement from its rest pose, the new model keeps its own bone lengths, the hips move
+by the ratio of the two hip heights, the hand props keep the original's place in the hand (so the sling hangs as on
+the Macehualtin), and the clip is written in one track group named `Bip01`, at 60 samples a second. Each clip gets
+its tag file (`.gr2.precomp`) with the bone tags moved to the new body and `LAUNCHPOINT`, where the stone leaves,
+unchanged. The tool also writes the anim file blocks to paste: the definebones, the sling and torch attachments, the
+`<attach a="sling" frombone="bone_sling" tobone="PROP1" syncanims="1"/>` line for the model's component, and every
+`<anim>` of the Macehualtin pointed at the new clips with its tags (attack, sound, footsteps) as they were. A recipe
+per target model; `skirmisher` (WoL's light infantry model) and `native` (the game's native rifleman) are built in,
+and a JSON recipe names any other model (and a bone name map for a rig whose names differ).
+
+The pack `wol-fixes/slinger-anims` (`apply_fix.py <WoL folder>`, `--check`, `--restore` byte for byte; README in
+English and Spanish) adds both clip sets (`art\WoL\units\infantry_ranged\slinger\anims_skirmisher\` and
+`anims_native\`, 35 clips and tag files each, 4.8 MB; nothing of the mod changes) and the blocks to paste
+(`files\skirmisher-anims.xml`, `files\native-anims.xml`). Any `Bip01` body of the standard proportions can use either
+set (they differ by 1.6 cm at the hips). `--test` also adds three TEST units, copies of `POLYMarauder` (its
+`musketBayonet.tactics`): `SlingerTestSkirmisher`, `SlingerTestNative`, and `SlingerTestControl` (the skirmisher
+model with the Macehualtin's own clips).
+
+![Slingers on two other models, and the control](media/slinger-anims-wol.gif)
+
+*A test scenario, the three TEST units selected (left: the skirmisher model, middle: the native rifleman, right: the
+control, the skirmisher model with the original clips), then three WoL Scythemen:* the two retargeted slingers idle
+with the sling, walk forward, fight hand to hand and die with the Macehualtin's animations; the control keeps its
+bind pose throughout, only its sling moving in its hand. Game time runs 1.3 to 1.9 times real time in this
+background copy. [Full video (MP4)](media/slinger-anims-wol.mp4).
+
+![The sling attack beside WoL's own slinger](media/slinger-anims-attack-wol.gif)
+
+*The skirmisher-model slinger (left), WoL's own Polynesian slinger `POLYMarauder` (middle, the Macehualtin model) and
+the native-model slinger (right) against two WoL Line Infantry:* the three whirl and throw on the same beats, and the
+Line Infantry fall to their stones. The stones are too small to see at this zoom; they leave from the same
+`LAUNCHPOINT` as `POLYMarauder`'s, since the tag is copied unchanged. [Full video (MP4)](media/slinger-anims-attack-wol.mp4).
+
+- **Tested 2026-11-23** (WoLReal4, `--test`): idle, walk, the hand attack, deaths and the sling attack on both
+  models; the control in its bind pose; a game saved and loaded (the slingers still animate); a skirmish against a
+  German AI with the pack applied: no XS error, the AI built and trained. `--restore` gave back `protoy.xml` byte for
+  byte. All 70 clips also went through the game's own `granny2.dll` (compressed and expanded back, CRC checked).
+- **Not seen in game:** the run animation (the units walked) and the torch on buildings; they are clips of the same
+  kind and are drawn on both models in the review sheets.
+- **To make a new slinger:** copy the slinger proto, give it an anim file with its model, the blocks of
+  `files\skirmisher-anims.xml` (or `native-anims.xml`) and the sling's `<attach>` line in the model's component. For
+  a model with other proportions or bone names, run `retarget_anims.py` with a recipe for it.
+
 ### Aura rings
 
 A ring on the ground tells the player which units an aura is working on, as the one Karni Mata puts around the Indian
