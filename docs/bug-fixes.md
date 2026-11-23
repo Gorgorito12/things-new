@@ -20,6 +20,7 @@ Grouped as in the modding guide.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`compatMode`](#compatmode) | Offers every 32-bit display mode as a 16-bit mode too. | **in `wol.cfg`** | Nothing. | confirmed |
+| [`modelCacheLimit`](#modelcachelimit) | Stops the game from unloading 3D models that units still use, the cause of the Granny crashes in big games (WoL #78). | **new** (or a 4-byte patch of WoL's exe) | The two data fixes in `wol-fixes/art-dmg-bones-20261123/`. | confirmed (single player) |
 
 #### compatMode
 
@@ -39,6 +40,59 @@ compatMode
 - **Simulation:** display only.
 - **Status:** confirmed (2026-11-03): the hook runs at startup for the adapter's modes and the game
   starts and plays normally.
+
+#### modelCacheLimit
+
+*Keeps the game from unloading 3D models that units still use, which crashed big games (WoL #78).*
+
+```
+modelCacheLimit [MB] [log]
+```
+
+- **The bug (WoL #78, "NEW" Levant):** the game keeps its loaded models in a cache with a budget of 30 MB, written
+  in the exe. Every frame, while the cache holds more, it unloads the model used least recently, even when units
+  still draw or animate with it. The next draw loads the file again into new memory while the unit's model still
+  points into the old one, and the game reads freed memory: a crash at `age3y.exe+0xC07C` or `+0xCC7B`, or in
+  `granny2.dll` (`+0x3A02A`, `+0x2C8CD`). WoL's art keeps the cache over 30 MB from the first minutes: 584 unloads
+  in 9.4 minutes of a 6-player Levant game. More players, more civs and a camera that moves over the whole map make
+  it worse.
+- **What the key does:** with no number, or `0`, no model is ever unloaded for the budget (recommended for WoL).
+  With a number of megabytes (30 to 4000), models are unloaded only above it; any limit the cache reaches can
+  crash again, so use one only if memory runs short. With `log`, the log says each time the cache passes a new
+  50 MB step.
+- **Memory:** every model a game draws stays loaded. In the Levant click sweeps (the whole map revealed and
+  clicked) the cache grew to 90-120 MB in 13.5 minutes instead of 30, and the game's peak private bytes were
+  1,363-1,539 MB instead of 1,267-1,328 MB (about +90 to +150 MB at 10 minutes). WoL's exe is
+  large-address-aware (4 GB).
+- **WoL also needs (data):** a damage template whose parts name a bone the model does not have makes the game
+  reload that model while it is in use, the first time it meets the bone name; the key does not cover it. In WoL,
+  `art\War of the Triple Alliance\DLC\Other\new trees\cypress.xml` gives the cypress trees `tree_oak_a.dmg`, whose
+  part bone `oak a death` the cypress models lack: a game crashed 12 s after a cypress fell
+  (`granny2.dll+0x2C8CD`). The fix is to drop the three `damagetemplate="terrain\trees\Damage\tree_oak_a.dmg"`
+  attributes of its `death` component. aoe3-blender-tools' `tools/dmg_bones.py` lists every such pair: 27 in
+  WoL's art (`wol-fixes/art-dmg-bones-20261123/`).
+- **Without the DLL (WoL's own exe):** the same fix is four bytes twice, `80 C3 C9 01` → `FF FF FF FF`, at file
+  offsets `0x6C043` and `0x2E017A` of `age3y.exe` (WoL's exe `0a277f14…` and the stock one have the same bytes
+  there). Check both offsets hold `80 C3 C9 01` first.
+- **Log:** `modelCacheLimit: models are never unloaded for the cache budget (stock: above 30 MB)` or `... unloaded
+  above N MB of loaded models (stock 30 MB)`; with `log`, `modelCacheLimit: the model cache holds 51 MB (game time
+  4:47)`. A bad argument: `modelCacheLimit: X is not a number of megabytes from 30 to 4000, 0 (no limit) or log;
+  feature not applied`.
+- **Simulation:** none; what the cache holds already differs between players in the stock game (it follows each
+  one's camera).
+- **Beside WoL's DLL:** applied (`dinput8.dll`); WoL's DLL does not touch these bytes.
+- **Tested (2026-11-23, single player, WoL 1.0.15c with WoL's `uhc.dll`, our `dinput8.dll`):** "NEW" Levant,
+  `tools/clicksweep.py` (the map revealed, every kind of unit selected, double-clicked and right-clicked with
+  player 1's villagers, 13.5 minutes of game time), player 1 Dutch, European AIs, `tools/re/trace_frees.py` on
+  every key-on game. With `modelCacheLimit 0 log` and the cypress fixed: **6 games, 0 crashes** (6 players free
+  for all Hard ×2 and Expert, 8 players free for all Hard, 4v4 Hard and Expert), and 0 models unloaded for the
+  budget during play. With the key and WoL's data as shipped: one 6-player game ok, one 8-player 4v4 Expert game
+  crashed after 6.0 minutes, 12 s after the cypress reload. Key off: 2 games ok here (1,751 budget unloads in the
+  traced 8-player one); 4 crashes in 7 on 2026-11-22; with only WoL's `uhc.dll` (no DLL of ours): 1 crash in 2
+  (`granny2.dll+0x2C9A4`, 10.5 minutes). The fixed `market.xml` removed the West market's 5 reloads (2 games).
+  At the main menu: `modelCacheLimit 10` and `modelCacheLimit abc log` logged the refusal and FAILED;
+  `modelCacheLimit 500 log` and `modelCacheLimit` alone applied. Not tested: multiplayer, games longer than 13.5 minutes, a limit other than 0 in
+  game. Details: `wol-fixes/maps/levant-fix-20261123.txt`.
 
 ### Combat
 

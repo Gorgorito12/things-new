@@ -229,6 +229,12 @@ inline constexpr Site kTrainSingle1{"TrainSingle1", 0x009CE573, kTrainSingle1Byt
 inline constexpr std::uint8_t kTrainSingle2Bytes[] = {0xE8, 0x58, 0xE3, 0xA7, 0xFF};
 inline constexpr Site kTrainSingle2{"TrainSingle2", 0x009CE767, kTrainSingle2Bytes, sizeof(kTrainSingle2Bytes)};
 
+inline constexpr std::uint8_t kModelCacheBudget1Bytes[] = {0x81, 0xBE, 0x6C, 0x30, 0x00, 0x00, 0x80, 0xC3, 0xC9, 0x01};
+inline constexpr Site kModelCacheBudget1{"ModelCacheBudget1", 0x0046C03D, kModelCacheBudget1Bytes, sizeof(kModelCacheBudget1Bytes)};
+
+inline constexpr std::uint8_t kModelCacheBudget2Bytes[] = {0x81, 0xBE, 0x6C, 0x30, 0x00, 0x00, 0x80, 0xC3, 0xC9, 0x01};
+inline constexpr Site kModelCacheBudget2{"ModelCacheBudget2", 0x006E0174, kModelCacheBudget2Bytes, sizeof(kModelCacheBudget2Bytes)};
+
 inline constexpr std::uint8_t kSelectionCap1Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
 inline constexpr Site kSelectionCap1{"SelectionCap1", 0x004E0BEE, kSelectionCap1Bytes, sizeof(kSelectionCap1Bytes)};
 
@@ -3283,6 +3289,7 @@ bool AddDanceCivs(const std::vector<std::string>& names, const char* feature);
 // which applies after that key.
 bool AddFirstTcShipmentPoint();
 Outcome ApplySelectionLimit(const Config& config);
+Outcome ApplyModelCacheLimit(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
@@ -3405,6 +3412,7 @@ inline constexpr Feature kFeatures[] = {
     {"impactBoneFix", ApplyImpactBoneFix},
     {"customImpactTypes", ApplyCustomImpactTypes},
     {"selectionLimit", ApplySelectionLimit},
+    {"modelCacheLimit", ApplyModelCacheLimit},
     {"enableAllTeams", ApplyEnableAllTeams},
     {"startingTC", ApplyStartingTc},
     // After startingTC: both use the FirstTC proto hook at 0x506B3B, which the first one writes.
@@ -3482,7 +3490,7 @@ inline constexpr const char* kHandledKeys[] = {
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc", "scenariocivs",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory",
+    "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit",
 };
 
 }  // namespace uhc

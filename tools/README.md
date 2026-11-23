@@ -403,8 +403,8 @@ villagers to gather (2026-11-22).
 `UHC.dll`): the game starts with `+noIntroCinematics +DontPauseWhenLosingFocus`, the map is revealed by the setup
 (`gamemapvisibility` 1, Revealed; fog stays), and the camera moves by a posted click on the minimized UI's
 minimap (`PlainRun`: centre 213.9, 930.8 and radius 189.5 at 1920 x 1080 for a map of side S, the square turned by
-45 degrees; measured on six Town Centers). Player 1's explorer is clicked before each right click. Not yet run
-to the end (2026-11-22).
+45 degrees; measured on six Town Centers). Player 1's explorer is clicked before each right click. Run to the end
+on 2026-11-23 (#78: two 6-player Levant games beside background copies, one ok, one crash).
 
 `re/trace_frees.py <prefix>` (set `UHC_GAME_DIR`): a crash watch that also logs every model unload of the game's
 model cache (with the file name), every reload of a loaded model and the model instances freed, and at a crash

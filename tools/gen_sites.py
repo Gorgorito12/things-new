@@ -95,6 +95,10 @@ SITES = [
     # trainSingleAbstractType: call 44CAC4h (is type 5Dh) in the two train-one-at-a-time tests
     ("TrainSingle1", 0x9CE573, 5),
     ("TrainSingle2", 0x9CE767, 5),
+    # modelCacheLimit: cmp dword [esi+306Ch],1C9C380h (the model cache budget, 30,000,000 bytes), the only two
+    # compares of it: FUN_0041CA8F's first test (then ja 0x6E014C) and the unload loop's test (then jbe 0x46C04D)
+    ("ModelCacheBudget1", 0x46C03D, 10),
+    ("ModelCacheBudget2", 0x6E0174, 10),
     # selectionLimit: mov eax,32h (the 50-unit selection cap), the getter 0x4E0BEE and seven compares
     ("SelectionCap1", 0x4E0BEE, 5),
     ("SelectionCap2", 0x4E0F5F, 5),

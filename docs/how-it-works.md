@@ -451,6 +451,42 @@ FUN_0054D663 adds each adapter display mode (16 B: width, height, ..., Direct3D 
 with `0x54D605` at `0x54D6D1`. The key redirects that call to a wrapper that also adds an
 X8R8G8B8 (16h) mode as R5G6B5 (17h); `0x545A10` maps the formats to bit depths.
 
+### modelCacheLimit
+
+The game keeps the Granny files of its models in a cache with a budget of 30,000,000 bytes. FUN_0041CA8F, called
+every frame at `0x4056EA` on `[0C66240h]+60A0h` (the model manager), runs when `[mgr+60F9h]` is set: while the
+loaded bytes `[mgr+306Ch]` are above the budget (`cmp dword [esi+306Ch],1C9C380h` at `0x46C03D`, then `ja`) and the
+least-recently-used list `[mgr+304Ch]` is not empty, it unloads the list's tail `[mgr+3068h]` through FUN_00AD9FD8
+→ FUN_0046C210, which calls `GrannyFreeFile` (`0x588B30`), and compares again at `0x6E0174` (`jbe` out). Those two
+are the only compares with the budget in the exe.
+
+**The bug:** an unloaded model can still be in use. A visual keeps its Granny model instance (`[visual+24h]`) made
+from the freed file; the next draw finds the cache entry empty and loads the file again (FUN_00405C49 with load = 1)
+into new memory, but the instance still points into the old one. The draw then reads freed memory:
+`GrannyGetSourceSkeleton` returns 0 or garbage at `0x40C07C` and `0x40CC7B`, or the animation lookup at `0x4B6F1F`
+falls inside `granny2.dll`. Stock data rarely goes over the budget; a mod with much more art is over it all game.
+<!-- private:begin -->
+In WoL's 6-player "NEW" Levant, 584 unloads in 9.4 minutes, and 4 crashes in 7 click sweeps (#78,
+`wol-fixes/maps/levant-clicks-20261122.txt`).
+<!-- private:end -->
+
+**The key** rewrites the imm32 of both compares (`0x46C043` and `0x6E017A`) after `VerifyAll`: `MB × 1,000,000`,
+or `0FFFFFFFFh` for 0 / no number, which the unsigned compares never exceed, so the loop never unloads. No hook.
+With `log`, a world tick reads `[[0C66240h]+910Ch]` and logs each new 50 MB step of the loaded bytes.
+
+**Why it is safe:** only the budget changes; the unload path, the loader and the least-recently-used list run as
+before. Models are then freed only by the other callers of FUN_0046C210: traced with the key on, the loader's
+reload (`0x46D80D`) during play and FUN_00589000 (`0x589003`) when the game closes. The cost is memory: every model
+drawn in a session stays loaded (in 13-minute click sweeps of a large mod, 90-120 MB of models instead of 30).
+
+**Not covered: the part declaration's reload.** FUN_004F0187 reads a damage template's part; when its bone name is
+not yet in the global bone name table `0D6F478h` (lookup `0x58E506` at `0x4F0217`), it adds the name (`0x59C213`,
+`bl` = 1); when the model then has no bone of that id (`0x4F010C`), it writes "Invalid bone name ... in part
+declaration for model ..." and, with `bl` set, calls the loader on the loaded model (`0x658C35`), which frees the
+file under the units that draw it: the same fault, once per bone name new to the session. The names come from
+`<definebone>` lines of the anim files, so it is a data error: a part bone that the anim file does not define, or
+that the model lacks. aoe3-blender-tools' `tools/dmg_bones.py` lists such templates.
+
 ### multiarmor
 
 A proto's armor is the damage type byte `[proto+1D3h]` and the value `[proto+C4h]`; the `<Armor>`
