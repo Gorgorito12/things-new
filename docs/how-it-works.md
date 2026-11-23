@@ -2313,6 +2313,47 @@ alpha 0 take the colour of the player of the visual the model hangs on: measured
 texture, blue on player 1's Skirmisher, red on player 2's Outpost, and the local player's blue on a placement ghost. The
 key needs nothing for it.
 
+**The look (2026-11-23).** The game's selection decal (`shadows_selections\selection_circle_64x64.ddt`) is a white line,
+2 texels of a 32-texel half width, alpha 255 on the line and 0 elsewhere, which the game draws flat in the owner's
+colour: about (48, 44, 213) for player 1's (45, 45, 245), 3 to 4 px wide at the default zoom. The range ring now matches
+it: `range_line.ddt` is white with alpha 0 across the whole line (until 2026-11-23 a 150-grey core between white edges of
+alpha 255), so the shader's `diffuse *= lerp(pixelxformColor, 1, diffuse.a)` gives the owner's colour itself. The line is
+0.5 m wide, +0.008 m per metre of radius. The ring used to look pale (in game a core of (195, 178, 250) for blue and
+(255, 179, 162) for red) because of its bump map. `BumpPS` in the game's `sm3_shaders.hlsl` reads the bump as
+(x, y, z, shine) = (A, G, B, R), and adds the sun's shine, scaled by R, over the colour. The old flat bump was
+(R 128, G 128, B 255, A 255): half shine on a normal tilted 45° along the ring. `range_line_bump.ddt` is now
+(0, 128, 255, 128), as the game's own `flat_normal_black_spec.ddt`. Measured after the change: the ring's core is
+(72, 66, 255) for blue, next to the selected Skirmisher's own decal.
+
+**Fills and dashed rings (2026-11-23).** Each ring is one or two models of `effects\uhc_rings`:
+- `range_<N>.xml`: the line.
+- `rangefill_<N>_p<player>.xml`: its fill.
+- `range_<N>_ships.xml`: a dashed line with no fill, for an attack that reaches only ships.
+
+The fill:
+- It is a flat disc 0.22 m over the feet, under the line, reaching the middle of the line.
+- It uses the game's `alphablend` effect, which blends by the texture's alpha.
+- Engine tests in game, 2026-11-23:
+  - the selection decal effect `decalselection` on a mesh drew nothing;
+  - `pixelxform` (with `pixelxformColor = playerColor`) drew the owner's colour, but opaque;
+  - `alphablend` blended, but with no player colour.
+- So each player ID 0 to 8 has its own texture, `rangefill_p<player>.ddt` (the game's `playercolors.xml` `color1`), and the
+  key hangs the owner's disc, `[[unit+44h]+0]`. The placement ghost gets none: a ghost that cannot be placed is drawn with the tint technique, and `alphablend`'s tint draws the disc opaque (seen in game on a Fort's ghost, 2026-11-23).
+- Measured with an alpha-banded test disc: the blend follows the texture's alpha, and the sun about doubles the
+  texture's colour. So the texture holds 0.6 of the colour.
+- Its alpha (DXT5, smooth at these low values) is 0 up to 20 % of the radius, then rises as t^1.2 to the colour's edge
+  value: 0.38 for blue, 0.36 purple, 0.32 red, 0.30 the others.
+
+**Ships only.** An attack counts as ships-only when:
+- its `<Rate>` list (`[action+0Ch]`, count `+10h`, 0Ch-byte entries, `+0` the unittype) is not empty;
+- every type on it is `Ship`, or a type whose every proto in the database (`[db+54h]`, count `+58h`, tested with the
+  is-a test 0x44D7FA) is a Ship. That covers `AbstractWarShip` and a ship's own proto.
+
+Ship's ID comes from the unittype name table `[db+190h]` (0x58E685 / 0x40295B). Each type is worked out once per
+database.
+
+**Caps.** The caps count models: 60 in all, so a filled ring is two.
+
 **`<Flag>AlwaysDisplayRange</Flag>`.** The proto flag parser 0x5F640A (`stdcall(proto, name)`) compares the name with each
 flag it knows, through the string compare 0x4028B4, and returns with nothing for any other name. The key replaces the call of
 its last compare, 0x5F726F, with a hook that runs the compare and, when it does not match, hands the name to the key.

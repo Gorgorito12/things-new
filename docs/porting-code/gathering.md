@@ -736,7 +736,7 @@ Contract: [displayedRange](../porting-to-another-dll.md#displayedrange).
 
 Besides the core helpers, it needs: [`ghostobservers.h`](helpers.md#placement-ghost-observers), [`prototags.h`](helpers.md#proto-tags), [`unitmodels.h`](helpers.md#models-on-a-unit), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `AltQuery` `0x452EA0` (24 B), `PlayerProtoEntry` `0x45311B` (8 B), `CurrentSelectionGroup` `0x453B28` (33 B), `ActionRangeByKey` `0x4946D6` (10 B), `ProtoFlagLastCompare` `0x5F7269` (26 B).
+Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `AltQuery` `0x452EA0` (24 B), `PlayerProtoEntry` `0x45311B` (8 B), `CurrentSelectionGroup` `0x453B28` (33 B), `ActionRangeByKey` `0x4946D6` (10 B), `ProtoFlagLastCompare` `0x5F7269` (26 B).
 
 ### src/features/displayrange.cpp
 
@@ -767,7 +767,15 @@ Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `AltQuery` 
 //
 // Player colour: the rings are aoe3-blender-tools' range meshes (make_rings.py), whose texture marks player colour as a
 // unit's does; the engine tints a model hung on a unit with the unit's owner's colour, and on the ghost with the local
-// player's. Nothing here picks a colour.
+// player's. The line needs nothing from here.
+//
+// Each ring has a fill, a transparent disc under its line graded from clear at the centre to the owner's colour at the
+// edge (effects\uhc_rings\rangefill_<N>_p<player>.xml). The game's alphablend shader has no player colour, so there is
+// one disc per player ID (0 to 8) and this key picks the owner's; the placement ghost gets no fill (a ghost that cannot
+// be placed is tinted, and the tint draws the disc opaque). An attack that
+// reaches only ships (each type of its <Rate> list is Ship or a type whose every proto is a Ship, such as
+// AbstractWarShip) gets a dashed ring with no fill instead (range_<N>_ships.xml); two attacks on one ring size share
+// it, filled if either is not ship-only. The caps count models: a filled ring is two.
 //
 // <Flag>: the proto flag parser 0x5F640A (stdcall(proto, name)) compares the name with each flag it knows and
 // returns with nothing for any other name. Its last compare, the call 0x5F726F of the string compare 0x4028B4, is
@@ -807,7 +815,8 @@ constexpr std::uint32_t kTickMs = 100;
 constexpr std::uint32_t kRangedFlag = 0x0A;  // <RangedLogic> (0x5FAC6D), the bit the stat panel tests for a range
 // Measured (perfprobe, 2026-11-21, 50 selected units on screen, render time a frame): 100 rings 6.6 ms against 6.0
 // with the key off, 200 rings 8.0 against 7.6, inside the noise of the runs (0.6 ms). The caps keep a big selection
-// readable: at most 4 rings a unit and 60 in all, the units with the longest ranges first.
+// readable: at most 4 rings a unit and 60 models in all (a filled ring is two: its line and its fill), the units with
+// the longest ranges first.
 constexpr std::size_t kMaxRingsPerUnit = 4;
 constexpr std::size_t kMaxRings = 60;
 // The sizes aoe3-blender-tools' make_rings.py writes (RANGES).
@@ -819,12 +828,19 @@ using RangeFn = float(__thiscall*)(const char* action, std::int32_t key);
 using KeyQueryFn = bool(__thiscall*)(void* input, std::int32_t key);
 using PlayerByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
 using PlayerProtoFn = const char*(__thiscall*)(const char* player, std::int32_t id);
+using IsAFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using NameBucketFn = std::int32_t(__thiscall*)(const char* table, const char* name);
+using NameFindFn = bool(__thiscall*)(const char* table, const char* name, std::int32_t bucket, std::int32_t* id);
 
 const auto kSelection = reinterpret_cast<SelectionFn>(0x00453B28);
 const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
 const auto kRange = reinterpret_cast<RangeFn>(0x004946D6);
 const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
 const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
+const auto kIsA = reinterpret_cast<IsAFn>(0x0044D7FA);
+const auto kNameBucket = reinterpret_cast<NameBucketFn>(0x0058E685);
+const auto kNameFind = reinterpret_cast<NameFindFn>(0x0040295B);
+constexpr std::int32_t kFillPlayers = 9;  // rangefill_<N>_p0 .. p8 (make_rings.py, RANGE_FILL_PLAYERS)
 
 struct Range {
   bool show = false;    // <DisplayRange>
@@ -833,7 +849,9 @@ struct Range {
 };
 
 std::unordered_map<std::int32_t, Range> g_protos;  // by proto ID; the load fills it
-std::map<std::int32_t, std::int32_t> g_models;     // by radius
+std::map<std::wstring, std::int32_t> g_models;     // by file
+std::unordered_map<std::int32_t, bool> g_shipTypes;  // by unittype ID: only ships are of it
+std::int32_t g_shipType = -2;                         // the unittype Ship; -2 until looked up
 std::map<std::int32_t, std::vector<std::int32_t>> g_hung;  // by unit ID: the models on it
 std::int32_t g_bone = -2;
 const char* g_world = nullptr;
@@ -892,6 +910,8 @@ bool __cdecl ReadMetres(void*, const char* node, char* proto) {
 void NewDatabase(char*) {
   g_protos.clear();
   g_models.clear();
+  g_shipTypes.clear();
+  g_shipType = -2;
   g_hung.clear();
   g_bone = -2;
   g_logLines = 0;
@@ -919,28 +939,114 @@ std::int32_t RingRadius(float metres) {
   return radius;
 }
 
-// The model of a ring of `radius` metres, effects\uhc_rings\range_<N>.xml.
-std::int32_t ModelFor(std::int32_t radius) {
-  const auto found = g_models.find(radius);
+// The model of a file of effects\uhc_rings: range_<N>.xml (a line), range_<N>_ships.xml (dashed), rangefill_<N>_p<k>.xml.
+std::int32_t ModelOf(const wchar_t* path) {
+  const auto found = g_models.find(path);
   if (found != g_models.end()) {
     return found->second;
   }
-  wchar_t path[64];
-  swprintf_s(path, L"effects\\uhc_rings\\range_%d.xml", radius);
   const std::int32_t model = uhc::ModelOfPath(path);
   if (g_log) {
     uhc::Log(L"displayedRange: %ls is model %d", path, model);
   }
   if (model != -1) {  // -1: the table does not exist yet
-    g_models[radius] = model;
+    g_models[path] = model;
   }
   return model;
+}
+
+struct Ring {
+  std::int32_t radius;
+  bool ships;  // every attack on this ring reaches only ships
+};
+
+// The models of one ring for an owner: its line (dashed for ships) and, unless ships only, the owner's fill.
+std::vector<std::int32_t> RingModels(const Ring& ring, std::int32_t player) {
+  std::vector<std::int32_t> models;
+  wchar_t path[80];
+  swprintf_s(path, ring.ships ? L"effects\\uhc_rings\\range_%d_ships.xml" : L"effects\\uhc_rings\\range_%d.xml",
+             ring.radius);
+  const std::int32_t line = ModelOf(path);
+  if (line == -1) {
+    return models;
+  }
+  models.push_back(line);
+  if (!ring.ships && player >= 0 && player < kFillPlayers) {
+    swprintf_s(path, L"effects\\uhc_rings\\rangefill_%d_p%d.xml", ring.radius, player);
+    const std::int32_t fill = ModelOf(path);
+    if (fill != -1) {
+      models.push_back(fill);
+    }
+  }
+  return models;
+}
+
+const char* Database() {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+}
+
+// True when every proto of unittype `type` is a Ship (and there is one): Ship itself, AbstractWarShip, a ship's proto.
+// The protos of the database [db+54h] (count +58h), tested by the is-a test 0x44D7FA; the name table [db+190h] gives
+// Ship's ID. Each type is worked out once per database.
+bool ShipType(std::int32_t type) {
+  const char* database = Database();
+  if (database == nullptr || type < 0) {
+    return false;
+  }
+  if (g_shipType == -2) {
+    const char* table = database + 0x190;
+    std::int32_t id = -1;
+    g_shipType = kNameFind(table, "Ship", kNameBucket(table, "Ship"), &id) ? id : -1;
+    if (g_log) {
+      uhc::Log(L"displayedRange: unittype Ship is %d", g_shipType);
+    }
+  }
+  if (g_shipType < 0) {
+    return false;
+  }
+  if (type == g_shipType) {
+    return true;
+  }
+  const auto found = g_shipTypes.find(type);
+  if (found != g_shipTypes.end()) {
+    return found->second;
+  }
+  const auto* protos = Field<const char* const*>(database, 0x54);
+  const std::int32_t count = Field<std::int32_t>(database, 0x58);
+  bool any = false;
+  bool ships = true;
+  for (std::int32_t i = 0; protos != nullptr && i < count && ships; ++i) {
+    const char* proto = protos[i];
+    if (proto != nullptr && kIsA(proto, type)) {
+      any = true;
+      ships = kIsA(proto, g_shipType);
+    }
+  }
+  g_shipTypes[type] = any && ships;
+  return any && ships;
+}
+
+// An attack that reaches only ships: its <Rate> list ([action+0Ch], count +10h, 0Ch-byte entries, +0 the unittype)
+// is not empty and every type on it is a ship type.
+bool ShipsOnly(const char* action) {
+  const char* rates = Field<const char*>(action, 0x0C);
+  const std::int32_t count = Field<std::int32_t>(action, 0x10);
+  if (rates == nullptr || count <= 0) {
+    return false;
+  }
+  for (std::int32_t i = 0; i < count; ++i) {
+    if (!ShipType(Field<std::int32_t>(rates, 12 * i))) {
+      return false;
+    }
+  }
+  return true;
 }
 
 // The ranged attacks of one tactic, as the attack list 0x487EEE reads them: 12-byte entries at [tactic+44h] (count
 // +48h), +4 the index of the action in the set [tactic+0] (actions [set+1Ch], count +20h); an action counts when it is
 // active (bit 0 of [action+64h]), has the ranged flag and a range entry.
-void TacticRadii(const char* tactic, std::vector<std::int32_t>& radii) {
+void TacticRadii(const char* tactic, std::vector<Ring>& radii) {
   const char* owner = Field<const char*>(tactic, 0x00);
   const char* entries = Field<const char*>(tactic, 0x44);
   const std::int32_t count = Field<std::int32_t>(tactic, 0x48);
@@ -958,7 +1064,7 @@ void TacticRadii(const char* tactic, std::vector<std::int32_t>& radii) {
     }
     const float metres = kRange(action, -1);
     if (metres > 0.5f) {
-      radii.push_back(RingRadius(metres));
+      radii.push_back({RingRadius(metres), ShipsOnly(action)});
     }
   }
 }
@@ -967,20 +1073,23 @@ void TacticRadii(const char* tactic, std::vector<std::int32_t>& radii) {
 // attacks of its current tactic ([mgr+0A8h], an index into the player's proto's tactics [[proto+44h]+10h], count
 // +14h); a tactic with none (an artillery piece limbered to move) takes those of all its tactics, the attacks it
 // unlimbers to.
-// Largest first, each size once, at most kMaxRingsPerUnit.
-void Trim(std::vector<std::int32_t>& radii) {
-  std::sort(radii.begin(), radii.end(), [](std::int32_t a, std::int32_t b) { return a > b; });
-  radii.erase(std::unique(radii.begin(), radii.end()), radii.end());
+// Largest first, each size once (filled if any of its attacks is not ship-only), at most kMaxRingsPerUnit.
+void Trim(std::vector<Ring>& radii) {
+  std::sort(radii.begin(), radii.end(), [](const Ring& a, const Ring& b) {
+    return a.radius != b.radius ? a.radius > b.radius : a.ships < b.ships;
+  });
+  radii.erase(std::unique(radii.begin(), radii.end(), [](const Ring& a, const Ring& b) { return a.radius == b.radius; }),
+              radii.end());
   if (radii.size() > kMaxRingsPerUnit) {
     radii.resize(kMaxRingsPerUnit);
   }
 }
 
-std::vector<std::int32_t> WantedRadii(const char* unit, const Range& range) {
-  std::vector<std::int32_t> radii;
+std::vector<Ring> WantedRadii(const char* unit, const Range& range) {
+  std::vector<Ring> radii;
   if (!range.fixed.empty()) {
     for (const float metres : range.fixed) {
-      radii.push_back(RingRadius(metres));
+      radii.push_back({RingRadius(metres), false});
     }
   } else {
     const char* proto = Field<const char*>(unit, 0x5C);
@@ -1006,11 +1115,11 @@ std::vector<std::int32_t> WantedRadii(const char* unit, const Range& range) {
 
 // The rings of a proto with no unit (the placement ghost): its <DisplayedRange> values, or the ranged attacks of every
 // tactic of the player's copy (a building has no current tactic before it stands).
-std::vector<std::int32_t> ProtoRadii(const char* proto, const Range* range) {
-  std::vector<std::int32_t> radii;
+std::vector<Ring> ProtoRadii(const char* proto, const Range* range) {
+  std::vector<Ring> radii;
   if (range != nullptr && !range->fixed.empty()) {
     for (const float metres : range->fixed) {
-      radii.push_back(RingRadius(metres));
+      radii.push_back({RingRadius(metres), false});
     }
   } else {
     const char* set = Field<const char*>(proto, 0x44);
@@ -1042,7 +1151,8 @@ struct Want {
   std::int32_t id;
   char* unit;
   std::vector<std::int32_t> models;
-  std::vector<std::int32_t> radii;  // each model's
+  std::vector<Ring> rings;  // each model's ring
+  std::vector<bool> fills;  // each model: the ring's fill
   std::int32_t largest;
 };
 
@@ -1082,13 +1192,16 @@ void Tick(char* world, std::int32_t) {
     if (found == g_protos.end() || !(found->second.always || (found->second.show && alt))) {
       continue;
     }
-    Want want{ids[i], unit, {}, {}, 0};
-    for (const std::int32_t radius : WantedRadii(unit, found->second)) {
-      const std::int32_t model = ModelFor(radius);
-      if (model != -1) {
-        want.models.push_back(model);
-        want.radii.push_back(radius);
-        want.largest = std::max(want.largest, radius);
+    Want want{ids[i], unit, {}, {}, {}, 0};
+    const char* owner = Field<const char*>(unit, 0x44);
+    const std::int32_t player = owner == nullptr ? -1 : Field<std::int32_t>(owner, 0);
+    for (const Ring& ring : WantedRadii(unit, found->second)) {
+      const std::vector<std::int32_t> models = RingModels(ring, player);
+      for (std::size_t k = 0; k < models.size(); ++k) {
+        want.models.push_back(models[k]);
+        want.rings.push_back(ring);
+        want.fills.push_back(k > 0);
+        want.largest = std::max(want.largest, ring.radius);
       }
     }
     if (!want.models.empty()) {
@@ -1100,7 +1213,8 @@ void Tick(char* world, std::int32_t) {
   for (Want& want : wants) {  // each unit's rings are largest first
     const std::size_t keep = std::min(budget, want.models.size());
     want.models.resize(keep);
-    want.radii.resize(keep);
+    want.rings.resize(keep);
+    want.fills.resize(keep);
     budget -= keep;
   }
   std::erase_if(wants, [](const Want& want) { return want.models.empty(); });
@@ -1145,8 +1259,9 @@ void Tick(char* world, std::int32_t) {
         hung.push_back(model);
         if (g_log && g_logLines < kMaxLogLines) {
           ++g_logLines;
-          uhc::Log(L"displayedRange: ring of %d m on unit %d (%hs)%ls", want.radii[k], want.id,
-                   Field<const char*>(Field<const char*>(want.unit, 0x5C), 0x10), alt ? L", Alt held" : L"");
+          uhc::Log(L"displayedRange: %ls of %d m on unit %d (%hs)%ls%ls", want.fills[k] ? L"fill" : L"ring",
+                   want.rings[k].radius, want.id, Field<const char*>(Field<const char*>(want.unit, 0x5C), 0x10),
+                   want.rings[k].ships ? L", ships only (dashed)" : L"", alt ? L", Alt held" : L"");
         }
       }
     }
@@ -1183,15 +1298,16 @@ void __stdcall OnGhost(char* ghost) {
     const char* proto = player == nullptr ? nullptr : kPlayerProto(player, protoId);
     if (proto != nullptr) {
       const auto found = g_protos.find(Field<std::int32_t>(proto, 0x04));
-      for (const std::int32_t radius : ProtoRadii(proto, found == g_protos.end() ? nullptr : &found->second)) {
-        const std::int32_t model = ModelFor(radius);
-        if (model != -1) {
-          g_ghost.models.push_back(model);
-          if (g_log && g_logLines < kMaxLogLines) {
-            ++g_logLines;
-            uhc::Log(L"displayedRange: ring of %d m on the placement ghost (%hs)", radius,
-                     Field<const char*>(proto, 0x10));
-          }
+      for (const Ring& ring : ProtoRadii(proto, found == g_protos.end() ? nullptr : &found->second)) {
+        // No fill on the ghost: a ghost that cannot be placed is drawn with the game's tint, and the alphablend
+        // shader's tint technique draws the disc opaque (seen in game, 2026-11-23, a Fort's ghost).
+        const std::vector<std::int32_t> models = RingModels(ring, -1);
+        g_ghost.models.insert(g_ghost.models.end(), models.begin(), models.end());
+        if (!models.empty() && g_log && g_logLines < kMaxLogLines) {
+          ++g_logLines;
+          uhc::Log(L"displayedRange: ring of %d m on the placement ghost (%hs)%ls", ring.radius,
+                   Field<const char*>(proto, 0x10),
+                   ring.ships ? L", ships only (dashed)" : L"");
         }
       }
     }
@@ -1244,7 +1360,7 @@ Outcome ApplyDisplayedRange(const Config& config) {
   }
   if (!VerifyAll("displayedRange", {&sites::kCurrentSelectionGroup, &sites::kUnitById, &sites::kAltQuery,
                                     &sites::kActionRangeByKey, &sites::kProtoFlagLastCompare, &sites::kPlayerById,
-                                    &sites::kPlayerProtoEntry}) ||
+                                    &sites::kPlayerProtoEntry, &sites::kIsA}) ||
       (g_placement && !AddGhostObserver(&OnGhost)) ||
       !VerifyUnitModels("displayedRange") || !AddProtoTagHandler("DisplayRange", &ReadShow) ||
       !AddProtoTagHandler("DisplayedRange", &ReadMetres) || !AddProtoTagHandler("AlwaysDisplayRange", &ReadAlways) ||

@@ -181,11 +181,11 @@ hcTargetTechs-wol 2 18 2
 hcTargetTechs-wol-control 2 18 2
 unitResourceAuras-torp-wol 4 12 1
 unitResourceAuras-torp-wol-control 4 12 1
-displayedRange-wol 3 36 3
+displayedRange-wol 4 23 2
 displayedRange-wol-control 5 33 3
-displayedRange-wol-ally 2 12 1
-displayedRange-wol-enemy 1 18 1.5
-displayedRange-wol-placement 2 24 2
+displayedRange-wol-ally 5 12 1
+displayedRange-wol-enemy 2 12 1
+displayedRange-wol-placement 4 15 1.3
 displayedRange-wol-placement-control 2 16 2
 linkedResource-wol 2 12 1
 linkedResource-wol-control 2 12 1
