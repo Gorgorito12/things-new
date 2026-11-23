@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Monday 2026-11-23 09:18 | [`dmgPartBoneFix`](bug-fixes.md#dmgpartbonefix) | Added. Stops the game from reloading a 3D model in use when a damage template names a bone the model lacks, the other cause of the Granny crashes (WoL #78). | Nothing; `wol-fixes/art-dmg-bones-20261123/` fixes the data itself. |
 | Monday 2026-11-23 08:38 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Monday 2026-11-23 08:05 | [`modelCacheLimit`](bug-fixes.md#modelcachelimit) | Added. Stops the game from unloading 3D models that units still use, the cause of the Granny crashes in big games (WoL #78). | The two data fixes in `wol-fixes/art-dmg-bones-20261123/`. |
 | Monday 2026-11-23 07:59 | [`resendableCards`](#resendablecards) | Added. `<resendeveryage>1</resendeveryage>` in a home city card: the card can be sent again each time its player reaches a new age (its `<maxcount>` back, no stacking across ages). | The tag on the cards that want it. |

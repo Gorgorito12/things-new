@@ -485,7 +485,38 @@ not yet in the global bone name table `0D6F478h` (lookup `0x58E506` at `0x4F0217
 declaration for model ..." and, with `bl` set, calls the loader on the loaded model (`0x658C35`), which frees the
 file under the units that draw it: the same fault, once per bone name new to the session. The names come from
 `<definebone>` lines of the anim files, so it is a data error: a part bone that the anim file does not define, or
-that the model lacks. aoe3-blender-tools' `tools/dmg_bones.py` lists such templates.
+that the model lacks. aoe3-blender-tools' `tools/dmg_bones.py` lists such templates; [dmgPartBoneFix](#dmgpartbonefix)
+removes the reload.
+
+### dmgPartBoneFix
+
+**The path (FUN_004F0187, a damage template's `<part>`):** the bone attribute is looked up in the global bone name
+table `0D6F478h` (`0x58E506` at `0x4F0217`); a name not there yet is added (`0x59C213` at `0x658B6A`, `bl` = 1).
+The model's own map from those ids to its skeleton (`0x4F010C` → `[model+10h]`, `0x484329`) is built when the model
+is loaded, so a model loaded before its bone names were in the table has no entry for them: `0x4F0240` (`jle
+658BA4h`) writes "Invalid bone name \"%s\" in part declaration for model \"%s\"" (`0xC0B878`). Then, only when `bl`
+is set (`0x658C18`: `test bl,bl / je 658C3Ah`), it calls the loader FUN_0046D7C3 on the loaded cache entry
+(`0x658C35`); the loader's branch for a loaded entry (`0x46E7ED`) unloads the Granny file (FUN_00AD5DCF) and loads it
+again, so the new map has the name. Units that draw the model keep instances of the freed file, and the next draw can
+crash (`granny2.dll+0x2C8CD`). Either way the code continues at `0x658C3A` → `0x4F0246` and keeps the part with its
+bone id. With `bl` clear (the name was already in the table, e.g. the second model that meets it) there is no reload:
+the part stays, and in that model it matches no bone. REA `ev_5cd8bb32…` (FUN_004F0187), `ev_82ec70b4…` (FUN_0046D7C3);
+capstone for `0x658B2F..0x658C9D`.
+
+**The key** makes every case take the `bl` = 0 path: `je 658C3Ah` (`74 1E` at `0x658C1A`) becomes `jmp` (`EB 1E`),
+after `VerifyAll` of the 34 bytes `0x658C18..0x658C39` (the test, the jump, the reload call). With `log`, a 5-byte
+`jmp` at `0x658C18` goes to `UhcPartBoneReloadHook` (`dmgpartbone_hooks.asm`), which, when `bl` is set, logs the bone
+(`[[esp+44h]+4]`) and the model (`[edi+4]`) and leaves through `jmp 658C3Ah`.
+
+**Why it is safe:** the instructions skipped are the reload and its argument setup (`ebx` is reloaded at `0x4F0246`,
+`ebp` cleared there); what follows is the stock path the game already takes for every `bl` = 0 case. Only the
+model's bone map is not rebuilt, so that part has no bone in that model until the model is loaded again (with
+[modelCacheLimit](#modelcachelimit) 0, not during the game): a debris piece or a falling-tree part is missing, the
+rest of the damage and destruction is unchanged. The other caller of `0x59C213` in this area (`0x658D70`, from
+FUN_004F0540's bone lookup) does not reload. Traced (2026-11-23, `tools/re/trace_frees.py --parts`): with the key
+the same invalid parts are met and no model is unloaded or reloaded for them; every other unload is the same.
+Simulation: none expected (inferred, not traced): a model's bone map is drawing state, and which models are loaded,
+and in which order the bone names are met, already differs between players.
 
 ### multiarmor
 

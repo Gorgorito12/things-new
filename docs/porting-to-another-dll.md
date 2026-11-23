@@ -890,6 +890,25 @@ Code: [game-files](porting-code/game-files.md#modelcachelimit).
   follows each one's camera); the key only changes when the local machine frees a model file.
 - **The design:** [how-it-works.md](how-it-works.md#modelcachelimit).
 
+### dmgPartBoneFix
+
+Code: [game-files](porting-code/game-files.md#dmgpartbonefix).
+
+- **Site:** `0x658C18` in the part declaration FUN_004F0187, after its "Invalid bone name" error: `84 DB` (`test
+  bl,bl`), `74 1E` (`je 658C3Ah`), then the reload's argument setup and the call `0x658C35` of the model loader
+  FUN_0046D7C3 on the loaded model. Verify the 34 bytes up to `0x658C3A`.
+- **Without log:** one byte, `74` → `EB` at `0x658C1A` (the `je` becomes `jmp`). In WoL's exe that is file offset
+  `0x258C1A`.
+- **With log:** a 5-byte `jmp` at `0x658C18` to a hook that, when `bl` is set, reads the bone text `[[esp+44h]+4]` and
+  the model name `[edi+4]` (UTF-16 game strings), logs them, and leaves through `jmp 658C3Ah`; with `bl` clear it goes
+  there at once. Preserve every register around the log call (`pushad`).
+- **Must preserve:** the continuation `0x658C3A` (it frees the error string and jumps back to `0x4F0246`, which
+  reloads `ebx` and clears `ebp`).
+- **Why it can differ between players:** it changes when a model file is loaded again and whether a damage part
+  finds its bone: drawing state, which already differs between players (model detail, what each camera drew, the
+  order the bone names were met). Inferred, not traced: no simulation value reads a model's bone map.
+- **The design:** [how-it-works.md](how-it-works.md#dmgpartbonefix).
+
 ### xsErrorLog
 
 Code: [game-files](porting-code/game-files.md#xserrorlog).

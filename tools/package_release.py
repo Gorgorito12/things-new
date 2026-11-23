@@ -240,6 +240,7 @@ nowalkfarm                    farm gatherers keep their first spot
 repairWallGlobal              UI syscall repairWallGlobal(): repair all walls
 compatMode                    32-bit display modes also offered at 16 bits
 modelCacheLimit [MB] [log]    the model cache unloads no model in use (0: never; stock 30 MB)
+dmgPartBoneFix [log]          a damage part's unknown bone no longer reloads the model in use
 customSyscalls [files]        load .upl plugins and their XS syscalls
 customCheats                  the cheats plugins register work in the chat
 asianCivs Civ ... [log]       these civs count as Asian civs (consulate, wonders)

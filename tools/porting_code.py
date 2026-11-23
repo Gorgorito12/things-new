@@ -57,6 +57,7 @@ PAGES = {
         "fastLastInLine": ["src/features/lastinline.cpp", "src/hooks/lastinline_hooks.asm"],
         "rendererOption": ["src/features/renderer.cpp"],
         "modelCacheLimit": ["src/features/modelcache.cpp"],
+        "dmgPartBoneFix": ["src/features/dmgpartbone.cpp", "src/hooks/dmgpartbone_hooks.asm"],
         "menuOptions": ["src/menuoptions.h", "src/menuoptions.cpp", "src/hooks/menuoptions_hooks.asm"],
         "xsErrorLog": ["src/features/xslog.cpp", "src/hooks/xslog_hooks.asm"],
         "lanAutoStart": ["src/features/lanautostart.cpp"],
