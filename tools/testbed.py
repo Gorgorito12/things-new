@@ -26,7 +26,7 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
   shot <out.png> [scale]     PrintWindow capture, works while the window is covered
   record <out.mp4> [seconds] [fps] [width] [--watch ID|Proto,...] [--log REGEX] [--frame ID] [--follow ID]
          [--select ID|Proto,...] [--close Z] [--crop WxH[@cx,cy]] [--hover X,Y] [--master <out.mkv>]
-         [--background] [--log-top] [--perf] [--perf-csv <out.csv>] [--gold P,P]
+         [--background] [--log-top] [--perf] [--perf-csv <out.csv>] [--gold P,P [--gold-resource N]]
                              films the window in real time to an H.264 MP4 (default 30 s, 10 fps,
                              1280 px wide); needs ffmpeg (UHC_FFMPEG, PATH or
                              C:\\Tools\\ffmpeg\\ffmpeg.exe). --watch draws the game time and the
@@ -45,7 +45,8 @@ Usage: python -I tools/testbed.py [--bed <folder>] <command> ...
                              --perf the performance numbers once a second (fps, longest frame,
                              frames over 50 ms, simulation speed, main-thread CPU, memory; the
                              frame numbers need perfStats in the cfg), --perf-csv also saves them,
-                             --gold 1,2 shows those players' gold, read from the game
+                             --gold 1,2 shows those players' gold, read from the game (--gold-resource N:
+                             resource N instead, e.g. 4, the faith of the faithResource pack)
   profile                    the bed's exe build, cfg path, AI and map folders, My Games folder
   profile backup             copy the bed's player profiles (Users3\\*.xml) to .bak-uhc-<date>
   profile hc [civ | file]    list the saved single-player home cities and their civs; with a civ
@@ -1404,9 +1405,10 @@ class Overlay:
     the hit points of the watched units (unit IDs or proto names, matched again every second, so new
     units appear and dead ones go) and the latest UHC.log lines that match a pattern."""
 
-    def __init__(self, bed, watch, log_pattern, follow=None, perf=None, select=None, look=None, gold=()):
+    def __init__(self, bed, watch, log_pattern, follow=None, perf=None, select=None, look=None, gold=(), gold_res=0):
         self.proc = process()
         self.gold, self.gold_values = list(gold), {}  # --gold: players whose gold is shown
+        self.gold_res = gold_res  # --gold-resource: the resource shown instead of gold (0)
         self.perf = perf
         self.bed, self.follow, self.next_follow = bed, follow, 0.0
         self.follow_center = None
@@ -1471,8 +1473,9 @@ class Overlay:
             self.read_log()
             for unit in D.units(proc) if self.gold else []:
                 player = D.unit_player(proc, unit)
-                if player in self.gold:  # [[unit+44h]+230h]: the stockpile, gold first, xored with [C6DF14h]
-                    raw = proc.u32(proc.u32(proc.u32(unit + 0x44) + 0x230)) ^ proc.u32(0xC6DF14)
+                if player in self.gold:  # [[unit+44h]+230h]: the stockpile, gold first, entry i xored with [C6DF14h+4i]
+                    i = self.gold_res
+                    raw = proc.u32(proc.u32(proc.u32(unit + 0x44) + 0x230) + 4 * i) ^ proc.u32(0xC6DF14 + 4 * i)
                     self.gold_values[player] = struct.unpack("<f", struct.pack("<I", raw))[0]
         lines = [f"game time {(game_time(proc) or 0) / 1000:.1f} s"]
         if len(self.units) > 6:  # many units: one count per proto and player instead of one line each
@@ -1490,7 +1493,8 @@ class Overlay:
         if not self.ids and not self.protos:
             lines = lines[:1]  # --perf or --log alone: no unit lines
         if self.gold:
-            lines.append("gold: " + ", ".join(f"player {p} {self.gold_values.get(p, 0):.0f}" for p in self.gold))
+            label = ["gold", "wood", "food", "oil", "faith", "xp", "ships", "trade"][self.gold_res]
+            lines.append(f"{label}: " + ", ".join(f"player {p} {self.gold_values.get(p, 0):.{1 if self.gold_res else 0}f}" for p in self.gold))
         self.lines = lines
         # Without the feature's name: the frame only has room for what it says.
         self.bottom = [re.sub(r"^\w+: ", "", line) for line in self.log_lines[-4:]]
@@ -2031,8 +2035,9 @@ def main(argv):
             crop = (cw, ch, cx, cy)
         perf_csv = args[args.index("--perf-csv") + 1] if "--perf-csv" in args else None
         gold = [int(w) for w in args[args.index("--gold") + 1].split(",")] if "--gold" in args else []
+        gold_res = int(args[args.index("--gold-resource") + 1]) if "--gold-resource" in args else 0
         flags = {i for f in ("--watch", "--log", "--follow", "--frame", "--select", "--close", "--crop", "--hover",
-                             "--master", "--perf-csv", "--gold")
+                             "--master", "--perf-csv", "--gold", "--gold-resource")
                  if f in args for i in (args.index(f), args.index(f) + 1)}
         look = frame if frame is not None else follow
         # With the camera locked the cursor can do what it likes: an edge no longer scrolls it, and
@@ -2066,7 +2071,7 @@ def main(argv):
         if "--perf" in args or perf_csv:
             pid = bed_pid() or sys.exit("testbed: the game is not running")
             perf = PerfReader(pid, perf_csv)
-        overlay = (Overlay(bed, watch, log_pattern, follow, perf, select, look, gold)
+        overlay = (Overlay(bed, watch, log_pattern, follow, perf, select, look, gold, gold_res)
                    if watch or log_pattern or follow is not None or perf or select else None)
         if overlay is not None:
             overlay.selected = set(ids)
