@@ -406,6 +406,8 @@ autoGatherFrom [log]          a unit idle for a few seconds gathers from what it
                               <AutogatherFrom> names, if one is within the action's range
 buildingGather [log]          a building with a Gather action gathers from what is within its range
 herdWalkAwayFix [log]         a fattened herdable that walks away from its pen or nomad stays there
+faithResource [log]           optional: resource 4 (SkillPoints) a plain resource, cut from the home city;
+                              a Gather of it plays the action's own <anim>
 transformChecks [log]         transform buttons grey out with the reason; a transform respects BuildLimit
 lanAutoStart [host [rules=N] | join <address>]   from the main menu straight to hosting or joining
                               a LAN game; +uhcLanHost / uhcLanJoin="<address>" on the command line

@@ -125,6 +125,7 @@ PAGES = {
         "autoGatherFrom": ["src/features/autogatherfrom.cpp"],
         "buildingGather": ["src/features/buildinggather.cpp", "src/hooks/buildgather_hooks.asm"],
         "herdWalkAwayFix": ["src/features/herdwalkaway.cpp"],
+        "faithResource": ["src/features/faith.cpp", "src/hooks/faith_hooks.asm"],
         "deadReplacementAtZeroInventory": ["src/features/deadreplacement.cpp", "src/hooks/deadrepl_hooks.asm"],
     }),
     "buildings": ("Buildings and training", {

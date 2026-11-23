@@ -5529,6 +5529,57 @@ The return value is passed on (the caller ignores it).
 **Why it is safe.** One call site, no other caller changed; the anchor is simulation state that the game saves and
 the leash already uses; the point depends only on the two units' positions. The flee keeps its own random point.
 
+### faithResource
+
+An optional key: resource 4 (`SkillPoints`) made a plain resource for a mod to gather and spend (a faith that
+villagers gather by praying, with the mod's data). In the stock game resource 4 stands for the home city's skill points
+in three places (two of them changed), and a Gather action never plays its own animation; the key changes the
+reads, the bank and the animation.
+
+**The reads.** The skill point total `0x5011C6` (`int thiscall(player)`) returns int(resource 4) plus the home city's
+unspent skill points `[[player+84h]+1F4h]`. Six places call it instead of reading the list entry: the KB getter
+behind `kbResourceGet` (`0x86B637`), the AI's KB copy loops (`0x86D8C5`, `0x8767D2`), the `{resource()}` text of the
+interface (`0x63C8C6`, from `0x453EA9`), `trPlayerResourceCount` (`0x98859E`, a tail jump) and the per-player
+statistics snapshot (`0x501211`). The key turns its `je 501209h` (`0x501201`) into `jmp`: the function returns
+int(resource 4) alone, as it does for a player with no home city, so every caller reads the plain amount. The home
+city's own uses of its skill points (buying a card, `0x857DB2`: `[HC+1F4h]` ≥ 1, decrement) never went through it.
+REA `ev_ab8acb45…`.
+
+**The bank.** At the end of a game FUN_00852924 (`thiscall(homecity)`, four callers: `0x7074D7`, `0x862C41` before the
+home city is written, `0x865579`, `0x980344`) adds resource 5 to the home city's XP and resource 4 to its skill points,
+then sets both resources to 0. A 6-byte `jmp` at `0x852A3B` replaces `add [esi+1F4h],edx` with `UhcFaithBankHook`,
+which adds nothing (with `log` it writes EDX, the amount, and the skill points) and returns to `0x852A41`; `EB 0C` at
+`0x852A4A` jumps over the clear of resource 4 (`mov ecx,[esi+8]` / three pushes / `call 49A8C5h`, a balanced call), so
+the amount stays in the game if a caller ever runs before its end. The XP half, the x87 sequence around the add and
+the clear of resource 5 are untouched. REA `ev_b5972f48…`.
+
+**Not changed: the AI's card budget.** FUN_006AED5E gives each AI player with a home city a level from the human
+players (`[HC+54h]`), sets its resource 4 to that level + 15 (`0x6AEEDC`, `0x6AF052`, two branches) and resets its
+home city (`0x85A63E`, skill points level − 1). The AI buys its home city cards at the start from resource 4: in a
+stock skirmish its resource 4 went 20 → 6 (14 cards) while its home city's points stayed 9. Zeroing that seed (the
+key's first version) left the AI with no cards, so the key keeps it, and an AI starts with what it did not spend (6
+there) as faith. An AI script that reads its budget through `kbResourceGet(cResourceSkillPoints)` (the stock
+`buyCards` rule does) now gets resource 4 alone; adding `kbGetHCLevel(cMyID) - 1` gives back the stock total (with
+it the same 14 cards were bought with the key on).
+
+**The animation.** The Gather action's state change FUN_004ED254 stores the animation to play in `[action+74h]` from
+the target's unit types only: a mine, a tree, a farm, a hunt, a fish, a crate, a fire pit (DanceActive), else
+GatherBush when the model has it, else GatherFarm; the chain starts at `0x4ED355` and every case leaves to `0x4ED3FA`.
+The tactics action's `<anim>` (`[[action+4]+58h]`) is never read, so villagers sent to a church that holds faith
+danced, whatever the `<anim>`. A 7-byte `jmp` at `0x4ED355` goes to `UhcFaithGatherAnimHook`: when `[action+70h]` (the
+resource gathered) is 4, the tactics action has an anim (≥ 0) and the gatherer's model has it (`0x471D24(unit,
+anim)` ≥ 0, the lookup the attack code uses), it stores that anim and leaves to `0x4ED3FA`; otherwise it redoes
+`mov ecx,[edi+5Ch] / cmp ecx,ebx / je 4ED36Bh` and continues at `0x4ED35C` or `0x4ED36B`.
+
+**Why it is safe.** Every write is a few bytes checked by `VerifyAll` (`FaithTotal`, `FaithBank`, `FaithBankClear`,
+`FaithGatherAnim` and the two continuations, and `0x471D24`). Only resource 4 and its home city
+link change: a mod that uses resource 4 for skill points must not turn the key on. At `0x852A3B` the flags of the
+skipped `add` are dead (`fldcw` and a call follow). At `0x4ED355` EAX, ECX and EDX are dead (every stock case sets
+ECX at once; EAX and EDX are set before they are read after `0x4ED3FA`), ESI/EDI/EBX/EBP are kept, and a gather of
+food, wood, gold, XP or oil takes the stock chain unchanged. Simulation: the amounts are simulation state, the same
+on every machine with the key, so every player needs it (multiplayer not tested). Saved games keep resource 4 as
+any resource (tested).
+
 ### transformChecks
 
 **The stock transform.** `uiTransformSelectedUnit("Proto")` (UI command 0x7E7193) looks the proto up and sends a

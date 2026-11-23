@@ -103,6 +103,23 @@ SITES = [
     # je 658C3Ah / the model loader's call 0x658C35 on the loaded entry (a reload while units draw it), up to the
     # continuation 0x658C3A
     ("PartBoneReload", 0x658C18, 0x22),
+    # faithResource: the skill point total 0x5011C6 (resource 4 plus the home city's skill points): je 501209h /
+    # add eax,[esi+1F4h], up to its pop esi at 0x501209
+    ("FaithTotal", 0x501201, 9),
+    # faithResource: the home city bank FUN_00852924: add [esi+1F4h],edx (resource 4 into the skill points) /
+    # fldcw [esp+1Ch], the continuation 0x852A41 (call 49A8C5h, which clears resource 5)
+    ("FaithBank", 0x852A3B, 0x0F),
+    # faithResource: the same function's clear of resource 4: mov ecx,[esi+8] / push 0 / push 0 / push 4 /
+    # call 49A8C5h, up to its pop edi at 0x852A58
+    ("FaithBankClear", 0x852A4A, 0x0F),
+    # faithResource: the Gather action's state change FUN_004ED254 picks the gather animation [action+74h] from the
+    # target's unit types, never from the tactics <anim>: mov ecx,[edi+5Ch] / cmp ecx,ebx / je 4ED36Bh (the first
+    # test, unit type 8 -> GatherMine), up to push 8 at 0x4ED35C; the shared continuation 0x4ED3FA
+    # (mov ecx,[edi+5Ch]) and the next test 0x4ED36B. The hook calls the model anim lookup 0x471D24
+    # (ShotsAnimVariant's site, verified with it)
+    ("FaithGatherAnim", 0x4ED355, 9),
+    ("FaithGatherAnimSet", 0x4ED3FA, 3),
+    ("FaithGatherAnimNext", 0x4ED36B, 3),
     # selectionLimit: mov eax,32h (the 50-unit selection cap), the getter 0x4E0BEE and seven compares
     ("SelectionCap1", 0x4E0BEE, 5),
     ("SelectionCap2", 0x4E0F5F, 5),

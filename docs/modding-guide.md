@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Monday 2026-11-23 13:56 | [`faithResource`](#faithresource) | Added. Optional: resource 4 becomes faith, gathered by villagers praying at their church or mosque, cut from the home city's skill points; a faith Gather plays its own animation. | The opt-in pack `wol-fixes/faith/` (and `wol-fixes/faith-panel/` for the panel row). |
 | Monday 2026-11-23 09:18 | [`dmgPartBoneFix`](bug-fixes.md#dmgpartbonefix) | Added. Stops the game from reloading a 3D model in use when a damage template names a bone the model lacks, the other cause of the Granny crashes (WoL #78). | Nothing; `wol-fixes/art-dmg-bones-20261123/` fixes the data itself. |
 | Monday 2026-11-23 08:38 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Monday 2026-11-23 08:05 | [`modelCacheLimit`](bug-fixes.md#modelcachelimit) | Added. Stops the game from unloading 3D models that units still use, the cause of the Granny crashes in big games (WoL #78). | The two data fixes in `wol-fixes/art-dmg-bones-20261123/`. |
@@ -5312,6 +5313,7 @@ Resources, gatherers, and what pays for them.
 | [`cratePriority`](#cratepriority) | The order in which a civ's units gather crates, instead of the exe's hardcoded one. | **new** | One line per civ in `wol.cfg`. | confirmed |
 | [`enableFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`enableRectFarmAnim`](#enablefarmanim-enablerectfarmanim-and-farmingradius), [`farmingRadius`](#enablefarmanim-enablerectfarmanim-and-farmingradius) | Mill and Rice Paddy gathering on WoL's farm buildings, and a gather area per building. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`nowalkfarm`](#nowalkfarm) | Gatherers on a farm keep the spot they take. | **in `wol.cfg`** | Nothing. | confirmed |
+| [`faithResource`](#faithresource) | Optional: resource 4 becomes faith, gathered by villagers praying at their church or mosque, cut from the home city's skill points; a faith Gather plays its own animation. | **new** | The opt-in pack `wol-fixes/faith/` (and `wol-fixes/faith-panel/` for the panel row). | confirmed (single player) |
 | [`marketUnits`](#marketunits) | Owning a unit of a listed proto (`WOLMarketGreek`, `SoukCaravan`, …) counts as owning a Market. | **in `wol.cfg`** | Nothing. | confirmed |
 
 #### autoGatherFrom
@@ -6123,6 +6125,86 @@ nowalkfarm
 - **Simulation:** changes where units stand: every player needs the same line.
 - **Status:** confirmed (single player, on WoL): four settlers on a Mill moved 0 m in 60 s with the key and
   33–47 m each without it, gathering in both cases.
+
+#### faithResource
+
+*Optional: villagers pray at their church or mosque to gather faith, a resource of its own beside oil.*
+
+**Added:** Monday 2026-11-23 13:56 · **Filmed in WoL:** Monday 2026-11-23 13:56
+
+**Optional.** Off unless its line is in `wol.cfg`, and it does nothing visible without the data and animation pack
+`wol-fixes/faith/` (an opt-in pack: `apply_fix.py` applies it, `--restore` takes it back byte for byte). Turn on both,
+or neither. The panel's faith row is another opt-in pack, `wol-fixes/faith-panel/`.
+
+![faithResource in WoL](media/faithResource-wol.gif)
+
+*In WoL, key and pack on (a scenario, player 1 Ethiopian with four European `Settler` villagers, two of each sex; at
+17 s a trigger sends them to the Church):* they walk to it and kneel with their hands together; the Church's tooltip
+counts 4 gatherers of 10, and faith (`faith: player 1`, resource 4 read from the game) climbs from 0 by 1.0 a second.
+[Full video (MP4)](media/faithResource-wol.mp4).
+
+![faithResource in WoL, Ottomans](media/faithResource-ottomans-wol.gif)
+
+*In WoL, key and pack on (a skirmish on a test map with the Istanbul home city, level 10, 9 unspent skill points; four
+Ottoman settlers sent to the Church, which the Ottomans see as a mosque):* they kneel, sit back and bow to the ground;
+faith starts at 0, not at the home city's 9, and rises 1.0 a second. [Full video (MP4)](media/faithResource-ottomans-wol.mp4).
+
+![faithResource in WoL, key and pack off](media/faithResource-wol-control.gif)
+
+*In WoL, key and pack off (the first scene):* the same order walks the settlers to the Church, where they stand idle:
+the Church holds no resource and the tooltip has no gatherer count; faith stays 0.
+[Full video (MP4)](media/faithResource-wol-control.mp4).
+
+```
+faithResource [log]
+```
+
+- **Effect:** the engine's resource 4 (`SkillPoints`, unused by WoL's data) becomes a plain resource, faith. In the
+  stock game it stands for the home city's skill points: every read adds the home city's unspent skill points (the
+  counter would start at 9 with a level-10 home city), the end of a game adds it to the home city's skill points (the
+  faith gathered would become free cards in the profile), and an AI's is set to its home city level + 15 at the start
+  (its budget for home city cards). The key removes the first two (the AI keeps its card budget, and starts with what
+  it did not spend as faith: 6 in the test), and makes a Gather action of faith play the action's own `<anim>` (the game picks a
+  gather animation from the target only, so villagers danced at a church). Oil (resource 3), XP and its banking into
+  the home city, the home city's skill points and every other gather animation are unchanged.
+- **The pack** (`wol-fixes/faith/README.txt` lists every change): the Church, the Greek Temple and the Egyptian and
+  Saudi Temple Caravans hold faith (`<InitialResource>` and `<CarryCapacity>` of `SkillPoints`, `<GathererLimit>10`,
+  `UnlimitedSupply`); 22 villager protos of the Christian and Islamic civs get a Gather action `Pray`
+  (`<anim>Pray</anim>`, 0.25 faith a second each, the Maypole's rate) in their tactics and protos; the Zulu are left out
+  by their Age0 tech; 20 villager anim files get `PrayIn`, `Pray` and `PrayOut`, copies of each model's Idle (its
+  hats, no tools) playing 12 new clips made by aoe3-blender-tools' `tools/make_pray.py`: kneeling with the hands
+  together for the Christian civs, bowing to the ground for the Islamic civs; string 28530 (the name of resource 4)
+  becomes "Faith"; the AI's `buyCards` rule adds `kbGetHCLevel(cMyID) - 1` to `kbResourceGet(cResourceSkillPoints)`,
+  the home city's points that the engine's total included, so the AI buys the same cards as before.
+- **Which civs pray:** Christian (kneel): the Europeans but the Ottomans, the Americans, Canadians, Australians, the
+  Balkan civs, the Ethiopians and the Latin American civs but the Argentines (their villager rides a horse). Islamic
+  (bow): the Ottomans, Persians, Afghans, Uzbeks, Saudis and Egyptians. Not yet: the Asian civs, the natives, the Maori
+  and the Zulu (questions for JTMaston in the pack's README).
+- **Log:** `faithResource: resource 4 (SkillPoints) is a plain resource: no home city skill points in its reads, not
+  banked into the home city; a faith Gather action plays its own <anim>`, `hook reached:
+  faithResource gather animation (0x4ED355)`, `... the action's own <anim> played`, `hook reached: faithResource home
+  city bank (0x852A3B)`; with `log`, at the end of a game, `faithResource: home city bank: 65 of resource 4 (faith)
+  not added to the home city's skill points (they stay 9)`. A bad argument: `faithResource: unknown argument 'x'
+  (expected log); not applied`.
+- **Limits:** the engine plays only the loop: a Gather has no entry or exit animation, so `PrayIn` and `PrayOut` are
+  in the files but a villager kneels and stands at once. The female villagers' skirt hem goes under the ground when
+  they kneel.
+- **Simulation:** changes the resources: every player needs the same line and the same pack.
+- **Status:** confirmed (single player, on WoL 1.0.15c, 2026-11-23/24, copy WoLReal5): four `Settler` villagers at a
+  Church gathered 1.0 faith a second (0.25 each) from 0 and knelt; three `SettlerME` bowed at a Church and three Balkan
+  `Peasant`s knelt at the Greek Temple (no pitchfork in the hands): 1.5 a second for the six; Ottoman settlers bowed at
+  their mosque. Skirmish with the Istanbul home city (level 10, 9 skill points): faith 0 at the start; at a victory
+  with 65.6 faith, `log` wrote `65 of resource 4 (faith) not added to the home city's skill points (they stay 9)`, and
+  the saved home city kept 9 skill points while its XP was banked (140 000 → 142 836). A game saved with 26.5 faith
+  loaded with 26.5, and the villagers went on kneeling and gathering. The AI (Germans, Hard) bought its 14 home city
+  cards with the key and the pack as without them (its resource 4 20 → 6 in the first 20 s; a first version that
+  zeroed that start value left it with none) and played 7.5 minutes with no XS error (20 settlers, a Mill, Manors).
+  Oil and the other resources unchanged. Without the key's animation hook (its first version) the villagers danced at
+  the church, whatever the action's `<anim>`: the engine's own choice of gather animation. Performance (`perfprobe.py`, 60 s, six praying villagers, the same scene): main
+  thread 82.2 % with and without the key, 0 frames over 50 ms in both; videos 1180–1220 fps. The home city screens
+  (deck, cards) did not show string 28530. Not tested: multiplayer, the Egyptian and Saudi Temple Caravans, every
+  one of the 20 anim files in game (the European, Ottoman, Middle Eastern and Balkan ones were seen), the female skirt
+  and the hats on each model (seen acceptable on those four), WOLPiedNoir's Cheer-based prayer.
 
 #### marketUnits
 

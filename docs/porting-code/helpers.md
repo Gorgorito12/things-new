@@ -238,6 +238,24 @@ inline constexpr Site kModelCacheBudget2{"ModelCacheBudget2", 0x006E0174, kModel
 inline constexpr std::uint8_t kPartBoneReloadBytes[] = {0x84, 0xDB, 0x74, 0x1E, 0x8B, 0x1D, 0x40, 0x62, 0xC6, 0x00, 0x6A, 0x00, 0x8B, 0xCD, 0x81, 0xC3, 0xA0, 0x60, 0x00, 0x00, 0xE8, 0x17, 0x87, 0xDA, 0xFF, 0x50, 0x53, 0x8B, 0xCF, 0xE8, 0x89, 0x4B, 0xE1, 0xFF};
 inline constexpr Site kPartBoneReload{"PartBoneReload", 0x00658C18, kPartBoneReloadBytes, sizeof(kPartBoneReloadBytes)};
 
+inline constexpr std::uint8_t kFaithTotalBytes[] = {0x74, 0x06, 0x03, 0x86, 0xF4, 0x01, 0x00, 0x00, 0x5E};
+inline constexpr Site kFaithTotal{"FaithTotal", 0x00501201, kFaithTotalBytes, sizeof(kFaithTotalBytes)};
+
+inline constexpr std::uint8_t kFaithBankBytes[] = {0x01, 0x96, 0xF4, 0x01, 0x00, 0x00, 0xD9, 0x6C, 0x24, 0x1C, 0xE8, 0x7B, 0x7E, 0xC4, 0xFF};
+inline constexpr Site kFaithBank{"FaithBank", 0x00852A3B, kFaithBankBytes, sizeof(kFaithBankBytes)};
+
+inline constexpr std::uint8_t kFaithBankClearBytes[] = {0x8B, 0x4E, 0x08, 0x6A, 0x00, 0x6A, 0x00, 0x6A, 0x04, 0xE8, 0x6D, 0x7E, 0xC4, 0xFF, 0x5F};
+inline constexpr Site kFaithBankClear{"FaithBankClear", 0x00852A4A, kFaithBankClearBytes, sizeof(kFaithBankClearBytes)};
+
+inline constexpr std::uint8_t kFaithGatherAnimBytes[] = {0x8B, 0x4F, 0x5C, 0x3B, 0xCB, 0x74, 0x0F, 0x6A, 0x08};
+inline constexpr Site kFaithGatherAnim{"FaithGatherAnim", 0x004ED355, kFaithGatherAnimBytes, sizeof(kFaithGatherAnimBytes)};
+
+inline constexpr std::uint8_t kFaithGatherAnimSetBytes[] = {0x8B, 0x4F, 0x5C};
+inline constexpr Site kFaithGatherAnimSet{"FaithGatherAnimSet", 0x004ED3FA, kFaithGatherAnimSetBytes, sizeof(kFaithGatherAnimSetBytes)};
+
+inline constexpr std::uint8_t kFaithGatherAnimNextBytes[] = {0x8B, 0x4F, 0x5C};
+inline constexpr Site kFaithGatherAnimNext{"FaithGatherAnimNext", 0x004ED36B, kFaithGatherAnimNextBytes, sizeof(kFaithGatherAnimNextBytes)};
+
 inline constexpr std::uint8_t kSelectionCap1Bytes[] = {0xB8, 0x32, 0x00, 0x00, 0x00};
 inline constexpr Site kSelectionCap1{"SelectionCap1", 0x004E0BEE, kSelectionCap1Bytes, sizeof(kSelectionCap1Bytes)};
 
@@ -3336,6 +3354,7 @@ bool AddFirstTcShipmentPoint();
 Outcome ApplySelectionLimit(const Config& config);
 Outcome ApplyModelCacheLimit(const Config& config);
 Outcome ApplyDmgPartBoneFix(const Config& config);
+Outcome ApplyFaithResource(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
@@ -3467,6 +3486,7 @@ inline constexpr Feature kFeatures[] = {
     {"selectionLimit", ApplySelectionLimit},
     {"modelCacheLimit", ApplyModelCacheLimit},
     {"dmgPartBoneFix", ApplyDmgPartBoneFix},
+    {"faithResource", ApplyFaithResource},
     {"enableAllTeams", ApplyEnableAllTeams},
     {"startingTC", ApplyStartingTc},
     // After startingTC: both use the FirstTC proto hook at 0x506B3B, which the first one writes.
@@ -3545,7 +3565,7 @@ inline constexpr const char* kHandledKeys[] = {
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc", "scenariocivs",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix",
+    "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
 };
 
 }  // namespace uhc

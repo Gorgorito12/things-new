@@ -16,7 +16,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `scenarioCivs`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots`, `retargetInAction` | [combat](porting-code/combat.md) |
-| Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `buildingGather`, `herdWalkAwayFix` | [gathering](porting-code/gathering.md) |
+| Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `buildingGather`, `herdWalkAwayFix`, `faithResource` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs`, `resendableCards`, `quickArrivalCards` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon`, `autoScout` | [interface](porting-code/interface.md) |
@@ -1477,6 +1477,25 @@ Code: [gathering](porting-code/gathering.md#herdwalkawayfix).
 - **What it writes:** the herdable's leash anchor `[mgr+7Ch..84h]`, after the stock flee.
 - **Test:** a nomad with `AbstractTypeHerdableMagnet` (`wol-fixes/me-herdables`) and sheep drawn to it: fattened
   sheep walk away and stay there; without the key, the ones the game drew in walk back to where they stood first.
+
+### faithResource
+
+Code: [gathering](porting-code/gathering.md#faithresource). An optional key, with the data pack `wol-fixes/faith/`.
+
+- **Sites (byte patches):** `0x501201` `74 06` → `EB 06` (the skill point total 0x5011C6 no longer adds `[HC+1F4h]`);
+  `0x852A4A` `8B 4E 08 6A 00 …` → `EB 0C` (the bank's clear of resource 4 is jumped over, to `0x852A58`). The AI's
+  start value of resource 4 (level + 15, `0x6AEEDC` / `0x6AF052`) is kept: it is the AI's budget for home city cards.
+- **Hooks:** a 6-byte `jmp` at `0x852A3B` (`01 96 F4 01 00 00`, `add [esi+1F4h],edx`, the bank of resource 4 into the
+  home city's skill points): the hook adds nothing (logs EDX with `log`) and continues at `0x852A41`. A 7-byte `jmp`
+  at `0x4ED355` (`8B 4F 5C 3B CB 74 0F`, the head of the Gather action's animation choice): when `[esi+70h]` = 4 and the
+  gatherer's model has the tactics action's anim (`[[esi+4]+58h]`, `0x471D24` ≥ 0), it stores that anim in
+  `[esi+74h]` and continues at `0x4ED3FA`; otherwise it redoes the three instructions and continues at `0x4ED35C` or
+  `0x4ED36B`. On entry ESI is the Gather action, EDI the target (not null), EBX 0; EAX, ECX, EDX are free.
+- **Check against your DLL:** nothing else may write those bytes; a DLL that hooks the Gather setState `0x4ED254`
+  head is not affected (the site is inside it).
+- **Test:** villagers with a Pray Gather action at a Church that holds resource 4 (the faith pack): they kneel (the
+  Pray clip), faith rises 0.25/s each from 0 (not from the home city's skill points), and after a won game the
+  saved home city keeps its skill points.
 ### editorSearch
 
 Code: [interface](porting-code/interface.md#editorsearch). It needs the [UI gadgets](porting-code/helpers.md#ui-gadgets)
