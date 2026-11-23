@@ -31,7 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Monday 2026-11-23 07:38 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
+| Monday 2026-11-23 08:38 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Sunday 2026-11-22 13:54 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Sunday 2026-11-22 12:35 | [`broadsideSoundSet`](#broadsidesoundset) | Filmed in WoL, with a control. A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). |
 | Sunday 2026-11-22 12:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, keeping its firing pose between them (`<BurstPose>`), before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
@@ -8173,16 +8173,19 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 *A selected unit shows its range on the ground while Alt is held: one ring per ranged attack.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Monday 2026-11-23 07:38
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Monday 2026-11-23 08:38
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
 *In WoL, with `displayedRange log` (Ethiopians, a scenario of 3 players; test data: `<DisplayRange>1</DisplayRange>` on
-the Fort and the Skirmisher, `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the Outpost; the rings of 2026-11-23, a thin
-line in the owner's colour with no border):* the Fort is selected and shows nothing; Alt held, its 40 m anti-ship and 26 m
-cannon rings in your blue; Alt released, none; the Outpost, selected, shows its 40 and 24 m at once, with no Alt; a
-Skirmisher with Alt shows 20 and 6 m, the same blue as the stock selection circle at its feet. The log names each ring.
-[Full video (MP4)](media/displayedRange-wol.mp4).
+the Fort and the Skirmisher, `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the Outpost; the rings of 2026-11-23):*
+- The Fort is selected and shows nothing.
+- With Alt held, its 26 m cannon ring appears, filled in your blue, and its 40 m anti-ship ring, dashed with no fill:
+  that attack reaches only ships. Alt released, none.
+- The Outpost, selected, shows its 24 m filled and its 40 m dashed at once, with no Alt.
+- A Skirmisher with Alt shows 20 and 6 m. The zone inside 6 m is stronger: both attacks reach it.
+
+The log names each ring and fill. [Full video (MP4)](media/displayedRange-wol.mp4).
 
 ![displayedRange in WoL, key off](media/displayedRange-wol-control.gif)
 
@@ -8191,11 +8194,14 @@ Skirmisher with Alt shows 20 and 6 m, the same blue as the stock selection circl
 
 ![displayedRange on the placement ghost](media/displayedRange-wol-placement.gif)
 
-*In WoL, the ghost of a building being placed (Ethiopians, a scenario; the Outpost's and the Fort's ranged attacks):* a
-Settler starts placing an Outpost (`uiSetProtoCursor`): its ghost carries the 40 m anti-ship and the 24 m ranged rings in
-the player's blue, and they follow the pointer; the placement ends (`uiSetProtoCursorID(-1)`, what Escape and a right
-click run) and both rings go with the ghost; then the ghost of a Fort (red: no room there) carries its 40 and 26 m. The
-log names each ring. [Full video (MP4)](media/displayedRange-wol-placement.mp4). *Filmed 2026-11-23 with the new rings.
+*In WoL, the ghost of a building being placed (Ethiopians, a scenario; the Outpost's and the Fort's ranged attacks):*
+- A Settler starts placing an Outpost (`uiSetProtoCursor`). Its ghost carries the 24 m ring and the dashed 40 m anti-ship
+  ring in the player's blue, and they follow the pointer.
+- The placement ends (`uiSetProtoCursorID(-1)`, what Escape and a right click run), and both rings go with the ghost.
+- Then the ghost of a Fort (red: no room there) carries its 26 m and its dashed 40 m.
+- A ghost has lines and no fill (the red tint would draw a fill opaque).
+
+The log names each ring. [Full video (MP4)](media/displayedRange-wol-placement.mp4). *Filmed 2026-11-23 with the new rings.
 Tested on 2026-11-22 in a skirmish (Dutch, against the German AI): a click places the Outpost, the rings go with the
 ghost and the foundation has none.*
 
@@ -8208,15 +8214,16 @@ ghost and the foundation has none.*
 
 *In WoL, an enemy's units (Ethiopians, a scenario of 2 players, player 2 the enemy (Egyptians); test data
 `<DisplayRange>1</DisplayRange>` on the Grenzer, `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the Outpost, fog off):*
-the enemy Outpost, selected, shows its 40 and 24 m rings in its red, the red of its own selection square; then an enemy
-Grenzer with Alt, 20 and 6 m; Alt released, none. Your own units' rings in your blue are in the first video.
+the enemy Outpost, selected, shows its 24 m ring filled in its red (where it shoots at you) and its 40 m dashed (ships
+only), the red of its own selection square; then an enemy Grenzer with Alt, 20 and 6 m filled; Alt released, none. Your
+own units' rings in your blue are in the first video.
 [Full video (MP4)](media/displayedRange-wol-enemy.mp4).
 
 ![displayedRange on an ally's units](media/displayedRange-wol-ally.gif)
 
 *In WoL, an ally's units (a scenario of 3 players, player 2 (Egyptians) an ally of player 1, as on 2026-11-22):* its
-Outpost, selected, shows its 40 and 24 m rings in its red, the red of its selection square; then one of its Crossbowmen
-with Alt, 16 and 6 m. [Full video (MP4)](media/displayedRange-wol-ally.mp4).
+Outpost, selected, shows its 24 m ring filled and its 40 m dashed in its red, the red of its selection square; then one of
+its Crossbowmen with Alt, 16 and 6 m, filled. [Full video (MP4)](media/displayedRange-wol-ally.mp4).
 
 ```
 displayedRange [log] [noPlacement]
@@ -8249,13 +8256,35 @@ displayedRange [log] [noPlacement]
   or its `<DisplayedRange>` values. They follow the ghost, change when you pick another building, and go when the
   placement ends (tested: placed, and cancelled with Escape; a right click runs the same `editMode("none")`).
   `noPlacement` turns this part off.
+- **How to read the rings** (2026-11-23):
+  - **The colour is the owner's**: yours, an ally's or an enemy's.
+  - **The fill is where that attack hits you**: a soft disc in the owner's colour inside each ring, clear next to the
+    unit and stronger toward the ring, like DE's range indicator. Where several attacks reach, their fills add up, so the
+    zone that several attacks cover reads stronger (a Skirmisher's 6 m inside its 20 m).
+  - **A dashed ring with no fill is an attack that reaches only ships**: the Outpost's and the Fort's 40 m anti-ship
+    attack.
+  - "Only ships" is read from the attack's `<Rate>` list: every type on it is `Ship`, or a type whose every proto is a
+    Ship (`AbstractWarShip`, a ship's proto). The attack's name plays no part.
+  - Two attacks on one ring size share one ring, filled if either is not ships-only.
+  - Not like DE: DE draws one decal a unit, at a single range ([de-parity.md](de-parity.md#range-indicator-wol-92-displayedrange)).
+    Here every attack keeps its ring.
 - **In the owner's colour** (JTMaston, 2026-11-22: "can these rings use player color via alpha channels?"): a range ring
   is a flat annulus mesh, `range_<N>.gr2`, in the colour of the unit's owner (yours on a placement ghost). The cut-out comes from the geometry, so the texture's alpha is free to mark player colour as on a unit
   (`range_line.ddt`, alpha 1, the units' shader `bumpspec_mask_pixelxform`); the engine does the tinting, so one mesh per
-  radius serves every player and the key picks nothing. A particle has no player colour of its own, which is why the rings
+  radius serves every player and the line needs nothing from the key (the fill does: below). A particle has no player colour of its own, which is why the rings
   are no longer particles. The line is 0.5 m wide (more past 62 m), 0.25 m over the unit's feet; it does not follow the
   ground, so on a hill a large ring can dip into it. `make_rings.py --range-particles` writes the white particle rings of
   before, with the same file names.
+- **The fill's files:** `rangefill_<N>_p<player>.xml`/`.gr2` on `rangefill_p<player>.ddt`, players 0 to 8. The game's
+  transparent shader (`alphablend`) has no player colour, and the units' shader draws opaque, so there is one fill disc
+  per player colour, and the key hangs the owner's. A placement ghost shows the lines only: a ghost that cannot be placed is drawn with the game's red tint, and the tint draws a fill opaque.
+  - The colours are those of WoL's `playercolors.xml` (`color1`). A player above 8 gets the line and no fill.
+  - The team-colour option is not followed: the line takes the colour the game draws, while the fill keeps the player's
+    own colour.
+  - The edge alpha is set per colour, from 0.30 to 0.38: blue and purple need more to read over yellow grass.
+  - The dashed ring is `range_<N>_ships.xml`/`.gr2`: 48 dashes, the same line.
+  - `make_rings.py --no-range-fills` and `--no-ship-rings` leave those files out. With no fill files in the game, the
+    rings show without fills.
 - **Which rings:** one per ranged attack (`<RangedLogic>1</RangedLogic>`) of the unit's current tactic, at that attack's
   `MaxRange` as the player has it now: a tech that adds range moves the ring at once (`Revetment`: the Fort's 26 m ring
   became 32 m). A Fort shows its 40 m anti-ship attack and its 26 m cannon, an Outpost 40 and 24, a Crossbowman 16 and the
@@ -8289,8 +8318,19 @@ displayedRange [log] [noPlacement]
   Halberdiers cost more than the Hussars with the key off too, so it is their models, not the rings. With 1 and 20 units
   the numbers were the same with 0, 1, 2 and 4 rings. No frame over 100 ms in any capped run.
 
-  So the rings cost nothing measurable. A selection still shows at most 4 rings a unit and 60 in all, the units
-  with the longest ranges first, so that a big selection stays readable.
+  So the rings cost nothing measurable. A selection still shows at most 4 rings a unit and 60 models in all (a filled
+  ring is two: its line and its fill), the units with the longest ranges first, so that a big selection stays readable.
+
+  **With the fills (2026-11-23):** 70 Skirmishers selected, 40 s a case with `perfprobe.py`, other games running on the
+  PC.
+
+  | Alt | Models on screen | fps | Render a frame | Main thread | GPU | Frames over 50 ms |
+  |---|---|---|---|---|---|---|
+  | no | 0 | 427 | 2.17 ms | 93 % | 20 % | 0 |
+  | held | 60, the cap (15 units, 30 filled rings) | 351 | 2.67 ms | 94 % | 19 % | 0 |
+
+  At the cap, the fills cost about 0.5 ms a frame: their large transparent discs are drawn over each other. No frame
+  goes over 50 ms.
 
   **Big selections, Alt held (2026-11-22, JTMaston: "do they lag if you have 75 ranged units selected?"):** Skirmishers
   (2 rings each, 20 and 6 m), selected on screen, 40 s a case with `perfprobe.py`, five other games running on the PC,
@@ -8333,7 +8373,14 @@ displayedRange [log] [noPlacement]
   next to a selected Skirmisher's own selection circle: the ring's blue (72, 66, 255), the circle's (48, 44, 213), against
   (195, 178, 250) before. Tested in WoL: your units (blue), an ally's and an enemy's (red), and the placement ghosts of the
   Outpost and the Fort; videos above. Copy `tools/rings` again to `art/effects/uhc_rings` (the `range_*.gr2`,
-  `range_line.ddt` and `range_line_bump.ddt` changed).
+  `range_line.ddt` and `range_line_bump.ddt` changed, and the fills and dashed rings are new).
+- **Tested in WoL (2026-11-23, fills and dashed rings):**
+  - Your Fort with Alt: 26 m filled, 40 m dashed. Your Outpost: 24 m filled, 40 m dashed. A Skirmisher: 20 and 6 m filled.
+  - An ally's Outpost and Crossbowman, an enemy's Outpost and Grenzer: the same, in their red.
+  - Five players' Outposts side by side: blue, red, yellow, purple and green fills each read in their colour; yellow is
+    the faintest over yellow grass.
+  - The placement ghosts of the Outpost and the Fort: lines only, dashed for 40 m.
+  - Log: `ring of 40 m on unit 0 (FortFrontier), ships only (dashed), Alt held`, `fill of 26 m on unit 0 (FortFrontier)`.
 
 #### abilitySlots
 

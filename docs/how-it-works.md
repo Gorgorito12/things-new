@@ -2212,6 +2212,35 @@ alpha 255), so the shader's `diffuse *= lerp(pixelxformColor, 1, diffuse.a)` giv
 (0, 128, 255, 128), as the game's own `flat_normal_black_spec.ddt`. Measured after the change: the ring's core is
 (72, 66, 255) for blue, next to the selected Skirmisher's own decal.
 
+**Fills and dashed rings (2026-11-23).** Each ring is one or two models of `effects\uhc_rings`:
+- `range_<N>.xml`: the line.
+- `rangefill_<N>_p<player>.xml`: its fill.
+- `range_<N>_ships.xml`: a dashed line with no fill, for an attack that reaches only ships.
+
+The fill:
+- It is a flat disc 0.22 m over the feet, under the line, reaching the middle of the line.
+- It uses the game's `alphablend` effect, which blends by the texture's alpha.
+- Engine tests in game, 2026-11-23:
+  - the selection decal effect `decalselection` on a mesh drew nothing;
+  - `pixelxform` (with `pixelxformColor = playerColor`) drew the owner's colour, but opaque;
+  - `alphablend` blended, but with no player colour.
+- So each player ID 0 to 8 has its own texture, `rangefill_p<player>.ddt` (the game's `playercolors.xml` `color1`), and the
+  key hangs the owner's disc, `[[unit+44h]+0]`. The placement ghost gets none: a ghost that cannot be placed is drawn with the tint technique, and `alphablend`'s tint draws the disc opaque (seen in game on a Fort's ghost, 2026-11-23).
+- Measured with an alpha-banded test disc: the blend follows the texture's alpha, and the sun about doubles the
+  texture's colour. So the texture holds 0.6 of the colour.
+- Its alpha (DXT5, smooth at these low values) is 0 up to 20 % of the radius, then rises as t^1.2 to the colour's edge
+  value: 0.38 for blue, 0.36 purple, 0.32 red, 0.30 the others.
+
+**Ships only.** An attack counts as ships-only when:
+- its `<Rate>` list (`[action+0Ch]`, count `+10h`, 0Ch-byte entries, `+0` the unittype) is not empty;
+- every type on it is `Ship`, or a type whose every proto in the database (`[db+54h]`, count `+58h`, tested with the
+  is-a test 0x44D7FA) is a Ship. That covers `AbstractWarShip` and a ship's own proto.
+
+Ship's ID comes from the unittype name table `[db+190h]` (0x58E685 / 0x40295B). Each type is worked out once per
+database.
+
+**Caps.** The caps count models: 60 in all, so a filled ring is two.
+
 **`<Flag>AlwaysDisplayRange</Flag>`.** The proto flag parser 0x5F640A (`stdcall(proto, name)`) compares the name with each
 flag it knows, through the string compare 0x4028B4, and returns with nothing for any other name. The key replaces the call of
 its last compare, 0x5F726F, with a hook that runs the compare and, when it does not match, hands the name to the key.

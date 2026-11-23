@@ -204,7 +204,8 @@ are data: copy that folder to the game's art\\effects and name one in an aura, w
 aura_<name>.xml adds a floating icon, for gathering auras (gold, wood, food, hunt, berry, farm, fish,
 export, xp, oil, work). The colours: wood, food, gold, work (work rate), export, xp, oil, damage, rof
 (rate of fire), hp (max hit points), heal and speed. displayedRange shows range_<metres>.xml, a line in
-the owner's colour. These rings are the defaults: an aura with a model of its own keeps it.
+the owner's colour, with rangefill_<metres>_p<player>.xml, a soft fill in that colour, or range_<metres>_ships.xml,
+a dashed line for an attack that reaches only ships. These rings are the defaults: an aura with a model of its own keeps it.
 veterancyBonus shows rank_1.xml to rank_5.xml over a unit with a rank when the folder is there.
 art\\ui\\uhc\\health_overheal.ddt is the orange end of the HP bar under the portrait, which
 overhealHitpointBars segment shows for units above their 100 %: copy it to the game's art\\ui\\uhc
