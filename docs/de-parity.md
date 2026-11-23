@@ -818,6 +818,59 @@ waits for the team's answer; 5 is kept.
 5. **Keep** the nearest-first choice (level with DE for a land scout) and the revisit of the oldest-seen blocks: once
    most of the map is known, ours keeps the picture fresh, where DE's Envoy gained 1.9 % in two minutes.
 
+### Range indicator (WoL #92, `displayedRange`)
+
+A study for [`displayedRange`](modding-guide.md#displayedrange) (2026-11-23), before its fill and dashed rings. DE's exe
+was read only with `tools/re/pe64.py` and capstone: REA's only provider here is Ghidra, which does not finish on this exe
+(above), so there is no REA Evidence ID for it. The DE data came from the read-only install into a scratch folder.
+
+- [O] **When (data, strings):**
+  - `stringtabley` 49203 "Display Attack Range Indicator";
+  - 49256: "Range Indicator displays a ring around your units representing their range capabilities. Select from the
+    three options: Single select, Single hover or All units with Alt.";
+  - the option names `ShowAttackRange`, `ShowAttackRangeSingleSelected` and `ShowAttackRangeSingleHover`
+    (`OptionUIShowAttackRange*`).
+  - No code reference to those names was found: the readers are probably among the encrypted functions.
+- [O] **Which units (`protoy`):**
+  - 78 protos have `<Flag>DisplayRange</Flag>`: TC, Outpost, Fort, Blockhouse, Dock, towers, the Torp.
+  - 23 have `<DisplayedRange>`.
+  - The guide (p17) calls `DisplayRange` "displayed as a decal upon selection", obsolete since the options cover every unit.
+  - `DisplayRangeToEnemies` (3 protos, guide p21): the decal also on units you do not own. [I] So by default only your own.
+  - `DisplayMinimumRange` (guide p20): the decal at the minimum attack range instead of the maximum.
+  - `DisplayMaxRangeOnSelection`: the maximum on selection when hover shows the minimum.
+  - `RangeDisplayedAsSquare` (deGranary): a square decal.
+- [O] **Which attacks (tactics):**
+  - The action tag `ExcludeFromRangeIndicator` is on the ships' `LongRangeAttack` and the Maltese gun's `AntiShipAttack`
+    and `LongRangeAttack`, among others.
+  - The TC's `AntiShipAttack` does not have it.
+  - `HandAttackDisplayRange` makes a hand attack count.
+- [O] **How it is drawn (fn 0xB3DB70, the only reference to the texture names):**
+  - One call reads one radius: an attack's range (`[proto+0BCh] + [proto+0B4h]`, or fn 0xFAFD70), replaced by the proto's
+    `+5B8h` (`DisplayedRange`) when that is above 0.
+  - It takes a decal entry (manager `[0x370A548]+820h`, fn 0x788D90; entries of 0D4h bytes).
+  - It stores a value read from the owner player (`[player+480h]`) at entry `+10h` (fn 0x788E30). [I] Probably the colour.
+  - It stores the texture `effects\rangedecals\range1`, or `range_square` when the proto's flag byte `+17h` bit 4 is
+    set, at `+4h` (fns 0x72F280 and 0x788E50).
+  - It stores a transform at `+24h` (fn 0x788E00), sized by the radius (one term × 0.5).
+  - [I] So DE draws **one** ground decal per unit, at one radius, not one ring per attack. There is no dashed or per-type
+    style.
+- [O] **The look (`ArtEffects.bar`, `effects\rangedecals\range1.tga`, 2048 × 2048, white):**
+  - A rim at the edge at about 14 % alpha (35–37 of 255, 10 px of 1024).
+  - A fill that rises from 0 at 30 % of the radius to about 5 % next to the rim (2 → 14 of 255), in bands with thin radial
+    spokes.
+  - `range_tcarea.tga` (1024 px) is a single opaque thin ring.
+  - Very faint: a ring and a light glow toward the edge, not a solid line.
+- **Unknown:** DE's decal shader and blend mode, whether the colour is the owner's, the hover and Alt logic, and whether
+  the placement of a building shows it. All of these are in encrypted code or untraced.
+- **Legacy:**
+  - A `<decal>` on a model hung on a unit is not drawn (tried 2026-11-22).
+  - The selection decal effect `decalselection` on a mesh drew nothing (2026-11-23).
+  - `alphablend` drew a blended disc, but with no player colour.
+  - `pixelxform` drew the owner's colour but opaque.
+  - So an owner-coloured transparent fill needs one texture per player colour.
+- Compared in `_share\maston-20261123\b-range-de-comparison.png` with the mock-up approved on 2026-11-23 (one ring per
+  attack, soft fill, dashed rings for ships). DE's look is simulated there from its texture.
+
 ## What legacy does today
 
 Read with REA (Ghidra) in the stock exe. The addresses, registers and Evidence IDs are in

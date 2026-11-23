@@ -95,6 +95,14 @@ SITES = [
     # trainSingleAbstractType: call 44CAC4h (is type 5Dh) in the two train-one-at-a-time tests
     ("TrainSingle1", 0x9CE573, 5),
     ("TrainSingle2", 0x9CE767, 5),
+    # modelCacheLimit: cmp dword [esi+306Ch],1C9C380h (the model cache budget, 30,000,000 bytes), the only two
+    # compares of it: FUN_0041CA8F's first test (then ja 0x6E014C) and the unload loop's test (then jbe 0x46C04D)
+    ("ModelCacheBudget1", 0x46C03D, 10),
+    ("ModelCacheBudget2", 0x6E0174, 10),
+    # dmgPartBoneFix: the part declaration FUN_004F0187 after "Invalid bone name ... in part declaration": test bl,bl /
+    # je 658C3Ah / the model loader's call 0x658C35 on the loaded entry (a reload while units draw it), up to the
+    # continuation 0x658C3A
+    ("PartBoneReload", 0x658C18, 0x22),
     # selectionLimit: mov eax,32h (the 50-unit selection cap), the getter 0x4E0BEE and seven compares
     ("SelectionCap1", 0x4E0BEE, 5),
     ("SelectionCap2", 0x4E0F5F, 5),
@@ -1443,6 +1451,14 @@ SITES = [
     # inside); and the model index lookup 0x471D24 (mov ecx,[ecx+60h] / test ecx,ecx / je), which the hook calls.
     ("ShotsReloadAnim", 0x4976CB, 9),
     ("ShotsAnimVariant", 0x471D24, 0xB),
+    # retargetInAction: the attack update's "no live target" branch 0x487838, reached from 0x48A3D3 (no unit),
+    # 0x48A3EA (vtable +A4h: not alive) and 0x48A409 (0x48A3F9: inside another unit): mov al,[esi+61h] / cmp al,19h
+    # (replaced, 5 B; no branch lands inside) / je 48A40Fh (the continuation) / cmp [esi+0Ch],ebx / jge / cmp al,1 /
+    # jne 49785Bh / setState(19h). The update's head from the target read, where the hook goes back with a new target:
+    # mov ecx,[esi+14h] / cmp ecx,ebx / mov edx,[0C66234h] / mov edx,[edx+13Ch] / push edi / jl / mov eax,ecx / and
+    # eax,3FFFFh.
+    ("RetargetNoTarget", 0x487838, 0x1B),
+    ("RetargetUpdateTarget", 0x48A359, 0x1F),
     # broadsideSoundSet: in FUN_004CEB37 (the broadside fire step's effect of one shot), push 0BA1D5Ch (replaced, 5 B)
     # / add edx,14h (the continuation; no branch lands inside), and the name it pushes, "ShipCannonShoot" with its NUL
     ("BroadsideSound", 0x4CECBD, 8),
@@ -2112,6 +2128,34 @@ SITES = [
     # editorSearch: a parameter's change (event 10, 0x829E29): the field's current index 0xAC0D1B, its entry's text
     # 0xAC0EEA, given to the parameter (0x82AC1C): the value is the text picked, not an index into the stock list.
     ("EditorParamPickText", 0x829E65, 0x24),
+    # card tags (cardtags.*): the home city loader FUN_0062E6C9 reads each <card>'s children in a loop over the card
+    # node EBX (mov eax,[esp+1Ch] / push eax / mov ecx,ebx at 0x62FD1D; the loop's end add eax,1 / cmp eax,[ebx+0Ch]
+    # at 0x62FF42), then commits the card it built on the stack: lea edx,[esp+0A8h] / push edx / add ecx,204h /
+    # mov [esp+0D0h],al / call 62FBC7h (the append to the home city's card array hc+204h, thiscall, ret 4, the new
+    # index in EAX). The call at 0x630017 is redirected; EBX is still the card node there.
+    ("CardChildLoop", 0x62FD1D, 7),
+    ("CardChildLoopEnd", 0x62FF42, 0x14),
+    ("CardCommitPrep", 0x630002, 0x15),
+    ("CardCommitCall", 0x630017, 5),
+    # resendableCards: the age setter FUN_008D4E01 thiscall(player, age, announce, tech), at the join 0x8D502F after
+    # the age is written (mov eax,[0C66234h]), before the stock refill of the InfiniteInLastAge cards (world+870h,
+    # age > 3, hc [esi+84h], call 85650Ah). The advance flag [esp+13h] (1 when the old age >= the new one) is written
+    # at 0x8D4EE3..0x8D4EF2 in the same frame.
+    ("AgeUpJoin", 0x8D502F, 5),
+    ("AgeUpStockRefill", 0x8D5034, 0x24),
+    ("SetAgeAdvanceFlag", 0x8D4EE3, 0x0F),
+    # resendableCards: the card rollover builder FUN_007103CE shows the card's cost line after it was sent only for
+    # an InfiniteInLastAge card in age 4 with sends left: test bl,bl / je / cmp [ebp+24h],al / je / mov eax,[edi+8]
+    # / test / je / cmp dword ptr [eax+50h],4 / jne 710863h (0x710804, 6 bytes replaced; EBP = the card).
+    ("CardRolloverAgeCheck", 0x7107F4, 0x16),
+    # quickArrivalCards: the same builder's head (its frame: four pushes after sub esp,30h, so the output list is
+    # [esp+44h], the tech ID [esp+4Ch], the list-mode byte [esp+58h] in the body), and its join before the advanced
+    # info, mov ecx,[0D6F6F0h] at 0x710909 (6 bytes), reached after the send-limit line (9001h/9002h/9003h).
+    ("CardRolloverHead", 0x7103CE, 0x26),
+    ("CardRolloverAdvanced", 0x710909, 6),
+    # quickArrivalCards: the bullet line helper FUN_004C5076(list, BString*, 1, 0) the builder uses for its lines
+    # (it appends <ttf><ttb> then the line, through 0x443960 and 0x4439E3); verify only, the key appends the same.
+    ("CardBulletLine", 0x4C5076, 0x2A),
 ]
 
 

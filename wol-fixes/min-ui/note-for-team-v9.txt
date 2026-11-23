@@ -1,0 +1,36 @@
+Minimized UI, version 9: every icon square
+==========================================
+
+The icons of the minimized panel no longer look squeezed. This covers yours and the game's: damage types, rate of
+fire, range, area, armor, the multipliers' unit types, and the cost, LOS and speed icons at the top.
+
+Why they were squeezed: in the game's text markup <icon="(N)(texture)">, N sets the icon's WIDTH in pixels (N + 1)
+and its height is always the height of the text line, which comes from the font. The game's own minimized rows
+write (10), so at 1920x1080 every icon there was 11 pixels wide in a 17 pixel line: 0.65 of its width. That is why
+the stopwatch, the shield and your soldiers looked thin.
+
+What changed:
+- Our DLL writes N = line height - 1 for every icon of the minimized panel, so each icon is drawn square, at its
+  true aspect. The line height depends on the font size the game picks for the resolution (FONTS\fonts3.xml): a
+  17 px line on screens 960 px tall or more (1280x960, 1920x1080, 2560x1440...), 14 px below (1024x768, 1600x900).
+  We measured both in game.
+- Your four icons are no longer widened. The three soldiers keep one scale. The Minie keeps its copper bullet and
+  its wings as you drew them, shortened where they run straight (the stepped tips kept), so it fills the icon's
+  height like the soldiers.
+- Our six drawn icons (stopwatch, hourglass, shield, eye, winged boot, cylinder) are drawn round instead of wide.
+- Your house icon (population, Buildings) is enlarged from 28 to 32 texels so it is as tall as the others. The
+  pack replaces ui\ingame\stat_icon_building.ddt, and apply_fix.py keeps yours for --restore.
+- A row too long for the panel still drops its last multipliers with "(+N)". The DLL now counts each icon at its
+  real width, so nothing runs off the panel.
+- The big interface is the game's own panel and does not change.
+
+Checked in game with our UHC.dll, the pack installed with apply_fix.py and removed with --restore:
+- the Escopetero, the Falconet in Bombard, the Lancer and the Villero (Koygua), rows and tooltips;
+- 1920x1080 and 2560x1440: every row fits;
+- 1600x900: every row fits;
+- 1280x960 and 1024x768: the longest rows end with "(+2)" or "(+3)", nothing runs off the panel.
+Pictures: final\minUIStats-v9-*.jpg (one per unit at 1920x1080, the tooltips, the big interface, and one picture
+per resolution: -r768, -r900, -r960, -r1440). The review sheet: icons-v9-square-review.png.
+
+To install over version 8: run "python apply_fix.py <WoL folder> --restore" first, then
+"python apply_fix.py <WoL folder>", and use our new UHC.dll.

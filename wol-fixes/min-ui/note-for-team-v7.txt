@@ -1,6 +1,9 @@
 Minimized UI, version 7: answers to JTMaston's points on version 6
 ==================================================================
 
+(2026-11-23: the unit type icons of point 5 are replaced by version 8's, from JTMaston's art: note-for-team-v8.txt.
+The winged bullet in review\ and the pictures final\minUIStats-v7-icons-*.jpg were removed with them.)
+
 1. "4 s there should be 4s, character and value sticked together"
    Done everywhere our DLL writes seconds:
    - the attack rows' tooltip line: "Rate of fire: 3.50s" (item 3 below);

@@ -204,7 +204,8 @@ are data: copy that folder to the game's art\\effects and name one in an aura, w
 aura_<name>.xml adds a floating icon, for gathering auras (gold, wood, food, hunt, berry, farm, fish,
 export, xp, oil, work). The colours: wood, food, gold, work (work rate), export, xp, oil, damage, rof
 (rate of fire), hp (max hit points), heal and speed. displayedRange shows range_<metres>.xml, a line in
-the owner's colour. These rings are the defaults: an aura with a model of its own keeps it.
+the owner's colour, with rangefill_<metres>_p<player>.xml, a soft fill in that colour, or range_<metres>_ships.xml,
+a dashed line for an attack that reaches only ships. These rings are the defaults: an aura with a model of its own keeps it.
 veterancyBonus shows rank_1.xml to rank_5.xml over a unit with a rank when the folder is there.
 art\\ui\\uhc\\health_overheal.ddt is the orange end of the HP bar under the portrait, which
 overhealHitpointBars segment shows for units above their 100 %: copy it to the game's art\\ui\\uhc
@@ -238,6 +239,8 @@ customImpactTypes <names>     impact types after the 15 stock ones (.dmg, Impact
 nowalkfarm                    farm gatherers keep their first spot
 repairWallGlobal              UI syscall repairWallGlobal(): repair all walls
 compatMode                    32-bit display modes also offered at 16 bits
+modelCacheLimit [MB] [log]    the model cache unloads no model in use (0: never; stock 30 MB)
+dmgPartBoneFix [log]          a damage part's unknown bone no longer reloads the model in use
 customSyscalls [files]        load .upl plugins and their XS syscalls
 customCheats                  the cheats plugins register work in the chat
 asianCivs Civ ... [log]       these civs count as Asian civs (consulate, wonders)
@@ -286,6 +289,10 @@ orPrereqsQty [log]            <Flag qty="N">OrPrereqs</Flag>: a tech needs N of 
                               prerequisites instead of one
 ageFiveShipments              cards of <age>4</age> (Imperial Age) in the deck, at the right end of
                               the Age IV row, sendable in the Imperial Age
+resendableCards [log]         <resendeveryage>1</resendeveryage> on a card: sendable again (its
+                              maxcount) each time its player reaches a new age
+quickArrivalCards [stringid N] [log]  <Flag>QuickArrival</Flag> on a card's tech: the bullet line
+                              "This is a quick-arrival card." in the card's rollover
 shipmentCounts [log]          cards shipped per player and card age, kept in saved games; Data
                               subtype FreeHomeCityUnitByShipmentCount, XS
                               xsGetShipmentCount and xsGetShipmentCountRange
@@ -355,6 +362,8 @@ containedUnitsROF [log]       ScaleByContainedUnits target="ROF": an attack fire
 numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart before the
                               reload, the firing pose kept between them (<BurstPose>);
                               projectiles: <NumberProjectiles> per shot
+retargetInAction [log]        an attack with <RetargetInAction>1 whose target dies during its
+                              attack animation fires the rest of its shots at a new target
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
 auraStacking [log]            <ForbidUnitType> on any aura

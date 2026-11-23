@@ -20,6 +20,8 @@ Grouped as in the modding guide.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`compatMode`](#compatmode) | Offers every 32-bit display mode as a 16-bit mode too. | **in `wol.cfg`** | Nothing. | confirmed |
+| [`modelCacheLimit`](#modelcachelimit) | Stops the game from unloading 3D models that units still use, the cause of the Granny crashes in big games (WoL #78). | **new** (or a 4-byte patch of WoL's exe) | The two data fixes in `wol-fixes/art-dmg-bones-20261123/`. | confirmed (single player) |
+| [`dmgPartBoneFix`](#dmgpartbonefix) | Stops the game from reloading a 3D model in use when a damage template names a bone the model lacks, the other cause of the Granny crashes (WoL #78). | **new** (or a 1-byte patch of WoL's exe) | Nothing; `wol-fixes/art-dmg-bones-20261123/` fixes the data itself. | confirmed (single player) |
 
 #### compatMode
 
@@ -39,6 +41,107 @@ compatMode
 - **Simulation:** display only.
 - **Status:** confirmed (2026-11-03): the hook runs at startup for the adapter's modes and the game
   starts and plays normally.
+
+#### modelCacheLimit
+
+*Keeps the game from unloading 3D models that units still use, which crashed big games (WoL #78).*
+
+**Added:** Monday 2026-11-23 08:05
+
+```
+modelCacheLimit [MB] [log]
+```
+
+- **The bug (WoL #78, "NEW" Levant):** the game keeps its loaded models in a cache with a budget of 30 MB, written
+  in the exe. Every frame, while the cache holds more, it unloads the model used least recently, even when units
+  still draw or animate with it. The next draw loads the file again into new memory while the unit's model still
+  points into the old one, and the game reads freed memory: a crash at `age3y.exe+0xC07C` or `+0xCC7B`, or in
+  `granny2.dll` (`+0x3A02A`, `+0x2C8CD`). WoL's art keeps the cache over 30 MB from the first minutes: 584 unloads
+  in 9.4 minutes of a 6-player Levant game. More players, more civs and a camera that moves over the whole map make
+  it worse.
+- **What the key does:** with no number, or `0`, no model is ever unloaded for the budget (recommended for WoL).
+  With a number of megabytes (30 to 4000), models are unloaded only above it; any limit the cache reaches can
+  crash again, so use one only if memory runs short. With `log`, the log says each time the cache passes a new
+  50 MB step.
+- **Memory:** every model a game draws stays loaded. In the Levant click sweeps (the whole map revealed and
+  clicked) the cache grew to 90-120 MB in 13.5 minutes instead of 30, and the game's peak private bytes were
+  1,363-1,539 MB instead of 1,267-1,328 MB (about +90 to +150 MB at 10 minutes). WoL's exe is
+  large-address-aware (4 GB).
+- **WoL also needs (data):** a damage template whose parts name a bone the model does not have makes the game
+  reload that model while it is in use, the first time it meets the bone name; the key does not cover it
+  ([dmgPartBoneFix](#dmgpartbonefix) does). In WoL,
+  `art\War of the Triple Alliance\DLC\Other\new trees\cypress.xml` gives the cypress trees `tree_oak_a.dmg`, whose
+  part bone `oak a death` the cypress models lack: a game crashed 12 s after a cypress fell
+  (`granny2.dll+0x2C8CD`). The fix is to drop the three `damagetemplate="terrain\trees\Damage\tree_oak_a.dmg"`
+  attributes of its `death` component. aoe3-blender-tools' `tools/dmg_bones.py` lists every such pair: 27 in
+  WoL's art (`wol-fixes/art-dmg-bones-20261123/`).
+- **Without the DLL (WoL's own exe):** the same fix is four bytes twice, `80 C3 C9 01` → `FF FF FF FF`, at file
+  offsets `0x6C043` and `0x2E017A` of `age3y.exe` (WoL's exe `0a277f14…` and the stock one have the same bytes
+  there). Check both offsets hold `80 C3 C9 01` first.
+- **Log:** `modelCacheLimit: models are never unloaded for the cache budget (stock: above 30 MB)` or `... unloaded
+  above N MB of loaded models (stock 30 MB)`; with `log`, `modelCacheLimit: the model cache holds 51 MB (game time
+  4:47)`. A bad argument: `modelCacheLimit: X is not a number of megabytes from 30 to 4000, 0 (no limit) or log;
+  feature not applied`.
+- **Simulation:** none; what the cache holds already differs between players in the stock game (it follows each
+  one's camera).
+- **Beside WoL's DLL:** applied (`dinput8.dll`); WoL's DLL does not touch these bytes.
+- **Tested (2026-11-23, single player, WoL 1.0.15c with WoL's `uhc.dll`, our `dinput8.dll`):** "NEW" Levant,
+  `tools/clicksweep.py` (the map revealed, every kind of unit selected, double-clicked and right-clicked with
+  player 1's villagers, 13.5 minutes of game time), player 1 Dutch, European AIs, `tools/re/trace_frees.py` on
+  every key-on game. With `modelCacheLimit 0 log` and the cypress fixed: **6 games, 0 crashes** (6 players free
+  for all Hard ×2 and Expert, 8 players free for all Hard, 4v4 Hard and Expert), and 0 models unloaded for the
+  budget during play. With the key and WoL's data as shipped: one 6-player game ok, one 8-player 4v4 Expert game
+  crashed after 6.0 minutes, 12 s after the cypress reload. Key off: 2 games ok here (1,751 budget unloads in the
+  traced 8-player one); 4 crashes in 7 on 2026-11-22; with only WoL's `uhc.dll` (no DLL of ours): 1 crash in 2
+  (`granny2.dll+0x2C9A4`, 10.5 minutes). The fixed `market.xml` removed the West market's 5 reloads (2 games).
+  At the main menu: `modelCacheLimit 10` and `modelCacheLimit abc log` logged the refusal and FAILED;
+  `modelCacheLimit 500 log` and `modelCacheLimit` alone applied. Not tested: multiplayer, games longer than 13.5 minutes, a limit other than 0 in
+  game. Details: `wol-fixes/maps/levant-fix-20261123.txt`.
+
+#### dmgPartBoneFix
+
+*Keeps the game from reloading a 3D model that units still draw when a damage template names a bone the model does not have (WoL #78).*
+
+**Added:** Monday 2026-11-23 09:18
+
+```
+dmgPartBoneFix [log]
+```
+
+- **The bug:** a damage template (`.dmg`) hangs its parts (debris, a falling trunk) on bones by name. The game finds
+  a part's bone through a table of bone names, which the anim files fill with `<definebone>`, and through each
+  model's own map of that table, built when the model was loaded. When a part names a bone the model's map lacks,
+  the game writes "Invalid bone name ... in part declaration for model ..." and, if that name was new to the table,
+  loads the model again so its map includes it: the old file is freed while units still draw it, and the game can
+  crash in its next draw (`granny2.dll+0x2C8CD`). It happens once per bone name in a session, the first time a
+  model with such a template is used. WoL's art has 182 model and template pairs whose bones the model lacks and 253
+  whose bones the anim file does not define (the original game: 19 and 40). In a Levant game the cypress trees
+  (with the oak's template) crashed the game 12 s after the first one fell, with `modelCacheLimit 0` on.
+- **What the key does:** the game never reloads a model for a part. It takes the path it already takes when the
+  bone name was known: the part is kept, and in that model it has no bone, so that piece of debris is not drawn
+  for that model (the rest of the damage and destruction is unchanged). With `log`, the log names the bone and the
+  model each time a reload is skipped.
+- **WoL also needs:** nothing. The data fix `wol-fixes/art-dmg-bones-20261123/` (the `<definebone>` lines the 253
+  pairs lack, and the cypress without the oak's template) makes those parts work instead of being skipped; the 182
+  pairs whose models lack the bones need a template made for the model, or none.
+- **Without the DLL (WoL's own exe):** one byte, `74` → `EB` at file offset `0x258C1A` of `age3y.exe` (WoL's exe
+  `0a277f14…` and the stock one hold `84 DB 74 1E` at `0x258C18`; check it first).
+- **Log:** `dmgPartBoneFix: a damage part whose bone a model lacks no longer reloads the model` (with `log`: `...
+  (each skipped reload logged)`); with `log`, `dmgPartBoneFix: bone "bone_debris_1p" of a damage part is not in
+  model "buildings\market\generic_market_damaged": reload skipped, the part has no bone in that model (1 so far)`.
+  A bad argument: `dmgPartBoneFix: unknown argument 'abc' (expected log); not applied`.
+- **Simulation:** none expected: a model's bone map is drawing state, which already differs between players.
+- **Beside WoL's DLL:** not run yet; its site (0x658C18) is not in the list of bytes WoL's DLL changes.
+- **Tested (2026-11-23, single player, our `UHC.dll` in a WoL 1.0.15c copy):** a scenario with two markets damaged
+  and destroyed and seven cypress trees, `tools/re/trace_frees.py --parts`: key off, 2 invalid parts
+  (`generic_market_damaged`, `bone_debris_1p` and `1q`) and 2 reloads of that model; key on (with and without
+  `log`), the same 2 invalid parts and no reload; every other model unload the same. "NEW" Levant, 6 players free
+  for all, Hard, European AIs, `tools/clicksweep.py` for 14 minutes, WoL's data as shipped, `modelCacheLimit 0 log`
+  and `dmgPartBoneFix log`: **ok, no crash**; 7 invalid parts met (the West market's damaged model, `bone_debris_2q`
+  to `2u`, at 9:09; a cypress, `oak a death`, at 13:34: the reload that crashed a game in the `modelCacheLimit`
+  tests), 6 reloads skipped and logged, 0 models unloaded or reloaded during play. With the
+  `wol-fixes/art-dmg-bones-20261123/` data applied, a 6.5-minute Levant game met no invalid part at all.
+  `dmgPartBoneFix abc`: refused and FAILED. Not tested: multiplayer, beside WoL's DLL, games longer than 14 minutes.
 
 ### Combat
 

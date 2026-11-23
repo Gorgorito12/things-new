@@ -5,8 +5,8 @@
 // pass after a load 0x94DDEA, each with its own copy of the loop over the team. So the key wraps the
 // three: for a marked tech it calls the stock routine once per target, without the team flag. The tech
 // stays active in the owner's tree only; a load and a removal go through the owner, and the targets are
-// counted again then. The flag's reader is hooked too: the stock chain ignores a name it does not know.
-// The hooks are in hooks/hctarget_hooks.asm.
+// counted again then. The two flags are read through the shared flag reader hook (techflags.h): the stock chain
+// ignores a name it does not know. The other hooks are in hooks/hctarget_hooks.asm.
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -17,9 +17,9 @@
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../techflags.h"
 
 extern "C" {
-void UhcTechFlagHook();
 void UhcTechRemoveStock();
 void UhcTechLoadStock();
 }
@@ -28,7 +28,6 @@ namespace {
 
 enum class Target { kEnemies, kAll };
 
-constexpr std::uint32_t kFlagHead = 0x00620C2F;
 constexpr std::uint32_t kApplyCall = 0x0094D0AE;
 constexpr std::uint32_t kRemoveHead = 0x0094DCB2;
 constexpr std::uint32_t kLoadHead = 0x0094DDEA;
@@ -98,8 +97,8 @@ bool __fastcall Apply(char* tech, void*, char* player, void* unit, std::uint32_t
 
 }  // namespace
 
-// From the head of the flag reader: true for the two flags of the key, which stock would ignore.
-extern "C" bool __stdcall UhcTechFlag(char* entry, const char* name) {
+// From the shared flag reader hook: true for the two flags of the key, which stock would ignore.
+static bool UhcTechFlag(char* entry, const char* name) {
   const bool enemy = name != nullptr && _stricmp(name, "HCTargetEnemy") == 0;
   if (!enemy && (name == nullptr || _stricmp(name, "HCTargetAll") != 0)) {
     return false;
@@ -148,9 +147,9 @@ Outcome ApplyHcTargetTechs(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("hcTargetTechs", {&sites::kTechFlagHead, &sites::kTechApplyCall, &sites::kTechRemoveHead,
+  if (!VerifyAll("hcTargetTechs", {&sites::kTechApplyCall, &sites::kTechRemoveHead,
                                    &sites::kTechLoadHead, &sites::kIsEnemyHead}) ||
-      !WriteJmp(kFlagHead, reinterpret_cast<const void*>(&UhcTechFlagHook), 5) ||
+      !AddTechFlagHandler("hcTargetTechs", &UhcTechFlag) ||
       !WriteCall(kApplyCall, reinterpret_cast<const void*>(&Apply)) ||
       !WriteJmp(kRemoveHead, reinterpret_cast<const void*>(&UhcTechRemove), 6) ||
       !WriteJmp(kLoadHead, reinterpret_cast<const void*>(&UhcTechLoad), 7)) {

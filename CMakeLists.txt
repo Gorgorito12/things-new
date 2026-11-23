@@ -38,6 +38,8 @@ set(UHC_SOURCES
   src/transformcalls.cpp
   src/prototags.cpp
   src/techtags.cpp
+  src/techflags.cpp
+  src/cardtags.cpp
   src/civtags.cpp
   src/techsubtypes.cpp
   src/d3d9hooks.cpp
@@ -58,6 +60,8 @@ set(UHC_SOURCES
   src/features/detonation.cpp
   src/features/annexfacing.cpp
   src/features/hctargets.cpp
+  src/features/resendcards.cpp
+  src/features/quickarrival.cpp
   src/features/cratepriority.cpp
   src/features/donotqueue.cpp
   src/features/freeresearch.cpp
@@ -117,6 +121,8 @@ set(UHC_SOURCES
   src/features/lastinline.cpp
   src/features/renderer.cpp
   src/features/selection.cpp
+  src/features/modelcache.cpp
+  src/features/dmgpartbone.cpp
   src/features/sharedlimit.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
@@ -163,6 +169,7 @@ set(UHC_SOURCES
   src/features/containedrof.cpp
   src/features/shots.cpp
   src/features/inventorybars.cpp
+  src/features/retarget.cpp
   src/features/unitresource.cpp
   src/features/gatherauras.cpp
   src/features/resourcedebt.cpp
@@ -176,6 +183,7 @@ set(UHC_SOURCES
   src/hooks/foundation_hooks.asm
   src/hooks/truckattack_hooks.asm
   src/hooks/impactbone_hooks.asm
+  src/hooks/dmgpartbone_hooks.asm
   src/hooks/impacttype_hooks.asm
   src/hooks/syscall_hooks.asm
   src/hooks/team_hooks.asm
@@ -193,6 +201,8 @@ set(UHC_SOURCES
   src/hooks/ageup_hooks.asm
   src/hooks/politicianplaces_hooks.asm
   src/hooks/techtags_hooks.asm
+  src/hooks/techflags_hooks.asm
+  src/hooks/cardtags_hooks.asm
   src/hooks/dance_hooks.asm
   src/hooks/farm_hooks.asm
   src/hooks/decimalpop_hooks.asm
@@ -236,11 +246,14 @@ set(UHC_SOURCES
   src/hooks/rofreads_hooks.asm
   src/hooks/floatingbars_hooks.asm
   src/hooks/inventorybars_hooks.asm
+  src/hooks/retarget_hooks.asm
   src/hooks/shots_hooks.asm
   src/hooks/unitresource_hooks.asm
   src/hooks/gatherauras_hooks.asm
   src/hooks/resourcedebt_hooks.asm
   src/hooks/hctarget_hooks.asm
+  src/hooks/resendcards_hooks.asm
+  src/hooks/quickarrival_hooks.asm
   src/hooks/modifytype_hooks.asm
   src/hooks/bounty_hooks.asm
   src/hooks/cantslow_hooks.asm

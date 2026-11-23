@@ -1,0 +1,175 @@
+"NEW" Levant crash (#78): the fix, tested (2026-11-23)
+=====================================================
+
+Follows wol-fixes/maps/levant-clicks-20261122.txt (the crash reproduced 4 times, and its likely cause).
+
+Short answer
+------------
+There are two causes, both in how the game frees 3D models while units still use them, and both are fixed:
+
+1. The model cache's 30 MB budget (the main one). The game unloads the model it used least recently every
+   frame while its loaded models take more than 30,000,000 bytes, even when units still draw it; WoL's art is
+   over that from the first minutes. Fix: our DLL's new key `modelCacheLimit 0` (no model is ever unloaded
+   for the budget), or the same as a 4-byte patch of WoL's age3y.exe (below).
+2. Damage templates whose "part" bones the anim file does not define, or the model lacks (a smaller one, in
+   the data). When a building or tree with such a template is damaged or dies, the game writes "Invalid bone
+   name ... in part declaration for model ..." and, the first time it meets that bone name, loads the model
+   again while units still draw it. With the key on, one game crashed this way: a cypress tree with the oak's template, bone
+   "oak a death", which the cypress models do not have. Fix: in WoL's data (files below).
+
+With the key on and the cypress fixed: 6 games of 13.5 minutes (6 and 8 players, free for all and teams, Hard
+and Expert), 0 crashes, and not one model unloaded for the budget during play (the traces). Without the key the
+same clicks crashed 4 times in 7 games yesterday (2 more games without the key today did not), and today
+once in 2 games with ONLY your uhc.dll (no DLL of ours at all): so it is not our test DLL. The cost is about
+100 to 150 MB more memory at 10 minutes (the cache held 90 to 120 MB instead of 30).
+
+What to do in WoL
+-----------------
+- Put `modelCacheLimit 0` in our DLL's cfg, or patch age3y.exe yourselves (it does the same, with no DLL):
+    file offset 0x6C043:  80 C3 C9 01  ->  FF FF FF FF
+    file offset 0x2E017A: 80 C3 C9 01  ->  FF FF FF FF
+  Check that both offsets hold 80 C3 C9 01 first (they do in WoL's age3y.exe 0a277f14... and in the Steam
+  exe). These are the two compares with the budget, 30,000,000 = 0x01C9C380; FF FF FF FF is never exceeded.
+- art\War of the Triple Alliance\DLC\Other\new trees\cypress.xml: remove the three
+  damagetemplate="terrain\trees\Damage\tree_oak_a.dmg" of its "death" component (the cypress models have no
+  bone "oak a death", so that part never worked on them; the tree still has its death animation). The fixed file:
+  wol-fixes/art-dmg-bones-20261123/art/... (same path).
+- art\War of the Triple Alliance\Buildingsets\market.xml: add <definebone> for bone_debris_2Q to 2U after
+  bone_debris_2P (the model has these bones; the anim file defines only up to 2P, so the game reloaded the
+  West market's damaged model in every game we played with the key on). The fixed file is in the same folder.
+- The other damage templates with the same fault are listed in wol-fixes/art-dmg-bones-20261123/:
+  dmg-bones-wol.csv (WoL's art: 182 model and template pairs with bones the model lacks, 253 with bones the
+  anim file does not define) and dmg-bones-stock.csv (the original game has 19 and 40 itself). Each one is a
+  possible crash only the first time its bone name is met in a session, and only while the model is in use;
+  "not defined" ones are fixed with <definebone> lines, "missing bones" ones with a template made for the
+  model or no template. The list comes from aoe3-blender-tools' tools/dmg_bones.py (it reads the loose files
+  and the .bar archives, and the compressed models through the game's granny2.dll).
+
+The key
+-------
+  modelCacheLimit [MB] [log]
+- No number, or 0: no model is ever unloaded for the budget (recommended).
+- A number of megabytes (30 to 4000): models are unloaded only above it. Any limit the cache reaches can crash
+  again, so use one only if memory runs short.
+- log: the log says each time the cache passes a new 50 MB step.
+- It rewrites the two numbers above in memory (after checking the original bytes); no hook. It works beside
+  WoL's uhc.dll (our dinput8.dll; WoL's DLL does not touch these bytes) and in our UHC.dll.
+
+Memory
+------
+With the key, every model a game draws stays loaded. In these sweeps (the whole map revealed and clicked,
+which draws far more kinds of model than a player's camera) the cache grew to 90-120 MB in 13.5 minutes
+instead of staying at 30 MB, and the process's private bytes were 1,363-1,539 MB at their peak instead of
+1,267-1,328 MB (about +90 to +150 MB at 10 minutes of game time; working set 1,112-1,285 MB against
+1,018-1,076 MB). WoL's exe is large-address-aware (up to 4 GB), so this is far from any limit. The cache can only
+grow up to the size of all the models one game uses; a limit (modelCacheLimit 500, say) is there for a machine
+that runs short of memory, at the price of the crash coming back when the cache reaches it.
+
+The tests
+---------
+- A copy of WoL 1.0.15c with WoL's own uhc.dll (c070d138) and our dinput8.dll beside it (only to drive the
+  game: console, background window, XS error log, perfStats), the fixed NEWLevant.xs of 2026-11-21, single
+  player skirmishes, player 1 Dutch (idle apart from the clicks), European AIs (6 players: Otto, Victoria,
+  Isabel, Alexander, Carlos; 8 players in teams: plus Oscar and Frederick; 8 players free for all: Maria
+  Theresa, Leopold, Victor Emmanuel, Theodoros, Carol, Petar, Ferdinand), the map revealed, tools/clicksweep.py
+  clicking every kind of unit (select, double click, right click with player 1's villagers) for 13 minutes of
+  game time, as on 2026-11-22.
+- On every game: a crash watch, a memory sampler (working set, private bytes, the model cache's loaded bytes
+  [[0C66240h]+910Ch], every 5 s), and with the key on tools/re/trace_frees.py (every model unload and reload).
+- The control: the same clicks with only WoL's uhc.dll (no dinput8.dll, no engine-ext: clicksweep.py
+  --no-console moves the camera with the minimap, the map revealed by the setup).
+
+  setup (all "NEW" Levant)    DLLs                    key     data            result                       game time  peak private  peak cache
+  6 free for all, Hard        WoL's + dinput8         key 0   as shipped      ok                           13.5 min   1,394 MB      94 MB
+  8 in 4v4, Expert            WoL's + dinput8         key 0   as shipped      CRASH granny2.dll+0x2C8CD    6.0 min    1,329 MB      87 MB
+                                                                              (12 s after the cypress reload)
+  6 free for all, Hard        WoL's + dinput8         off     as shipped      ok                           13.5 min   1,328 MB      33 MB
+  8 in 4v4, Expert            WoL's + dinput8         key 0   cypress fixed   ok                           13.5 min   1,539 MB      115 MB
+  8 free for all, Hard        WoL's + dinput8         key 0   cypress fixed   ok                           13.5 min   1,440 MB      97 MB
+  6 free for all, Hard        WoL's only (control)    -       as shipped      ok                           13.5 min   1,267 MB      30 MB
+  6 free for all, Expert      WoL's + dinput8         key 0   cypress fixed   ok                           13.5 min   1,444 MB      120 MB
+  6 free for all, Hard        WoL's only (control)    -       as shipped      CRASH granny2.dll+0x2C9A4    10.5 min   1,267 MB      30 MB
+  6 free for all, Hard        WoL's + dinput8         key 0   cypress fixed   ok                           13.5 min   1,384 MB      111 MB
+  6 free for all, Hard        WoL's + dinput8         key 0   both fixed      ok                           13.5 min   1,363 MB      100 MB
+  8 in 4v4, Hard              WoL's + dinput8         key 0   both fixed      ok                           13.5 min   1,478 MB      91 MB
+  8 in 4v4, Expert            WoL's + dinput8         off     cypress fixed   ok                           13.5 min   1,365 MB      39 MB
+
+  "key 0" = modelCacheLimit 0 log. "cypress fixed" = cypress.xml as above. Peak private = the process's peak
+  private bytes; peak cache = the highest loaded-model bytes sampled.
+
+What the traces show
+--------------------
+- With the key, no model was unloaded for the budget in any game (0 unloads during play in 8 traced games;
+  without the key: 1,751 during play in the traced 8-player game of today, 584 in 9.4 minutes in yesterday's
+  6-player one). The only unloads during play were the part
+  declaration reloads below; 1,270-1,560 unloads at the end of each game are the game freeing everything when
+  it closes.
+- The key-on crash (8 players, Expert, 6.0 minutes): at 5:50 of game time the game wrote the "Invalid bone
+  name" error for the cypress (model war of the triple alliance\dlc\other\new trees\cypressa, bone "oak a
+  death") and reloaded it; 12 seconds later it crashed in granny2.dll+0x2C8CD, called from the model draw
+  (age3y.exe 0x40CACE, 0x44EA8C, 0x451446), the same draw as yesterday's crashes.
+- In every key-on game with the original market.xml, the game reloaded the West market's damaged model
+  (buildings\market\west\age_2\west_market_age2_damaged) 5 times, once for each of bone_debris_2q, 2r, 2s,
+  2t and 2u, between 5:37 and 10:00 of game time; those games did not crash, but it is the same risk. With
+  the fixed market.xml (2 games): no reload at all.
+- The control crash (only your uhc.dll, 10.5 minutes): granny2.dll+0x2C9A4, read of 0x471, called from the
+  model draw (0x40CC78, 0x40CACE, 0x44EA8C, 0x451446): the same fault, with no DLL of ours in the process. The
+  cache was at its 30 MB budget all game (so unloading every frame).
+
+The key's arguments (2026-11-23, at the main menu): `modelCacheLimit 10` and `modelCacheLimit abc log` are
+refused ("... is not a number of megabytes from 30 to 4000, 0 (no limit) or log; feature not applied", FAILED),
+`modelCacheLimit 500 log` and `modelCacheLimit` alone are applied.
+
+Not tested
+----------
+Multiplayer; games longer than 13.5 minutes; a human civ other than Dutch; the map not revealed (which draws
+fewer models, so the cache would grow less); the King of the Hill version; a limit other than 0 in a game (the
+same compares); the key in our UHC.dll instead of dinput8.dll (the same code). Which of the 435 other listed
+templates a Levant game meets was not checked; the two we saw are fixed.
+
+Follow-up, later the same day: every damage template, and a key
+-------------------------------------------------------------
+- Data: wol-fixes/art-dmg-bones-20261123/ now fixes all 253 "not defined" pairs (1533 <definebone> lines in 131
+  anim files, plus the cypress), as WoL-dmg-bones-fix.zip with apply_fix.py (--check / --restore). After it,
+  dmg_bones.py reports 0 "not defined"; the 179 "missing bones" pairs left are listed by template there.
+- DLL: the new key `dmgPartBoneFix [log]` (docs/bug-fixes.md) removes the reload itself: the game takes the path
+  it already takes when the bone name was known, so that part is not drawn on that model and nothing is freed.
+  It covers every case (the 182 + 253 of WoL, the original game's 19 + 40, future art). Without the DLL: one
+  byte, file offset 0x258C1A of age3y.exe, 74 -> EB (check 84 DB 74 1E at 0x258C18 first).
+- Tests (our UHC.dll in a WoL 1.0.15c copy, single player): a 6-player free for all, Hard, 14 minutes of clicks
+  with WoL's data as shipped, modelCacheLimit 0 log + dmgPartBoneFix log: ok, no crash; the West market's five
+  bones (9:09) and a cypress's "oak a death" (13:34, the reload that crashed a game this morning) were met, their
+  6 reloads skipped, and no model was unloaded or reloaded during play (tools/re/trace_frees.py --parts). With the
+  data pack applied, a 6.5-minute game met no invalid part. Details: docs/bug-fixes.md, dmgPartBoneFix.
+
+Reply for JTMaston (#78)
+------------------------
+#78 "NEW" Levant crash: found and fixed (tested).
+
+The crash is not in the map script. It is the game's 3D model cache: the exe has a fixed 30 MB budget for loaded
+models, and every frame it unloads the least recently used model while it is over that, even if units on the map
+still use it. WoL's art keeps the cache over 30 MB from the first minutes (we counted 584 to 1,751 unloads in one
+game), so sooner or later a unit draws a model that was freed under it and the game crashes inside Granny
+(Windows reports age3y.exe offset 0000c07c / 0000cc7b, or granny2.dll offset 0003a02a / 0002c8cd / 0002c9a4).
+Big games (6 to 8 players), clicking or scrolling over the whole map, and many civs make it more likely. It also
+crashed with only your uhc.dll and none of ours, so it is the game, not a DLL.
+
+The fix:
+1. Remove the budget. Either our DLL's new key `modelCacheLimit 0`, or patch age3y.exe yourselves, 4 bytes twice:
+   file offset 0x6C043: 80 C3 C9 01 -> FF FF FF FF, and file offset 0x2E017A: 80 C3 C9 01 -> FF FF FF FF
+   (check both hold 80 C3 C9 01 first). Cost: about 100-150 MB more memory in a 13-minute game; WoL's exe is
+   large-address-aware, so that is fine.
+2. Two data errors that make the game reload a model while it is in use (same kind of crash; one game crashed
+   this way with the budget removed):
+   - art\War of the Triple Alliance\DLC\Other\new trees\cypress.xml uses the oak's damage template
+     (terrain\trees\Damage\tree_oak_a.dmg), whose part bone "oak a death" the cypress models do not have.
+     Remove the three damagetemplate="..." of its death component.
+   - art\War of the Triple Alliance\Buildingsets\market.xml does not define bone_debris_2Q to 2U, which the West
+     market's damaged model has: add five <definebone> lines after bone_debris_2P.
+   Both fixed files are attached. We also attach a list of every other damage template with the same fault in
+   WoL's art (and in the original game, which has some too); each one is a possible crash the first time its
+   bone is met in a game, so they are worth fixing when you touch those files.
+
+Tested: 6 games of 13.5 minutes on "NEW" Levant, 6 and 8 players, free for all and 4v4, Hard and Expert,
+European AIs, one player clicking every unit on the revealed map: 0 crashes with the fix, and the cache never
+unloaded a model during play. Before the fix the same test crashed in about half the games.

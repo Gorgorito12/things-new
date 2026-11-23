@@ -17,22 +17,21 @@ nothing.
 
 What it changes (README.txt has the why and the recipe for another unit):
 - data\\tactics\\wolChasseurDismount.tactics (new, made from the folder's own musketCavalry.tactics): the same
-  actions and tactics, plus the actions DismountedRangedAttack, DismountedHandAttack and DismountedBuildingAttack
-  (copies of DefendRangedAttack, MeleeHandAttack and BuildingAttack with the animations on foot), a tactic
-  "Dismounted" (speed x0.67) and a transition from every mounted tactic to it (animation Dismount, 2.5 s; 3.5 s
+  actions and tactics, plus the actions DismountedRangedAttack and DismountedBuildingAttack (copies of
+  DefendRangedAttack and BuildingAttack with the animations on foot; the shot with <minrange> 0, so it fires at
+  point blank: no hand attack on foot), a tactic "Dismounted" (speed x0.67) and a transition from every mounted tactic to it (animation Dismount, 2.5 s; 3.5 s
   with the horse hidden, the rider then stepping to the unit's centre) and back (Mount, the same); with --test, the file's Build and Heal actions are active and in the stance on foot only;
-- data\\protoy.xml: ChasseuraCheval uses that file and gets the ProtoActions of the three new attacks (copies of
+- data\\protoy.xml: ChasseuraCheval uses that file and gets the ProtoActions of the two new attacks (copies of
   its own) and the buttons DismountStance and MountStance on its command row (page 10, the first free columns);
   with --test, the unit ChasseuraChevalDismountTest;
 - data\\protounitcommands.xml: those buttons, unitSetTactic("Dismounted") and unitSetTactic("Stagger");
 - data\\uhc\\customprotounitcommands.xml: their names, which the game must know to keep the buttons (DLL key
   customProtoUnitCommands);
-- data\\techtreey.xml: every effect on DefendRangedAttack, MeleeHandAttack or BuildingAttack gets a twin on the
-  new action, so upgrades and cards reach the attacks on foot too;
+- data\\techtreey.xml: every effect on DefendRangedAttack or BuildingAttack gets a twin on the new action, so upgrades and cards reach the attacks on foot too;
 - data\\battle.xml: the squad mode CavalryDismounted (the stance button) for AbstractWoLRangedCavalry;
 - data\\stringtabley.xml and translations\\_originals\\stringtabley.xml: the tooltips (IDs 690911, 690912);
 - art\\WoL\\units\\cavalry\\chasseur_a_cheval\\chasseur_a_cheval_horse.xml and chasseur_a_cheval_rider.xml: the
-  animations Dismounted_* (idle, bored, walk, jog, run, attack, reload, melee, death, raze idle and attack),
+  animations Dismounted_* (idle, bored, walk, jog, run, attack, reload, death, raze idle and attack),
   Dismount and Mount; with the horse hidden, the clips chasseur_hidden_* (the rider on the unit's centre on foot)
   and chasseur_horse_hidden_* (the horse under the ground while he is on foot);
 - art\\WoL\\units\\cavalry\\chasseur_a_cheval\\dismount\\*.gr2 (new): the rider's animations and the horse clips
@@ -65,11 +64,16 @@ RIDER_XML = ART + "/chasseur_a_cheval_rider.xml"
 ACTIONS = {
     "DefendRangedAttack": ("DismountedRangedAttack", {"anim": "Dismounted_Attack", "reloadanim": "Dismounted_Reload",
                                                       "idleanim": "Dismounted_Idle"}),
-    "MeleeHandAttack": ("DismountedHandAttack", {"anim": "Dismounted_Melee", "idleanim": "Dismounted_Idle"}),
     "BuildingAttack": ("DismountedBuildingAttack", {"anim": "Dismounted_Raze_attack",
                                                     "idleanim": "Dismounted_Raze_idle"}),
 }
-PRIORITY = {"DismountedRangedAttack": 100, "DismountedHandAttack": 90, "DismountedBuildingAttack": 75}
+PRIORITY = {"DismountedRangedAttack": 100, "DismountedBuildingAttack": 75}
+# tags set on every occurrence in an action on foot. The shot keeps the mounted one's damage, range and ROF (the
+# ProtoAction is a copy) but fires at point blank: the source writes <minrange>2 twice, and inside 2 m the unit
+# switched to its hand attack (WoL's request of 2026-11-23: a ranged unit keeps its shot on foot, no melee).
+SET_ALL = {"DismountedRangedAttack": {"minrange": "0"}}
+# actions of the mounted tactic the stance on foot does not keep: the Jezail's shot, and the hand attack
+NOT_ON_FOOT = ("JezailRangedAttack", "MeleeHandAttack")
 # --test only: the Build and Heal actions of the tactics file (which the Chasseur has no ProtoAction for) are made
 # active and are in the stance on foot only; the test unit gets the ProtoActions. Measured in game (2026-11-22):
 # copies named DismountedHeal / DismountedBuild never healed or built, and with <anim>Dismounted_Heal / _Build the
@@ -86,7 +90,7 @@ TEST_PROTO_ACTIONS = ("\t\t<ProtoAction>\r\n\t\t\t<Name>Build</Name>\r\n"
                       "\t\t<Train column=\"0\" page=\"6\" row=\"0\">House</Train>\r\n")
 STRING_ID = 690911
 STRINGS = {
-    690911: "Dismount: the rider gets off and fights on foot beside his horse. Slower on foot; the same attacks.",
+    690911: "Dismount: the rider gets off and fights on foot. Slower on foot; the same shot, even at point blank.",
     690912: "Mount: the rider gets back on his horse (Stagger stance).",
 }
 MOUNT_TACTIC = "Stagger"
@@ -188,6 +192,10 @@ def tactics_file(text, test=False, horse="hide"):
         a = re.sub(r"(<name[^>]*>)\s*%s\s*(</name>)" % old, r"\g<1>%s\2" % new, a, count=1)
         for tag, value in anims.items():
             a = re.sub(r"<%s>[^<]*</%s>" % (tag, tag), f"<{tag}>{value}</{tag}>", a, count=1)
+        for tag, value in SET_ALL.get(new, {}).items():
+            a, n = re.subn(r"<%s>[^<]*</%s>" % (tag, tag), f"<{tag}>{value}</{tag}>", a)
+            if n == 0:
+                sys.exit(f"apply_fix: {SOURCE_TACTICS}'s action {old} has no <{tag}>")
         a = re.sub(r"[ \t]*<active>0</active>\r?\n", "", a)
         new_actions += a.lstrip("\r\n")
     last = list(re.finditer(r"\n\t</action>\r?\n", text))[-1]
@@ -216,7 +224,7 @@ def tactics_file(text, test=False, horse="hide"):
     first = block(text, "tactic", MOUNTED[1], SOURCE_TACTICS).group(0)
     # the tactic's own actions only (two tabs in), not the <action>Limber</action> of its transitions
     keep = [line.group(0) for line in re.finditer(r"(?m)^\t\t<action[^>]*>\s*([^<]*?)\s*</action>", first)
-            if line.group(1) not in actions and line.group(1) != "JezailRangedAttack"]
+            if line.group(1) not in actions and line.group(1) not in NOT_ON_FOOT]
     back = "".join(f"\t\t<transition>\n\t\t\t<tactic>{t}</tactic>\n\t\t\t<action>Limber</action>\n\t\t\t<anim>Mount</anim>\n"
                    f"\t\t\t<length>{LENGTH[horse]}</length>\n\t\t\t<exit>1</exit>\n\t\t</transition>\n" for t in MOUNTED)
     on_foot = "".join(f"\t\t<action priority=\"{PRIORITY[new]}\">{new}</action>\n" for new, _a in actions.values())

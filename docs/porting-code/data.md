@@ -143,6 +143,7 @@ constexpr KnownTag kKnownTags[] = {
     {L"NumberOfShots", "numberOfShots"},
     {L"ShotInterval", "numberOfShots"},
     {L"BurstPose", "numberOfShots"},
+    {L"RetargetInAction", "retargetInAction"},
     {L"BroadsideSoundSet", "broadsideSoundSet"},
     {L"DetonationHitpointThreshold", "detonationDeath"},
     {L"DetonationHitpointDecay", "detonationDeath"},
@@ -178,6 +179,8 @@ constexpr KnownTag kKnownTags[] = {
     {L"CanOverheal", "overhealSources"},
     {L"OverhealCap", "overhealSources"},
     {L"OverhealDecay", "overhealDecay"},
+    {L"ResendEveryAge", "resendableCards"},
+    {L"QuickArrival", "quickArrivalCards"},
 };
 
 std::map<std::wstring, Seen> g_seen[kKinds];

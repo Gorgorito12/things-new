@@ -1,0 +1,383 @@
+Damage templates whose part bones the model lacks, WoL 1.0.15c after the pack (179 model and template pairs, 101 templates)
+Each template: the number of models (pairs), then each anim file, model and the bones it lacks.
+
+buildings\house\house_generic_a.dmg: 11 models in 11 anim files
+    buildings\native_civs\house\house.xml | buildings\native_civs\house\iro\iro_house_1a | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f (+13 more)
+    war of the triple alliance\buildingsets\arsenal.xml | buildings\church\french_church_age3_damaged | lacks bone_debris_1h, bone_debris_1i, bone_debris_2d, bone_debris_2e, bone_debris_2f
+    war of the triple alliance\buildingsets\gwairfield.xml | buildings\church\french_church_age3_damaged | lacks bone_debris_1h, bone_debris_1i, bone_debris_2d, bone_debris_2e, bone_debris_2f
+    war of the triple alliance\buildingsets\gwartilleryhq.xml | buildings\church\french_church_age3_damaged | lacks bone_debris_1h, bone_debris_1i, bone_debris_2d, bone_debris_2e, bone_debris_2f
+    war of the triple alliance\buildingsets\gwcavalryhq.xml | buildings\church\french_church_age3_damaged | lacks bone_debris_1h, bone_debris_1i, bone_debris_2d, bone_debris_2e, bone_debris_2f
+    war of the triple alliance\buildingsets\gwinfantryhq.xml | buildings\church\french_church_age3_damaged | lacks bone_debris_1h, bone_debris_1i, bone_debris_2d, bone_debris_2e, bone_debris_2f
+    war of the triple alliance\buildingsets\gwsupplydepot.xml | buildings\church\french_church_age3_damaged | lacks bone_debris_1h, bone_debris_1i, bone_debris_2d, bone_debris_2e, bone_debris_2f
+    war of the triple alliance\buildingsets\store.xml | buildings\church\french_church_age3_damaged | lacks bone_debris_1h, bone_debris_1i, bone_debris_2d, bone_debris_2e, bone_debris_2f
+    war of the triple alliance\buildingsets\town_center.xml | buildings\church\french_church_age3_damaged | lacks bone_debris_1h, bone_debris_1i, bone_debris_2d, bone_debris_2e, bone_debris_2f
+    war of the triple alliance\dlc\zupay\buildings\town center\town_center.xml | buildings\church\french_church_age3_damaged | lacks bone_debris_1h, bone_debris_1i, bone_debris_2d, bone_debris_2e, bone_debris_2f
+    wol\buildings\towncenter\towncenter.xml | buildings\church\french_church_age3_damaged | lacks bone_debris_1h, bone_debris_1i, bone_debris_2d, bone_debris_2e, bone_debris_2f
+
+buildings\native_civs\corral\nat_corral_age2_damaged.dmg: 11 models in 11 anim files
+    buildings\asian_civs\caravanserai\caravanserai.xml | buildings\native_civs\corral\iroquois_corral_age2_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_3d (+3 more)
+    buildings\native_civs\corral\corral.xml | buildings\native_civs\corral\iroquois_corral_age2_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_3d (+3 more)
+    buildings\polynesia\pa\pa_wall.xml | buildings\native_civs\corral\iroquois_corral_age2_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_3d (+3 more)
+    buildings\polynesia\siege_workshop\siege_workshop.xml | buildings\native_civs\corral\iroquois_corral_age2_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_3d (+3 more)
+    war of the triple alliance\buildings\corral\corral.xml | buildings\native_civs\corral\iroquois_corral_age2_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_3d (+3 more)
+    war of the triple alliance\buildings\heiau\heiau.xml | buildings\native_civs\corral\iroquois_corral_age2_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_3d (+3 more)
+    war of the triple alliance\buildings\livestock\corral.xml | buildings\native_civs\corral\iroquois_corral_age2_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_3d (+3 more)
+    war of the triple alliance\buildings\pucara\pucara.xml | buildings\native_civs\corral\iroquois_corral_age2_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_3d (+3 more)
+    war of the triple alliance\buildingsets\delta\colonial\kraal\gunpowderkraal.xml | buildings\native_civs\corral\iroquois_corral_age2_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_3d (+3 more)
+    war of the triple alliance\buildingsets\delta\colonial\kraal\horsekraal.xml | buildings\native_civs\corral\iroquois_corral_age2_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_3d (+3 more)
+    war of the triple alliance\dlc\zupay\units\bolivia\campamento\nueva carpeta\corral.xml | buildings\native_civs\corral\iroquois_corral_age2_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_3d (+3 more)
+
+terrain\trees\damage\tree_madrone_a.dmg: 9 models in 5 anim files
+    wol\buildings\me\george\goldbush.xml | WoL\terrain\bush\cotton_bush_model | lacks madrones a death
+    wol\buildings\me\george\goldbush.xml | WoL\terrain\bush\poppy_bush_model | lacks madrones a death
+    wol\buildings\me\george\goldbush.xml | WoL\terrain\bush\saffron_bush_model | lacks madrones a death
+    wol\buildings\me\george\poppy.xml | WoL\terrain\bush\cotton_bush_model | lacks madrones a death
+    wol\buildings\me\george\poppy.xml | WoL\terrain\bush\poppy_bush_model | lacks madrones a death
+    wol\buildings\me\george\poppy.xml | WoL\terrain\bush\saffron_bush_model | lacks madrones a death
+    wol\terrain\bush\cotton_bush.xml | WoL\terrain\bush\cotton_bush_model | lacks madrones a death
+    wol\terrain\bush\poppy_bush.xml | WoL\terrain\bush\poppy_bush_model | lacks madrones a death
+    wol\terrain\bush\saffron_bush.xml | WoL\terrain\bush\saffron_bush_model | lacks madrones a death
+
+buildings\asian_civs\town_center\japan\age_2\japan_towncenter_age02.dmg: 8 models in 8 anim files
+    war of the triple alliance\buildingsets\backup\town_center.xml | buildings\asian_civs\town_center\japan\age_2\japan_towncenter_age2_damaged | lacks bone_debris_1q, bone_debris_3b
+    war of the triple alliance\buildingsets\town_center.xml | buildings\asian_civs\town_center\japan\age_2\japan_towncenter_age2_damaged | lacks bone_debris_1q, bone_debris_3b
+    war of the triple alliance\dlc\zupay\buildings\town center\town_center.xml | buildings\asian_civs\town_center\japan\age_2\japan_towncenter_age2_damaged | lacks bone_debris_1q, bone_debris_3b
+    war of the triple alliance\immigrants\buildings\irish\colony\irish.xml | buildings\asian_civs\town_center\japan\age_2\japan_towncenter_age2_damaged | lacks bone_debris_1q, bone_debris_3b
+    war of the triple alliance\immigrants\buildings\lebanese\colony\lebanese.xml | buildings\asian_civs\town_center\japan\age_2\japan_towncenter_age2_damaged | lacks bone_debris_1q, bone_debris_3b
+    war of the triple alliance\immigrants\buildings\ukrainian\colony\ukraine.xml | buildings\asian_civs\town_center\japan\age_2\japan_towncenter_age2_damaged | lacks bone_debris_1q, bone_debris_3b
+    war of the triple alliance\units\javanese\javanese.xml | buildings\asian_civs\town_center\japan\age_2\japan_towncenter_age2_damaged | lacks bone_debris_1q, bone_debris_3b
+    wol\buildings\towncenter\towncenter.xml | buildings\asian_civs\town_center\japan\age_2\japan_towncenter_age2_damaged | lacks bone_debris_1q, bone_debris_3b
+
+buildings\asian_civs\town_center\china\age_4\china_towncenter_age4.dmg: 7 models in 6 anim files
+    war of the triple alliance\buildingsets\backup\town_center.xml | buildings\asian_civs\town_center\china\age_4\china_towncenter_age4_damaged | lacks bone_debris_4a, bone_debris_4b, bone_debris_4c, bone_debris_4d
+    war of the triple alliance\buildingsets\town_center.xml | buildings\asian_civs\town_center\china\age_4\china_towncenter_age4_damaged | lacks bone_debris_4a, bone_debris_4b, bone_debris_4c, bone_debris_4d
+    war of the triple alliance\dlc\zupay\buildings\town center\town_center.xml | buildings\asian_civs\town_center\china\age_4\china_towncenter_age4_damaged | lacks bone_debris_4a, bone_debris_4b, bone_debris_4c, bone_debris_4d
+    war of the triple alliance\immigrants\buildings\lebanese\colony\lebanese.xml | buildings\asian_civs\town_center\china\age_4\china_towncenter_age4_damaged | lacks bone_debris_4a, bone_debris_4b, bone_debris_4c, bone_debris_4d
+    war of the triple alliance\immigrants\buildings\ukrainian\colony\ukraine.xml | buildings\asian_civs\town_center\china\age_4\china_towncenter_age4_damaged | lacks bone_debris_4a, bone_debris_4b, bone_debris_4c, bone_debris_4d
+    wol\buildings\towncenter\towncenter.xml | buildings\asian_civs\town_center\china\age_4\china_towncenter_age4_damaged | lacks bone_debris_4a, bone_debris_4b, bone_debris_4c, bone_debris_4d
+    wol\buildings\towncenter\towncenter.xml | WoL\buildings\asian\korean\towncenter\korea_towncenter_age4_damaged_Model | lacks bone_debris_4a, bone_debris_4b, bone_debris_4c, bone_debris_4d
+
+buildings\plantation\MED\age2\med_plantation_age2.dmg: 6 models in 6 anim files
+    war of the triple alliance\buildings\plantation market arsenal\fazenda.xml | buildings\native_civs\plantation\plantation | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2a, bone_debris_2b (+14 more)
+    war of the triple alliance\buildings\plantation market arsenal\plantation.xml | buildings\native_civs\plantation\plantation | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2a, bone_debris_2b (+14 more)
+    war of the triple alliance\buildingsets\backup\plantation.xml | buildings\native_civs\plantation\plantation | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2a, bone_debris_2b (+14 more)
+    war of the triple alliance\buildingsets\olive_plantation.xml | buildings\native_civs\plantation\plantation | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2a, bone_debris_2b (+14 more)
+    war of the triple alliance\buildingsets\plantation.xml | buildings\native_civs\plantation\plantation | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2a, bone_debris_2b (+14 more)
+    war of the triple alliance\dlc\zupay\buildings\plantation.xml | buildings\native_civs\plantation\plantation | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2a, bone_debris_2b (+14 more)
+
+buildings\Great War\Bunker\Bunker.dmg: 4 models in 2 anim files
+    buildings\bunker\bunker.xml | buildings\Great War\Bunker\BunkerEU_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_2c, bone_debris_2d, bone_debris_2e (+15 more)
+    buildings\bunker\bunker.xml | buildings\Great War\Bunker\BunkerLA_damaged | lacks bone_debris_1d, bone_debris_1e, bone_debris_2c, bone_debris_2d, bone_debris_2e, bone_debris_2f (+18 more)
+    buildings\great war\bunker\bunker.xml | buildings\Great War\Bunker\BunkerEU_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_2c, bone_debris_2d, bone_debris_2e (+15 more)
+    buildings\great war\bunker\bunker.xml | buildings\Great War\Bunker\BunkerLA_damaged | lacks bone_debris_1d, bone_debris_1e, bone_debris_2c, bone_debris_2d, bone_debris_2e, bone_debris_2f (+18 more)
+
+terrain\trees\Damage\tree_palm_b.dmg: 4 models in 3 anim files
+    war of the triple alliance\delta\nature\gorilla.xml | units\wotta_animals\gorila\gorila1 | lacks palm b death
+    war of the triple alliance\delta\nature\penguin.xml | units\wotta_animals\penguin\penguin | lacks palm b death
+    war of the triple alliance\delta\nature\tortoise.xml | units\wotta_animals\tortoise\tortoise | lacks palm b death
+    war of the triple alliance\delta\nature\tortoise.xml | units\wotta_animals\tortoise\tortoise_big | lacks palm b death
+
+buildings\asian_civs\consulate\japan\age_2\japan_consulate_age2.dmg: 3 models in 3 anim files
+    buildings\asian_civs\consulate\consulate.xml | buildings\asian_civs\consulate\japan\age_1\japan_consulate_age1_damaged | lacks bone_debris_1d, bone_debris_1f, bone_debris_2d
+    war of the triple alliance\buildingsets\consulate.xml | buildings\asian_civs\consulate\japan\age_1\japan_consulate_age1_damaged | lacks bone_debris_1d, bone_debris_1f, bone_debris_2d
+    wol\buildings\asian\consulate\consulate.xml | buildings\asian_civs\consulate\japan\age_1\japan_consulate_age1_damaged | lacks bone_debris_1d, bone_debris_1f, bone_debris_2d
+
+buildings\dock\east\age_2\east_dock_age2.dmg: 3 models in 1 anim file
+    war of the triple alliance\dlc\zupay\buildings\dock\dock.xml | WoL\buildings\ME\dock\Dock1_Model | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f (+18 more)
+    war of the triple alliance\dlc\zupay\buildings\dock\dock.xml | WoL\buildings\ME\dock\Dock2_Model | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f (+18 more)
+    war of the triple alliance\dlc\zupay\buildings\dock\dock.xml | WoL\buildings\ME\dock\Dock4_Model | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f (+18 more)
+
+buildings\native_civs\house\iro\iro_house_2a.dmg: 3 models in 3 anim files
+    buildings\native_civs\house\house_iro.xml | buildings\native_civs\house\iro\iro_house_2a_damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2a, bone_debris_2b (+10 more)
+    buildings\polynesia\pa\pa_longhouse.xml | buildings\native_civs\house\iro\iro_house_2a_damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2a, bone_debris_2b (+10 more)
+    war of the triple alliance\buildings\house\tupi_house.xml | buildings\native_civs\house\iro\iro_house_2a_damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2a, bone_debris_2b (+10 more)
+
+units\Great War\FT-17\FT-17.dmg: 3 models in 1 anim file
+    units\great war\tank\tank.xml | units\Great War\FT-17\FT-17_Asians_Damaged | lacks bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2b, bone_debris_2c, bone_debris_2d (+9 more)
+    units\great war\tank\tank.xml | units\Great War\FT-17\FT-17_Euros_Damaged | lacks bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2b, bone_debris_2c, bone_debris_2d (+9 more)
+    units\great war\tank\tank.xml | units\Great War\FT-17\FT-17_French_Damaged | lacks bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2b, bone_debris_2c, bone_debris_2d (+9 more)
+
+units\Great War\MarkIV\MarkIV.dmg: 3 models in 1 anim file
+    units\great war\tank\tank.xml | units\Great War\MarkIV\MarkIV_Anglos_Damaged | lacks bone_debris_1b, bone_debris_2b, bone_debris_3b, bone_debris_4d
+    units\great war\tank\tank.xml | units\Great War\MarkIV\MarkIV_Euros_Damaged | lacks bone_debris_1b, bone_debris_2b, bone_debris_3b, bone_debris_4d
+    units\great war\tank\tank.xml | units\Great War\MarkIV\MarkIV_Ottomans_Damaged | lacks bone_debris_1b, bone_debris_2b, bone_debris_3b, bone_debris_4d
+
+buildings\Great War\Airfield\Airfield.dmg: 2 models in 1 anim file
+    buildings\great war\airfield\airfield.xml | buildings\Great War\Airfield\AirfieldEU_damaged | lacks bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_2d, bone_debris_2e (+14 more)
+    buildings\great war\airfield\airfield.xml | buildings\Great War\Airfield\AirfieldLA_damaged | lacks bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_2d, bone_debris_2e, bone_debris_2f (+13 more)
+
+buildings\Great War\AssemblyLine\AssemblyLine.dmg: 2 models in 1 anim file
+    buildings\great war\assemblyline\assemblyline.xml | buildings\Great War\AssemblyLine\AssemblyLineEU_damaged | lacks bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_2e, bone_debris_2f (+28 more)
+    buildings\great war\assemblyline\assemblyline.xml | buildings\Great War\AssemblyLine\AssemblyLineLA_damaged | lacks bone_debris_1g, bone_debris_2d, bone_debris_2e, bone_debris_2f, bone_debris_2g, bone_debris_2h (+27 more)
+
+buildings\Great War\CommandPost\CommandPost.dmg: 2 models in 1 anim file
+    buildings\great war\commandpost\commandpost.xml | buildings\Great War\CommandPost\CommandPostEU_damaged | lacks bone_debris_10a, bone_debris_10b, bone_debris_10e, bone_debris_3e, bone_debris_3f, bone_debris_4c (+14 more)
+    buildings\great war\commandpost\commandpost.xml | buildings\Great War\CommandPost\CommandPostLA_damaged | lacks bone_debris_10a, bone_debris_10b, bone_debris_10c, bone_debris_10d, bone_debris_10e, bone_debris_1f (+18 more)
+
+buildings\Great War\FieldBarracks\FieldBarracks.dmg: 2 models in 1 anim file
+    buildings\great war\fieldbarracks\fieldbarracks.xml | buildings\Great War\FieldBarracks\FieldBarracksEU_damaged | lacks bone_debris_10f, bone_debris_11c, bone_debris_11d, bone_debris_11e, bone_debris_11f, bone_debris_1a (+31 more)
+    buildings\great war\fieldbarracks\fieldbarracks.xml | buildings\Great War\FieldBarracks\FieldBarracksLA_damaged | lacks bone_debris_10f, bone_debris_11c, bone_debris_11d, bone_debris_11e, bone_debris_11f, bone_debris_1e (+37 more)
+
+buildings\Great War\OilRig\OilRig.dmg: 2 models in 2 anim files
+    buildings\great war\oilrig\oilrig.xml | buildings\Great War\OilRig\OilRig_Damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_2d (+17 more)
+    buildings\oilrig\oilrig.xml | buildings\Great War\OilRig\OilRig_Damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_2d (+17 more)
+
+buildings\Great War\SupplyDepot\SupplyDepot.dmg: 2 models in 1 anim file
+    buildings\great war\supplydepot\supplydepot.xml | buildings\Great War\SupplyDepot\SupplyDepotEU_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_2c, bone_debris_2d, bone_debris_2e (+18 more)
+    buildings\great war\supplydepot\supplydepot.xml | buildings\Great War\SupplyDepot\SupplyDepotLA_damaged | lacks bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_2d, bone_debris_2e, bone_debris_2f (+13 more)
+
+NOW\Buildingset\Age0\TownCenter\Brazilians\Now_Brazilians_TownCenter_age0_damaged.dmg: 2 models in 2 anim files
+    war of the triple alliance\buildingsets\town_center.xml | NOW\Buildingset\Age0\TownCenter\Brazilians\Now_Brazilians_TownCenter_age0_damaged | lacks bone_debris_2d
+    wol\buildings\towncenter\towncenter.xml | NOW\Buildingset\Age0\TownCenter\Brazilians\Now_Brazilians_TownCenter_age0_damaged | lacks bone_debris_2d
+
+NOW\Buildingset\Age2\TownCenter\Brazilians\Now_Brazilians_TownCenter_age2_damaged.dmg: 2 models in 2 anim files
+    war of the triple alliance\buildingsets\town_center.xml | NOW\Buildingset\Age2\TownCenter\Brazilians\Now_Brazilians_TownCenter_age2_damaged | lacks bone_debris_2d
+    wol\buildings\towncenter\towncenter.xml | NOW\Buildingset\Age2\TownCenter\Brazilians\Now_Brazilians_TownCenter_age2_damaged | lacks bone_debris_2d
+
+NOW\Buildingset\Age4\Town Center\Brazilians\Now_Brazilians_TownCenter_age4_damaged.dmg: 2 models in 2 anim files
+    war of the triple alliance\buildingsets\town_center.xml | NOW\Buildingset\Age4\Town Center\Brazilians\Now_Brazilians_TownCenter_age4_damaged | lacks bone_debris_2d
+    wol\buildings\towncenter\towncenter.xml | NOW\Buildingset\Age4\Town Center\Brazilians\Now_Brazilians_TownCenter_age4_damaged | lacks bone_debris_2d
+
+terrain\trees\Damage\tree_ironwood_b.dmg: 2 models in 2 anim files
+    war of the triple alliance\delta\nature\treebaobab.xml | War of the Triple Alliance\Delta\nature\baobab | lacks ironwood b death
+    war of the triple alliance\delta\nature\treekauri.xml | War of the Triple Alliance\Delta\nature\baobab | lacks ironwood b death
+
+terrain\trees\damage\tree_japanese_maple_01.dmg: 2 models in 2 anim files
+    wol\buildings\me\george\foodbush.xml | terrain\trees\tree_japanese_maple_death02 | lacks japanese_maple01_death
+    wol\terrain\trees\apricot.xml | terrain\trees\tree_japanese_maple_death02 | lacks japanese_maple01_death
+
+Terrain\trees\damage\tree_saxaul_01.dmg: 2 models in 2 anim files
+    wol\buildings\me\george\foodbush.xml | Terrain\trees\tree_saxaul_03_death | lacks saxaul_01_death
+    wol\terrain\trees\pomegranate.xml | Terrain\trees\tree_saxaul_03_death | lacks saxaul_01_death
+
+units\Great War\A7V\A7V.dmg: 2 models in 1 anim file
+    units\great war\tank\tank.xml | units\Great War\A7V\A7V_Euros_Damaged | lacks bone_debris_2b, bone_debris_3b, bone_debris_4b, bone_debris_5b
+    units\great war\tank\tank.xml | units\Great War\A7V\A7V_Germans_Damaged | lacks bone_debris_2b, bone_debris_3b, bone_debris_4b, bone_debris_5b
+
+units\Great War\Dreadnought_Nassau\Dreadnought_Nassau.dmg: 2 models in 2 anim files
+    units\great war\dreadnought\dreadnought.xml | units\Great War\Dreadnought_Nassau\Dreadnought_Nassau_Damaged | lacks bone_debris_3b
+    units\great war\dreadnought_nassau\dreadnought_nassau.xml | units\Great War\Dreadnought_Nassau\Dreadnought_Nassau_Damaged | lacks bone_debris_3b
+
+units\Great War\LKII\LKII.dmg: 2 models in 1 anim file
+    units\great war\tank\tank.xml | units\Great War\LKII\LKII_Balkans_Damaged | lacks bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2b, bone_debris_2c, bone_debris_2d (+11 more)
+    units\great war\tank\tank.xml | units\Great War\LKII\LKII_Swedish_Damaged | lacks bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2b, bone_debris_2c, bone_debris_2d (+11 more)
+
+units\Great War\Truck\Truck.dmg: 2 models in 1 anim file
+    units\great war\truck\truck.xml | units\Great War\Truck\Truck_Africans_Damaged | lacks bone_debris_2e, bone_debris_3d, bone_debris_4d, bone_debris_5a, bone_debris_5b, bone_debris_5c (+1 more)
+    units\great war\truck\truck.xml | units\Great War\Truck\Truck_Euros_Damaged | lacks bone_debris_3d
+
+buildings\asian_civs\caravanserai\india\age_2\indian_caravanserai_age2.dmg: 1 model in 1 anim file
+    buildings\asian_civs\caravanserai\caravanserai.xml | buildings\asian_civs\caravanserai\india\age_4\india_caravanserai_age4_damaged | lacks bone_debris_4d
+
+buildings\asian_civs\shrine\age_2\japan_shrine_age2_03.dmg: 1 model in 1 anim file
+    wol\buildings\asian\korean\house\house.xml | WoL\buildings\asian\korean\house\korean_age2_01_damaged_Model | lacks bone_debris_1f, bone_debris_3f, bone_debris_4e
+
+buildings\asian_civs\shrine\age_4\japan_shrine_age4_01.dmg: 1 model in 1 anim file
+    wol\buildings\asian\korean\house\house.xml | WoL\buildings\asian\korean\house\korean_age2_03_damaged_Model | lacks bone_debris_5a, bone_debris_5b, bone_debris_5c, bone_debris_5d, bone_debris_5e
+
+buildings\asian_civs\shrine\age_4\japan_shrine_age4_02.dmg: 1 model in 1 anim file
+    wol\buildings\asian\korean\house\house.xml | WoL\buildings\asian\korean\house\korean_age4_01_damaged_Model | lacks bone_debris_1g, bone_debris_1h, bone_debris_1i, bone_debris_2f
+
+buildings\Balkans\Star_Fort\Star_Fort.dmg: 1 model in 1 anim file
+    buildings\balkans\star_fort\star_fort.xml | buildings\Balkans\Star_Fort\Star_Fort_damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_2a (+33 more)
+
+buildings\church\russian_church_age2_.dmg: 1 model in 1 anim file
+    buildings\church\church_delete.xml | buildings\church\russain_church_age2_damaged | lacks bone_debris_01d
+
+buildings\fort\east_fort.dmg: 1 model in 1 anim file
+    wol\buildings\estancia\estancia.xml | buildings\outpost\outpost_generic_damaged | lacks bone_debris_1e, bone_debris_1f, bone_debris_1g, bone_debris_1h, bone_debris_1i, bone_debris_1j (+13 more)
+
+buildings\Great War\AAgun\AAgun.dmg: 1 model in 1 anim file
+    buildings\great war\aagun\aagun.xml | buildings\Great War\AAgun\AAgun_Damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2a, bone_debris_2b (+2 more)
+
+buildings\Great War\Shipyard\ShipyardEU.dmg: 1 model in 1 anim file
+    buildings\great war\shipyard\shipyard.xml | buildings\Great War\Shipyard\ShipyardEU_damaged | lacks bone_debris_11b, bone_debris_11d, bone_debris_12b, bone_debris_15c, bone_debris_1c, bone_debris_1d (+22 more)
+
+buildings\Great War\Shipyard\ShipyardLA.dmg: 1 model in 1 anim file
+    buildings\great war\shipyard\shipyard.xml | buildings\Great War\Shipyard\ShipyardLA_damaged | lacks bone_debris_11b, bone_debris_11c, bone_debris_12c, bone_debris_12d, bone_debris_13h, bone_debris_14c (+30 more)
+
+buildings\house\east\AGE_2\east_house_age2a.dmg: 1 model in 1 anim file
+    wol\buildings\immigrants\confederate\house.xml | WoL\buildings\immigrants\Confederate\east_house_age2b_damaged_Model | lacks bone_debris_1d, bone_debris_2d, bone_debris_2e, bone_debris_2f, bone_debris_2g, bone_debris_2h
+
+buildings\house\house_generic_b.dmg: 1 model in 1 anim file
+    buildings\native_civs\house\house.xml | buildings\native_civs\house\iro\iro_house_1b | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f (+24 more)
+
+buildings\house\house_generic_c.dmg: 1 model in 1 anim file
+    buildings\native_civs\house\house.xml | buildings\native_civs\house\iro\iro_house_1b | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f (+16 more)
+
+buildings\house\MED\AGE_2\med_house_age2a.dmg: 1 model in 1 anim file
+    buildings\african\hut\african_hut_2.xml | buildings\african\kraal\kraal_age1 | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f (+19 more)
+
+buildings\house\west\age_2\west_house_age2a.dmg: 1 model in 1 anim file
+    buildings\native_civs\house\house.xml | buildings\native_civs\house\iro\iro_house_2a | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_2b, bone_debris_2c, bone_debris_2d (+22 more)
+
+buildings\house\west\age_2\west_house_age2b.dmg: 1 model in 1 anim file
+    buildings\native_civs\house\house.xml | buildings\native_civs\house\iro\iro_house_2b | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_2a, bone_debris_2b, bone_debris_2c (+27 more)
+
+buildings\house\west\age_3\west_house_age3a.dmg: 1 model in 1 anim file
+    buildings\native_civs\house\house.xml | buildings\native_civs\house\iro\iro_house_4a | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f (+31 more)
+
+buildings\house\west\age_3\west_house_age3b.dmg: 1 model in 1 anim file
+    buildings\native_civs\house\house.xml | buildings\native_civs\house\iro\iro_house_4b | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_2b, bone_debris_2c, bone_debris_2d (+16 more)
+
+buildings\house\west\age_3\west_house_age3c.dmg: 1 model in 1 anim file
+    buildings\native_civs\house\house.xml | buildings\native_civs\house\iro\iro_house_4c | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1f, bone_debris_1g (+16 more)
+
+buildings\livestock pen\generic_livestock.dmg: 1 model in 1 anim file
+    buildings\asian_civs\grove\grove.xml | buildings\asian_civs\grove\asian_grove | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f (+30 more)
+
+buildings\mining_camp\mining_camp.dmg: 1 model in 1 anim file
+    buildings\mining_camp\miningcamp.xml | buildings\mining_camp\mining_camp_damaged | lacks bone_debris_2b, bone_debris_2c, bone_debris_2d, bone_debris_2e, bone_debris_2f, bone_debris_2g
+
+buildings\native_civs\wall\wall_aztec_gate.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildings\wall\wall_gate.xml | buildings\wall\Indian_wall\indian_wall_gate_stone | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2a, bone_debris_2b (+7 more)
+
+buildings\native_civs\war_hut\lak\lak_war_hut_age4_damaged.dmg: 1 model in 1 anim file
+    war of the triple alliance\dlc\zupay\units\bolivia\campamento\barracks.xml | buildings\native_civs\war_hut\lak\lak_war_hut_age1_damaged | lacks bone_debris_2h, bone_debris_2i, bone_debris_3e, bone_debris_3f, bone_debris_3g
+
+buildings\wall\wall_stone_1X1.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildings\wall\wall_1x1.xml | buildings\wall\Indian_wall\indian_wall_1x1_stone | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f (+1 more)
+
+buildings\wall\wall_stone_1X2.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildings\wall\wall_1x2.xml | buildings\wall\Asian_walls_destructions\1x2\asian_wall_damaged_1x2 | lacks bone_debris_2b
+
+buildings\wall\wall_stone_1X3.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildings\wall\wall_1x3.xml | buildings\wall\Indian_wall\indian_wall_1x3_stone | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f (+6 more)
+
+buildings\wall\wall_stone_1X4.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildings\wall\wall_1x4.xml | buildings\wall\Indian_wall\indian_wall_1x4_stone | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_2a (+12 more)
+
+buildings\wall\wall_stone_1X5.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildings\wall\wall_1x5.xml | buildings\wall\wall_stone_1X5 | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_1f (+18 more)
+
+buildings\wall\wall_wooden_1X1.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildings\wall\wall_1x1.xml | buildings\native_civs\wall\wall_wicker_1X1 | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d
+
+buildings\wall\wall_wooden_1X3.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildings\wall\wall_1x3.xml | buildings\native_civs\wall\wall_wicker_1X3 | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2a, bone_debris_2b (+11 more)
+
+buildings\wall\wall_wooden_1X4.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildings\wall\wall_1x4.xml | buildings\native_civs\wall\wall_wicker_1X4 | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_2a (+12 more)
+
+buildings\Wonder\Gyeongbokgung_palace\Gyeongbokgung_palace.dmg: 1 model in 1 anim file
+    wol\buildings\wonders\grand_palace\grand_palace.xml | buildings\Wonder\Gyeongbokgung_palace\Gyeongbokgung_palace_damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_2a (+33 more)
+
+buildings\Wonder\Hwaseong_Fortress\Hwaseong_Fortress.dmg: 1 model in 1 anim file
+    wol\buildings\wonders\hwaseong_fortress\hwaseong_fortress.xml | buildings\Wonder\Hwaseong_Fortress\Hwaseong_Fortress_damaged | lacks bone_debris_1d, bone_debris_1e, bone_debris_2d, bone_debris_2e, bone_debris_2f, bone_debris_3d (+11 more)
+
+buildings\wonder\puyong_hall\puyong_hall.dmg: 1 model in 1 anim file
+    wol\buildings\wonders\puyong_hall\puyong_hall.xml | buildings\wonder\puyong_hall\puyong_hall_damaged | lacks bone_debris_1d, bone_debris_1e, bone_debris_2f, bone_debris_3d, bone_debris_3e, bone_debris_3f (+13 more)
+
+buildings\wonder\pyongyang_gate\pyongyang_gate.dmg: 1 model in 1 anim file
+    wol\buildings\wonders\pyongyang_gate\pyongyang_gate.xml | buildings\wonder\pyongyang_gate\pyongyang_gate_damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_2d (+24 more)
+
+buildings\wonders\agra_fort\agra_fort_age2.dmg: 1 model in 1 anim file
+    wol\buildings\wonders\haeinsa_temple\haeinsa_temple.xml | buildings\wonder\haeinsa_temple_damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_1e, bone_debris_2a (+21 more)
+
+Now\Buildingset\Age0\Market\Brazilians\Now_Brazilians_Market_age0_damaged.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildingsets\market.xml | Now\Buildingset\Age0\Market\Brazilians\Now_Brazilians_Market_age0_damaged | lacks bone_debris_2d
+
+NOW\Buildingset\Age0\MiningCamp\MiningCamp_age0_damaged.dmg: 1 model in 1 anim file
+    now\buildingset\miningcamp.xml | NOW\Buildingset\Age0\MiningCamp\MiningCamp_age0_damaged | lacks bone_debris_2d
+
+NOW\Buildingset\Age2\Artillery_depot\Brazilians\Brazilians_ArtilleryDepot_age2_damaged.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildingsets\artillery_depot.xml | NOW\Buildingset\Age2\Artillery_depot\Brazilians\Brazilians_ArtilleryDepot_age2_damaged | lacks bone_debris_2d
+
+NOW\Buildingset\Age2\House\Brazilians\NOW_Brazilians_House_a_age2_damaged.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildingsets\housebrazil.xml | NOW\Buildingset\Age2\House\Brazilians\NOW_Brazilians_House_age3_a_damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_2a, bone_debris_2c, bone_debris_2d (+9 more)
+
+NOW\Buildingset\Age2\House\Brazilians\NOW_Brazilians_House_b_age2_damaged.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildingsets\housebrazil.xml | NOW\Buildingset\Age2\House\Brazilians\NOW_Brazilians_House_age3_b_damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_2a, bone_debris_2c, bone_debris_2d (+9 more)
+
+NOW\Buildingset\Age2\House\Brazilians\NOW_Brazilians_House_c_age2_damaged.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildingsets\housebrazil.xml | NOW\Buildingset\Age2\House\Brazilians\NOW_Brazilians_House_age3_c_damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_2a, bone_debris_2c, bone_debris_2d (+9 more)
+
+NOW\Buildingset\Age2\Market\Brazilians\Now_Brazilians_Market_age2_damaged.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildingsets\market.xml | NOW\Buildingset\Age2\Market\Brazilians\Now_Brazilians_Market_age2_damaged | lacks bone_debris_2d, bone_debris_6b, bone_debris_6c
+
+NOW\Buildingset\Age2\MiningCamp\MiningCamp_age2_damaged.dmg: 1 model in 1 anim file
+    now\buildingset\miningcamp.xml | NOW\Buildingset\Age2\MiningCamp\MiningCamp_age2_damaged | lacks bone_debris_2d
+
+NOW\Buildingset\Age2\Stable\Brazilians\Now_Brazilians_Stable_age2_damaged.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildingsets\stables.xml | NOW\Buildingset\Age2\Stable\Brazilians\Now_Brazilians_Stable_age2_damaged | lacks bone_debris_2d
+
+NOW\Buildingset\Age4\Market\Brazilians\Now_Brazilians_Market_age4_damaged.dmg: 1 model in 1 anim file
+    war of the triple alliance\buildingsets\market.xml | NOW\Buildingset\Age4\Market\Brazilians\Now_Brazilians_Market_age4_damaged | lacks bone_debris_2d
+
+terrain\trees\damage\tree_lp_spruce_c.dmg: 1 model in 1 anim file
+    terrain\tree_newspruce_nwt.xml | terrain\trees\tree_lp_spruce_c_death | lacks spruce c death
+
+terrain\trees\damage\tree_lp_spruce_d.dmg: 1 model in 1 anim file
+    terrain\tree_newspruce_nwt.xml | terrain\trees\tree_lp_spruce_d_death | lacks spruce d death
+
+terrain\trees\damage\tree_pine_christmas.dmg: 1 model in 1 anim file
+    terrain\tree_christmas.xml | terrain\trees\tree_pine_christmas | lacks pine_christmas_death
+
+terrain\trees\damage\tree_polyepis_02.dmg: 1 model in 1 anim file
+    terrain\trees\tree_polyepis.xml | terrain\trees\tree_polyepis_03_death | lacks tree_polyepis_02_death
+
+TOW\buildings\Tower\lvl2\tower2.dmg: 1 model in 1 anim file
+    tow\buildings\tower\tower.xml | TOW\buildings\Tower\lvl2\Tower_lvl2_damaged_Model | lacks bone_flag_civ
+
+units\asians\naval\kwason\kwason.dmg: 1 model in 1 anim file
+    units\asians\naval\kwason\kwason.xml | units\asians\naval\kwason\kwason_damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2c, bone_debris_2d (+2 more)
+
+units\asians\naval\Panokseon\Panokseon.dmg: 1 model in 1 anim file
+    units\asians\naval\panokseon\panokseon.xml | units\asians\naval\Panokseon\Panokseon_damaged | lacks bone_debris_1d, bone_debris_2d, bone_debris_2e, bone_debris_6a, bone_debris_6b, bone_debris_6c
+
+units\asians\naval\TurtleShip\TurtleShip.dmg: 1 model in 1 anim file
+    units\asians\naval\turtleship\turtleship.xml | units\asians\naval\TurtleShip\TurtleShip_Damaged | lacks bone_debris_4c, bone_debris_5c
+
+units\Great War\Bulldozer\Bulldozer.dmg: 1 model in 1 anim file
+    units\great war\bulldozer\bulldozer.xml | units\Great War\Bulldozer\Bulldozer | lacks bone_debris_1a, bone_debris_1b, bone_debris_2a, bone_debris_2b, bone_debris_3a, bone_debris_3b
+
+units\Great War\TNCA_Salinas\TNCA_Salinas.dmg: 1 model in 1 anim file
+    units\great war\tank\tank.xml | units\Great War\TNCA_Salinas\TNCA_Salinas_Latins_Damaged | lacks bone_debris_1b, bone_debris_1c, bone_debris_1d, bone_debris_2b, bone_debris_2c, bone_debris_2d (+9 more)
+
+units\Great War\Trawler\Trawler.dmg: 1 model in 1 anim file
+    units\great war\trawler\trawler.xml | units\Great War\Trawler\Trawler_Damaged | lacks bone_debris_2c, bone_debris_3c
+
+units\naval\Baghlah\Baghlah.dmg: 1 model in 1 anim file
+    units\naval\baghlah\baghlah.xml | units\naval\Baghlah\Baghlah_Damaged | lacks bone_debris_0a, bone_debris_0b, bone_debris_0c, bone_debris_0d, bone_debris_1c, bone_debris_2d (+6 more)
+
+units\naval\Battleship\Battleship.dmg: 1 model in 1 anim file
+    units\naval\battleship\battleship.xml | units\naval\Battleship\Battleship_Damaged | lacks bone_debris_7h
+
+units\naval\Boum\Boum.dmg: 1 model in 1 anim file
+    units\naval\boum\boum.xml | units\naval\Boum\Boum_Damaged | lacks bone_debris_0a, bone_debris_0b, bone_debris_0c, bone_debris_0d, bone_debris_1c, bone_debris_3d (+6 more)
+
+units\naval\Corsair_Dhow\Corsair_Dhow.dmg: 1 model in 1 anim file
+    units\naval\corsair_dhow\corsair_dhow.xml | units\naval\Corsair_Dhow\Corsair_Dhow_Damaged | lacks bone_debris_0a, bone_debris_0b, bone_debris_0c, bone_debris_0d, bone_debris_2c, bone_debris_2d (+13 more)
+
+units\naval\Corvette\Corvette.dmg: 1 model in 1 anim file
+    units\naval\corvette\corvette.xml | units\naval\Corvette\Corvette_Damaged | lacks bone_debris_3a, bone_debris_4a, bone_debris_4b, bone_debris_4c
+
+units\naval\Floating_Battery\Floating_Battery.dmg: 1 model in 1 anim file
+    units\naval\floating_battery\floating_battery.xml | units\naval\Floating_Battery\Floating_Battery_Damaged | lacks bone_debris_6e
+
+units\naval\Lorcha\Lorcha.dmg: 1 model in 1 anim file
+    units\naval\lorcha\lorcha.xml | units\naval\Lorcha\Lorcha_Damaged | lacks bone_debris_2c
+
+units\naval\Sambuk\Sambuk.dmg: 1 model in 1 anim file
+    units\naval\sambuk\sambuk.xml | units\naval\Sambuk\Sambuk_Damaged | lacks bone_debris_1c, bone_debris_2c, bone_debris_2d, bone_debris_3d, bone_debris_3e, bone_debris_4b (+6 more)
+
+units\naval\Shuai\Shuai.dmg: 1 model in 1 anim file
+    units\naval\shuai\shuai.xml | units\naval\Shuai\Shuai_Damaged | lacks bone_debris_2d, bone_debris_3b, bone_debris_3d, bone_debris_3e
+
+units\naval\Torpedo_Boat\Torpedo_Boat.dmg: 1 model in 1 anim file
+    units\naval\torpedo_boat\torpedo_boat.xml | units\naval\Torpedo_Boat\Torpedo_Boat_Damaged | lacks bone_debris_2b, bone_debris_2c, bone_debris_3d
+
+units\villagers\Tractor\Tractor.dmg: 1 model in 1 anim file
+    units\villagers\tractor\tractor.xml | units\villagers\Tractor\Tractor_Damaged | lacks bone_debris_1a, bone_debris_1b, bone_debris_2a, bone_debris_2b, bone_debris_3a, bone_debris_3b
+
+WoL\buildings\immigrants\Chinese\chinese.dmg: 1 model in 1 anim file
+    wol\buildings\immigrants\chinese\chinese.xml | WoL\buildings\immigrants\Chinese\ChineseColonyDmg_Model | lacks bone_debris_1q, bone_debris_3b
+
+WoL\buildings\immigrants\Irish\Irish.dmg: 1 model in 1 anim file
+    wol\buildings\immigrants\irish\irish.xml | WoL\buildings\immigrants\Irish\IrishColonyDmg_Model | lacks bone_debris_1q, bone_debris_3b
+
+WoL\buildings\ME\dildo\tower2.dmg: 1 model in 1 anim file
+    wol\buildings\me\dildo\tower.xml | WoL\buildings\ME\dildo\Tower2_dmg_Model | lacks bone_debris_debris_003
+
+WoL\buildings\ME\royalcourt\royalcourt2.dmg: 1 model in 1 anim file
+    wol\buildings\me\royalcourt\royalcourt.xml | WoL\buildings\ME\royalcourt\RoyalCourt2_dmg_Model | lacks bone_debris_debris_011

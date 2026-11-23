@@ -451,6 +451,73 @@ FUN_0054D663 adds each adapter display mode (16 B: width, height, ..., Direct3D 
 with `0x54D605` at `0x54D6D1`. The key redirects that call to a wrapper that also adds an
 X8R8G8B8 (16h) mode as R5G6B5 (17h); `0x545A10` maps the formats to bit depths.
 
+### modelCacheLimit
+
+The game keeps the Granny files of its models in a cache with a budget of 30,000,000 bytes. FUN_0041CA8F, called
+every frame at `0x4056EA` on `[0C66240h]+60A0h` (the model manager), runs when `[mgr+60F9h]` is set: while the
+loaded bytes `[mgr+306Ch]` are above the budget (`cmp dword [esi+306Ch],1C9C380h` at `0x46C03D`, then `ja`) and the
+least-recently-used list `[mgr+304Ch]` is not empty, it unloads the list's tail `[mgr+3068h]` through FUN_00AD9FD8
+→ FUN_0046C210, which calls `GrannyFreeFile` (`0x588B30`), and compares again at `0x6E0174` (`jbe` out). Those two
+are the only compares with the budget in the exe.
+
+**The bug:** an unloaded model can still be in use. A visual keeps its Granny model instance (`[visual+24h]`) made
+from the freed file; the next draw finds the cache entry empty and loads the file again (FUN_00405C49 with load = 1)
+into new memory, but the instance still points into the old one. The draw then reads freed memory:
+`GrannyGetSourceSkeleton` returns 0 or garbage at `0x40C07C` and `0x40CC7B`, or the animation lookup at `0x4B6F1F`
+falls inside `granny2.dll`. Stock data rarely goes over the budget; a mod with much more art is over it all game.
+<!-- private:begin -->
+In WoL's 6-player "NEW" Levant, 584 unloads in 9.4 minutes, and 4 crashes in 7 click sweeps (#78,
+`wol-fixes/maps/levant-clicks-20261122.txt`).
+<!-- private:end -->
+
+**The key** rewrites the imm32 of both compares (`0x46C043` and `0x6E017A`) after `VerifyAll`: `MB × 1,000,000`,
+or `0FFFFFFFFh` for 0 / no number, which the unsigned compares never exceed, so the loop never unloads. No hook.
+With `log`, a world tick reads `[[0C66240h]+910Ch]` and logs each new 50 MB step of the loaded bytes.
+
+**Why it is safe:** only the budget changes; the unload path, the loader and the least-recently-used list run as
+before. Models are then freed only by the other callers of FUN_0046C210: traced with the key on, the loader's
+reload (`0x46D80D`) during play and FUN_00589000 (`0x589003`) when the game closes. The cost is memory: every model
+drawn in a session stays loaded (in 13-minute click sweeps of a large mod, 90-120 MB of models instead of 30).
+
+**Not covered: the part declaration's reload.** FUN_004F0187 reads a damage template's part; when its bone name is
+not yet in the global bone name table `0D6F478h` (lookup `0x58E506` at `0x4F0217`), it adds the name (`0x59C213`,
+`bl` = 1); when the model then has no bone of that id (`0x4F010C`), it writes "Invalid bone name ... in part
+declaration for model ..." and, with `bl` set, calls the loader on the loaded model (`0x658C35`), which frees the
+file under the units that draw it: the same fault, once per bone name new to the session. The names come from
+`<definebone>` lines of the anim files, so it is a data error: a part bone that the anim file does not define, or
+that the model lacks. aoe3-blender-tools' `tools/dmg_bones.py` lists such templates; [dmgPartBoneFix](#dmgpartbonefix)
+removes the reload.
+
+### dmgPartBoneFix
+
+**The path (FUN_004F0187, a damage template's `<part>`):** the bone attribute is looked up in the global bone name
+table `0D6F478h` (`0x58E506` at `0x4F0217`); a name not there yet is added (`0x59C213` at `0x658B6A`, `bl` = 1).
+The model's own map from those ids to its skeleton (`0x4F010C` → `[model+10h]`, `0x484329`) is built when the model
+is loaded, so a model loaded before its bone names were in the table has no entry for them: `0x4F0240` (`jle
+658BA4h`) writes "Invalid bone name \"%s\" in part declaration for model \"%s\"" (`0xC0B878`). Then, only when `bl`
+is set (`0x658C18`: `test bl,bl / je 658C3Ah`), it calls the loader FUN_0046D7C3 on the loaded cache entry
+(`0x658C35`); the loader's branch for a loaded entry (`0x46E7ED`) unloads the Granny file (FUN_00AD5DCF) and loads it
+again, so the new map has the name. Units that draw the model keep instances of the freed file, and the next draw can
+crash (`granny2.dll+0x2C8CD`). Either way the code continues at `0x658C3A` → `0x4F0246` and keeps the part with its
+bone id. With `bl` clear (the name was already in the table, e.g. the second model that meets it) there is no reload:
+the part stays, and in that model it matches no bone. REA `ev_5cd8bb32…` (FUN_004F0187), `ev_82ec70b4…` (FUN_0046D7C3);
+capstone for `0x658B2F..0x658C9D`.
+
+**The key** makes every case take the `bl` = 0 path: `je 658C3Ah` (`74 1E` at `0x658C1A`) becomes `jmp` (`EB 1E`),
+after `VerifyAll` of the 34 bytes `0x658C18..0x658C39` (the test, the jump, the reload call). With `log`, a 5-byte
+`jmp` at `0x658C18` goes to `UhcPartBoneReloadHook` (`dmgpartbone_hooks.asm`), which, when `bl` is set, logs the bone
+(`[[esp+44h]+4]`) and the model (`[edi+4]`) and leaves through `jmp 658C3Ah`.
+
+**Why it is safe:** the instructions skipped are the reload and its argument setup (`ebx` is reloaded at `0x4F0246`,
+`ebp` cleared there); what follows is the stock path the game already takes for every `bl` = 0 case. Only the
+model's bone map is not rebuilt, so that part has no bone in that model until the model is loaded again (with
+[modelCacheLimit](#modelcachelimit) 0, not during the game): a debris piece or a falling-tree part is missing, the
+rest of the damage and destruction is unchanged. The other caller of `0x59C213` in this area (`0x658D70`, from
+FUN_004F0540's bone lookup) does not reload. Traced (2026-11-23, `tools/re/trace_frees.py --parts`): with the key
+the same invalid parts are met and no model is unloaded or reloaded for them; every other unload is the same.
+Simulation: none expected (inferred, not traced): a model's bone map is drawing state, and which models are loaded,
+and in which order the bone names are met, already differs between players.
+
 ### multiarmor
 
 A proto's armor is the damage type byte `[proto+1D3h]` and the value `[proto+C4h]`; the `<Armor>`
@@ -1647,7 +1714,8 @@ each target, with the team flag clear. applyEffects goes through its `call`; the
 a function with the same arguments and `ret`, and an asm stub re-executes the replaced head for the stock call.
 
 The flag name is read by FUN_00620C2F, a chain of string compares called once, at 0x620C23, which ignores what it does not
-know. The key hooks the head of that reader, not its call, so it still works when another DLL wraps the call, and keeps the
+know. The key reads its two flags through the shared hook on the head of that reader ("Tech flags", below; since
+2026-11-23, before that its own hook on the same head), so it still works when another DLL wraps the call, and keeps the
 tech's definition, the routines' `this`, in a set. The set is only written during the load, so the game's lookups are lock-free.
 
 The enemies come from 0x484D2D, the check the placement rules use, over the players of the world without Gaia.
@@ -1889,7 +1957,7 @@ stop at four ages (REA `ev_4c5c5b11…`, `ev_cb7f901b…`; capstone):
   stop at 0x9A77DC; buttons at `+154h`, hidden first at 0x9A76AC..0x9A76EB); it did not open in the tests (inferred:
   another deck dialog of the same screen).
 
-The panel greys a card whose age is above the player's (`[card+18h]` against `[player+50h]`, rollover string 8FA6h),
+The panel greys a card whose age is above the player's (`[card+18h]` against `[player+50h]`; its disabled reason is 8FA6h, and the rollover says *This Card cannot be sent until Age %d*, 9012h),
 and the send FUN_0085A724 refuses it (0x85A90A, string 8FFCh); neither stops at 3.
 
 **What the key does.** The immediate of `cmp eax,4` at 0x63022E becomes 5 (`CardListAgePasses`), so the game's list
@@ -1935,6 +2003,82 @@ slots, removal from the deck builder). The slots between the two groups stay hid
 and their overlays and resets the links before it places a card. The counts are read from the same list the fill
 walks, so they cannot disagree with it. Not in the hot path: the fills run when a panel is opened or changes, and the
 count is one pass over the list (25 cards in the decks tested) per card of the Age IV row.
+
+### resendableCards
+
+`src/features/resendcards.cpp`, `hooks/resendcards_hooks.asm`; the tag through the shared card tag hook (`cardtags.*`).
+
+**Stock (#97, 2026-11-23; REA `ev_d08f643f…`, `ev_8b93b70f…`, `ev_d2f7d77e…`; capstone).** A player's card list
+`hc+228h` holds copies (28h B) of the home city's cards, made by FUN_006301DE from the deck, each with its sends left in
+`[card+20h]`, set to `<maxcount>` `[card+4]` when the list is built. The send FUN_0085A724 refuses a card with a
+`<maxcount>` of 0 or more and no sends left (0x85A9B9, *You have already sent %s*, 8FFDh) and takes one with
+FUN_0085FBEA(card, −1) at 0x85ACF8 (`+20h` += delta, clamped to 0 .. `+4`); a cancel gives it back (+1, 0x85AE98). The
+in-game panel greys such a card (0x9A5AFC). The card's tech has the HomeCity flag, which the tech activation 0x94CF27
+never refuses as already active, so a card sent again runs its effects again. `<infiniteinlastage>` is the byte
+`[card+24h]`: when the age setter FUN_008D4E01 sets an age above 3, it calls FUN_0085650A(hc) (0x8D5053), which sets
+`+20h` = `+4` for each card whose byte is 1. So the stock feature is one refill of the card when the player reaches the
+Imperial Age, not unlimited sends. The field and the byte are in the saved game (the card's save 0x85FC40 and load
+0x8607C5).
+
+**The tag.** `<resendeveryage>` reaches the key through `AddCardTagHandler` (below, "Card tags"), once the card is in the
+home city's array: `1` or `true` sets bit 1 (02h) of the card's byte `+24h`, `0` or `false` clears it, anything else is
+logged. The deck build (10 dwords), the save and the load copy the byte whole, so every copy of the card carries the
+bit, in every player's list and in saved games, with no state in the DLL.
+
+**The reset.** A 5-byte `jmp` over `mov eax,[0C66234h]` at 0x8D502F, the join of the age setter after the new age is
+written: `UhcResendAgeUp(player = ESI, flag = byte [esp+13h])`, then the replaced load and `jmp 0x8D5034`. The setter's
+flag is 1 when the old age was the same or higher; on an advance, each card of the player's list (`[hc+244h]`, count
+`[hc+248h]`) with the bit, a `<maxcount>` of 0 or more and fewer sends than its `<maxcount>` gets `+20h` = `+4`. One
+reset per age-up, never added: an age with no send does not stack (sent in Age II, not in Age III: one send in Age IV).
+An `<infiniteinlastage>` card with the bit is refilled the same way when the Imperial Age comes, before the stock refill,
+whose `== 1` no longer matches it.
+
+**The rollover's cost.** The card rollover builder hides the card's cost line once its tech has been researched (the
+research count against `ResearchLimit`), unless the card is `<infiniteinlastage>` in age 4 with sends left. A 6-byte
+`jmp` over `cmp dword ptr [eax+50h],4 / jne 710863h` at 0x710804 (EAX = the player, EBP = the card, reached only when the
+byte `+24h` is not 0) keeps age 4 as stock and lets a card with the bit go on to the sends-left test (0x71080A) in any
+age; any other card goes to 0x710863 as stock. A card that costs only one shipment shows no cost line, so for such a card
+this changes nothing visible.
+
+**Why it is safe.**
+- The join is reached on every path once the age is written (0x8D4F49, 0x8D4F54, 0x8D4F5F and the fall-through after
+  the age-up message, no push outstanding); EAX, ECX and EDX are written there before they are read; the stdcall keeps
+  EBX, ESI, EDI and EBP. The setter's early return (nothing changed) does not reach it.
+- The reset writes only `+20h` of cards in the player's own list, as the stock refill and the cancel do, within
+  0 .. `<maxcount>`; the send, the panel, the AI (whose card checks read the same list) and the save see the same field.
+- Simulation: the age setter runs in the simulation (a tech effect, a trigger), the cards are the same on every machine,
+  and nothing depends on the local player. `CardRolloverAgeCheck` is display only.
+- The bit: no reader of the byte `+24h` other than the stock refill (`== 1`) and the rollover (`!= 0`) was found near
+  the card lookups (capstone over the callers of 0x85FFCE, 0x85FFEC, 0x8563EA and 0x860020). A save made with the key
+  and loaded without it keeps the bit: the cards are then neither reset each age nor refilled at the Imperial Age when
+  they also have `<infiniteinlastage>`.
+
+### quickArrivalCards
+
+`src/features/quickarrival.cpp`, `hooks/quickarrival_hooks.asm`; the flag through the shared flag hook (`techflags.*`).
+
+**Stock (#99, 2026-11-23; REA `ev_8b93b70f…`).** The rollover of a home city card is built by FUN_007103CE(out, hc,
+tech, …, list, pop) for the in-game shipment panel (0x9A61B7), "Build a Deck" (0x9A0714) and the deck dialog
+(0x9A7A1E), all in list mode. Its lines: the name, the population, the unit's text when the tech has no rollover text,
+*cannot be sent until Age N* (9012h), the cost, the tech's rollover text, the send limit (9001h / 9002h / 9003h), then,
+with the detailed help option on, the advanced info FUN_0071006D. Each line is added by FUN_004C5076(out, line, 1, 0),
+which appends `<ttf><ttb>` (a bullet) and the line.
+
+**The flag.** `<Flag>QuickArrival</Flag>` reaches the key through `AddTechFlagHandler` (below, "Tech flags"): it keeps
+the tech's ID (`[[record]+0]`) in a table and takes the flag, which stock would ignore.
+
+**The line.** A 6-byte `jmp` over `mov ecx,[0D6F6F0h]` at 0x710909, the join before the advanced info (reached from
+0x7108C3, 0x7108DB and the fall-through after the send-limit line, no push outstanding):
+`UhcQuickArrivalLine(out = [esp+44h], tech = [esp+4Ch], list = [esp+58h])`, then the replaced load and `jmp 0x71090F`.
+For a flagged tech it appends `<ttf><ttb>` and the text with the BString append 0x443960, as FUN_004C5076 does (a `\n`
+instead of the bullet in string mode). The text is *This is a quick-arrival card.*, or string N of the string table
+with `stringid N` (read at each rollover, so a language change follows; an empty string falls back to the English).
+So the line comes right after the send-limit line: after *This Card may be sent INFINITE times* for an infinite card,
+and between the card's rollover text (and its send limit) and the advanced info for the others.
+
+**Why it is safe.** Display only. The stdcall keeps EBX, ESI, EDI and EBP; ECX is reloaded by the replaced instruction,
+EDX at 0x71090F and EAX by the call at 0x710917. `CardRolloverHead` verifies the builder's frame (the offsets of its
+arguments), `CardBulletLine` the bullet helper the key copies.
 
 ### maintainWaitForPop
 
@@ -2199,6 +2343,47 @@ on an alpha-1 texture with the units' shader `bumpspec_mask_pixelxform` (`pixelx
 alpha 0 take the colour of the player of the visual the model hangs on: measured 2026-11-22 with a half-and-half test
 texture, blue on player 1's Skirmisher, red on player 2's Outpost, and the local player's blue on a placement ghost. The
 key needs nothing for it.
+
+**The look (2026-11-23).** The game's selection decal (`shadows_selections\selection_circle_64x64.ddt`) is a white line,
+2 texels of a 32-texel half width, alpha 255 on the line and 0 elsewhere, which the game draws flat in the owner's
+colour: about (48, 44, 213) for player 1's (45, 45, 245), 3 to 4 px wide at the default zoom. The range ring now matches
+it: `range_line.ddt` is white with alpha 0 across the whole line (until 2026-11-23 a 150-grey core between white edges of
+alpha 255), so the shader's `diffuse *= lerp(pixelxformColor, 1, diffuse.a)` gives the owner's colour itself. The line is
+0.5 m wide, +0.008 m per metre of radius. The ring used to look pale (in game a core of (195, 178, 250) for blue and
+(255, 179, 162) for red) because of its bump map. `BumpPS` in the game's `sm3_shaders.hlsl` reads the bump as
+(x, y, z, shine) = (A, G, B, R), and adds the sun's shine, scaled by R, over the colour. The old flat bump was
+(R 128, G 128, B 255, A 255): half shine on a normal tilted 45° along the ring. `range_line_bump.ddt` is now
+(0, 128, 255, 128), as the game's own `flat_normal_black_spec.ddt`. Measured after the change: the ring's core is
+(72, 66, 255) for blue, next to the selected Skirmisher's own decal.
+
+**Fills and dashed rings (2026-11-23).** Each ring is one or two models of `effects\uhc_rings`:
+- `range_<N>.xml`: the line.
+- `rangefill_<N>_p<player>.xml`: its fill.
+- `range_<N>_ships.xml`: a dashed line with no fill, for an attack that reaches only ships.
+
+The fill:
+- It is a flat disc 0.22 m over the feet, under the line, reaching the middle of the line.
+- It uses the game's `alphablend` effect, which blends by the texture's alpha.
+- Engine tests in game, 2026-11-23:
+  - the selection decal effect `decalselection` on a mesh drew nothing;
+  - `pixelxform` (with `pixelxformColor = playerColor`) drew the owner's colour, but opaque;
+  - `alphablend` blended, but with no player colour.
+- So each player ID 0 to 8 has its own texture, `rangefill_p<player>.ddt` (the game's `playercolors.xml` `color1`), and the
+  key hangs the owner's disc, `[[unit+44h]+0]`. The placement ghost gets none: a ghost that cannot be placed is drawn with the tint technique, and `alphablend`'s tint draws the disc opaque (seen in game on a Fort's ghost, 2026-11-23).
+- Measured with an alpha-banded test disc: the blend follows the texture's alpha, and the sun about doubles the
+  texture's colour. So the texture holds 0.6 of the colour.
+- Its alpha (DXT5, smooth at these low values) is 0 up to 20 % of the radius, then rises as t^1.2 to the colour's edge
+  value: 0.38 for blue, 0.36 purple, 0.32 red, 0.30 the others.
+
+**Ships only.** An attack counts as ships-only when:
+- its `<Rate>` list (`[action+0Ch]`, count `+10h`, 0Ch-byte entries, `+0` the unittype) is not empty;
+- every type on it is `Ship`, or a type whose every proto in the database (`[db+54h]`, count `+58h`, tested with the
+  is-a test 0x44D7FA) is a Ship. That covers `AbstractWarShip` and a ship's own proto.
+
+Ship's ID comes from the unittype name table `[db+190h]` (0x58E685 / 0x40295B). Each type is worked out once per
+database.
+
+**Caps.** The caps count models: 60 in all, so a filled ring is two.
 
 **`<Flag>AlwaysDisplayRange</Flag>`.** The proto flag parser 0x5F640A (`stdcall(proto, name)`) compares the name with each
 flag it knows, through the string compare 0x4028B4, and returns with nothing for any other name. The key replaces the call of
@@ -3842,6 +4027,66 @@ before reading them. The broadside fire step (0x4CEA43) and melee (0x4DCFE2) are
 - Cost: one map lookup per ROF read of an action with a burst while some action has one, one per shot with projectiles;
   with no tag in the data, the gates are closed and the hooks only compare. `hold` adds a call of 0x4939BD per quick shot.
 
+### retargetInAction
+
+**What the attack does when its target dies (2026-11-23, capstone on the stock exe, REA `ev_c3f18d0017…` for the unit
+query FUN_00499CE4, hardware write breakpoints and the key's own log in game).** The attack unit action (vtable 0xB96278)
+keeps its target's ID in `[ua+14h]`, its range in the float `[ua+24h]` and its state in the byte `[ua+61h]`.
+- **A shot per Attack tag.** The event handler (vtable `+44h`, 0x48CED0) resolves `[ua+14h]` (EDI, 0 when it is no unit)
+  and switches on the event type − 5 (0x48CF65): event 5, an animation's `Attack` tag, goes to 0x48F739, which fires the
+  shot block (0x48F7F0..0x48F8E9: launch, `[ua+68h]` + 1, the wait 0x48FA69) when the attack is in state 1 or its tactic
+  has flag bit 4 (0x48F75F..0x48F7DE). The shot changes no state, so every Attack tag of the animation fires while the
+  state stays 1: [O] a machine gun with six Attack tags fired six shots a cycle, 0.10 to 0.24 s apart. The other events the attack does not
+  take (TargetDied 13h among them) go to the base handler 0x48CF88, which ignores 13h (0x48CFC4).
+- **The update finds the dead target.** The update (vtable `+3Ch`, FUN_0048A330) reads `[ua+14h]` at 0x48A359; no unit
+  (0x48A3D3 by way of 0x48782F, unless the ID is below 0, a point attack), not alive (vtable `+A4h`, 0x48A3EA) or inside
+  another unit (0x48A3F9, the current action of type 2Bh; 0x48A409) all go to 0x487838: in state 19h it goes on (0x48A40F,
+  where state 19h returns at once, 0x48A413); with `[ua+0Ch]` ≥ 0 its own branch (0x4F6F6E); in state 1 or 15h
+  setState(19h) (0x487854); otherwise setState(0Ah) (0x497863). In state 19h the Attack tags fire nothing, so the rest of
+  the animation is lost. [O, trace] When the wait is over the unit reuses the same unit action for its next target:
+  `[ua+14h]` = −1 (0x4719F3) and `[ua+68h]` = 0 (0x472CE8) under 0x472CCD (vtable `+8`), then the new target, and a new
+  cycle from the start of the animation.
+- **What the update checks on a live target** (each update): the attack the tactic gives for it, 0x489ECC(tactic, unit,
+  target, 1, !flag 0Dh, 0, 0, `[ua+24h]`) at 0x48A570, against the tactics action's ID `[[ua+4]+0]` (another one →
+  0x4E5346); the range, the unit's vtable `+CCh(target, [ua+24h])` (0x48A5C8); the visibility, 0x48A9EF(target, player)
+  (0x48A605); then `[ua+18h]` = the target's position. The tactic is the unit's current one: `[[[unit+5Ch]+44h]+10h]`
+  indexed by `[[unit+58h]+0A8h]` (0x48A533..0x48A56E).
+
+**The hook.** `hooks/retarget_hooks.asm` replaces `mov al,[esi+61h] / cmp al,19h` (5 B at 0x487838; reached only by the
+three jumps above, `cs` scan) with a jmp. ESI = the unit action, EBX = 0, the update's saved EDI on top of the stack. While
+some action has the tag (`g_uhcRetargetOn`), `UhcRetargetAction(ua)` runs with EAX, ECX and EDX saved. For a tagged
+action (`{proto ID, action name index}` of the unit's proto and `[ua+4]`) in state 1 with a target ID ≥ 0, it searches:
+the units within `[ua+24h]` + 12 m of the unit (FUN_004A1C55, the world's spatial query), each one not the unit or the
+lost target, alive, not inside another unit, of the tactic's `<autoattacktype>` `[tactic+174h]` when it has one
+(0x44D7FA, the test of the automatic search 0x4A1A0E), given this attack by 0x489ECC with the update's arguments, in
+range by vtable `+CCh` and seen (0x48A9EF); the nearest by vtable `+BCh` (the distance the update reads at 0x48A59B), then
+the lowest ID. It writes the ID to `[ua+14h]` and returns 1; the hook pops EDI and jumps to 0x48A359, so the update
+reads the new target and runs all its own checks on it, as at any update. Otherwise (no tag, another state, no target)
+the hook redoes the compare and goes on at 0x48783D (`je 48A40Fh`), the stock path. A second call for the same action
+in the same game time returns 0, so a target the update refuses cannot loop. The shot count, the cycle start `[ua+78h]`,
+the wait and the animation are the action's own and stay: the next Attack tag fires at the new target.
+
+**numberOfShots.** A burst's quick shots wait the interval in state 1 with `<BurstPose>` hold (the attack animation's
+tail is stretched to the wait), so a kill by a quick shot is seen in state 1 and the burst goes on. [O] A target swapped in
+state 19h (an earlier version did it while a burst had shots left) did not keep the burst: the action was reset at the
+wait's end as above and the count started again, so the key leaves state 19h alone.
+
+**Tags.** Read through the shared action tag hook (`actiontags.h`) from a tactics `<action>` or a `<ProtoAction>`:
+`RetargetInAction` 1 (retarget) or 0 (stock, logged with `log`); cleared on every data load. With `log` a third ROF filter
+(`rofreads.h`, after numberOfShots') logs each shot and cycle start of a tagged action; it changes no value.
+
+**Why it is safe.**
+- The site: no branch lands in 0x487839..0x48783C; 0x48783D is the stock `je`, entered with the flags of the re-executed
+  `cmp`. 0x48A359 is the head the update reaches from its own start (and 0x49E056), with the stack the hook leaves after
+  `pop edi`, EBX = 0 and the update's locals already written (0x48A34F). Both sites are verified (`RetargetNoTarget`,
+  `RetargetUpdateTarget`).
+- Deterministic: the search reads simulation state only (positions, the spatial query, the attack's data, the player's
+  visibility, which is simulation state), picks by distance then unit ID, and runs in the update on every machine. No
+  container keyed by pointer decides anything. Every player needs the same line and data.
+- Cost: with no tag in the data the hook compares one global. A tagged action pays one map lookup when its target is lost,
+  and one spatial query over its range when that happens in its animation: once per kill, not per frame (the state is 19h
+  right after a search that found nothing).
+
 ### unitResourceAuras
 
 An `AutoRangedModify` action's update is FUN_009D033E, `void thiscall(action)`, a vtable slot with no direct caller.
@@ -4341,7 +4586,14 @@ fill as the extra rows: the minimized block writes them each fill, then the pane
 fills the 250 ms refresh skips, from the last plan), with the attack style and help text of the fill's rows. Each
 attack row of the fill is matched, in order, with the action list it comes from (0x487EEE, every listed action) and its
 name checked against the action's (`[db+1FE4h]`); then:
-- the icons get the minimized panel's size (`(10)`, 0xC36508) instead of the stat panel's (`(16)`, 0xBA2100);
+- the icons are written square (since 2026-11-23): in the markup `<icon="(N)(texture)">` N sets the icon's **width**
+  (N + 1 px, at every resolution) and its **height** is always the text line's, which the font gives (`fonts3.xml`,
+  "Arial 12": a 17 px line on a screen 960 px tall or more, its `ResolutionOverride ResX="1280"` sizes, 14 px below;
+  measured at 1024 x 768, 1600 x 900, 1280 x 960, 1280 x 1024, 1920 x 1080 and 2560 x 1440). The game's minimized rows
+  write `(10)` (0xC36508): 11 x 17 at 1080p, every square icon squeezed to 0.65 of its width; the stat panel's `(16)`
+  (0xBA2100) is 17 x 22 in its 22 px line. The key writes N = line - 1 (`IconSize`: 16, or 13 below 960 lines, the
+  height `[[0C66044h]+608h]`), in the rows, the resists row and the top blocks, so every icon shows at its true aspect;
+  the pack's own icons are made for that (no pre-widening). The big interface is not the key's and keeps `(16)`;
 - with `rofIcon`, the action's ROF (`[action+34h]` ms) and that icon go right after the damage icon;
 - with `projectilesIcon`, the projectiles the action fires before its reload go after the ROF, when above 1: its
   `<NumberOfShots>` times its `<NumberProjectiles>` (or `<NumberOfProjectiles>`) as the data writes them
@@ -4368,7 +4620,8 @@ name checked against the action's (`[db+1FE4h]`); then:
 - an original attack row (its gadget spans the panel to the right edge) longer than that width over the font's
   character width drops its last multipliers (`, <n>x <icon>` parts, last first) and ends with ` (+N)`. The font does
   not shrink below 1080 lines (at 1024 x 768 a row is as wide in pixels as at 1920 x 1080), so the character width is
-  taken at 1080 lines at least;
+  taken at 1080 lines at least; an icon counts as the characters its width takes (N + 1 px over that width: about 3.5
+  at 1080p);
   A row too long for its column keeps the damage, ROF and projectiles in its short form when they fit (the explorers'
   `Sharpshooter ATK 750 <ranged> 4.50 <rof> 3 <cylinder>`);
 - an **ability attack the unit cannot use** is dropped. Such an action is listed active by its tactic on every unit of
@@ -5450,6 +5703,28 @@ would also accept it inside `<Prereqs>` and `<Effects>` (0x6203A2), which is why
 **Why it is safe.** `pushad` / `popad` keep every register around the stdcall dispatch; the flags are written by the
 `cmp` that follows. No branch lands in the 7 bytes (they were dataLint's site; capstone scan). Data load only: once per
 `<Tech>`, a walk over its 10 to 30 children with a name compare each.
+
+### Tech flags (techflags.*)
+
+The tech parser reads each `<Flag>` through FUN_00620C2F `cdecl(record, name)`, a chain of string compares called once
+(0x620C23) that ignores a name it does not know. `techflags.cpp` owns a 5-byte `jmp` over its head (`push esi / mov
+esi,[esp+8]`, re-executed before `jmp 0x620C34`): `UhcTechFlagDispatch(record, name)` asks each handler added by
+`AddTechFlagHandler`, in `kFeatures` order, and returns for a flag one of them took; any other flag goes on to stock.
+The head, not the call, so a DLL that wraps the call still reaches it for the flags it does not know.
+`hcTargetTechs` (HCTargetEnemy, HCTargetAll) and `quickArrivalCards` (QuickArrival) use it; whichever applies first
+verifies the head and writes the jump. Data load only.
+
+### Card tags (cardtags.*)
+
+The home city loader FUN_0062E6C9 reads each `<card>`'s children in a loop over the card node (EBX, 0x62FD1D: children
+`[node+8]`, count `[node+0Ch]`), compares each name with its tags and reads past one it does not know (0x66B720), then
+commits the card built on its stack with `call 62FBC7h` at 0x630017 (ECX = the home city's card array `hc+204h`).
+`cardtags.cpp` redirects that call to `UhcCardCommitHook`: it calls the append with the same `this` and argument, then
+`UhcCardTagsDispatch(node = EBX, array, index = EAX)`, which walks the node's children (a child's name
+`[[child+4]+18h][[child+18h]]`, case ignored, its text the BString `[child+14h]`) and calls the handler added for that
+name by `AddCardTagHandler` with the home city, the card now in the array, and the text; it returns the index with
+`ret 4`, as the append does. The loader overwrites ECX and EDX after the call and does not read EAX again.
+`resendableCards` uses it for `<resendeveryage>`. Data load only, once per card.
 
 ### trainBatchSize
 

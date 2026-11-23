@@ -34,6 +34,7 @@ Outcome ApplyWorkRateByAbstractType(const Config& config);
 Outcome ApplyAutoGatherScaleByContained(const Config& config);
 Outcome ApplyContainedUnitsROF(const Config& config);
 Outcome ApplyNumberOfShots(const Config& config);
+Outcome ApplyRetargetInAction(const Config& config);
 Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
@@ -59,6 +60,8 @@ Outcome ApplyDoNotQueue(const Config& config);
 Outcome ApplyNextResearchFree(const Config& config);
 Outcome ApplyResearchGrants(const Config& config);
 Outcome ApplyShipTechLimit(const Config& config);
+Outcome ApplyResendableCards(const Config& config);
+Outcome ApplyQuickArrivalCards(const Config& config);
 Outcome ApplyHomeCityTechsInUnits(const Config& config);
 Outcome ApplyKillBountyTechs(const Config& config);
 Outcome ApplyTeamKillBounty(const Config& config);
@@ -164,6 +167,8 @@ bool AddDanceCivs(const std::vector<std::string>& names, const char* feature);
 // which applies after that key.
 bool AddFirstTcShipmentPoint();
 Outcome ApplySelectionLimit(const Config& config);
+Outcome ApplyModelCacheLimit(const Config& config);
+Outcome ApplyDmgPartBoneFix(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
@@ -193,12 +198,19 @@ inline constexpr Feature kFeatures[] = {
     {"containedUnitsROF", ApplyContainedUnitsROF},
     // After containedUnitsROF: its filter on the shared ROF reads (rofreads.h) runs on that key's result.
     {"numberOfShots", ApplyNumberOfShots},
+    // After numberOfShots: it asks that key whether a burst has shots left, and its "log" ROF filter runs after it.
+    {"retargetInAction", ApplyRetargetInAction},
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
     {"randomCost", ApplyRandomCost},
     {"shipmentCounts", ApplyShipmentCounts},
     {"ageFiveShipments", ApplyAgeFiveShipments},
+    // No order constraint: the only keys that write 0x630017 (the shared card tag hook), 0x8D502F, 0x710804 and
+    // 0x710909. quickArrivalCards reads its flag through the shared flag hook (0x620C2F); each handler there takes
+    // only its own flag names, so its place relative to hcTargetTechs does not matter.
+    {"resendableCards", ApplyResendableCards},
+    {"quickArrivalCards", ApplyQuickArrivalCards},
     {"kothTimer", ApplyKothTimer},
     {"unitTypeTechs", ApplyUnitTypeTechs},
     {"trainBatchSize", ApplyTrainBatchSize},
@@ -286,6 +298,8 @@ inline constexpr Feature kFeatures[] = {
     {"impactBoneFix", ApplyImpactBoneFix},
     {"customImpactTypes", ApplyCustomImpactTypes},
     {"selectionLimit", ApplySelectionLimit},
+    {"modelCacheLimit", ApplyModelCacheLimit},
+    {"dmgPartBoneFix", ApplyDmgPartBoneFix},
     {"enableAllTeams", ApplyEnableAllTeams},
     {"startingTC", ApplyStartingTc},
     // After startingTC: both use the FirstTC proto hook at 0x506B3B, which the first one writes.
@@ -350,12 +364,13 @@ inline constexpr Feature kFeatures[] = {
 // Lowercase cfg keys read by the features above; any other key is logged as not implemented.
 inline constexpr const char* kHandledKeys[] = {
     "customabstracttypes",
-    "agefiveshipments",
+    "agefiveshipments", "resendablecards", "quickarrivalcards",
     "removeconversionrestriction", "ignoreregistrypath", "deckcardcount", "basepop", "extrapop",
     "decimalpopulation",
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
+    "retargetinaction",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "broadsidesoundset", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
@@ -363,7 +378,7 @@ inline constexpr const char* kHandledKeys[] = {
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc", "scenariocivs",
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
-    "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory",
+    "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix",
 };
 
 }  // namespace uhc

@@ -31,7 +31,12 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Sunday 2026-11-22 14:03 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
+| Monday 2026-11-23 09:18 | [`dmgPartBoneFix`](bug-fixes.md#dmgpartbonefix) | Added. Stops the game from reloading a 3D model in use when a damage template names a bone the model lacks, the other cause of the Granny crashes (WoL #78). | Nothing; `wol-fixes/art-dmg-bones-20261123/` fixes the data itself. |
+| Monday 2026-11-23 08:38 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
+| Monday 2026-11-23 08:05 | [`modelCacheLimit`](bug-fixes.md#modelcachelimit) | Added. Stops the game from unloading 3D models that units still use, the cause of the Granny crashes in big games (WoL #78). | The two data fixes in `wol-fixes/art-dmg-bones-20261123/`. |
+| Monday 2026-11-23 07:59 | [`resendableCards`](#resendablecards) | Added. `<resendeveryage>1</resendeveryage>` in a home city card: the card can be sent again each time its player reaches a new age (its `<maxcount>` back, no stacking across ages). | The tag on the cards that want it. |
+| Monday 2026-11-23 07:59 | [`quickArrivalCards`](#quickarrivalcards) | Added. `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a quick-arrival card.* to the card's rollover, after its *may be sent ... | The flag on the cards' techs; a string in the string table to translate the line. |
+| Monday 2026-11-23 07:56 | [`retargetInAction`](#retargetinaction) | Added. An attack with `<RetargetInAction>1</RetargetInAction>` whose target dies before the last shot of its attack animation (a machine gun's Attack tags, a burst's quick shot) fires the rest at a new target in range, instead of losing them. | The tag on the attacks that want it (the machine guns' `CannonAttack` in `organGun.tactics`). |
 | Sunday 2026-11-22 13:54 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Sunday 2026-11-22 12:35 | [`broadsideSoundSet`](#broadsidesoundset) | Filmed in WoL, with a control. A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). |
 | Sunday 2026-11-22 12:35 | [`numberOfShots`](#numberofshots) | Filmed in WoL, with a control. An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, keeping its firing pose between them (`<BurstPose>`), before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. |
@@ -597,6 +602,8 @@ Caps that are fixed in the exe.
 | [`decimalPopulation`](#decimalpopulation) | Population with decimals: `<PopulationCount>0.5`, `<PopulationCapAddition>7.5` and decimal amounts in their tech effects; the counter and the tooltips show them. | **new** | The decimals in `protoy` and `techtreey`. | confirmed (single player, also a skirmish vs AI) |
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | in WoL's DLL | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). | confirmed above the level table; see the section |
 | [`ageFiveShipments`](#agefiveshipments) | Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown at the right end of the Age IV row (the Age IV cards stay at the left), greyed until the Imperial Age, then sent like the others. | **new** | `<age>4</age>` on the cards that want it. | confirmed (single player) |
+| [`resendableCards`](#resendablecards) | `<resendeveryage>1</resendeveryage>` in a home city card: the card can be sent again each time its player reaches a new age (its `<maxcount>` back, no stacking across ages). | **new** | The tag on the cards that want it. | confirmed (single player) |
+| [`quickArrivalCards`](#quickarrivalcards) | `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a quick-arrival card.* to the card's rollover, after its *may be sent ... times* line. | **new** | The flag on the cards' techs; a string in the string table to translate the line. | confirmed (single player) |
 | [`selectionLimit`](#selectionlimit) | A selection holds up to N units (50 in the exe). `wol.cfg` sets 75. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`noAILimit`](#noailimit) | Shows every `AI4\*.personality` file in game setup. WoL uses `noAILimitV2` instead. | in WoL's DLL | The personality files. | confirmed |
 | [`noAILimitV2`](#noailimitv2) | Shows WoL's 52 `AI4\*.personality` files in game setup. Without it, a random AI crashes the game. | **in `wol.cfg`** | The personality files. | confirmed |
@@ -870,6 +877,143 @@ ageFiveShipments
   - key off: six Age IV cards, no Age V card, 25/25 (panel and deck builder).
   - Not tested: the AI with an Age V card, multiplayer, other resolutions (the panels' own buttons are used, so none
     expected).
+
+#### resendableCards
+
+*Lets a home city card be sent again each time its player reaches a new age.*
+
+**Added:** Monday 2026-11-23 07:59 · **Filmed in WoL:** Monday 2026-11-23 07:59
+
+![resendableCards in WoL](media/resendableCards-wol.gif)
+
+*In WoL, with `resendableCards log` (2026-11-23, a skirmish on a test map, Dutch against a German AI, the ages set by
+triggers at 1:00 and 2:00; in the copy's `homecitydutch.xml` `<resendeveryage>1</resendeveryage>` on "3 Dutch Workers"
+(Age I, which also has `<infiniteinlastage>`) and on "Cords of 600 wood" (Age II); "Chests of 700 coin" untagged; 6x
+speed):* "3 Dutch Workers", sent in Age I, is dark until the Age II comes, then it can be sent again. In Age II the 600
+wood and the 700 coin are sent and turn dark; when the Age III comes the 600 wood is lit again and the 700 coin stays
+dark. The log at the bottom: `player 1 reached Age III: card 715 (HCShipWoodCrates2) can be sent 1 time(s) again`.
+[Full video (MP4)](media/resendableCards-wol.mp4).
+
+![resendableCards in WoL, key off](media/resendableCards-wol-control.gif)
+
+*In WoL, key off (the same data, deck, map and clicks, in a new game; 6x speed):* the three cards stay dark after they
+are sent, through Age II and Age III. [Full video (MP4)](media/resendableCards-wol-control.mp4).
+
+```
+resendableCards [log]
+```
+
+- **In WoL today:** a card is sent at most `<maxcount>` times in a game. `<infiniteinlastage>1</infiniteinlastage>` is
+  the game's only reset: when the player reaches the Imperial Age, the card gets its sends back once (it does not become
+  unlimited). JTMaston's #97 (2026-11-23).
+- **What the key does:** a card with `<resendeveryage>1</resendeveryage>` gets its sends back each time its player
+  reaches a new age: it is sendable again as many times as its `<maxcount>` (once for `1`). The reset **sets** the sends
+  to `<maxcount>`, it never adds to them: a card sent in Age II and not in Age III has one send in Age IV, not two. A
+  card not sent since the last age-up is left as it is, and an infinite card (`-1`) is not touched. The panel lights the
+  card again at the age-up, its rollover shows it as sendable, and the AI's card list is the same list, so an AI with
+  such a card can send it again too.
+- **With `<infiniteinlastage>`:** the Imperial Age is one more age-up, so such a card gets its sends back then as well,
+  once (the game's own refill and this one are the same reset). Nothing else changes for the cards with only
+  `<infiniteinlastage>`.
+- **What a modder writes:** in the card of the home city file (`data\homecityxxx.xml`), next to the other tags, in lower
+  case like them (the name is not case sensitive):
+  ```xml
+  <card>
+      <name>HCShipWoodCrates2</name>
+      <maxcount>1</maxcount>
+      <level>0</level>
+      <prereqtech>HCShipWoodCrates1</prereqtech>
+      <age>1</age>
+      <displayunitcount>600</displayunitcount>
+      <infiniteinlastage>1</infiniteinlastage>
+      <resendeveryage>1</resendeveryage>
+  </card>
+  ```
+  `1` or `true` turns it on, `0` or `false` off; another value is logged and ignored. The tag belongs to that civ's card:
+  the same tech in another civ's home city file keeps its own setting.
+- **Off:** the game reads past the tag, as before.
+- **Saved games:** the card's sends and the tag are kept in the save by the game itself; a save loaded with the key goes
+  on as it was (a card sent in that age stays sent until the next age-up). A save made with the key and loaded without
+  it: those cards are no longer reset, and a card that also has `<infiniteinlastage>` loses its Imperial Age refill.
+- **Multiplayer:** every player needs the same setting (it changes what a player can send).
+- **Log:** `resendableCards: a card with <resendeveryage>1</resendeveryage> gets its sends back (its maxcount) each time
+  its player reaches a new age ... (multiplayer unverified)`; with `log`, each tagged card as its home city is read
+  (`card 715 (HCShipWoodCrates2) of home city ... is sent again in each new age (maxcount 1)`) and each reset (`player
+  1 reached Age III: card 715 (HCShipWoodCrates2) can be sent 1 time(s) again (it had 0 left)`); `hook reached: card tags
+  (0x630017)`, `... resendableCards age (0x8D502F)`, `... resendableCards rollover (0x710804)`.
+- **Tested in WoL (2026-11-23, single player, `C:\AoE3-UHC-WoLReal2`, Dutch skirmishes on a test map against a German AI
+  (`wolOtto`), XP granted at 0:03, the ages set by `trPlayerSetAge` triggers; the cards' sends read from memory):**
+  - "3 Dutch Workers" (Age I, tag and `<infiniteinlastage>`) sent in Age I: 0 sends left, 1 again at the Age II;
+  - "Cords of 600 wood" (Age II, tag) sent in Age II: back at the Age III; not sent in Age III: still 1 (not 2) in Age
+    IV; sent in Age IV: back at the Age V;
+  - "Chests of 700 coin" (untagged, with `<infiniteinlastage>`): sent in Age II, still 0 in Ages III and IV, 1 at the
+    Age V (the game's own refill);
+  - saved games: a save in Age III and one in Age IV, after a send, loaded in the same process: the sends as they were
+    when saved, the tag kept on the cards, and no reset at the load; a save in Age III after a send, loaded: the card
+    came back at the next age-up (Age IV);
+  - key off, the same clicks: no card comes back (the video above);
+  - the test AI resigned at about 4 to 5 minutes in every run, with and without the key (on a test map with only a Town
+    Center and settlers), so an AI sending a tagged card twice was not seen. Not tested: multiplayer.
+
+#### quickArrivalCards
+
+*Adds the line "This is a quick-arrival card." to the rollover of the cards whose tech has the QuickArrival flag.*
+
+**Added:** Monday 2026-11-23 07:59
+
+![quickArrivalCards: an infinite card in the shipment panel](media/quickArrivalCards-panel-infinite.jpg)
+
+*In WoL (2026-11-23, a Dutch skirmish, the in-game shipment panel; `<Flag>QuickArrival</Flag>` added to
+`HCShipFoodCrates1` and `HCShipCoinCrates3` in the copy's `techtreey.xml`):* the infinite card "Crates of 300 food" ends
+with *This Card may be sent INFINITE times* and then *This is a quick-arrival card.*, as its own bullet.
+
+![quickArrivalCards: a card sent once, in the shipment panel](media/quickArrivalCards-panel-once.jpg)
+
+*The same panel, "Chests of 700 coin" (sent once):* its rollover text, *This Card may be sent ONE time*, then the new
+line.
+
+![quickArrivalCards: the control card](media/quickArrivalCards-panel-control.jpg)
+
+*The same panel, "Cords of 700 wood" (no flag):* unchanged.
+
+![quickArrivalCards in Build a Deck](media/quickArrivalCards-deck-builder.jpg)
+
+*"Build a Deck" on the home city screen:* the same line on the card with the flag, after the game's red *This Card cannot
+be sent until Age 2*, its rollover text and its send limit. More: the infinite card and the control card in "Build a
+Deck", and the line taken from the string table (`stringid`), in `docs/media/quickArrivalCards-*.jpg`.
+
+```
+quickArrivalCards [stringid N] [log]
+```
+
+- **In WoL today:** nothing in a card's rollover says that it arrives quickly. JTMaston's #99 (2026-11-23).
+- **What the key does:** for a card whose tech has `<Flag>QuickArrival</Flag>`, the card's rollover gets one more bullet,
+  *This is a quick-arrival card.*, right after the line *This Card may be sent INFINITE times* (or *ONE time*, or the
+  *N times* line), so it sits between the card's own rollover text and the advanced information (the detailed help, when
+  that option is on). The line looks like the game's other lines of the card. The same rollover is used by the in-game
+  shipment panel, "Build a Deck" and the deck chooser. Nothing else about the card changes: the flag does not change
+  how fast a card arrives.
+- **`stringid N`:** the line is string N of the string table (`data\stringtabley.xml`), so it can be translated; an
+  empty or missing string falls back to the English text. Without it, the English text.
+- **What a modder writes:** in the card's tech in `techtreey.xml`:
+  ```xml
+  <Tech name ='HCShipFoodCrates1' type ='Normal'>
+      ...
+      <Flag>HomeCity</Flag>
+      <Flag>QuickArrival</Flag>
+  ```
+- **Off:** the game ignores the flag, as it ignores any name it does not know.
+- **Multiplayer:** display only; players may set it differently.
+- **Log:** `quickArrivalCards: the tech flag QuickArrival adds the line "This is a quick-arrival card." to a card's
+  rollover` (or `the line of string N`); with `log`, `tech 935 has the QuickArrival flag` per flagged tech and, once,
+  `the line was added to the rollover of tech 935`; `hook reached: tech flags (0x620C2F)`, `... quickArrivalCards
+  (0x710909)`.
+- **Tested in WoL (2026-11-23, single player, `C:\AoE3-UHC-WoLReal2`, Dutch, the flag on `HCShipFoodCrates1` (infinite)
+  and `HCShipCoinCrates3` (once), `HCShipWoodCrates3` as the control):** the line after the send-limit line on both
+  flagged cards, in the in-game panel (in Ages I to III, greyed or not) and in "Build a Deck"; none on the control card;
+  with `stringid 36865` the line read the text of that string. With `hcTargetTechs` on and `<Flag>HCTargetEnemy</Flag>`
+  on a test tech, both keys read their flags through the shared hook (`hcTargetTechs: HCTargetEnemy read`). Not tested:
+  the deck chooser (the same rollover builder), another language.
 
 #### selectionLimit
 
@@ -2940,6 +3084,7 @@ Attacks, armor, and what a hit does.
 | [`accuracyTechs`](#accuracytechs) | A tech can change an action's `<Accuracy>`, with a `Data` effect of subtype `Accuracy`. | **new** | The `Data` effects in `techtreey.xml`. | confirmed |
 | [`containedUnitsROF`](#containedunitsrof) | An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | **new** | The attribute on the attacks that want it (none has it today). | confirmed |
 | [`numberOfShots`](#numberofshots) | An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, keeping its firing pose between them (`<BurstPose>`), before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | **new** | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. | confirmed (single player) |
+| [`retargetInAction`](#retargetinaction) | An attack with `<RetargetInAction>1</RetargetInAction>` whose target dies before the last shot of its attack animation (a machine gun's Attack tags, a burst's quick shot) fires the rest at a new target in range, instead of losing them. | **new** | The tag on the attacks that want it (the machine guns' `CannonAttack` in `organGun.tactics`). | confirmed (single player) |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
 | [`broadsideSoundSet`](#broadsidesoundset) | A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | **new** | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). | confirmed (single player) |
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | **new** | The type on the protos that want it. | confirmed |
@@ -4114,6 +4259,97 @@ numberOfShots [projectiles] [log]
   (`perfprobe.py`, 60 s, 30 Skirmishers with 3-shot bursts against 30 Crossbowmen, two runs each, six other games running
   on the machine): with the key 426 / 437 fps, update 0.18 / 0.17 ms, render 2.2 ms, no frame over 50 ms; key off 361 /
   427 fps, update 0.22 / 0.21 ms, render 2.6 / 2.2 ms, one frame over 50 ms. Not tested: multiplayer.
+
+#### retargetInAction
+
+*A machine gun whose target falls in the middle of its burst keeps shooting at the next enemy instead of wasting the rest.*
+
+**Added:** Monday 2026-11-23 07:56 · **Filmed in WoL:** Monday 2026-11-23 07:56
+
+![retargetInAction in WoL](media/retargetInAction-wol.gif)
+
+*In WoL, with `retargetInAction log` (2 `WOLMercMaximGun`, selected, whose `CannonAttack` in `organGun.tactics` has
+`<retargetinaction>1</retargetinaction>`, test data; 16 enemy `WOLRegular`s, 200 HP, that walk up to them; filmed on
+2026-11-23):* the tracers of each burst fan out over the line: when a soldier falls, the next Attack tags of the same
+animation hit the soldier beside him (the log lines at the bottom: `lost its target 3 ... after 3 shots: new target 16`).
+All 16 fall in 21 s of game time and the guns survive. [Full video (MP4)](media/retargetInAction-wol.mp4).
+
+![retargetInAction in WoL, tag off](media/retargetInAction-wol-control.gif)
+
+*The same scene with `<retargetinaction>0</retargetinaction>` (the stock behaviour, logged):* when the target falls, the
+rest of the animation fires nothing and the gun waits out its 4 s ROF before it takes the next soldier. Both guns are
+destroyed and 6 Regulars are left. [Full video (MP4)](media/retargetInAction-wol-control.mp4).
+
+```
+retargetInAction [log]
+```
+
+- **In WoL today (WoL #98):** an attack fires one shot at each `Attack` tag of its attack animation, while the attack is
+  in its firing state (state 1). WoL's Maxim gun (`WOLMercMaximGun`, and the six other protos of `organGun.tactics`:
+  OrganGun, xpGatlingGun, Mitrailleuse, ConsulateGatlingGun, WOLNordenfeltGun, ConsulateRabauld) has six in
+  `Bombard_ranged_attack` (0.27 to 0.81 of the animation), so it fires six shots a cycle, each with the action's full
+  damage. When the target dies, the attack notices it at its next update and goes to its wait: the tags left in the
+  animation fire nothing, and only when the wait is over (the ROF, 4 s for the Maxim) does the unit take its next target
+  and start a new animation. In the tests, with 130 HP targets, the Maxims lost one to five of their six shots that way,
+  and all six when another gun made the kill before the first tag.
+- **The tag:** an attack with `<RetargetInAction>1</RetargetInAction>` (in its tactics `<action>` or its `<ProtoAction>`;
+  the last one read wins) whose target dies, or goes away (garrisoned, deleted), while it is still in its attack
+  animation takes a new target on the spot and keeps going: the same attack, so the next Attack tag of the same animation
+  fires at the new target, the shot count goes on and the cycle and the ROF are not restarted. Projectiles already in
+  the air keep flying to the old target; the ones launched afterwards fly to the new one.
+
+  ```xml
+  <action>
+      <name stringid="38119">CannonAttack</name>
+      ...
+      <retargetinaction>1</retargetinaction>
+  </action>
+  ```
+
+  `0` is the stock behaviour (and logs it with `log`, useful for a comparison); any other value is logged and ignored.
+- **The new target** is one the unit could shoot right now without moving: the nearest unit within the attack's range
+  that the attack can target (the game's own test of which attack a unit uses on a target: enemies only, the action's
+  target types), of the tactic's `<autoattacktype>` when the tactic has one (what the unit attacks on its own), alive,
+  not inside a building or a ship, and seen by the unit's player. Ties go to the lowest unit ID. With none, the stock
+  behaviour: the wait, then the unit's own search.
+- **With [`numberOfShots`](#numberofshots):** a burst's quick shots keep the unit in its attack animation until the next
+  shot (`<BurstPose>` hold), so a target that dies after a quick shot is replaced and the burst goes on: 3 shots, the
+  last on the new target, then the reload. A target lost during the reload wait (between bursts, or after a burst's last
+  shot with another pose) is not replaced: the next burst starts on the unit's next target, as without the tag.
+- **Not covered:** the target the unit was ordered to attack (a player's right-click) is replaced by any enemy in range
+  when it dies, like the automatic targets. An attack with a single Attack tag gains no shot: its next one comes after
+  the ROF anyway, and the tag only picks that next target sooner (the nearest in range rather than the unit's own
+  search).
+- **Balance:** the six tags now all hit. In the tests the tagged Maxims killed 12 `WOLLandwehr` in 5.3 s, against 13 s
+  with the tag at 0, and 2 of them beat 16 `WOLRegular`s that win the same fight without the tag. Check the Maxim's
+  damage (100 a tag, `DamageArea` 2) against groups.
+- **Log:** `retargetInAction: applied`, `hook reached: retargetInAction (0x487838)`. With `log`: each tag read (at most
+  200), every shot of a tagged attack with its target and that target's state (`unit 0 shot 2 of action 4731A8C0 at 9
+  (WOLLandwehr, alive, 130 HP), state 01h`; at most 200), each cycle start, and each lost target (at most 300): `lost its
+  target 10 in state 01h after 1 shots: new target 9 (WOLLandwehr, 130 HP) at 18.8 m`, or `no other target in range, the
+  stock code (45 units around: ... 3 out of range 22.0, 0 unseen)` with why each unit around was refused.
+- **Simulation:** changes combat: every player needs the same line and data.
+- **Saved games:** nothing to keep: the tags are read with the data, and the target is the attack's own.
+- **Tested in WoL (2026-11-23, single player, `C:\AoE3-UHC-WoLReal4`):**
+  - 3 `WOLMercMaximGun` against 12 `WOLLandwehr` (130 HP): six shots a cycle, 16 new targets, every shot logged at a
+    living target (none at a body); with the tag at 0, the shots left in each cycle lost after a kill and the next
+    attack 4 s later.
+  - The video scenes above (2 Maxims, 16 `WOLRegular`s): 16 new targets, the last loss with nobody left in range: stock.
+  - The Merina rifleman `WOLAURMerinaRifleman` (`carabinero.tactics`, test data: `<numberofshots>3`, `<shotinterval>0.4`
+    and the tag on its three ranged attacks) against 12 `Seimen` brought to 25 HP by a trigger: a kill after the first or
+    second shot of a burst moved the rest of the burst to a new target (`shot 3 of its burst of 3` at the new one); the
+    targets further than its 12 m range were refused (logged as out of range), as they should.
+  - Untagged units (the enemies, the other protos of the scenes) log nothing and fight as before.
+  - A saved game (`saveGame` / `loadGame` from the console, before the fight): Maxims and Merinas changed targets as before.
+  - A 100 s skirmish as the Mapuche against `wolOtto` (Germans) with the tagged data: no XS error, the AI grew to 10
+    settlers and scouted.
+  - Performance (`perfprobe.py`, 70 s, 30 Maxims and 10 Merina riflemen against 50 `Jawan`s and 50 `Seimen`s, other
+    sessions' games running on the machine): with the key, update 0.36 ms a frame, render 3.5 ms, 273 fps, main thread
+    92 %, no frame over 50 ms; key off (`numberOfShots` alone), update 0.35 ms, render 3.3 ms, 330 fps, 91 %, one frame
+    of 52 ms. The frame rates differ with the fight (the tagged guns kill faster, so the scenes are not the same) and
+    with the other games; the simulation's update time is the same. The search runs only when a tagged attack loses its
+    target in its animation.
+  - Not tested: multiplayer, beside WoL's DLL.
 
 #### broadsideMuzzleLimit
 
@@ -8173,14 +8409,19 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 *A selected unit shows its range on the ground while Alt is held: one ring per ranged attack.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Sunday 2026-11-22 14:03
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Monday 2026-11-23 08:38
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
-*In WoL, with `displayedRange log` (Ethiopians, a scenario, the rings at their true size; test data: `<DisplayRange>1</DisplayRange>` on
-the Fort and the Crossbowman, `<Flag>AlwaysDisplayRange</Flag>` on the Outpost):* the Fort is selected and shows nothing; Alt held, its 40 m anti-ship and 26 m cannon rings; Alt released, none; the Outpost, selected, shows its 40 and 24 m at once, with no Alt; two Crossbowmen with Alt show 16 and 6 m each. The log names each ring. [Full video (MP4)](media/displayedRange-wol.mp4).
-*Filmed 2026-11-21 with the white particle rings; since 2026-11-22 the rings are meshes in the owner's colour, as in the
-videos below.*
+*In WoL, with `displayedRange log` (Ethiopians, a scenario of 3 players; test data: `<DisplayRange>1</DisplayRange>` on
+the Fort and the Skirmisher, `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the Outpost; the rings of 2026-11-23):*
+- The Fort is selected and shows nothing.
+- With Alt held, its 26 m cannon ring appears, filled in your blue, and its 40 m anti-ship ring, dashed with no fill:
+  that attack reaches only ships. Alt released, none.
+- The Outpost, selected, shows its 24 m filled and its 40 m dashed at once, with no Alt.
+- A Skirmisher with Alt shows 20 and 6 m. The zone inside 6 m is stronger: both attacks reach it.
+
+The log names each ring and fill. [Full video (MP4)](media/displayedRange-wol.mp4).
 
 ![displayedRange in WoL, key off](media/displayedRange-wol-control.gif)
 
@@ -8189,11 +8430,16 @@ videos below.*
 
 ![displayedRange on the placement ghost](media/displayedRange-wol-placement.gif)
 
-*In WoL, the ghost of a building being placed (Dutch, a skirmish against the German AI; no tag on the Outpost, only its
-attacks):* a Settler starts placing an Outpost (build mode, `uiBuildMode`): its ghost carries the 40 m anti-ship and the
-24 m ranged rings in the player's blue, and they follow it; Escape ends the placement and both rings go with the ghost;
-placing again brings them back, and a click places the Outpost: the rings go with the ghost and the foundation has none.
-The log names each ring. [Full video (MP4)](media/displayedRange-wol-placement.mp4).
+*In WoL, the ghost of a building being placed (Ethiopians, a scenario; the Outpost's and the Fort's ranged attacks):*
+- A Settler starts placing an Outpost (`uiSetProtoCursor`). Its ghost carries the 24 m ring and the dashed 40 m anti-ship
+  ring in the player's blue, and they follow the pointer.
+- The placement ends (`uiSetProtoCursorID(-1)`, what Escape and a right click run), and both rings go with the ghost.
+- Then the ghost of a Fort (red: no room there) carries its 26 m and its dashed 40 m.
+- A ghost has lines and no fill (the red tint would draw a fill opaque).
+
+The log names each ring. [Full video (MP4)](media/displayedRange-wol-placement.mp4). *Filmed 2026-11-23 with the new rings.
+Tested on 2026-11-22 in a skirmish (Dutch, against the German AI): a click places the Outpost, the rings go with the
+ghost and the foundation has none.*
 
 ![displayedRange on the placement ghost, key off](media/displayedRange-wol-placement-control.gif)
 
@@ -8202,16 +8448,18 @@ The log names each ring. [Full video (MP4)](media/displayedRange-wol-placement.m
 
 ![displayedRange on an enemy's units](media/displayedRange-wol-enemy.gif)
 
-*In WoL, your units and an enemy's (Ethiopians, a scenario of 2 players, player 2 the enemy; test data
-`<DisplayRange>1</DisplayRange>` on the Skirmisher, the Outpost and the Grenzer, fog off):* with Alt, your Skirmisher's 20 and
-6 m rings in your blue, then the enemy Outpost's 40 and 24 m in its red, then an enemy Grenzer's 20 and 6 m; Alt released,
-none. [Full video (MP4)](media/displayedRange-wol-enemy.mp4).
+*In WoL, an enemy's units (Ethiopians, a scenario of 2 players, player 2 the enemy (Egyptians); test data
+`<DisplayRange>1</DisplayRange>` on the Grenzer, `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the Outpost, fog off):*
+the enemy Outpost, selected, shows its 24 m ring filled in its red (where it shoots at you) and its 40 m dashed (ships
+only), the red of its own selection square; then an enemy Grenzer with Alt, 20 and 6 m filled; Alt released, none. Your
+own units' rings in your blue are in the first video.
+[Full video (MP4)](media/displayedRange-wol-enemy.mp4).
 
 ![displayedRange on an ally's units](media/displayedRange-wol-ally.gif)
 
-*In WoL, an ally's Outpost (a scenario of 3 players, player 2 an ally of player 1: its diplomacy slot reads 1; the aura
-ring scene of [Aura rings](#aura-rings) beside it):* with Alt its 40 and 24 m rings in its red. [Full video
-(MP4)](media/displayedRange-wol-ally.mp4).
+*In WoL, an ally's units (a scenario of 3 players, player 2 (Egyptians) an ally of player 1, as on 2026-11-22):* its
+Outpost, selected, shows its 24 m ring filled and its 40 m dashed in its red, the red of its selection square; then one of
+its Crossbowmen with Alt, 16 and 6 m, filled. [Full video (MP4)](media/displayedRange-wol-ally.mp4).
 
 ```
 displayedRange [log] [noPlacement]
@@ -8244,14 +8492,35 @@ displayedRange [log] [noPlacement]
   or its `<DisplayedRange>` values. They follow the ghost, change when you pick another building, and go when the
   placement ends (tested: placed, and cancelled with Escape; a right click runs the same `editMode("none")`).
   `noPlacement` turns this part off.
+- **How to read the rings** (2026-11-23):
+  - **The colour is the owner's**: yours, an ally's or an enemy's.
+  - **The fill is where that attack hits you**: a soft disc in the owner's colour inside each ring, clear next to the
+    unit and stronger toward the ring, like DE's range indicator. Where several attacks reach, their fills add up, so the
+    zone that several attacks cover reads stronger (a Skirmisher's 6 m inside its 20 m).
+  - **A dashed ring with no fill is an attack that reaches only ships**: the Outpost's and the Fort's 40 m anti-ship
+    attack.
+  - "Only ships" is read from the attack's `<Rate>` list: every type on it is `Ship`, or a type whose every proto is a
+    Ship (`AbstractWarShip`, a ship's proto). The attack's name plays no part.
+  - Two attacks on one ring size share one ring, filled if either is not ships-only.
+  - Not like DE: DE draws one decal a unit, at a single range ([de-parity.md](de-parity.md#range-indicator-wol-92-displayedrange)).
+    Here every attack keeps its ring.
 - **In the owner's colour** (JTMaston, 2026-11-22: "can these rings use player color via alpha channels?"): a range ring
-  is a flat annulus mesh, `range_<N>.gr2`, with white edges and a core in the colour of the unit's owner (yours on a
-  placement ghost). The cut-out comes from the geometry, so the texture's alpha is free to mark player colour as on a unit
+  is a flat annulus mesh, `range_<N>.gr2`, in the colour of the unit's owner (yours on a placement ghost). The cut-out comes from the geometry, so the texture's alpha is free to mark player colour as on a unit
   (`range_line.ddt`, alpha 1, the units' shader `bumpspec_mask_pixelxform`); the engine does the tinting, so one mesh per
-  radius serves every player and the key picks nothing. A particle has no player colour of its own, which is why the rings
-  are no longer particles. The line is 0.8 m wide (more past 66 m), 0.25 m over the unit's feet; it does not follow the
+  radius serves every player and the line needs nothing from the key (the fill does: below). A particle has no player colour of its own, which is why the rings
+  are no longer particles. The line is 0.5 m wide (more past 62 m), 0.25 m over the unit's feet; it does not follow the
   ground, so on a hill a large ring can dip into it. `make_rings.py --range-particles` writes the white particle rings of
   before, with the same file names.
+- **The fill's files:** `rangefill_<N>_p<player>.xml`/`.gr2` on `rangefill_p<player>.ddt`, players 0 to 8. The game's
+  transparent shader (`alphablend`) has no player colour, and the units' shader draws opaque, so there is one fill disc
+  per player colour, and the key hangs the owner's. A placement ghost shows the lines only: a ghost that cannot be placed is drawn with the game's red tint, and the tint draws a fill opaque.
+  - The colours are those of WoL's `playercolors.xml` (`color1`). A player above 8 gets the line and no fill.
+  - The team-colour option is not followed: the line takes the colour the game draws, while the fill keeps the player's
+    own colour.
+  - The edge alpha is set per colour, from 0.30 to 0.38: blue and purple need more to read over yellow grass.
+  - The dashed ring is `range_<N>_ships.xml`/`.gr2`: 48 dashes, the same line.
+  - `make_rings.py --no-range-fills` and `--no-ship-rings` leave those files out. With no fill files in the game, the
+    rings show without fills.
 - **Which rings:** one per ranged attack (`<RangedLogic>1</RangedLogic>`) of the unit's current tactic, at that attack's
   `MaxRange` as the player has it now: a tech that adds range moves the ring at once (`Revetment`: the Fort's 26 m ring
   became 32 m). A Fort shows its 40 m anti-ship attack and its 26 m cannon, an Outpost 40 and 24, a Crossbowman 16 and the
@@ -8285,8 +8554,19 @@ displayedRange [log] [noPlacement]
   Halberdiers cost more than the Hussars with the key off too, so it is their models, not the rings. With 1 and 20 units
   the numbers were the same with 0, 1, 2 and 4 rings. No frame over 100 ms in any capped run.
 
-  So the rings cost nothing measurable. A selection still shows at most 4 rings a unit and 60 in all, the units
-  with the longest ranges first, so that a big selection stays readable.
+  So the rings cost nothing measurable. A selection still shows at most 4 rings a unit and 60 models in all (a filled
+  ring is two: its line and its fill), the units with the longest ranges first, so that a big selection stays readable.
+
+  **With the fills (2026-11-23):** 70 Skirmishers selected, 40 s a case with `perfprobe.py`, other games running on the
+  PC.
+
+  | Alt | Models on screen | fps | Render a frame | Main thread | GPU | Frames over 50 ms |
+  |---|---|---|---|---|---|---|
+  | no | 0 | 427 | 2.17 ms | 93 % | 20 % | 0 |
+  | held | 60, the cap (15 units, 30 filled rings) | 351 | 2.67 ms | 94 % | 19 % | 0 |
+
+  At the cap, the fills cost about 0.5 ms a frame: their large transparent discs are drawn over each other. No frame
+  goes over 50 ms.
 
   **Big selections, Alt held (2026-11-22, JTMaston: "do they lag if you have 75 ranged units selected?"):** Skirmishers
   (2 rings each, 20 and 6 m), selected on screen, 40 s a case with `perfprobe.py`, five other games running on the PC,
@@ -8322,6 +8602,21 @@ displayedRange [log] [noPlacement]
   ghost, change with the proto, go on Escape and when the Outpost is placed, and never stay on the foundation; key off,
   no ring on the ghost; `annexFacing` on the same shared ghost hook still `applied` and reached. Log:
   `hook reached: placement ghost update (0x96E4E7)`, `ring of 40 m on the placement ghost (Outpost)`.
+- **The look (2026-11-23, JTMaston: "Can the white border on the rings be removed? And also increase the contrast on
+  them so they look like selection decal rings?"):** the white edges are gone; the whole line is the owner's colour, flat
+  and opaque like the game's selection circle (a white line the game tints), and thinner, 0.5 m. The ring had looked pale
+  because its flat bump map asked for shine: the sun added white over the colour. Its bump now has none. Measured in game
+  next to a selected Skirmisher's own selection circle: the ring's blue (72, 66, 255), the circle's (48, 44, 213), against
+  (195, 178, 250) before. Tested in WoL: your units (blue), an ally's and an enemy's (red), and the placement ghosts of the
+  Outpost and the Fort; videos above. Copy `tools/rings` again to `art/effects/uhc_rings` (the `range_*.gr2`,
+  `range_line.ddt` and `range_line_bump.ddt` changed, and the fills and dashed rings are new).
+- **Tested in WoL (2026-11-23, fills and dashed rings):**
+  - Your Fort with Alt: 26 m filled, 40 m dashed. Your Outpost: 24 m filled, 40 m dashed. A Skirmisher: 20 and 6 m filled.
+  - An ally's Outpost and Crossbowman, an enemy's Outpost and Grenzer: the same, in their red.
+  - Five players' Outposts side by side: blue, red, yellow, purple and green fills each read in their colour; yellow is
+    the faintest over yellow grass.
+  - The placement ghosts of the Outpost and the Fort: lines only, dashed for 40 m.
+  - Log: `ring of 40 m on unit 0 (FortFrontier), ships only (dashed), Alt held`, `fill of 26 m on unit 0 (FortFrontier)`.
 
 #### abilitySlots
 
@@ -8587,13 +8882,29 @@ attackTypeIcons <UnitType> <StringID> <IconPath> [<UnitType> <StringID> <IconPat
 
 **Added:** Tuesday 2026-11-17 08:07 · **Filmed in WoL:** Tuesday 2026-11-17 10:30
 
-![minUIStats version 7 on a unit in WoL](../wol-fixes/min-ui/final/minUIStats-v7-icons-min-escopetero.jpg)
+![minUIStats version 9 on a unit in WoL](../wol-fixes/min-ui/final/minUIStats-v9-escopetero.jpg)
 
-*In WoL, version 7 (2026-11-21, `minUIStats` and the layout of `wol-fixes/min-ui`, Ethiopians, an `Escopetero`, minimized
-interface):* cost and pop at the top left, LOS, speed and train time at the top right, armor as a percent (`20%`), and
-each attack in one row: damage, rate of fire (`3.50` and the clock icon), range, area, then the bonus multipliers.
-More pictures of version 7 (the big interface, the Falconet limbered and deployed, gathering, beside WoL's own
-`uhc.dll`): `wol-fixes/min-ui/final/minUIStats-v7-*.jpg`.
+*In WoL, version 9 (2026-11-23, `minUIStats` and the layout of `wol-fixes/min-ui`, Ethiopians, an `Escopetero`, minimized
+interface, 1920 x 1080):* cost and pop at the top left, LOS, speed and train time at the top right, armor as a percent
+(`20%`), and each attack in one row: damage, rate of fire (`3.50` and the clock icon), range, area, then the bonus
+multipliers with the team's unit type icons (`1.5x` Maneuver, the winged Minie; `1.25x` Line, the blue soldier). Every
+icon is square, at its true aspect (17 x 17 px here; the game's own `(10)` icons were 11 x 17, squeezed).
+More pictures of version 9 (the tooltips, the big interface, the Falconet's `3x` Standing, the Lancer's `2x`
+Skirmisher, the Villero's long rows, and one picture per resolution: 1024 x 768, 1600 x 900, 1280 x 960,
+2560 x 1440): `wol-fixes/min-ui/final/minUIStats-v9-*.jpg`. Version 7's pictures (the Falconet limbered and deployed,
+gathering, beside WoL's own `uhc.dll`), taken with the earlier, squeezed icons: `wol-fixes/min-ui/final/minUIStats-v7-*.jpg`.
+
+![minUIStats version 9: the Lancer's 2x against Skirmisher](../wol-fixes/min-ui/final/minUIStats-v9-tip-lancero.jpg)
+
+*In WoL, version 9 (a `Lancero`, the pointer on its hand attack):* `2x` and the green Skirmisher icon in the row, and the
+tooltip line `2X Bonus Damage against (icon) Skirmisher`. The icon comes from WoL's `attackTypeIcons` line
+(`AbstractRangedInfantry 42032 ui\ingame\stat_icon_skirmisher`): without that triple the `2x` is not shown at all
+(`minUIStats-v8-icons-min-lancero-control-tip.jpg`, version 8).
+
+![minUIStats version 9 at 1024 x 768](../wol-fixes/min-ui/final/minUIStats-v9-r768.jpg)
+
+*Version 9 at 1024 x 768 (the Escopetero, the Falconet, the Lancer, the Villero):* the small font's 14 px line, the icons
+14 x 14; the longest rows end with `(+3)` and `(+2)` (the multipliers they drop are in the tooltip).
 
 ![minUIStats version 7 on a building in WoL](../wol-fixes/min-ui/final/minUIStats-v7-mill.jpg)
 
@@ -8750,15 +9061,59 @@ minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of w
       at `uhcRow2`'s place: `Gathers: Wood 0.50/s`, the same value as the stock rate row.
     - Three unit type icons redrawn at the team's request, approved in review: Line (`AbstractHeavyInfantry`, an
       infantryman in a shako with a blue coat), Standing (`AbstractInfantry`, the same in a red coat) and Maneuver
-      (`AbstractRangedCavalry`, a winged arrow; a winged bullet was the alternative, kept in the pack's `review`
-      folder). They replace WoL's files at the paths the panels draw (`ui\ingame\stat_icon_heavy_infantry`,
+      (`AbstractRangedCavalry`, a winged arrow; a winged bullet was the alternative). They replace WoL's files at the
+      paths the panels draw (`ui\ingame\stat_icon_heavy_infantry`,
       `WoL\ui\ingame\staticons\stat_icon_ranged`; for Standing `ui\ingame\stat_icon_infantry`, the stock icon of
       `AbstractInfantry`, which wins over the `WoL\...\stat_icon_standing_unit` of `attackTypeIcons`, so both get it),
       32x32 BGRA, soft edges and shading like WoL's own, drawn by aoe3-blender-tools' `make_type_icon.py`. The pack
       now has an `apply_fix.py` (install, `--restore`, `--check`). Checked in WoL (1920 x 1080, installed and removed
       with it, files byte for byte back): the Escopetero's rows and tooltips show the arrow and the blue soldier, the
-      Falconet's Bombard row the red soldier, in both interfaces, rows as long as with WoL's icons
-      (`wol-fixes/min-ui/final/minUIStats-v7-icons-*`).
+      Falconet's Bombard row the red soldier, in both interfaces, rows as long as with WoL's icons. Replaced in
+      version 8, with their pictures.
+  - **Version 8 (2026-11-23), the team's own unit type icons:** JTMaston sent four pictures (pixel art) and they are
+    in the pack, converted, not redrawn: Line (a blue coat, the musket upright in front,
+    `ui\ingame\stat_icon_heavy_infantry`), Skirmisher (a green coat, the musket held diagonally,
+    `ui\ingame\stat_icon_skirmisher`, new in the pack), Standing (a purple coat, no weapon, `ui\ingame\stat_icon_infantry`
+    and `WoL\ui\ingame\staticons\stat_icon_standing_unit`) and Maneuver (the winged Minie, the bullet tinted to
+    `#C75A21`, the colour of the "Maneuver Unit" name, with its shading kept; `WoL\ui\ingame\staticons\stat_icon_ranged`).
+    - Conversion (aoe3-blender-tools' `tools/import_icon.py`): the panels draw a type icon 11 x 17 pixels at
+      1920 x 1080, so each picture is widened by 1/0.65 and reduced by area averaging to 32x32 BGRA, one level; the
+      three soldiers keep one scale on the bottom edge, each icon centred. The review sheet is the pack's
+      `icons-v8-review.png`.
+    - Skirmisher's file: the exe has no icon of its own for `AbstractRangedInfantry`. With WoL's `attackTypeIcons`
+      triple `AbstractRangedInfantry 42032 ui\ingame\stat_icon_skirmisher` taken out, the `Lancero`'s `2x` against
+      Skirmisher disappears from its row and its tooltip; with it, the new green soldier shows. Line and Standing use
+      the exe's own files, Skirmisher and Maneuver only the cfg's.
+    - Tested in WoL (2026-11-23, single player, our `UHC.dll` with `minUIStats`, `multiplierDecimals`,
+      `showGatherRate`, WoL's `wol.cfg` lines, the pack installed with `apply_fix.py` and removed with `--restore`,
+      every file byte for byte back, 1920 x 1080, 38 applied, 0 failed): the Escopetero's `1.5x` Maneuver, `1.25x`
+      Line and the Falconet's Bombard `3x` Standing in the rows and tooltips of both interfaces, the Lancero's hand
+      attack `2x` Skirmisher in the minimized one (WoL's big interface shows only the first attack row); the rows end
+      where they did (pictures replaced by version 9's, the control kept).
+  - **Version 9 (2026-11-23), square icons (the team: "the icons look compressed"):**
+    - **Why they were squeezed:** in the game's text markup `<icon="(N)(texture)">`, N sets the icon's **width**
+      (N + 1 pixels, at every resolution) and its **height** is always the text line's, which the font gives
+      (`FONTSonts3.xml`). The game's minimized rows write `(10)` (0xC36508): 11 x 17 at 1920 x 1080, so every icon
+      there, the game's and WoL's too, showed at 0.65 of its width. Measured with a test build that changed only N, at
+      1024 x 768, 1600 x 900, 1280 x 960, 1280 x 1024, 1920 x 1080 and 2560 x 1440: the line is 17 px on a screen
+      960 px tall or more (the font's `ResolutionOverride ResX="1280"` sizes) and 14 px below; the width follows N
+      only. The big stat panel writes `(16)` into a 22 px line (17 x 22) and is the game's: not changed.
+    - **The key:** every icon it writes in the minimized panel (the rows, the resists row, the top blocks, the
+      `[icon:...]` of the data file) uses N = line - 1: `(16)` on screens 960 px tall or more, `(13)` below (the
+      height `[[0C66044h]+608h]`), so each icon is square. The row-width estimate counts an icon at its real width
+      (N + 1 pixels, about 3.5 characters at 1080p): a row too long for the panel drops its last multipliers with
+      `(+N)` instead of running off it. Log: `minUIStats: screen 1080 px tall: icons (16), 17 px square`.
+    - **The pack's icons at their true aspect:** the four type icons without the widening (the Minie's wings
+      shortened where they run straight, their stepped tips kept, at 0.75 and a little behind the bullet:
+      `import_icon.py --sides`), the six drawn stat icons round in the texture (`make_stat_icon.py --aspect 1`; the
+      cylinder fills the square), and WoL's house (`stat_icon_building`, population and Buildings) enlarged from 28
+      to 32 texels.
+    - **Tested in WoL (2026-11-23, copy 2, our `UHC.dll`, the pack installed with `apply_fix.py` and removed with
+      `--restore`, files and profile byte for byte back):** the Escopetero, the Falconet in Bombard, the Lancero and the
+      Villero (Koygua), rows and tooltips: at 1920 x 1080, 2560 x 1440 and 1600 x 900 every row fits; at 1280 x 960
+      and 1024 x 768 the longest rows end with `(+2)` / `(+3)`, nothing runs off the panel; the Villero's second ranged
+      row in the right column takes its short form. Before the width fix, at `(16)` that row lost its last icon at the
+      panel's edge. Pictures `wol-fixes/min-ui/final/minUIStats-v9-*`.
   - `<replace row="..." stock="a,b"/>` (2026-11-17): while that row shows, the original gadgets named are hidden (the
     game shows them each fill; the DLL hides them again after). The layout keeps the original hit points and resists
     gadgets where they are, so it reads as before without the key, and draws the DLL's rows with icons over them.
@@ -9359,10 +9714,21 @@ matters:
 *A ranged horseman gets off and fights on foot, his horse hidden or kept beside him, and mounts again, with data only.*
 
 The pack `wol-fixes/dismount` (`apply_fix.py <WoL folder>`, `--restore` to undo; README in English and Spanish)
-does it for the Chasseur a Cheval, as request #84 asked: a tactic `Dismounted` with its own actions (fire, bayonet,
+does it for the Chasseur a Cheval, as request #84 asked: a tactic `Dismounted` with its own actions (the shot and
 the torch against buildings), speed and animations, `<transition>`s both ways as the artillery's Limber/Bombard,
 two buttons (`unitSetTactic("Dismounted")`, `unitSetTactic("Stagger")`) and the rider's animations on foot and
 getting off and on, made by aoe3-blender-tools' `tools/make_dismount.py` from the game's infantry animations.
+
+**No melee on foot** (2026-11-23; the user, after the fight video: a ranged unit keeps on foot the shot it has
+mounted). Until then the stance had a copy of the hand attack too (`DismountedHandAttack`, the rifleman's standing
+melee), and the shot kept the mounted `<minrange>2</minrange>` (written twice in `musketCavalry.tactics`): inside 2 m
+the shot could not fire and the unit turned to the bayonet with the musket in hand. Now the stance on foot has two
+attacks, `DismountedRangedAttack` (`DefendRangedAttack`'s damage, range, ROF and bonuses, its ProtoAction a copy)
+with every `<minrange>` at 0, and `DismountedBuildingAttack` (the torch, a throw at buildings only, kept). With no
+hand attack to turn to, the unit keeps firing with an enemy in contact. The tech twins now cover
+`DefendRangedAttack` and `BuildingAttack` only (220 effects, the tech count checked as before); the melee
+animation left the pack (its four `.gr2`, the `Dismounted_Melee` blocks), and `make_dismount.py` makes it only with
+the recipe's `"melee": true` (or `--melee`), for a unit that should fight hand to hand on foot.
 
 **The horse, per unit** (2026-11-22, Maston: "the option to choose for different units if we want the horse kept or
 hidden"). `make_dismount.py`'s recipe has `"horse": "keep"` or `"hide"` (`--horse`), one recipe per unit, and the
@@ -9394,18 +9760,30 @@ under another name (`DismountedHeal`) healed nothing; and a heal or a constructi
 `Build` (also `BuildLifting`, `BuildSaw`, `BuildStaking`), not the action's `<anim>`: with `Dismounted_Heal` there,
 the unit healed in its idle pose.
 
-![The horse hidden, a fight on foot](media/dismount-hidden-wol.gif)
+![The horse hidden, a fight on foot at point blank](media/dismount-hidden-wol.gif)
 
 *`--horse hide`, a test scenario (its player is not French; the chasseurs show their Chasseur d'Afrique model, which
-the anim file picks for that player's techs), three chasseurs set to Dismounted by console and sent by a trigger
-against four Jaegers (filmed again 2026-11-22, the rider on the centre):* no horse on foot; each rider stands on his
-selection circle, fires and fights with the bayonet, and the dead lie on the ground without a horse.
-[Full video (MP4)](media/dismount-hidden-wol.mp4).
+the anim file picks for that player's techs), five chasseurs set to Dismounted by console, three Scythemen (melee
+infantry) sent by a trigger to charge into them (filmed 2026-11-23):* the riders fire as the Scythemen come and keep
+firing with them in contact, muzzle flash and smoke at point blank; no bayonet, no melee animation. All three Scythemen
+die; two chasseurs are left. [Full video (MP4)](media/dismount-hidden-wol.mp4).
 
-![The horse kept, the same fight](media/dismount-hidden-wol-control.gif)
+![Mounted, the same fight](media/dismount-hidden-wol-control.gif)
 
-*The control, `--horse keep`, same scenario (filmed 2026-11-22; the kept variant did not change since):* the horses
-stand beside the riders and fall with them. [Full video (MP4)](media/dismount-hidden-wol-control.mp4).
+*The control: the same scenario with the chasseurs left mounted (the stock stance; filmed 2026-11-23):* in contact the
+mounted chasseurs turn to their hand attack (`MeleeHandAttack`) and fight with the sabre; all five fall and two
+Scythemen are left. [Full video (MP4)](media/dismount-hidden-wol-control.mp4).
+
+![On foot against cavalry](media/dismount-hidden-cavalry-wol.gif)
+
+*`--horse hide`, five dismounted chasseurs against three Hussars charging (filmed 2026-11-23):* they fire at the
+riders in contact (shot smoke among the horses) and never draw a blade; the Hussars, built to beat ranged cavalry,
+win with 278, 337 and 248 of their 352 hit points left. [Full video (MP4)](media/dismount-hidden-cavalry-wol.mp4).
+
+![The horse kept, the same fight](media/dismount-keep-wol.gif)
+
+*`--horse keep`, the Scythemen scenario (filmed 2026-11-23):* the horses stand beside the riders, who fire at point
+blank as in hide; the riders who die fall with their horses. [Full video (MP4)](media/dismount-keep-wol.mp4).
 
 ![Dismount and mount, the horse hidden](media/dismount-hidden-transitions-wol.gif)
 
@@ -9432,7 +9810,8 @@ default; French against a German AI, four Chasseurs a Cheval, crossbowmen coming
 stance set by console, the command the buttons send):* the riders get off on the horses' left side and stand
 beside them, then walk and fire on foot with the horses beside them; read from the game, their tactic stays
 `Dismounted` through the fight. Filmed before the last tuning of the transitions (2 s, a higher leg): the
-close video below shows the final ones. [Full video (MP4)](media/dismount-wol.mp4).
+close video below shows the final ones. The stance then still had a hand attack on foot, removed on 2026-11-23; no
+enemy reaches the chasseurs in this video, so it shows no melee. [Full video (MP4)](media/dismount-wol.mp4).
 
 ![Without the pack](media/dismount-wol-control.gif)
 
@@ -9470,11 +9849,81 @@ tags", "Tactic for an action", "Squad mode of a unit"):
   version of the tech twins copied seven whole techs (effects written `</Effect></Effects>` on one line) and the AI
   did not compile (`'cTechypConsulateBritishBrigade' is not a valid operator`); `apply_fix.py` now ends each twin at
   its own `</Effect>` and refuses an edit that changes the number of techs. Not seen: the run animation on foot.
+  The bayonet seen then is gone since 2026-11-23.
+- **Tested 2026-11-23** (no melee on foot; `--horse hide`, then `keep`, test scenarios in `C:\AoE3-UHC-WoLReal8`):
+  against Scythemen and Hussars charging into contact the dismounted chasseurs kept firing at point blank and played
+  no melee animation (videos above); the torch on an enemy House (1055 to 764 hit points in 26 s); a game saved on
+  foot and loaded (still on foot, still burning the House), then mounted by the command; `--check`, and `--restore`
+  byte for byte in both horse modes, with and without `--test`; the AI scripts compile (French skirmish against a
+  German AI: 11 compiles, 0 errors, XS tracer; it trained settlers and built a Manor).
 - **What a stance cannot change:** unit types, armour, hit points, obstruction, `<PhysicsInfo>`. On foot the unit
   still counts as cavalry; if it must count as infantry, the alternative is a transform (`uiTransformSelectedUnit`,
   [`transformChecks`](#transformchecks)).
 - **Do not add the new animation names to `data\animtypes.xml`:** tried, the unit then played its mounted attack
   while on foot.
+
+### Slinger animations on other models
+
+*The Aztec Macehualtin's slinger animations (idle, walk, run, the sling, melee, torch, deaths) made to play on any
+standard infantry body, so a new slinger unit can use its own model.*
+
+Request #100 (Punchline, 2026-11-23): "the Macehualtin animations only work with that model". WoL's two slingers
+(`POLYMarauder`, `units\polynesia\shared\slinger.xml`) reuse the Macehualtin's model with another texture for that
+reason.
+
+**Why they only play on that model** (read in the game's code, then seen in game): the game starts an animation on a
+model only if the animation has a track group named after that model (`GrannyFindTrackGroupForModel` at 0x426A5F and
+0x4B6F1F; no match, no animation). The Macehualtin's model and its 35 animations
+(`animation_library\natives\macehuatlin\*`) are named `bone_master`, a master bone above the biped; every standard
+infantry model (WoL's skirmisher and `redolero_2age`, the game's native rifleman and Holcan spearman) is named
+`Bip01`. Played on such a model, the clips do nothing and the body stays in its bind pose, also while it walks (the
+control below). The skeletons are otherwise the same biped: same bones, axes and lengths. The sling is an attachment
+with its own animations (`macehuatlin_sling01.xml`, hung on `PROP1` with `syncanims="1"`); its model is also
+`bone_master`, so it plays on any body and needs no change.
+
+**The fix, art only, no DLL key:** aoe3-blender-tools' `tools/retarget_anims.py` puts each clip on the new model:
+each bone copies the original's movement from its rest pose, the new model keeps its own bone lengths, the hips move
+by the ratio of the two hip heights, the hand props keep the original's place in the hand (so the sling hangs as on
+the Macehualtin), and the clip is written in one track group named `Bip01`, at 60 samples a second. Each clip gets
+its tag file (`.gr2.precomp`) with the bone tags moved to the new body and `LAUNCHPOINT`, where the stone leaves,
+unchanged. The tool also writes the anim file blocks to paste: the definebones, the sling and torch attachments, the
+`<attach a="sling" frombone="bone_sling" tobone="PROP1" syncanims="1"/>` line for the model's component, and every
+`<anim>` of the Macehualtin pointed at the new clips with its tags (attack, sound, footsteps) as they were. A recipe
+per target model; `skirmisher` (WoL's light infantry model) and `native` (the game's native rifleman) are built in,
+and a JSON recipe names any other model (and a bone name map for a rig whose names differ).
+
+The pack `wol-fixes/slinger-anims` (`apply_fix.py <WoL folder>`, `--check`, `--restore` byte for byte; README in
+English and Spanish) adds both clip sets (`art\WoL\units\infantry_ranged\slinger\anims_skirmisher\` and
+`anims_native\`, 35 clips and tag files each, 4.8 MB; nothing of the mod changes) and the blocks to paste
+(`files\skirmisher-anims.xml`, `files\native-anims.xml`). Any `Bip01` body of the standard proportions can use either
+set (they differ by 1.6 cm at the hips). `--test` also adds three TEST units, copies of `POLYMarauder` (its
+`musketBayonet.tactics`): `SlingerTestSkirmisher`, `SlingerTestNative`, and `SlingerTestControl` (the skirmisher
+model with the Macehualtin's own clips).
+
+![Slingers on two other models, and the control](media/slinger-anims-wol.gif)
+
+*A test scenario, the three TEST units selected (left: the skirmisher model, middle: the native rifleman, right: the
+control, the skirmisher model with the original clips), then three WoL Scythemen:* the two retargeted slingers idle
+with the sling, walk forward, fight hand to hand and die with the Macehualtin's animations; the control keeps its
+bind pose throughout, only its sling moving in its hand. Game time runs 1.3 to 1.9 times real time in this
+background copy. [Full video (MP4)](media/slinger-anims-wol.mp4).
+
+![The sling attack beside WoL's own slinger](media/slinger-anims-attack-wol.gif)
+
+*The skirmisher-model slinger (left), WoL's own Polynesian slinger `POLYMarauder` (middle, the Macehualtin model) and
+the native-model slinger (right) against two WoL Line Infantry:* the three whirl and throw on the same beats, and the
+Line Infantry fall to their stones. The stones are too small to see at this zoom; they leave from the same
+`LAUNCHPOINT` as `POLYMarauder`'s, since the tag is copied unchanged. [Full video (MP4)](media/slinger-anims-attack-wol.mp4).
+
+- **Tested 2026-11-23** (WoLReal4, `--test`): idle, walk, the hand attack, deaths and the sling attack on both
+  models; the control in its bind pose; a game saved and loaded (the slingers still animate); a skirmish against a
+  German AI with the pack applied: no XS error, the AI built and trained. `--restore` gave back `protoy.xml` byte for
+  byte. All 70 clips also went through the game's own `granny2.dll` (compressed and expanded back, CRC checked).
+- **Not seen in game:** the run animation (the units walked) and the torch on buildings; they are clips of the same
+  kind and are drawn on both models in the review sheets.
+- **To make a new slinger:** copy the slinger proto, give it an anim file with its model, the blocks of
+  `files\skirmisher-anims.xml` (or `native-anims.xml`) and the sling's `<attach>` line in the model's component. For
+  a model with other proportions or bone names, run `retarget_anims.py` with a recipe for it.
 
 ### Aura rings
 

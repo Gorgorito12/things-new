@@ -40,12 +40,6 @@
 		</assetreference>
 		<component>ModelComp</component>
 	</anim>
-	<anim>Dismounted_Melee
-		<assetreference type="GrannyAnim">
-			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_hidden_melee</file>
-		</assetreference>
-		<component>ModelComp</component>
-	</anim>
 	<anim>Dismounted_Death
 		<assetreference type="GrannyAnim">
 			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_hidden_death</file>

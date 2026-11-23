@@ -12,6 +12,10 @@ Contents:
 - [orPrereqsQty](#orprereqsqty)
 - [shipmentCounts](#shipmentcounts)
 - [ageFiveShipments](#agefiveshipments)
+- [Tech flags](#tech-flags)
+- [Card tags](#card-tags)
+- [resendableCards](#resendablecards)
+- [quickArrivalCards](#quickarrivalcards)
 - [kothTimer](#kothtimer)
 - [transformUpdatesLOS](#transformupdateslos)
 - [transformSpan](#transformspan)
@@ -21,7 +25,7 @@ Contents:
 
 Contract: [hcTargetTechs](../porting-to-another-dll.md#hctargettechs).
 
-Sites: `IsEnemyHead` `0x484D2D` (6 B), `TechFlagHead` `0x620C2F` (5 B), `TechApplyCall` `0x94D0AE` (5 B), `TechRemoveHead` `0x94DCB2` (6 B), `TechLoadHead` `0x94DDEA` (7 B).
+Sites: `IsEnemyHead` `0x484D2D` (6 B), `TechApplyCall` `0x94D0AE` (5 B), `TechRemoveHead` `0x94DCB2` (6 B), `TechLoadHead` `0x94DDEA` (7 B).
 
 ### src/features/hctargets.cpp
 
@@ -33,8 +37,8 @@ Sites: `IsEnemyHead` `0x484D2D` (6 B), `TechFlagHead` `0x620C2F` (5 B), `TechApp
 // pass after a load 0x94DDEA, each with its own copy of the loop over the team. So the key wraps the
 // three: for a marked tech it calls the stock routine once per target, without the team flag. The tech
 // stays active in the owner's tree only; a load and a removal go through the owner, and the targets are
-// counted again then. The flag's reader is hooked too: the stock chain ignores a name it does not know.
-// The hooks are in hooks/hctarget_hooks.asm.
+// counted again then. The two flags are read through the shared flag reader hook (techflags.h): the stock chain
+// ignores a name it does not know. The other hooks are in hooks/hctarget_hooks.asm.
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -45,9 +49,9 @@ Sites: `IsEnemyHead` `0x484D2D` (6 B), `TechFlagHead` `0x620C2F` (5 B), `TechApp
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../techflags.h"
 
 extern "C" {
-void UhcTechFlagHook();
 void UhcTechRemoveStock();
 void UhcTechLoadStock();
 }
@@ -56,7 +60,6 @@ namespace {
 
 enum class Target { kEnemies, kAll };
 
-constexpr std::uint32_t kFlagHead = 0x00620C2F;
 constexpr std::uint32_t kApplyCall = 0x0094D0AE;
 constexpr std::uint32_t kRemoveHead = 0x0094DCB2;
 constexpr std::uint32_t kLoadHead = 0x0094DDEA;
@@ -126,8 +129,8 @@ bool __fastcall Apply(char* tech, void*, char* player, void* unit, std::uint32_t
 
 }  // namespace
 
-// From the head of the flag reader: true for the two flags of the key, which stock would ignore.
-extern "C" bool __stdcall UhcTechFlag(char* entry, const char* name) {
+// From the shared flag reader hook: true for the two flags of the key, which stock would ignore.
+static bool UhcTechFlag(char* entry, const char* name) {
   const bool enemy = name != nullptr && _stricmp(name, "HCTargetEnemy") == 0;
   if (!enemy && (name == nullptr || _stricmp(name, "HCTargetAll") != 0)) {
     return false;
@@ -176,9 +179,9 @@ Outcome ApplyHcTargetTechs(const Config& config) {
     }
     g_log = true;
   }
-  if (!VerifyAll("hcTargetTechs", {&sites::kTechFlagHead, &sites::kTechApplyCall, &sites::kTechRemoveHead,
+  if (!VerifyAll("hcTargetTechs", {&sites::kTechApplyCall, &sites::kTechRemoveHead,
                                    &sites::kTechLoadHead, &sites::kIsEnemyHead}) ||
-      !WriteJmp(kFlagHead, reinterpret_cast<const void*>(&UhcTechFlagHook), 5) ||
+      !AddTechFlagHandler("hcTargetTechs", &UhcTechFlag) ||
       !WriteCall(kApplyCall, reinterpret_cast<const void*>(&Apply)) ||
       !WriteJmp(kRemoveHead, reinterpret_cast<const void*>(&UhcTechRemove), 6) ||
       !WriteJmp(kLoadHead, reinterpret_cast<const void*>(&UhcTechLoad), 7)) {
@@ -194,9 +197,9 @@ Outcome ApplyHcTargetTechs(const Config& config) {
 ### src/hooks/hctarget_hooks.asm
 
 ```asm
-; hcTargetTechs (src/features/hctargets.cpp): the hook on the tech flag reader, and the stock heads of the
-; two routines the key replaces with a jmp. The C++ wrappers call these, which re-execute the replaced
-; instructions and leave through an explicit jmp to the verified continuation.
+; hcTargetTechs (src/features/hctargets.cpp): the stock heads of the two routines the key replaces with a jmp (its
+; flags are read through the shared flag reader hook, hooks/techflags_hooks.asm). The C++ wrappers call these,
+; which re-execute the replaced instructions and leave through an explicit jmp to the verified continuation.
 .686
 .model flat, c
 option casemap :none
@@ -204,29 +207,10 @@ option casemap :none
 include common.inc
 
 .data
-flagNext        dd 00620C34h    ; test esi,esi, in the flag reader
 removeNext      dd 0094DCB8h    ; push edi, in removeEffects
 loadNext        dd 0094DDF1h    ; xor ebx,ebx, in the pass after a load
 
 .code
-
-UhcTechFlag PROTO STDCALL :DWORD, :DWORD
-
-; The flag reader, cdecl (entry, name): replaces 0x620C2F..0x620C33 (push esi / mov esi,[esp+8]). The head,
-; not its one call: another DLL may wrap the call, and what it does not know still reaches this head.
-UhcTechFlagHook PROC
-    TRACE_ONCE "hcTargetTechs flag (0x620C2F)"
-    push dword ptr [esp+8]
-    push dword ptr [esp+8]
-    call UhcTechFlag
-    test al, al
-    jz stock
-    ret
-stock:
-    push esi
-    mov esi, dword ptr [esp+8]
-    jmp flagNext
-UhcTechFlagHook ENDP
 
 ; removeEffects: replaces 0x94DCB2..0x94DCB7 (push ebx / push ebp / mov ebp,[esp+0Ch]).
 UhcTechRemoveStock PROC
@@ -1985,6 +1969,771 @@ UhcAgeFiveDeckColumnHook PROC
 deckColLeftOut:
     jmp deckColSkip
 UhcAgeFiveDeckColumnHook ENDP
+
+END
+```
+
+## Tech flags
+
+Contract: [Tech flags](../porting-to-another-dll.md#tech-flags).
+
+Sites: `TechFlagHead` `0x620C2F` (5 B).
+
+### src/techflags.h
+
+```cpp
+// New <Flag> names of a <Tech> in the techtree: one hook on the head of the flag reader FUN_00620C2F
+// (cdecl(record, name), called once per <Flag> at 0x620C23), shared by every key that reads a flag of its own
+// (hcTargetTechs' HCTargetEnemy / HCTargetAll, quickArrivalCards' QuickArrival). Stock ignores a name it does not know.
+#pragma once
+
+namespace uhc {
+
+// `record` is the tech's template record ([[loader+4]+0Ch] + 24h * id: [record+0] its definition, whose +0 is the
+// tech ID); `name` the flag's text. Returns true when the key took the flag: stock then does not read it.
+using TechFlagHandler = bool (*)(char* record, const char* name);
+
+// Asks `handler` about every <Flag> of every tech, in the order the keys added them, before stock reads it. Writes
+// the hook the first time, after checking the stock bytes of the reader's head.
+bool AddTechFlagHandler(const char* feature, TechFlagHandler handler);
+
+}  // namespace uhc
+```
+
+### src/techflags.cpp
+
+```cpp
+// The head of the tech flag reader 0x620C2F jumps to UhcTechFlagHook (hooks/techflags_hooks.asm), which asks
+// UhcTechFlagDispatch; a flag no key takes goes on to the stock reader.
+#include "techflags.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcTechFlagHook();
+
+namespace {
+
+constexpr std::size_t kMaxHandlers = 8;
+constexpr std::uint32_t kFlagHead = 0x00620C2F;  // push esi / mov esi,[esp+8]
+
+uhc::TechFlagHandler g_handlers[kMaxHandlers] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+// From the hook: true when a key took the flag.
+extern "C" bool __stdcall UhcTechFlagDispatch(char* record, const char* name) {
+  if (record == nullptr || name == nullptr) {
+    return false;
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    if (g_handlers[i](record, name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+namespace uhc {
+
+bool AddTechFlagHandler(const char* feature, TechFlagHandler handler) {
+  if (g_count == kMaxHandlers) {
+    Log(L"%hs: no room for another tech flag handler", feature);
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll(feature, {&sites::kTechFlagHead}) ||
+        !WriteJmp(kFlagHead, reinterpret_cast<const void*>(&UhcTechFlagHook), 5)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_handlers[g_count++] = handler;
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/techflags_hooks.asm
+
+```asm
+; The tech <Flag> reader's head (src/techflags.cpp), shared by the keys that read flags of their own. It leaves
+; through an explicit jmp to the verified continuation, or returns for a flag a key took.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcTechFlagDispatch PROTO STDCALL :DWORD, :DWORD
+
+.data
+flagNext        dd 00620C34h    ; test esi,esi, in the flag reader
+
+.code
+
+; The flag reader, cdecl (record, name): replaces 0x620C2F..0x620C33 (push esi / mov esi,[esp+8]). The head, not
+; its one call 0x620C23: another DLL may wrap the call, and what it does not know still reaches this head. EAX, ECX
+; and EDX are free at a cdecl head.
+UhcTechFlagHook PROC
+    TRACE_ONCE "tech flags (0x620C2F)"
+    push dword ptr [esp+8]          ; name
+    push dword ptr [esp+8]          ; record, [esp+4] + the push
+    call UhcTechFlagDispatch
+    test al, al
+    jz stock
+    ret
+stock:
+    push esi
+    mov esi, dword ptr [esp+8]
+    jmp flagNext
+UhcTechFlagHook ENDP
+
+END
+```
+
+## Card tags
+
+Contract: [Card tags](../porting-to-another-dll.md#card-tags).
+
+Sites: `CardChildLoop` `0x62FD1D` (7 B), `CardChildLoopEnd` `0x62FF42` (20 B), `CardCommitPrep` `0x630002` (21 B), `CardCommitCall` `0x630017` (5 B).
+
+### src/cardtags.h
+
+```cpp
+// New child tags of a <card> in a home city file (homecity<civ>.xml): one hook on the home city loader's commit of
+// each card (the call 0x630017 of the append to the home city's card array hc+204h), shared by every key that reads
+// one (resendableCards' <resendeveryage>). The stock loader reads past a tag it does not know.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// `hc` is the home city being loaded, `card` the card just added to its card array (a record of 28h bytes: +0 the
+// tech ID, +4 <maxcount>, +18h <age>, +20h the sends left in a game, byte +24h <infiniteinlastage>; the game's card
+// list of a player, hc+228h, is built from these records by copying them), `text` the tag's text (may be null).
+using CardTagHandler = void (*)(char* hc, char* card, const wchar_t* text);
+
+// Makes each child element of a <card> named `name` (static text, case ignored) reach `handler`, once the card is in
+// the home city's array. Writes the hook the first time, after checking the stock bytes.
+bool AddCardTagHandler(const char* feature, const char* name, CardTagHandler handler);
+
+}  // namespace uhc
+```
+
+### src/cardtags.cpp
+
+```cpp
+// The home city loader's call of the card append at 0x630017 goes to UhcCardCommitHook (hooks/cardtags_hooks.asm):
+// it appends the card as stock does, then UhcCardTagsDispatch walks the card node's children for the keys' tags.
+#include "cardtags.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcCardCommitHook();
+
+namespace {
+
+constexpr std::size_t kMaxTags = 8;
+constexpr std::uint32_t kCommitCall = 0x00630017;  // call 62FBC7h
+constexpr std::uint32_t kCardArray = 0x204;        // in the home city: {data, count, capacity}
+constexpr std::uint32_t kCardSize = 0x28;
+
+struct Tag {
+  const char* name;
+  uhc::CardTagHandler handler;
+};
+
+Tag g_tags[kMaxTags] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+// The element's name, as the loader's compare chain reads it: [[node+4]+18h][[node+18h]]; null for a node without one.
+const wchar_t* NodeName(const char* node) {
+  const std::int32_t index = Field<std::int32_t>(node, 0x18);
+  const char* names = Field<const char*>(node, 0x04);
+  if (index < 0 || names == nullptr || index >= Field<std::int32_t>(names, 0x1C)) {
+    return nullptr;
+  }
+  return Field<const wchar_t* const*>(names, 0x18)[index];
+}
+
+// name (narrow) == tag (wide), case ignored.
+bool SameName(const char* name, const wchar_t* tag) {
+  for (;; ++name, ++tag) {
+    const wchar_t a = static_cast<wchar_t>(*name >= 'A' && *name <= 'Z' ? *name + 32 : *name);
+    const wchar_t b = *tag >= L'A' && *tag <= L'Z' ? *tag + 32 : *tag;
+    if (a != b) {
+      return false;
+    }
+    if (a == 0) {
+      return true;
+    }
+  }
+}
+
+}  // namespace
+
+// From the hook, after the append: `node` is the <card> (EBX in the loader), `array` the home city's card array
+// (hc+204h), `index` the new card's index in it.
+extern "C" void __stdcall UhcCardTagsDispatch(const char* node, char* array, std::int32_t index) {
+  if (node == nullptr || array == nullptr || index < 0 || index >= Field<std::int32_t>(array, 4)) {
+    return;
+  }
+  char* data = Field<char*>(array, 0);
+  if (data == nullptr) {
+    return;
+  }
+  char* card = data + static_cast<std::uint32_t>(index) * kCardSize;
+  char* hc = array - kCardArray;
+  // The children: [node+8] an array of nodes, [node+0Ch] their count (as the loader's loop reads them).
+  const std::int32_t count = Field<std::int32_t>(node, 0x0C);
+  const char* const* children = Field<const char* const*>(node, 0x08);
+  for (std::int32_t c = 0; children != nullptr && c < count; ++c) {
+    const char* child = children[c];
+    const wchar_t* name = child == nullptr ? nullptr : NodeName(child);
+    if (name == nullptr) {
+      continue;
+    }
+    for (std::size_t t = 0; t < g_count; ++t) {
+      if (SameName(g_tags[t].name, name)) {
+        g_tags[t].handler(hc, card, Field<const wchar_t*>(child, 0x14));
+      }
+    }
+  }
+}
+
+namespace uhc {
+
+bool AddCardTagHandler(const char* feature, const char* name, CardTagHandler handler) {
+  if (g_count == kMaxTags) {
+    Log(L"%hs: no room for the card tag %hs", feature, name);
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll(feature, {&sites::kCardChildLoop, &sites::kCardChildLoopEnd, &sites::kCardCommitPrep,
+                             &sites::kCardCommitCall}) ||
+        !WriteCall(kCommitCall, reinterpret_cast<const void*>(&UhcCardCommitHook))) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_tags[g_count++] = {name, handler};
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/cardtags_hooks.asm
+
+```asm
+; The home city loader's commit of a card (src/cardtags.cpp), shared by the keys that read card tags of their own.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcCardTagsDispatch PROTO STDCALL node:DWORD, array:DWORD, index:DWORD
+
+.data
+cardAppend      dd 0062FBC7h    ; the card array's append, thiscall(array, card*), ret 4, the new index in EAX
+
+.code
+
+; Replaces call 62FBC7h at 0x630017 in the home city loader FUN_0062E6C9. ECX = the home city's card array
+; (hc+204h), [esp+4] = the card built on the stack, [esp] = the return address 0x63001C, EBX = the <card> node.
+; Calls the append with the same this and argument, then the dispatch, and returns its index with ret 4 as the
+; append does. The loader overwrites ECX and EDX after the call (lea ecx,[esp+0A8h] at 0x63001C) and does not read
+; EAX again; EBX, ESI, EDI and EBP are kept by both calls.
+UhcCardCommitHook PROC
+    TRACE_ONCE "card tags (0x630017)"
+    push ecx                        ; the array, kept
+    push dword ptr [esp+8]          ; the card, [esp+4] + the push
+    call dword ptr [cardAppend]     ; ECX is still the array; pops the card
+    pop ecx
+    push eax                        ; the index, returned
+    push eax
+    push ecx
+    push ebx
+    call UhcCardTagsDispatch
+    pop eax
+    ret 4
+UhcCardCommitHook ENDP
+
+END
+```
+
+## resendableCards
+
+Contract: [resendableCards](../porting-to-another-dll.md#resendablecards).
+
+Sites: `CardRolloverHead` `0x7103CE` (38 B), `CardRolloverAgeCheck` `0x7107F4` (22 B), `SetAgeAdvanceFlag` `0x8D4EE3` (15 B), `AgeUpJoin` `0x8D502F` (5 B), `AgeUpStockRefill` `0x8D5034` (36 B).
+
+### src/features/resendcards.cpp
+
+```cpp
+// resendableCards: <resendeveryage>1</resendeveryage> in a home city card makes the card sendable again each time
+// its player reaches a new age: its sends left go back to its <maxcount>, as stock does once for an
+// <infiniteinlastage> card when the player reaches the Imperial Age.
+//
+// How stock counts a card's sends: the game's card list of a player (hc+228h, records of 28h built from the deck by
+// FUN_006301DE) keeps the sends left in [card+20h], set to <maxcount> [card+4] when the list is built. The send
+// FUN_0085A724 refuses a card with <maxcount> >= 0 and no sends left ("You have already sent %s", 8FFDh, 0x85A9B9)
+// and takes one with FUN_0085FBEA(card, -1) (0x85ACF8); a cancel gives it back (+1, 0x85AE98); the shipment panel
+// greys such a card (0x9A5AFC). The card's tech has the HomeCity flag, which the tech activation 0x94CF27 never
+// refuses as already active, so the tech runs again at each shipment. The age setter FUN_008D4E01 calls
+// FUN_0085650A(hc) when the new age is above 3 (the Imperial Age), which sets [card+20h] = [card+4] for each card of
+// the list whose byte [card+24h] is 1 (<infiniteinlastage>). The field is in the saved game (the card's save at
+// 0x85FC40 writes +20h and the byte +24h).
+//
+// The key: the tag sets bit 1 (02h) of the card's byte +24h in the home city's card array, read through the shared
+// card tag hook (cardtags.h); the deck build, the save and the load copy the byte whole, so every player's copy of
+// the card carries it. At the age setter's join after the new age is written (0x8D502F, before the stock refill),
+// when the player advances (the setter's flag [esp+13h] is 0), each card of the player's list with the bit and a
+// <maxcount> of 0 or more gets [card+20h] = [card+4]: one reset per age-up, never added to what is left, so an age
+// with no send does not stack. An <infiniteinlastage> card that also has the bit is refilled the same way at the
+// Imperial Age (stock's test `== 1` no longer matches it, and this reset has already done it). The card rollover
+// builder hides the card's cost after its tech was researched unless the card is <infiniteinlastage> in age 4 with
+// sends left; for a card with the bit the age test is skipped, so the cost shows again when it can be sent.
+#include <cstdarg>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <cwchar>
+#include <string>
+
+#include "../cardtags.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+
+extern "C" {
+void UhcResendAgeHook();
+void UhcResendCostHook();
+}
+
+namespace {
+
+constexpr std::uint32_t kAgeJoin = 0x008D502F;     // mov eax,[0C66234h]
+constexpr std::uint32_t kCostAgeCheck = 0x00710804;  // cmp dword ptr [eax+50h],4 / jne 710863h
+constexpr std::uint8_t kResendBit = 0x02;           // in the card's byte +24h; bit 0 is <infiniteinlastage>
+constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr int kMaxLines = 200;
+
+bool g_log = false;
+int g_lines = 0;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+void Line(const wchar_t* format, ...) {
+  if (g_lines >= kMaxLines) {
+    return;
+  }
+  wchar_t text[512];
+  va_list args;
+  va_start(args, format);
+  _vsnwprintf_s(text, _TRUNCATE, format, args);
+  va_end(args);
+  ++g_lines;
+  uhc::Log(L"%ls%ls", text, g_lines == kMaxLines ? L" (no more lines are logged)" : L"");
+}
+
+const wchar_t* TechName(std::int32_t id) {
+  const char* game = *reinterpret_cast<const char* const*>(kGameGlobal);
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  if (database == nullptr) {
+    return L"?";
+  }
+  const wchar_t* const* names = Field<const wchar_t* const*>(database, 0x3824);
+  if (names == nullptr || id < 0 || id >= Field<std::int32_t>(database, 0x3828) || names[id] == nullptr) {
+    return L"?";
+  }
+  return names[id];
+}
+
+const wchar_t* AgeName(std::int32_t age) {
+  static const wchar_t* const kNames[] = {L"I", L"II", L"III", L"IV", L"V"};
+  return age >= 0 && age < 5 ? kNames[age] : L"?";
+}
+
+// <resendeveryage>: 1 or true sets the bit, 0 or false clears it.
+void ReadTag(char* hc, char* card, const wchar_t* text) {
+  std::wstring value = text == nullptr ? L"" : text;
+  while (!value.empty() && iswspace(value.back())) {
+    value.pop_back();
+  }
+  std::size_t first = 0;
+  while (first < value.size() && iswspace(value[first])) {
+    ++first;
+  }
+  value = value.substr(first);
+  auto& flags = *reinterpret_cast<std::uint8_t*>(card + 0x24);
+  const std::int32_t tech = Field<std::int32_t>(card, 0x00);
+  if (value == L"1" || _wcsicmp(value.c_str(), L"true") == 0) {
+    flags = static_cast<std::uint8_t>(flags | kResendBit);
+    if (g_log) {
+      Line(L"resendableCards: card %d (%ls) of home city %p is sent again in each new age (maxcount %d)", tech,
+           TechName(tech), static_cast<void*>(hc), Field<std::int32_t>(card, 0x04));
+    }
+  } else if (value == L"0" || _wcsicmp(value.c_str(), L"false") == 0) {
+    flags = static_cast<std::uint8_t>(flags & ~kResendBit);
+  } else {
+    Line(L"resendableCards: <resendeveryage>%ls</resendeveryage> on card %d (%ls) is not 1, 0, true or false; ignored",
+         value.c_str(), tech, TechName(tech));
+  }
+}
+
+}  // namespace
+
+extern "C" {
+
+// From the age setter's join: `player` has its new age in [player+50h]; `notAdvance` is the setter's flag, 1 when
+// the old age was the same or higher.
+void __stdcall UhcResendAgeUp(char* player, std::uint32_t notAdvance) {
+  if (player == nullptr || (notAdvance & 0xFF) != 0) {
+    return;
+  }
+  char* hc = Field<char*>(player, 0x84);
+  if (hc == nullptr) {
+    return;
+  }
+  // The game's card list hc+228h: [list+1Ch] the records, [list+20h] their count (FUN_0085FFCE).
+  char* cards = Field<char*>(hc, 0x228 + 0x1C);
+  const std::int32_t count = Field<std::int32_t>(hc, 0x228 + 0x20);
+  for (std::int32_t i = 0; cards != nullptr && i < count; ++i) {
+    char* card = cards + static_cast<std::uint32_t>(i) * 0x28;
+    if ((Field<std::uint8_t>(card, 0x24) & kResendBit) == 0) {
+      continue;
+    }
+    const std::int32_t max = Field<std::int32_t>(card, 0x04);
+    const std::int32_t left = Field<std::int32_t>(card, 0x20);
+    if (max < 0 || left == max) {
+      continue;  // infinite, or not sent since the last reset
+    }
+    *reinterpret_cast<std::int32_t*>(card + 0x20) = max;
+    if (g_log) {
+      const std::int32_t tech = Field<std::int32_t>(card, 0x00);
+      Line(L"resendableCards: player %d reached Age %ls: card %d (%ls) can be sent %d time(s) again (it had %d left)",
+           Field<std::int32_t>(player, 0x00), AgeName(Field<std::int32_t>(player, 0x50)), tech, TechName(tech), max,
+           left);
+    }
+  }
+}
+
+// From the card rollover's cost test: true when the card has the bit (the age test is then skipped).
+bool __stdcall UhcResendCard(const char* card) {
+  return card != nullptr && (Field<std::uint8_t>(card, 0x24) & kResendBit) != 0;
+}
+}
+
+namespace uhc {
+
+Outcome ApplyResendableCards(const Config& config) {
+  const Config::Args* args = config.First("resendableCards");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  bool log = false;
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      log = true;
+    } else {
+      Log(L"resendableCards: unexpected argument %hs (expected: [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("resendableCards", {&sites::kAgeUpJoin, &sites::kAgeUpStockRefill, &sites::kSetAgeAdvanceFlag,
+                                     &sites::kCardRolloverAgeCheck, &sites::kCardRolloverHead})) {
+    return Outcome::kFailed;
+  }
+  g_log = log;
+  if (!AddCardTagHandler("resendableCards", "resendeveryage", &ReadTag) ||
+      !WriteJmp(kAgeJoin, reinterpret_cast<const void*>(&UhcResendAgeHook), 5) ||
+      !WriteJmp(kCostAgeCheck, reinterpret_cast<const void*>(&UhcResendCostHook), 6)) {
+    return Outcome::kFailed;
+  }
+  Log(L"resendableCards: a card with <resendeveryage>1</resendeveryage> gets its sends back (its maxcount) each time "
+      L"its player reaches a new age%ls (multiplayer unverified)",
+      log ? L"; each card read and each reset is logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/resendcards_hooks.asm
+
+```asm
+; resendableCards (src/features/resendcards.cpp): the age setter's join and the card rollover's cost test. Each
+; leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcResendAgeUp PROTO STDCALL player:DWORD, notAdvance:DWORD
+UhcResendCard PROTO STDCALL card:DWORD
+
+.data
+ageNext         dd 008D5034h    ; mov ecx,[eax+13Ch], in the age setter
+costShow        dd 0071080Ah    ; mov eax,[ebp] / push eax / mov ecx,edi / call 852F11h: the sends-left test
+costHide        dd 00710863h    ; past the cost line
+
+.code
+
+; Replaces mov eax,[0C66234h] at 0x8D502F in the age setter FUN_008D4E01 (thiscall(player, age, announce, tech)),
+; the join every path takes once the new age is in [esi+50h] (0x8D4F49, 0x8D4F54, 0x8D4F5F and the fall-through
+; after the age-up message). ESI = the player; the byte [esp+13h] is 1 when the old age was the same or higher
+; (0x8D4EE3..0x8D4EF2, same frame). EAX, ECX and EDX are written before they are read after 0x8D5034
+; (mov ecx,[eax+13Ch], the cmp at 0x8D503A, mov edx,[esi] at 0x8D505D); EBX, ESI, EDI and EBP are kept by the call.
+UhcResendAgeHook PROC
+    TRACE_ONCE "resendableCards age (0x8D502F)"
+    movzx eax, byte ptr [esp+13h]
+    push eax
+    push esi
+    call UhcResendAgeUp
+    mov eax, dword ptr ds:[0C66234h]
+    jmp ageNext
+UhcResendAgeHook ENDP
+
+; Replaces cmp dword ptr [eax+50h],4 / jne 710863h at 0x710804 in the card rollover builder FUN_007103CE, reached
+; only for the local player's own card whose byte [ebp+24h] is not 0, with EAX = the player and EBP = the card.
+; Age 4 goes on as stock; otherwise a card with the resend bit goes on to the sends-left test too, and any other
+; card skips the cost line as stock. EAX and ECX are reloaded at 0x71080A; EDX is not read before it is written.
+UhcResendCostHook PROC
+    TRACE_ONCE "resendableCards rollover (0x710804)"
+    cmp dword ptr [eax+50h], 4
+    je show
+    push ebp
+    call UhcResendCard
+    test al, al
+    jz hide
+show:
+    jmp costShow
+hide:
+    jmp costHide
+UhcResendCostHook ENDP
+
+END
+```
+
+## quickArrivalCards
+
+Contract: [quickArrivalCards](../porting-to-another-dll.md#quickarrivalcards).
+
+Sites: `BStringAppend` `0x443960` (16 B), `CardBulletLine` `0x4C5076` (42 B), `CardRolloverHead` `0x7103CE` (38 B), `CardRolloverAdvanced` `0x710909` (6 B).
+
+### src/features/quickarrival.cpp
+
+```cpp
+// quickArrivalCards [stringid N] [log]: <Flag>QuickArrival</Flag> on a home city card's tech adds the bullet line
+// "This is a quick-arrival card." to the card's rollover, right after its send-limit line ("This Card may be sent
+// INFINITE times" / "ONE time" / N times), before the advanced info. Display only.
+//
+// The card rollover builder FUN_007103CE(list, hc, tech, ...) is the one used by the in-game shipment panel
+// (0x9A61B7), the deck builder of the home city screen (0x9A0714) and the deck dialog (0x9A7A1E), all three in list
+// mode (its sixth argument 1). Its lines, in order: the name (header, FUN_004C5032), the population, the unit's own
+// text when the tech has no rollover text, "This Card cannot be sent until Age N" (9012h), the cost, the tech's
+// rollover text, the send-limit line (9001h/9002h/9003h), then, with the detailed help option on, the advanced info
+// FUN_0071006D. Each line goes through FUN_004C5076(list, line, 1, 0), which appends "<ttf><ttb>" and the line: the
+// bullet. The key's hook sits at the join before the advanced info (0x710909) and appends its line the same way.
+//
+// The flag is read through the shared flag reader hook (techflags.h); the techs are kept by ID.
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <vector>
+
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../techflags.h"
+
+extern "C" void UhcQuickArrivalHook();
+
+namespace {
+
+constexpr std::uint32_t kAdvancedJoin = 0x00710909;  // mov ecx,[0D6F6F0h]
+constexpr std::int32_t kMaxTech = 1 << 20;
+constexpr const wchar_t* kDefaultText = L"This is a quick-arrival card.";
+constexpr const wchar_t* kBullet = L"<ttf><ttb>";  // what FUN_004C5076(list, line, 1, 0) puts before a line
+
+// The engine's string: one pointer to a wide, reference-counted buffer; null is empty.
+struct BString {
+  wchar_t* text;
+};
+using AppendFn = void(__thiscall*)(void* text, const wchar_t* more, std::int32_t length, std::int32_t start);
+const auto kAppend = reinterpret_cast<AppendFn>(0x00443960);  // BString append; -1, -1: all of it, at the end
+using BStringFromIdFn = BString*(__thiscall*)(BString* self, std::int32_t stringId);
+using BStringFreeFn = void(__thiscall*)(BString* self);
+const auto kBStringFromId = reinterpret_cast<BStringFromIdFn>(0x0058EA52);
+const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+
+std::vector<bool> g_quick;  // by tech ID; filled while the techtree loads
+std::int32_t g_stringId = -1;
+bool g_log = false;
+int g_logLines = 0;
+bool g_loggedLine = false;
+
+bool ReadFlag(char* record, const char* name) {
+  if (_stricmp(name, "QuickArrival") != 0) {
+    return false;
+  }
+  const char* def = *reinterpret_cast<const char* const*>(record);
+  const std::int32_t tech = def == nullptr ? -1 : *reinterpret_cast<const std::int32_t*>(def);
+  if (tech < 0 || tech >= kMaxTech) {
+    return true;
+  }
+  if (static_cast<std::size_t>(tech) >= g_quick.size()) {
+    g_quick.resize(static_cast<std::size_t>(tech) + 1, false);
+  }
+  g_quick[static_cast<std::size_t>(tech)] = true;
+  if (g_log && g_logLines < 200) {
+    ++g_logLines;
+    uhc::Log(L"quickArrivalCards: tech %d has the QuickArrival flag", tech);
+  }
+  return true;
+}
+
+}  // namespace
+
+// From the hook, once the card's send-limit line is in: `list` is the rollover being built, `tech` the card's tech
+// ID, `listMode` the builder's sixth argument (1 in the three callers: one bulleted line per entry).
+extern "C" void __stdcall UhcQuickArrivalLine(void* list, std::int32_t tech, std::uint32_t listMode) {
+  if (list == nullptr || tech < 0 || static_cast<std::size_t>(tech) >= g_quick.size() ||
+      !g_quick[static_cast<std::size_t>(tech)]) {
+    return;
+  }
+  BString fromTable{nullptr};
+  const wchar_t* text = kDefaultText;
+  if (g_stringId >= 0) {
+    kBStringFromId(&fromTable, g_stringId);
+    if (fromTable.text != nullptr && fromTable.text[0] != 0) {
+      text = fromTable.text;
+    }
+  }
+  if ((listMode & 0xFF) != 0) {
+    kAppend(list, kBullet, -1, -1);
+  } else {
+    kAppend(list, L"\n", -1, -1);  // the builder's string mode puts each line after a line break
+  }
+  kAppend(list, text, -1, -1);
+  if (g_log && !g_loggedLine) {
+    g_loggedLine = true;
+    uhc::Log(L"quickArrivalCards: the line was added to the rollover of tech %d (logged once)", tech);
+  }
+  if (g_stringId >= 0) {
+    kBStringFree(&fromTable);
+  }
+}
+
+namespace uhc {
+
+Outcome ApplyQuickArrivalCards(const Config& config) {
+  const Config::Args* args = config.First("quickArrivalCards");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  bool log = false;
+  std::int32_t stringId = -1;
+  for (std::size_t i = 0; i < args->size(); ++i) {
+    const std::string& arg = (*args)[i];
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      log = true;
+    } else if (_stricmp(arg.c_str(), "stringid") == 0 && i + 1 < args->size()) {
+      const std::string& value = (*args)[++i];
+      char* end = nullptr;
+      const long id = std::strtol(value.c_str(), &end, 10);
+      if (value.empty() || *end != 0 || id < 0 || id > 0x7FFFFFFF) {
+        Log(L"quickArrivalCards: stringid %hs is not a string ID (0 or more); feature not applied", value.c_str());
+        return Outcome::kFailed;
+      }
+      stringId = static_cast<std::int32_t>(id);
+    } else {
+      Log(L"quickArrivalCards: unexpected argument %hs (expected: [stringid N] [log]); feature not applied",
+          arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("quickArrivalCards", {&sites::kCardRolloverHead, &sites::kCardRolloverAdvanced,
+                                       &sites::kCardBulletLine, &sites::kBStringAppend})) {
+    return Outcome::kFailed;
+  }
+  g_log = log;
+  g_stringId = stringId;
+  if (!AddTechFlagHandler("quickArrivalCards", &ReadFlag) ||
+      !WriteJmp(kAdvancedJoin, reinterpret_cast<const void*>(&UhcQuickArrivalHook), 6)) {
+    return Outcome::kFailed;
+  }
+  if (stringId >= 0) {
+    Log(L"quickArrivalCards: the tech flag QuickArrival adds the line of string %d to a card's rollover", stringId);
+  } else {
+    Log(L"quickArrivalCards: the tech flag QuickArrival adds the line \"%ls\" to a card's rollover", kDefaultText);
+  }
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/quickarrival_hooks.asm
+
+```asm
+; quickArrivalCards (src/features/quickarrival.cpp): the card rollover builder's join before the advanced info. It
+; leaves through an explicit jmp to the verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcQuickArrivalLine PROTO STDCALL list:DWORD, tech:DWORD, listMode:DWORD
+
+.data
+advancedNext    dd 0071090Fh    ; mov edx,[ecx], in the card rollover builder
+
+.code
+
+; Replaces mov ecx,[0D6F6F0h] at 0x710909 in FUN_007103CE (cdecl(list, hc, tech, ...), frame: sub esp,30h and four
+; pushes), reached from 0x7108C3, 0x7108DB and the fall-through at 0x710904, all with no push outstanding: the
+; list is [esp+44h], the tech ID [esp+4Ch], the list-mode byte [esp+58h] (EBX holds it too). ECX is reloaded here,
+; EDX at 0x71090F and EAX by the call at 0x710917; EBX, ESI, EDI and EBP are kept by the call.
+UhcQuickArrivalHook PROC
+    TRACE_ONCE "quickArrivalCards (0x710909)"
+    push dword ptr [esp+58h]        ; list mode
+    push dword ptr [esp+50h]        ; tech, [esp+4Ch] + one push
+    push dword ptr [esp+4Ch]        ; list, [esp+44h] + two pushes
+    call UhcQuickArrivalLine
+    mov ecx, dword ptr ds:[0D6F6F0h]
+    jmp advancedNext
+UhcQuickArrivalHook ENDP
 
 END
 ```
