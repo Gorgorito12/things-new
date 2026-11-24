@@ -1,6 +1,10 @@
 """Build the release zip that modders download: dist/UHC-<version>.zip.
 
-Usage: python -I tools/package_release.py [--force] [--dxvk <folder>]
+Usage: python -I tools/package_release.py [--force] [--dxvk <folder>] [--dinput8-only]
+
+--dinput8-only writes dist/dinput8-<version>.zip instead: dinput8.dll at the top with
+engine-ext/engine-ext.cfg, the same art, DXVK and LICENSE, and its own README.txt; no UHC.dll,
+no Startup folder and no check of build/Release/UHC.dll.
 
 Run it from the repository root after a Release build (docs/developer-guide.md, "Making a
 release"). It checks build/Release/UHC.dll first and stops if:
@@ -31,7 +35,7 @@ import sys
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-REPO_URL = "https://github.com/Gorgorito12/tad-engine-extensions"
+REPO_URL = "https://github.com/Gorgorito12/things-new"
 DXVK_VERSION = "3.1.1"
 DXVK_D3D9_SHA256 = "265888c31ca78dffa290c39cb7e50bfb02762590e41927906e46fb32f01497fa"
 
@@ -456,8 +460,81 @@ remove it, delete the dxvk folder.
     return text.replace("\n", "\r\n")
 
 
+def readme_dinput8(version):
+    """README.txt of the --dinput8-only package: dinput8.dll and engine-ext, no UHC.dll."""
+    full = readme(version).replace("\r\n", "\n")
+    rings = full[full.index("Aura rings\n"):full.index("A uhc.cfg written by the patcher")]
+    # The keys' default data folder is engine-ext\ in this build (src/engineext.cpp, kDataFolder).
+    keys = full[full.index("Keys that need data edits"):].replace("data\\uhc\\", "engine-ext\\")
+    text = f"""dinput8.dll {version} for Age of Empires III: The Asian Dynasties (Steam)
+=========================================================================
+
+dinput8.dll removes hard-coded limits of the game and adds new engine features. A mod turns each
+feature on in engine-ext\\engine-ext.cfg. It needs the Steam version of TAD (age3y.exe, SHA-256
+b1a1dab7...11d9d). It needs no loader and no patcher, and it also works in a game whose loader
+runs another UHC.dll: nothing of that game changes, not its exe, its UHC.dll, its cfg or data\\uhc.
+
+Full guide:  {REPO_URL}/blob/main/docs/modding-guide.md
+Downloads:   {REPO_URL}/releases
+
+Adding it to your mod
+---------------------
+1. Make your mod folder a complete game folder: a copy of the game's bin folder plus your
+   mod's files. Never modify the Steam install.
+2. Copy dinput8.dll and the engine-ext folder of this package next to the mod's age3y.exe.
+3. In engine-ext\\engine-ext.cfg, remove the "#" in front of the keys you want, and in front of
+   ignoreRegistryPath if nothing else in the mod folder makes the game read its data from there.
+   Data files that keys read by default go in engine-ext\\. Some keys need data or art from your
+   mod: see the guide.
+4. Start the mod's age3y.exe. engine-ext\\engine-ext.log appears: its first line is
+   "dinput8.dll {version}", and every key you enabled says "applied". A key fails, and changes
+   nothing, when another DLL of the game already patched a place it needs.
+5. Ship dinput8.dll and engine-ext\\engine-ext.cfg with your mod (not engine-ext.log). Players
+   install nothing else.
+To remove it, delete dinput8.dll and the engine-ext folder.
+If the game already has a dinput8.dll that loads another DLL (a mod's proxy), keep that file
+aside and put "preloadDll <its DLL>" in engine-ext\\engine-ext.cfg: this dinput8.dll then loads
+it at the same moment, before the game starts.
+
+"""
+    return (text + rings + keys).replace("\n", "\r\n")
+
+
+def main_dinput8(argv, force):
+    """dist/dinput8-<version>.zip: dinput8.dll with its engine-ext cfg, the art and DXVK; no UHC.dll."""
+    dxvk_folder = ROOT / "rea" / "vendor" / f"dxvk-{DXVK_VERSION}"
+    if "--dxvk" in argv:
+        dxvk_folder = pathlib.Path(argv[argv.index("--dxvk") + 1])
+    dxvk_dll, dxvk_license = read_dxvk(dxvk_folder)
+    version = read_version()
+    proxy = check_proxy(ROOT / "build" / "Release" / "dinput8.dll", version)
+    out = ROOT / "dist" / f"dinput8-{version}.zip"
+    if out.exists() and not force:
+        fail(f"{out.relative_to(ROOT)} already exists; pass --force to replace it")
+    out.parent.mkdir(exist_ok=True)
+    top = f"dinput8-{version}"
+    license_text = (ROOT / "LICENSE").read_text(encoding="utf-8").replace("\r\n", "\n").replace("\n", "\r\n")
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr(f"{top}/dinput8.dll", proxy)
+        z.writestr(f"{top}/engine-ext/engine-ext.cfg",
+                   template_cfg(version, f"# engine-ext\\engine-ext.cfg template for dinput8.dll {version}."))
+        for ring in sorted((ROOT / "tools" / "rings").glob("*")):
+            z.write(ring, f"{top}/art/effects/uhc_rings/{ring.name}")
+        for bar in sorted((ROOT / "tools" / "bars").glob("*.ddt")):
+            z.write(bar, f"{top}/art/ui/uhc/{bar.name}")
+        z.writestr(f"{top}/dxvk/d3d9.dll", dxvk_dll)
+        z.writestr(f"{top}/dxvk/LICENSE.txt", dxvk_license)
+        z.writestr(f"{top}/LICENSE.txt", license_text)
+        z.writestr(f"{top}/README.txt", readme_dinput8(version))
+    print(f"wrote {out.relative_to(ROOT)}")
+    print(f"  SHA-256 zip         {hashlib.sha256(out.read_bytes()).hexdigest()}")
+    print(f"  SHA-256 dinput8.dll {hashlib.sha256(proxy).hexdigest()}")
+
+
 def main(argv):
     force = "--force" in argv
+    if "--dinput8-only" in argv:
+        return main_dinput8(argv, force)
     dxvk_folder = ROOT / "rea" / "vendor" / f"dxvk-{DXVK_VERSION}"
     if "--dxvk" in argv:
         dxvk_folder = pathlib.Path(argv[argv.index("--dxvk") + 1])
