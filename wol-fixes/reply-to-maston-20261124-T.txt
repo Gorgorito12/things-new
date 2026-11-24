@@ -37,5 +37,10 @@ Videos: gatlingCamel-wol (the gun turning, from the saddle), gatlingCamelDeploye
 saddle), gatlingCamel-move-wol (walking), turretArc-wol-control (the same scene with the key off: the whole camel
 turns).
 
+One more thing about the art already in the pack (rounds 2 and 3): it has two faults that the next
+version fixes in every animation. The gunner's forearm can turn over in a single frame (idle, walk, jog,
+run, fire, deploy, reload), and at the jog and the run the gun slides 13 to 24 cm off its post. The next
+version replaces every art file of the pack, so please don't ship the current art on its own.
+
 The questions from my last message (how players get GatlingCamelDeployed, its stats, whether the old model
 stays, the gun size) are still open.
