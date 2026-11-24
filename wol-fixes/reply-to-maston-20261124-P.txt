@@ -1,0 +1,34 @@
+Oil display before the Great War (#103) and global gathering rates (#105): the panel part
+==========================================================================================
+
+Oil only after the Great War
+----------------------------
+Yes. Every variant of the resource panel (default and detailed, European / Asian / Native, big and minimized: 12 in
+all) now holds two panels: one without the oil row, used before the Great War, where the other rows spread over the
+freed space, and today's, with oil, used after it. A new DLL option swaps them when the player gets GreatWarizeALL
+(every Great War path gives it). With the option off, the panel is exactly today's.
+
+It is an optional pack (wol-fixes\oil-panel): it adds five textures (the backgrounds without the oil row, beside
+yours) and replaces the SettlerCountDialog block of data\uimainnew.xml; --restore puts everything back. It does not
+need faith; if you take the faith row too, --faith puts it in both panels.
+
+The picture p-oil-panel-default.jpg shows each default variant as the game draws it at 1920x1080: yours today,
+before GW, after GW, and the same two with the faith row. p-oil-panel-advanced.jpg shows the detailed variants.
+On the way, the after-GW panels keep two fixes of the earlier panel work: the Asian minimized panel shows the oil
+amount (the population sat on top of it), and the Native minimized panel shows its icons.
+
+Questions:
+1. In the taller rows before the Great War the icons grow a little (at most 10 %) and the rest is wood, so they
+   do not reach the numbers. Do you prefer that, or icons that fill the taller rows?
+2. Observer mode uses its own layout files, without oil already; we left them alone.
+
+Global gathering rates
+----------------------
+p-rates-options.jpg shows three places for the rate ("+4.2": the player's income of that resource per second,
+from gathering, auto-gathering and trickles, averaged over a few seconds), on your current panels:
+  A. on the same line as the amount, right-aligned against the panel's edge (a column of rates);
+  B. under the amount, in smaller numbers (tight in the 7-row Asian and Native panels);
+  C. only in the row's tooltip ("Income: +4.2 per second").
+Which one do you want? A keeps every row readable at a glance; C changes nothing on screen. The colour (green in
+the pictures) and per second or per minute are open too. The lag question is answered separately, with
+measurements in an 8-player game.
