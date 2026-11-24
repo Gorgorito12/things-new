@@ -1,0 +1,83 @@
+Splitting aiWoLMain.xs into one file per culture: what it costs and saves (#104)
+Measured 2026-11-24, single player, WoL with the current AI4 files. Nothing was changed in your files.
+
+SHORT ANSWER
+- Load: an AI that compiles only the shared code plus its culture's rules starts about 0.3 s faster per AI
+  (about 2 s less CPU when a game has 7 AIs). Small next to a 20 s loading screen.
+- Memory: about 2-2.5 MB less per AI (7 AIs: about 43 MB today against 27 MB, in a game process of 1.15 GB).
+- During the game: no change. The split does not make the AI cheaper per frame.
+- Splitting the file into several includes costs nothing by itself.
+So the split is safe to do for organisation and maintenance, but do not expect it to fix lag.
+
+WHAT IS IN aiWoLMain.xs TODAY (33,801 lines, 1.47 MB)
+- 96 rules and 3 functions belong to one culture (Euro*, NA*, LA*, ME*, Asian*, African*, Balkan*, NS* and a few
+  others by name): 32 % of the bytes. European 5.3 %, Anglo 4.5 %, Asian 4.5 %, American 4.2 %, African 3.9 %,
+  MiddleEastern 3.5 %, NationState 3.4 %, NativeAmerican 2.8 %, Polynesian 0 % (the Maori AI uses its own script).
+- The other 68 % is shared, with many kbGetCiv() branches inside it. A European AI would still compile all of that.
+
+HOW IT WAS MEASURED
+- New skirmishes (a saved game keeps the script it started with), ESOC High Plains, same seed, hard, free for all,
+  an idle human player. 1v1 against one European AI, and 8 players with seven European AIs (Russians, Portuguese,
+  Spanish, Germans, British, Dutch, Swedes). Two games per case.
+- A tracer timed every script compile (per file, per AI player, CPU time and memory) and every rule run of each AI
+  for the first minute; then a profiler sampled the game for 5 minutes without the tracer (AI share of the frame,
+  frames over 50 ms).
+- Four versions of the AI:
+  orig       your files as they are;
+  euro-stub  one aiWoLMain.xs with the shared code and only the European rules (every other culture's rule and
+             function left as an empty stub so it still compiles): the most a European file could save without
+             touching the shared code;
+  euro-inc   the same code as two included files (aiWoLCore.xs + aiWoLEuropean.xs);
+  all-inc    your full AI as 10 included files (core + one per culture): the cost of includes alone.
+- Every game: no XS error, and the AIs played (20-58 units each by the end).
+
+RESULTS (ranges of the two games; other programs ran on the PC, so "÷ map" compares each compile with the map
+script compiled in the same game, which removes the machine's speed)
+
+  Case                  Compile per AI   ÷ map   All AIs     Memory per AI   Loading    AI share of frame   of it, script
+  1v1, orig             0.78-0.95 s      8.3     0.8-0.95 s  6.1 MB          8.2-9.5 s  1.0 %               0.23 %
+  1v1, euro-stub        0.41-0.45 s      4.3     0.4-0.45 s  3.7 MB          8.2-9.4 s  0.8 %               0.23 %
+  8 players, orig       0.67-0.75 s      7.3     4.7-5.2 s   6.2 MB          19.3-20.2  3.5 %               0.88 %
+  8 players, euro-stub  0.42-0.44 s      4.7     2.9-3.1 s   3.9 MB          18.5-21.2  3.2 %               0.95 %
+  8 players, euro-inc   0.42-0.47 s      4.6     2.9-3.3 s   3.9 MB          19.0-20.7  2.7 %               0.83 %
+  8 players, all-inc    0.76-0.82 s      7.1     5.3-5.7 s   4.3 MB          20.4-23.5  2.8 %               0.72 %
+
+What it means
+1. Every AI player compiles its own copy of the whole script, one after another, during the loading screen. With
+   7 AIs the AI is compiled 7 times: about 5 s of CPU today.
+2. Load: the European-only version compiles in about 60 % of the time (the bytes drop only 25 %). That is about
+   0.3 s per AI, 1.9 s with 7 AIs. The total loading time changes by more than that from game to game (the map
+   generation after it), so in two games each the difference does not show in the loading time itself.
+3. Includes are free: the same AI in 10 files compiles as fast as in 1 file.
+4. Memory: each AI's compile keeps 6.2 MB today. About 2 MB of that follows the size of the biggest file, not the
+   amount of code: the same full AI in 10 smaller files keeps 4.3 MB. The European-only version keeps 3.9 MB.
+5. During the game: each AI runs its rules every frame; in the first minutes that is 7-15 ms of CPU per second per
+   AI. The whole AI is about 3 % of the main thread with 7 AIs, and the script itself less than 1 % (the rest is
+   the engine's own AI work: plans, knowledge base). Inactive rules cost nothing. No version changed this beyond
+   the normal game-to-game spread, and frames over 50 ms were the same in all versions.
+6. One thing seen along the way, in every version: at 1 s and 3 s of game time all AIs run their first rules in
+   the same frame (40-100 ms each), so an 8-player game starts with two frames of 0.3-0.5 s. That is shared code;
+   a split does not change it.
+
+RECOMMENDATION, if you split
+- One loader per culture (aiLoaderEuropean.xs, aiLoaderAnglo.xs, ...), and each .personality names its culture's
+  loader in <script>. Each loader includes aiWoLHeader.xs, the shared core, its culture file and aiWolloseum.xs.
+- Each loader has its own preInit()/postInit(). Today's aiLoaderStandard.xs has two civ lines in preInit (Tupi:
+  no gold; Egyptians: no fortify) and walls on for all: copy the walls line to every loader and move each civ line
+  to its culture's loader.
+- The core must compile alone: rules and the 3 functions that only one culture uses go to that culture's file
+  (chooseConsulateFlag and createConsulateResearchPlan are Asian, createNativeResearchPlan is Native American).
+  The core's xsEnableRule("...") calls for other cultures' rules are only reached for those civs; if the game
+  complains about a missing rule name, leave an empty stub of that rule in the core (we kept stubs, so a missing
+  rule was not tried).
+- Scenario AIs that include aiWoLMain.xs directly (first_barbary_war_p2, hakodate_p2, hakodate_p3, inactive,
+  the_marsh_of_bolivar_p2, wol1_01p02): keep aiWoLMain.xs as a small file that includes the core and every culture
+  file. They keep working and cost the same as today (the all-inc case).
+- Keep the files small: the memory follows the largest file.
+- Moving the inline kbGetCiv() branches of the shared code into the culture files would save a little more at load
+  (not measured), with more risk; it would not help during the game either.
+- For lag, the AI work to look at is elsewhere: the two start-up frames above (stagger each AI's first rules), and
+  heavy rules late in the game (like towerManager, fixed earlier).
+
+Tools (in our repository, if you want the numbers again after a change): tools/re/time_xs.py (compile and rule
+timings per AI), tools/xs_culture_split.py (the culture table and the simulated splits).

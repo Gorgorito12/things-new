@@ -1,0 +1,21 @@
+About splitting aiWoLMain.xs per culture (#104): we measured it before you start. Full report with the table:
+wol-fixes/ai-split-cost-20261124.txt.
+
+- Load: an AI that compiles only the shared code plus its culture's rules (European measured) compiles in about
+  60 % of the time: about 0.3 s less per AI, about 2 s of CPU less in a game with 7 AIs. Each AI player compiles
+  its own copy of the script during the loading screen, so the saving grows with the number of AIs, but it is
+  small next to a 20 s load.
+- Memory: about 2-2.5 MB less per AI (7 AIs: 43 MB today, 27 MB European-only).
+- In game: no difference. The script is under 1 % of the main thread even with 7 AIs; inactive rules cost nothing.
+- Includes are free: your whole AI split into 10 included files cost the same as one file (and used 2 MB less per
+  AI, because memory follows the size of the biggest file).
+
+So the split is fine for organisation and maintenance; it will not reduce lag. If you do it: one loader per culture
+chosen by each .personality, the shared core, each loader with its own preInit/postInit, and keep aiWoLMain.xs as a
+file that includes everything for the scenario AIs that include it directly (details in the report).
+
+Questions
+1. Do you want us to prepare the split files (loaders per culture, core, culture files, personalities updated), or
+   will your AI author do it?
+2. Side finding: at the very start of a game all AIs run their first rules in the same frame, so an 8-player game
+   starts with two frames of 0.3-0.5 s. Would you like us to look at staggering them?
