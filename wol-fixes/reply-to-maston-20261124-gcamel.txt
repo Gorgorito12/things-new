@@ -1,0 +1,37 @@
+Hi JTMaston,
+
+About the gatling camel (#102): the new model is done and tested in game. It replaces the current one.
+
+What it is
+- The zamburak's camel with its own swivel gun removed, carrying the American Gatling's barrel cluster, its casing
+  with the trunnion, the crank and the magazine on its back (at 0.55 of the Gatling's size). The rider turns the
+  crank: the barrels spin and the crank turns while it fires, the shots and the muzzle flashes leave from the
+  muzzle, and on reload he swaps the magazine. The camel lowers its head out of the line of fire.
+- Two units, as you'll see in the videos:
+  1. GatlingCamel (your existing unit, same stats, cost, cards and strings): now fires from the saddle and moves
+     while it fights, like the zamburak (no deploying). Only its anim file and tactics change.
+  2. GatlingCamelDeployed (new, a copy of GatlingCamel): the camel lies down, the gunner gets off step by step and
+     fires on foot, then gets back on before the camel stands up. It keeps the deploy tactics; deploying takes
+     5.33 s and undeploying 4.17 s (the length of the animations).
+- Everything is in wol-fixes/gatling-camel (apply_fix.py, with --check and --restore; README inside). Your current
+  KingsReturn gatling camel files are not touched.
+
+Tested (single player): both units idle, walking, firing, reloading, deploying, dying, save/load, and a skirmish
+against a German AI with the pack applied (no XS errors).
+
+Questions
+1. How should players get the deployed unit (GatlingCamelDeployed)? Same as the current one (the Vickers Purchase
+   card, HCGatlingCamels1, the Hookah Lounge), a separate card, or an upgrade/tech that switches between the two?
+   Right now nothing trains it.
+2. Stats: the deployed unit is an exact copy of GatlingCamel (340 HP, 500 gold, range 22, ROF 4, 4 population).
+   Do you want it different, e.g. longer range or more damage while deployed, and is the saddle version fine with
+   the same numbers now that it fires on the move?
+3. Should the old model stay available as an option (for example for a later age or a civ), or can it go?
+4. Gun size: we used 0.55 of the Gatling; 0.70 is also ready if you prefer a bigger gun.
+
+Videos: gatlingCamel-wol (from the saddle), gatlingCamelDeployed-wol (deployed), gatlingCamel-move-wol (both
+units walking), gatlingCamel-wol-control (the current unit).
+
+A note on movement: the anim file has its own walk, jog and run (both hands on the reins at the run), all checked
+in game. In our tests both units used the walk at every speed we gave them, so the jog and run only
+show where the game picks them.
