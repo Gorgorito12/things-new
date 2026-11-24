@@ -83,7 +83,12 @@ const char* CurrentWorld() {
   return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
 }
 
-void NewDatabase(char*) { ++g_generation; }
+// Every game start and every load reads the data again: the states are read again in the next world update (a new
+// game may get the old world's address).
+void NewDatabase(char*) {
+  ++g_generation;
+  g_world = nullptr;
+}
 
 // The gadget's handle, looked up again when it went stale (at most every 2 s while missing); 0 if none.
 std::int32_t Resolve(Slot& slot) {

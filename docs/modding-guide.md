@@ -9783,6 +9783,7 @@ Tests (2026-11-24, copy of WoL, single player, a test layout in all 12 variants)
 | Test | Result |
 |---|---|
 | Skirmish start, French (European panel), minimized interface | pass: `-preGW` shown, no oil amount; all 24 gadgets found |
+| The same with the full interface (`optionminimizedui` off, its own game) | pass: no oil amount before, the oil amount from the Great War on |
 | `GreatWarButton` set by a trigger (scenario at 45 s, skirmish on a test map at 40 s) | pass: `GreatWarizeALL` active, `-postGW` shown in the same frame (log) |
 | Saved after the Great War, loaded | pass: `-postGW` shown, also while the loaded game is still paused |
 | Asian panel (the scenario's player 1) | pass: switched (WoL's Asian panel has no oil amount to show; the faith panel pack fixes that panel) |
@@ -9832,7 +9833,8 @@ incomeRates [<seconds>] [perMinute] [log]
 - **Log:** `incomeRates: {uhcIncome(<resource>)} = income per second over the last 20 s`; with `log`, every 60 s of
   game time, the shown player's income per resource by source next to the change of its stockpile:
   `player 1, resource 1, last 60 s: counted 185.4 (gather 185.4, AutoGather 0.0, trickle 0.0, DLL 0.0), stockpile
-  +185.4 (197.6 -> 383.0); rate 3.09/s, 185.4/min`.
+  +185.4 (197.6 -> 383.0); rate 3.09/s, 185.4/min`, and what counting cost: `last 60 s of game time: 14232 adds
+  through the hook, 14206 counted, 756 us inside the count`.
 - **Status:** see the tests below.
 
 Tests (2026-11-24, copy of WoL, single player; `log` compares the counted income with the stockpile over each 60 s
@@ -9846,7 +9848,23 @@ of game time):
 | The text's argument | the BString holds the whole token, `{uhcincome(food)}`: the name is read between the parentheses, as the stock helper 0x453F8F does for `{resource(food)}` |
 | Saved and loaded | pass: 0.0 while the loaded game is paused, then the rate fills again |
 | Key off | pass: the text shows `+{uhcIncome(gold)}` as written: the game does not know the name |
-| Performance, 8 players | see below |
+| Performance, 8 players | no difference: see below |
+
+**Performance** (`perfprobe.py`, 2026-11-24, a new 8-player skirmish each run, key on and off alternated; other test
+games ran on the machine at the same time, which moves fps and render time from run to run):
+
+| Run (8 players, Acre, seed 436, 7 European AIs, French human idle; 120 s from 5:00 of game time) | fps | update ms / frame | update ms / s | main thread | frames > 50 ms | longest |
+|---|---|---|---|---|---|---|
+| key on, 1 | 165.0 | 1.86 | 307 | 93.5 % | 8 | 505 ms |
+| key off, 1 | 184.3 | 1.55 | 286 | 92.5 % | 7 | 535 ms |
+| key on, 2 | 164.2 | 1.58 | 259 | 93.7 % | 6 | 460 ms |
+| key off, 2 | 230.0 | 1.36 | 313 | 92.8 % | 9 | 475 ms |
+
+The frames over 50 ms (6 to 9 per 120 s, all over 100 ms) are as many with the key off as on: they are the game's own
+(the AIs). The main thread is busy all the time (the frame rate is not capped), so its share says nothing; the update
+time per second of real time is the same on and off. Measured inside the game (`log`, a third run): from 3,400 adds
+in the first minute to 14,200 in the eighth (8 players, all their villagers, trickles and AutoGather), and 0.3 to
+0.8 ms a minute spent counting them: about 13 µs per second of game time.
 
 
 ## 6. Editing the game data

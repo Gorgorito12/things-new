@@ -6540,7 +6540,10 @@ tributes, the market, shipments, treasures and triggers come from other callers.
 - It reads the add's arguments and writes only its own buckets; the add runs as before. EAX is free at the head (the
   stolen `mov` writes it); the flags are not read before the next compare.
 - Cost: three compares on every add; a counted add is a few float adds. No unit is walked. The ref reads up to 16 ×
-  21 floats when a gadget refreshes.
+  21 floats when a gadget refreshes. Measured in an 8-player game with 7 AIs (`log`): up to 14,200 adds a minute by
+  the eighth minute, 0.3 to 0.8 ms a minute inside the count (about 13 µs per second of game time); an A/B of two
+  runs each (`perfprobe.py`) showed no difference in frames over 50 ms (8 and 6 on, 7 and 9 off) or update time per
+  second (modding guide, "incomeRates").
 - The rates are not saved: after a load they build up again over the window.
 - Interface only: the numbers never reach the simulation, so players may set it differently.
 

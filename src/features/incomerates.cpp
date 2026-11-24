@@ -12,6 +12,8 @@
 // - The ref reads its argument as {resource()} does: a resource name (0x44709C), for the player the interface
 //   shows ([game+3C0h]). With shared resources ([world+6912h]) {resource()} shows the team's total, so the rate is
 //   the team's: every player the shown one counts as itself or an ally (0x4707EC).
+#include <windows.h>
+
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -28,7 +30,11 @@
 #include "../unittypes.h"
 #include "../worldtick.h"
 
-extern "C" void UhcIncomeAddHook();
+extern "C" {
+void UhcIncomeAddHook();
+// Every add that passes the hook (the asm increments it), for `log`'s cost line.
+std::uint32_t g_uhcIncomeAdds = 0;
+}
 
 namespace {
 
@@ -80,8 +86,6 @@ int g_generation = 0;
 int g_namesGeneration = -1;
 std::map<std::wstring, std::int32_t> g_names;  // lowercase resource name -> index, -1 if unknown
 
-void NewDatabase(char*) { ++g_generation; }
-
 const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
 
 void Clear() {
@@ -95,6 +99,14 @@ void Clear() {
   g_current = 0;
   g_currentMs = 0;
   g_full = 0;
+}
+
+// Every game start and every load reads the data again: a new game may get the old world's address, so the
+// buckets are emptied here too.
+void NewDatabase(char*) {
+  ++g_generation;
+  Clear();
+  g_world = nullptr;
 }
 
 // The player's income of a resource per second over the window.
@@ -127,6 +139,25 @@ void Count(std::int32_t player, std::int32_t resource, float amount, Source sour
       }
     }
   }
+}
+
+// With `log`: what the counting cost since the last line (the time inside UhcIncomeCount, by the performance counter).
+std::uint32_t g_counted = 0;
+std::int64_t g_countTicks = 0;
+std::uint32_t g_addsBefore = 0;
+
+void LogCost() {
+  if (g_logLines >= kMaxLogLines) {
+    return;
+  }
+  LARGE_INTEGER frequency;
+  QueryPerformanceFrequency(&frequency);
+  ++g_logLines;
+  uhc::Log(L"incomeRates: last 60 s of game time: %u adds through the hook, %u counted, %.0f us inside the count",
+           g_uhcIncomeAdds - g_addsBefore, g_counted, 1e6 * static_cast<double>(g_countTicks) / frequency.QuadPart);
+  g_addsBefore = g_uhcIncomeAdds;
+  g_counted = 0;
+  g_countTicks = 0;
 }
 
 // Every 60 s of game time: per resource, what was counted by source, the stockpile's change, and the rate shown.
@@ -186,6 +217,7 @@ void Tick(char* world, std::int32_t deltaMs) {
   if (g_logMs >= 60000 && g_currentMs < deltaMs) {
     g_logMs = 0;
     LogPeriod(world);
+    LogCost();
   }
 }
 
@@ -231,10 +263,21 @@ std::int32_t ArgumentResource(const char* database) {
 // From the hook, with the add's return address: one of the three income callers.
 extern "C" void __stdcall UhcIncomeCount(const char* player, std::int32_t resource, float amount,
                                          std::uint32_t caller) {
-  if (player != nullptr) {
-    const Source source = caller == 0x004ED1F3 ? kGather : caller == 0x004C379D ? kAutoGather : kTrickle;
-    Count(Field<std::int32_t>(player, 0), resource, amount, source);
+  if (player == nullptr) {
+    return;
   }
+  const Source source = caller == 0x004ED1F3 ? kGather : caller == 0x004C379D ? kAutoGather : kTrickle;
+  if (!g_log) {
+    Count(Field<std::int32_t>(player, 0), resource, amount, source);
+    return;
+  }
+  LARGE_INTEGER start;
+  LARGE_INTEGER end;
+  QueryPerformanceCounter(&start);
+  Count(Field<std::int32_t>(player, 0), resource, amount, source);
+  QueryPerformanceCounter(&end);
+  ++g_counted;
+  g_countTicks += end.QuadPart - start.QuadPart;
 }
 
 namespace {

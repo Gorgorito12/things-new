@@ -6,6 +6,7 @@ option casemap :none
 
 include common.inc
 
+EXTERN g_uhcIncomeAdds:DWORD
 UhcIncomeCount PROTO STDCALL player:DWORD, resource:DWORD, amount:DWORD, caller:DWORD
 
 .data
@@ -18,6 +19,7 @@ addNext       dd 0049A990h    ; push ebp: the add goes on
 ; [esp+8] the amount. Only the three income callers are counted: the global trickle (returns to 0x4E0CFE),
 ; unit AutoGather (0x4C379D) and the gather tick (0x4ED1F3). EAX is free: the stolen mov writes it.
 UhcIncomeAddHook PROC
+    inc g_uhcIncomeAdds                 ; for `log`'s cost line (the flags are not read before the next cmp)
     mov eax, dword ptr [esp]
     cmp eax, 004ED1F3h
     je count
