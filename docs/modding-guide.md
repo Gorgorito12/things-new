@@ -31,9 +31,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Tuesday 2026-11-24 09:53 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
-| Tuesday 2026-11-24 09:08 | [`techGadgets`](#techgadgets) | Filmed in WoL, with a control. Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | Two named children per panel variant in `uimainnew.xml` (the oil panel pack), and one line per variant. |
-| Tuesday 2026-11-24 09:08 | [`incomeRates`](#incomerates) | Filmed in WoL, with a control. A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | The text in the panel's layout (the oil panel pack has it under each amount and in the tooltips). |
+| Tuesday 2026-11-24 09:53 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24). |
+| Tuesday 2026-11-24 09:08 | [`techGadgets`](#techgadgets) | Filmed in WoL, with a control. Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. |
+| Tuesday 2026-11-24 09:08 | [`incomeRates`](#incomerates) | Filmed in WoL, with a control. A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). |
 | Monday 2026-11-23 13:56 | [`faithResource`](#faithresource) | Added. Optional: resource 4 becomes faith, gathered by villagers praying at their church or mosque, cut from the home city's skill points; a faith Gather plays its own animation. | The opt-in pack `wol-fixes/faith/` (and `wol-fixes/faith-panel/` for the panel row). |
 | Monday 2026-11-23 09:18 | [`dmgPartBoneFix`](bug-fixes.md#dmgpartbonefix) | Added. Stops the game from reloading a 3D model in use when a damage template names a bone the model lacks, the other cause of the Granny crashes (WoL #78). | Nothing; `wol-fixes/art-dmg-bones-20261123/` fixes the data itself. |
 | Monday 2026-11-23 08:05 | [`modelCacheLimit`](bug-fixes.md#modelcachelimit) | Added. Stops the game from unloading 3D models that units still use, the cause of the Granny crashes in big games (WoL #78). | The two data fixes in `wol-fixes/art-dmg-bones-20261123/`. |
@@ -85,7 +85,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-11-12 15:52 | [`stealthTargeting`](bug-fixes.md#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
-| Thursday 2026-11-12 11:40 | [`menuOptions`](bug-fixes.md#menuoptions) | Added. Lets the player switch `bufferedFileReads` and `fastVertexFill` on or off in the options menu, from the next start. | A field per key in `data\options.xml`. |
+| Thursday 2026-11-12 11:40 | [`menuOptions`](bug-fixes.md#menuoptions) | Added. Lets the player switch `bufferedFileReads`, `fastVertexFill` and `fastLastInLine` on or off in the options menu, from the next start. | A field per key in `data\options.xml`. |
 | Thursday 2026-11-12 08:17 | [`fastLastInLine`](bug-fixes.md#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
 | Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
 | Wednesday 2026-11-11 15:49 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
@@ -212,13 +212,13 @@ before porting it:
    ([reading the log](#4-reading-uhclog)):
    - the first lines are `UHC.dll x.y.z` and `UHCMain: working directory <the copy>`;
    - every key you added says `applied`;
-   - seven of WoL's own keys say `not implemented yet`
+   - six of WoL's own keys say `not implemented yet`
      ([section 8](#8-wols-keys-that-are-not-implemented)). That is expected.
 
 To go back, delete `UHC.dll` and rename `uhc.dll.wol-orig`.
 
-**What this way does not cover yet.** Besides the seven keys, WoL's DLL has work this one has not
-rebuilt: the `Data` tech subtypes `ROF`, `GathererLimit`, `MinimumRange` and `Bounty`, a group of
+**What this way does not cover yet.** Besides the six keys, WoL's DLL has work this one has not
+rebuilt: the `Data` tech subtypes `ROF`, `GathererLimit` and `MinimumRange`, a group of
 smaller fixes, multiplayer save and restore, and the ESOC lobby. Do not ship WoL on this DLL. The
 list is in [wol-migration.md](wol-migration.md#wols-always-on-patches-inventory-2026-11-03).
 
@@ -315,7 +315,8 @@ of WoL's own file as it is.
   `more` and `cards` are arguments.
 - **One line per key:** a key that takes values reads only its first line. Write
   `hcShipmentPointFallback` once, with all its names. The exceptions: `dodgeSoundSet`,
-  `criticalSoundSet`, `danceBonusCivs` and `perfAutoExec` read every line, and
+  `criticalSoundSet`, `dodgeChance`, `danceBonusCivs`, `cratePriority`, `techGadgets`, `menuOptions`,
+  `perfAutoExec` and `preloadDll` (in `engine-ext.cfg`) read every line, and
   `broadsideMuzzleLimit` and `noTrainNearEnemyTC` refuse a second line.
 - **Unknown keys:** a key this DLL does not handle, whether one of WoL's or a misspelling, is logged in
   lowercase as `<key>: not implemented yet; ignored`.
@@ -374,9 +375,10 @@ each feature's section starts with one line on what it does, then the day, date 
 - [Interface](#interface): What the panels and the fog of war show.
 
 The keys that fix a bug of the game or of WoL's data, and the performance keys, are in their own
-document: [Bug fixes and performance](bug-fixes.md).
+document: [Bug fixes and performance](bug-fixes.md). The benchmark keys `perfStats`, `perfAutoExec`, `perfExecFile` and
+`perfFileLog` are for measuring, not for players: they are in [performance.md](performance.md#benchmark-harness).
 
-No feature has been tested in multiplayer yet.
+Every feature was tested in single player only; none was tested in multiplayer.
 
 ### Game files and startup
 
@@ -389,7 +391,7 @@ Where the game reads its data, how it reads it, and how it starts.
 | [`dataLint`](#datalint) | While the data loads, lists what it asks for and the game drops. | **new** | Nothing. | confirmed |
 | [`multipleInstances`](#multipleinstances) | Lets this copy of the game run while a copy from another folder is running. With `background`, its window stays behind every other window and never takes the focus. | for tests | Nothing. | confirmed (two copies, single player) |
 | [`preloadDll`](#preloaddll) | Our `dinput8.dll` also loads another DLL of the game folder, such as WoL's `WoL.dll`, at the moment WoL's own `dinput8.dll` loader would. | `dinput8.dll` build only | Nothing. | confirmed (`WoL.dll` v1.33, single player) |
-| [`lanAutoStart`](#lanautostart) | Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | **new** | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. | confirmed (host, and Connect with no host; no join between two machines yet) |
+| [`lanAutoStart`](#lanautostart) | Takes the game from the main menu to a LAN game with no clicks: it hosts, or joins an address by Direct IP, as a launcher asks on the command line. | **new** | Nothing; a launcher that passes `+uhcLanHost` or `uhcLanJoin="<address>"`. | confirmed (host, and Connect with no host; a join between two machines not tested) |
 
 #### ignoreRegistryPath
 
@@ -1130,10 +1132,10 @@ enableAllTeams
 ```
 
 - **Effect:** the single-player game setup offers Team 3 and Team 4 besides Team 1, Team 2 and
-  "?". The multiplayer lobby is not changed yet.
+  "?". The multiplayer lobby is not changed.
 - **WoL needs:** nothing: string IDs 36143 and 36144, `Team 3` and `Team 4`, are in WoL's string table.
 - **Log:** `enableAllTeams: Team 3 and Team 4 in the single-player setup (multiplayer lobby not
-  changed yet)`; `hook reached: enableAllTeams setup list (0x7A0709)`.
+  changed (single player only))`; `hook reached: enableAllTeams setup list (0x7A0709)`.
 - **Simulation:** it only adds choices; the teams chosen are part of the game setup as usual.
 - **Status:** partly confirmed (2026-11-02, single player): the list shows Team 1–4 and "?", and
   a skirmish with Team 3 against Team 4 started and played; how the game numbers the teams inside was not
@@ -8418,7 +8420,7 @@ What the panels and the fog of war show.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`abilitySlots`](#abilityslots) | Lets the command panel show up to N abilities per unit instead of 6. | **new** | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. | confirmed (single player, UI) |
-| [`displayedRange`](#displayedrange) | A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | **new** | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. | confirmed (single player) |
+| [`displayedRange`](#displayedrange) | A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`. | **new** | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24). | confirmed (single player) |
 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | **new** | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. | confirmed (single player, UI) |
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
@@ -8428,8 +8430,8 @@ What the panels and the fog of war show.
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
 | [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. | confirmed (single player) |
 | [`editorSearch`](#editorsearch) | The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | **new** | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. | confirmed (editor, UI) |
-| [`techGadgets`](#techgadgets) | Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | **new** | Two named children per panel variant in `uimainnew.xml` (the oil panel pack), and one line per variant. | confirmed (single player, UI) |
-| [`incomeRates`](#incomerates) | A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | **new** | The text in the panel's layout (the oil panel pack has it under each amount and in the tooltips). | confirmed (single player, UI) |
+| [`techGadgets`](#techgadgets) | Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | **new** | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. | confirmed (single player, UI) |
+| [`incomeRates`](#incomerates) | A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | **new** | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). | confirmed (single player, UI) |
 
 #### nativePreview
 
@@ -8493,9 +8495,14 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 #### displayedRange
 
-*A selected unit shows its range on the ground while Alt is held: one ring per ranged attack.*
+*A selected unit shows its range on the ground while Alt is held: a ring at the reach of its ranged attacks.*
 
 **Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Tuesday 2026-11-24 09:53
+
+**Changed on 2026-11-24:** the rings are at the real reach (from a building's walls, plus the target's radius:
+"Where the ring is", below); the ring files had shown 0.615 of their radius and are now at true scale; an
+attack on structures only (a torch) has no ring when the unit also attacks units; ring sizes every metre from 4 to
+50 m. Copy `tools/rings` again to `art/effects/uhc_rings`.
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
@@ -8607,7 +8614,7 @@ displayedRange [log] [noPlacement]
   - **The colour is the owner's**: yours, an ally's or an enemy's.
   - **The fill is where that attack hits you**: a soft disc in the owner's colour inside each ring, clear next to the
     unit and stronger toward the ring, like DE's range indicator. Where several attacks reach, their fills add up, so the
-    zone that several attacks cover reads stronger (a Skirmisher's 6 m inside its 20 m).
+    zone that several attacks cover reads stronger.
   - **A dashed ring with no fill is an attack that cannot hit your army**: one that reaches only ships (the Outpost's
     and the Fort's anti-ship attack), or only buildings and ships.
   - This is read from the attack's `<Rate>` list: "only ships" when every type on it is `Ship`, or a type whose every
@@ -8654,7 +8661,7 @@ displayedRange [log] [noPlacement]
   is a flat annulus mesh, `range_<N>.gr2`, in the colour of the unit's owner (yours on a placement ghost). The cut-out comes from the geometry, so the texture's alpha is free to mark player colour as on a unit
   (`range_line.ddt`, alpha 1, the units' shader `bumpspec_mask_pixelxform`); the engine does the tinting, so one mesh per
   radius serves every player and the line needs nothing from the key (the fill does: below). A particle has no player colour of its own, which is why the rings
-  are no longer particles. The line is 0.31 m wide (more past 62 m), 0.15 m over the unit's feet; it does not follow the
+  are no longer particles. The line is 0.31 m wide, or 0.005 m per metre of radius where that is more (past 62 m), 0.15 m over the unit's feet; it does not follow the
   ground, so on a hill a large ring can dip into it.
 - **From 2026-11-22 to 2026-11-24 the mesh rings showed 0.615 of their radius**, a bug of the ring files, not of the
   key: `make_rings.py` wrote the vertices in the stock files' basis (0.615 units a metre), and the game reads a model's
@@ -8675,7 +8682,8 @@ displayedRange [log] [noPlacement]
   - The dashed ring is `range_<N>_ships.xml`/`.gr2`: 48 dashes, the same line.
   - `make_rings.py --no-range-fills` and `--no-ship-rings` leave those files out. With no fill files in the game, the
     rings show without fills.
-- **Which rings:** one per ranged attack (`<RangedLogic>1</RangedLogic>`) of the unit's current tactic, from that attack's
+- **Which rings:** one per ranged attack (`<RangedLogic>1</RangedLogic>`) of the unit's current tactic, at most 4 a
+  unit, largest first, but for an attack on structures only beside an attack on units (above), from that attack's
   `MaxRange` as the player has it now: a tech that adds range moves the ring at once (`Revetment` makes the Fort's
   cannon 32, so its ring goes to 39 m). A Fort shows its anti-ship attack and its cannon, an Outpost the same, a
   Crossbowman its crossbow (not its torch, above). Two attacks on the same ring size share one ring. A cannon limbered to
@@ -9815,7 +9823,7 @@ editorSearch [log]
 ![techGadgets in WoL](media/techGadgets-wol.gif)
 
 *In WoL, French, the minimized interface, with `techGadgets` for the 12 panel variants and a test layout (each variant
-split into `-preGW` without the oil gadgets and `-postGW`, today's panel; not the oil panel pack's art):* the oil row has
+split into `-preGW` without the oil gadgets and `-postGW`, today's panel; not the oil panel pack's art, below):* the oil row has
 no amount before the Great War; a trigger sets `GreatWarButton` at 40 s, `GreatWarizeALL` becomes active and the
 panel with the oil amount shows at once (the log lines at the top). [Full video (MP4)](media/techGadgets-wol.mp4).
 
@@ -9823,6 +9831,18 @@ panel with the oil amount shows at once (the log lines at the top). [Full video 
 
 *Key off, the same layout and trigger:* the layout's default, today's panel with oil, shows before and after the
 Great War. [Full video (MP4)](media/techGadgets-wol-control.mp4).
+
+![The oil panel pack in WoL](media/oilPanel-wol.gif)
+
+*In WoL, Ethiopians (an Asian panel in WoL), with `techGadgets`, `incomeRates` and the oil panel pack
+(`wol-fixes/oil-panel/`, below) applied with `--rates`:* before the Great War the panel has no oil row and the income
+shows in green under each amount; when a trigger activates `GreatWarizeALL`, the oil row comes back at the top and
+the other rows move down. Full video: `wol-fixes/oil-panel/media/oil-panel-gw.mp4`.
+
+![The oil panel pack in WoL, key off](media/oilPanel-wol-control.gif)
+
+*Key off, the same pack and trigger:* the layout's default, the panel with the oil row, all along. Full video:
+`wol-fixes/oil-panel/media/oil-panel-gw-control.mp4`.
 
 ```
 techGadgets <Tech> <GadgetAfter> [<GadgetBefore>]
@@ -9844,11 +9864,25 @@ techGadgets GreatWarizeALL SettlerCountDialog-defaultPanelEurMin-postGW SettlerC
   engine's age, so the tech is the signal.
 - **What it needs:** gadgets with those names, unique in the whole interface (the key finds them in any panel, as the
   console's `gadgetReal` does). The layout keeps `GadgetAfter` shown and `GadgetBefore` hidden (`hidden=""`), so with
-  the key off the interface is as before. For the oil row, the oil panel pack makes each variant a holder with two
-  children, `-postGW` (today's panel, first) and `-preGW` (the panel without the oil row).
+  the key off the interface is as before. For the oil row, the oil panel pack (below) makes each variant a holder
+  with two children, `-postGW` (today's panel, first) and `-preGW` (the panel without the oil row).
 - **When:** the tech is read every 100 ms of game time; the gadgets are set every frame, also while the game is
   paused, so a panel switched between the full and minimized interface, or an interface rebuilt, is right at once.
   Before a game's first check (its first moment, or a save loading) the layout's defaults show.
+- **The oil panel pack,** `wol-fixes/oil-panel/`: it changes the `SettlerCountDialog` block of `data\uimainnew.xml`
+  (all 12 variants) and adds the `*_pregw.ddt` backgrounds; its `README.txt` has the 12 cfg lines. Nothing changes
+  until it is applied:
+
+  ```
+  python apply_fix.py "<WoL folder>"              apply (backup in <WoL folder>\oil-panel-backup\)
+  python apply_fix.py "<WoL folder>" --faith      the same with the faith row (wol-fixes\faith-panel must sit beside it)
+  python apply_fix.py "<WoL folder>" --rates      with either mode: the income under each amount and in the
+                                                   tooltips (needs incomeRates)
+  python apply_fix.py "<WoL folder>" --check      what is applied (give the same mode)
+  python apply_fix.py "<WoL folder>" --restore    the backed-up files back; the added files deleted
+  ```
+
+  To switch modes, `--restore` first; if `wol-fixes\faith-panel` is applied, restore it first.
 - **Simulation:** none. Display only: players may set it differently.
 - **Log:** `techGadgets: N rule(s)`, `techGadgets: first tech check (player 1)`; with `log`, each gadget found, each
   change (`player 1, GreatWarizeALL active: …-postGW shown, hidden: …-preGW`), a name not found yet, and a gadget
@@ -9878,8 +9912,8 @@ Tests (2026-11-24, copy of WoL, single player, a test layout in all 12 variants)
 
 ![incomeRates in WoL](media/incomeRates-wol.gif)
 
-*In WoL, French, with `incomeRates` and a test layout (`+{uhcIncome(...)}` beside each amount, green; not the oil
-panel pack's):* a Factory selected makes gold: the panel shows +4.4 to +4.6 per second while the stock rises from
+*In WoL, French, with `incomeRates` and a test layout (`+{uhcIncome(...)}` beside each amount, green; not the [oil
+panel pack](#techgadgets)'s):* a Factory selected makes gold: the panel shows +4.4 to +4.6 per second while the stock rises from
 257 to 412 in 34 s of game time (4.5 per second). [Full video (MP4)](media/incomeRates-wol.mp4).
 
 ![incomeRates in WoL, key off](media/incomeRates-wol-control.gif)
@@ -9889,22 +9923,22 @@ the same.
 [Full video (MP4)](media/incomeRates-wol-control.mp4).
 
 ```
-incomeRates [<seconds>] [perMinute] [log]
+incomeRates [<seconds>] [perSecond | perMinute] [log]
 ```
 
 - **Effect:** a text for any `formatText` gadget, `{uhcIncome(<resource>)}`, with a resource name as
   `{resource(...)}` takes it (`food`, `wood`, `gold`, `fame` for WoL's oil, `skillpoints` for faith, `xp`). It is what
   the player's villagers gathered, its AutoGather units (factories, banks, trading posts, ...) produced and its trickles
-  gave, over the last 20 s of game time (`<seconds>`: 1 to 60), per second with one decimal (`2.4`), or per minute,
-  whole, with `perMinute`. The number has no sign: the layout writes `+{uhcIncome(food)}`, or a tooltip line
+  gave, over the last 20 s of game time (`<seconds>`: 1 to 60), per second with one decimal (`2.4`, the default,
+  or `perSecond`), or per minute, whole, with `perMinute`. The number has no sign: the layout writes `+{uhcIncome(food)}`, or a tooltip line
   "Income: +{uhcIncome(food)} per second".
 - **Counted:** gathering, AutoGather, the trickles, and what this DLL's own keys pay (`unitResourceAuras`, the kill
   bounties, `pillageGold`). **Not counted:** costs, upkeep (a negative trickle), tributes, the market, shipments,
   treasures, triggers: it is income, not the change of the stockpile.
 - **Whose:** the player the interface shows, as `{resource()}`; with shared resources `{resource()}` shows the team's
   stock, and the rate is the team's.
-- **What it needs:** the text in the panel's layout: the oil panel pack has it under each amount and in each
-  resource's tooltip.
+- **What it needs:** the text in the panel's layout: the [oil panel pack](#techgadgets), `wol-fixes/oil-panel/`
+  applied with `--rates`, has it under each amount and in each resource's tooltip.
 - **After a load:** the rates are not saved; they fill again over the window.
 - **Simulation:** none. Display only.
 - **Log:** `incomeRates: {uhcIncome(<resource>)} = income per second over the last 20 s`; with `log`, every 60 s of
@@ -10671,7 +10705,9 @@ the code. Saved games were tested only where a section says so.
   `selectionLimit`, `customHotkeyContexts`, `twoScoutCivs`, `bigButtonCivs`, `noBigButtonBlds`,
   `customRevolutionBanners`, `overhealHitpointBars`, `showGatherRate`, `abilitySlots`,
   `wonderPanelSkipAuras`, `explorerUnits`, `nativePreview`, `displayedRange`, `steadyHitpointBars`, `politicianPlacesFix`, `xsErrorLog`, `dataLint`,
-  `dodgeSoundSet` and `criticalSoundSet`.
+  `dodgeSoundSet`, `criticalSoundSet`, `broadsideSoundSet`, `quickArrivalCards`, `inventoryBars`, `attackTypeIcons`,
+  `minUIStats`, `editorSearch`, `techGadgets`, `incomeRates`, and from the bug fixes `multiplierDecimals`,
+  `modelCacheLimit`, `dmgPartBoneFix` and `fastLastInLine`.
 - **Everything else changes the game state,** or a list every machine must agree on. A difference
   between players can desynchronize the game. Each section has a **Simulation** line.
 - **A key that adds a unit type** changes the unit type count: `healNonIdle`, `dodgeAnyUnit`, `spreadAnyAccuracy`,
@@ -10699,6 +10735,8 @@ the code. Saved games were tested only where a section says so.
 | `annexFacing` | The angle is saved with the building; the link is not: an annex's parent is found again by the facing rule. |
 | `nextResearchFree` | A spent turn comes back. |
 | `randomCost` | Goes on: the seed and the purchase counts are kept on a unit; the next prices are those the game would have had (tested: two loads in new processes). |
+| `incomeRates` | The rates are not saved: they start again and fill over the window (tested: 0.0 while the loaded game is paused). |
+| `techGadgets` | The layout's defaults show until the first tech check, then the gadgets follow the tech (tested: saved after the Great War, loaded: the panel with oil, also while paused). |
 
 ## 8. WoL's keys that are not implemented
 
@@ -10707,7 +10745,6 @@ implemented yet; ignored`, and nothing changes:
 
 | Key | What it does in WoL |
 |---|---|
-| `attackTypeIcons` | The icons of the attack types. |
 | `enablerandomtecheffect` | The `RandomTech` tech effect. Nothing in WoL's data uses it today. |
 | `flagoverrideeffect` | WoL's flags. |
 | `optionhighpolycliff` | Higher-detail cliffs. |

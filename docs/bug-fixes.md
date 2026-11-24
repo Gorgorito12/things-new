@@ -1482,7 +1482,8 @@ politicianPlacesFix [log]
 ## Performance
 
 Fewer stutters, faster loading and more frames per second. A player can switch some of them on or off
-in the options menu ([`menuOptions`](#menuoptions)).
+in the options menu ([`menuOptions`](#menuoptions)). The benchmark keys `perfStats`, `perfAutoExec`, `perfExecFile`
+and `perfFileLog` are for measuring, not for players: they are in [performance.md](performance.md#benchmark-harness).
 
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
@@ -1490,7 +1491,7 @@ in the options menu ([`menuOptions`](#menuoptions)).
 | [`fastVertexFill`](#fastvertexfill) | Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | **new** | Nothing. | confirmed (single player) |
 | [`fastLastInLine`](#fastlastinline) | Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | **new** | Nothing. | confirmed (single player) |
 | [`rendererOption`](#rendereroption) | Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | **new** | The field in `data\options.xml` and the `dxvk` folder. | confirmed (single player) |
-| [`menuOptions`](#menuoptions) | Lets the player switch `bufferedFileReads` and `fastVertexFill` on or off in the options menu, from the next start. | **new** | A field per key in `data\options.xml`. | confirmed (single player) |
+| [`menuOptions`](#menuoptions) | Lets the player switch `bufferedFileReads`, `fastVertexFill` and `fastLastInLine` on or off in the options menu, from the next start. | **new** | A field per key in `data\options.xml`. | confirmed (single player) |
 
 #### bufferedFileReads
 
@@ -1829,8 +1830,8 @@ switch itself is the same dropdown as the Renderer's, filmed in [`rendererOption
 menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill, fastLastInLine
 ```
 
-- **In WoL today:** `bufferedFileReads` and `fastVertexFill` are on or off for every player as `wol.cfg` says; a
-  player who wants the other setting has to edit the cfg.
+- **In WoL today:** `bufferedFileReads`, `fastVertexFill` and `fastLastInLine` are on or off for every player as
+  `wol.cfg` says; a player who wants the other setting has to edit the cfg.
 - **Effect:** each key named on the line gets an Off / On entry in the options menu (Options → Graphics, next to
   [`rendererOption`](#rendereroption)'s Renderer). The choice is used from the next start and kept in
   `uhc-options.cfg` next to `UHC.log`, as the renderer's; the profile is not touched.
@@ -1892,9 +1893,9 @@ menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill
     `bufferedFileReads off` in `uhc-options.cfg`;
   - a name that cannot follow the menu: `menuOptions: <name> cannot follow the options menu (these can: …); ignored`,
     and `menuOptions: FAILED`; the other names still work.
-- **Simulation:** no. Both keys change how the game reads its files or feeds the video card, not what it computes, so
-  players may choose differently. Only such keys can be named; `fastLastInLine` (the same bits as stock) could be added
-  the same way, as one line of the DLL.
+- **Simulation:** no. `bufferedFileReads` and `fastVertexFill` change how the game reads its files or feeds the video
+  card, and `fastLastInLine` computes the same bits as stock faster, not what the game computes, so players may choose
+  differently. Only such keys can be named (one line each in the DLL's list).
 - **Status:** confirmed in single player (2026-11-12), in WoL with this DLL, beside `rendererOption`, over seven
   starts:
   - the three entries show in Graphics Options with the start values (Renderer DirectX 9, buffered reads On from its
