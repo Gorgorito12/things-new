@@ -27,6 +27,12 @@ What it does to each variant:
 
 --no-faith writes layout\\settlercount-nofaith.xml: the same fixes (the Asian and Native minimized panels, the
 renamed oil gadgets, the numbers centred in their rows) on WoL's own rows and backgrounds, without the faith row.
+
+--oil-gw <rows.json> --out <file> (request #103, wol-fixes\\oil-panel): every variant becomes a holder (its name, place
+and visibility, no background) of two full panels: <variant>-postGW, the panel above (shown), and <variant>-preGW
+(hidden), built on rows.json's rows (the backgrounds without the oil row, written by panel_rows.py as *_pregw.ddt)
+without the gadgets that show oil; a gadget of the oil row that does not show oil goes to the next row. The DLL key
+techGadgets swaps them by the tech GreatWarizeALL. With --no-faith, rows.json must have no faith row; without it, one.
 """
 import hashlib
 import json
@@ -108,7 +114,10 @@ class Frame:
                 return name
         return self.rows[-1][0]
 
+    alias = {}            # a row this frame drops -> the row that takes its gadgets (--oil-gw: oil -> the next row)
+
     def span(self, name):
+        name = self.alias.get(name, name)
         for n, a, b in self.rows:
             if n == name:
                 return a, b
@@ -164,6 +173,11 @@ def frames(spec_rows, positions, variant_tag, panel):
     top_name = "top"
     old = Frame(tc, size, [list(r) for r in old_rows], top_name)
     new = Frame(tc, size, new_rows, top_name)
+    # a row of the old panel that the new one drops (the oil row before the Great War): its gadgets that stay
+    # (none that show oil: drop_oil removes those) go to the next row that is kept
+    kept = [n for n in names if n in pos["order"]]
+    new.alias = {n: next((k for k in names[i + 1:] if k in kept), kept[-1])
+                 for i, n in enumerate(names) if n not in pos["order"]}
     hdr = pos.get("header_top")
     if hdr is not None:                       # the header shrinks: its own linear map
         old.rows[0] = (top_name, hdr, old_rows[0][1])
@@ -193,8 +207,27 @@ COUNT_TEMPLATE = ('<gadget name="SettlerCountDialog-faith" type="formatText" tra
                   'background="">{{numGatherers(%s)}}</gadget>' % FAITH_RES)
 
 
-def build_variant(text, s, e, old, new, culture, name):
-    """The variant's element text with every gadget moved and the faith row added."""
+def drop_oil(v):
+    """The variant's text without the gadgets that show oil (resource fame): every child whose element mentions
+    fame (its value, its gatherer count, its tooltip, its click), with the blank line before it."""
+    els = elements(v, 0, len(v))
+    rootd = els[0][3]
+    cut = [(os_, ce) for (os_, oe, ce, d) in els if d == rootd + 1 and "fame" in v[os_:ce]]
+    for os_, ce in reversed(cut):
+        ls = v.rfind("\n", 0, os_) + 1
+        end = ce
+        if v[ls:os_].strip():               # not alone on its line: the element only
+            ls = os_
+        else:                               # its whole line, and one blank line after it
+            m = re.match(r"[ \t]*\r?\n(?:[ \t]*\r?\n)?", v[ce:])
+            end = ce + (m.end() if m else 0)
+        v = v[:ls] + v[end:]
+    return v
+
+
+def build_variant(text, s, e, old, new, culture, name, pre=False):
+    """The variant's element text with every gadget moved and the faith row added. pre: the panel before the
+    Great War (--oil-gw): the gadgets that show oil are left out."""
     els = elements(text, s, e)
     root = els[0]
     pieces, last = [], s
@@ -210,6 +243,8 @@ def build_variant(text, s, e, old, new, culture, name):
     out = re.sub(r'name="minimapPanel-trade"([^>]*>\{resource\(fame\)\})', r'name="minimapPanel-fame"\1', out)
     out = re.sub(r'name="minimapPanel-trade"([^>]*mouseovertext="[^"]*fame[^"]*"[^>]*>\{resource\(fame\)\})',
                  r'name="minimapPanel-fame"\1', out)
+    if pre:
+        out = drop_oil(out)
     if NO_FAITH:
         return out
     # the food row's elements (top level children), in the moved text
@@ -279,35 +314,14 @@ OIL_ASIMIN = ('<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z=
               'textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{{resource(fame)}}</gadget>{nl}{nl}{i}')
 
 
-def main():
-    if len(sys.argv) < 2:
-        sys.exit(__doc__)
-    wol = pathlib.Path(sys.argv[1])
-    default = "settlercount-nofaith.xml" if NO_FAITH else "settlercount.xml"
-    out_path = pathlib.Path(sys.argv[sys.argv.index("--out") + 1]) if "--out" in sys.argv else HERE / "layout" / default
-    text = (wol / "data" / "uimainnew.xml").read_bytes().decode("utf-8")
-    start = text.index('<gadget name="SettlerCountDialog" ')
-    stop = text.index('<gadget name="timeDisplay"')
-    end = text.rindex("</gadget>", start, stop) + len("</gadget>")
-    block = text[start:end]
-    sha = hashlib.sha256(block.encode("utf-8")).hexdigest()
-    if "--print-sha" in sys.argv:
-        print(sha)
-        return
-    if sha != BLOCK_SHA and "--force" not in sys.argv:
-        sys.exit(f"the panel block of {wol / 'data' / 'uimainnew.xml'} is not WoL 1.0.15c's (sha {sha})")
-    spec = json.loads((HERE / "art" / "panel-spec.json").read_text(encoding="utf-8"))
-    spec_rows = {p["id"]: [tuple(r) for r in p["rows"]] for t in spec["textures"] for p in t["panels"]}
-    positions = json.loads((HERE / "art" / "rows.json").read_text(encoding="utf-8"))
-    if NO_FAITH:                # WoL's own rows: the backgrounds stay as they are
-        positions = {p["id"]: {"texture": t["file"], "row_tops": [r[1] for r in p["rows"]] + [p["bottom"]],
-                               "order": [r[0] for r in p["rows"]], "header_top": None, "x": p["x"]}
-                     for t in spec["textures"] for p in t["panels"]}
+def build(block, spec_rows, positions, pre=False):
+    """The panel block's pieces (text between the variants, and each variant built on positions' rows) and
+    {variant name: index in pieces}. pre: the panel before the Great War (no oil row, no oil gadgets)."""
     nl = "\r\n" if "\r\n" in block else "\n"
     # top-level variants
     els = elements(block, 0, len(block))
     tops = [x for x in els if x[3] == 0]
-    out, last = [], 0
+    out, last, where = [], 0, {}
     for (os_, oe, ce, d) in tops:
         tag = block[os_:oe]
         name = (attr(tag, "name") or "").replace("SettlerCountDialog-", "")
@@ -316,19 +330,21 @@ def main():
         if name not in VARIANTS:
             out.append(block[os_:ce])
             continue
+        where[name] = len(out)
         panel, culture = VARIANTS[name]
         if name == "defaultPanelNatMin":
             out.append(None)               # filled after NatMax is built
             continue
         old, new = frames(spec_rows, positions, tag, panel)
-        v = build_variant(block, os_, ce, old, new, culture, name)
+        v = build_variant(block, os_, ce, old, new, culture, name, pre)
         if name == "defaultPanelAsiMin":
             v = header_pop(v, new, "SettlerCountDialog-totalPopLeft", 271, 344)
-            a, b = new.span("oil")
-            y0, y1 = round(new.ly(a + 8)), round(new.ly(b))
-            at = v.index('<gadget name="SettlerCountDialog-tradeLabel"')
-            ls = v.rfind("\n", 0, at) + 1
-            v = v[:at] + OIL_ASIMIN.format(y0=y0, y1=y1, nl=nl, i=v[ls:at]) + v[at:]
+            if not pre:                    # the oil row's gadgets (WoL's panel has none)
+                a, b = new.span("oil")
+                y0, y1 = round(new.ly(a + 8)), round(new.ly(b))
+                at = v.index('<gadget name="SettlerCountDialog-tradeLabel"')
+                ls = v.rfind("\n", 0, at) + 1
+                v = v[:at] + OIL_ASIMIN.format(y0=y0, y1=y1, nl=nl, i=v[ls:at]) + v[at:]
         if name == "defaultPanelEurMin" and not NO_FAITH:      # its header shrinks only with the faith row
             v = header_pop(v, new, "minimapPanel-dptotalPopLeft", 274, 347)
         if name == "defaultPanelNatMax":
@@ -363,6 +379,71 @@ def main():
     natmin = head + "".join(pieces)
     natmin = header_pop(natmin, nmin, "SettlerCountDialog-totalPopLeft", 271, 344)
     out[i] = natmin
+    return out, where
+
+
+def drop_attr(tag, name):
+    return re.sub(r'\s+%s\s*=\s*"[^"]*"' % name, "", tag, flags=re.I)
+
+
+def two_panels(post, pre, name, pre_texture):
+    """A variant as a holder (its name, place and visibility, no background) with two full panels in it:
+    <variant>-postGW (today's, shown) and <variant>-preGW (no oil row, hidden, on pre_texture)."""
+    nl = "\r\n" if "\r\n" in post else "\n"
+    mpost, mpre = TAG.match(post), TAG.match(pre)
+    root = post[:mpost.end()]
+    holder = drop_attr(drop_attr(root, "background"), "texturecoords")
+    full = "SettlerCountDialog-" + name
+    post_tag = drop_attr(set_attr(root, "name", full + "-postGW"), "hidden")
+    pre_tag = drop_attr(set_attr(pre[:mpre.end()], "name", full + "-preGW"), "hidden")
+    bg = attr(pre_tag, "background").strip()
+    new_bg = "ui\\ingame\\" + pathlib.PurePosixPath(pre_texture).stem
+    if pathlib.PureWindowsPath(bg).name.lower() != new_bg.lower().replace("_pregw", "").split("\\")[-1]:
+        raise SystemExit(f"{name}: background {bg} is not the texture of its rows ({pre_texture})")
+    pre_tag = re.sub(r'(background\s*=\s*)"[^"]*"', lambda m: f'{m.group(1)}"{new_bg}"', pre_tag, count=1)
+    pre_tag = pre_tag[:-1] + ' hidden="">'
+    indent = "\t"
+    shift = lambda s: s.replace(nl, nl + indent)  # noqa: E731
+    return (holder + nl + indent + "\t" + post_tag + shift(post[mpost.end():]) + nl
+            + indent + "\t" + pre_tag + shift(pre[mpre.end():]) + nl + indent + "</gadget>")
+
+
+def main():
+    if len(sys.argv) < 2:
+        sys.exit(__doc__)
+    wol = pathlib.Path(sys.argv[1])
+    pregw = pathlib.Path(sys.argv[sys.argv.index("--oil-gw") + 1]) if "--oil-gw" in sys.argv else None
+    default = "settlercount-nofaith.xml" if NO_FAITH else "settlercount.xml"
+    if pregw and "--out" not in sys.argv:
+        sys.exit("--oil-gw needs --out")
+    out_path = pathlib.Path(sys.argv[sys.argv.index("--out") + 1]) if "--out" in sys.argv else HERE / "layout" / default
+    text = (wol / "data" / "uimainnew.xml").read_bytes().decode("utf-8")
+    start = text.index('<gadget name="SettlerCountDialog" ')
+    stop = text.index('<gadget name="timeDisplay"')
+    end = text.rindex("</gadget>", start, stop) + len("</gadget>")
+    block = text[start:end]
+    sha = hashlib.sha256(block.encode("utf-8")).hexdigest()
+    if "--print-sha" in sys.argv:
+        print(sha)
+        return
+    if sha != BLOCK_SHA and "--force" not in sys.argv:
+        sys.exit(f"the panel block of {wol / 'data' / 'uimainnew.xml'} is not WoL 1.0.15c's (sha {sha})")
+    spec = json.loads((HERE / "art" / "panel-spec.json").read_text(encoding="utf-8"))
+    spec_rows = {p["id"]: [tuple(r) for r in p["rows"]] for t in spec["textures"] for p in t["panels"]}
+    positions = json.loads((HERE / "art" / "rows.json").read_text(encoding="utf-8"))
+    if NO_FAITH:                # WoL's own rows: the backgrounds stay as they are
+        positions = {p["id"]: {"texture": t["file"], "row_tops": [r[1] for r in p["rows"]] + [p["bottom"]],
+                               "order": [r[0] for r in p["rows"]], "header_top": None, "x": p["x"]}
+                     for t in spec["textures"] for p in t["panels"]}
+    out, where = build(block, spec_rows, positions)
+    if pregw:
+        pre_positions = json.loads(pregw.read_text(encoding="utf-8"))
+        for panel, pos in pre_positions.items():
+            if "oil" in pos["order"] or ("faith" in pos["order"]) == NO_FAITH:
+                sys.exit(f"{pregw}: {panel} is not a panel without oil for this mode ({pos['order']})")
+        pre, _ = build(block, spec_rows, pre_positions, pre=True)
+        for name, i in where.items():
+            out[i] = two_panels(out[i], pre[i], name, pre_positions[VARIANTS[name][0]]["texture"])
     new_block = "".join(out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_bytes(new_block.encode("utf-8"))
