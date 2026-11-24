@@ -31,11 +31,11 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Tuesday 2026-11-24 09:53 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Tuesday 2026-11-24 09:08 | [`techGadgets`](#techgadgets) | Filmed in WoL, with a control. Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | Two named children per panel variant in `uimainnew.xml` (the oil panel pack), and one line per variant. |
 | Tuesday 2026-11-24 09:08 | [`incomeRates`](#incomerates) | Filmed in WoL, with a control. A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | The text in the panel's layout (the oil panel pack has it under each amount and in the tooltips). |
 | Monday 2026-11-23 13:56 | [`faithResource`](#faithresource) | Added. Optional: resource 4 becomes faith, gathered by villagers praying at their church or mosque, cut from the home city's skill points; a faith Gather plays its own animation. | The opt-in pack `wol-fixes/faith/` (and `wol-fixes/faith-panel/` for the panel row). |
 | Monday 2026-11-23 09:18 | [`dmgPartBoneFix`](bug-fixes.md#dmgpartbonefix) | Added. Stops the game from reloading a 3D model in use when a damage template names a bone the model lacks, the other cause of the Granny crashes (WoL #78). | Nothing; `wol-fixes/art-dmg-bones-20261123/` fixes the data itself. |
-| Monday 2026-11-23 08:38 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
 | Monday 2026-11-23 08:05 | [`modelCacheLimit`](bug-fixes.md#modelcachelimit) | Added. Stops the game from unloading 3D models that units still use, the cause of the Granny crashes in big games (WoL #78). | The two data fixes in `wol-fixes/art-dmg-bones-20261123/`. |
 | Monday 2026-11-23 07:59 | [`resendableCards`](#resendablecards) | Added. `<resendeveryage>1</resendeveryage>` in a home city card: the card can be sent again each time its player reaches a new age (its `<maxcount>` back, no stacking across ages). | The tag on the cards that want it. |
 | Monday 2026-11-23 07:59 | [`quickArrivalCards`](#quickarrivalcards) | Added. `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a quick-arrival card.* to the card's rollover, after its *may be sent ... | The flag on the cards' techs; a string in the string table to translate the line. |
@@ -8495,17 +8495,19 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 *A selected unit shows its range on the ground while Alt is held: one ring per ranged attack.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Monday 2026-11-23 08:38
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Tuesday 2026-11-24 09:53
 
 ![displayedRange in WoL](media/displayedRange-wol.gif)
 
-*In WoL, with `displayedRange log` (Ethiopians, a scenario of 3 players; test data: `<DisplayRange>1</DisplayRange>` on
-the Fort and the Skirmisher, `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the Outpost; the rings of 2026-11-23):*
+*In WoL, with `displayedRange log` and the rings of 2026-11-24 (Ethiopians, a scenario of 3 players; test data:
+`<DisplayRange>1</DisplayRange>` on the Fort and the Skirmisher, `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the
+Outpost):*
 - The Fort is selected and shows nothing.
-- With Alt held, its 26 m cannon ring appears, filled in your blue, and its 40 m anti-ship ring, dashed with no fill:
-  that attack reaches only ships. Alt released, none.
-- The Outpost, selected, shows its 24 m filled and its 40 m dashed at once, with no Alt.
-- A Skirmisher with Alt shows 20 and 6 m. The zone inside 6 m is stronger: both attacks reach it.
+- With Alt held, its 33 m cannon ring appears (26 from its walls, plus an infantry unit's 0.69), filled in your blue,
+  and its 47 m anti-ship ring, dashed with no fill: that attack reaches only ships. Alt released, none.
+- The Outpost, selected, shows its 27 m filled and its 43 m dashed at once, with no Alt.
+- A Skirmisher with Alt shows one ring, 21 m (20 + 0.69 + 0.69). Its 6 m torch, on buildings and ships only, is left
+  out.
 
 The log names each ring and fill. [Full video (MP4)](media/displayedRange-wol.mp4).
 
@@ -8516,16 +8518,16 @@ The log names each ring and fill. [Full video (MP4)](media/displayedRange-wol.mp
 
 ![displayedRange on the placement ghost](media/displayedRange-wol-placement.gif)
 
-*In WoL, the ghost of a building being placed (Ethiopians, a scenario; the Outpost's and the Fort's ranged attacks):*
-- A Settler starts placing an Outpost (`uiSetProtoCursor`). Its ghost carries the 24 m ring and the dashed 40 m anti-ship
+*In WoL, the ghost of a building being placed (Ethiopians, a scenario; the Outpost's and the Fort's ranged attacks;
+filmed 2026-11-24):*
+- A Settler starts placing an Outpost (`uiSetProtoCursor`). Its ghost carries the 27 m ring and the dashed 43 m anti-ship
   ring in the player's blue, and they follow the pointer.
 - The placement ends (`uiSetProtoCursorID(-1)`, what Escape and a right click run), and both rings go with the ghost.
-- Then the ghost of a Fort (red: no room there) carries its 26 m and its dashed 40 m.
+- Then the ghost of a Fort (red: no room there) carries its 33 m and its dashed 47 m.
 - A ghost has lines and no fill (the red tint would draw a fill opaque).
 
-The log names each ring. [Full video (MP4)](media/displayedRange-wol-placement.mp4). *Filmed 2026-11-23 with the new rings.
-Tested on 2026-11-22 in a skirmish (Dutch, against the German AI): a click places the Outpost, the rings go with the
-ghost and the foundation has none.*
+The log names each ring. [Full video (MP4)](media/displayedRange-wol-placement.mp4). *Tested on 2026-11-22 in a skirmish
+(Dutch, against the German AI): a click places the Outpost, the rings go with the ghost and the foundation has none.*
 
 ![displayedRange on the placement ghost, key off](media/displayedRange-wol-placement-control.gif)
 
@@ -8534,18 +8536,41 @@ ghost and the foundation has none.*
 
 ![displayedRange on an enemy's units](media/displayedRange-wol-enemy.gif)
 
-*In WoL, an enemy's units (Ethiopians, a scenario of 2 players, player 2 the enemy (Egyptians); test data
-`<DisplayRange>1</DisplayRange>` on the Grenzer, `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the Outpost, fog off):*
-the enemy Outpost, selected, shows its 24 m ring filled in its red (where it shoots at you) and its 40 m dashed (ships
-only), the red of its own selection square; then an enemy Grenzer with Alt, 20 and 6 m filled; Alt released, none. Your
-own units' rings in your blue are in the first video.
+*In WoL, an enemy's units (the same scenario, player 3 the enemy; test data `<DisplayRange>1</DisplayRange>` on the
+Grenzer, `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the Outpost; a revealer gives you sight there):* the enemy
+Outpost, selected, shows its 27 m ring filled in its yellow (where it shoots at you) and its 43 m dashed (ships only),
+the yellow of its own selection square; then an enemy Grenzer with Alt, one ring of 21 m (its torch left out); Alt released,
+none. Your own units' rings in your blue are in the first video.
 [Full video (MP4)](media/displayedRange-wol-enemy.mp4).
 
 ![displayedRange on an ally's units](media/displayedRange-wol-ally.gif)
 
-*In WoL, an ally's units (a scenario of 3 players, player 2 (Egyptians) an ally of player 1, as on 2026-11-22):* its
-Outpost, selected, shows its 24 m ring filled and its 40 m dashed in its red, the red of its selection square; then one of
-its Crossbowmen with Alt, 16 and 6 m, filled. [Full video (MP4)](media/displayedRange-wol-ally.mp4).
+*In WoL, an ally's units (the same scenario, player 2 an ally of player 1):* its Outpost, selected, shows its 27 m
+ring filled and its 43 m dashed in its red, the red of its selection square; then its Crossbowman with Alt, one
+ring of 17 m (16 + 0.69 + 0.69). [Full video (MP4)](media/displayedRange-wol-ally.mp4).
+
+![displayedRange: a Fort shooting the Settlers inside its ring](media/displayedRange-wol-fire-fort.gif)
+
+*In WoL, buildings firing with their rings shown (2026-11-24; Ethiopians, a scenario of 3 players, the age techs
+`Colonialize` and `Fortressize` so the buildings see past their rings; test data: Settlers of 5 HP, so that one shot
+kills, and Alt held for the rings and the HP bars):* six enemy Settlers appear beyond a selected Fort, on the 2 m grid
+of the map. The Fort shoots the two inside its 33 m ring (32 m from its centre, off its sides) and leaves the two
+outside (36 m). On the diagonal, the one 33.9 m out, just past the ring, is shot too (past a corner the reach goes
+further than the ring) and the one 39.6 m out is not. [Full video (MP4)](media/displayedRange-wol-fire-fort.mp4).
+
+![displayedRange: an Outpost shooting the Settlers inside its ring](media/displayedRange-wol-fire-outpost.gif)
+
+*The same with an Outpost (27 m):* shot at 26 m from its centre and at 25.5 m on the diagonal; not at 30 m, nor at
+31.1 m on the diagonal. [Full video (MP4)](media/displayedRange-wol-fire-outpost.mp4).
+
+![displayedRange: a Blockhouse shooting the Settlers inside its ring](media/displayedRange-wol-fire-blockhouse.gif)
+
+*The same with a Blockhouse (29 m):* shot at 28 m from its centre and at 28.3 m on the diagonal; not at 32 m, nor at
+33.9 m on the diagonal. [Full video (MP4)](media/displayedRange-wol-fire-blockhouse.mp4).
+
+A unit that walks in is shot a little later than it crosses the ring: in a test with Pikemen walking at a Fort, the
+first cannonball left when they were 23 to 26 m from its centre, about 2 s after they crossed 33 m (the building's
+attack starts and the shot leaves later in its animation, an inference: the delay itself was not traced).
 
 ```
 displayedRange [log] [noPlacement]
@@ -8583,19 +8608,62 @@ displayedRange [log] [noPlacement]
   - **The fill is where that attack hits you**: a soft disc in the owner's colour inside each ring, clear next to the
     unit and stronger toward the ring, like DE's range indicator. Where several attacks reach, their fills add up, so the
     zone that several attacks cover reads stronger (a Skirmisher's 6 m inside its 20 m).
-  - **A dashed ring with no fill is an attack that reaches only ships**: the Outpost's and the Fort's 40 m anti-ship
-    attack.
-  - "Only ships" is read from the attack's `<Rate>` list: every type on it is `Ship`, or a type whose every proto is a
-    Ship (`AbstractWarShip`, a ship's proto). The attack's name plays no part.
-  - Two attacks on one ring size share one ring, filled if either is not ships-only.
+  - **A dashed ring with no fill is an attack that cannot hit your army**: one that reaches only ships (the Outpost's
+    and the Fort's anti-ship attack), or only buildings and ships.
+  - This is read from the attack's `<Rate>` list: "only ships" when every type on it is `Ship`, or a type whose every
+    proto is a Ship (`AbstractWarShip`, a ship's proto); "only buildings and ships" when no type on it has a proto that
+    is neither a `Building` nor a `Ship` (`LogicalTypeShipsAndBuildings`). The attack's name plays no part.
+  - **An attack on buildings only is left out when the unit has an attack on units** (2026-11-24, JTMaston: "What is
+    the extra ring showing on the grenzer?"). That second ring was the Grenzer's torch, `BuildingAttack`, 6 m on
+    `LogicalTypeShipsAndBuildings`; a Crossbowman, a Skirmisher and most infantry have the same. A unit whose only ranged
+    attack is on buildings (a mortar) keeps it, dashed.
+  - Two attacks on one ring size share one ring, filled if either reaches units.
+- **Where the ring is** (2026-11-24, JTMaston: "the fort has 26 range; ... the normal range ring is too close to the
+  building; same for outposts"): the ring marks where an infantry unit's centre comes into range, measured as the game
+  measures it (REA and in game, [how-it-works.md](how-it-works.md#displayedrange)). The number in the stat panel, the
+  `MaxRange` of the data, is not measured from the unit's centre:
+  - **from a building, it starts at its walls** (its obstruction rectangle, `ObstructionRadiusX`/`Z`): the Fort's 26
+    runs from its 12 × 12 m walls, so it reaches 6 m further from the centre than the old ring showed;
+  - **the target's size counts too**: the game takes off the target's radius × 1.41, 0.69 m for an infantry unit
+    (radius 0.49), 1.1 m for a cavalryman (0.79), 1.4 m for a cannon (0.99), more for a ship;
+  - **a unit that shoots adds its own radius the same way**: a Grenzer's 20 reaches an infantry unit whose centre is
+    21.4 m from its own.
+
+  So the rings in WoL now: Fort 26 → 33 m (6 + 26 + 0.69 = 32.69) and its anti-ship 40 → 47 m dashed; Outpost 24 → 27 m
+  (2 + 24 + 0.69) and 43 m dashed; Blockhouse and War Hut 24 → 29 m (4 + 24 + 0.69); Town Center 32 → 37 m; Grenzer and
+  Skirmisher 20 → 21 m; Crossbowman 16 → 17 m.
+
+  Measured in game with a Fort: Settlers whose centre was 26.08, 26.31 and 26.68 m from its walls were shot; 26.83,
+  26.9 and 27.2 m were not, so the edge is 26 + 0.69. Their centres were up to 34.4 m from the Fort's, where the old
+  ring was meant to be at 26 m and, with the scale bug below, showed at 16 m. The Outpost and the Blockhouse agreed.
+
+  Two limits of a round ring:
+  - **Past a corner of the building the reach goes further** than the ring, because the zone is the building's square
+    grown by the range: 2.5 m more at the Fort's corners, 1.7 m at a Blockhouse's, 0.8 m at an Outpost's. The ring is
+    the reach in front of a wall, so whatever is inside it is in range.
+  - **Cavalry and cannons are hit a little further out**, by 0.4 and 0.7 m, and ships by more.
+- **A building shoots only at what its player sees.** Line of sight is measured from the centre. The Fort's `<LOS>` in
+  WoL is 26 m, shorter than its reach (33 m from the centre); the age techs add 7 (`Colonialize`) and 4 (`Fortressize`)
+  to every building, so from the Fortress Age it sees 37 m and shoots at its ring (filmed below). Without them, in a test
+  scenario, a lone Fort with `LOS` 26 shot the Settlers 24 and 26 m from its centre (east and west) and none of those at
+  25.5 (on a diagonal: the sight is worked out on a grid), 26.9, 28, 28.3, 29.7 or 30 m, although all were in range:
+  then it fires only where it or a unit of yours sees.
   - Not like DE: DE draws one decal a unit, at a single range ([de-parity.md](de-parity.md#range-indicator-wol-92-displayedrange)).
     Here every attack keeps its ring.
 - **In the owner's colour** (JTMaston, 2026-11-22: "can these rings use player color via alpha channels?"): a range ring
   is a flat annulus mesh, `range_<N>.gr2`, in the colour of the unit's owner (yours on a placement ghost). The cut-out comes from the geometry, so the texture's alpha is free to mark player colour as on a unit
   (`range_line.ddt`, alpha 1, the units' shader `bumpspec_mask_pixelxform`); the engine does the tinting, so one mesh per
   radius serves every player and the line needs nothing from the key (the fill does: below). A particle has no player colour of its own, which is why the rings
-  are no longer particles. The line is 0.5 m wide (more past 62 m), 0.25 m over the unit's feet; it does not follow the
-  ground, so on a hill a large ring can dip into it. `make_rings.py --range-particles` writes the white particle rings of
+  are no longer particles. The line is 0.31 m wide (more past 62 m), 0.15 m over the unit's feet; it does not follow the
+  ground, so on a hill a large ring can dip into it.
+- **From 2026-11-22 to 2026-11-24 the mesh rings showed 0.615 of their radius**, a bug of the ring files, not of the
+  key: `make_rings.py` wrote the vertices in the stock files' basis (0.615 units a metre), and the game reads a model's
+  vertices as metres and does not apply that number. So the Fort's "26 m" ring lay 16 m from its centre, and its
+  "40 m" anti-ship ring about 25 m out, near where its cannon really reaches: what JTMaston saw. Measured with Settlers
+  at known distances: the 26 m ring passed the one 16 m out, the 55 m ring passed between 32 and 34 m. The files of
+  `tools/rings` are fixed (one unit a metre: the 31 m ring now passes between markers at 30 and 32 m, the 35 m ring
+  between 34 and 36 m, the 17 m ring between 16 and 18 m), with the line as wide as it looked before. Copy them again to
+  `art/effects/uhc_rings`. `make_rings.py --range-particles` writes the white particle rings of
   before, with the same file names.
 - **The fill's files:** `rangefill_<N>_p<player>.xml`/`.gr2` on `rangefill_p<player>.ddt`, players 0 to 8. The game's
   transparent shader (`alphablend`) has no player colour, and the units' shader draws opaque, so there is one fill disc
@@ -8607,15 +8675,17 @@ displayedRange [log] [noPlacement]
   - The dashed ring is `range_<N>_ships.xml`/`.gr2`: 48 dashes, the same line.
   - `make_rings.py --no-range-fills` and `--no-ship-rings` leave those files out. With no fill files in the game, the
     rings show without fills.
-- **Which rings:** one per ranged attack (`<RangedLogic>1</RangedLogic>`) of the unit's current tactic, at that attack's
-  `MaxRange` as the player has it now: a tech that adds range moves the ring at once (`Revetment`: the Fort's 26 m ring
-  became 32 m). A Fort shows its 40 m anti-ship attack and its 26 m cannon, an Outpost 40 and 24, a Crossbowman 16 and the
-  6 of its building attack. Two attacks on the same ring size share one ring. A cannon limbered to move has no attack in
-  that tactic, so it shows the attacks of all its tactics (the Falconet's 26). With `<DisplayedRange>` the rings are those
-  values instead.
-- **Sizes:** each radius goes to the nearest ring of `tools/rings`: 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
-  32, 36, 40, 45, 50, 60, 70, 80 and 100 m (aoe3-blender-tools' `make_rings.py`, `RANGES`; the line widens a little on
-  the large ones so it stays visible). The line's outer edge is at the radius.
+- **Which rings:** one per ranged attack (`<RangedLogic>1</RangedLogic>`) of the unit's current tactic, from that attack's
+  `MaxRange` as the player has it now: a tech that adds range moves the ring at once (`Revetment` makes the Fort's
+  cannon 32, so its ring goes to 39 m). A Fort shows its anti-ship attack and its cannon, an Outpost the same, a
+  Crossbowman its crossbow (not its torch, above). Two attacks on the same ring size share one ring. A cannon limbered to
+  move has no attack in that tactic, so it shows the attacks of all its tactics (the Falconet's). With `<DisplayedRange>`
+  the rings are those values instead, from the unit's centre, as written.
+- **Sizes:** each radius goes to the nearest ring of `tools/rings`: every metre from 4 to 50 m, then 55, 60, 65, 70, 80,
+  90 and 100 m (aoe3-blender-tools' `make_rings.py`, `RANGES`; until 2026-11-24 every 2 m up to 32, then 36, 40, 45,
+  50: the Fort's 32.7 went to 32 then, and to 33 now). So a ring is at most half a metre off up to 50 m. The line widens
+  a little on the large ones so it stays visible; its outer edge is at the radius. Copy `tools/rings` again to
+  `art/effects/uhc_rings`: the new sizes are new files.
 - **Before 2026-11-21 the rings showed half their radius:** the 12 m ring was drawn at 6 m (measured with crates at
   known distances), because the game takes a flat particle's scale as its full width and `make_rings.py` wrote the
   half width. The `range_*.particle` files of `tools/rings` are fixed (scale doubled; the textures are the same):
@@ -8671,8 +8741,15 @@ displayedRange [log] [noPlacement]
 - **Multiplayer:** display only: the selection and the keyboard are this machine's, and a model is a visual. Every player
   can have it or not.
 - **Log:** `displayedRange: applied`, `hook reached: displayedRange: proto flag parser's last compare (0x5F726F)`, and
-  with `log` `proto Outpost: <Flag>AlwaysDisplayRange</Flag>`, `Alt held`, `ring of 40 m on unit 206 (FortFrontier), Alt
-  held`, `Alt released`, `rings off unit 206`.
+  with `log` `proto Outpost: <Flag>AlwaysDisplayRange</Flag>`, `unittype Ship is 3635, Building 3636, Unit ...`,
+  `Alt held`, `ring of 47 m on unit 6 (FortFrontier), no land unit (dashed), Alt held`, `ring of 33 m on unit 6
+  (FortFrontier), Alt held`, `Alt released`, `rings off unit 6`.
+- **Tested in WoL (2026-11-24):** the reach measured as above (a Fort, an Outpost, a Blockhouse, Settlers at known
+  distances, two players turned enemies by a trigger or Settlers created at known points); the ring scale with Settler
+  markers (17, 31, 35 m rings, and the old files' 26, 50, 55); the rings in game: Fort 33 and 47 dashed, Outpost 27 and
+  43, Blockhouse 29 and 45, Skirmisher and Grenzer 21 (no torch ring), Crossbowman 17; the placement ghosts of the
+  Outpost and the Fort; Pikemen walking at a Fort, Outpost and Blockhouse (the Fortress Age techs); a lone Fort with
+  `LOS` 26. The earlier numbers below (26, 40, 24 m) are the rings as they were then.
 - **Tested in WoL (2026-11-21):** a scenario (Ethiopians) and a skirmish (Swedes), Alt posted to the window as
   `WM_KEYDOWN` / `WM_KEYUP` of `VK_MENU` (the game reads it from its messages, so no real keyboard was needed):
   the Fort selected, no ring; Alt, 40 and 26 m; released, none; after `Revetment` the 26 m ring became 32 m; the
