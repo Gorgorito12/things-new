@@ -1,0 +1,351 @@
+{
+ "comment": "Wars of Liberty 1.0.15c resource panels without the oil row (shown before the Great War, request #103), with the faith row of wol-fixes/faith-panel (layout A) on top. Rows are texture rows [name, top of its rope bar, top of the next bar]; the oil row is left out of order and the other rows share its space. Written beside WoL's textures as *_pregw.ddt. Tool: aoe3-blender-tools tools/panel_rows.py.",
+ "icons": {
+  "faith": {
+   "file": "../../faith-panel/art/faith-icon.png",
+   "height": 0.92,
+   "smear": [
+    62,
+    90,
+    150
+   ]
+  }
+ },
+ "textures": [
+  {
+   "file": "art/ui/ingame/eur_max_ui.ddt",
+   "panels": [
+    {
+     "id": "EurMax",
+     "x": [
+      440,
+      688
+     ],
+     "dx": 0,
+     "bottom": 1018,
+     "blank_from": "gold",
+     "rows": [
+      [
+       "oil",
+       784,
+       834
+      ],
+      [
+       "food",
+       834,
+       880
+      ],
+      [
+       "wood",
+       880,
+       926
+      ],
+      [
+       "gold",
+       926,
+       972
+      ],
+      [
+       "vill",
+       972,
+       1018
+      ]
+     ],
+     "order": [
+      "faith",
+      "food",
+      "wood",
+      "gold",
+      "vill"
+     ],
+     "keep_bars": true,
+     "icon_scale_max": 1.1
+    }
+   ],
+   "out": "art/ui/ingame/eur_max_ui_pregw.ddt"
+  },
+  {
+   "file": "art/ui/ingame/ASI_UI_MAX.ddt",
+   "panels": [
+    {
+     "id": "AsiMax",
+     "x": [
+      440,
+      688
+     ],
+     "dx": 0,
+     "bottom": 1018,
+     "blank_from": "gold",
+     "rows": [
+      [
+       "oil",
+       784,
+       822
+      ],
+      [
+       "export",
+       822,
+       860
+      ],
+      [
+       "food",
+       860,
+       900
+      ],
+      [
+       "wood",
+       900,
+       939
+      ],
+      [
+       "gold",
+       939,
+       978
+      ],
+      [
+       "vill",
+       978,
+       1018
+      ]
+     ],
+     "order": [
+      "faith",
+      "export",
+      "food",
+      "wood",
+      "gold",
+      "vill"
+     ],
+     "keep_bars": true,
+     "icon_scale_max": 1.1
+    }
+   ],
+   "out": "art/ui/ingame/ASI_UI_MAX_pregw.ddt"
+  },
+  {
+   "file": "art/ui/ingame/nat_ui_max.ddt",
+   "panels": [
+    {
+     "id": "NatMax",
+     "x": [
+      440,
+      688
+     ],
+     "dx": 0,
+     "bottom": 1018,
+     "blank_from": "gold",
+     "rows": [
+      [
+       "oil",
+       784,
+       822
+      ],
+      [
+       "fire",
+       822,
+       860
+      ],
+      [
+       "food",
+       860,
+       900
+      ],
+      [
+       "wood",
+       900,
+       939
+      ],
+      [
+       "gold",
+       939,
+       978
+      ],
+      [
+       "vill",
+       978,
+       1018
+      ]
+     ],
+     "order": [
+      "faith",
+      "fire",
+      "food",
+      "wood",
+      "gold",
+      "vill"
+     ],
+     "keep_bars": true,
+     "icon_scale_max": 1.1
+    }
+   ],
+   "out": "art/ui/ingame/nat_ui_max_pregw.ddt"
+  },
+  {
+   "file": "art/ui/ingame/ingame_ui_small_01_asian.ddt",
+   "panels": [
+    {
+     "id": "AsiMin",
+     "x": [
+      440,
+      688
+     ],
+     "dx": 0,
+     "bottom": 724,
+     "blank_from": "gold",
+     "rows": [
+      [
+       "oil",
+       490,
+       528
+      ],
+      [
+       "export",
+       528,
+       566
+      ],
+      [
+       "food",
+       566,
+       606
+      ],
+      [
+       "wood",
+       606,
+       645
+      ],
+      [
+       "gold",
+       645,
+       684
+      ],
+      [
+       "vill",
+       684,
+       724
+      ]
+     ],
+     "order": [
+      "faith",
+      "export",
+      "food",
+      "wood",
+      "gold",
+      "vill"
+     ],
+     "keep_bars": true,
+     "icon_scale_max": 1.1
+    }
+   ],
+   "out": "art/ui/ingame/ingame_ui_small_01_asian_pregw.ddt"
+  },
+  {
+   "file": "art/ui/ingame/ingame_ui_small_01_ypack.ddt",
+   "panels": [
+    {
+     "id": "EurMin",
+     "x": [
+      686,
+      940
+     ],
+     "dx": 246,
+     "bottom": 1018,
+     "blank_from": "gold",
+     "header": {
+      "top": 745,
+      "shrink": 38,
+      "keep_top": 22
+     },
+     "rows": [
+      [
+       "oil",
+       822,
+       860
+      ],
+      [
+       "food",
+       860,
+       900
+      ],
+      [
+       "wood",
+       900,
+       939
+      ],
+      [
+       "gold",
+       939,
+       978
+      ],
+      [
+       "vill",
+       978,
+       1018
+      ]
+     ],
+     "order": [
+      "faith",
+      "food",
+      "wood",
+      "gold",
+      "vill"
+     ],
+     "keep_bars": true,
+     "icon_scale_max": 1.1
+    },
+    {
+     "id": "NatMin",
+     "x": [
+      440,
+      688
+     ],
+     "dx": 0,
+     "bottom": 724,
+     "blank_from": "gold",
+     "rows": [
+      [
+       "oil",
+       490,
+       528
+      ],
+      [
+       "fire",
+       528,
+       566
+      ],
+      [
+       "food",
+       566,
+       606
+      ],
+      [
+       "wood",
+       606,
+       645
+      ],
+      [
+       "gold",
+       645,
+       684
+      ],
+      [
+       "vill",
+       684,
+       724
+      ]
+     ],
+     "order": [
+      "faith",
+      "fire",
+      "food",
+      "wood",
+      "gold",
+      "vill"
+     ],
+     "keep_bars": true,
+     "icon_scale_max": 1.1
+    }
+   ],
+   "out": "art/ui/ingame/ingame_ui_small_01_ypack_pregw.ddt"
+  }
+ ]
+}

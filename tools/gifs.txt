@@ -77,6 +77,8 @@ noTrainNearEnemyTC-wol 4 44 3
 noTrainNearEnemyTC-wol-control 4 44 3
 nowalkfarm-wol 2 26 3
 nowalkfarm-wol-control 2 26 3
+oilPanel-wol 2 12 1 800:360:0:360
+oilPanel-wol-control 2 12 1 800:360:0:360
 overhealDecay-wol 6 20 2
 overhealDecay-wol-control 6 20 2
 overhealHitpointBars-wol 6 22 2
@@ -181,12 +183,15 @@ hcTargetTechs-wol 2 18 2
 hcTargetTechs-wol-control 2 18 2
 unitResourceAuras-torp-wol 4 12 1
 unitResourceAuras-torp-wol-control 4 12 1
-displayedRange-wol 4 23 2
+displayedRange-wol 2 26 2.2
 displayedRange-wol-control 5 33 3
-displayedRange-wol-ally 5 12 1
-displayedRange-wol-enemy 2 12 1
-displayedRange-wol-placement 4 15 1.3
+displayedRange-wol-ally 2 16 1.4
+displayedRange-wol-enemy 2 16 1.4
+displayedRange-wol-placement 2 18 1.6
 displayedRange-wol-placement-control 2 16 2
+displayedRange-wol-fire-fort 3 16 1.5
+displayedRange-wol-fire-outpost 3 16 1.5
+displayedRange-wol-fire-blockhouse 3 16 1.5
 linkedResource-wol 2 12 1
 linkedResource-wol-control 2 12 1
 linkedResource-model-wol 4 84 7
@@ -370,3 +375,7 @@ gatlingCamel-wol 0 22 2
 gatlingCamel-wol-control 0 22 2
 gatlingCamel-move-wol 1 24 2
 gatlingCamelDeployed-wol 0 24 2
+techGadgets-wol 0 12 1
+techGadgets-wol-control 0 12 1
+incomeRates-wol 0 24 2
+incomeRates-wol-control 0 24 2

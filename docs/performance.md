@@ -1049,6 +1049,90 @@ held. Files: `rea/evidence/age3y-b1a1dab7/aifix-long-20261113/` (`bench-lg-*.csv
 
 `FOR-MASTON.txt` (beside the fixed file) has these results for JTMaston.
 
+### Splitting the AI script per culture (2026-11-24)
+
+JTMaston's question (#104 in wol-requests.md): what would it cost or save to divide `AI4\aiWoLMain.xs` (33,801
+lines, 1.47 MB) into one file per culture (American, Anglo, European, African, MiddleEastern, Asian, Polynesian,
+NativeAmerican, NationState)? Measurement only: nothing was delivered, the bed's AI files were put back (same
+SHA-256).
+
+**What is in the file** (`tools/xs_culture_split.py --report`): 480 top-level items. 96 rules and 3 functions are
+specific to one culture by their names and callers (Euro*, NA*, LA*, ME*, Asian*, African*, Balkan*, NS* and a few
+named ones; the table `CULTURE` in the script): **32 % of the bytes**. European 5.3 %, Anglo 4.5 %, Asian 4.5 %,
+American 4.2 %, African 3.9 %, NationState 3.4 %, MiddleEastern 3.5 %, NativeAmerican 2.8 %, Polynesian 0 (the Maori
+AI has its own script). The other 68 % is shared, with hundreds of `kbGetCiv()` branches inline. Almost every
+culture rule is `inactive` and enabled only for its culture.
+
+**Variants**, each in a new game (a save keeps the script it started with):
+- `orig`: WoL's files.
+- `euro-stub`: one `aiWoLMain.xs` with the shared code and the European rules; every other culture's rule and
+  function replaced by a stub (`--keep European --out`), 1.13 MB. The most a European loader could drop without
+  touching the shared code.
+- `euro-inc`: the same code as two files, `aiWoLCore.xs` and `aiWoLEuropean.xs`, both included by the loader.
+- `all-inc`: the original program as 1 + 8 files (core and one file per culture, `--keep all --split`), all
+  included: the cost of the includes alone.
+
+**Setup.** Bed `C:\AoE3-UHC-WoLReal8` (WoL with this DLL, its own profile, `perfStats`, `multipleInstances
+background`; no `fastLastInLine`), ESOC High Plains, seed 24004, hard, free for all, an idle French player 1. 1v1:
+one AI (`wolAlexander`, Russians); 8 players: seven European AIs (`ai_personality.py`: Russians, Portuguese,
+Spanish, Germans, British, Dutch, Swedish). `tools/re/time_xs.py` from the main menu: every compile, then 60 s of
+the AIs' rule runs (`interpretRules` called by `BAI::update`); then `perfprobe.py --sample-hz 200` without the
+debugger, 300 s (150 s for the two include variants). Two runs per case, interleaved. Other agents' games ran on the
+machine, so absolute times move by about ±15 % between runs; the same map script, compiled in every run after the
+AIs, is the yardstick ("÷ map"). Files: `rea/evidence/age3y-b1a1dab7/aisplit-20261124/` (`runs/<label>/`:
+`time_xs.log`, `updates.csv`, `perf.csv` and its stacks and report, `result.json`; the variants; the drivers in
+`scripts/`).
+
+| Case (2 runs each) | AI compile, CPU per AI | ÷ map | All AIs | Private memory per AI compile | Load, Play to clock | AI share of the main thread | of it, XS rules | XS rules per AI |
+|---|---|---|---|---|---|---|---|---|
+| 1v1, `orig` | 0.78–0.95 s | 8.3 | 0.78–0.95 s | 6.1 MB | 8.2–9.5 s | 1.0 % | 0.23 % | 14.8 ms/s |
+| 1v1, `euro-stub` | 0.41–0.45 s | **4.3** | 0.41–0.45 s | **3.7–3.8 MB** | 8.2–9.4 s | 0.8 % | 0.23 % | 14.0 ms/s |
+| 8 players, `orig` | 0.67–0.75 s | 7.3 | 4.7–5.2 s | 6.2 MB | 19.3–20.2 s | 3.5 % | 0.88 % | 7.9 ms/s |
+| 8 players, `euro-stub` | 0.42–0.44 s | **4.7** | **2.9–3.1 s** | **3.9 MB** | 18.5–21.2 s | 3.2 % | 0.95 % | 7.2 ms/s |
+| 8 players, `euro-inc` | 0.42–0.47 s | **4.6** | **2.9–3.3 s** | **3.9 MB** | 19.0–20.7 s | 2.7 % | 0.83 % | 7.4 ms/s |
+| 8 players, `all-inc` | 0.76–0.82 s | 7.1 | 5.3–5.7 s | 4.3 MB | 20.4–23.5 s | 2.8 % | 0.72 % | 8.4 ms/s |
+
+Every run: no `XS: Error` in `Age3Log.txt`, and the AIs alive (20–58 units each at the end against the idle
+player's 11).
+
+- **Every AI player compiles its own copy** **[O]**: seven compiles of `aiLoaderStandard.xs` in an 8-player game,
+  one after the other on the main thread during the loading screen, each with its own compiler object, each
+  include compiled again (engine-symbols.md, "XS compiler").
+- **Load** **[O]**: the European-only file compiles in about **60 % of the time** (÷ map 4.3–4.7 against 7.3–8.3;
+  the bytes drop only 25 %), about 0.3 s less per AI: **about 1.9 s of CPU less at the start of an 8-player game**,
+  0.4 s in a 1v1. The measured load (Play to the first tick, 8–23 s) varies by more than that from run to run
+  (the map generation after the compiles), so two runs do not show it in the total.
+- **Includes cost nothing** **[O]**: the same program in ten files compiles in the same time as one file (÷ map
+  7.1 against 7.3), and the European code in two files as in one (4.6 against 4.7).
+- **Memory** **[O]**: each AI's compile adds 6.2 MB of private memory with the original file, 3.9 MB with the
+  European code. The same full program in ten files adds 4.3 MB: **about 2 MB per AI depends on the size of the
+  largest file** (**[I]** the compiler keeps a buffer as big as the file), and only about 0.4 MB on the code
+  itself. Seven AIs: 43 MB against 27 MB, of a process at 1.15 GB.
+- **Per frame: no change** **[O]**. Each AI runs its rules every frame (`interpretRules` called once per frame per
+  AI player, with a time limit); in the first minutes that is 7–15 ms of CPU per second per AI. All of the AI is 3 %
+  of the main thread in an 8-player game, and the script's own part (the XS rules) under 1 %; the rest is the
+  engine's AI (plans, knowledge base), which the script's size does not change. The differences between variants
+  are within the run-to-run spread (the AIs play differently each game). Inactive rules cost nothing while they
+  stay inactive.
+- **Frames over 50 ms**: the same in every variant. In this bed most are LastInLine recomputes (no
+  `fastLastInLine`) and model loads; 0–3 per run are the AI script. At the start every AI runs its first rules in
+  the same game tick, at 1 s and again at 3 s: 40–100 ms each, so two frames of 300–490 ms in an 8-player game
+  (`updates.csv`), in every variant: that code is shared.
+
+**Recommendation** (for JTMaston, `wol-fixes/ai-split-cost-20261124.txt`): split for maintenance, not for speed.
+Expect about 0.3 s less load per AI (about 2 s with 7 AIs) and 2–2.5 MB less memory per AI, and nothing per frame.
+How: one loader per culture (`aiLoaderEuropean.xs`, ...), named by each `.personality`'s `<script>`; each includes
+`aiWoLHeader.xs`, a shared core and its culture file, and keeps `preInit`/`postInit` (today's loader has two civ
+lines in `preInit`: the Tupi and Egyptian ones go to their cultures' loaders). The core must still compile alone:
+its calls to culture functions (`chooseConsulateFlag`, `createConsulateResearchPlan`, `createNativeResearchPlan`)
+move into the culture files, and the `xsEnableRule("...")` calls of other cultures' rules may stay (they are only
+reached for those civs; a missing rule name is a run-time lookup, not a compile error; the measurement kept stubs,
+so this was not tried). The scenario scripts that include `aiWoLMain.xs` directly (`first_barbary_war_p2.xs`,
+`hakodate_p2.xs`, `hakodate_p3.xs`, `inactive.xs`, `the_marsh_of_bolivar_p2.xs`, `wol1_01p02.xs`) keep working if
+`aiWoLMain.xs` stays as a file that includes the core and every culture file (the `all-inc` layout, measured
+above: same cost as today). Keep each file small: memory follows the largest file. The per-frame cost and the two
+start-up frames need other work (staggering the first rules of each AI), not a split.
+
 ## Benchmark harness
 
 These parts of `src/features/perf.cpp` exist for measurement. The game behaves as stock with them.

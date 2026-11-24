@@ -5,10 +5,12 @@
 //   <AlwaysDisplayRange>1</AlwaysDisplayRange>  (or <Flag>AlwaysDisplayRange</Flag>) it shows them whenever it is
 //                                               selected, without Alt;
 //   <DisplayedRange>N</DisplayedRange>          a fixed radius instead of the attacks', repeatable.
-// With no <DisplayedRange>, the radii are the MaxRange (0x4946D6 with key -1, as the stat panel reads it) of each
-// active action of the unit's current tactic with the ranged flag 0Ah (<RangedLogic>), read from the player's copy,
-// so range techs show at once. Each radius is drawn as the ring of tools/rings nearest to it; two attacks on one
-// ring share it.
+// With no <DisplayedRange>, the rings are those of each active action of the unit's current tactic with the ranged
+// flag 0Ah (<RangedLogic>), read from the player's copy, so range techs show at once. The radius is where an infantry
+// unit's centre comes into that attack's range, as the game measures it (kRadii's comment): its MaxRange (0x4946D6 with
+// key -1, the number the stat panel shows) plus the target's radius x sqrt(2), plus the attacker's own radius x
+// sqrt(2), or for a building the half side of its rectangle. Each radius is drawn as the ring of tools/rings nearest to
+// it (1 m apart up to 50); two attacks on one ring share it.
 //
 // Alt is the game's own query, the one the HP bar chunk makes (0x452EA0..0x452EB3: [[[0C66244h]+74h]+2Ch], vtable
 // +34h with 2). The ring is a model of the table the tactics parser uses (0x58F68F, 0x58E506), hung on the unit as
@@ -30,9 +32,11 @@
 // edge (effects\uhc_rings\rangefill_<N>_p<player>.xml). The game's alphablend shader has no player colour, so there is
 // one disc per player ID (0 to 8) and this key picks the owner's; the placement ghost gets no fill (a ghost that cannot
 // be placed is tinted, and the tint draws the disc opaque). An attack that
-// reaches only ships (each type of its <Rate> list is Ship or a type whose every proto is a Ship, such as
-// AbstractWarShip) gets a dashed ring with no fill instead (range_<N>_ships.xml); two attacks on one ring size share
-// it, filled if either is not ship-only. The caps count models: a filled ring is two.
+// reaches no unit on land gets a dashed ring with no fill instead (range_<N>_ships.xml): only ships (each type of its
+// <Rate> list is Ship or a type whose every proto is a Ship, such as AbstractWarShip), or only structures (each type's
+// protos are Buildings or Ships, such as a torch's LogicalTypeShipsAndBuildings). A structures-only attack is left out
+// when the unit has an attack on land units (the Grenzer's 6 m torch beside its musket). Two attacks on one ring size
+// share it, filled if either reaches land units. The caps count models: a filled ring is two.
 //
 // <Flag>: the proto flag parser 0x5F640A (stdcall(proto, name)) compares the name with each flag it knows and
 // returns with nothing for any other name. Its last compare, the call 0x5F726F of the string compare 0x4028B4, is
@@ -76,8 +80,24 @@ constexpr std::uint32_t kRangedFlag = 0x0A;  // <RangedLogic> (0x5FAC6D), the bi
 // the longest ranges first.
 constexpr std::size_t kMaxRingsPerUnit = 4;
 constexpr std::size_t kMaxRings = 60;
-// The sizes aoe3-blender-tools' make_rings.py writes (RANGES).
-constexpr std::int32_t kRadii[] = {4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, 36, 40, 45, 50, 60, 70, 80, 100};
+// The sizes aoe3-blender-tools' make_rings.py writes (RANGES): every metre from 4 to 50, then 55 to 100.
+constexpr std::int32_t kRadii[] = {4,  5,  6,  7,  8,  9,  10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22,
+                                   23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+                                   42, 43, 44, 45, 46, 47, 48, 49, 50, 55, 60, 65, 70, 80, 90, 100};
+// How the game measures an attack's reach (the action's range test 0x48B6AA..0x48B779 compares the unit distance,
+// unit vtable +0BCh -> +0B4h 0x487B81, with the action's MaxRange [action+24h]):
+//   - attacker and target that can move (0x45EE55): centre distance - each one's radius x sqrt(2) (0x4889AF; the
+//     radius is the larger of its proto's obstruction radii, 0x48272C);
+//   - a building (cannot move) on a unit: the unit's centre to the building's obstruction rectangle, minus the unit's
+//     radius x sqrt(2) (0x4945FE, 0x485E26);
+//   - a unit on a building: its centre to the building's rectangle minus its own radius x sqrt(2) (0x4882FE).
+// So a ring is drawn where an infantry unit's centre (radius 0.49 m, the common one) comes into range: MaxRange +
+// 0.49 x sqrt(2), plus the attacker's own radius x sqrt(2) for a unit that moves, or the half side of a building's
+// rectangle (the smaller one). Measured in game, 2026-11-24 (a mod's Fort, MaxRange 26, rectangle 12 x 12 m; Settlers,
+// radius 0.49): Settlers whose centre was 26.08, 26.31 and 26.68 m from the rectangle were shot, 26.83, 26.9 and
+// 27.2 m were not (the limit 26 + 0.69). Past a corner the zone reaches further than the ring (2.5 m for the Fort).
+constexpr float kSqrt2 = 1.41421356f;
+constexpr float kTargetRadius = 0.49f;  // an infantry unit's obstruction radius (Musketeer, Settler, Grenzer)
 
 using SelectionFn = const char*(__cdecl*)();
 using UnitByIdFn = const char*(__thiscall*)(const char* world, std::int32_t id);
@@ -107,8 +127,12 @@ struct Range {
 
 std::unordered_map<std::int32_t, Range> g_protos;  // by proto ID; the load fills it
 std::map<std::wstring, std::int32_t> g_models;     // by file
-std::unordered_map<std::int32_t, bool> g_shipTypes;  // by unittype ID: only ships are of it
+// What an attack reaches: land units (a filled ring), only ships, or only structures (buildings, or buildings and ships).
+enum class Reach { kLand, kShips, kStructures };
+std::unordered_map<std::int32_t, Reach> g_typeReach;  // by unittype ID
 std::int32_t g_shipType = -2;                         // the unittype Ship; -2 until looked up
+std::int32_t g_buildingType = -1;                     // the unittype Building
+std::int32_t g_unitType = -1;                         // the unittype Unit
 std::map<std::int32_t, std::vector<std::int32_t>> g_hung;  // by unit ID: the models on it
 std::int32_t g_bone = -2;
 const char* g_world = nullptr;
@@ -167,8 +191,10 @@ bool __cdecl ReadMetres(void*, const char* node, char* proto) {
 void NewDatabase(char*) {
   g_protos.clear();
   g_models.clear();
-  g_shipTypes.clear();
+  g_typeReach.clear();
   g_shipType = -2;
+  g_buildingType = -1;
+  g_unitType = -1;
   g_hung.clear();
   g_bone = -2;
   g_logLines = 0;
@@ -214,21 +240,22 @@ std::int32_t ModelOf(const wchar_t* path) {
 
 struct Ring {
   std::int32_t radius;
-  bool ships;  // every attack on this ring reaches only ships
+  bool dashed;  // no attack on this ring reaches a unit on land: only ships, or only buildings
 };
 
-// The models of one ring for an owner: its line (dashed for ships) and, unless ships only, the owner's fill.
+// The models of one ring for an owner: its line (dashed when it reaches no land unit) and, unless dashed, the owner's
+// fill.
 std::vector<std::int32_t> RingModels(const Ring& ring, std::int32_t player) {
   std::vector<std::int32_t> models;
   wchar_t path[80];
-  swprintf_s(path, ring.ships ? L"effects\\uhc_rings\\range_%d_ships.xml" : L"effects\\uhc_rings\\range_%d.xml",
+  swprintf_s(path, ring.dashed ? L"effects\\uhc_rings\\range_%d_ships.xml" : L"effects\\uhc_rings\\range_%d.xml",
              ring.radius);
   const std::int32_t line = ModelOf(path);
   if (line == -1) {
     return models;
   }
   models.push_back(line);
-  if (!ring.ships && player >= 0 && player < kFillPlayers) {
+  if (!ring.dashed && player >= 0 && player < kFillPlayers) {
     swprintf_s(path, L"effects\\uhc_rings\\rangefill_%d_p%d.xml", ring.radius, player);
     const std::int32_t fill = ModelOf(path);
     if (fill != -1) {
@@ -243,67 +270,97 @@ const char* Database() {
   return game == nullptr ? nullptr : Field<const char*>(game, 0x140);
 }
 
-// True when every proto of unittype `type` is a Ship (and there is one): Ship itself, AbstractWarShip, a ship's proto.
-// The protos of the database [db+54h] (count +58h), tested by the is-a test 0x44D7FA; the name table [db+190h] gives
-// Ship's ID. Each type is worked out once per database.
-bool ShipType(std::int32_t type) {
+std::int32_t TypeId(const char* database, const char* name) {
+  const char* table = database + 0x190;
+  std::int32_t id = -1;
+  return kNameFind(table, name, kNameBucket(table, name), &id) ? id : -1;
+}
+
+// What the protos of unittype `type` are: kLand when one of them is a Unit that is neither a Ship nor a Building (a unit
+// on land), kShips when there are some and every one is a Ship (Ship itself, AbstractWarShip, a ship's proto), else
+// kStructures (buildings, or buildings and ships: LogicalTypeShipsAndBuildings). "A Unit" matters: a mod's helper
+// objects (an aura's carrier, a packed wagon) can carry LogicalTypeShipsAndBuildings without being Buildings. The protos
+// of the database [db+54h] (count +58h), tested by the is-a test 0x44D7FA; the name table [db+190h] gives the IDs of
+// Ship, Building and Unit. Each type is worked out once per database.
+Reach TypeReach(std::int32_t type) {
   const char* database = Database();
   if (database == nullptr || type < 0) {
-    return false;
+    return Reach::kLand;
   }
   if (g_shipType == -2) {
-    const char* table = database + 0x190;
-    std::int32_t id = -1;
-    g_shipType = kNameFind(table, "Ship", kNameBucket(table, "Ship"), &id) ? id : -1;
+    g_shipType = TypeId(database, "Ship");
+    g_buildingType = TypeId(database, "Building");
+    g_unitType = TypeId(database, "Unit");
     if (g_log) {
-      uhc::Log(L"displayedRange: unittype Ship is %d", g_shipType);
+      uhc::Log(L"displayedRange: unittype Ship is %d, Building %d, Unit %d", g_shipType, g_buildingType, g_unitType);
     }
   }
-  if (g_shipType < 0) {
-    return false;
-  }
-  if (type == g_shipType) {
-    return true;
-  }
-  const auto found = g_shipTypes.find(type);
-  if (found != g_shipTypes.end()) {
+  const auto found = g_typeReach.find(type);
+  if (found != g_typeReach.end()) {
     return found->second;
   }
   const auto* protos = Field<const char* const*>(database, 0x54);
   const std::int32_t count = Field<std::int32_t>(database, 0x58);
   bool any = false;
+  bool land = false;
   bool ships = true;
-  for (std::int32_t i = 0; protos != nullptr && i < count && ships; ++i) {
+  for (std::int32_t i = 0; protos != nullptr && i < count && !land; ++i) {
     const char* proto = protos[i];
-    if (proto != nullptr && kIsA(proto, type)) {
-      any = true;
-      ships = kIsA(proto, g_shipType);
+    if (proto == nullptr || !kIsA(proto, type)) {
+      continue;
     }
+    any = true;
+    const bool ship = g_shipType >= 0 && kIsA(proto, g_shipType);
+    const bool building = g_buildingType >= 0 && kIsA(proto, g_buildingType);
+    land = !ship && !building && g_unitType >= 0 && kIsA(proto, g_unitType);
+    ships = ships && ship;
   }
-  g_shipTypes[type] = any && ships;
-  return any && ships;
+  const Reach reach = !any || land ? Reach::kLand : ships ? Reach::kShips : Reach::kStructures;
+  g_typeReach[type] = reach;
+  return reach;
 }
 
-// An attack that reaches only ships: its <Rate> list ([action+0Ch], count +10h, 0Ch-byte entries, +0 the unittype)
-// is not empty and every type on it is a ship type.
-bool ShipsOnly(const char* action) {
+// What an attack reaches, from its <Rate> list ([action+0Ch], count +10h, 0Ch-byte entries, +0 the unittype): land
+// units when one of its types has them (or the list is empty), ships when every type is a ship type, else structures.
+Reach AttackReach(const char* action) {
   const char* rates = Field<const char*>(action, 0x0C);
   const std::int32_t count = Field<std::int32_t>(action, 0x10);
   if (rates == nullptr || count <= 0) {
-    return false;
+    return Reach::kLand;
   }
+  bool ships = true;
   for (std::int32_t i = 0; i < count; ++i) {
-    if (!ShipType(Field<std::int32_t>(rates, 12 * i))) {
-      return false;
+    const Reach reach = TypeReach(Field<std::int32_t>(rates, 12 * i));
+    if (reach == Reach::kLand) {
+      return Reach::kLand;
     }
+    ships = ships && reach == Reach::kShips;
   }
-  return true;
+  return ships ? Reach::kShips : Reach::kStructures;
 }
+
+// The proto's own share of an attack's reach, as the unit distance counts it: a unit that moves, its radius x sqrt(2)
+// (the larger obstruction radius, [proto+88h] / [proto+8Ch], 0x48272C); a building, the half side of its rectangle
+// (the smaller of the two, so that the ring stays inside the zone on every side). Can move is 0x45EE55: not when the
+// first flag byte has bit 4 ([[proto+50h]], with [proto+54h] > 4), else when [proto+80h] is above 1e-6.
+float OwnReach(const char* proto) {
+  const float x = Field<float>(proto, 0x88);
+  const float z = Field<float>(proto, 0x8C);
+  const auto* flags = Field<const std::uint8_t*>(proto, 0x50);
+  const bool fixed = Field<std::uint32_t>(proto, 0x54) > 4 && flags != nullptr && (flags[0] & 0x10) != 0;
+  const bool moves = !fixed && Field<float>(proto, 0x80) > 1e-6f;
+  return moves ? std::max(x, z) * kSqrt2 : std::min(x, z);
+}
+
+struct Attack {
+  float metres;  // where an infantry unit's centre comes into range, or a building's wall for a structures-only attack
+  Reach reach;
+};
 
 // The ranged attacks of one tactic, as the attack list 0x487EEE reads them: 12-byte entries at [tactic+44h] (count
 // +48h), +4 the index of the action in the set [tactic+0] (actions [set+1Ch], count +20h); an action counts when it is
-// active (bit 0 of [action+64h]), has the ranged flag and a range entry.
-void TacticRadii(const char* tactic, std::vector<Ring>& radii) {
+// active (bit 0 of [action+64h]), has the ranged flag and a range entry. `own` is the attacker's share (OwnReach).
+void TacticAttacks(const char* tactic, float own, std::vector<Attack>& attacks) {
   const char* owner = Field<const char*>(tactic, 0x00);
   const char* entries = Field<const char*>(tactic, 0x44);
   const std::int32_t count = Field<std::int32_t>(tactic, 0x48);
@@ -319,77 +376,93 @@ void TacticRadii(const char* tactic, std::vector<Ring>& radii) {
         Field<std::int32_t>(action, 0x1C) <= 0) {
       continue;
     }
-    const float metres = kRange(action, -1);
-    if (metres > 0.5f) {
-      radii.push_back({RingRadius(metres), ShipsOnly(action)});
+    const float range = kRange(action, -1);
+    if (range > 0.5f) {
+      const Reach reach = AttackReach(action);
+      // On a building the distance runs to its wall, with no radius of the target's.
+      attacks.push_back({range + own + (reach == Reach::kStructures ? 0.0f : kTargetRadius * kSqrt2), reach});
     }
   }
 }
 
-// The rings the unit wants, largest first, at most kMaxRingsPerUnit: the fixed <DisplayedRange> values, or the ranged
-// attacks of its current tactic ([mgr+0A8h], an index into the player's proto's tactics [[proto+44h]+10h], count
-// +14h); a tactic with none (an artillery piece limbered to move) takes those of all its tactics, the attacks it
-// unlimbers to.
-// Largest first, each size once (filled if any of its attacks is not ship-only), at most kMaxRingsPerUnit.
-void Trim(std::vector<Ring>& radii) {
+// Largest first, each size once (filled if any of its attacks reaches land units), at most kMaxRingsPerUnit. An attack
+// that reaches only structures (a torch on buildings and ships) is left out when another attack reaches land units:
+// its ring would read as a range on your army. Alone (a mortar) it gets its dashed ring.
+std::vector<Ring> Rings(const std::vector<Attack>& attacks) {
+  const bool land =
+      std::any_of(attacks.begin(), attacks.end(), [](const Attack& a) { return a.reach == Reach::kLand; });
+  std::vector<Ring> radii;
+  for (const Attack& attack : attacks) {
+    if (!(land && attack.reach == Reach::kStructures)) {
+      radii.push_back({RingRadius(attack.metres), attack.reach != Reach::kLand});
+    }
+  }
   std::sort(radii.begin(), radii.end(), [](const Ring& a, const Ring& b) {
-    return a.radius != b.radius ? a.radius > b.radius : a.ships < b.ships;
+    return a.radius != b.radius ? a.radius > b.radius : a.dashed < b.dashed;
   });
   radii.erase(std::unique(radii.begin(), radii.end(), [](const Ring& a, const Ring& b) { return a.radius == b.radius; }),
               radii.end());
   if (radii.size() > kMaxRingsPerUnit) {
     radii.resize(kMaxRingsPerUnit);
   }
+  return radii;
 }
 
+// <DisplayedRange>: radii from the unit's centre, as written.
+std::vector<Ring> FixedRings(const Range& range) {
+  std::vector<Attack> attacks;
+  for (const float metres : range.fixed) {
+    attacks.push_back({metres, Reach::kLand});
+  }
+  return Rings(attacks);
+}
+
+// The rings the unit wants, largest first, at most kMaxRingsPerUnit: the fixed <DisplayedRange> values, or the ranged
+// attacks of its current tactic ([mgr+0A8h], an index into the player's proto's tactics [[proto+44h]+10h], count
+// +14h); a tactic with none (an artillery piece limbered to move) takes those of all its tactics, the attacks it
+// unlimbers to.
 std::vector<Ring> WantedRadii(const char* unit, const Range& range) {
-  std::vector<Ring> radii;
   if (!range.fixed.empty()) {
-    for (const float metres : range.fixed) {
-      radii.push_back({RingRadius(metres), false});
+    return FixedRings(range);
+  }
+  std::vector<Attack> attacks;
+  const char* proto = Field<const char*>(unit, 0x5C);
+  const char* manager = Field<const char*>(unit, 0x58);
+  const char* set = proto == nullptr ? nullptr : Field<const char*>(proto, 0x44);
+  const auto* tactics = set == nullptr ? nullptr : Field<const char* const*>(set, 0x10);
+  const std::int32_t count = set == nullptr ? 0 : Field<std::int32_t>(set, 0x14);
+  if (manager != nullptr && tactics != nullptr) {
+    const float own = OwnReach(proto);
+    const std::int32_t index = Field<std::int32_t>(manager, 0xA8);
+    if (index >= 0 && index < count && tactics[index] != nullptr) {
+      TacticAttacks(tactics[index], own, attacks);
     }
-  } else {
-    const char* proto = Field<const char*>(unit, 0x5C);
-    const char* manager = Field<const char*>(unit, 0x58);
-    const char* set = proto == nullptr ? nullptr : Field<const char*>(proto, 0x44);
-    const auto* tactics = set == nullptr ? nullptr : Field<const char* const*>(set, 0x10);
-    const std::int32_t count = set == nullptr ? 0 : Field<std::int32_t>(set, 0x14);
-    if (manager != nullptr && tactics != nullptr) {
-      const std::int32_t index = Field<std::int32_t>(manager, 0xA8);
-      if (index >= 0 && index < count && tactics[index] != nullptr) {
-        TacticRadii(tactics[index], radii);
-      }
-      for (std::int32_t i = 0; radii.empty() && i < count; ++i) {
-        if (tactics[i] != nullptr) {
-          TacticRadii(tactics[i], radii);
-        }
+    for (std::int32_t i = 0; attacks.empty() && i < count; ++i) {
+      if (tactics[i] != nullptr) {
+        TacticAttacks(tactics[i], own, attacks);
       }
     }
   }
-  Trim(radii);
-  return radii;
+  return Rings(attacks);
 }
 
 // The rings of a proto with no unit (the placement ghost): its <DisplayedRange> values, or the ranged attacks of every
 // tactic of the player's copy (a building has no current tactic before it stands).
 std::vector<Ring> ProtoRadii(const char* proto, const Range* range) {
-  std::vector<Ring> radii;
   if (range != nullptr && !range->fixed.empty()) {
-    for (const float metres : range->fixed) {
-      radii.push_back({RingRadius(metres), false});
-    }
-  } else {
-    const char* set = Field<const char*>(proto, 0x44);
-    const auto* tactics = set == nullptr ? nullptr : Field<const char* const*>(set, 0x10);
-    const std::int32_t count = set == nullptr ? 0 : Field<std::int32_t>(set, 0x14);
-    for (std::int32_t i = 0; tactics != nullptr && i < count; ++i) {
-      if (tactics[i] != nullptr) {
-        TacticRadii(tactics[i], radii);
-      }
+    return FixedRings(*range);
+  }
+  std::vector<Attack> attacks;
+  const char* set = Field<const char*>(proto, 0x44);
+  const auto* tactics = set == nullptr ? nullptr : Field<const char* const*>(set, 0x10);
+  const std::int32_t count = set == nullptr ? 0 : Field<std::int32_t>(set, 0x14);
+  const float own = OwnReach(proto);
+  for (std::int32_t i = 0; tactics != nullptr && i < count; ++i) {
+    if (tactics[i] != nullptr) {
+      TacticAttacks(tactics[i], own, attacks);
     }
   }
-  Trim(radii);
-  return radii;
+  return Rings(attacks);
 }
 
 void Release(const char* world, std::int32_t id, const std::vector<std::int32_t>& models) {
@@ -518,7 +591,7 @@ void Tick(char* world, std::int32_t) {
           ++g_logLines;
           uhc::Log(L"displayedRange: %ls of %d m on unit %d (%hs)%ls%ls", want.fills[k] ? L"fill" : L"ring",
                    want.rings[k].radius, want.id, Field<const char*>(Field<const char*>(want.unit, 0x5C), 0x10),
-                   want.rings[k].ships ? L", ships only (dashed)" : L"", alt ? L", Alt held" : L"");
+                   want.rings[k].dashed ? L", no land unit (dashed)" : L"", alt ? L", Alt held" : L"");
         }
       }
     }
@@ -564,7 +637,7 @@ void __stdcall OnGhost(char* ghost) {
           ++g_logLines;
           uhc::Log(L"displayedRange: ring of %d m on the placement ghost (%hs)%ls", ring.radius,
                    Field<const char*>(proto, 0x10),
-                   ring.ships ? L", ships only (dashed)" : L"");
+                   ring.dashed ? L", no land unit (dashed)" : L"");
         }
       }
     }

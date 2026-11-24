@@ -11,7 +11,9 @@ namespace uhc {
 
 // The value a provider fills: the evaluator sets `type` to the ref's registered type first, then calls the
 // provider; type 1 is a float at +4, 2 an int at +4, 3 a BString (one wchar_t*) at +4. The provider returns false
-// when it has no value (the text then shows nothing). The argument of {name(arg)} is in [0C6DF7Ch] during the call.
+// when it has no value (the text then shows nothing). During the call [0C6DF7Ch] points to a BString holding the
+// whole token, "{name(arg)}" (lowercased, seen in game): the stock providers take what is between the first "(" and
+// the next ")" (0x453F8F, strchr 28h / 29h, e.g. for {resource(food)}), and an added one does the same.
 struct DataRefValue {
   std::int32_t type;
   union {

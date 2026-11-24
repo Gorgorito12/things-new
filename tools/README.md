@@ -26,6 +26,8 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
 | [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
+| [`re/time_xs.py`](#retime_xspy) | Times the AI scripts in the running game: each XS compile (per file, per AI player, with the memory it adds) and each AI player's rule runs. |
+| [`xs_culture_split.py`](#xs_culture_splitpy) | Files the rules and functions of an AI script by culture and writes simulated splits (one culture kept, the others stubbed; or core plus culture files), for measuring what a split would change. |
 | [`mapsweep.py`](#mapsweeppy) | Plays every random map of a test copy for 30 s of game time and writes a CSV row per run: ok, crash (code, EIP, module), hang, XS error or timeout. Resumable; shards for parallel copies. |
 | [`clicksweep.py`](#clicksweeppy) | Plays a skirmish and clicks every kind of unit (select, double click, right click with own units), a Trading Post built first so trade units exist, with the crash watch on. |
 | [`mapstarts.py`](#mapstartspy) | Generates one random map many times in the editor (players × seeds, about 10 s a run) and lists the players the map left with no Town Center and no units. |
@@ -534,6 +536,51 @@ message: "Error 0003: could not compile file '%S'." 'aiLoaderStandard.xs' (chain
 `1 error(s) before it` means the error came from the game's own declarations, which it compiles
 before the script, not from the script. The example is the tactics problem in the
 [modding guide, "Tactics files"](../docs/modding-guide.md#tactics-files).
+
+## re/time_xs.py
+
+```
+python -I tools/re/time_xs.py <log> [--minutes N] [--update-seconds S] [--target rules|update]
+                                    [--csv <calls.csv>] [--no-update]
+```
+
+Start it at the main menu (`UHC_GAME_DIR` names the copy when several run), then start the game.
+It logs every compile of an XS file (the compile of the loader and each include, with the compiler
+object, the caller, the CPU and wall time, and the private bytes before and after), then for `S`
+seconds (default 120) every call of the target, and a table per player: calls, calls per second,
+CPU per call (mean, 95th percentile, maximum), calls over 10 ms and CPU per real second. Target
+`rules` (default) is `interpretRules` called by `BAI::update` (an AI player's rules, the script's
+own cost); `update` is all of `BAI::update`. It needs four hardware breakpoints: the two compile
+functions, the target, and one slot that follows the return address of the innermost timed call.
+
+The CPU time is the thread's cycle count read while the thread is stopped at the entry and the
+return, so the debugger's own delay is not in it, except the exception dispatch of the two hits:
+the smallest call (about 15-30 us) is taken as that floor and the table also gives the totals
+without it. The game runs slower while calls are timed (two hits per call, one call per frame per
+AI player); measure frame times and the AI's share of the main thread afterwards with
+`perfprobe.py --sample-hz`. It detaches by itself when the time runs out (`debugger.py` now drains
+the debug events still queued at detach; one left pending made the game exit). Stop it early with
+Ctrl+C, never by killing it. Used for the per-culture split question in
+[docs/performance.md](../docs/performance.md#splitting-the-ai-script-per-culture-2026-11-24).
+
+## xs_culture_split.py
+
+```
+python -I tools/xs_culture_split.py <aiMain.xs> --report
+python -I tools/xs_culture_split.py <aiMain.xs> --keep European --out <copy.xs>
+python -I tools/xs_culture_split.py <aiMain.xs> --keep European|all --split <folder>
+```
+
+Reads the script's top-level items (rules, functions, globals; comments and strings skipped), files
+a rule under a culture by its name (table `CULTURE` in the script) and a function under a culture
+when every call of it lies in that culture's items; the rest is the core. `--report` prints the
+items, lines and bytes per culture. `--out` writes one file with the core, the kept culture's items,
+and a stub for every other culture's item (a rule keeps its header and only disables itself, a
+function returns a default), so it still compiles. `--split` writes the same code as
+`aiWoLCore.xs` plus `aiWoL<Culture>.xs` with each kept culture's rules, and prints the loader's
+include lines; `--keep all` gives the original program in 1 + 8 files. It writes only the files
+named; installing them in a test copy is up to the caller. A measurement aid, not a split for
+release: the inline branches per civ in the core stay where they are.
 
 ## re/inspect_unittypes.py
 

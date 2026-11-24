@@ -379,6 +379,18 @@ Observed in game:
 - **When the AI compile runs.** A skirmish start compiles the AI scripts before it reloads the
   data, so a tactics file that one skirmish start loads shows up in the next game's AI compile.
   This is inferred from the order of the traces.
+- **Every AI player compiles its own copy** (2026-11-24, `tools/re/time_xs.py`, WoL, 1v1 and 8-player
+  skirmishes). FUN_005B52FF runs once per AI player, through FUN_005B50F6 (return 0x5B5238) called at
+  0x720BD5 (the player's AI setup), each time with a new compiler object, one after the other on the
+  main thread before the map script (FUN_005B50F6 again, from 0x908EB9) and the triggers
+  (`trigtemp.xs`, return 0x994402). Each `include` is a
+  nested FUN_005B4E4C call from 0xA4BA3B (return 0xA4BA40), so an included file is compiled again by
+  every player. WoL's `aiLoaderStandard.xs` takes 650–700 ms of CPU per AI player and adds about 6 MB
+  of private memory each; 7 AIs: about 4.7 s and 43 MB at the start of the game.
+- **The AI runs its rules every frame.** `BAI::update` 0x720CA7 is called every frame for every AI
+  player, and it calls `interpretRules` (0x721203, return 0x721208) with ESI = the BAI object, whose
+  player number is `[BAI+4]`. `[runtime+4]` (the global 0xC665F0 while rules run) is not the player
+  number: it read 5 for player 2.
 
 ## Dodge and critical hits (2026-10-28, for `dodgeAnyUnit`, `dodgeSoundSet`, `criticalSoundSet`)
 
@@ -1341,6 +1353,7 @@ by capstone (`cs`) and in game.
 | Visibility mask | `[[unit+B4h]+ACh]` (players that see the unit), `+B0h` | in game | A stealthed spy (radius 0.49) kept 0x2; a stealthed submarine (Z 2.5) went 0x2 → 0x6 when enemy ships came in range (stock). |
 | Visible to a player (UI) | 0x4818F4 | confirmed (`cs`) | Reads the mask when `[world+6921h]`; its cold path 0x6A05CD uses the local player: not for simulation code. |
 | Attack action for a target | FUN_00489ECC, `int thiscall(tactic, attacker, target, ...)`, `ret 1Ch` | confirmed (REA `ev_9fc9c2ff…`) | -1 for none (0x4974C1). Checks the attacker, alliance (0x484E01), the relation when arg 4 is 1, proto bit 0Eh, both units built; no visibility. Callers include the unit query 0x499CE4 and the auto-attack scoring 0x4A893B (12 call sites). Site of `stealthTargeting`. |
+| Action range test | 0x48B6AA..0x48B779 (referenced from the table at 0xB97D94, REA `ev_8d67303f…`; Ghidra has no function there) | [O] capstone, in game (2026-11-24) | `thiscall(action)`: the target `[action+14h]` by ID, then the unit distance `[[action+10h]]` vtable `+0BCh` (0x4898B2 → `+0B4h` 0x487B81) against `[action+24h]`, the MaxRange; within it, in range (0x49CC37); else a second compare with MaxRange + 2.0 (0xB9A498). 0x487B81 picks by who can move (0x45EE55): both, 0x4889AF, centre distance − both radii × √2 (0x48272C × 0xBA1384); the attacker fixed (a building) and the target moving, `+104h` 0x4945FE, the target's centre to the building's obstruction outline (0x485E26) − the target's radius × √2 (0x494666, REA `ev_7f3cea9e…`); the attacker moving and the target fixed, `+0FCh` 0x4882FE, its centre to the target's outline − its own radius × √2. In game: a Fort (26, 12 × 12 m) shot Settlers (0.49) 26.08, 26.31, 26.68 m from its outline, not 26.83 to 27.2 m. `displayedRange` draws its rings from this. |
 | Auto-attack range test | FUN_004A1A0E | confirmed (REA `ev_c9a4cfb6…`) | `thiscall(tactic, attacker, target, float)`: the target is of `[tactic+174h]` (AutoAttackType, 0x44D7FA), both built, and within range. Callers 0x4A8969, 0x94174E. |
 
 ### Gather orders, gather range and the herdable magnet (for `autoGatherFrom` and `herdWalkAwayFix`, WoL #79/#80, 2026-11-21)

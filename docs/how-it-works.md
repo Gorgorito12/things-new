@@ -2309,7 +2309,11 @@ The ring is a model of the table the tactics parser fills: 0x58F68F gives the ID
 it at the unit's feet. A world tick, ten times a second of game time, compares the selection of 0x453B28 and the Alt state
 with the units that hold rings, and hangs or removes them through the functions of the stock aura update.
 
-**Ring size:** a range ring is a mesh since 2026-11-22, its outer edge at N m in `range_<N>.gr2`'s own vertices (in metres through the file's units per metre). Before, with the white particle rings (`make_rings.py --range-particles`), the model's flat particle is drawn `<scale>` metres wide in all, not twice that: `range_<N>.particle` has
+**Ring size:** a range ring is a mesh since 2026-11-22, its outer edge at N in `range_<N>.gr2`'s own vertices. The game
+takes a model's vertices as metres and does not apply the file's `UnitsPerMeter`: until 2026-11-24 the files were written
+in the stock basis (0.615 units a metre), and every ring showed 0.615 of its radius (in game, the 26 m ring passed a Settler
+16 m from the Fort's centre, the 55 m ring passed between Settlers 32 and 34 m out). They are now written with one unit a
+metre: the 17, 31 and 35 m rings pass between Settlers at 16 and 18, 30 and 32, 34 and 36 m. Before, with the white particle rings (`make_rings.py --range-particles`), the model's flat particle is drawn `<scale>` metres wide in all, not twice that: `range_<N>.particle` has
 a scale of 2 × N / 0.97, the texture's line ending at 0.97 of its half width (measured in game, 2026-11-21: with the
 half width as the scale every ring showed half its radius).
 
@@ -2321,8 +2325,36 @@ player's proto: its action entries are 12 bytes at `[tactic+44h]` (count `+48h`)
 `[[tactic]+1Ch]`, as the attack list 0x487EEE reads them. An action counts when bit 0 (active) and bit 0Ah (`<RangedLogic>`,
 set by its handler 0x5FAC6D) of `[action+64h]` are set; its range is 0x4946D6(action, −1), the entry the stat panel shows. The
 player's copy is read every tick, so a range tech shows at once. A tactic with no ranged attack (a cannon limbered to move)
-takes the ranged attacks of all the unit's tactics. Each radius goes to the nearest ring size; equal sizes share a ring;
-at most 4 rings a unit, the largest first, and 60 rings in all, the units with the longest ranges first.
+takes the ranged attacks of all the unit's tactics. Each radius goes to the nearest ring size (every metre from 4 to 50,
+then 55, 60, 65, 70, 80, 90, 100); equal sizes share a ring; at most 4 rings a unit, the largest first, and 60 rings in
+all, the units with the longest ranges first.
+
+**Where the ring goes (2026-11-24).** `MaxRange` is not measured from the unit's centre. The action's range test
+(0x48B6AA..0x48B779; the function is referenced from the table at 0xB97D94) compares the unit distance (unit vtable `+0BCh`,
+which calls `+0B4h`, 0x487B81, with the target) with the action's `[action+24h]`. That distance depends on who can move
+(0x45EE55: not when bit 4 of the proto's first flag byte is set, else when `[proto+80h]` is above 1e-6):
+- both move (0x4889AF): the centre distance minus each one's radius × √2, the radius being the larger of the proto's
+  obstruction radii `[proto+88h]` / `[proto+8Ch]` (0x48272C, ×√2 at 0x488A06 with the constant 0xBA1384);
+- a building on a unit (0x4945FE): the distance from the unit's centre to the building's obstruction rectangle (0x485E26,
+  0 inside), minus the unit's radius × √2 (0x494666);
+- a unit on a building (0x4882FE): its centre to the building's rectangle, minus its own radius × √2.
+
+So the key draws each ring where an infantry unit's centre (radius 0.49 m, the Musketeer's, the Settler's) comes into
+range: `MaxRange` + 0.69 m, plus 0.69 m more for an infantry attacker (its own radius × √2), or the half side of a
+building's rectangle (the smaller one, so the ring stays inside the zone on every side). An attack that reaches only
+structures (below) goes to their wall, with no target radius. Measured in game (2026-11-24, a mod's Fort, `MaxRange` 26 and
+a 12 × 12 m rectangle, Settlers of 5 HP created on the 2 m grid so that one shot kills, the two players turned enemies by
+a trigger after the units stood): Settlers whose centre was 26.08, 26.31 and 26.68 m from the rectangle were shot, 26.83,
+26.9 and 27.2 m were not. The limit is 26 + 0.69. Their centres were up to 34.4 m from the Fort's: the old ring, meant to be 26 m from
+the centre, was 6.7 m short (and drawn at 16 m: "Ring size" above). A first scene with the Outpost (`MaxRange` 24, 4 × 4 m) and the Blockhouse (24, 8 × 8 m)
+agreed: shot at 23.6 and 21.3 m from the rectangle less 0.69, not at 24.9 and 26.0. The zone is the rectangle grown by that
+reach, so past a corner it goes further than the circle: (√2 − 1) × the half side, 2.5 m for the Fort, 0.8 m for the
+Outpost.
+
+**Line of sight is separate.** A building only shoots at what its player sees, and sight is measured from the centre, on
+a grid. With the Fort's own `LOS` of 26 (no age tech) it shot Settlers 24 and 26 m from its centre along its sides and
+none at 25.5 m on a diagonal or at 26.9 to 30 m, though all were in range; with `LOS` 50 in the test data it shot every
+one in range. The age techs `Colonialize` (+7) and `Fortressize` (+4) give buildings 37 m and more.
 
 **The placement ghost.** The shared ghost update (`ghostobservers.*`: the jump at 0x96E4E7 in FUN_0096E062, before the
 ghost's placement test, `AddGhostObserver`; `annexFacing` turns the ghost there too) runs each frame of a placement, the
@@ -2349,7 +2381,7 @@ key needs nothing for it.
 colour: about (48, 44, 213) for player 1's (45, 45, 245), 3 to 4 px wide at the default zoom. The range ring now matches
 it: `range_line.ddt` is white with alpha 0 across the whole line (until 2026-11-23 a 150-grey core between white edges of
 alpha 255), so the shader's `diffuse *= lerp(pixelxformColor, 1, diffuse.a)` gives the owner's colour itself. The line is
-0.5 m wide, +0.008 m per metre of radius. The ring used to look pale (in game a core of (195, 178, 250) for blue and
+0.31 m wide, +0.005 m per metre of radius (written as 0.5 and 0.008 in the old basis, the same on screen). The ring used to look pale (in game a core of (195, 178, 250) for blue and
 (255, 179, 162) for red) because of its bump map. `BumpPS` in the game's `sm3_shaders.hlsl` reads the bump as
 (x, y, z, shine) = (A, G, B, R), and adds the sun's shine, scaled by R, over the colour. The old flat bump was
 (R 128, G 128, B 255, A 255): half shine on a normal tilted 45° along the ring. `range_line_bump.ddt` is now
@@ -2359,10 +2391,11 @@ alpha 255), so the shader's `diffuse *= lerp(pixelxformColor, 1, diffuse.a)` giv
 **Fills and dashed rings (2026-11-23).** Each ring is one or two models of `effects\uhc_rings`:
 - `range_<N>.xml`: the line.
 - `rangefill_<N>_p<player>.xml`: its fill.
-- `range_<N>_ships.xml`: a dashed line with no fill, for an attack that reaches only ships.
+- `range_<N>_ships.xml`: a dashed line with no fill, for an attack that reaches no unit on land (only ships, or only
+  structures).
 
 The fill:
-- It is a flat disc 0.22 m over the feet, under the line, reaching the middle of the line.
+- It is a flat disc 0.135 m over the feet, under the line (0.15 m), reaching the middle of the line.
 - It uses the game's `alphablend` effect, which blends by the texture's alpha.
 - Engine tests in game, 2026-11-23:
   - the selection decal effect `decalselection` on a mesh drew nothing;
@@ -2375,13 +2408,17 @@ The fill:
 - Its alpha (DXT5, smooth at these low values) is 0 up to 20 % of the radius, then rises as t^1.2 to the colour's edge
   value: 0.38 for blue, 0.36 purple, 0.32 red, 0.30 the others.
 
-**Ships only.** An attack counts as ships-only when:
-- its `<Rate>` list (`[action+0Ch]`, count `+10h`, 0Ch-byte entries, `+0` the unittype) is not empty;
-- every type on it is `Ship`, or a type whose every proto in the database (`[db+54h]`, count `+58h`, tested with the
-  is-a test 0x44D7FA) is a Ship. That covers `AbstractWarShip` and a ship's own proto.
+**What an attack reaches.** Each type of its `<Rate>` list (`[action+0Ch]`, count `+10h`, 0Ch-byte entries, `+0` the
+unittype) is sorted by its protos in the database (`[db+54h]`, count `+58h`, tested with the is-a test 0x44D7FA):
+- land units: one of its protos is neither a `Ship` nor a `Building` (`Unit`, `AbstractInfantry`);
+- ships: every one is a `Ship` (`AbstractWarShip`, a ship's own proto);
+- structures: the rest, buildings or buildings and ships (`LogicalTypeShipsAndBuildings`, a torch).
 
-Ship's ID comes from the unittype name table `[db+190h]` (0x58E685 / 0x40295B). Each type is worked out once per
-database.
+An attack reaches land units when one of its types does (or its list is empty): a filled ring. Otherwise it gets the
+dashed ring. A structures-only attack is left out when the unit has another attack on land units (2026-11-24, after a question on
+the Grenzer's second ring: it was the 6 m torch, `BuildingAttack` on `LogicalTypeShipsAndBuildings`); alone, as on a
+mortar, it keeps its dashed ring. The IDs of `Ship` and `Building` come from the unittype name table `[db+190h]`
+(0x58E685 / 0x40295B). Each type is worked out once per database.
 
 **Caps.** The caps count models: 60 in all, so a filled ring is two.
 
@@ -6474,6 +6511,90 @@ thread 29 % against 19 %; the difference follows the other games' load (render t
 whose check measured 1–2 µs a frame.
 
 Not tested: a real keyboard (posted messages only), another resolution than 1920 × 1080, IME input.
+
+### techGadgets
+
+**Why it exists.** Nothing in the stock interface depends on a tech: a layout can only show what its gadgets always
+show. A mod whose fourth resource appears with a late tech (a resource row painted in the panel's background) needs
+two versions of a panel and something to switch them.
+
+**What it does.** Each cfg line names a tech and one or two gadgets. In the world update (`worldtick.*`), every 100 ms
+of game time and at once in a new world or for another shown player, it reads the tech's state for the player the
+interface shows: `[game+3C0h]`, the player `{resource()}` reads, through `0x94AF27` (`bool thiscall([world+7Ch],
+player, tech)`); the tech's ID comes from `0x600BE1` on the database `[game+140h]`, again after each data load. The
+gadgets are set from Direct3D's Present (`d3d9hooks.*`), every frame, so also while the game is paused: each is found
+by name in any panel through `0x433A2C` (`thiscall(manager, int* out, const char* name)`, what the UI commands
+`gadgetReal` and `gadgetUnreal` use, `uigadgets.*` `FindAnywhere`), and its handle is kept. A gadget is shown or
+hidden (`0x447F7B` / `0x448F13`, `uigadgets.*` `Show`) only when its flags `[gadget+0A4h]` say it is in the other
+state (bits 0 and 1 set and bit 7 clear: shown; none of 0, 1, 7: hidden; the tests of the base show 0x447BBC and hide
+0x447CEA). Without the Present observer (another DLL took the Direct3D import) the update sets them itself.
+
+**Why it is safe.**
+- Interface only: it reads a tech's state and calls the game's own show and hide, as the console's `gadgetReal` does.
+  Nothing reaches the simulation.
+- A handle carries a generation (`uigadgets.h`), so a rebuilt interface resolves the old handle to no gadget and the
+  name is looked up again (at most every 2 s while it is missing, since the lookup walks every panel). A missing
+  gadget or tech leaves the layout as it is.
+- Before the first tech check of a world (a game starting or a save loading) it writes nothing: the layout's
+  defaults show. Its state is not saved; a loaded game reads the tech again.
+- The engine's own choice of panel variant (the 12 `SettlerCountDialog-*` panels, chosen by civ type and by the full
+  or minimized interface) shows or hides the variant, never its children, so the children keep what the key set; a
+  gadget the game showed or hid again would be set back on the next frame (logged with `log`).
+- Cost: per frame, two handle lookups and a flag read per gadget; per 100 ms, one tech test per line.
+
+### incomeRates
+
+**Why it exists.** The stock resource panel shows stockpiles only: how fast each resource comes in is not shown
+anywhere.
+<!-- private:begin -->
+DE's resource panel can show it (its option "Resource Gather Per Minute", `OptionResourceGatherRate`; see "What DE
+does" below).
+<!-- private:end -->
+
+**Where income comes in.** Every change of a player's stockpile through the game goes through one add, `0x49A98A`
+(`bool thiscall(player, resource, float amount, bool)`, `ret 0Ch`); with shared resources (`[world+6912h]`) it divides
+the amount among the player and its allies (`0x67993B`). Income is told apart by the caller, as `resourceDebt` does:
+the global trickle returns to `0x4E0CFE`, unit AutoGather to `0x4C379D`, the gather tick to `0x4ED1F3`. Costs,
+tributes, the market, shipments, treasures and triggers come from other callers.
+
+**What it does.**
+- A 6-byte `jmp` at the add's head (`push ecx / mov eax,[0C66234h]`, `hooks/incomerates_hooks.asm`) compares the
+  return address with the three callers; on a match it calls `UhcIncomeCount` (`pushad` around it) with the player,
+  the resource, a positive amount and the caller. Then it runs the two stolen instructions and jumps to `0x49A990`.
+- The keys that pay a player from the DLL through the same add (`unitResourceAuras`, `resourceBounty` and
+  `killBountyTechs`, `pillageGold`) count their payment with `CountIncome` (`income.h`).
+- The amounts go into buckets of one second of game time, per player and resource (16 × 16), filled in the world
+  update; the rate is the sum of the last N seconds (default 20) over the time they cover. A new world clears them.
+- The data ref `{uhcIncome(<resource>)}` (`datarefs.*`, a string) gives the rate with one decimal, per second (or
+  per minute, whole, with `perMinute`). Its argument is read as the stock refs read theirs: the argument BString at
+  `[0C6DF7Ch]` holds the whole token, `{uhcincome(food)}`, and the stock helper `0x453F8F` takes the text between the
+  first `(` and the next `)`; the name becomes a resource through `0x44709C` (`int thiscall(db, const char*)`). The
+  player is the one the interface shows (`[game+3C0h]`); with shared resources `{resource()}` shows the sum of the
+  stockpiles of every player the shown one counts as itself or an ally (`0x63C807`, `0x4707EC`), so the rate is that
+  sum of rates.
+
+**Why it is safe.**
+- It reads the add's arguments and writes only its own buckets; the add runs as before. EAX is free at the head (the
+  stolen `mov` writes it); the flags are not read before the next compare.
+- Cost: three compares on every add; a counted add is a few float adds. No unit is walked. The ref reads up to 16 ×
+  21 floats when a gadget refreshes. Measured in an 8-player game with 7 AIs (`log`): up to 14,200 adds a minute by
+  the eighth minute, 0.3 to 0.8 ms a minute inside the count (about 13 µs per second of game time); an A/B of two
+  runs each (`perfprobe.py`) showed no difference in frames over 50 ms (8 and 6 on, 7 and 9 off) or update time per
+  second (modding guide, "incomeRates").
+- The rates are not saved: after a load they build up again over the window.
+- Interface only: the numbers never reach the simulation, so players may set it differently.
+
+<!-- private:begin -->
+**What DE does** (`AoE3DE_s.exe`, read-only): its interface layout (`UI.bar`, `uimainnew.xaml`) has a collapsed
+`<res>_gatherpermin` text "(+999)" beside each amount (food, wood, gold, fame; dance, trade, influence for the other
+civs), and the options page the check box `OptionResourceGatherRate`, "Resource Gather Per Minute: additional
+information in the resources panel, displaying resources gather per minute". The code that binds those texts is
+FUN 0xE473D0 (it finds each by name, `food_gatherpermin` at 0xE474FB); the code that fills them, and so whether it
+counts gross or net income and over which window, was not found: a full REA analysis of that exe does not finish
+(4 h, 2026-11-05), the byte search found no reference to `kbGetResourceIncome` or to the "1 Minute Income" debug
+strings, and about 42 % of its functions are encrypted on disk. So DE's per-minute display is confirmed; how DE
+computes it is not.
+<!-- private:end -->
 
 ### impactBoneFix
 
