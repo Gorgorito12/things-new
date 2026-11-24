@@ -45,26 +45,20 @@ WoL keeps its own DLL and takes the code of the features it wants, from the
 
 In any other mod:
 <!-- private:end -->
-1. **Get the release zip** from [Releases](https://github.com/Gorgorito12/tad-engine-extensions/releases).
-   It holds `UHC.dll`, a `Startup\uhc.cfg` with every key commented out, a short `README.txt` and the
-   license, plus `beside-another-dll\` (`dinput8.dll` and its `engine-ext\engine-ext.cfg`, the same
-   code for a game that keeps another `UHC.dll`), `art\effects\uhc_rings\` (the aura rings,
-   for the mod's `art` folder), `art\ui\uhc\health_overheal.ddt` (the orange end of the portrait HP bar, for
-   `overhealHitpointBars`) and `dxvk\` (DXVK's `d3d9.dll` and its license, for `rendererOption`).
+1. **Get the release zip** from [Releases](https://github.com/Gorgorito12/things-new/releases).
+   It holds `dinput8.dll`, an `engine-ext\engine-ext.cfg` with every key commented out, a short `README.txt`
+   and the license, plus `art\effects\uhc_rings\` (the aura and range rings, for the mod's `art` folder),
+   `art\ui\uhc\health_overheal.ddt` (the orange end of the portrait HP bar, for `overhealHitpointBars`) and
+   `dxvk\` (DXVK's `d3d9.dll` and its license, for `rendererOption`). There is no `UHC.dll` and no patcher.
 2. **Make your mod folder a complete game folder:** a copy of the game's `bin` folder plus your files.
    Never modify the Steam install.
-<!-- private:begin -->
-3. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`. It must
-   be the unmodified Steam exe.
-<!-- private:end -->
-<!-- public: 3. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`. It must be the unmodified Steam exe. -->
-4. **Copy `UHC.dll` and `Startup\uhc.cfg` from the zip** over the patcher's files.
-5. **Enable keys** by removing the `#` in front of them: always `ignoreRegistryPath`, then the ones you
-   want, with the data each needs.
-6. **Start the mod's `age3y.exe`.** `UHC.log` appears next to it, and every key you enabled says
-   `applied`.
-
-<!-- public: The full version is in [Adding UHC.dll to your mod](docs/modding-guide.md#adding-uhcdll-to-your-mod). -->
+3. **Copy `dinput8.dll` and the `engine-ext` folder** next to the mod's `age3y.exe`. It works with the
+   unmodified Steam exe, and also beside a loader that runs another `UHC.dll`.
+4. **Enable keys** in `engine-ext\engine-ext.cfg` by removing the `#` in front of them: `ignoreRegistryPath`
+   when nothing else makes the game read the mod folder's data, then the ones you want, with the data each
+   needs (data files go in `engine-ext\`).
+5. **Start the mod's `age3y.exe`.** `engine-ext\engine-ext.log` appears; its first line is
+   `dinput8.dll x.y.z`, and every key you enabled says `applied`.
 
 ## Building
 

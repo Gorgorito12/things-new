@@ -35,7 +35,7 @@ import sys
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-REPO_URL = "https://github.com/Gorgorito12/tad-engine-extensions"
+REPO_URL = "https://github.com/Gorgorito12/things-new"
 DXVK_VERSION = "3.1.1"
 DXVK_D3D9_SHA256 = "265888c31ca78dffa290c39cb7e50bfb02762590e41927906e46fb32f01497fa"
 
