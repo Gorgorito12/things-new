@@ -234,8 +234,8 @@ noDamageOnUnbuiltFoundations  unbuilt foundations take no damage
 truckAttackResourceFix [log] a TruckAttack no longer empties the buildings it hits
 deadReplacementAtZeroInventory [log] a hunt or herdable leaves its DeadReplacement when its body is used up
 fallenHeroTacticsFix          knocked-out or stunned units keep their tactic
-impactBoneFix [all]           impact effects hung on scaled bones keep their size
-customImpactTypes <names>     impact types after the 15 stock ones (.dmg, ImpactType)
+impactBoneFix [all] [log]     impact effects hung on scaled bones keep their size
+customImpactTypes <names> [log]   impact types after the 15 stock ones (.dmg, ImpactType)
 nowalkfarm                    farm gatherers keep their first spot
 repairWallGlobal              UI syscall repairWallGlobal(): repair all walls
 compatMode                    32-bit display modes also offered at 16 bits
@@ -305,7 +305,9 @@ broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles p
 broadsideSoundSet [log]       a BroadsideAttack action's <BroadsideSoundSet> sound set at each
                               shot instead of ShipCannonShoot (rocket ships)
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
-displayedRange [log]          a selected unit shows a ring per ranged attack while Alt is held
+displayedRange [noPlacement] [log]   a selected unit shows a ring per ranged attack while Alt is
+                              held (<AlwaysDisplayRange>: without Alt); a building being placed
+                              shows its rings (noPlacement: not)
 steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit
                               instead of jumping with its animations
 inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]   while Alt is held,
@@ -320,7 +322,8 @@ lifespanAfterConstruction [UnitType] [log]   a marked building's Lifespan starts
 gaiaSocketsOnly [UnitType] [log]  socketed buildings only on sockets owned by Gaia
 customHotkeyContexts [log]    keymap contexts <ProtoName>Accel: hotkeys for new buildings
 snareOnlyHitUnit [log]        a snared unit no longer slows the group it moves with
-techRenameEffect [log]        tech effect SetTechName: rename a tech per player
+techRenameEffect [log]        tech effect SetTechName: rename a tech per player (alias
+                              enableTechRenameEffect)
 noCorpseDopples [UnitType] [expire=S] [log]   dead marked units (hunt carcasses) leave no dopple
 danceBonusCivs Civ ... [log]  fire pit train/XP/gather/regen dances for more civs
 startingTC [UnitType] [log]   marked buildings count as a player's first town center
@@ -330,6 +333,7 @@ civFirstTC [log]              a civ's <firstTC> in civs.xml replaces the TownCen
 firstTC [UnitType] [log]      civFirstTC, and startingTC when a type is named, in one line
 scenarioCivs [log]            data\\scenariocivs.xml: more civs after civs.xml, for scenarios
                               and campaigns, not in the skirmish list, in the editor's
+                              player civ list
 transformInventory [all] [scale] [UnitType] [log]   units transformed by a tech get the
                               resources (InitialResource) of their new proto
 noTrainNearEnemyTC M [UnitType] [near UnitType]... [nowarn | warn=Text] [refuse] [log]   marked units
@@ -354,6 +358,11 @@ multiplierDecimals [N]        the attack rows' bonus multipliers with N decimals
                               1.25x instead of 1.3x, in both panels and their tooltips
 attackTypeIcons T S P ...     a bonus multiplier against these unit types shows in the attack
                               rows, with that icon (P) and name (string S)
+techGadgets <Tech> <GadgetAfter> [<GadgetBefore>]   (repeatable) a gadget of the interface
+                              shows once the tech is active, the other one before it
+incomeRates [seconds] [perMinute|perSecond] [log]   {{uhcIncome(<resource>)}} in a formatText
+                              gadget: what the shown player gathered and trickled over the
+                              last seconds (default 20), per second or per minute
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
@@ -383,7 +392,8 @@ transformSpan [log]           transformspan on a TransformUnit effect turns the 
 hcTargetTechs [log]           tech flags HCTargetEnemy and HCTargetAll
 detonationDeath [log]         <DetonationProtoAction> fires an action when a unit dies
 accuracyTechs [log]           a Data tech effect may change an action's Accuracy
-cratePriority <Civ> <Res> <Res> <Res>   a civ's order of gathering crates
+cratePriority <Civ|all> <Res> <Res> <Res>   a civ's order of gathering crates (repeatable;
+                              a line "cratePriority log" logs)
 sharedBuildLimit [log]        protos share a build limit, by type, with weights, or by team
 annexFacing [log]             <AnnexOf> annexes face their parent building and fall with it
 customWalls [log]             <WallPiece> tags: a wallBuild proto lays its own posts and pieces
@@ -418,7 +428,8 @@ buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change trai
                               research, Maintain, heal and build speed
 bufferedFileReads [KB] [readahead] [verify]  buffered file reads: fewer stutters, faster
                               loading; readahead reads the next block on a worker thread
-fastVertexFill                waving flags drawn without reading video memory: more fps with flags on screen
+fastVertexFill [verify] [log]   waving flags drawn without reading video memory: more fps with
+                              flags on screen
 fastLastInLine [log] [verify]  no freeze after a home city shipment in a mod with many techs
 xsErrorLog [lines]            the XS compiler's and runtime's messages go to the log
 multipleInstances [background]  run beside a copy of the game from another folder
@@ -426,11 +437,11 @@ preloadDll <file> ...         engine-ext.cfg only: dinput8.dll also loads these 
                               folder before the game starts, as another dinput8.dll proxy would
 rendererOption [vulkan|dx9] [folder=D] [log] [conf=...]   a Renderer entry in the options
                               menu: Vulkan (DXVK, from dxvk\\) at the next start, more fps
-menuOptions <key> ...         players switch bufferedFileReads / fastVertexFill on or off in the
-                              options menu, from the next start
+menuOptions <key> ...         players switch bufferedFileReads / fastVertexFill / fastLastInLine
+                              on or off in the options menu, from the next start
 
 What each key needs from your mod, and how well it is tested: see the guide.
-No feature has been tested in multiplayer yet. License: MIT, see LICENSE.txt.
+Single player only: no feature has been tested in multiplayer. License: MIT, see LICENSE.txt.
 
 Vulkan renderer (rendererOption)
 --------------------------------
