@@ -271,9 +271,10 @@ class Debugger:
             self._apply(handle, True)
 
     def run(self, deadline, on_hit, on_idle=None, idle_ms=400):
-        """Returns "exited" when the game exits, "deadline" when time runs out."""
+        """Returns "exited" when the game exits, "deadline" when time runs out. deadline is a
+        time.time() value, or a function returning one (read before every event)."""
         event = (ctypes.c_ubyte * 192)()  # DEBUG_EVENT, 64-bit layout
-        while time.time() < deadline:
+        while time.time() < (deadline() if callable(deadline) else deadline):
             if not k32.WaitForDebugEvent(event, idle_ms):
                 if on_idle is not None:
                     on_idle()
@@ -332,6 +333,39 @@ class Debugger:
         k32.Wow64SetThreadContext(handle, ctx)
         return DBG_CONTINUE
 
+    def _drain(self, quiet_ms=150, limit_s=5.0):
+        """Handle the debug events still queued after the breakpoints were cleared: a thread that
+        hit a breakpoint just before has its single-step exception in flight, and one left pending
+        at detach goes to the game, which then exits (seen with time_xs.py, hundreds of hits a
+        second). Each is continued as handled (with DR7 clear the instruction runs once more and
+        does not stop); everything else is passed on as run() would."""
+        event = (ctypes.c_ubyte * 192)()
+        end = time.time() + limit_s
+        while time.time() < end and k32.WaitForDebugEvent(event, quiet_ms):
+            code, pid, tid = struct.unpack_from("<III", event, 0)
+            status = DBG_CONTINUE
+            try:
+                if code == 1:
+                    exc = struct.unpack_from("<I", event, 16)[0]
+                    if exc in (0x80000004, 0x4000001E):
+                        handle = self.threads.get(tid)
+                        if handle:
+                            self._apply(handle, False)  # DR7 and DR6 cleared in that thread too
+                    elif exc not in (0x80000003, 0x4000001F):
+                        status = DBG_NOT_HANDLED
+                elif code == 2:
+                    self.threads[tid] = struct.unpack_from("<Q", event, 16)[0]
+                elif code in (3, 6):
+                    k32.CloseHandle(struct.unpack_from("<Q", event, 16)[0])
+                elif code == 4:
+                    self.threads.pop(tid, None)
+                elif code == 5:
+                    self.attached = False
+            finally:
+                k32.ContinueDebugEvent(pid, tid, status)
+            if not self.attached:
+                return
+
     def detach(self):
         # Clear the debug registers before anything that could fail: a breakpoint left set
         # after the debugger is gone raises an exception nobody handles, and the game dies.
@@ -340,6 +374,7 @@ class Debugger:
             self.breakpoints = []
             for handle in self.threads.values():
                 self._apply(handle, True)
+            self._drain()
             k32.DebugActiveProcessStop(self.pid)
             self.attached = False
             self.log("detached; the game keeps running")
