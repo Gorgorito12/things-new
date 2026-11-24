@@ -775,6 +775,13 @@ Modders download a zip, so they never need a compiler. The version has a single 
    It prints the SHA-256 of the zip and of the DLL, and refuses to replace an existing zip
    unless given `--force`. The game exe is never included: it is Microsoft's binary, and each
    modder patches their own copy.
+
+   `--dinput8-only` writes `dist\dinput8-x.y.z.zip` instead, a package without `UHC.dll`. Its top folder `dinput8-x.y.z\`
+   holds `dinput8.dll`, `engine-ext\engine-ext.cfg` (the same template), the same `art`, `dxvk` and `LICENSE.txt`,
+   and its own `README.txt`: copy `dinput8.dll` and `engine-ext` next to the exe. It needs no loader or patcher. With
+   the stock exe, it hooks the entry point itself (`src/engineext.cpp`). Beside another loader's `UHC.dll`, it runs
+   after that DLL. Only `build\Release\dinput8.dll` is checked. Test it the same way, in a copy with the stock exe
+   (such as `C:\AoE3-UHC-LanChat`): the first line of `engine-ext\engine-ext.log` is `dinput8.dll x.y.z`.
 4. **Test the zip as a modder would:**
    1. unzip it somewhere, then copy the **contents** of its `UHC-x.y.z\` folder into a test copy
       that has a patched exe, replacing its `UHC.dll` and `Startup\uhc.cfg` (the zip's top

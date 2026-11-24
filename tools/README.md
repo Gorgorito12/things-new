@@ -73,8 +73,12 @@ patching. It refuses any exe whose SHA-256 is not the stock build's. To add a si
 ## package_release.py
 
 ```
-python -I tools/package_release.py [--force] [--dxvk <folder>]
+python -I tools/package_release.py [--force] [--dxvk <folder>] [--dinput8-only]
 ```
+
+`--dinput8-only` writes `dist\dinput8-x.y.z.zip` instead. It is a package without `UHC.dll`: `dinput8.dll`,
+`engine-ext\engine-ext.cfg`, the same art, DXVK and license, and a README for that route. Only
+`build\Release\dinput8.dll` is checked.
 
 Checks `build\Release\UHC.dll` and stops if it fails any check:
 - it must be a 32-bit DLL that exports `_UHCMain@0`;
