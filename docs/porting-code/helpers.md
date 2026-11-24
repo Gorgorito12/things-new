@@ -2683,6 +2683,27 @@ inline constexpr Site kUiFieldEditBox{"UiFieldEditBox", 0x0062BDD2, kUiFieldEdit
 inline constexpr std::uint8_t kUiEditBoxTextBytes[] = {0x8D, 0xB7, 0x70, 0x01, 0x00, 0x00};
 inline constexpr Site kUiEditBoxText{"UiEditBoxText", 0x005C2C54, kUiEditBoxTextBytes, sizeof(kUiEditBoxTextBytes)};
 
+inline constexpr std::uint8_t kUiFindAnywhereBytes[] = {0x56, 0x57, 0x8B, 0xF9, 0x8B, 0x0D, 0xC0, 0x72, 0xC6, 0x00, 0x33, 0xF6, 0x39, 0x77};
+inline constexpr Site kUiFindAnywhere{"UiFindAnywhere", 0x00433A2C, kUiFindAnywhereBytes, sizeof(kUiFindAnywhereBytes)};
+
+inline constexpr std::uint8_t kUiGadgetShowFlagsBytes[] = {0x8A, 0x87, 0xA4, 0x00, 0x00, 0x00, 0xA8, 0x01, 0x74, 0x0A, 0xA8, 0x02, 0x74, 0x06, 0x84, 0xC0, 0x78, 0x02, 0x5F, 0xC3};
+inline constexpr Site kUiGadgetShowFlags{"UiGadgetShowFlags", 0x00447BBF, kUiGadgetShowFlagsBytes, sizeof(kUiGadgetShowFlagsBytes)};
+
+inline constexpr std::uint8_t kUiGadgetHideFlagsBytes[] = {0x8A, 0x86, 0xA4, 0x00, 0x00, 0x00, 0xA8, 0x83, 0x75, 0x08};
+inline constexpr Site kUiGadgetHideFlags{"UiGadgetHideFlags", 0x00447CFF, kUiGadgetHideFlagsBytes, sizeof(kUiGadgetHideFlagsBytes)};
+
+inline constexpr std::uint8_t kIncomeTrickleCallBytes[] = {0x56, 0xE8, 0x8C, 0x9C, 0xFB, 0xFF};
+inline constexpr Site kIncomeTrickleCall{"IncomeTrickleCall", 0x004E0CF8, kIncomeTrickleCallBytes, sizeof(kIncomeTrickleCallBytes)};
+
+inline constexpr std::uint8_t kIncomeAutoGatherCallBytes[] = {0x57, 0x53, 0xE8, 0xED, 0x71, 0xFD, 0xFF};
+inline constexpr Site kIncomeAutoGatherCall{"IncomeAutoGatherCall", 0x004C3796, kIncomeAutoGatherCallBytes, sizeof(kIncomeAutoGatherCallBytes)};
+
+inline constexpr std::uint8_t kResourceByNameBytes[] = {0x57, 0x8B, 0x7C, 0x24, 0x08, 0x85, 0xFF, 0x74, 0x2F, 0x56, 0x8D, 0x71, 0x7C, 0x57, 0x8B, 0xCE};
+inline constexpr Site kResourceByName{"ResourceByName", 0x0044709C, kResourceByNameBytes, sizeof(kResourceByNameBytes)};
+
+inline constexpr std::uint8_t kPlayerIsAllyOrSelfBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x0F, 0x8C, 0x75, 0x44, 0x01, 0x00, 0x83, 0xF8, 0x10, 0x0F, 0x8D, 0x6C, 0x44, 0x01, 0x00, 0x8B, 0x84, 0x81, 0xD4};
+inline constexpr Site kPlayerIsAllyOrSelf{"PlayerIsAllyOrSelf", 0x004707EC, kPlayerIsAllyOrSelfBytes, sizeof(kPlayerIsAllyOrSelfBytes)};
+
 inline constexpr std::uint8_t kEditorPaletteAddProtoBytes[] = {0x8D, 0x54, 0x24, 0x58, 0x52, 0x8D, 0x44, 0x24, 0x14, 0x50, 0x8B, 0xCF, 0xE8, 0xD4, 0xAC, 0x2D, 0x00};
 inline constexpr Site kEditorPaletteAddProto{"EditorPaletteAddProto", 0x007F5371, kEditorPaletteAddProtoBytes, sizeof(kEditorPaletteAddProtoBytes)};
 
@@ -3356,6 +3377,8 @@ Outcome ApplyModelCacheLimit(const Config& config);
 Outcome ApplyDmgPartBoneFix(const Config& config);
 Outcome ApplyFaithResource(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
+Outcome ApplyTechGadgets(const Config& config);
+Outcome ApplyIncomeRates(const Config& config);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
 // which of the keys it names the list then sees.
@@ -3525,6 +3548,9 @@ inline constexpr Feature kFeatures[] = {
     {"resourceDebt", ApplyResourceDebt},
     // After resourceDebt and the keys that verify the heads of the inventory add and the inventory recreate.
     {"linkedResource", ApplyLinkedResource},
+    // After resourceDebt, linkedResource, unitResourceAuras and pillageGold, which verify the stock bytes of the add
+    // 0x49A98A whose head this key writes.
+    {"incomeRates", ApplyIncomeRates},
     {"auraStacking", ApplyAuraStacking},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
@@ -3544,6 +3570,8 @@ inline constexpr Feature kFeatures[] = {
     {"playerIcon", ApplyPlayerIcon},
     // After rendererOption: it reads its search fields from the Present of whichever Direct3DCreate9 the game gets.
     {"editorSearch", ApplyEditorSearch},
+    // After rendererOption: it sets its gadgets from the Present of whichever Direct3DCreate9 the game gets.
+    {"techGadgets", ApplyTechGadgets},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
 };
@@ -3566,6 +3594,7 @@ inline constexpr const char* kHandledKeys[] = {
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
+    "techgadgets", "incomerates",
 };
 
 }  // namespace uhc
@@ -3774,7 +3803,7 @@ bool AddWorldTick(WorldTick tick);
 
 namespace {
 
-constexpr std::size_t kMaxTicks = 24;  // 15 keys add one
+constexpr std::size_t kMaxTicks = 32;  // about 20 keys add one
 
 using WorldUpdateFn = bool(__fastcall*)(char* world, void* unused, std::int32_t a, std::int32_t deltaMs);
 
@@ -6266,7 +6295,9 @@ namespace uhc {
 
 // The value a provider fills: the evaluator sets `type` to the ref's registered type first, then calls the
 // provider; type 1 is a float at +4, 2 an int at +4, 3 a BString (one wchar_t*) at +4. The provider returns false
-// when it has no value (the text then shows nothing). The argument of {name(arg)} is in [0C6DF7Ch] during the call.
+// when it has no value (the text then shows nothing). During the call [0C6DF7Ch] points to a BString holding the
+// whole token, "{name(arg)}" (lowercased, seen in game): the stock providers take what is between the first "(" and
+// the next ")" (0x453F8F, strchr 28h / 29h, e.g. for {resource(food)}), and an added one does the same.
 struct DataRefValue {
   std::int32_t type;
   union {
@@ -8283,6 +8314,22 @@ std::int32_t FindChild(void* parent, const char* name);
 // the text changes; copy it.
 const wchar_t* FieldText(const void* field);
 
+// The handle of the first gadget named `name` in any of the manager's panels (0x433A2C, what the UI commands
+// gadgetReal and gadgetUnreal use), or 0 if none or before the UI exists. Walks every panel: cache the handle.
+std::int32_t FindAnywhere(const char* name);
+
+// True if the show / hide addresses below hold the stock code (0x447F7B, 0x448F13 and the flags their bases test).
+bool VerifyUiShow(const char* feature);
+
+// Shows or hides a gadget (0x447F7B / 0x448F13, thiscall([[0C66244h]+44h], handle), what gadgetReal and
+// gadgetUnreal run). Nothing for handle 0 or before the UI exists. Showing a hidden gadget puts it above its
+// siblings; showing a shown one, or hiding a hidden one, does nothing.
+void Show(std::int32_t handle, bool visible);
+
+// The state the base show and hide test, from the flags [gadget+0A4h]: 1 shown (bits 0 and 1 set, bit 7 clear),
+// 0 hidden (none of bits 0, 1, 7), -1 for anything in between or no gadget.
+int ShownState(std::int32_t handle);
+
 }  // namespace uhc::ui
 ```
 
@@ -8307,12 +8354,19 @@ using FindChildFn = std::int32_t*(__fastcall*)(void* parent, void* edx, std::int
 const auto kLookup = reinterpret_cast<LookupFn>(0x0040423C);
 const auto kFindChild = reinterpret_cast<FindChildFn>(0x00433812);
 
+using FindAnywhereFn = std::int32_t*(__fastcall*)(void* manager, void* edx, std::int32_t* out, const char* name);
+using ShowFn = void(__fastcall*)(void* manager, void* edx, std::int32_t handle);
+const auto kFindAnywhere = reinterpret_cast<FindAnywhereFn>(0x00433A2C);
+const auto kShow = reinterpret_cast<ShowFn>(0x00447F7B);
+const auto kHide = reinterpret_cast<ShowFn>(0x00448F13);
+
 template <typename T>
 T Read(const void* base, std::uint32_t offset) {
   return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
 }
 
 bool g_verified = false;
+bool g_showVerified = false;
 
 }  // namespace
 
@@ -8346,6 +8400,43 @@ std::int32_t FindChild(void* parent, const char* name) {
   std::int32_t handle = 0;
   kFindChild(parent, nullptr, &handle, name, 1);
   return handle == *reinterpret_cast<const std::int32_t*>(kNoGadget) ? 0 : handle;
+}
+
+std::int32_t FindAnywhere(const char* name) {
+  void* manager = Manager();
+  if (manager == nullptr || name == nullptr) {
+    return 0;
+  }
+  std::int32_t handle = 0;
+  kFindAnywhere(manager, nullptr, &handle, name);
+  return handle == *reinterpret_cast<const std::int32_t*>(kNoGadget) ? 0 : handle;
+}
+
+bool VerifyUiShow(const char* feature) {
+  if (!g_showVerified) {
+    g_showVerified = VerifyAll(feature, {&sites::kGadgetLookup, &sites::kGadgetShow, &sites::kGadgetHide,
+                                         &sites::kUiGadgetShowFlags, &sites::kUiGadgetHideFlags});
+  }
+  return g_showVerified;
+}
+
+void Show(std::int32_t handle, bool visible) {
+  void* manager = Manager();
+  if (manager != nullptr && handle != 0) {
+    (visible ? kShow : kHide)(manager, nullptr, handle);
+  }
+}
+
+int ShownState(std::int32_t handle) {
+  const void* gadget = Gadget(handle, kAnyGadget);
+  if (gadget == nullptr) {
+    return -1;
+  }
+  const std::uint8_t flags = Read<std::uint8_t>(gadget, 0xA4);
+  if ((flags & 0x03) == 0x03 && (flags & 0x80) == 0) {
+    return 1;
+  }
+  return (flags & 0x83) == 0 ? 0 : -1;
 }
 
 const wchar_t* FieldText(const void* field) {

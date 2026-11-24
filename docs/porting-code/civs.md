@@ -2244,6 +2244,7 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 #include "../log.h"
 #include "../patch.h"
 #include "../techtags.h"
+#include "../uigadgets.h"
 #include "../unittypes.h"
 
 namespace {
@@ -2254,7 +2255,6 @@ struct BString {
 
 constexpr std::uint32_t kGameGlobal = 0x00C66234;  // +13Ch world, +140h database, +3C0h the local player's ID
 constexpr std::uint32_t kNoGadget = 0x00C672C0;    // [..]: the handle of "no gadget"
-constexpr std::uint32_t kUiManager = 0x00C66244;   // [[+44h]]: the gadget manager (show / hide)
 constexpr std::uint32_t kGadgetTip = 0x68;         // a gadget's help text, a BString
 constexpr int kPlaces = 5;
 constexpr int kMaxTags = 4;
@@ -2263,7 +2263,6 @@ constexpr int kListRows = 2;  // up to this many techs: one per row; more: two p
 using GadgetByNameFn = std::int32_t*(__thiscall*)(void* panel, std::int32_t* out, BString* name, std::int32_t flag);
 using GadgetAnyFn = void*(__cdecl*)(std::int32_t handle);
 using GadgetReleaseFn = std::int32_t(__cdecl*)(std::int32_t handle);
-using GadgetShowFn = void(__thiscall*)(void* manager, std::int32_t handle);
 using SetTextureFn = void(__thiscall*)(void* gadget, const BString* path);
 using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
 using BStringFromIdFn = BString*(__thiscall*)(BString* self, std::int32_t id);
@@ -2279,8 +2278,6 @@ using RolloverFn = void(__cdecl*)(BString* text, const char* status, const char*
 const auto kGadgetByName = reinterpret_cast<GadgetByNameFn>(0x00AB7C2F);
 const auto kGadgetAny = reinterpret_cast<GadgetAnyFn>(0x00404296);
 const auto kGadgetRelease = reinterpret_cast<GadgetReleaseFn>(0x0040431B);
-const auto kGadgetShow = reinterpret_cast<GadgetShowFn>(0x00447F7B);
-const auto kGadgetHide = reinterpret_cast<GadgetShowFn>(0x00448F13);
 const auto kSetTexture = reinterpret_cast<SetTextureFn>(0x00638823);
 const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
 const auto kBStringFromId = reinterpret_cast<BStringFromIdFn>(0x0058EA52);
@@ -2440,13 +2437,7 @@ void* Object(std::int32_t handle) {
   return object;
 }
 
-void Show(std::int32_t handle, bool visible) {
-  const char* ui = *reinterpret_cast<const char* const*>(kUiManager);
-  void* manager = ui == nullptr ? nullptr : Field<void*>(ui, 0x44);
-  if (manager != nullptr && handle != 0) {
-    (visible ? kGadgetShow : kGadgetHide)(manager, handle);
-  }
-}
+void Show(std::int32_t handle, bool visible) { uhc::ui::Show(handle, visible); }
 
 void SetText(std::int32_t handle, const BString& text, const BString* tip) {
   void* object = Object(handle);

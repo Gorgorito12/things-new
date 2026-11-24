@@ -2087,6 +2087,25 @@ SITES = [
     ("UiFindChild", 0x433812, 0x0A),
     ("UiFieldEditBox", 0x62BDD2, 0x09),
     ("UiEditBoxText", 0x5C2C54, 0x06),
+    # uigadgets (shared): a gadget by name in any of the manager's panels, 0x433A2C (int* thiscall(manager, int* out,
+    # const char* name), ret 8: 0x433812 on each panel [manager+50h], count [manager+54h]; what the UI commands
+    # gadgetReal 0x7E2244 and gadgetUnreal 0x7E2278 use). The flags [gadget+0A4h] the base show 0x447BBC tests
+    # (bits 0 and 1 set and bit 7 clear: shown, nothing to do) and the base hide 0x447CEA tests (none of 0, 1, 7:
+    # hidden, nothing to do). techGadgets reads them to show or hide only a gadget in the wrong state.
+    ("UiFindAnywhere", 0x433A2C, 0x0E),
+    ("UiGadgetShowFlags", 0x447BBF, 0x14),
+    ("UiGadgetHideFlags", 0x447CFF, 0x0A),
+    # incomeRates: the two income calls of the add 0x49A98A besides the gather tick's (GatherTickAddResource): the
+    # global trickle's push esi / call 49A98Ah (returns to 0x4E0CFE) and the AutoGather update's push edi /
+    # push ebx / call 49A98Ah (returns to 0x4C379D). The add's head push ecx / mov eax,[0C66234h] (6 bytes,
+    # PlayerAddResource) gets the jmp. {resource(name)} (0x453E2C..0x453EA0, 0x63C807): the name through 0x44709C
+    # (int thiscall(db, const char*), -1 if none); with shared resources [world+6912h] it shows the sum over the
+    # players the local player [game+3C0h] counts as itself or an ally, 0x4707EC (bool thiscall(player, int id):
+    # [player+1D4h+id*4] is 0 or 1).
+    ("IncomeTrickleCall", 0x4E0CF8, 0x06),
+    ("IncomeAutoGatherCall", 0x4C3796, 0x07),
+    ("ResourceByName", 0x44709C, 0x10),
+    ("PlayerIsAllyOrSelf", 0x4707EC, 0x19),
     # editorSearch: the Objects palette fill FUN_007F501E (the fill callback [palette+17Ch] that 0x7F5C51 gives
     # EditorProtoPalette) adds each proto with lea edx,[esp+58h] / push edx / lea eax,[esp+14h] / push eax /
     # mov ecx,edi / call 0AD0056h (0x7F537D, ESI = the player's proto), the add thiscall(palette, entry*,

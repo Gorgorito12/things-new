@@ -171,6 +171,8 @@ Outcome ApplyModelCacheLimit(const Config& config);
 Outcome ApplyDmgPartBoneFix(const Config& config);
 Outcome ApplyFaithResource(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
+Outcome ApplyTechGadgets(const Config& config);
+Outcome ApplyIncomeRates(const Config& config);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
 // which of the keys it names the list then sees.
@@ -340,6 +342,9 @@ inline constexpr Feature kFeatures[] = {
     {"resourceDebt", ApplyResourceDebt},
     // After resourceDebt and the keys that verify the heads of the inventory add and the inventory recreate.
     {"linkedResource", ApplyLinkedResource},
+    // After resourceDebt, linkedResource, unitResourceAuras and pillageGold, which verify the stock bytes of the add
+    // 0x49A98A whose head this key writes.
+    {"incomeRates", ApplyIncomeRates},
     {"auraStacking", ApplyAuraStacking},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
@@ -359,6 +364,8 @@ inline constexpr Feature kFeatures[] = {
     {"playerIcon", ApplyPlayerIcon},
     // After rendererOption: it reads its search fields from the Present of whichever Direct3DCreate9 the game gets.
     {"editorSearch", ApplyEditorSearch},
+    // After rendererOption: it sets its gadgets from the Present of whichever Direct3DCreate9 the game gets.
+    {"techGadgets", ApplyTechGadgets},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
 };
@@ -381,6 +388,7 @@ inline constexpr const char* kHandledKeys[] = {
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
+    "techgadgets", "incomerates",
 };
 
 }  // namespace uhc

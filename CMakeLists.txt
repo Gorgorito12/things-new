@@ -124,6 +124,8 @@ set(UHC_SOURCES
   src/features/modelcache.cpp
   src/features/dmgpartbone.cpp
   src/features/faith.cpp
+  src/features/techgadgets.cpp
+  src/features/incomerates.cpp
   src/features/sharedlimit.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
@@ -186,6 +188,7 @@ set(UHC_SOURCES
   src/hooks/impactbone_hooks.asm
   src/hooks/dmgpartbone_hooks.asm
   src/hooks/faith_hooks.asm
+  src/hooks/incomerates_hooks.asm
   src/hooks/impacttype_hooks.asm
   src/hooks/syscall_hooks.asm
   src/hooks/team_hooks.asm

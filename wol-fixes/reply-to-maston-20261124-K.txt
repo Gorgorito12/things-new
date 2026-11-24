@@ -1,0 +1,62 @@
+Reply to JTMaston, round of 2026-11-24: oil display (#103) and global gathering rates (#105), the DLL part
+==========================================================================================================
+
+Tested in single player in a copy of WoL. The panel art and layout are a separate part (the oil panel pack).
+
+
+#103 "oil display": the panel without oil before the Great War, with oil after
+-------------------------------------------------------------------------------
+New key in our DLL, techGadgets. It is generic: it ties any interface gadget to a tech.
+
+    techGadgets <Tech> <GadgetAfter> [<GadgetBefore>]
+
+While the tech is not active for the player, GadgetBefore is shown and GadgetAfter hidden; once it is active, the
+reverse. For the oil row it is one line per resource panel variant (12), with the tech GreatWarizeALL, which every
+route to the Great War activates (the Great War button, the Tupi button, the AI's alternative and the allies' card;
+the engine's age does not change with the Great War, so the tech is the signal):
+
+    techGadgets GreatWarizeALL SettlerCountDialog-defaultPanelEurMax-postGW SettlerCountDialog-defaultPanelEurMax-preGW
+    ... (the 12 lines are in the pack's README)
+
+The pack makes each panel variant a holder with two children: "-postGW" (today's panel, with oil) and "-preGW"
+(no oil row, the other rows spread). The layout shows postGW by default, so without the key, or with an older DLL,
+the panel is exactly today's. You can use the same key for anything else you want to tie to a tech.
+
+Tested in a copy of WoL with a test layout (each of the 12 panel variants split in two, the oil amount left out of
+the pre-Great War half): the panel without oil until a trigger researched GreatWarButton, which activates
+GreatWarizeALL; the panel with oil from that moment; the same after saving and loading. With the key off, today's
+panel all along. Videos: techGadgets-wol and its control in the guide.
+Not tested: switching between the full and minimized interface inside one game (the game reads that option at
+startup; each variant has its own two children, so each variant switches on its own), and observer mode (multiplayer
+only; the observer has its own interface files).
+
+
+#105 "global gathering": a rate display like DE's, and would it lag?
+--------------------------------------------------------------------
+What DE shows (read from DE's own interface files): an option "Resource Gather Per Minute" in the interface
+options; with it on, a small "(+N)" right of each amount in the resource panel, per
+minute. How DE computes the number (gross or net, over how long) we could not find: DE's exe is very large and
+partly encrypted, and the code that fills that text did not turn up.
+
+What you get: new key incomeRates and a text for the panel, {uhcIncome(food)} (any resource: food, wood, gold, fame
+for oil, skillpoints for faith, xp). As the user chose for WoL: per second with one decimal, under each amount, and a
+tooltip line "Income: +N.N per second". It counts what the player's villagers gather, its AutoGather units
+(factories, banks, trading posts...) produce, and its trickles, over the last 20 seconds of game time; also what
+our DLL's own keys pay (unit resource auras, kill bounties, pillage). It does not count costs, upkeep, tributes, the
+market, shipments or treasures: it is income, not the change of the stockpile. With shared resources it is the
+team's, as the amount is. Optional: incomeRates perMinute for whole numbers per minute, like DE.
+
+Would it lag? No. Our DLL counts income in the single function every income goes through (one check of who called
+it on each call), so it never walks units, whatever the number of players, villagers or trickles. Measured in a new
+8-player skirmish (you and 7 European AIs, Acre), two runs with the key on and two with it off, 2 minutes each from
+minute 5:
+- frames over 50 ms: 8 and 6 with the key, 7 and 9 without (they are the AIs' own spikes, there either way);
+- the simulation's time per second: 307 / 259 ms with the key, 286 / 313 ms without (the run-to-run noise is larger
+  than any difference);
+- measured inside the game: up to 14,200 income payments a minute by minute 8, and 0.3 to 0.8 ms per minute spent
+  counting them, about 13 microseconds per second of game time.
+
+Tested: the rate equals what the stockpile gains (wood from 5 villagers: 185.4 counted, +185.4 in the stockpile in
+60 s; a Factory's gold: 268.2 and +268.2; the XP trickle: 120.1 and +120.1). Videos: incomeRates-wol and its control.
+Note for the layout: with the key off the game prints an unknown text as written, so the pack's "+{uhcIncome(food)}"
+needs the key on.

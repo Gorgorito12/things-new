@@ -2076,6 +2076,7 @@ Sites: `ModelById` `0x405E83` (6 B), `IsAbstractIndex` `0x44CAC4` (70 B), `UnitB
 #include "../actiontags.h"
 #include "../aurastacking.h"
 #include "../features.h"
+#include "../income.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../modifytypes.h"
@@ -2621,6 +2622,7 @@ extern "C" void __stdcall UhcUnitResourceAura(const char* action) {
       kCheckState(target);
     }
     kPlayerAdd(player, resource, take * multiplier, false);
+    uhc::CountIncome(player, resource, take * multiplier);
     if (g_log && g_logLines < kMaxLogLines) {
       ++g_logLines;
       uhc::Log(L"unitResourceAuras: unit %d (%hs) took %.3f of resource %d from unit %d (%hs), %.1f left",

@@ -31,6 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Tuesday 2026-11-24 09:08 | [`techGadgets`](#techgadgets) | Filmed in WoL, with a control. Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | Two named children per panel variant in `uimainnew.xml` (the oil panel pack), and one line per variant. |
+| Tuesday 2026-11-24 09:08 | [`incomeRates`](#incomerates) | Filmed in WoL, with a control. A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | The text in the panel's layout (the oil panel pack has it under each amount and in the tooltips). |
 | Monday 2026-11-23 13:56 | [`faithResource`](#faithresource) | Added. Optional: resource 4 becomes faith, gathered by villagers praying at their church or mosque, cut from the home city's skill points; a faith Gather plays its own animation. | The opt-in pack `wol-fixes/faith/` (and `wol-fixes/faith-panel/` for the panel row). |
 | Monday 2026-11-23 09:18 | [`dmgPartBoneFix`](bug-fixes.md#dmgpartbonefix) | Added. Stops the game from reloading a 3D model in use when a damage template names a bone the model lacks, the other cause of the Granny crashes (WoL #78). | Nothing; `wol-fixes/art-dmg-bones-20261123/` fixes the data itself. |
 | Monday 2026-11-23 08:38 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows one ring per ranged attack on the ground while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings`. |
@@ -8426,6 +8428,8 @@ What the panels and the fog of war show.
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
 | [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. | confirmed (single player) |
 | [`editorSearch`](#editorsearch) | The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | **new** | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. | confirmed (editor, UI) |
+| [`techGadgets`](#techgadgets) | Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | **new** | Two named children per panel variant in `uimainnew.xml` (the oil panel pack), and one line per variant. | confirmed (single player, UI) |
+| [`incomeRates`](#incomerates) | A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | **new** | The text in the panel's layout (the oil panel pack has it under each amount and in the tooltips). | confirmed (single player, UI) |
 
 #### nativePreview
 
@@ -9724,6 +9728,144 @@ editorSearch [log]
   `trigger parameter list "cavalry": 13 of 3634`) and every 5000 frames the cost of the per-frame check.
 - **Status:** confirmed (2026-11-21, WoL, the editor, single player): see the pass/fail table in
   [how-it-works.md](how-it-works.md#editorsearch) and the screenshots in `wol-fixes/editor/media`.
+
+#### techGadgets
+
+*A panel of the interface changes once a tech is researched: WoL's resource panel has no oil row before the Great War, and gets it with the Great War.*
+
+**Added:** Tuesday 2026-11-24 08:33 · **Filmed in WoL:** Tuesday 2026-11-24 09:08
+
+![techGadgets in WoL](media/techGadgets-wol.gif)
+
+*In WoL, French, the minimized interface, with `techGadgets` for the 12 panel variants and a test layout (each variant
+split into `-preGW` without the oil gadgets and `-postGW`, today's panel; not the oil panel pack's art):* the oil row has
+no amount before the Great War; a trigger sets `GreatWarButton` at 40 s, `GreatWarizeALL` becomes active and the
+panel with the oil amount shows at once (the log lines at the top). [Full video (MP4)](media/techGadgets-wol.mp4).
+
+![techGadgets in WoL, key off](media/techGadgets-wol-control.gif)
+
+*Key off, the same layout and trigger:* the layout's default, today's panel with oil, shows before and after the
+Great War. [Full video (MP4)](media/techGadgets-wol-control.mp4).
+
+```
+techGadgets <Tech> <GadgetAfter> [<GadgetBefore>]
+techGadgets log
+```
+
+One line per pair of gadgets. For WoL's oil row, one line per resource panel variant (the 12
+`SettlerCountDialog-<variant>` panels of `uimainnew.xml`):
+
+```
+techGadgets GreatWarizeALL SettlerCountDialog-defaultPanelEurMax-postGW SettlerCountDialog-defaultPanelEurMax-preGW
+techGadgets GreatWarizeALL SettlerCountDialog-defaultPanelEurMin-postGW SettlerCountDialog-defaultPanelEurMin-preGW
+...
+```
+
+- **Effect:** while the tech is not active for the player the interface shows, `GadgetAfter` is hidden and
+  `GadgetBefore` shown; once it is active, the reverse. `GreatWarizeALL` is what every route to the Great War
+  activates (the Great War button, the Tupi one, the AI's and the allies' card): WoL's Great War does not change the
+  engine's age, so the tech is the signal.
+- **What it needs:** gadgets with those names, unique in the whole interface (the key finds them in any panel, as the
+  console's `gadgetReal` does). The layout keeps `GadgetAfter` shown and `GadgetBefore` hidden (`hidden=""`), so with
+  the key off the interface is as before. For the oil row, the oil panel pack makes each variant a holder with two
+  children, `-postGW` (today's panel, first) and `-preGW` (the panel without the oil row).
+- **When:** the tech is read every 100 ms of game time; the gadgets are set every frame, also while the game is
+  paused, so a panel switched between the full and minimized interface, or an interface rebuilt, is right at once.
+  Before a game's first check (its first moment, or a save loading) the layout's defaults show.
+- **Simulation:** none. Display only: players may set it differently.
+- **Log:** `techGadgets: N rule(s)`, `techGadgets: first tech check (player 1)`; with `log`, each gadget found, each
+  change (`player 1, GreatWarizeALL active: …-postGW shown, hidden: …-preGW`), a name not found yet, and a gadget
+  the game showed or hid again (`… was shown by the game; set again`).
+- **Status:** see the tests below.
+
+Tests (2026-11-24, copy of WoL, single player, a test layout in all 12 variants):
+
+| Test | Result |
+|---|---|
+| Skirmish start, French (European panel), minimized interface | pass: `-preGW` shown, no oil amount; all 24 gadgets found |
+| The same with the full interface (`optionminimizedui` off, its own game) | pass: no oil amount before, the oil amount from the Great War on |
+| `GreatWarButton` set by a trigger (scenario at 45 s, skirmish on a test map at 40 s) | pass: `GreatWarizeALL` active, `-postGW` shown in the same frame (log) |
+| Saved after the Great War, loaded | pass: `-postGW` shown, also while the loaded game is still paused |
+| Asian panel (the scenario's player 1) | pass: switched (WoL's Asian panel has no oil amount to show; the faith panel pack fixes that panel) |
+| Key off | pass: the layout's default, `-postGW`, before and after |
+| The game showing a hidden child again | not seen: no `set again` line in any test |
+| Switching full / minimized interface during a game | not tested: the option is read at startup (`optionminimizedui`), so each was tested in its own game; the variants are separate gadgets, each with its own children |
+| Observer mode | not tested: multiplayer only, and WoL's observer mode does not switch on in this install ([observer-mode.md](observer-mode.md)); its interface comes from `uimainnewobserver*.xml`, where the names are not, so nothing changes there |
+
+
+#### incomeRates
+
+*The resource panel can show how much of each resource comes in per second, as DE's panel shows its gather rates.*
+
+**Added:** Tuesday 2026-11-24 08:33 · **Filmed in WoL:** Tuesday 2026-11-24 09:08
+
+![incomeRates in WoL](media/incomeRates-wol.gif)
+
+*In WoL, French, with `incomeRates` and a test layout (`+{uhcIncome(...)}` beside each amount, green; not the oil
+panel pack's):* a Factory selected makes gold: the panel shows +4.4 to +4.6 per second while the stock rises from
+257 to 412 in 34 s of game time (4.5 per second). [Full video (MP4)](media/incomeRates-wol.mp4).
+
+![incomeRates in WoL, key off](media/incomeRates-wol-control.gif)
+
+*Key off, the same layout:* the game does not know `{uhcIncome}`, so the texts show it as written; the gold rises
+the same.
+[Full video (MP4)](media/incomeRates-wol-control.mp4).
+
+```
+incomeRates [<seconds>] [perMinute] [log]
+```
+
+- **Effect:** a text for any `formatText` gadget, `{uhcIncome(<resource>)}`, with a resource name as
+  `{resource(...)}` takes it (`food`, `wood`, `gold`, `fame` for WoL's oil, `skillpoints` for faith, `xp`). It is what
+  the player's villagers gathered, its AutoGather units (factories, banks, trading posts, ...) produced and its trickles
+  gave, over the last 20 s of game time (`<seconds>`: 1 to 60), per second with one decimal (`2.4`), or per minute,
+  whole, with `perMinute`. The number has no sign: the layout writes `+{uhcIncome(food)}`, or a tooltip line
+  "Income: +{uhcIncome(food)} per second".
+- **Counted:** gathering, AutoGather, the trickles, and what this DLL's own keys pay (`unitResourceAuras`, the kill
+  bounties, `pillageGold`). **Not counted:** costs, upkeep (a negative trickle), tributes, the market, shipments,
+  treasures, triggers: it is income, not the change of the stockpile.
+- **Whose:** the player the interface shows, as `{resource()}`; with shared resources `{resource()}` shows the team's
+  stock, and the rate is the team's.
+- **What it needs:** the text in the panel's layout: the oil panel pack has it under each amount and in each
+  resource's tooltip.
+- **After a load:** the rates are not saved; they fill again over the window.
+- **Simulation:** none. Display only.
+- **Log:** `incomeRates: {uhcIncome(<resource>)} = income per second over the last 20 s`; with `log`, every 60 s of
+  game time, the shown player's income per resource by source next to the change of its stockpile:
+  `player 1, resource 1, last 60 s: counted 185.4 (gather 185.4, AutoGather 0.0, trickle 0.0, DLL 0.0), stockpile
+  +185.4 (197.6 -> 383.0); rate 3.09/s, 185.4/min`, and what counting cost: `last 60 s of game time: 14232 adds
+  through the hook, 14206 counted, 756 us inside the count`.
+- **Status:** see the tests below.
+
+Tests (2026-11-24, copy of WoL, single player; `log` compares the counted income with the stockpile over each 60 s
+of game time):
+
+| Test | Result |
+|---|---|
+| 5 villagers chopping wood (French skirmish) | pass: counted 185.4, stockpile +185.4 in 60 s (all from the gather tick) |
+| XP trickle | pass: counted 120.1, stockpile +120.1 in 60 s |
+| A Factory's gold (AutoGather) | pass: counted 268.2, stockpile +268.2 in 60 s; the panel showed +4.4 to +4.6/s |
+| The text's argument | the BString holds the whole token, `{uhcincome(food)}`: the name is read between the parentheses, as the stock helper 0x453F8F does for `{resource(food)}` |
+| Saved and loaded | pass: 0.0 while the loaded game is paused, then the rate fills again |
+| Key off | pass: the text shows `+{uhcIncome(gold)}` as written: the game does not know the name |
+| Performance, 8 players | no difference: see below |
+
+**Performance** (`perfprobe.py`, 2026-11-24, a new 8-player skirmish each run, key on and off alternated; other test
+games ran on the machine at the same time, which moves fps and render time from run to run):
+
+| Run (8 players, Acre, seed 436, 7 European AIs, French human idle; 120 s from 5:00 of game time) | fps | update ms / frame | update ms / s | main thread | frames > 50 ms | longest |
+|---|---|---|---|---|---|---|
+| key on, 1 | 165.0 | 1.86 | 307 | 93.5 % | 8 | 505 ms |
+| key off, 1 | 184.3 | 1.55 | 286 | 92.5 % | 7 | 535 ms |
+| key on, 2 | 164.2 | 1.58 | 259 | 93.7 % | 6 | 460 ms |
+| key off, 2 | 230.0 | 1.36 | 313 | 92.8 % | 9 | 475 ms |
+
+The frames over 50 ms (6 to 9 per 120 s, all over 100 ms) are as many with the key off as on: they are the game's own
+(the AIs). The main thread is busy all the time (the frame rate is not capped), so its share says nothing; the update
+time per second of real time is the same on and off. Measured inside the game (`log`, a third run): from 3,400 adds
+in the first minute to 14,200 in the eighth (8 players, all their villagers, trickles and AutoGather), and 0.3 to
+0.8 ms a minute spent counting them: about 13 µs per second of game time.
+
 
 ## 6. Editing the game data
 
