@@ -31,6 +31,21 @@
 		<attach a="rider" frombone="hotspot" tobone="ATTACHPOINT" syncanims="1"/>
 		<attach a="gatling" frombone="bone_gatling_camel_gun_B55" tobone="ATTACHPOINT" syncanims="1"/>
 	</component>
+	<component>
+		DeadComp
+		<assetreference type="GrannyModel">
+			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_camel_dead_B55</file>
+		</assetreference>
+		<decal>
+			<effecttype>default</effecttype>
+			<texture isfakeshadow="1">shadows_selections\shadow_circle_128x128</texture>
+			<selectedtexture>shadows_selections\selection_oval_32x64</selectedtexture>
+			<width>2.00</width>
+			<height>3.00</height>
+			<zoffset>-0.10</zoffset>
+		</decal>
+		<attach a="rider" frombone="hotspot" tobone="ATTACHPOINT" syncanims="1"/>
+	</component>
 	<anim>
 		Idle
 		<assetreference type="GrannyAnim">
@@ -180,42 +195,76 @@
 			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_camel_B_death</file>
 			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
 		</assetreference>
-		<component>ModelComp</component>
+		<component>DeadComp</component>
 	</anim>
 	<anim>
 		Death
 		<assetreference type="GrannyAnim">
-			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_camel_B_fall</file>
+			<file>units\asians\indians\sowar\sowarCamel_death00</file>
 			<tag type="SpecificSoundSet" checkvisible="1" set="KRCamelDeath">0.01</tag>
 			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
 		</assetreference>
-		<component>ModelComp</component>
+		<assetreference type="GrannyAnim">
+			<file>units\asians\indians\sowar\sowarCamel_death01</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="KRCamelDeath">0.01</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
+		</assetreference>
+		<assetreference type="GrannyAnim">
+			<file>units\asians\indians\sowar\sowarCamel_death02</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="KRCamelDeath">0.01</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
+		</assetreference>
+		<component>DeadComp</component>
 	</anim>
 	<anim>
 		Death_by_melee
 		<assetreference type="GrannyAnim">
-			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_camel_B_fall</file>
+			<file>units\asians\indians\sowar\sowarCamel_death00</file>
 			<tag type="SpecificSoundSet" checkvisible="1" set="KRCamelDeath">0.01</tag>
 			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
 		</assetreference>
-		<component>ModelComp</component>
+		<assetreference type="GrannyAnim">
+			<file>units\asians\indians\sowar\sowarCamel_death01</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="KRCamelDeath">0.01</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
+		</assetreference>
+		<assetreference type="GrannyAnim">
+			<file>units\asians\indians\sowar\sowarCamel_death02</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="KRCamelDeath">0.01</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
+		</assetreference>
+		<component>DeadComp</component>
 	</anim>
 	<anim>
 		Death_by_range
 		<assetreference type="GrannyAnim">
-			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_camel_B_fall</file>
+			<file>units\asians\indians\sowar\sowarCamel_death00</file>
 			<tag type="SpecificSoundSet" checkvisible="1" set="KRCamelDeath">0.01</tag>
 			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
 		</assetreference>
-		<component>ModelComp</component>
+		<assetreference type="GrannyAnim">
+			<file>units\asians\indians\sowar\sowarCamel_death01</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="KRCamelDeath">0.01</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
+		</assetreference>
+		<assetreference type="GrannyAnim">
+			<file>units\asians\indians\sowar\sowarCamel_death02</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="KRCamelDeath">0.01</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
+		</assetreference>
+		<component>DeadComp</component>
 	</anim>
 	<anim>
 		Death_by_havoc
 		<assetreference type="GrannyAnim">
-			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_camel_B_fall</file>
-			<tag type="SpecificSoundSet" checkvisible="1" set="KRCamelDeath">0.01</tag>
-			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
+			<file>animation_library\cavalry\horse_death_front</file>
 		</assetreference>
-		<component>ModelComp</component>
+		<assetreference type="GrannyAnim">
+			<file>units\asians\indians\sowar\sowarCamel_death_left</file>
+		</assetreference>
+		<assetreference type="GrannyAnim">
+			<file>units\asians\indians\sowar\sowarCamel_death_right</file>
+		</assetreference>
+		<component>DeadComp</component>
 	</anim>
 </animfile>

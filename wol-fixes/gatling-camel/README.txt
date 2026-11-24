@@ -51,11 +51,15 @@ Tested (2026-11-23, test copy of Wars of Liberty 1.0.15c, single player)
   the muzzle), reload, deploy and undeploy, deaths (the gun stays on the camel and falls with it), the
   selection circle and the health bar; a game saved and loaded; a skirmish (Saudis) against a German AI with
   the pack applied: the AI plays, no XS error. The current unit filmed as the control.
-- Not seen in game: the run (drawn in the previews), multiplayer.
+- Second round (2026-11-23, filmed close and checked frame by frame): walk, jog and run of both units
+  mounted (legs on the ground, the rider's hands on the reins at the run, the gun at 0.55), the deploy, the
+  undeploy and remount, the deaths and the corpse fading out.
+- Not seen in game: multiplayer.
 - Fixed on 2026-11-23 after the first films: the camel's left legs were drawn lifted (the stock clips' leg
-  mirrors were copied in the clips' own axes); on death the gun stayed in the air (it now falls with the
-  camel: the rider's bone follows the chest in the death clip). Known: while the corpse fades out (the last
-  half second) the gun turns on itself.
+  mirrors were copied in the clips' own axes); on death the gun stayed in the air, then turned on itself
+  while the corpse faded out. The dead unit is now a model of its own, the camel with the gun built into
+  it, which plays the game's camel deaths: the gun falls and fades with the camel, and the rider falls off
+  as the zamburak's does.
 
 ESPAÑOL
 -------
@@ -92,8 +96,12 @@ Probado (2026-11-23, copia de prueba de Wars of Liberty 1.0.15c, un jugador)
   disparos salen de la boca), recarga, desplegar y replegar, muertes (el arma sigue en el camello y cae con él),
   el círculo de selección y la barra de vida; una partida guardada y cargada; una escaramuza (saudíes) contra
   una IA alemana con el paquete aplicado: la IA juega, sin errores XS. La unidad actual grabada como control.
-- No visto en el juego: el galope (dibujado en las vistas previas), multijugador.
+- Segunda ronda (2026-11-23, grabado de cerca y revisado fotograma a fotograma): paso, trote y galope de las
+  dos unidades montadas (patas en el suelo, las manos del jinete en las riendas al galope, el arma al 0,55),
+  el despliegue, el repliegue y la subida, las muertes y el cadáver desvaneciéndose.
+- No visto en el juego: multijugador.
 - Corregido el 2026-11-23 tras las primeras grabaciones: las patas izquierdas del camello se veían levantadas
   (las simetrías de las patas de los clips del juego se copiaban en los ejes del propio clip); al morir el arma
-  quedaba en el aire (ahora cae con el camello). Conocido: mientras el cadáver se desvanece (el último medio
-  segundo) el arma gira sobre sí misma.
+  quedaba en el aire y luego giraba sobre sí misma mientras el cadáver se desvanecía. La unidad muerta es ahora
+  un modelo propio, el camello con el arma incorporada, que reproduce las muertes de camello del juego: el arma
+  cae y se desvanece con el camello, y el jinete cae como el del zamburak.

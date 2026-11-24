@@ -10040,13 +10040,19 @@ English and Spanish) delivers it:
 ![The new gatling camel, from the saddle](media/gatlingCamel-wol.gif)
 
 *Two `GatlingCamel` (Saudi-style mercenaries, player 1) attack-move into six WoL Jägers (`WOLJaeger`): they fire from
-the saddle without stopping to deploy, the tracers leaving the Gatling's muzzle; one is killed at 40 s and falls with
-the gun on its back.* [Full video (MP4)](media/gatlingCamel-wol.mp4).
+the saddle without stopping to deploy, the tracers leaving the Gatling's muzzle; one is killed at 40 s: the camel falls
+with the gun, the rider falls off, and the corpse fades out with the gun.* [Full video (MP4)](media/gatlingCamel-wol.mp4).
+
+![The two gatling camels walking](media/gatlingCamel-move-wol.gif)
+
+*A `GatlingCamel` and a `GatlingCamelDeployed` (both mounted) walk back and forth, close up (`normalZoom` 16): the legs
+on the ground, the gun at 0.55 on the post, the rider's hands at the reins and the gun.* [Full video (MP4)](media/gatlingCamel-move-wol.mp4).
 
 ![The new gatling camel, deployed](media/gatlingCamelDeployed-wol.gif)
 
 *Two `GatlingCamelDeployed` against eight WoL Landwehr (`WOLLandwehr`): the camels lie down, the gunners get off and
-fire on foot until the Landwehr break; one is killed at its gun.* [Full video (MP4)](media/gatlingCamelDeployed-wol.mp4).
+fire on foot until the Landwehr break; one is killed at its gun: the camel rolls over with the gun, the gunner falls
+beside it.* [Full video (MP4)](media/gatlingCamelDeployed-wol.mp4).
 
 ![Today's gatling camel (the control)](media/gatlingCamel-wol-control.gif)
 
@@ -10057,16 +10063,28 @@ static gun at about the stock Gatling's full size) stops, sits down with its gun
   flash from the muzzle), reload, deploy and undeploy, deaths, the selection circle and the health bar; a game saved
   and loaded (the deployed unit kept its pose); a skirmish as the Saudis against a German AI with the pack applied:
   the AI played (12 settlers, a manor at 3 min), no XS error. `--restore` gave back every file byte for byte.
-- **Not seen in game:** the run (the zamburak's gallop; drawn in the previews), multiplayer.
+- **Second round, 2026-11-23** (WoLReal6, close takes at `normalZoom` 12 to 16, every state checked frame by frame
+  from the masters, enlarged contact sheets in `_share\maston-20261124\ingame-r2\`): walk, jog and run of both
+  units mounted (the jog and the run filmed with the walk anim pointed at their clips: in these tests the units
+  played `Walk` at every speed a trigger gave them, as far as the frames show), legs on the ground, both hands at the
+  reins at the run; the deploy; the undeploy and the remount, the unit walking off after it; the three deaths
+  (mounted A, mounted B, deployed B) to the end of the corpse's fade.
+- **Not seen in game:** multiplayer.
 - **Bugs found in the first films (2026-11-23) and fixed:** (1) the camel's left legs were drawn lifted, in every
   clip: the stock camel clips are in other axes (inches, z up) and their constant scales mirror the left legs;
   the tool copied those scales in the clip's axes, so the mirror landed on the wrong axis. Now each scale is
   turned into the model's axes, every bone's scale is written as the runtime gives it, and the tool checks every
   leg bone of its clips against the stock clip as the runtime draws them (1e-7 apart). (2) On death the gun
-  stayed in the air: the stock death moves the body away from the rider's bone the gun hangs on. The death is now
-  a clip of ours (the sowar camel's fall) with that bone kept on the chest, the gun's and the rider's death clips
-  of the same length; checked in game for both units. Left: while the corpse fades out (its last half second)
-  the gun turns on itself. (3) The "giant" Gatling is the control: today's WoL model, whose own static gun is
+  stayed in the air: the stock death moves the body away from the rider's bone the gun hangs on. A first fix (a
+  death clip of ours keeping that bone on the chest) left the gun turning on itself while the corpse faded out
+  (its last half second). Neither the rider's bone's tag files (`.gr2.precomp`), a held clip for the `Decay` anim
+  (the name the game's enum at FUN_0052277e gives the fade, next to `CorpseDecay`; REA evidence
+  `gcamel-decay-20261123.json`) nor another `frombone` changed it, so the game places attachments its own way
+  while a corpse fades (inferred, not traced). Now the dead unit is a component of its own, `DeadComp`: the camel
+  model with the gun's parts built into it on the chest bone (`<name>_camel_dead_<tag>.gr2`), playing the stock
+  sowar camel deaths (three, plus the havoc falls), with the rider attached and playing the zamburak rider's
+  deaths; the deployed death is a clip of ours on the same model with the rider's bone kept where it began. In
+  game the gun falls, lies and fades with the camel in all three deaths. (3) The "giant" Gatling is the control: today's WoL model, whose own static gun is
   about the stock Gatling's full size; the new units show the 0.55 gun in every state.
 - **Fixes the tool needed in game:** a packed vertex stream must start 16-byte aligned (otherwise the camel is not
   drawn); the gun hung on `HS Bone Chest` by a `definebone` drew tipped up about 60 degrees, so it hangs on the rider's

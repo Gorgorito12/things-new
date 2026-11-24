@@ -368,4 +368,5 @@ faithResource-ottomans-wol 4 24 2
 faithResource-wol-control 3 24 2
 gatlingCamel-wol 0 22 2
 gatlingCamel-wol-control 0 22 2
+gatlingCamel-move-wol 1 24 2
 gatlingCamelDeployed-wol 0 24 2

@@ -62,32 +62,4 @@
 		</assetreference>
 		<component>gatling</component>
 	</anim>
-	<anim>
-		Death
-		<assetreference type="GrannyAnim">
-			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_A55_fall</file>
-		</assetreference>
-		<component>gatling</component>
-	</anim>
-	<anim>
-		Death_by_melee
-		<assetreference type="GrannyAnim">
-			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_A55_fall</file>
-		</assetreference>
-		<component>gatling</component>
-	</anim>
-	<anim>
-		Death_by_range
-		<assetreference type="GrannyAnim">
-			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_A55_fall</file>
-		</assetreference>
-		<component>gatling</component>
-	</anim>
-	<anim>
-		Death_by_havoc
-		<assetreference type="GrannyAnim">
-			<file>WoL\units\cavalry_ranged\gatling_camel\gatling_camel_gun_A55_fall</file>
-		</assetreference>
-		<component>gatling</component>
-	</anim>
 </animfile>
