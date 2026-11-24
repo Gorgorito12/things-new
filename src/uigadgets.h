@@ -39,4 +39,20 @@ std::int32_t FindChild(void* parent, const char* name);
 // the text changes; copy it.
 const wchar_t* FieldText(const void* field);
 
+// The handle of the first gadget named `name` in any of the manager's panels (0x433A2C, what the UI commands
+// gadgetReal and gadgetUnreal use), or 0 if none or before the UI exists. Walks every panel: cache the handle.
+std::int32_t FindAnywhere(const char* name);
+
+// True if the show / hide addresses below hold the stock code (0x447F7B, 0x448F13 and the flags their bases test).
+bool VerifyUiShow(const char* feature);
+
+// Shows or hides a gadget (0x447F7B / 0x448F13, thiscall([[0C66244h]+44h], handle), what gadgetReal and
+// gadgetUnreal run). Nothing for handle 0 or before the UI exists. Showing a hidden gadget puts it above its
+// siblings; showing a shown one, or hiding a hidden one, does nothing.
+void Show(std::int32_t handle, bool visible);
+
+// The state the base show and hide test, from the flags [gadget+0A4h]: 1 shown (bits 0 and 1 set, bit 7 clear),
+// 0 hidden (none of bits 0, 1, 7), -1 for anything in between or no gadget.
+int ShownState(std::int32_t handle);
+
 }  // namespace uhc::ui

@@ -20,6 +20,8 @@ Contents:
 - [autoScout](#autoscout)
 - [transformChecks](#transformchecks)
 - [editorSearch](#editorsearch)
+- [techGadgets](#techgadgets)
+- [incomeRates](#incomerates)
 
 ## abilitySlots
 
@@ -8152,4 +8154,687 @@ UhcEditorParamListHook PROC
 UhcEditorParamListHook ENDP
 
 END
+```
+
+## techGadgets
+
+Contract: [techGadgets](../porting-to-another-dll.md#techgadgets).
+
+Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+
+Sites: `UiFindAnywhere` `0x433A2C` (14 B), `TechByName` `0x600BE1` (16 B), `TechActive` `0x94AF27` (51 B).
+
+### src/features/techgadgets.cpp
+
+```cpp
+// techGadgets <tech> <gadgetAfter> [<gadgetBefore>] (repeatable), and techGadgets log: ties interface gadgets to a
+// tech of the player the interface shows ([game+3C0h], the player {resource()} reads): once the tech is active
+// (0x94AF27, thiscall([world+7Ch], player, tech)) gadgetAfter is shown and gadgetBefore hidden; before, the reverse.
+// Nothing is written while there is no game; with the key off the layout's own defaults stay.
+// - The tech state is read in the world update (worldtick.h), every 100 ms of game time, by tech ID (0x600BE1 on
+//   the database [game+140h], again after each data load), and kept per rule with the world it belongs to.
+// - The gadgets are set from Direct3D's Present (d3d9hooks.h), every frame: each is found by name in any panel
+//   (0x433A2C, what gadgetReal / gadgetUnreal use), its handle kept until it goes stale (the handles carry a
+//   generation, so a rebuilt interface resolves to no gadget and the name is looked up again, at most every 2 s
+//   while missing). A gadget is shown or hidden (0x447F7B / 0x448F13) only when its flags [gadget+0A4h] say it is
+//   in the other state, so an interface rebuilt while the game is paused, or a gadget the engine shows again, is
+//   corrected on the next frame; with `log`, the latter is logged. Without the Present observer (another DLL took
+//   the Direct3D import) the gadgets are set from the world update instead.
+#include <windows.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
+
+#include "../d3d9hooks.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../uigadgets.h"
+#include "../unittypes.h"
+#include "../worldtick.h"
+
+namespace {
+
+using TechByNameFn = std::int32_t(__thiscall*)(const char* database, const char* name);
+using TechActiveFn = bool(__thiscall*)(const char* techStatus, std::int32_t playerId, std::int32_t techId);
+const auto kTechByName = reinterpret_cast<TechByNameFn>(0x00600BE1);
+const auto kTechActive = reinterpret_cast<TechActiveFn>(0x0094AF27);
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database, +3C0h the shown player
+constexpr std::int32_t kTickMs = 100;
+constexpr DWORD kRetryMs = 2000;
+constexpr int kMaxLogLines = 300;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+struct Slot {
+  std::string name;  // empty: none
+  std::int32_t handle = 0;
+  DWORD lastLookup = 0;
+  bool looked = false;
+  bool missingLogged = false;
+  int setTo = -1;  // what the key last set: 1 shown, 0 hidden, -1 nothing yet
+};
+
+struct Rule {
+  std::string tech;
+  std::int32_t techId = -1;
+  int generation = -1;
+  Slot after;
+  Slot before;
+  int active = -1;  // -1 unknown (no game yet), 0 before the tech, 1 after
+};
+
+std::vector<Rule> g_rules;
+int g_generation = 0;
+bool g_log = false;
+int g_logLines = 0;
+bool g_present = false;
+const char* g_world = nullptr;  // the world the rules' states belong to
+std::int32_t g_player = -1;
+std::int32_t g_elapsed = kTickMs;
+
+void LogLine(const wchar_t* format, const char* a, const char* b = "") {
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(format, a, b);
+  }
+}
+
+const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
+
+const char* CurrentWorld() {
+  const char* game = Game();
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+}
+
+void NewDatabase(char*) { ++g_generation; }
+
+// The gadget's handle, looked up again when it went stale (at most every 2 s while missing); 0 if none.
+std::int32_t Resolve(Slot& slot) {
+  if (slot.name.empty()) {
+    return 0;
+  }
+  if (slot.handle != 0 && uhc::ui::Gadget(slot.handle, uhc::ui::kAnyGadget) != nullptr) {
+    return slot.handle;
+  }
+  const DWORD now = GetTickCount();
+  if (slot.looked && slot.handle == 0 && now - slot.lastLookup < kRetryMs) {
+    return 0;
+  }
+  slot.looked = true;
+  slot.lastLookup = now;
+  slot.handle = uhc::ui::FindAnywhere(slot.name.c_str());
+  slot.setTo = -1;
+  if (slot.handle == 0 && !slot.missingLogged) {
+    slot.missingLogged = true;
+    LogLine(L"techGadgets: no gadget named %hs yet (looked up again every 2 s)%hs", slot.name.c_str());
+  } else if (slot.handle != 0) {
+    slot.missingLogged = false;
+    LogLine(L"techGadgets: gadget %hs found%hs", slot.name.c_str());
+  }
+  return slot.handle;
+}
+
+void Apply(Slot& slot, bool visible) {
+  const std::int32_t handle = Resolve(slot);
+  if (handle == 0) {
+    return;
+  }
+  const int state = uhc::ui::ShownState(handle);
+  const int want = visible ? 1 : 0;
+  if (state == want) {
+    slot.setTo = want;
+    return;
+  }
+  if (slot.setTo == want) {
+    LogLine(L"techGadgets: %hs was %hs by the game; set again", slot.name.c_str(), visible ? "hidden" : "shown");
+  }
+  uhc::ui::Show(handle, visible);
+  slot.setTo = want;
+}
+
+// Sets every rule's gadgets from its last tech state, when that state belongs to the current world.
+void ApplyAll() {
+  const char* world = CurrentWorld();
+  if (world == nullptr || world != g_world || uhc::ui::Manager() == nullptr) {
+    return;
+  }
+  for (Rule& rule : g_rules) {
+    if (rule.active < 0) {
+      continue;
+    }
+    Apply(rule.after, rule.active == 1);
+    Apply(rule.before, rule.active == 0);
+  }
+}
+
+void BeforePresent() { ApplyAll(); }
+
+// The world update: the tech states every 100 ms of game time, at once in a new world or for another player.
+void Tick(char* world, std::int32_t deltaMs) {
+  const char* game = Game();
+  if (game == nullptr || world == nullptr) {
+    return;
+  }
+  const std::int32_t player = Field<std::int32_t>(game, 0x3C0);
+  const bool fresh = world != g_world || player != g_player;
+  g_elapsed += deltaMs;
+  if (!fresh && g_elapsed < kTickMs) {
+    return;
+  }
+  g_elapsed = 0;
+  if (fresh) {
+    static bool reached = false;
+    if (!reached) {
+      reached = true;
+      uhc::Log(L"techGadgets: first tech check (player %d)", player);
+    }
+    for (Rule& rule : g_rules) {
+      rule.active = -1;
+    }
+    g_world = world;
+    g_player = player;
+  }
+  const char* database = Field<const char*>(game, 0x140);
+  const char* techStatus = Field<const char*>(world, 0x7C);
+  if (database == nullptr || techStatus == nullptr || player < 0) {
+    return;
+  }
+  for (Rule& rule : g_rules) {
+    if (rule.generation != g_generation) {
+      rule.generation = g_generation;
+      rule.techId = kTechByName(database, rule.tech.c_str());
+      if (rule.techId < 0) {
+        uhc::Log(L"techGadgets: no tech named %hs; its gadgets are left as they are", rule.tech.c_str());
+      }
+    }
+    if (rule.techId < 0) {
+      continue;
+    }
+    const int active = kTechActive(techStatus, player, rule.techId) ? 1 : 0;
+    if (active != rule.active) {
+      if (g_log && g_logLines < kMaxLogLines) {
+        ++g_logLines;
+        uhc::Log(L"techGadgets: player %d, %hs %hs: %hs shown%hs%hs", player, rule.tech.c_str(),
+                 active ? "active" : "not active", active ? rule.after.name.c_str() : rule.before.name.c_str(),
+                 (active ? rule.before.name : rule.after.name).empty() ? "" : ", hidden: ",
+                 active ? rule.before.name.c_str() : rule.after.name.c_str());
+      }
+      rule.active = active;
+    }
+  }
+  if (!g_present) {
+    ApplyAll();
+  }
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplyTechGadgets(const Config& config) {
+  const auto* lines = config.All("techGadgets");
+  if (lines == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const Config::Args& args : *lines) {
+    if (args.size() == 1 && _stricmp(args[0].c_str(), "log") == 0) {
+      g_log = true;
+      continue;
+    }
+    if (args.size() < 2 || args.size() > 3) {
+      Log(L"techGadgets: a line needs <tech> <gadget shown after it> [<gadget shown before it>] (or log); "
+          L"line with %u argument(s) ignored",
+          static_cast<unsigned>(args.size()));
+      continue;
+    }
+    Rule rule;
+    rule.tech = args[0];
+    rule.after.name = args[1];
+    if (args.size() == 3) {
+      rule.before.name = args[2];
+    }
+    g_rules.push_back(rule);
+  }
+  if (g_rules.empty()) {
+    Log(L"techGadgets: no rule; not applied");
+    return Outcome::kFailed;
+  }
+  if (!ui::VerifyUiGadgets("techGadgets") || !ui::VerifyUiShow("techGadgets") ||
+      !VerifyAll("techGadgets", {&sites::kUiFindAnywhere, &sites::kTechActive, &sites::kTechByName})) {
+    return Outcome::kFailed;
+  }
+  if (!OnDatabaseLoad(&NewDatabase) || !AddWorldTick(&Tick)) {
+    return Outcome::kFailed;
+  }
+  g_present = AddD3D9Observer({nullptr, nullptr, &BeforePresent, nullptr}, "techGadgets");
+  if (!g_present) {
+    Log(L"techGadgets: no Present observer; the gadgets are set from the world update (not while paused)");
+  }
+  for (const Rule& rule : g_rules) {
+    Log(L"techGadgets: with %hs active for the shown player: %hs shown%hs%hs", rule.tech.c_str(),
+        rule.after.name.c_str(), rule.before.name.empty() ? "" : ", before it: ", rule.before.name.c_str());
+  }
+  Log(L"techGadgets: %u rule(s)%ls (interface only)", static_cast<unsigned>(g_rules.size()),
+      g_log ? L", changes logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+## incomeRates
+
+Contract: [incomeRates](../porting-to-another-dll.md#incomerates).
+
+Besides the core helpers, it needs: [`datarefs.h`](helpers.md#data-refs), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+
+Sites: `BStringAssign` `0x443BB8` (15 B), `ResourceByName` `0x44709C` (16 B), `PlayerIsAllyOrSelf` `0x4707EC` (25 B), `PlayerAddResource` `0x49A98A` (16 B), `IncomeAutoGatherCall` `0x4C3796` (7 B), `IncomeTrickleCall` `0x4E0CF8` (6 B), `GatherTickAddResource` `0x4ED1E1` (18 B).
+
+### src/features/incomerates.cpp
+
+```cpp
+// incomeRates [<seconds>] [perMinute] [log]: the income rate of each resource, for the interface, as the
+// formatText refs {uhcIncome(<resource>)}: what the player's gatherers, its units' AutoGather and its trickles
+// brought in over the last <seconds> of game time (default 20, 1 to 60), per second with one decimal ("2.4"), or
+// with perMinute per minute, whole ("144"). Gross income: costs, upkeep (a negative trickle), tributes, trades, shipments and treasures are
+// not in it.
+// - Counted at the single add 0x49A98A (hooks/incomerates_hooks.asm): its head reads the return address, and only
+//   the global trickle (0x4E0CFE), unit AutoGather (0x4C379D) and the gather tick (0x4ED1F3) are counted, with a
+//   positive amount (handicap included, as the add gets it). The keys that pay from the DLL through the same add
+//   count their payments with CountIncome (income.h).
+// - Kept per player and resource in buckets of one second of game time (the world update, worldtick.h); a new
+//   world clears them, so after a load the rate builds up again over <seconds>.
+// - The ref reads its argument as {resource()} does: a resource name (0x44709C), for the player the interface
+//   shows ([game+3C0h]). With shared resources ([world+6912h]) {resource()} shows the team's total, so the rate is
+//   the team's: every player the shown one counts as itself or an ally (0x4707EC).
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <cwchar>
+#include <map>
+#include <string>
+
+#include "../datarefs.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../income.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+#include "../worldtick.h"
+
+extern "C" void UhcIncomeAddHook();
+
+namespace {
+
+struct BString {
+  wchar_t* text;
+};
+
+using ResourceByNameFn = std::int32_t(__thiscall*)(const char* database, const char* name);
+using PlayerByIdFn = char*(__thiscall*)(const char* world, std::int32_t id);
+using AllyOrSelfFn = bool(__thiscall*)(const char* player, std::int32_t id);
+using BStringAssignFn = void(__thiscall*)(wchar_t** self, const BString* source, std::int32_t, std::int32_t);
+const auto kResourceByName = reinterpret_cast<ResourceByNameFn>(0x0044709C);
+const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
+const auto kAllyOrSelf = reinterpret_cast<AllyOrSelfFn>(0x004707EC);
+const auto kBStringAssign = reinterpret_cast<BStringAssignFn>(0x00443BB8);
+using StockpileFn = float(__thiscall*)(const char* stockpiles, std::int32_t resource);
+const auto kStockpile = reinterpret_cast<StockpileFn>(0x0044EFFF);  // [player+230h], the stockpile list
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database, +3C0h the shown player
+constexpr std::uint32_t kRefArgument = 0x00C6DF7C;  // the BString* of {name(arg)} during a ref's call
+
+constexpr int kPlayers = 16;
+constexpr int kResources = 16;
+constexpr int kMaxWindow = 60;
+constexpr int kBuckets = kMaxWindow + 1;
+constexpr std::int32_t kBucketMs = 1000;
+constexpr int kMaxLogLines = 200;
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+bool g_on = false;
+bool g_perSecond = true;
+bool g_log = false;
+int g_logLines = 0;
+int g_window = 20;
+
+// g_amount[b][player][resource]: what came in during bucket b. g_current is being filled (g_currentMs of it
+// elapsed); g_full counts the complete buckets behind it, up to g_window.
+float g_amount[kBuckets][kPlayers][kResources] = {};
+int g_current = 0;
+std::int32_t g_currentMs = 0;
+int g_full = 0;
+const char* g_world = nullptr;
+std::int32_t g_logMs = 0;
+
+int g_generation = 0;
+int g_namesGeneration = -1;
+std::map<std::wstring, std::int32_t> g_names;  // lowercase resource name -> index, -1 if unknown
+
+void NewDatabase(char*) { ++g_generation; }
+
+const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
+
+void Clear() {
+  for (auto& bucket : g_amount) {
+    for (auto& player : bucket) {
+      for (float& amount : player) {
+        amount = 0.0f;
+      }
+    }
+  }
+  g_current = 0;
+  g_currentMs = 0;
+  g_full = 0;
+}
+
+// The player's income of a resource per second over the window.
+float Rate(int player, int resource) {
+  const float seconds = static_cast<float>(g_full) + static_cast<float>(g_currentMs) / kBucketMs;
+  if (seconds < 0.5f) {
+    return 0.0f;
+  }
+  float sum = 0.0f;
+  for (int i = 0; i <= g_full; ++i) {
+    sum += g_amount[(g_current - i + kBuckets) % kBuckets][player][resource];
+  }
+  return sum / seconds;
+}
+
+// With `log`: the shown player's income since the last log line, by source, and its stockpiles then.
+enum Source { kGather, kAutoGather, kTrickle, kDll, kSources };
+float g_source[kSources][kResources] = {};
+float g_stock[kResources] = {};
+bool g_haveStock = false;
+constexpr int kLoggedResources = 6;  // gold, wood, food, fame, skill points, XP
+
+void Count(std::int32_t player, std::int32_t resource, float amount, Source source) {
+  if (player >= 0 && player < kPlayers && resource >= 0 && resource < kResources && amount > 0.0f) {
+    g_amount[g_current][player][resource] += amount;
+    if (g_log) {
+      const char* game = Game();
+      if (game != nullptr && Field<std::int32_t>(game, 0x3C0) == player) {
+        g_source[source][resource] += amount;
+      }
+    }
+  }
+}
+
+// Every 60 s of game time: per resource, what was counted by source, the stockpile's change, and the rate shown.
+void LogPeriod(const char* world) {
+  const char* game = Game();
+  const std::int32_t shown = game == nullptr ? -1 : Field<std::int32_t>(game, 0x3C0);
+  const char* player = shown < 0 ? nullptr : kPlayerById(world, shown);
+  if (player == nullptr || shown >= kPlayers) {
+    return;
+  }
+  for (int r = 0; r < kLoggedResources && g_logLines < kMaxLogLines; ++r) {
+    const float stock = kStockpile(player + 0x230, r);
+    const float counted = g_source[kGather][r] + g_source[kAutoGather][r] + g_source[kTrickle][r] + g_source[kDll][r];
+    if (g_haveStock && (counted > 0.0f || stock != g_stock[r])) {
+      ++g_logLines;
+      uhc::Log(L"incomeRates: player %d, resource %d, last 60 s: counted %.1f (gather %.1f, AutoGather %.1f, "
+               L"trickle %.1f, DLL %.1f), stockpile %+.1f (%.1f -> %.1f); shown %.1f/min",
+               shown, r, counted, g_source[kGather][r], g_source[kAutoGather][r], g_source[kTrickle][r],
+               g_source[kDll][r], stock - g_stock[r], g_stock[r], stock, 60.0 * Rate(shown, r));
+    }
+    g_stock[r] = stock;
+  }
+  g_haveStock = true;
+  for (auto& source : g_source) {
+    for (float& amount : source) {
+      amount = 0.0f;
+    }
+  }
+}
+
+void Tick(char* world, std::int32_t deltaMs) {
+  if (world != g_world) {
+    Clear();
+    g_world = world;
+    g_logMs = 0;
+    g_haveStock = false;
+  }
+  g_currentMs += deltaMs;
+  while (g_currentMs >= kBucketMs) {
+    g_currentMs -= kBucketMs;
+    g_current = (g_current + 1) % kBuckets;
+    for (auto& player : g_amount[g_current]) {
+      for (float& amount : player) {
+        amount = 0.0f;
+      }
+    }
+    if (g_full < g_window) {
+      ++g_full;
+    }
+  }
+  if (!g_log || g_logLines >= kMaxLogLines) {
+    return;
+  }
+  // Logged on a bucket boundary, so with a 60 s window the rate shown covers the same 60 s as the counts.
+  g_logMs += deltaMs;
+  if (g_logMs >= 60000 && g_currentMs < deltaMs) {
+    g_logMs = 0;
+    LogPeriod(world);
+  }
+}
+
+// The resource index of the ref's argument, or -1.
+std::int32_t ArgumentResource(const char* database) {
+  const auto* arg = *reinterpret_cast<const BString* const*>(kRefArgument);
+  if (arg == nullptr || arg->text == nullptr || arg->text[0] == L'\0') {
+    return -1;
+  }
+  if (g_namesGeneration != g_generation) {
+    g_namesGeneration = g_generation;
+    g_names.clear();
+  }
+  // The argument holds the whole token, "{uhcincome(food)}": the name is what is between the first "(" and the next
+  // ")", as the stock providers read it (0x453F8F).
+  std::wstring key = arg->text;
+  const std::size_t open = key.find(L'(');
+  if (open != std::wstring::npos) {
+    const std::size_t close = key.find(L')', open);
+    key = key.substr(open + 1, close == std::wstring::npos ? std::wstring::npos : close - open - 1);
+  }
+  for (wchar_t& c : key) {
+    c = static_cast<wchar_t>(towlower(c));
+  }
+  const auto found = g_names.find(key);
+  if (found != g_names.end()) {
+    return found->second;
+  }
+  std::string narrow;
+  for (wchar_t c : key) {
+    narrow.push_back(c < 0x80 ? static_cast<char>(c) : '?');
+  }
+  const std::int32_t index = kResourceByName(database, narrow.c_str());
+  g_names[key] = index;
+  if (index < 0) {
+    uhc::Log(L"incomeRates: {uhcIncome(%ls)}: no resource of that name", key.c_str());
+  }
+  return index;
+}
+
+}  // namespace
+
+// From the hook, with the add's return address: one of the three income callers.
+extern "C" void __stdcall UhcIncomeCount(const char* player, std::int32_t resource, float amount,
+                                         std::uint32_t caller) {
+  if (player != nullptr) {
+    const Source source = caller == 0x004ED1F3 ? kGather : caller == 0x004C379D ? kAutoGather : kTrickle;
+    Count(Field<std::int32_t>(player, 0), resource, amount, source);
+  }
+}
+
+namespace {
+
+// {uhcIncome(<resource>)}, a string: the shown player's rate (its team's with shared resources).
+bool __stdcall IncomeRef(uhc::DataRefValue* value) {
+  if (value == nullptr || value->type != uhc::kDataRefString) {
+    return false;
+  }
+  const char* game = Game();
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+  if (world == nullptr || database == nullptr || world != g_world) {
+    return false;
+  }
+  const std::int32_t resource = ArgumentResource(database);
+  const std::int32_t shown = Field<std::int32_t>(game, 0x3C0);
+  if (resource < 0 || resource >= kResources || shown < 0 || shown >= kPlayers) {
+    return false;
+  }
+  float rate = 0.0f;
+  if (Field<std::uint8_t>(world, 0x6912) != 0) {
+    const char* self = kPlayerById(world, shown);
+    const std::int32_t count = Field<std::int32_t>(world, 0x5C);
+    for (std::int32_t i = 0; self != nullptr && i < count && i < kPlayers; ++i) {
+      if (kAllyOrSelf(self, i)) {
+        rate += Rate(i, resource);
+      }
+    }
+  } else {
+    rate = Rate(shown, resource);
+  }
+  wchar_t text[32];
+  if (g_perSecond) {
+    swprintf_s(text, L"%.1f", static_cast<double>(rate));
+  } else {
+    swprintf_s(text, L"%d", static_cast<int>(std::lround(rate * 60.0f)));
+  }
+  const BString source{text};
+  kBStringAssign(&value->text, &source, -1, -1);
+  return true;
+}
+
+}  // namespace
+
+namespace uhc {
+
+void CountIncome(const char* player, std::int32_t resource, float amount) {
+  if (g_on && player != nullptr) {
+    Count(Field<std::int32_t>(player, 0), resource, amount, kDll);
+  }
+}
+
+Outcome ApplyIncomeRates(const Config& config) {
+  const Config::Args* args = config.First("incomeRates");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "perMinute") == 0) {
+      g_perSecond = false;
+    } else if (_stricmp(arg.c_str(), "perSecond") == 0) {
+      g_perSecond = true;
+    } else if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else {
+      char* end = nullptr;
+      const long seconds = std::strtol(arg.c_str(), &end, 10);
+      if (end == arg.c_str() || *end != '\0' || seconds < 1 || seconds > kMaxWindow) {
+        Log(L"incomeRates: unknown argument '%hs' (expected seconds 1 to %d, perMinute, log); not applied",
+            arg.c_str(), kMaxWindow);
+        return Outcome::kFailed;
+      }
+      g_window = static_cast<int>(seconds);
+    }
+  }
+  if (!VerifyAll("incomeRates", {&sites::kPlayerAddResource, &sites::kIncomeTrickleCall,
+                                 &sites::kIncomeAutoGatherCall, &sites::kGatherTickAddResource,
+                                 &sites::kResourceByName, &sites::kPlayerIsAllyOrSelf, &sites::kBStringAssign})) {
+    return Outcome::kFailed;
+  }
+  if (!AddDataRef(L"uhcIncome", kDataRefString, &IncomeRef) || !OnDatabaseLoad(&NewDatabase) ||
+      !AddWorldTick(&Tick) ||
+      !WriteJmp(sites::kPlayerAddResource.va, reinterpret_cast<const void*>(&UhcIncomeAddHook), 6)) {
+    return Outcome::kFailed;
+  }
+  g_on = true;
+  Log(L"incomeRates: {uhcIncome(<resource>)} = income %ls over the last %d s of game time (gathering, AutoGather, "
+      L"trickles)%ls",
+      g_perSecond ? L"per second" : L"per minute", g_window, g_log ? L", the shown player's logged every 60 s" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/incomerates_hooks.asm
+
+```asm
+; Hook for incomeRates. Entered through a jmp written over the stock code; leaves through an explicit jmp
+; to the verified continuation (docs/engine-symbols.md, "Income rates").
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcIncomeCount PROTO STDCALL player:DWORD, resource:DWORD, amount:DWORD, caller:DWORD
+
+.data
+addNext       dd 0049A990h    ; push ebp: the add goes on
+
+.code
+
+; Replaces the head of the add 0x49A98A (push ecx / mov eax,[0C66234h], 6 bytes), bool thiscall(player,
+; resource, float amount, bool), ret 0Ch. ECX = the player; [esp] the return address, [esp+4] the resource,
+; [esp+8] the amount. Only the three income callers are counted: the global trickle (returns to 0x4E0CFE),
+; unit AutoGather (0x4C379D) and the gather tick (0x4ED1F3). EAX is free: the stolen mov writes it.
+UhcIncomeAddHook PROC
+    mov eax, dword ptr [esp]
+    cmp eax, 004ED1F3h
+    je count
+    cmp eax, 004C379Dh
+    je count
+    cmp eax, 004E0CFEh
+    je count
+stock:
+    push ecx                            ; stolen 0x49A98A
+    mov eax, dword ptr ds:[00C66234h]   ; stolen 0x49A98B
+    jmp addNext
+count:
+    TRACE_ONCE "incomeRates add (0x49A98A)"
+    pushad
+    push eax                            ; the return address
+    push dword ptr [esp+2Ch]            ; the amount ([esp+8] before pushad, one push later)
+    push dword ptr [esp+2Ch]            ; the resource ([esp+4] before pushad, two pushes later)
+    push ecx
+    call UhcIncomeCount
+    popad
+    jmp stock
+UhcIncomeAddHook ENDP
+
+END
+```
+
+### src/income.h
+
+```cpp
+// incomeRates: what a key's own payment to a player adds to that player's income rate. The key counts the game's
+// income at the add 0x49A98A by its callers (the gather tick, unit AutoGather, the global trickle); a key that pays
+// a player through the same add from the DLL (unitResourceAuras, resourceBounty / killBountyTechs, pillageGold)
+// calls this after the add, with the same player, resource and amount. Nothing when the key is off, for an amount
+// of 0 or less, or out of range.
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+void CountIncome(const char* player, std::int32_t resource, float amount);
+
+}  // namespace uhc
 ```

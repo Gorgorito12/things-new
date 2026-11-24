@@ -6475,6 +6475,87 @@ whose check measured 1–2 µs a frame.
 
 Not tested: a real keyboard (posted messages only), another resolution than 1920 × 1080, IME input.
 
+### techGadgets
+
+**Why it exists.** Nothing in the stock interface depends on a tech: a layout can only show what its gadgets always
+show. A mod whose fourth resource appears with a late tech (a resource row painted in the panel's background) needs
+two versions of a panel and something to switch them.
+
+**What it does.** Each cfg line names a tech and one or two gadgets. In the world update (`worldtick.*`), every 100 ms
+of game time and at once in a new world or for another shown player, it reads the tech's state for the player the
+interface shows: `[game+3C0h]`, the player `{resource()}` reads, through `0x94AF27` (`bool thiscall([world+7Ch],
+player, tech)`); the tech's ID comes from `0x600BE1` on the database `[game+140h]`, again after each data load. The
+gadgets are set from Direct3D's Present (`d3d9hooks.*`), every frame, so also while the game is paused: each is found
+by name in any panel through `0x433A2C` (`thiscall(manager, int* out, const char* name)`, what the UI commands
+`gadgetReal` and `gadgetUnreal` use, `uigadgets.*` `FindAnywhere`), and its handle is kept. A gadget is shown or
+hidden (`0x447F7B` / `0x448F13`, `uigadgets.*` `Show`) only when its flags `[gadget+0A4h]` say it is in the other
+state (bits 0 and 1 set and bit 7 clear: shown; none of 0, 1, 7: hidden; the tests of the base show 0x447BBC and hide
+0x447CEA). Without the Present observer (another DLL took the Direct3D import) the update sets them itself.
+
+**Why it is safe.**
+- Interface only: it reads a tech's state and calls the game's own show and hide, as the console's `gadgetReal` does.
+  Nothing reaches the simulation.
+- A handle carries a generation (`uigadgets.h`), so a rebuilt interface resolves the old handle to no gadget and the
+  name is looked up again (at most every 2 s while it is missing, since the lookup walks every panel). A missing
+  gadget or tech leaves the layout as it is.
+- Before the first tech check of a world (a game starting or a save loading) it writes nothing: the layout's
+  defaults show. Its state is not saved; a loaded game reads the tech again.
+- The engine's own choice of panel variant (the 12 `SettlerCountDialog-*` panels, chosen by civ type and by the full
+  or minimized interface) shows or hides the variant, never its children, so the children keep what the key set; a
+  gadget the game showed or hid again would be set back on the next frame (logged with `log`).
+- Cost: per frame, two handle lookups and a flag read per gadget; per 100 ms, one tech test per line.
+
+### incomeRates
+
+**Why it exists.** The stock resource panel shows stockpiles only: how fast each resource comes in is not shown
+anywhere.
+<!-- private:begin -->
+DE's resource panel can show it (its option "Resource Gather Per Minute", `OptionResourceGatherRate`; see "What DE
+does" below).
+<!-- private:end -->
+
+**Where income comes in.** Every change of a player's stockpile through the game goes through one add, `0x49A98A`
+(`bool thiscall(player, resource, float amount, bool)`, `ret 0Ch`); with shared resources (`[world+6912h]`) it divides
+the amount among the player and its allies (`0x67993B`). Income is told apart by the caller, as `resourceDebt` does:
+the global trickle returns to `0x4E0CFE`, unit AutoGather to `0x4C379D`, the gather tick to `0x4ED1F3`. Costs,
+tributes, the market, shipments, treasures and triggers come from other callers.
+
+**What it does.**
+- A 6-byte `jmp` at the add's head (`push ecx / mov eax,[0C66234h]`, `hooks/incomerates_hooks.asm`) compares the
+  return address with the three callers; on a match it calls `UhcIncomeCount` (`pushad` around it) with the player,
+  the resource, a positive amount and the caller. Then it runs the two stolen instructions and jumps to `0x49A990`.
+- The keys that pay a player from the DLL through the same add (`unitResourceAuras`, `resourceBounty` and
+  `killBountyTechs`, `pillageGold`) count their payment with `CountIncome` (`income.h`).
+- The amounts go into buckets of one second of game time, per player and resource (16 × 16), filled in the world
+  update; the rate is the sum of the last N seconds (default 20) over the time they cover. A new world clears them.
+- The data ref `{uhcIncome(<resource>)}` (`datarefs.*`, a string) gives the rate with one decimal, per second (or
+  per minute, whole, with `perMinute`). Its argument is read as the stock refs read theirs: the argument BString at
+  `[0C6DF7Ch]` holds the whole token, `{uhcincome(food)}`, and the stock helper `0x453F8F` takes the text between the
+  first `(` and the next `)`; the name becomes a resource through `0x44709C` (`int thiscall(db, const char*)`). The
+  player is the one the interface shows (`[game+3C0h]`); with shared resources `{resource()}` shows the sum of the
+  stockpiles of every player the shown one counts as itself or an ally (`0x63C807`, `0x4707EC`), so the rate is that
+  sum of rates.
+
+**Why it is safe.**
+- It reads the add's arguments and writes only its own buckets; the add runs as before. EAX is free at the head (the
+  stolen `mov` writes it); the flags are not read before the next compare.
+- Cost: three compares on every add; a counted add is a few float adds. No unit is walked. The ref reads up to 16 ×
+  21 floats when a gadget refreshes.
+- The rates are not saved: after a load they build up again over the window.
+- Interface only: the numbers never reach the simulation, so players may set it differently.
+
+<!-- private:begin -->
+**What DE does** (`AoE3DE_s.exe`, read-only): its interface layout (`UI.bar`, `uimainnew.xaml`) has a collapsed
+`<res>_gatherpermin` text "(+999)" beside each amount (food, wood, gold, fame; dance, trade, influence for the other
+civs), and the options page the check box `OptionResourceGatherRate`, "Resource Gather Per Minute: additional
+information in the resources panel, displaying resources gather per minute". The code that binds those texts is
+FUN 0xE473D0 (it finds each by name, `food_gatherpermin` at 0xE474FB); the code that fills them, and so whether it
+counts gross or net income and over which window, was not found: a full REA analysis of that exe does not finish
+(4 h, 2026-11-05), the byte search found no reference to `kbGetResourceIncome` or to the "1 Minute Income" debug
+strings, and about 42 % of its functions are encrypted on disk. So DE's per-minute display is confirmed; how DE
+computes it is not.
+<!-- private:end -->
+
 ### impactBoneFix
 
 A hit on a unit with a damage template picks one of its impact points (FUN_0049ABA1) and plays the projectile's

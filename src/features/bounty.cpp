@@ -24,6 +24,7 @@
 #include <vector>
 
 #include "../features.h"
+#include "../income.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -168,12 +169,14 @@ extern "C" void __stdcall UhcPayResourceBounty(const char* victim, char* killer)
         for (std::int32_t i = 0; i < count; ++i) {
           if (char* player = kPlayerById(world, ids[i])) {
             kPlayerAdd(player, bounty.resource, bounty.amount, false);
+            uhc::CountIncome(player, bounty.resource, bounty.amount);
             ++paid;
           }
         }
       }
     } else {
       kPlayerAdd(killer, bounty.resource, bounty.amount, false);
+      uhc::CountIncome(killer, bounty.resource, bounty.amount);
     }
     if (g_logResource && g_resourceLines < kMaxLogLines) {
       ++g_resourceLines;

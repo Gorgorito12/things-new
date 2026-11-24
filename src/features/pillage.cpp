@@ -18,6 +18,7 @@
 
 #include "../actiontags.h"
 #include "../features.h"
+#include "../income.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -152,6 +153,7 @@ extern "C" void __stdcall UhcPillageHit(const char* attacker, char* attackerPlay
   }
   kPlayerAdd(victimPlayer, kGold, -take, false);
   kPlayerAdd(attackerPlayer, kGold, take, false);
+  uhc::CountIncome(attackerPlayer, kGold, take);
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
     uhc::Log(L"pillageGold: unit %d of player %d took %g gold from player %d (%hs): %g -> %g, the attacker has %g",

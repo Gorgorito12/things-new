@@ -6720,6 +6720,7 @@ Sites: `TeamBountyPay` `0x49BDAB` (6 B), `BountyKillBranch` `0x4D4E0C` (5 B), `B
 #include <vector>
 
 #include "../features.h"
+#include "../income.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -6864,12 +6865,14 @@ extern "C" void __stdcall UhcPayResourceBounty(const char* victim, char* killer)
         for (std::int32_t i = 0; i < count; ++i) {
           if (char* player = kPlayerById(world, ids[i])) {
             kPlayerAdd(player, bounty.resource, bounty.amount, false);
+            uhc::CountIncome(player, bounty.resource, bounty.amount);
             ++paid;
           }
         }
       }
     } else {
       kPlayerAdd(killer, bounty.resource, bounty.amount, false);
+      uhc::CountIncome(killer, bounty.resource, bounty.amount);
     }
     if (g_logResource && g_resourceLines < kMaxLogLines) {
       ++g_resourceLines;
@@ -7017,6 +7020,7 @@ Sites: `ResListGet` `0x44EFFF` (61 B), `PlayerAddResource` `0x49A98A` (16 B), `P
 
 #include "../actiontags.h"
 #include "../features.h"
+#include "../income.h"
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
@@ -7151,6 +7155,7 @@ extern "C" void __stdcall UhcPillageHit(const char* attacker, char* attackerPlay
   }
   kPlayerAdd(victimPlayer, kGold, -take, false);
   kPlayerAdd(attackerPlayer, kGold, take, false);
+  uhc::CountIncome(attackerPlayer, kGold, take);
   if (g_log && g_logLines < kMaxLogLines) {
     ++g_logLines;
     uhc::Log(L"pillageGold: unit %d of player %d took %g gold from player %d (%hs): %g -> %g, the attacker has %g",
