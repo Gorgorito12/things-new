@@ -1,0 +1,136 @@
+{
+ "EurMax": {
+  "texture": "art/ui/ingame/eur_max_ui_pregw.ddt",
+  "row_tops": [
+   784,
+   842,
+   901,
+   960,
+   1018
+  ],
+  "order": [
+   "food",
+   "wood",
+   "gold",
+   "vill"
+  ],
+  "header_top": null,
+  "x": [
+   440,
+   688
+  ]
+ },
+ "AsiMax": {
+  "texture": "art/ui/ingame/ASI_UI_MAX_pregw.ddt",
+  "row_tops": [
+   784,
+   831,
+   878,
+   924,
+   971,
+   1018
+  ],
+  "order": [
+   "export",
+   "food",
+   "wood",
+   "gold",
+   "vill"
+  ],
+  "header_top": null,
+  "x": [
+   440,
+   688
+  ]
+ },
+ "NatMax": {
+  "texture": "art/ui/ingame/nat_ui_max_pregw.ddt",
+  "row_tops": [
+   784,
+   831,
+   878,
+   924,
+   971,
+   1018
+  ],
+  "order": [
+   "fire",
+   "food",
+   "wood",
+   "gold",
+   "vill"
+  ],
+  "header_top": null,
+  "x": [
+   440,
+   688
+  ]
+ },
+ "AsiMin": {
+  "texture": "art/ui/ingame/ingame_ui_small_01_asian_pregw.ddt",
+  "row_tops": [
+   490,
+   537,
+   584,
+   630,
+   677,
+   724
+  ],
+  "order": [
+   "export",
+   "food",
+   "wood",
+   "gold",
+   "vill"
+  ],
+  "header_top": null,
+  "x": [
+   440,
+   688
+  ]
+ },
+ "EurMin": {
+  "texture": "art/ui/ingame/ingame_ui_small_01_ypack_pregw.ddt",
+  "row_tops": [
+   822,
+   871,
+   920,
+   969,
+   1018
+  ],
+  "order": [
+   "food",
+   "wood",
+   "gold",
+   "vill"
+  ],
+  "header_top": null,
+  "x": [
+   686,
+   940
+  ]
+ },
+ "NatMin": {
+  "texture": "art/ui/ingame/ingame_ui_small_01_ypack_pregw.ddt",
+  "row_tops": [
+   490,
+   537,
+   584,
+   630,
+   677,
+   724
+  ],
+  "order": [
+   "fire",
+   "food",
+   "wood",
+   "gold",
+   "vill"
+  ],
+  "header_top": null,
+  "x": [
+   440,
+   688
+  ]
+ }
+}
