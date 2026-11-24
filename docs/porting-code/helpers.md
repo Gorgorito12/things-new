@@ -1918,6 +1918,12 @@ inline constexpr Site kRetargetNoTarget{"RetargetNoTarget", 0x00487838, kRetarge
 inline constexpr std::uint8_t kRetargetUpdateTargetBytes[] = {0x8B, 0x4E, 0x14, 0x3B, 0xCB, 0x8B, 0x15, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x92, 0x3C, 0x01, 0x00, 0x00, 0x57, 0x0F, 0x8C, 0xCF, 0x03, 0x00, 0x00, 0x8B, 0xC1, 0x25, 0xFF, 0xFF, 0x03, 0x00};
 inline constexpr Site kRetargetUpdateTarget{"RetargetUpdateTarget", 0x0048A359, kRetargetUpdateTargetBytes, sizeof(kRetargetUpdateTargetBytes)};
 
+inline constexpr std::uint8_t kTurretFaceHeadBytes[] = {0x83, 0xEC, 0x18, 0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x8B, 0x80, 0x8C, 0x00, 0x00, 0x00};
+inline constexpr Site kTurretFaceHead{"TurretFaceHead", 0x0048AA9F, kTurretFaceHeadBytes, sizeof(kTurretFaceHeadBytes)};
+
+inline constexpr std::uint8_t kTurretLaunchStartBytes[] = {0xD9, 0x44, 0x24, 0x28, 0x68, 0x00, 0x00, 0xA0, 0x40, 0xD8, 0x64, 0x24, 0x20};
+inline constexpr Site kTurretLaunchStart{"TurretLaunchStart", 0x004995D5, kTurretLaunchStartBytes, sizeof(kTurretLaunchStartBytes)};
+
 inline constexpr std::uint8_t kBroadsideSoundBytes[] = {0x68, 0x5C, 0x1D, 0xBA, 0x00, 0x83, 0xC2, 0x14};
 inline constexpr Site kBroadsideSound{"BroadsideSound", 0x004CECBD, kBroadsideSoundBytes, sizeof(kBroadsideSoundBytes)};
 
@@ -3241,6 +3247,7 @@ Outcome ApplyAutoGatherScaleByContained(const Config& config);
 Outcome ApplyContainedUnitsROF(const Config& config);
 Outcome ApplyNumberOfShots(const Config& config);
 Outcome ApplyRetargetInAction(const Config& config);
+Outcome ApplyTurretArc(const Config& config);
 Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
 Outcome ApplyResourceDebt(const Config& config);
@@ -3409,6 +3416,9 @@ inline constexpr Feature kFeatures[] = {
     {"numberOfShots", ApplyNumberOfShots},
     // After numberOfShots: it asks that key whether a burst has shots left, and its "log" ROF filter runs after it.
     {"retargetInAction", ApplyRetargetInAction},
+    // No order constraint: the only key that writes 0x48AA9F and 0x4995D5; it adds an observer to the shared Granny
+    // sample slot (grannyhooks.h) and a world tick.
+    {"turretArc", ApplyTurretArc},
     {"unitResourceAuras", ApplyUnitResourceAuras},
     {"displayedRange", ApplyDisplayedRange},
     {"costEscalationTechs", ApplyCostEscalationTechs},
@@ -3586,6 +3596,7 @@ inline constexpr const char* kHandledKeys[] = {
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
     "retargetinaction",
+    "turretarc",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "broadsidesoundset", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",

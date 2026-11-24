@@ -364,6 +364,8 @@ numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart
                               projectiles: <NumberProjectiles> per shot
 retargetInAction [log]        an attack with <RetargetInAction>1 whose target dies during its
                               attack animation fires the rest of its shots at a new target
+turretArc <Proto> <aim> ... [log]   an attack with <Turret> turns its gun on the mount, not the
+                              unit, toward a target inside the turret's arc
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
 linkedResource [log]          a resource building takes the stock of the mine beside it
 auraStacking [log]            <ForbidUnitType> on any aura

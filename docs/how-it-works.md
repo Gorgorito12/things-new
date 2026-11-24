@@ -4124,6 +4124,56 @@ wait's end as above and the count started again, so the key leaves state 19h alo
   and one spatial query over its range when that happens in its animation: once per kill, not per frame (the state is 19h
   right after a search that found nothing).
 
+### turretArc
+
+**What the engine has (2026-11-24, REA on the stock exe, capstone sweeps, read breakpoints and the key's own log in
+game; `docs/engine-symbols.md`, "Turrets, facing and the Granny pose", REA evidence `gcamel-turret-20261124.json` and
+`gcamel-turret-launch-20261124.json`).**
+- **The `<Turret>` tag is parsed and never read.** Its handler 0x68E0AF stores the number (the arc each side, degrees) at
+  `[tacticsAction+94h]`, `maxTurnAnglePerSecond` at `[+98h]` (radians a second) and `tracking="always"` as bit 25 of the
+  action's flags (`[[action+64h]+3] & 2`). In game, with the tag on the gatling camel's attack, the values were in
+  memory, the camel still turned whole to each target, and read breakpoints on `+94h` and `+98h` saw no read in 45 s
+  (the ROF `+34h` was read 79 times); no instruction tests bit 25. Dead data.
+- **Facing.** FUN_0048AA9F, `thiscall(unit, Vector* point)`, `ret 4`, turns the unit toward a point (0x48AA5D is the form
+  for a unit target): it writes the wanted forward at `[[unit+4Ch]+18h]` (0x48AB4A) and returns 1. The attack calls it
+  every update (by 0x48A6CA and 0x4B333A) and never waits for the facing: it fires whatever the angle. A turn under way
+  goes on in the movement code, so once the body starts turning it turns until it faces the target.
+- **The shot's start.** FUN_00499422 builds a projectile's launch; every way it finds the start (the launch tag, a
+  bone, the unit's position) meets at 0x4995D5, with EBX = the unit action, EDI = the unit, the start (world) at
+  `[esp+1Ch]` and the aim point at `[esp+28h]`. Seen in the key's log: the gatling camel's stock start sat 0.24 m from
+  its centre and turned about the centre with the direction to the target, not at the muzzle, so the key replaces it
+  rather than turning it.
+- **The pose.** The unit's visual `[unit+60h]`: `+1Ch` the model part (vtable 0xB964A0, its Granny model instance at
+  `+24h`), `+24h` / `+28h` the attachments (the gun and the rider are attachments of the camel; the hat, of the rider).
+  The game samples each model's pose with `GrannySampleModelAnimations`, called through the import slot 0xB847AC.
+  Granny skeletons: `+4` the bone count, `+8` the bones, 156 bytes each, the name at `+0` (measured in memory);
+  `GrannyFindBoneByName` can return true with an index past the skeleton for a missing name, so the key checks both.
+
+**The key.**
+- **Facing hook** (`hooks/turretarc_hooks.asm`, `UhcTurretFaceHook`): the head of FUN_0048AA9F (6 bytes, `sub esp,18h /
+  push esi / mov esi,ecx`, re-executed; continues at 0x48AAA5). `UhcTurretFace(unit, point)` returns 1 when the unit's
+  proto is listed, its attack with the tag is in its action list (`[unit+58h]+14h`, children at `[action+40h]`: the attack
+  asks for the facing before it is the current action) and the point is within the arc (+ 0.5 degree) of the unit's
+  forward `[unit+20h]`, the angle `atan2(right, forward)` in the ground plane; the hook then returns 1 (`mov al,1 / ret 4`)
+  without writing the wanted forward. Otherwise the stock function runs.
+- **Launch hook** (`UhcTurretLaunchHook`, 0x4995D5, 9 bytes `fld [esp+28h] / push 40A00000h` re-executed; continues at
+  0x4995DE): for a listed unit whose current attack is the tagged one, the start becomes the aim file's pivot plus its
+  muzzle turned by the angle to the aim point clamped to the arc, in the unit's axes (`[unit+14h]` position, `+20h`
+  forward, `+2Ch` up, `+38h` right; the model's +x is the unit's right).
+- Both use only the unit, its action list, its tactics and the aim point: game state, the same on every machine. The
+  key keeps no game state between updates.
+- **Display** (`grannyhooks.*`, the shared owner of the import slot 0xB847AC: `AddGrannySampleObserver`; the slot is
+  checked against `GetProcAddress("_GrannySampleModelAnimations@16")` before it is written). After the stock sample,
+  for the instances the key mapped (each world tick, `AddWorldTick`, from the units that aimed, through their visual and
+  its attachments), the shown yaw moves toward the last aim at the turn rate in real time, and goes home half a second
+  after the last aim or at once while the gun or the gunner plays a clip named for a reload, a death or a deploy. The
+  gun's yaw bone and the camel's turret bone turn by it (a quaternion about their local y). The gunner's bones take the
+  aim table's local transforms for the clip that weighs most among the instance's controls and its clock, blended
+  between the two nearest frames and yaws (`granny2.dll`'s own exports). Display only: nothing of it reaches the game.
+- **Aim file** (`UHCA`, version 1): the gun's yaw bone and the turret bone (32 B names), the pivot and the muzzle (3
+  floats each, the camel's model space at the fire clip's first frame), the yaws, the gunner's bones, then per clip its
+  rider animation's name, length and frames, `[frame][yaw][bone]` position and rotation.
+
 ### unitResourceAuras
 
 An `AutoRangedModify` action's update is FUN_009D033E, `void thiscall(action)`, a vtable slot with no direct caller.
