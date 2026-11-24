@@ -29,5 +29,9 @@ Questions
 3. Should the old model stay available as an option (for example for a later age or a civ), or can it go?
 4. Gun size: we used 0.55 of the Gatling; 0.70 is also ready if you prefer a bigger gun.
 
-Videos: gatlingCamel-wol (from the saddle), gatlingCamelDeployed-wol (deployed), gatlingCamel-wol-control (the
-current unit).
+Videos: gatlingCamel-wol (from the saddle), gatlingCamelDeployed-wol (deployed), gatlingCamel-move-wol (both
+units walking), gatlingCamel-wol-control (the current unit).
+
+A note on movement: the anim file has its own walk, jog and run (both hands on the reins at the run), all checked
+in game. In our tests both units used the walk at every speed we gave them, so the jog and run only
+show where the game picks them.
