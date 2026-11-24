@@ -7,6 +7,9 @@ player's tech GreatWarizeALL; without the key the panel is today's (postGW shown
                                                   <WoL folder>\\oil-panel-backup\\; the files it adds are listed there)
     python apply_fix.py <WoL folder> --faith      the same with the faith row of wol-fixes\\faith-panel in both panels
                                                   (it includes that pack: needs the faith-panel folder next to this one)
+    python apply_fix.py <WoL folder> --rates      with either mode: the income per second of each resource under its
+                                                  amount and in the row's tooltip (request #105; needs the DLL key
+                                                  incomeRates perSecond, and adds strings 1010111 to 1010116)
     python apply_fix.py <WoL folder> --check      say, file by file, whether it is WoL's original, this pack's version
                                                   or something else; change nothing (with --faith: that mode's files)
     python apply_fix.py <WoL folder> --restore    put the backed-up files back, byte for byte, delete the added ones
@@ -26,6 +29,7 @@ What it changes:
 """
 import importlib.util
 import pathlib
+import re
 import shutil
 import sys
 
@@ -34,15 +38,61 @@ FAITH = HERE.parent / "faith-panel"
 _spec = importlib.util.spec_from_file_location("faith_apply", FAITH / "apply_fix.py")
 fa = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(fa)
+_spec = importlib.util.spec_from_file_location("faith_layout", FAITH / "make_layout.py")
+ml = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(ml)
 
 BACKUP = "oil-panel-backup"
 CREATED = "created.txt"
 PREGW = ["eur_max_ui_pregw", "ASI_UI_MAX_pregw", "nat_ui_max_pregw", "ingame_ui_small_01_asian_pregw",
          "ingame_ui_small_01_ypack_pregw"]
-LAYOUTS = {False: "settlercount-gw.xml", True: "settlercount-gw-faith.xml"}
 
 
-def new_files(wol, faith):
+def layout_name(faith, rates):
+    return "settlercount-gw" + ("-faith" if faith else "") + ("-rates" if rates else "") + ".xml"
+
+
+RATE_BASE = {"food": 18397, "wood": 18419, "gold": 18420, "trade": 61365}     # each row's tooltip today
+RATE_OIL = {"en": "Oil Gatherers: {numGatherers(fame)}", "es": "Recolectores de petróleo: {numGatherers(fame)}"}
+RATE_LINE = {"en": "\\nIncome: +{uhcIncome(%s)} per second", "es": "\\nIngresos: +{uhcIncome(%s)} por segundo"}
+
+
+def string_of(text, sid):
+    m = re.search(r"<String\s+_locID\s*=\s*['\"]%d['\"][^>]*>(.*?)</String>" % sid, text, re.S)
+    return m.group(1) if m else None
+
+
+def set_string_id(text, sid, value):
+    nl = "\r\n" if "\r\n" in text else "\n"
+    quote = '"' if re.search(r'<String _locID="', text) else "'"
+    entry = f"<String _locID={quote}{sid}{quote}>{value}</String>"
+    pat = re.compile(r"<String\s+_locID\s*=\s*['\"]%d['\"][^>]*>(.*?)</String>" % sid, re.S)
+    if pat.search(text):
+        return pat.sub(lambda _: entry, text, count=1)
+    m = re.search(r"\n([ \t]*)<String ", text)
+    at = text.rindex("</Language>")
+    line_start = text.rindex("\n", 0, at) + 1
+    return text[:line_start] + (m.group(1) if m else "\t\t") + entry + nl + text[line_start:]
+
+
+def rate_strings(text, lang, faith):
+    """The table with the rows' tooltips plus the income line (--rates), ids RATE_IDS of make_layout."""
+    for res, sid in ml.RATE_IDS.items():
+        if res == "skillpoints":
+            if not faith:
+                continue
+            base = fa.STRINGS[lang]
+        elif res == "fame":
+            base = RATE_OIL[lang]
+        else:
+            base = string_of(text, RATE_BASE[res])
+            if base is None:
+                sys.exit(f"string {RATE_BASE[res]} is missing from a string table")
+        text = set_string_id(text, sid, base + RATE_LINE[lang] % res)
+    return text
+
+
+def new_files(wol, faith, rates=False):
     """{relative path: (new bytes, state of the current file)}; state 'absent' for a file this pack adds."""
     out = {}
     for name in PREGW:
@@ -54,12 +104,24 @@ def new_files(wol, faith):
         for rel, v in fa.new_files(wol).items():
             if rel != fa.LAYOUT:
                 out[rel] = v
+    if rates:                               # the tooltips with the income line, over the faith string if any
+        for rel in fa.TABLES:
+            p = wol / rel
+            if not p.exists():
+                continue
+            raw = out[rel][0] if rel in out else p.read_bytes()
+            text, kind = fa.decode(raw)
+            lang = "en" if "_originals" in rel else "es" if "ES-LA" in rel else fa.language_of(text)
+            new = fa.encode(rate_strings(text, lang, faith), kind)
+            cur = p.read_bytes()
+            out[rel] = (new, "applied" if cur == new else "original")
     text = (wol / fa.LAYOUT).read_bytes().decode("utf-8")
     a, b = fa.panel_block(text)
-    block = (HERE / "layout" / LAYOUTS[faith]).read_bytes().decode("utf-8")
+    block = (HERE / "layout" / layout_name(faith, rates)).read_bytes().decode("utf-8")
     cur = text[a:b]
-    if cur == (HERE / "layout" / LAYOUTS[not faith]).read_bytes().decode("utf-8"):
-        sys.exit("this pack is applied in the other mode: run --restore first")
+    others = [layout_name(f, r) for f in (False, True) for r in (False, True) if (f, r) != (faith, rates)]
+    if any(cur == (HERE / "layout" / n).read_bytes().decode("utf-8") for n in others):
+        sys.exit("this pack is applied in another mode: run --restore first")
     state = "applied" if cur == block else "original" if fa.sha(cur.encode("utf-8")) == fa.BLOCK_SHA else "other"
     out[fa.LAYOUT] = ((text[:a] + block + text[b:]).encode("utf-8"), state)
     return out
@@ -90,7 +152,7 @@ def main():
     if (wol / fa.BACKUP).exists() and "--check" not in sys.argv:
         sys.exit(f"wol-fixes\\faith-panel is applied ({wol / fa.BACKUP}): restore it first "
                  "(this pack's --faith includes it)")
-    files = new_files(wol, "--faith" in sys.argv)
+    files = new_files(wol, "--faith" in sys.argv, "--rates" in sys.argv)
     if "--check" in sys.argv:
         for rel, (_, state) in files.items():
             print(f"{state:9} {rel}")

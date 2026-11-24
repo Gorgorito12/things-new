@@ -33,6 +33,12 @@ and visibility, no background) of two full panels: <variant>-postGW, the panel a
 (hidden), built on rows.json's rows (the backgrounds without the oil row, written by panel_rows.py as *_pregw.ddt)
 without the gadgets that show oil; a gadget of the oil row that does not show oil goes to the next row. The DLL key
 techGadgets swaps them by the tech GreatWarizeALL. With --no-faith, rows.json must have no faith row; without it, one.
+
+--rates (request #105, with the DLL key incomeRates): under each resource amount, the player's income per second
+({uhcIncome(<resource>)}, green, smaller), and the row's tooltip gets a second line (strings 1010111 to 1010116,
+written by wol-fixes\\oil-panel\\apply_fix.py --rates). A panel whose every row has room for two lines puts the
+income under the amount; one with a lower row (the 7-row Asian and Native panels with faith, WoL's advanced Native
+panel) puts it in a column right of the amount. The amount stays at NumbersFont 12 (at 11 the game draws another face).
 """
 import hashlib
 import json
@@ -314,6 +320,67 @@ OIL_ASIMIN = ('<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z=
               'textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{{resource(fame)}}</gadget>{nl}{nl}{i}')
 
 
+# --rates (request #105, the DLL key incomeRates perSecond): the player's income per second of each resource
+# under its amount, smaller, and in the row's tooltip. resource -> the string id of its new tooltip (the row's
+# tooltip, a line break, "Income: +{uhcIncome(<resource>)} per second"; apply_fix writes them).
+RATE_IDS = {"food": 1010111, "wood": 1010112, "gold": 1010113, "fame": 1010114, "trade": 1010115,
+            "skillpoints": 1010116}
+RATE_COLOR = "150 225 120"
+RATE_UNDER_MIN = 15        # every row body of a panel at least this high (1024 x 768 units): the rate under the amount
+RATE_ROOMY = 19            # and from this high the rate a size bigger (10, else 9)
+RATE_COLUMN = 25           # a panel with a lower row: the rate in a column this far right of the amount, a little lower
+# The amount keeps NumbersFont 12: at 11 the game draws another, thinner face (seen in game).
+
+VALUE = re.compile(r'<gadget\b[^>]*>\{resource\((\w+)\)\}</gadget>')
+
+
+def add_rates(v):
+    """The variant with a rate under each resource amount and the rows' tooltips pointing at RATE_IDS. One layout per
+    panel, from its lowest row: under the amount when every row has room for two lines, else in a column."""
+    nl = "\r\n" if "\r\n" in v else "\n"
+    heights = [int(attr(m.group(0), "size1024").split()[3]) - int(attr(m.group(0), "size1024").split()[1])
+               for m in VALUE.finditer(v) if m.group(1) in RATE_IDS]
+    low = min(heights) if heights else 0
+    out, last = [], 0
+    for m in VALUE.finditer(v):
+        res = m.group(1)
+        if res not in RATE_IDS:
+            continue
+        tag = v[m.start():v.index(">", m.start()) + 1]
+        x0, y0, x1, y1 = (int(q) for q in attr(tag, "size1024").split())
+        h = y1 - y0
+        size, rate_size = "12", "10" if low >= RATE_ROOMY else "9"
+        if low >= RATE_UNDER_MIN:          # amount in the upper part, rate in the lower part, same column
+            amount = (x0, y0 + round(h * 0.5) - 12, x1, y0 + round(h * 0.5) + 2)
+            rate = (x0, y0 + round(h * 0.5), x1, y0 + round(h * 0.5) + 12)
+        else:                              # too low for two lines: the rate in a column right of the amount
+            amount = (x0, y0 - 1, x1, y1 - 1)
+            rate = (x0 + RATE_COLUMN, y0 + round(h * 0.3), x1 + 8, y1 + 2)
+        new_tag = set_attr(set_attr(tag, "size1024", " ".join(str(q) for q in amount)), "textfontsize", size)
+        ls = v.rfind("\n", 0, m.start()) + 1
+        indent = v[ls:m.start()] if v[ls:m.start()].strip() == "" else ""
+        z = attr(tag, "z") or "12"
+        rate_gadget = (f'<gadget name="uhcIncome-{res}" type="formatText" mouseovertext="$${RATE_IDS[res]}$$" '
+                       f'anchortooltiptopright="" size1024="{" ".join(str(q) for q in rate)}" donthighlight="" '
+                       f'datarefreshrate="100" textcolor="{RATE_COLOR}" textfont="NumbersFont" textfontsize="{rate_size}" '
+                       f'textcentervert="" z="{z}" background="">+{{uhcIncome({res})}}</gadget>')
+        out.append(v[last:m.start()] + new_tag + v[m.start() + len(tag):m.end()] + nl + indent + rate_gadget)
+        last = m.end()
+    out.append(v[last:])
+    v = "".join(out)
+    # the tooltips of every gadget of a resource's row (its label button, its count, its amount)
+    def tip(m):
+        tag = m.group(1)
+        for res, sid in RATE_IDS.items():
+            label = "faith" if res == "skillpoints" else res
+            if re.search(r'uiFindResourceGatherers\("%s"\)|\{(?:numGatherers|resource)\(%s\)\}|'
+                         r'name="SettlerCountDialog-%sLabel"' % (res, res, label), m.group(1) + m.group(2)):
+                return re.sub(r'mouseovertext="[^"]*"', f'mouseovertext="$${sid}$$"', tag, count=1)
+        return tag
+    return re.sub(r'(<gadget\b[^>]*mouseovertext="[^"]*"[^>]*>)((?:(?!<gadget\b)[\s\S])*?)(?=<gadget\b|</gadget>)',
+                  lambda m: tip(m) + m.group(2), v)
+
+
 def build(block, spec_rows, positions, pre=False):
     """The panel block's pieces (text between the variants, and each variant built on positions' rows) and
     {variant name: index in pieces}. pre: the panel before the Great War (no oil row, no oil gadgets)."""
@@ -436,6 +503,9 @@ def main():
                                "order": [r[0] for r in p["rows"]], "header_top": None, "x": p["x"]}
                      for t in spec["textures"] for p in t["panels"]}
     out, where = build(block, spec_rows, positions)
+    rates = add_rates if "--rates" in sys.argv else (lambda v: v)
+    for i in where.values():
+        out[i] = rates(out[i])
     if pregw:
         pre_positions = json.loads(pregw.read_text(encoding="utf-8"))
         for panel, pos in pre_positions.items():
@@ -443,7 +513,7 @@ def main():
                 sys.exit(f"{pregw}: {panel} is not a panel without oil for this mode ({pos['order']})")
         pre, _ = build(block, spec_rows, pre_positions, pre=True)
         for name, i in where.items():
-            out[i] = two_panels(out[i], pre[i], name, pre_positions[VARIANTS[name][0]]["texture"])
+            out[i] = two_panels(out[i], rates(pre[i]), name, pre_positions[VARIANTS[name][0]]["texture"])
     new_block = "".join(out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_bytes(new_block.encode("utf-8"))

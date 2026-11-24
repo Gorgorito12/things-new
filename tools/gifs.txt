@@ -77,6 +77,8 @@ noTrainNearEnemyTC-wol 4 44 3
 noTrainNearEnemyTC-wol-control 4 44 3
 nowalkfarm-wol 2 26 3
 nowalkfarm-wol-control 2 26 3
+oilPanel-wol 2 12 1 800:360:0:360
+oilPanel-wol-control 2 12 1 800:360:0:360
 overhealDecay-wol 6 20 2
 overhealDecay-wol-control 6 20 2
 overhealHitpointBars-wol 6 22 2
