@@ -1476,6 +1476,13 @@ SITES = [
     # eax,3FFFFh.
     ("RetargetNoTarget", 0x487838, 0x1B),
     ("RetargetUpdateTarget", 0x48A359, 0x1F),
+    # turretArc: the head of FUN_0048AA9F (the unit turns to face a point): sub esp,18h / push esi / mov esi,ecx (6 B,
+    # replaced; no branch lands inside) / mov eax,[esi] / mov eax,[eax+8Ch] (the continuation 0x48AAA5).
+    ("TurretFaceHead", 0x48AA9F, 0x0E),
+    # turretArc: in the projectile launch FUN_00499422, where every way of placing the shot's start meets (0x4995D5:
+    # from the launch data 0x4CEB32 -> 0x4AB5CC, the launch points 0x4AB5D4, none 0x4AB5B1): fld [esp+28h] / push
+    # 40A00000h (9 B, replaced) / fsub [esp+20h] (the continuation 0x4995DE).
+    ("TurretLaunchStart", 0x4995D5, 0x0D),
     # broadsideSoundSet: in FUN_004CEB37 (the broadside fire step's effect of one shot), push 0BA1D5Ch (replaced, 5 B)
     # / add edx,14h (the continuation; no branch lands inside), and the name it pushes, "ShipCannonShoot" with its NUL
     ("BroadsideSound", 0x4CECBD, 8),

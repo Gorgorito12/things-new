@@ -43,6 +43,7 @@ set(UHC_SOURCES
   src/civtags.cpp
   src/techsubtypes.cpp
   src/d3d9hooks.cpp
+  src/grannyhooks.cpp
   src/menuoptions.cpp
   src/rofreads.cpp
   src/floatingbars.cpp
@@ -171,6 +172,7 @@ set(UHC_SOURCES
   src/features/shots.cpp
   src/features/inventorybars.cpp
   src/features/retarget.cpp
+  src/features/turretarc.cpp
   src/features/unitresource.cpp
   src/features/gatherauras.cpp
   src/features/resourcedebt.cpp
@@ -249,6 +251,7 @@ set(UHC_SOURCES
   src/hooks/floatingbars_hooks.asm
   src/hooks/inventorybars_hooks.asm
   src/hooks/retarget_hooks.asm
+  src/hooks/turretarc_hooks.asm
   src/hooks/shots_hooks.asm
   src/hooks/unitresource_hooks.asm
   src/hooks/gatherauras_hooks.asm
