@@ -18,10 +18,13 @@
 //
 // On screen (grannyhooks.h, after the game samples a model's pose): the gun's yaw bone and the model's turret bone
 // (which carries the launch point and the muzzle flash) turn by the shown yaw, which follows the game's yaw at the turn
-// rate and goes back to 0 half a second after the unit last aimed; the gunner's bones take the aim table's pose for
-// the clip and time the model plays, between the two nearest yaws.
+// rate and goes back to 0 half a second after the unit last aimed, or as soon as the gun or the gunner plays a clip
+// named for a reload, a death or a deploy (the gunner's new magazine comes to where the hopper is at rest, a corpse
+// shows the gun at rest, and the gunner holds the reins while the camel lies down or rises); the gunner's bones take
+// the aim table's pose for the clip and time the model plays, between the two nearest yaws.
 #include <windows.h>
 
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <cstdint>
@@ -278,6 +281,7 @@ struct Shown {
   LARGE_INTEGER lastReal{};
   int aim = -1;
   bool lastInside = false;     // for the log
+  bool home = false;           // the gun or the gunner plays a reload or a death: the gun goes home
   float lastLogged = 0.0f;
 };
 
@@ -510,6 +514,19 @@ const char* PlayingClip(const void* instance, float* clock) {
   return best;
 }
 
+// A clip in which the gun stays home: its name holds "reload", "death" or "deploy" (and so "undeploy"), any case.
+bool IsHomeClip(const char* name) {
+  if (name == nullptr) {
+    return false;
+  }
+  std::string s(name);
+  for (char& ch : s) {
+    ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+  }
+  return s.find("reload") != std::string::npos || s.find("death") != std::string::npos ||
+         s.find("deploy") != std::string::npos;
+}
+
 void PoseGunner(void* pose, int count, const AimFile& aim, const BoneMap& m, const char* clipName, float clock,
                 float modelYaw) {
   const auto found = aim.clips.find(clipName);
@@ -590,7 +607,14 @@ void AfterSample(void* instance, int first, int count, void* pose) {
   Shown& sh = s->second;
   // the shown yaw follows the aim (or goes home after it) at the turn rate, in real time: display only
   const char* world = World();
-  const float target = (sh.aimedAt >= 0 && Now(world) - sh.aimedAt <= kAimHoldMs) ? sh.gameYaw : 0.0f;
+  // a reload, a death or a (un)deploy clip brings the gun home whatever the aim: the full magazine comes from the
+  // gunner's pocket to where the hopper is at yaw 0, and the dead unit's model shows the gun at rest
+  if (found->second.role != Role::kBody) {
+    float c = 0.0f;
+    sh.home = IsHomeClip(PlayingClip(instance, &c));
+  }
+  const float target =
+      (!sh.home && sh.aimedAt >= 0 && Now(world) - sh.aimedAt <= kAimHoldMs) ? sh.gameYaw : 0.0f;
   LARGE_INTEGER now;
   QueryPerformanceCounter(&now);
   const double dt = sh.lastReal.QuadPart == 0 ? 0.0 : Seconds(sh.lastReal, now);

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The gatling camel that fires from the saddle: the zamburak's tactics (it fires and moves without deploying) with the gatling camel's attack. -->
+<!-- The gatling camel that fires from the saddle: the zamburak's tactics (it fires and moves without deploying) with the gatling camel's attack, whose <turret> (arc 90 each side) is read by the turretArc key, which turns the gun on its post instead of the camel. -->
 
 <tactics>
 	<action>
@@ -24,6 +24,7 @@
 		<rate type="All">1.0</rate>
 		<instantballistics>1</instantballistics>
 		<basedamagecap>1</basedamagecap>
+		<turret tracking="always" maxTurnAnglePerSecond="240">90</turret>
 	</action>
 	<action>
 		<name stringid="43295">AutoGatherFood</name>

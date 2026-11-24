@@ -94,6 +94,8 @@ PAGES = {
         "containedUnitsROF": ["src/features/containedrof.cpp", "src/hooks/containedrof_hooks.asm"],
         "numberOfShots": ["src/features/shots.cpp", "src/hooks/shots_hooks.asm"],
         "retargetInAction": ["src/features/retarget.cpp", "src/hooks/retarget_hooks.asm"],
+        "turretArc": ["src/grannyhooks.h", "src/grannyhooks.cpp", "src/features/turretarc.cpp",
+                      "src/hooks/turretarc_hooks.asm"],
         "accuracyTechs": ["src/features/accuracy.cpp"],
         "broadsideMuzzleLimit": ["src/features/broadside.cpp", "src/hooks/broadside_hooks.asm"],
         "broadsideSoundSet": ["src/features/broadsidesound.cpp", "src/hooks/broadsidesound_hooks.asm"],
