@@ -1,6 +1,7 @@
-// inventoryBars [UnitType] [always] [log]: while Alt is held, a unit with a resource inventory shows a second
-// floating bar under its HP bar: what it still holds, as a share of what it was created with, in the colour of the
-// resource it holds most of.
+// inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]: while Alt is held, a unit with a resource
+// inventory shows a second floating bar under its HP bar: what it still holds, as a share of what it was created with,
+// in the colour of the resource it holds most of (other=: the colour of a resource that is not gold, wood or food).
+// Mines, bushes and carcasses, which have no HP bar, get one too unless noSites; trees only with trees.
 //
 // Stock: holding Alt shows the HP bar of every unit whose proto has the HP bar flag (proto flag 5), with the profile
 // option 57h on (FUN_00451F9D: the modifier query 0x473E37(2) into BL at 0x452EBD, read at 0x511D80). Each unit with

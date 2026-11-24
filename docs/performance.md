@@ -85,7 +85,7 @@ the register-loaded calls (`mov reg,[IAT]` … `call reg`):
 | SleepEx(100) | 0xB59FA7, 0xB5A011, 0xB5A0D2 | Periodic loop of the network background thread 0xB59FD7. |
 | SleepEx(1/5) | 0xA9FCF3, 0xAA0C9B, 0xAA0D66, 0xAA0DC7 | Network: send-all retry after a partial send (FUN_00a9fcb4), and loops in FUN_00aa0692 (run from a destructor). |
 | SleepEx(1) loop | FUN_00771a3a | Waits up to 30 s for outstanding ESO tasks. Reached only from the virtual method FUN_00634072; looks like a leave/exit flush. `ev_c25c71f6…` |
-| SleepEx(0,1) spin | FUN_00b5a3f2 (callers 0xA25805, 0xA2582F) | Spins while the network singleton `[0xD98544]` is busy (byte `+6`, held by the background thread around its periodic work). **On the main thread during an online match, this would be a stutter source** (runtime check pending). |
+| SleepEx(0,1) spin | FUN_00b5a3f2 (callers 0xA25805, 0xA2582F) | Spins while the network singleton `[0xD98544]` is busy (byte `+6`, held by the background thread around its periodic work). **On the main thread during an online match, this would be a stutter source** (not checked at runtime: single player only). |
 | SleepEx(0,1) | 0x63DE6A, 0x6B61E4, 0xA1C194, 0xA2D3EB, 0xA2D475, 0xA2D4EC, 0xAA74A7, 0xAA75AF, 0xAA75FD, 0xB59F87, 0xB5A2A3, 0xB5A426 | Zero-ms yields after subsystem work and in socket retries. |
 | SleepEx(0,1) | 0x57D238, 0x57E1A3 | Shutdown (FUN_0057d0e6) and a destructor (FUN_0057e105). `ev_d4419de7…` |
 
@@ -1204,7 +1204,7 @@ with the main thread at 94.7 %. Runs that share the machine are only comparable 
 | More skinning workers (`deformWorkers`), plus letting them help during the flush | DLL feature | Not built. The late-game A/B puts skinning at 1–3 % of the main thread. |
 | Device flags: drop MULTITHREADED, HARDWARE vertex processing, back buffers | DLL feature, opt-in | Measured in a local build (§11): no change beyond noise. Dropping MULTITHREADED is unsafe, because the loading-screen thread calls Direct3D. Back buffers only matter with vsync on. |
 | Frame-time statistics and device logging (`perfStats`) | DLL feature, passive | Implemented (`src/features/perf.cpp`). Version 2 also records the QPC window of every frame over 50 ms. Read by `tools/perfprobe.py`, which also profiles the main thread's stack (§9). |
-| Large-Address-Aware on the test exe | header bit | Planned: `tools/set_laa.py`. |
+| Large-Address-Aware on the test exe | header bit | Available: `tools/set_laa.py <UHC-patched age3y.exe> <out.exe>` writes a copy with the flag set and the PE checksum recomputed, nothing else changed (it refuses any input but the known UHC-patched build, and an existing output); the flag is read when the process starts, so the DLL cannot set it. No measurement with it is recorded here: the stock data stays at about 1.0 GB (§8). |
 | `-demandLoadMeshes`, `megaPostLoadForceTextures` | cfg | **No effect** (§9, "The remaining stutters"): the first is stored at startup and never read, the second never read; the A/B runs match the key-off runs (3, 3 and 4 frames over 100 ms). `useDeviceReset` (§5) only matters on mode changes. |
 | DXVK (D3D9 → Vulkan) | wrapper | Measured twice, both with 3.1.1 (still the latest release on 2026-11-10): −28 % FPS in §8's 4K battle; **−14 % warm, −16 % cold** at 2560×1600 in §11's procedure, but +6 % at 1280×720. The extra time is one loop in 0x40D25B that reads back from a locked buffer (§11). **With `d3d9.cachedWriteOnlyBuffers = True` in `dxvk.conf` that loop costs nothing and DXVK beats stock: +14 % at 2560×1600, +18 % at 3840×2160, +14 % at 720p**, no frame over 50 ms, the picture unchanged on the frames compared. FPU state kept (0x007F), +225–255 MB of address space. Without the option: not recommended. With it: the only D3D layer measured that is faster than stock (**+19 % at 1920×1080** too). **In WoL (§11, "DXVK in WoL")**: +16…+25 % in a base view at four points of a 32-minute game and +17 % in a battle, at 1920×1080; a whole 32-minute game, minimize, device re-creation, save and load without a fault; the same picture; the same x87 control word during play. It adds 225–255 MB to WoL's 1.5 GB of address space, so it needs WoL's large-address-aware exe, and it leaves the stutter as it is. **Recommended to WoL's players as an optional, user-side setup for single player.** Multiplayer is untested: a LAN game could not be formed between two copies on one PC. |
 | The read-back loop in 0x40D25B (0x40D5C0…0x40D5FD): `fastVertexFill` | DLL feature, opt-in, display only | **Implemented and measured** (§11, "fastVertexFill"). 0x40D25B draws the cloth flags; the loop reads eight values per back-side vertex from a locked `DYNAMIC \| WRITEONLY` vertex buffer (write-combined memory, `PAGE_WRITECOMBINE` at runtime). The key's routine reads the source instead and writes the same bytes: on stock D3D9 **+7 % FPS at 1920×1080 and 2560×1600, +8 % at 3840×2160**, nothing at 1280×720 (no flag drawn); the function goes from 5.5–7.8 % of the main thread to 0.0 %. `verify`: 76,365 fills, 10.5 M vertices, 0 mismatches. With DXVK 3.1.1 and no `dxvk.conf`: 179.6 → 237.2 FPS (one run each). Not tested in multiplayer; it does not touch the simulation. |
@@ -1490,8 +1490,8 @@ protection's hook. That rules out D3D11 call counts and hooked Present times.
 
    **Update (2026-11-10, 13:40): (a) is done for WoL, except multiplayer** ("DXVK in WoL" below): +16…+25 % at
    1920×1080 at four points of a 32-minute game and +17 % in a battle, no fault in the whole game, the same picture
-   and the same FPU state in play. It is recommended to WoL's players for single player. A LAN game between two
-   copies on one PC could not be formed, so multiplayer sync stays open.
+   and the same FPU state in play. It is recommended to WoL's players for single player. It was not tested in multiplayer
+   (single player only; a LAN game between two copies on one PC could not be formed).
 2. **Not a render thread fed by a snapshot.** It is the only large prize (+75–80 % [I]), but the render and the
    simulation write each other's objects, a race there is a desync, and DE never did it either.
 3. **Yes, split work inside the render, the way DE does, starting with particles:** the particle update on a
@@ -1854,8 +1854,8 @@ attempts, 13:18–13:34):
     hosting again. `data\`, the exe, the plugins and the AI scripts of the two beds hash the same.
 - Not ruled out [?]: the product key the two copies share, and Windows Firewall, which holds inbound Block rules for
   both beds' exes (left alone: changing them needs an administrator and the user's decision).
-- **So multiplayer sync with DXVK is still open.** A LAN test needs a second PC or a virtual machine: one side stock,
-  one side DXVK, `units` and the game clock compared on both.
+- **So DXVK is not tested in multiplayer** (single player only): a LAN test would need a second PC or a virtual
+  machine.
 
 **Verdict.** DXVK 3.1.1 with `d3d9.cachedWriteOnlyBuffers = True` can be recommended to WoL's players as an optional,
 user-side setup **for single player**, with these caveats:
@@ -2099,13 +2099,11 @@ whether the tracer caused it.
 
 ## Next steps
 
-1. `bufferedFileReads` follow-up: a multiplayer game with one player using it and the other not, to show
-   it may differ between players.
-2. **The remaining stutter work** (found 2026-11-11, §9): Oodle1 decompression of `.gr2` files met for the first
+1. **The remaining stutter work** (found 2026-11-11, §9): Oodle1 decompression of `.gr2` files met for the first
    time. Answered 2026-11-13 with uncompressed copies as loose files, written offline (§9, "Uncompressed models as
    loose files", models and animations alike); left: whether WoL ships them.
-3. **WoL's stutters** (§9, "What WoL's stutters are"): A is fixed by `fastLastInLine` (implemented, verified, measured). B: the fixed `aiWoLMain.xs`, measured in a long game (2026-11-13): no `towerManager` frame (7 with the original file, up to 359 ms), as many towers; ready for Maston. The access violation at 0x40CC7B of `sk-fixed` did not recur in two 54-minute games. Open: why the HCRoyalDecreePortuguese activation did not trigger a recompute.
-4. Open questions:
+2. **WoL's stutters** (§9, "What WoL's stutters are"): A is fixed by `fastLastInLine` (implemented, verified, measured). B: the fixed `aiWoLMain.xs`, measured in a long game (2026-11-13): no `towerManager` frame (7 with the original file, up to 359 ms), as many towers; ready for Maston. The access violation at 0x40CC7B of `sk-fixed` did not recur in two 54-minute games. Open: why the HCRoyalDecreePortuguese activation did not trigger a recompute.
+3. Open questions:
    - which passes call the world draw 0x44FC96 under 0x408399: answered in §11 (pass 0 of the views and the
      main view), except what pass 0 renders;
    - what the `[world+148h]` loop 0x4910CF updates;
@@ -2118,11 +2116,11 @@ whether the tracer caused it.
      another thread while loading, very likely the loading-screen thread; none during a match);
    - whether the simulation reads the fields the render writes (§11): the bounding box at `[unit+B4h]+34h`
      and bit 5 of `[[unit+4]+1]`.
-5. Answered for single player: FUN_00771a3a and FUN_00b5a3f2 (§1) do not run during a match.
+4. Answered for single player: FUN_00771a3a and FUN_00b5a3f2 (§1) do not run during a match.
    - Neither appears in the 27,183 late-game samples of §9.
    - FUN_00771a3a is the wait for "outstanding ESO tasks": `SleepEx(1,1)` plus a `PeekMessageA` pump, for up
      to 30 s (`ev_109439de…`).
-   - FUN_00b5a3f2 is the network spin, so it still needs a check in an online match.
+   - FUN_00b5a3f2 is the network spin; it was not checked in an online match (single player only).
 
 The static claims in §1, §4 and §5 were re-checked from the raw bytes by an independent pass (2026-10-28).
 It confirmed them and supplied the corrections already folded in above:

@@ -314,9 +314,16 @@ thread, and stutters from first-use loads.
    - It needs the legacy visual-load entry (§9 chains 0x487A21 … 0x58EC9C) and a list of what to load,
      for example every proto of the civilizations in the match.
    - Its costs are memory (legacy has a 2 GB limit; LAA is possible) and a longer load.
-   - **Multiplayer safety must be checked.** If load order assigns IDs that the simulation sees,
-     preloading could desync players with different settings.
-   - **Candidate.**
+   - Multiplayer (not tested): if load order assigns IDs that the simulation sees, preloading could desync
+     players with different settings.
+   - **Candidate**, not built as such. Done since on the same problem:
+     - **Uncompressed models as loose files** (2026-11-13, commit 00ccd999; a one-off tool of aoe3-blender-tools,
+       no DLL key): in WoL a save loads 2.1 s faster (11.6 → 9.5 s) and the 72–80 ms frame of a model loaded
+       mid-game is gone, for about 1 GB of disk ([wol-migration.md](wol-migration.md#uncompressed-models-a-note-for-jtmaston-2026-11-13),
+       performance.md §9).
+     - **`modelCacheLimit`** (2026-11-23, `src/features/modelcache.cpp`): the model cache's 30 MB budget raised or
+       removed, so a model is no longer unloaded and loaded again during play (and no longer freed while a unit still
+       uses it: the Levant crash, WoL #78).
 3. **Background texture streaming with placeholders.** Not measured as a legacy problem: texture loads
    did not show up in the stutter profiles. It would need a data pipeline (placeholder cache), not just
    a patch. **Not recommended.**

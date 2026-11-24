@@ -1,25 +1,34 @@
-# things-new
+# things-new <!-- private -->
+<!-- public: # tad-engine-extensions -->
 
 Engine extensions for Age of Empires III: The Asian Dynasties (Steam). A DLL removes hard-coded limits
 and adds new engine features, and a mod turns each one on with a line in its cfg file.
 
 ## Features
 
+<!-- private:begin -->
 Every key, with what it needs and how far it was tested, is in the
-[modding guide](docs/modding-guide.md#5-feature-reference). By theme:
+[modding guide](docs/modding-guide.md#5-feature-reference), but for the keys that fix a bug and the performance
+keys, which are in [bug-fixes.md](docs/bug-fixes.md) (the benchmark harness is in
+[performance.md](docs/performance.md), "Benchmark harness"). By theme:
+<!-- private:end -->
+<!-- public:begin
+Every key, with its options, is in the commented [`examples/Startup/uhc.cfg`](examples/Startup/uhc.cfg); the
+[modding guide](docs/modding-guide.md#5-feature-reference) covers the earlier keys in depth. By theme:
+public:end -->
 
 | Theme | Keys |
 |---|---|
-| **Game files and startup** | `ignoreRegistryPath`, `bufferedFileReads`, `fastVertexFill`, `rendererOption`, `xsErrorLog`, `dataLint`, `multipleInstances`, `compatMode`, `modelCacheLimit`, `dmgPartBoneFix` |
-| **Population, decks and limits** | `basePop`, `extraPop`, `decimalPopulation`, `deckCardCount`, `selectionLimit`, `noAILimit`, `noAILimitV2`, `enableAllTeams` |
+| **Game files and startup** | `ignoreRegistryPath`, `bufferedFileReads`, `fastVertexFill`, `rendererOption`, `xsErrorLog`, `dataLint`, `multipleInstances`, `compatMode`, `modelCacheLimit`, `dmgPartBoneFix`, `fastLastInLine`, `menuOptions`, `preloadDll`, `lanAutoStart` |
+| **Population, decks and limits** | `basePop`, `extraPop`, `decimalPopulation`, `deckCardCount`, `selectionLimit`, `noAILimit`, `noAILimitV2`, `enableAllTeams`, `ageFiveShipments`, `resendableCards`, `quickArrivalCards` |
 | **New data and scripting** | `customAbstractTypes`, `customProtoUnitCommands`, `customHotkeyContexts`, `techRenameEffect`, `customSyscalls`, `customCheats`, `kbUnitSyscalls`, `auraStacking` |
-| **Civs** | `asianCivs`, `nativeCivs`, `twoScoutCivs`, `bigButtonCivs`, `noBigButtonBlds`, `danceBonusCivs`, `wonderCivUnitType`, `firstTC`, `startingTC`, `civFirstTC`, `customRevolutionBanners`, `removeFameRestriction` |
+| **Civs** | `asianCivs`, `nativeCivs`, `twoScoutCivs`, `bigButtonCivs`, `noBigButtonBlds`, `danceBonusCivs`, `wonderCivUnitType`, `firstTC`, `startingTC`, `civFirstTC`, `customRevolutionBanners`, `removeFameRestriction`, `ageUpBuildings`, `politicianEnablesTech`, `scenarioCivs` |
 | **Healing and hit points** | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` |
-| **Combat** | `detonationDeath`, `multiarmor`, `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `containedUnitsROF`, `broadsideMuzzleLimit`, `cantBeSlowed`, `veterancyBonus`, `snareOnlyHitUnit`, `snareValues`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `pillageGold`, `rofFix`, `stunMovingTargetFix`, `noDamageOnUnbuiltFoundations`, `fallenHeroTacticsFix`, `removeConversionRestriction` |
-| **Gathering and farms** | `gatherFix`, `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `cratePriority`, `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius`, `nowalkfarm`, `betterfreedynamicunit`, `marketUnits`, `faithResource` (optional) |
-| **Buildings and training** | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `trainSingleAbstractType`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `repairWallGlobal`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `trainBatchSize`, `costEscalationTechs`, `randomCost`, `annexFacing` |
-| **Techs and transforms** | `hcTargetTechs`, `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `unitTypeTechs` |
-| **Interface** | `nativePreview`, `displayedRange`, `abilitySlots`, `wonderPanelSkipAuras`, `explorerUnits`, `noCorpseDopples`, `steadyHitpointBars` |
+| **Combat** | `detonationDeath`, `multiarmor`, `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `accuracyTechs`, `containedUnitsROF`, `broadsideMuzzleLimit`, `cantBeSlowed`, `veterancyBonus`, `snareOnlyHitUnit`, `snareValues`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `pillageGold`, `rofFix`, `stunMovingTargetFix`, `noDamageOnUnbuiltFoundations`, `fallenHeroTacticsFix`, `removeConversionRestriction`, `numberOfShots`, `retargetInAction`, `broadsideSoundSet`, `killSpawn`, `customImpactTypes`, `directionalAttack`, `stealthTargeting`, `impactBoneFix` |
+| **Gathering and farms** | `gatherFix`, `showGatherRate`, `workRateByAbstractType`, `autoGatherScaleByContained`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `cratePriority`, `enableFarmAnim`, `enableRectFarmAnim`, `farmingRadius`, `nowalkfarm`, `betterfreedynamicunit`, `marketUnits`, `autoGatherFrom`, `buildingGather`, `truckAttackResourceFix`, `herdWalkAwayFix`, `deadReplacementAtZeroInventory`, `faithResource` (optional) |
+| **Buildings and training** | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `maintainWaitForPop`, `trainSingleAbstractType`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `repairWallGlobal`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `nextResearchFree`, `researchGrants`, `trainBatchSize`, `costEscalationTechs`, `randomCost`, `annexFacing`, `customWalls`, `researchOnTheMove`, `shipTechLimit`, `homeCityTechsInUnits` |
+| **Techs and transforms** | `hcTargetTechs`, `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `unitTypeTechs`, `kothTimer`, `shipmentCounts`, `orPrereqsQty`, `transformChecks` |
+| **Interface** | `nativePreview`, `displayedRange`, `abilitySlots`, `wonderPanelSkipAuras`, `explorerUnits`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `attackTypeIcons`, `multiplierDecimals`, `minUIStats`, `playerIcon`, `autoScout`, `editorSearch`, `techGadgets`, `incomeRates`, `politicianPlacesFix` |
 
 ## Status
 
@@ -40,16 +49,17 @@ In any other mod:
    It holds `UHC.dll`, a `Startup\uhc.cfg` with every key commented out, a short `README.txt` and the
    license, plus `beside-another-dll\` (`dinput8.dll` and its `engine-ext\engine-ext.cfg`, the same
    code for a game that keeps another `UHC.dll`), `art\effects\uhc_rings\` (the aura rings,
-   for the mod's `art` folder) and `dxvk\` (DXVK's `d3d9.dll`, for `rendererOption`).
+   for the mod's `art` folder), `art\ui\uhc\health_overheal.ddt` (the orange end of the portrait HP bar, for
+   `overhealHitpointBars`) and `dxvk\` (DXVK's `d3d9.dll` and its license, for `rendererOption`).
 2. **Make your mod folder a complete game folder:** a copy of the game's `bin` folder plus your files.
    Never modify the Steam install.
 <!-- private:begin -->
-3. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`, It must
+3. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`. It must
    be the unmodified Steam exe.
 <!-- private:end -->
 <!-- public: 3. **Patch the mod folder's `age3y.exe` once** with `UHCPatcher.exe`. It must be the unmodified Steam exe. -->
 4. **Copy `UHC.dll` and `Startup\uhc.cfg` from the zip** over the patcher's files.
-5. **Enable keys** by removing the `# ` in front of them: always `ignoreRegistryPath`, then the ones you
+5. **Enable keys** by removing the `#` in front of them: always `ignoreRegistryPath`, then the ones you
    want, with the data each needs.
 6. **Start the mod's `age3y.exe`.** `UHC.log` appears next to it, and every key you enabled says
    `applied`.
@@ -66,18 +76,22 @@ cmake --build build --config Release
 ```
 
 The result is `build\Release\UHC.dll`, which exports `_UHCMain@0`. Those names, and `uhc.cfg`, are what
-the loader asks for.
+the loader asks for. The same build writes `build\Release\dinput8.dll`, the same code for a game that keeps
+another `UHC.dll` (it reads `engine-ext\engine-ext.cfg`).
 
 ## Documentation
 
 | Document | For |
 |---|---|
-| [docs/modding-guide.md](docs/modding-guide.md) | Every key: what it does, what it needs, how to check it, multiplayer. |
+| [docs/modding-guide.md](docs/modding-guide.md) | The keys in depth: what each does, what it needs, how to check it, multiplayer. |
+| [docs/bug-fixes.md](docs/bug-fixes.md) | The same, for the keys that fix a bug of the game or of WoL's data, and the performance keys. | <!-- private -->
+| [docs/performance.md](docs/performance.md) | What limits CPU and GPU use, the A/B measurements, and the benchmark harness (the dev keys `perfStats`, `perfAutoExec`, `perfExecFile`, `perfFileLog`). | <!-- private -->
 | [docs/how-it-works.md](docs/how-it-works.md) | How each feature works inside the engine. |
 | [docs/porting-to-another-dll.md](docs/porting-to-another-dll.md) | Adding the features to WoL's own DLL, with the code in [docs/porting-code/](docs/porting-code/helpers.md). | <!-- private -->
 | [docs/developer-guide.md](docs/developer-guide.md) | Building, the test beds, adding a feature. | <!-- private -->
 | [tools/README.md](tools/README.md) | The data tools and the runtime tracers. | <!-- private -->
 | [docs/wol-migration.md](docs/wol-migration.md), [docs/wol-requests.md](docs/wol-requests.md) | WoL: progress, and its requests. | <!-- private -->
+| [docs/wol-maps.md](docs/wol-maps.md), [docs/wol-campaign.md](docs/wol-campaign.md) | WoL: the random map crash hunt, and the diagnosis of its campaign. | <!-- private -->
 
 ## Compatibility
 
