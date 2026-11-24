@@ -370,3 +370,7 @@ gatlingCamel-wol 0 22 2
 gatlingCamel-wol-control 0 22 2
 gatlingCamel-move-wol 1 24 2
 gatlingCamelDeployed-wol 0 24 2
+techGadgets-wol 0 12 1
+techGadgets-wol-control 0 12 1
+incomeRates-wol 0 24 2
+incomeRates-wol-control 0 24 2

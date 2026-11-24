@@ -143,9 +143,10 @@ void LogPeriod(const char* world) {
     if (g_haveStock && (counted > 0.0f || stock != g_stock[r])) {
       ++g_logLines;
       uhc::Log(L"incomeRates: player %d, resource %d, last 60 s: counted %.1f (gather %.1f, AutoGather %.1f, "
-               L"trickle %.1f, DLL %.1f), stockpile %+.1f (%.1f -> %.1f); shown %.1f/min",
+               L"trickle %.1f, DLL %.1f), stockpile %+.1f (%.1f -> %.1f); rate %.2f/s, %.1f/min",
                shown, r, counted, g_source[kGather][r], g_source[kAutoGather][r], g_source[kTrickle][r],
-               g_source[kDll][r], stock - g_stock[r], g_stock[r], stock, 60.0 * Rate(shown, r));
+               g_source[kDll][r], stock - g_stock[r], g_stock[r], stock, static_cast<double>(Rate(shown, r)),
+               60.0 * Rate(shown, r));
     }
     g_stock[r] = stock;
   }
@@ -246,8 +247,14 @@ bool __stdcall IncomeRef(uhc::DataRefValue* value) {
   const char* game = Game();
   const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
   const char* database = game == nullptr ? nullptr : Field<const char*>(game, 0x140);
-  if (world == nullptr || database == nullptr || world != g_world) {
+  if (world == nullptr || database == nullptr) {
     return false;
+  }
+  if (world != g_world) {  // a game loaded and still paused: nothing counted yet in this world
+    Clear();
+    g_world = world;
+    g_logMs = 0;
+    g_haveStock = false;
   }
   const std::int32_t resource = ArgumentResource(database);
   const std::int32_t shown = Field<std::int32_t>(game, 0x3C0);
