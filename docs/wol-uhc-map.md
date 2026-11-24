@@ -4,10 +4,12 @@
 
 A map of WoL's closed-source DLL: what it adds beyond upstream AoE3UnHardcoded, and which `age3y.exe` addresses each cfg key touches.
 
-**First pass, 2026-10-28.** Every patch site the DLL encodes upstream-style is listed exactly. For the WoL-only keys, the addresses are **candidates**:
+**First pass, 2026-10-28.** Every patch site the DLL encodes upstream-style is listed exactly. For the WoL-only keys, the addresses in "Per cfg key" are **candidates**:
 - they are age3y constants found in each key's handler function;
 - each was classified against the stock exe;
-- the per-site patch type and behavior are not traced yet.
+- the per-site patch type and behavior were not read from the handlers.
+
+**Since then:** the bytes the DLL actually changes were read from the running game (the memory diff, "Runtime patch list" below, 2026-10-28), and each changed range was attributed to the WoL function that installs it and its feature class ([wol-migration.md, "WoL's always-on patches"](wol-migration.md#wols-always-on-patches-inventory-2026-11-03), 2026-11-03). The `candidates` status of a "Per cfg key" row says only that its handler was not read.
 
 **Reference only.** Record addresses and behavior here, but never copy the DLL's code or pseudocode into `src/`.
 
@@ -197,7 +199,7 @@ JTMaston's request: keep WoL's `uhc.dll`, `Startup\wol.cfg` and `data\uhc` as th
 
 **WoL's DLL writes no `UHC.log`,** in this bed or in the control `C:\WoL-Test`, so there is no log of its own to compare.
 
-**Result with every key of ours on (`examples/Startup/uhc.cfg`, example values): 55 applied, 31 FAILED.** Checked with the live bytes of all 502 sites at the main menu, once with two runtime keys of ours (86 sites changed by WoL) and once with all keys: no site of an applied key was overwritten by WoL afterwards.
+**Result with every key of ours on (`examples/Startup/uhc.cfg`, example values): 55 applied, 31 FAILED** (the first run, 2026-11-05; historical: later runs with more keys gave 62 applied, 28 failed on 2026-11-06, in the tests below, and 85 applied, 33 failed beside `WoL.dll` on 2026-11-17, in its section). Checked with the live bytes of all 502 sites at the main menu, once with two runtime keys of ours (86 sites changed by WoL) and once with all keys: no site of an applied key was overwritten by WoL afterwards.
 
 | Key group | Beside WoL's DLL | Why |
 |---|---|---|
@@ -283,7 +285,7 @@ their arguments; live: the bytes at the menu and in a game, both modes, identica
 After the first revolution a thread scans memory for a deck pattern, 60 passes about 3 s apart (`wol_deck.log`); in
 both runs it logged candidates and wrote nothing (no `PATCH` line), because no deck map applied.
 
-**Against our DLL** (`src/generated/sites.h`, 758 sites, every verify range): **no shared byte.** Adjacent only:
+**Against our DLL** (`src/generated/sites.h` as it was then, 758 sites, every verify range): **no shared byte.** `sites.h` has 914 sites today (2026-11-24); the 156 added since were not compared against `WoL.dll`. Adjacent only:
 0x699227..0x69922C ends before `UnitPanelRateRow` 0x69922D, and 0x7F8114 starts after `TechRenameApplyCall`
 ..0x7F8113, as in v1.22x. None of the 13 sites is in the 287 ranges of WoL's `uhc.dll` (`wol-memdiff.txt`). The caves
 and cells, 0xC65200..0xC65FFF, are disjoint from what we read in that page (0xC65016, 0xC65083..0xC650AB).
@@ -402,6 +404,6 @@ all, so 0x699456 was not reached there); `ageIcons`; multiplayer.
 ## Next steps
 
 1. For each `candidates` row, read the bytes the feature writes (the `remod` patch objects' `+0Ch` vectors, or the call/imm rewrite). Then confirm the site against the stock exe in the same way as the address map.
-2. Verify the WoL-only cave at 0x699D31 and the changed TeamLimit SP range.
-3. Resolve `loadingScreenCount`, `alpha2coverage`, `repairWallGlobal` and the tech effects, whose handlers have no direct exe constants. Follow the feature classes' vtables.
+2. Verify the changed TeamLimit SP range (0x7A0709..0x7A070E). The WoL-only cave at 0x699D31 is done: checked against the stock exe on 2026-11-19 ("Upstream caves" above), and our `attackTypeIcons` hooks it as `TypeIconMinChain`.
+3. `loadingScreenCount`, `alpha2coverage`, `repairWallGlobal` and the tech effects have no direct exe constants in their handlers. Ours exist for two: `repairWallGlobal` (`src/features/repairwall.cpp`, a UI syscall) and `SetTechName` (`techRenameEffect`); `RandomTech`, `loadingScreenCount` and `alpha2coverage` are not built. For all of them, WoL's own handler sites are still untraced: follow the feature classes' vtables.
 4. Next target: `wolPlugin.upl` / `wolai.upl` (custom syscalls; out of scope here).
