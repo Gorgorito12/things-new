@@ -102,12 +102,14 @@ Sizes, following the Design rule in wol-requests.md:
 | 43 | `NativePreview` | Flag on native sockets: shows the settlement's units before a TP stands | Absent | L, UI; built as `nativePreview` (2026-11-08) |
 | 44 | Building rotated / annexed by its builder | Nothing by the builder; in-place building upgrades (`ForceMutate`, `RevertUpgrade`). The player can turn a building while placing it (see below) | Placement rotation: stock, only the key binding is missing | by the builder: needs a design; built with JTMaston's design as `annexFacing` (2026-11-08) |
 | 54 | Resource yield (Tier 5) | `yield` per `<Rate>` entry; subtypes `Yield`, `YieldSpecific`, `YieldBonus`; modify type `ResourceYield` | One `<Yield>` per action, on all resources, but trees only for the `Indians`/`SPCIndians` civs (gather tick 0x4ED0A6); no subtype | M (attribute + subtypes) |
-| 56, 57 | `UseBigHugeButton` (Tier 5) | Command flag, unused in DE's data; the tech flag only on `ypPickConsulateTech` | Tech flag 27h → big slot 3 for any unit (0x462067); the "Consulate only" check not found | S if data, M for the command flag |
+| 56, 57 | `UseBigHugeButton` (Tier 5) | Command flag, unused in DE's data; the tech flag only on `ypPickConsulateTech` | Tech flag 27h → big slot 3 for any unit (0x462067); "Consulate only" is WoL's layout, not a check (resolved in game 2026-11-13, see #56) | #56 **data only** (a layout edit); #57 M, not built (decided 2026-11-13) |
 | 58 | "Random" cost per unit (Tier 5) | Nothing | Nothing; `CostEscalation`, `DynamicCost`, `FreeHomeCityMerc` are the nearest | M, meaning to agree |
-| 62 | 5 age-up choices; politicians outside the TC (Tier 5) | XAML dialog, `uiShowAgeUpDialogInSelected` | Dialog already holds 5 (0x8191FE); the picker wants the TownCenter (0x7E6905, 0x7E803F) | S outside the TC; the 5 limit not located |
+| 62 | 5 age-up choices; politicians outside the TC (Tier 5) | XAML dialog, `uiShowAgeUpDialogInSelected` | Dialog already holds 5 (0x8191FE); the picker wants the TownCenter (0x7E6905, 0x7E803F) | S outside the TC (built: `ageUpBuildings`); five places: data plus `politicianPlacesFix`; the 5 limit located at 0x8191FE / 0x81A82A (see #62), more than five not built |
 
-**Where to start** [I] (historical, 2026-10-30: every item of this table has since been built, the DE subtypes
-`SharedBuildLimitUnit` and `AddSharedBuildLimitUnitType` of #29 excepted; see wol-requests.md):
+**Where to start** [I] (historical, 2026-10-30: every item of this table has since been built or answered, except the DE
+subtypes `SharedBuildLimitUnit` and `AddSharedBuildLimitUnitType` of #29, #54 (answered only: legacy's yield is not
+unlocked; DE's model not built), #57 (not built: #56's tech flag covers it) and more than five politicians in #62; see
+wol-requests.md):
 - **S:** #38 (the snare code is mapped), #35 (the payment already has a team mode), #30, and the flag parts of #29 and #31.
 - **M:** #41, #37, #33 and #26.
 - **Data only, today:** #2, the negative trickle of #24, and the garrison gate of #25.
@@ -874,7 +876,9 @@ was read only with `tools/re/pe64.py` and capstone: REA's only provider here is 
 ## What legacy does today
 
 Read with REA (Ghidra) in the stock exe. The addresses, registers and Evidence IDs are in
-engine-symbols.md, "DE parity sites". All of this is static reading; nothing was checked in game.
+engine-symbols.md, "DE parity sites". This section is static reading; nothing in it was checked in game. The in-game
+results of the later requests are in the "Result (..., in game)" parts of the Tier 5 sections above, and those of the
+keys built in the modding guide.
 
 - **#38 snare.** [O] The snare is created in one place, FUN_0048FA07's cold chunk. At 0x4DD201,
   before any argument is pushed:
@@ -975,13 +979,14 @@ So the cfg keys and markers can keep DE's names where DE has one:
 
 ## Other DE additions worth porting
 
-Not requested, all absent from legacy unless noted. Pages are the guide's. The full list, with use
+Not requested (as of 2026-10-30), all absent from legacy unless noted. Pages are the guide's. Some have been built
+since, as the rows say. The full list, with use
 counts, is in `requests-findings.md`, Appendix A.
 
 | Name | Page | What it does | Why it matters for legacy [I] |
 |---|---|---|---|
 | `ProtoUnitFlag`, `SetActionFlag` (effects) | 98, 105 | A tech sets any proto or action flag by name | Lets techs switch on most flags on this page |
-| `NoStack`, `ForbidAbstractType` / `ForbidUnitType`, `ModifyTargetLimit` (auras) | 26, 31 | An aura does not stack with itself; excludes types; caps the units it reaches | Fixes the "every aura stacks" problem (`NoStack` is on 185 DE actions) |
+| `NoStack`, `ForbidAbstractType` / `ForbidUnitType`, `ModifyTargetLimit` (auras) | 26, 31 | An aura does not stack with itself; excludes types; caps the units it reaches | Fixes the "every aura stacks" problem (`NoStack` is on 185 DE actions). **Since built or settled:** `ForbidUnitType` / `ForbidAbstractType` on any aura (`auraStacking`) and in the Torp's `UnitResource` aura with `ModifyTargetLimit` (`unitResourceAuras`, #26); `NoStack` turned out to be stock legacy's `<ModifyExclusive>`, so `auraStacking`'s old `<NoStack>` tag was retired (#94: logged and ignored) |
 | `DeadTransform` | 9 | The unit turns into another proto at 0 HP | "Wounded" units without triggers |
 | `UnitRegen` per proto | 11 | Regeneration with idle and damage timeouts; negative = decay | Legacy has it only per civ |
 | `ResourceReturn`, `ResourceReturnRate` | 8 | Refund on destruction | Salvage designs |
@@ -1060,5 +1065,6 @@ counts, is in `requests-findings.md`, Appendix A.
     now reworded.
 - **Legacy side.** Every site marked `confirmed` in engine-symbols.md, "DE parity sites", was read in
   assembly (REA listing or capstone). The pseudocode-only parts are marked `scoping`.
-- **Not done.** Nothing was tested in game, in DE or in legacy. The DE exe did not open in REA within
-  its 30-minute limit, so DE's code was read only through `pe64.py`.
+- **Not done** (in this verification, 2026-10-30). Nothing was tested in game, in DE or in legacy; the later "Result
+  (..., in game)" parts of the Tier 5 sections were tested in legacy. The DE exe did not open in REA within its
+  30-minute limit, so DE's code was read only through `pe64.py`.
