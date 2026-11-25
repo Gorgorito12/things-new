@@ -86,6 +86,7 @@ another `UHC.dll` (it reads `engine-ext\engine-ext.cfg`).
 | [tools/README.md](tools/README.md) | The data tools and the runtime tracers. | <!-- private -->
 | [docs/wol-migration.md](docs/wol-migration.md), [docs/wol-requests.md](docs/wol-requests.md) | WoL: progress, and its requests. | <!-- private -->
 | [docs/wol-maps.md](docs/wol-maps.md), [docs/wol-campaign.md](docs/wol-campaign.md) | WoL: the random map crash hunt, and the diagnosis of its campaign. | <!-- private -->
+| [docs/nursery-design.md](docs/nursery-design.md) | WoL: the design of the "Nursery" factor (request #107), and its open questions. | <!-- private -->
 
 ## Compatibility
 

@@ -1,0 +1,77 @@
+Reply to JTMaston, round of 2026-11-25: "Nursery mechanic" (#107), the design and our questions
+=============================================================================================
+
+Nothing is built yet. This is how we plan to do it; your answers to the questions at the end decide the open
+points before we build the first version.
+
+
+How it would work
+-----------------
+The trickle is the nursery's own AutoGather action, exactly as today (for the mink nursery: 0.5 gold in its tactics),
+and our DLL multiplies its rate by the building's factor. So:
+- to the owner: a plain AutoGather;
+- into the building's own inventory: the same action with the stock tactics tag
+  <AddResourcesToInventory>1</AddResourcesToInventory>, which the game already supports;
+- techs that change the AutoGather rate keep working as they do now;
+- the unit panel's rate row shows the rate already multiplied (0 minks: 0 gold/s; 10 minks: 5 gold/s);
+- a trickle to the owner also shows in the global income rates (incomeRates), with no extra work.
+
+The proto block (only the first tag is required):
+
+    <NurseryFactorMax>10</NurseryFactorMax>              the cap
+    <NurseryFactorInitial>0</NurseryFactorInitial>       the value of a new building (default 0)
+    <NurseryFactorInterval>30</NurseryFactorInterval>    game seconds per growth step (none: no growth with time)
+    <NurseryFactorStep>1</NurseryFactorStep>             the size of a step (default 1)
+    <NurseryFactorGrowth>linear</NurseryFactorGrowth>    linear or exponential
+    <NurseryFactorName>90001</NurseryFactorName>         string ID or plain text: "minks"
+    <NurseryFactorRolloverCount>90002</NurseryFactorRolloverCount>  e.g. "{current} out of {max} minks."
+    <NurseryFactorRolloverRate>90003</NurseryFactorRolloverRate>    e.g. "Produces one mink every {seconds} seconds."
+    <NurseryFactorTrickle>1</NurseryFactorTrickle>       0: a counter only, the AutoGather is not multiplied
+
+The two rollover strings are yours to write (string table IDs, so they can be translated), with the placeholders
+{current}, {max}, {name}, {seconds} and {step}.
+
+Each building keeps its own factor, saved in saved games. It grows only once the building is finished, one step per
+interval, and stops at the max. The max, the interval and the step are per player and shared by all his nurseries.
+
+Tech effects (type Data):
+
+    NurseryFactor          ProtoUnit target: adds to the factor (Absolute, may be negative) or sets it (Assign),
+                           clamped to 0..max
+    NurseryFactorMax       ProtoUnit target: the max
+    NurseryFactorInterval  ProtoUnit target: the seconds per step
+    NurseryFactorStep      ProtoUnit target: the step (optional)
+    FreeHomeCityUnitByNurseryFactor   Player target: the stock FreeHomeCityUnit, amount x the factor
+
+    <Effect type='Data' amount='1.00' subtype='FreeHomeCityUnitByNurseryFactor' unittype='CrateofCoin'
+            nursery='MinkNursery' consume='all' relativity='Absolute'>
+        <Target type='Player'/></Effect>
+
+consume='all' empties the factor after the shipment; consume='2' takes 2 per nursery and ships for what it took.
+
+The UI: in the unit panel, a row "Minks 3/10" (both the full and the minimized interface), and on hover your two
+lines. We also add a text {uhcNurseryFactor} you can put in your own layouts.
+
+
+Questions
+---------
+1. "Exponential": does each step add a share of the current factor (more minks breed faster: 4, 5, 6, 8, 10), does
+   the step itself grow (1, 2, 4, 8...), or does the time between steps get shorter? And from 0: should it take one
+   first step, or stay at 0 until a tech adds some?
+2. The shipment with several nurseries: does it ship for the sum of all the player's nurseries? Does "reset to 0"
+   empty all of them?
+3. "Decrease 2 by 2": per nursery (each gives 2 minks and ships 2 crates), or 2 in total? A nursery with 1 mink left:
+   does it give 1, or nothing?
+4. Where should the shipped units appear: at the home city gather point, like every shipment, or at the nursery?
+5. A captured nursery: does it keep its minks? A nursery that transforms into another nursery unit: keep them (cut to
+   the new max)?
+6. A tech that changes the factor: all the player's nurseries of that unit, or only the one that researched it?
+7. A tech that lowers the max: cut the nurseries above it at once, or let them keep the extra?
+8. Should a nursery with no max be possible?
+9. The panel while it grows: just "3/10 minks", or also the time to the next one ("3/10, next in 14s")? When it is
+   full, should the second rollover line ("Produces one mink every Z seconds") still show?
+10. Should the build button's rollover of the nursery also show the max and the rate, or only the selected
+    building's panel?
+11. A trickle to the owner shows in the global income rates; a trickle into the building's own inventory does not,
+    since it is not in the stockpile yet. Is that right for you?
+12. The factor is always a whole number (minks), and a Percent tech rounds down. Right?
