@@ -1,0 +1,28 @@
+Reply to JTMaston, round of 2026-11-26: the "loading piechart" (for the Nursery and GarrisonConvertTo)
+==========================================================================================================
+
+You asked for "a loading piechart 'pseudo gif', take the blue overlay of a unit training as an example". We did not
+draw a new picture for it: we use the game's own overlay, the very one a train button shows while its unit trains.
+
+What it is
+----------
+- The same blue at half transparency, filling the same way: the covered part is what is still to come, and the
+  clear wedge opens from 12 o'clock and turns clockwise until the picture is clear again.
+- It is drawn over the portrait of the selected unit (the big picture in the unit panel), in both interfaces: the
+  minimized one and the normal one. Pictures: progresspie-minimized-frames.png and progresspie-normal-frames.png (six
+  moments each: the Town Center's queue button on the left of each, the portrait with our overlay on the right,
+  filling the same way), progresspie-control-minimized.png (without it). GIFs: progressPie-wol (a Musketeer, the
+  overlay filling every 8 seconds, only to show it) and progressPie-wol-control.
+- It shows for one selected unit only. With several units selected the portrait is the plain one.
+- It moves smoothly: the game redraws it with the panel.
+- No new files: nothing to add to your art or your UI layouts.
+
+Where you will see it
+---------------------
+- The Nursery: the time to the next step (the next mink). The new Nursery version comes with it.
+- GarrisonConvertTo with a delay: the unit being converted, over the building's portrait.
+
+A question
+----------
+Is the portrait the right place, or would you rather have it smaller, next to the "X/Y minks" line? Both are possible
+with the same overlay; the portrait was the closest to what a train button shows.

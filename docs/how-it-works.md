@@ -190,6 +190,8 @@ The hooks are MASM files in `src/hooks/`.
     0x518B26);
   - `d3d9hooks.*`, `ReplaceDirect3DCreate9` and `AddD3D9Observer`: the IAT slot 0xB84164 of `Direct3DCreate9` and the
     device's CreateDevice, Reset and Present;
+  - `progresspie.*`, `AddProgressPieSource`: not a hook of its own; an observer of the panel tail that draws the
+    engine's pie chart filling (a train button's overlay) over the unit portrait for the keys that give a source;
   - `income.h`, `CountIncome`: not a hook; a key that pays a player from the DLL calls it so that `incomeRates`
     counts that income too.
 - **`TRACE_ONCE "text"`** (`src/hooks/common.inc`) writes `hook reached: text` to `UHC.log` the
@@ -7038,6 +7040,70 @@ spawn, the caller reads the chosen entry again by type (`0x49D884`, `cmp eax,0Fh
 custom type that read gives nothing, so no units are thrown out, as for a type with no entry. Evidence:
 `ev_89da6b7d…` (FUN_004F04FE, FUN_0059F436), `ev_7d29d565…` (FUN_005FE922, FUN_005FEABF), `ev_107075e1…`
 (FUN_005FE875, FUN_005FE8CD), `ev_a040ef98…` (FUN_0049C18C, FUN_00401F74, FUN_0051E1DF), `ev_79c38552…` (FUN_0049C1E5).
+
+### The progress pie (`progresspie.*`) and progressPieDemo
+
+A shared piece, not a key: a key that has a timed process on a unit (a growth step, a conversion) shows how far it
+has gone as the overlay a train button shows while its unit trains, drawn over the unit's portrait in the selection
+panel, in the minimized interface and the normal one. The dev key `progressPieDemo` is its test bed.
+
+**The engine's pie** (REA `ev_18d1be98…` FUN_00629A7A, `ev_0ba07671…` 0xAB6C63, `ev_0ef63318…` 0x4C51FA,
+`ev_b5dcc5c5…` 0xAB5C34, `ev_bdb706ee…` 0xAB5BAA, `ev_6cb3ea96…` FUN_0070ADE9; capstone for the callers):
+- Every gadget can hold one: the base layout parser FUN_00629A7A reads a `<pieChartFilling color="R G B A"
+  rotation="cw|ccw" fill="true|false" texture="...">` child into a 20h-byte record at `[gadget+130h]`: the fraction
+  `+0`, the colour `+4` (ARGB, packed by 0x404DF6), the texture `+8` (-1: none), `+0Ch` 1.0, the rotation `+1Ch`
+  (1 = cw), the fill flag `+1Dh`, on `+1Eh`; and a material `[gadget+12Ch]` (`defaultcolored_alphablend`, diffuse =
+  the texture). The layouts tested put one on each command panel button and on the training panel's buttons.
+- Every gadget vtable has the same fill at +6Ch, 0xAB6C63 (`thiscall(gadget, float)`, `ret 4`): with no record it
+  makes one (colour 88FFFFFFh, no texture, cw, fill false, on), then stores the fraction clamped to [0, 1].
+  0x4C51FA (`thiscall(gadget, bool)`, `ret 4`) turns the record on or off (`+1Eh`). 0xAB5C34
+  (`thiscall(gadget, r, g, b, a)` floats, `ret 10h`) sets the colour. 0xAB5BAA (`thiscall`, plain `ret`) makes the
+  material when there is none and gives it the record's texture.
+- The command panel fills its train buttons every refresh: `+6Ch(progress)`, `0x4C51FA(1)`, then the colour
+  `0xAB5C34(0, 0, 1, 0.5)`, blue at half alpha (0x69D9BC); other buttons of that panel use green (0x69D99F),
+  magenta (0x69C383), yellow (0x69C572) or blue (0x69C92B) the same way. The unit stack buttons (FUN_009B85C7) call
+  0xAB5BAA first when the button has no material, since their layout has no `<pieChartFilling>`. The special
+  powers panel (FUN_0070ADE9) adds a mask texture, `ui\core_ui\default_piechart_mask`, for its round buttons.
+- Seen in game (the train button of a Town Center's queue): the covered part is the part not done; the uncovered
+  wedge starts at 12 o'clock and grows clockwise. The pie covers the whole square of the gadget (no texture, no mask).
+
+**The module** adds no hook and no gadget. `AddProgressPieSource` verifies the four functions above, the portrait's
+bind (0x9BAE5E: `unitselectionpanel-unitPortrait` → `[panel+2E4h]`, the same field in both layouts) and the gadget
+lookup, then adds an observer to the shared panel tail (`AddUnitPanelTail`, 0x4C8281), which both interfaces reach. On
+each refresh the observer takes the portrait gadget from its handle; with one unit selected (the group's count
+`[+14h]` = 1) it asks the sources in the order added; the first that answers sets the pie as the command panel does
+(fill through the gadget's own slot +6Ch, which must be 0xAB6C63, else nothing is drawn and the log says so once;
+the material through 0xAB5BAA if missing; the colour through 0xAB5C34 when it changed; on through 0x4C51FA). When no
+source answers, or for a group, an on pie is turned off. `ShowGadgetPie` / `HideGadgetPie` do the same on any gadget
+handle, for a key that wants the pie elsewhere.
+
+**Why it is safe:** display only, on the main thread, from the panel fill. The record is the engine's own, made by the
+engine's function, and freed with the gadget as every button's is; nothing is written to the portrait but its record
+and material. The portrait has no `<pieChartFilling>` in the layouts tested and no stock code fills it, so no stock pie is
+overwritten. A stale handle gives no gadget (the lookup checks its generation).
+
+**progressPieDemo** `[seconds] [RRGGBBAA]` (dev key, not in `uhc.cfg`): a source that answers for every unit with
+the game time `[world+108h]` modulo the period (default 10 s, 1 to 600), in the train button's blue or the colour
+given. Bad values are logged and the key is not applied.
+
+**Tested** (2026-11-26, a modded copy, scenario, a Musketeer and a Town Center; `progressPieDemo 8`):
+(The WoL copy `C:\AoE3-UHC-WoLReal3`, Ethiopians.) <!-- private -->
+- minimized interface: the pie over the Musketeer's and the Town Center's portrait, filling clockwise from 12 o'clock
+  as the Town Center's queue button does next to it (the same colour and direction);
+- normal interface: the same over the big portrait; three villagers selected: no pie;
+- the key absent (control): the stock portrait;
+- the panel refreshes it with the frame: 16 changes in 40 frames of a 10 fps capture of a background copy.
+
+**Performance**, `perfprobe.py` 60 s each, the Musketeer selected, minimized interface, other agents' games running:
+
+| Run | fps | main thread CPU | frames over 50 ms |
+|---|---|---|---|
+| key absent | 714 (median 721) | 83.8 % | 0 |
+| `progressPieDemo 8` | 662 (median 689) | 79.7 % | 0 |
+
+The render time per frame went from 1.2 to 1.4 ms with the pie on (one more alpha-blended pie, the cost of a train
+button's); the main thread and the frames over 50 ms did not rise.
+Films: [with the pie](media/progressPie-wol.gif), [control, key absent](media/progressPie-wol-control.gif). <!-- private -->
 
 ## 5. Rules that keep multiplayer deterministic
 

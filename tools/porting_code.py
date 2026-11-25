@@ -50,6 +50,7 @@ PAGES = {
         "ROF reads": ["src/rofreads.h", "src/rofreads.cpp", "src/hooks/rofreads_hooks.asm"],
         "Floating bars": ["src/floatingbars.h", "src/floatingbars.cpp", "src/hooks/floatingbars_hooks.asm"],
         "UI gadgets": ["src/uigadgets.h", "src/uigadgets.cpp"],
+        "Progress pie": ["src/progresspie.h", "src/progresspie.cpp"],
     }),
     "game-files": ("Game files", {
         "bufferedFileReads": ["src/features/fileio.cpp"],
@@ -203,7 +204,7 @@ HELPER_OF = {
     "namelists.h": "name-lists", "unitmodels.h": "models-on-a-unit",
     "savedmarkers.h": "state-kept-for-a-saved-game", "researchpay.h": "research-payment",
     "canresearch.h": "can-research-test", "techrollover.h": "tech-rollover",
-    "rofreads.h": "rof-reads", "floatingbars.h": "floating-bars",
+    "rofreads.h": "rof-reads", "floatingbars.h": "floating-bars", "progresspie.h": "progress-pie",
 }
 LANG = {".cpp": "cpp", ".h": "cpp", ".asm": "asm", ".inc": "asm"}
 
