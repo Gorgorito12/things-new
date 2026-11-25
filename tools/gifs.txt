@@ -381,7 +381,7 @@ faithResource-wol-control 3 24 2
 gatlingCamel-wol 0 12 1
 gatlingCamel-wol-control 0 22 2
 gatlingCamel-move-wol 1 24 2
-gatlingCamelDeployed-wol 1 24 2
+gatlingCamelDeployed-wol 1 30 3
 techGadgets-wol 0 12 1
 techGadgets-wol-control 0 12 1
 incomeRates-wol 0 24 2

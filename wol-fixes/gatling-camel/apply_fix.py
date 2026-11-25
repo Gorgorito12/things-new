@@ -6,8 +6,9 @@ who cranks it. Two units:
   firing like the zamburak (data\\tactics\\GatlingCamelSaddle.tactics: the zamburak's tactics with the
   gatling camel's attack). Its stats, cost, cards and string IDs do not change.
 - GatlingCamelDeployed (new): a copy of GatlingCamel that keeps its deploy tactics: the camel lies down,
-  the gunner fires from the saddle (data\\tactics\\GatlingCamelDeployed.tactics: GatlingCamel.tactics
-  with the deploy lasting 3.33 s and the undeploy 2.17 s, the length of their animations). Its name and
+  the gunner gets off and fires on foot, the gun resting across the camel and turning from +30 to +150
+  (data\\tactics\\GatlingCamelDeployed.tactics: GatlingCamel.tactics with the deploy lasting 5.33 s and the
+  undeploy 4.17 s, the length of their animations). Its name and
   description are new strings (690950 to 690952, English); no card or building trains it yet.
 
     python apply_fix.py <WoL folder>              apply (a backup of every file it changes goes to
