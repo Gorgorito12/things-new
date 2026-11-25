@@ -1,4 +1,4 @@
-; editorSearch (editorsearch.cpp): three redirected calls of the scenario editor's list fills. Each asks the key
+; editorSearch (editorsearch.cpp): redirected calls of the scenario editor's list fills. Each asks the key
 ; whether the entry matches the search text and either goes on to the stock add (a jmp, so the stock routine returns
 ; to the fill as the original call did) or drops the entry with the add's own stack cleanup.
 .686
@@ -10,6 +10,7 @@ include common.inc
 UhcEditorPaletteKeep PROTO C pal:DWORD, unitProto:DWORD
 UhcEditorForbidKeep PROTO C dlg:DWORD, entryText:DWORD, entry:DWORD, isTech:DWORD
 
+UhcEditorTriggerKeep PROTO C editor:DWORD, trigGroup:DWORD, pos:DWORD, entryText:DWORD
 UhcEditorTypeFill PROTO C editor:DWORD, typeField:DWORD, names:DWORD, entryData:DWORD
 UhcEditorParamList PROTO C paramField:DWORD, names:DWORD, param:DWORD
 
@@ -77,6 +78,29 @@ UhcEditorForbidTechHook PROC
 drop:
     ret 4
 UhcEditorForbidTechHook ENDP
+
+; Replaces call 0AC9228h at 0x8248C3 in the trigger list fill FUN_0082481C. ECX = ESI = trEdit-Trigger-list,
+; EBP = the current group, EDI = the trigger's position in it, [esp+4] the BString of its name, [esp+1Ch] the editor
+; (the fill keeps it at [esp+4] of its frame, under four pushes and the argument). The fill gives the row the add
+; returns the position as its data (push eax / push edi / call 0AC6CC0h): a dropped entry returns -1, a row that
+; call ignores. After that call the loop reads no register but EDI, EBP, EBX and ESI, which are kept.
+UhcEditorTriggerAddHook PROC
+    TRACE_ONCE "editorSearch: trigger list entry (0x8248C3)"
+    push ecx
+    push dword ptr [esp+8]
+    push edi
+    push ebp
+    push dword ptr [esp+2Ch]
+    call UhcEditorTriggerKeep
+    add esp, 10h
+    pop ecx
+    test al, al
+    jz drop
+    jmp dword ptr [listAdd]
+drop:
+    or eax, -1
+    ret 4
+UhcEditorTriggerAddHook ENDP
 
 ; Replaces 0x8258A0..0x8258B7 in the trigger editor's type fill FUN_00825757: lea ecx,[esp+20h] / push ecx /
 ; mov ecx,ebx / call 5BECAAh (the names) and lea edx,[esp+2Ch] / push edx / mov ecx,ebx / call 0AC19D9h (each entry's

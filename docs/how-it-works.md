@@ -6439,7 +6439,8 @@ most 64 characters; anything else is ignored and logged.
 
 **Why it exists.** The scenario editor's Objects palette, the Allowed list of its Forbidden Units/Techs dialog and its
 trigger editor's lists (218 effect types, a unit parameter's 3,634 protos, a tech parameter's 10,542 techs in a big
-mod) list everything, sorted by name, with no way to find an entry but scrolling.
+mod; a campaign scenario's dozens of triggers) list everything, sorted by name, with no way to find an entry but
+scrolling.
 
 **The lists** (`docs/engine-symbols.md`, "Scenario editor lists"):
 - The Objects palette is the `palette` gadget `EditorProtoPalette` (`uieditorpalettes.xml`; class vtable 0xB92768,
@@ -6464,6 +6465,15 @@ mod) list everything, sorted by name, with no way to find an entry but scrolling
   textField (gadtrigparam.cpp, 0x82888A) given its list by 0x5BECAA from an array the trigger system keeps: units
   `[[game+97Ch]+84h]` (0x828A27), unit types `+90h` (0x828A4E), techs `+6Ch` (0x8289D5). A pick gives the parameter
   the entry's text (event 10: 0x829E29, 0x829F2F), not an index.
+- The trigger editor's list of triggers, `trEdit-Trigger-list` (`[editor+178h]`, bound at 0x824347), is filled by
+  FUN_0082481C (thiscall(editor)): it empties the list, takes the current group (`[sys+0Ch][[sys+18h]]`, sys =
+  `[game+97Ch]`), and for each position in the group adds the trigger's name (`[trig+3Ch]`) through `0xAC9228` at
+  0x8248C3, then gives the row the add returned the **position as its data** (`0xAC6CC0(list, data, row)`). It then
+  selects the row whose data is the group's current position `[group+4]` (0x97B7C4, 0xAC7BB0) and shows that trigger's
+  name, priority and Active / Loop / Run Immediately. A click in the list (the list handler FUN_00825933, event 0Fh)
+  reads the clicked row's data (0xAC6CFE) and makes that position current (0x97B79B); a row is never read as a
+  position (the list is `alphasort` anyway). The group change, Insert, Delete, the panel fill and the editor's
+  refresh (0x825CE8) all refill the list through FUN_0082481C (REA, `ev_2242487d…`, `ev_336e9911…`).
 
 **What it does.**
 - The three add calls of the palette and the dialog are redirected (`hooks/editorsearch_hooks.asm`). Each asks `UhcEditorPaletteKeep` or
@@ -6482,24 +6492,35 @@ mod) list everything, sorted by name, with no way to find an entry but scrolling
   entries, since one field serves every list of the panel; a parameter's current value (`[[param+13Ch]+8]`, entry 0,
   as 0x992D36 reads it) stays in its list. A new text runs FUN_00825757 again, which rebuilds the type list and the
   open condition's or effect's parameters through the same hooks.
+- The trigger list has its own field, `trEdit-Trigger-search` in `trEditor`. The add at 0x8248C3 is redirected
+  (`UhcEditorTriggerAddHook`): `UhcEditorTriggerKeep(editor, group, position, name)` keeps a trigger whose name holds
+  every word, and always the group's current trigger (`[group+4]`), so the list keeps showing the one the panels edit.
+  A dropped trigger returns row -1, which the data setter 0xAC6CC0 ignores (`test esi,esi / jl`). Since a row carries
+  its trigger's position, a shorter list edits the trigger it shows. A new text runs FUN_00825757's own call,
+  FUN_0082481C, again, in any mode (the list shows beside all three panels). Its field matches only the list:
+  nothing found leaves only the current trigger.
 - The match: the text is split on spaces and lowered (`towlower`); every word must appear in the text the list shows,
   or, for a proto, in its internal name (`[proto+10h]`) or its display name (the string ID `[proto+144h]`, read through
   0x58EA52 only when a word is not found otherwise).
 
 **Why it is safe.**
 - UI only: the fills run in the editor, the entries are what the stock fill would add minus some, and nothing is
-  saved or sent. The DLL's state is three handles and the texts, cleared when the owner's handle goes stale.
+  saved or sent. The DLL's state is four handles and the texts, cleared when the owner's handle goes stale.
 - The trigger lists keep the game's own mapping: a type's entry data is filtered with its name, and a parameter's
   value is the text picked, so a value picked from a filtered list is the one the full list gives (saved and loaded
   again: the same). The type list hook keeps every register (`pushad`/`popad`); the continuation 0x8258B8 reads no
   flag, and no branch lands inside the 24 replaced bytes.
+- The trigger list keeps the game's mapping too: each row carries its trigger's position as data, a click reads that
+  data, and the hook drops an entry before it has a row. After the redirected add the fill reads EDI, EBP, EBX and ESI
+  (kept) and the add's EAX (-1 for a dropped trigger); the editor at `[esp+1Ch]` is pinned by the verified head
+  `EditorTriggerListFill` (the frame `sub esp,48h` / `mov [esp+4],ecx` and four pushes).
 - After each redirected call the fill reads no register the add sets (0x7F5382 reloads ECX; 0x9991D5 and 0x99954C
   free the BString), and the hooks keep ECX for the jump.
 - The refills are the game's own: the refresh slot the palette runs when shown, and the fill and layout calls the
   dialog's refresh makes, on the main thread (Present runs there), between frames.
 - A layout without a field leaves the list stock (found missing once per owner, logged with `log`). Every address is
   verified (`UiFindChild`, `UiFieldEditBox`, `UiEditBoxText`, the `EditorPalette*`, `EditorForbid*` and `EditorList*`
-  sites, `EditorProtoDisplayName`).
+  sites, `EditorProtoDisplayName`, the `EditorTrigger*` sites and `EditorListSetData`).
 - Cost: nothing outside the editor (two null checks a frame); in the editor, two handle lookups and a string compare
   a frame. A refill is the stock fill (see the table).
 
@@ -6537,6 +6558,16 @@ dialog; text typed with posted `WM_CHAR`, `testbed.py chars`, erased with posted
 | Triggers, key on, stock `uitriggereditor.xml` | pass: stock lists, `has no textField trEdit-CondEffPanel-search` logged |
 | Triggers, key off, the layout with the field | pass: the field takes text, every list stays full (filmed) |
 | Cost of a trigger refill | 0.1–13 ms (the type list and the parameters), 66 ms once with the tech list |
+| Trigger list (2026-11-25, a mod's campaign scenario, 27 triggers in Ungrouped), "captain" | pass: 4 shown, 23 hidden; with a current trigger elsewhere, 5 (it stays) |
+| Trigger list, "training", the second row (P2_LandTrainingKicker) clicked | pass: its name, 4 Units in Area and 5 Fire Event show, the same as when it is picked from the full list (where row 2 is Captain02) (filmed) |
+| Trigger list, Loop ticked on a trigger picked from a filtered list | pass: the full list shows Loop on that trigger and off on its neighbour |
+| Trigger list, a filtered trigger, then Effects | pass: its own effects (CaptainReact: Disable Trigger ×2, Move To Point, AI Create Defend Plan, Destroy) |
+| Trigger list, Insert and Del with "captain" | pass: the new Trigger_233 shows (current); after Del the next current (Win_02) shows |
+| Trigger list, another group with the text kept | pass: the group's matches (none for "captain" in Opening Scene); erased, its 5 triggers |
+| Trigger list, the condition/effect field still | pass: "create" keeps 10 of 218 effect types |
+| Trigger list, key on, the layout without `trEdit-Trigger-search` | pass: stock list, `the trigger list has no textField trEdit-Trigger-search` logged |
+| Trigger list, key off | pass: the field takes text, the list stays full (filmed) |
+| Cost of a trigger list refill | 0.1–0.2 ms (27 triggers) |
 
 The palette's refill is slow because the stock refresh is: it rebuilds every entry of the current player, and FUN_00ACF80E
 the buttons. That is why a refill waits for a pause in the typing. A/B with `perfprobe.py` (60 s, the editor with the
