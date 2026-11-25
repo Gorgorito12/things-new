@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-25 14:03 | [`garrisonConvert`](#garrisonconvert) | Filmed in WoL, with a control. `<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, with the train button's pie over the building's portrait. | The tag on the buildings that want it. |
 | Wednesday 2026-11-25 08:53 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns as before. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
 | Wednesday 2026-11-25 08:50 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time up to a cap and is changed by techs; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panel shows it as `3/10` with a two-line rollover. | The `NurseryFactor*` tags on the proto, an AutoGather action, and the techs that want the Data subtypes. |
 | Wednesday 2026-11-25 08:42 | [`selectFattened`](#selectfattened) | Filmed in WoL, with a control. A button and a hotkey select the player's livestock that has reached its maximum food, on the whole map; the button shows how many there are and hides at none. | The button and the hotkey: `wol-fixes/select-fattened`. |
@@ -8088,6 +8089,7 @@ What happens when a tech activates or a unit changes proto.
 | [`shipmentCounts`](#shipmentcounts) | Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | **new** | The effect in the cards or techs that want it. | confirmed (single player) |
 | [`kothTimer`](#kothtimer) | The King of the Hill time comes from a table by the number of players, or of teams. | **new** | Nothing. | confirmed (single player) |
 | [`transformChecks`](#transformchecks) | A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | **new** | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. | confirmed (single player) |
+| [`garrisonConvert`](#garrisonconvert) | `<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, with the train button's pie over the building's portrait. | **new** | The tag on the buildings that want it. | confirmed (single player); questions to JTMaston |
 
 #### hcTargetTechs
 
@@ -8622,6 +8624,74 @@ transformChecks [log]
   the kraal rule, `2 / 3` for a group, "Not enough resources" alone, the placement reason over the cost); picture 8
   (beside WoL's DLL) was removed, as it showed the old wording and the run beside WoL's DLL was not repeated (the text
   is the pack's data, the same with either DLL).
+
+#### garrisonConvert
+
+*The units that enter a building become another unit: at once, or one at a time with a delay.*
+
+**Added:** Wednesday 2026-11-25 13:44 · **Filmed in WoL:** Wednesday 2026-11-25 14:03
+
+![garrisonConvert in WoL](media/garrisonConvert-wol.gif)
+
+*In WoL, with `garrisonConvert log` (a skirmish on a test map, Greeks; the Town Center has
+`<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>`, four Settlers are ordered into it):* the Town Center stays
+selected; while a Settler converts, the train button's blue pie fills over its portrait, and every 5 seconds one more
+Settler becomes a Pikeman (the "Contains" row shows Settlers going down and Pikemen going up). At 34 s a trigger empties
+the Town Center: four Pikemen walk out. The key's log lines at the bottom (they cover the lower part of the portrait).
+[Full video (MP4)](media/garrisonConvert-wol.mp4).
+
+![garrisonConvert in WoL, key off](media/garrisonConvert-wol-control.gif)
+
+*The same skirmish, key off (the tag still in the data):* the Settlers go in, stay Settlers, no pie, and four Settlers
+come out. [Full video (MP4)](media/garrisonConvert-wol-control.mp4).
+
+```
+garrisonConvert [log]
+```
+
+```xml
+<!-- protoy.xml, inside the building's <Unit> -->
+<GarrisonConvertTo>Pikeman</GarrisonConvertTo>               <!-- each unit that enters becomes a Pikeman -->
+<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>     <!-- one at a time, each after 5 seconds inside -->
+```
+
+- **The request (WoL, JTMaston, 2026-11-26):** "if this tag is added the garrison units will be exchanged for the unit
+  specified as soon as they enter the building. A delay attribute can be added to make the process take time and go
+  unit by unit converting them", with a loading pie for the delay.
+- **Effect:** a unit of the building's owner that enters the building (by a garrison order, a trigger, the map script)
+  is changed into the tag's unit in place, the way a `TransformUnit` effect changes a unit: it keeps its ID, its owner
+  and its share of hit points, stays inside, and counts the new unit's population. A unit that already is the target
+  is left alone.
+- **`delay` (seconds, 0 to 3600):** the units convert one at a time, in the order they entered, each after `delay`
+  seconds of game time with nobody converting before it. A unit that leaves before its turn leaves unconverted, and the
+  next one starts from 0. The timer waits while nobody inside qualifies. The progress is kept in saved games.
+- **The pie:** with a delay, while the building is selected alone and a unit converts, the train button's blue pie
+  ([the progress pie](how-it-works.md#the-progress-pie-progresspie-and-progresspiedemo)) fills over its portrait, in both interfaces.
+- **Questions sent to the WoL team** (the simplest reading is built until they answer): whether the unit stays inside
+  or comes out, what it keeps (HP, experience, rank), population, a building destroyed or captured mid-way, allied
+  units, several tags per building, which units qualify. Today: it stays inside; HP share kept as a transform does;
+  the new unit's population, with no cap check; a captured building converts its new owner's units; allies' units are
+  not converted; one tag per building (the last one counts); every unit of the owner qualifies.
+- **Other keys:** the conversion goes through the shared transform, so `veterancyBonus` and the other transform
+  observers see it. The entry is the shared garrison observer (`nurseryFactor`'s `<NurseryFactorGarrisonUnit>` uses it
+  too). `dataLint` knows the tag.
+- **Simulation:** changes it: every player needs the same setting.
+- **Log:** `garrisonConvert: applied`, `hook reached: garrison entries (0x9C26E1)`; with `log`, each tag and each
+  conversion (`unit 2 (Settler) in TownCenter 0 became Pikeman (proto 294 -> 295, game time 14194 ms)`).
+
+Tests (2026-11-26, WoL copy, single player):
+
+| Test | Result |
+|---|---|
+| A Blockhouse with `<GarrisonConvertTo>Halberdier</GarrisonConvertTo>`, 3 Settlers ordered in by a trigger | pass: the three became Halberdiers as each entered (6387, 6857, 7305 ms) |
+| A Town Center with `delay="5"` and `Pikeman`, 4 Settlers ordered in | pass: one Pikeman every 5.000 s (9023, 14022, 19022, 24022 ms) |
+| 6 Settlers into it, the trigger `Ungarrison` at 32 s | pass: 5 converted (9 to 29 s), the sixth came out a Settler with the 5 Pikemen |
+| A save in the middle of a conversion (`saveGame` at 8.6 s, 1.5 s into the first unit), `loadGame` later | pass: after the load the same units converted at 12 085 and 17 084 ms, against 12 084 and 17 085 ms before (without the saved progress it would have been 13.6 s) |
+| Two Town Centers, 3 Settlers in each; at 16 s the trigger `Kill` on one and `Convert` (to player 2) on the other | killed: pass: 2 Pikemen and 1 Settler came out of the rubble, nothing converted after it. Captured: not tested: the `Convert` left player 2's rubble and the units (2 Pikemen, 1 Settler) came out, so the "goes on for the new owner" reading is untested |
+| The pie: the Town Center selected while it converts | pass: the pie fills over the portrait, 5 s per unit, and is gone when nobody waits (video above) |
+| Key off, the same skirmish | pass: the Settlers stay Settlers, no pie (video above) |
+| AI alive: a skirmish against the AI (ConvictLabourer villagers) with the tag on the Town Center and the Blockhouse | pass: no XS error; the AI trained villagers (18 then 20 units at 2:47 and 3:54) |
+| Performance, `perfprobe` 120 s of that skirmish, key on and off | same: fps 420 / 427, update 0.4 / 0.4 ms, simulation speed 1.3 / 1.3, frames over 50 ms 1 / 2 (other copies ran beside it) |
 
 ### Interface
 

@@ -3838,7 +3838,7 @@ END
 
 Contract: [garrisonConvert](../porting-to-another-dll.md#garrisonconvert).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`transformcalls.h`](helpers.md#transform-calls), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`progresspie.h`](helpers.md#progress-pie), [`prototags.h`](helpers.md#proto-tags), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`transformcalls.h`](helpers.md#transform-calls), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
 Sites: `XmlAttribute` `0x598F37` (16 B), `ProtoByName` `0x5A2346` (32 B), `GarrisonLoadHead` `0x9C24B5` (16 B), `GarrisonEnterTail` `0x9C26E1` (31 B), `UnitAliveSlot` `0xB9355C` (4 B).
 
@@ -3863,7 +3863,8 @@ Sites: `XmlAttribute` `0x598F37` (16 B), `ProtoByName` `0x5A2346` (32 B), `Garri
 // keeps the progress. The timer waits while nobody qualifies. A game that starts or loads finds its active buildings
 // with one walk of the world's unit table.
 //
-// GarrisonConvertProgress (features.h) gives the panels the progress of a building.
+// GarrisonConvertProgress (features.h) gives the panels the progress of a building; with a delay, the progress pie
+// (progresspie.h, the train button's pie) fills over the portrait of a selected building while a unit converts.
 #include <windows.h>
 
 #include <cstdint>
@@ -3879,6 +3880,7 @@ Sites: `XmlAttribute` `0x598F37` (16 B), `ProtoByName` `0x5A2346` (32 B), `Garri
 #include "../generated/sites.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../progresspie.h"
 #include "../prototags.h"
 #include "../savedmarkers.h"
 #include "../transformcalls.h"
@@ -4237,6 +4239,16 @@ bool GarrisonConvertProgress(const char* building, float* fraction, std::int32_t
   return true;
 }
 
+namespace {
+
+// The progress pie over the portrait (progresspie.h): a selected building with a delay and a unit in progress.
+bool __stdcall PieSource(const char* unit, float* fraction, std::uint32_t*) {
+  const Tag* tag = g_tags.empty() ? nullptr : TagOf(unit);
+  return tag != nullptr && tag->delayMs != 0 && GarrisonConvertProgress(unit, fraction, nullptr);
+}
+
+}  // namespace
+
 Outcome ApplyGarrisonConvert(const Config& config) {
   const Config::Args* args = config.First("garrisonConvert");
   if (args == nullptr) {
@@ -4255,8 +4267,9 @@ Outcome ApplyGarrisonConvert(const Config& config) {
       !AddWorldTick(&Tick) || !AddGarrisonObserver(&OnEnter, "garrisonConvert")) {
     return Outcome::kFailed;
   }
-  Log(L"garrisonConvert: <GarrisonConvertTo> converts the units that enter a building%ls",
-      g_log ? L"; logged" : L"");
+  const bool pie = AddProgressPieSource(&PieSource);
+  Log(L"garrisonConvert: <GarrisonConvertTo> converts the units that enter a building%ls%ls",
+      pie ? L"; the progress pie over the portrait" : L"; no progress pie", g_log ? L"; logged" : L"");
   return Outcome::kApplied;
 }
 
