@@ -2192,6 +2192,28 @@ SITES = [
     ("EditorTriggerListClick", 0x825AE8, 0x10),
     ("EditorTriggerSetCurrent", 0x97B79B, 0x1A),
     ("EditorTriggerCurrent", 0x97B7C4, 0x1E),
+    # editorAutosave: the editor's gate [game+0B3Ah], as the saveScenario handler 0x7D9798 tests it (mov eax,[0C66234h] /
+    # test eax,eax / je / cmp byte [eax+0B3Ah],0); the undo handler 0x7DA8B9 (same gate, then mov ecx,[eax+928h]: the
+    # undo manager) and its undo 0x9BE4E2 (the undo count [um+4], the redo count [um+10h]).
+    ("EditorGate", 0x7D97AF, 0x14),
+    ("EditorUndoManager", 0x7DA8B9, 0x14),
+    ("EditorUndoCounts", 0x9BE4E2, 0x0F),
+    # editorAutosave: the handler saves through the game's vtable +0C0h: push 1 / push ecx (&name) / call 517BAAh
+    # (mov eax,[0D6FDB4h] / ret: the directory) / mov ecx,[0C66234h] / push eax / call [esi+0C0h]. The slot holds the
+    # thunk 0x703ED3 (jmp 834583h); FUN_00834583 thiscall(game, dir, BString* name, char flag), ret 0Ch, returns at
+    # once while [esi+0AB0h] (a save running) is set, and sets the open scenario's name: lea ecx,[esi+958h] /
+    # call 40196Fh (BStringSet), then mov [esi+95Ch],bl (the flag).
+    ("EditorSaveCall", 0x7D980E, 0x15),
+    ("EditorSaveSlot", 0xB886E8, 4),
+    ("EditorSaveThunk", 0x703ED3, 5),
+    ("EditorSaveHead", 0x834583, 0x0D),
+    ("EditorSaveSetsName", 0x8345D5, 0x2E),
+    ("EditorSaveDir", 0x517BAA, 6),
+    # editorAutosave's notice: the editor's message dialog, handle [editor+12Ch], hidden by 0x838CE8 (mov eax,
+    # [ecx+12Ch] / mov ecx,[0C66244h] / mov ecx,[ecx+44h] / push eax / call 448F13h / ret); 0x83A2B8 sets the text of
+    # its child "ingame-messagedialog3-prompt" (0xC11254) through the child's vtable +80h and shows it.
+    ("EditorMessageHide", 0x838CE8, 0x16),
+    ("EditorMessagePromptName", 0xC11254, 29),
     # card tags (cardtags.*): the home city loader FUN_0062E6C9 reads each <card>'s children in a loop over the card
     # node EBX (mov eax,[esp+1Ch] / push eax / mov ecx,ebx at 0x62FD1D; the loop's end add eax,1 / cmp eax,[ebx+0Ch]
     # at 0x62FF42), then commits the card it built on the stack: lea edx,[esp+0A8h] / push edx / add ecx,204h /

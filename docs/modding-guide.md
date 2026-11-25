@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-25 08:22 | [`editorAutosave`](#editorautosave) | Added. The scenario editor saves the open scenario every few minutes to `autosave-1` ... | Nothing. |
 | Wednesday 2026-11-25 08:10 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
 | Wednesday 2026-11-25 07:55 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`; the player turns them on or off in the options menu, at once. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24); the options-menu pack `wol-fixes/options-menu/` for the switch. |
 | Tuesday 2026-11-24 09:08 | [`techGadgets`](#techgadgets) | Filmed in WoL, with a control. Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. |
@@ -8437,6 +8438,7 @@ What the panels and the fog of war show.
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
 | [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. | confirmed (single player) |
 | [`editorSearch`](#editorsearch) | The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | **new** | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. | confirmed (editor, UI) |
+| [`editorAutosave`](#editorautosave) | The scenario editor saves the open scenario every few minutes to `autosave-1` ... `autosave-3`, the oldest overwritten, and the scenario keeps its own name. | **new** | Nothing. | confirmed (editor) |
 | [`techGadgets`](#techgadgets) | Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | **new** | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. | confirmed (single player, UI) |
 | [`incomeRates`](#incomerates) | A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | **new** | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). | confirmed (single player, UI) |
 
@@ -9886,6 +9888,52 @@ editorSearch [log]
   5000 frames the cost of the per-frame check.
 - **Status:** confirmed (2026-11-21, WoL, the editor, single player): see the pass/fail table in
   [how-it-works.md](how-it-works.md#editorsearch) and the screenshots in `wol-fixes/editor/media`.
+
+#### editorAutosave
+
+*In the scenario editor, the open scenario is saved every few minutes to autosave files, so a crash costs at most the last few minutes of work.*
+
+**Added:** Wednesday 2026-11-25 08:22 · **Filmed in WoL:** Wednesday 2026-11-25 08:22
+
+![editorAutosave in WoL](media/editorAutosave-wol.gif)
+
+*In WoL, with `editorAutosave 1 keep 3 log` (one minute, for the test), the scenario `e2-base` open in the editor:*
+monuments are placed from the Objects palette; a minute after the editor opened, "Autosaved: autosave-1" shows in the
+editor's message dialog, and the log line at the bottom says the save took 219 ms and the scenario kept its name
+`e2-base`. [Full video (MP4)](media/editorAutosave-wol.mp4).
+
+![editorAutosave in WoL, key off](media/editorAutosave-wol-control.gif)
+
+*Key off, the same steps:* no notice, and no autosave file is written. [Full video (MP4)](media/editorAutosave-wol-control.mp4).
+
+```
+editorAutosave [minutes] [keep N] [log]
+```
+
+- **Effect:** every `minutes` (default 5, 0.5 to 1440) of real time in the editor, the open scenario is saved as
+  `autosave-1`, then `autosave-2`, … `autosave-N` (`keep N`, default 3, 1 to 20); once there are N, the oldest is
+  overwritten. They go to the editor's own Scenario folder (`Documents\My Games\Wars of Liberty\Scenario` in WoL),
+  next to the user's scenarios, and load like any scenario (File > Load Scenario). Each save leaves exactly one file:
+  the `.bak` the game makes when it overwrites a scenario is deleted for the autosaves.
+- **The scenario keeps its name:** the game's save makes the name saved the open scenario's name, so the next
+  File > Save would go to the autosave. The key puts the name back right after each autosave: File > Save still writes
+  the user's own file (or asks for a name, for a scenario never saved). The editor's recent scenarios list is left
+  alone.
+- **When it does not save:** outside the editor (the main menu, a game, a playtest of the scenario); while a mouse
+  button is held (dragging units, painting terrain): it saves once the button is released; and when nothing can have
+  changed since the editor opened or the last autosave: the editor's undo list is the same and the game window got
+  no keyboard or mouse input. Then it tries again one interval later.
+- **On screen:** the editor's own message dialog, the one the game shows while it saves, says
+  `Autosaved: autosave-2` for 2 seconds after the save (the editor shows no chat).
+- **The pause:** the editor stops for as long as the game takes to write the scenario, as File > Save does: about
+  0.2 s for a small map (180 KB), 1 s for an 8-player random map with 2,500 objects (657 KB).
+- **Simulation:** none. Editor only: nothing reaches a game.
+- **Log:** `editorAutosave: every 5.0 min in the editor, to autosave-1 ... autosave-3`; with `log`, `the editor is
+  open; the first autosave in 5.0 min`, each save (`saved autosave-2 (180 ms, 184211 bytes); the open scenario keeps
+  its name "mymap"`), each skip (`nothing changed since the last autosave; skipped`) and `the editor closed`. A failed
+  save is logged without `log`.
+- **Status:** confirmed (2026-11-25, WoL, the editor, single player): the pass/fail table is in
+  [how-it-works.md](how-it-works.md#editorautosave).
 
 #### techGadgets
 

@@ -1488,6 +1488,24 @@ observed, [I] = inferred, [U] = unknown.
 | Trigger list click | FUN_00825933 `thiscall(editor, event, row)` `ret 8`: event 0Fh | confirmed (REA `ev_336e99117703576096e74c05e4692146cc133c1ba6a63db3853d0f2403c0611c`, in game) | [O] `0xAC6CFE(row)` (the row's data) → 0x97B79B (`[group+4]` = data when 0 ≤ data < `[group+10h]`), then the trigger's fields. The row position is never used: a filtered list edits the trigger it shows (in game: a trigger picked as row 2 of a filtered list showed its own conditions and effects; Loop set there landed on it). Event 12h is the condition/effect list. |
 | Group's current trigger | `[group+4]`: read 0x97B7C4, set 0x97B79B; -1 when none | confirmed (`cs`, in game) | [O] After a load nothing is current (the name field empty). |
 
+### Scenario editor save (for `editorAutosave`, 2026-11-25)
+
+REA (Ghidra 12.1.4) on the stock exe, `rea/evidence/age3y-b1a1dab7-editorautosave-20261125.json`; the console handlers
+are not Ghidra functions, so they were read with capstone (`cs`); then the live game (WoL with this DLL, `C:\AoE3-UHC-WoLReal6`,
+memory read with ReadProcessMemory). [O] = observed, [I] = inferred, [U] = unknown.
+
+| Name | Address | Status | Notes |
+|---|---|---|---|
+| `saveScenario(name)` handler | 0x7D9798, registered at 0x53AAA8 (`push 7D9798h / push 0BDC7ECh "saveScenario"`, xrefs `ev_c310d80b…`) | confirmed (`cs`) | Returns at once in multiplayer (`[0x404E8B()]` vtable +6Ch) or while `[game+0B3Ah]` is 0. Converts the name (UI manager +8Ch), calls the game's vtable +0C0h with (`0x517BAA()` = `[0xD6FDB4]`, &name, 1) at 0x7D980E..0x7D9823, and when it returns true 0x8338F4 (the recent list). |
+| Editor gate | byte `[game+0B3Ah]` | confirmed (`cs`, in game) | [O] 1 in the editor, 0 in the main menu, 0 during a playtest (`uiStartScenarioTest`), 0 right after `startRandomGame2` in the editor (while the map generates), 1 again after. Tested by the editor's console commands (`saveScenario`, `undo` 0x7DA8B9, `redo` 0x7DA8D3). |
+| Editor object | `[game+920h]` | confirmed (`cs`) | 0x8338F4 does nothing while it is 0. The "Saving '%s' ..." message dialog (string 0x56C1, `ingame-messagedialog3-prompt`) is shown by 0x83A2B8 on it and hidden by 0x838CE8. |
+| Undo manager | `[game+928h]`; undo 0x9BE4E2, redo 0x9BE535 (`thiscall(um)`) | confirmed (`cs`), layout inferred | [I] Undo entries `{[um+0] data, [um+4] count}`, redo entries `{[um+0Ch], [um+10h]}` (0x9BE4E5, 0x9BE4EE), `[um+18h]` set while undoing. |
+| Game vtable | 0xB88628 (ctor 0x55AF45, `mov [esi],0B88628h` at 0x55AF64; the object is made at 0x5AB384 and stored in 0xC66234 at 0x5AB3A2) | confirmed (`cs`) | +5Ch the chat (trChatSend), +0C0h the scenario save. |
+| Scenario save | vtable +0C0h = 0x703ED3 (`jmp 834583h`) → FUN_00834583 `thiscall(game, dir, BString* name, char flag)`, `ret 0Ch`, returns true when written (`ev_8622922c…`) | confirmed (REA, `cs`, in game) | Returns false while `[game+0AB0h]` (a save running) is set, or for an empty or invalid name (0x401F47, 0xA461A7). Shows the "Saving" dialog (0x83A2B8 with `[game+920h]`), **sets the open scenario's name** `BStringSet([game+958h], name)` at 0x8345E5 and `[game+95Ch]` = flag at 0x8345FD, offers to overwrite a read-only file (string 4BAEh), copies an existing file to `.bak` (0x8346C3..), sets `[game+0AB0h]` around the write, writes through FUN_00833DDC (`ev_2ac8c3da…`: free space ≥ 20 MB, a `.tmp` then the file) and hides the dialog. [O] After `saveScenario("autosave-1")` the editor's Save (`uiSaveScenarioBrowser`) wrote `autosave-1` (no dialog), and made `autosave-1.bak`. |
+| Open scenario's name | BString `[game+958h]` | confirmed (in game) | [O] `e2-base` after saving as it, `autosave-1` after `saveScenario("autosave-1")`; the text emptied (length 0) when a new editor opens. The editor's Save writes to it without a dialog when it is set. |
+| Recent scenarios | FUN_008338F4 `thiscall(game, BString name, uimgr+180h)` (`ev_e25c9a4d…`) | confirmed (REA) | Returns for a name starting with `~` (as `~last`, `~testing`); else puts it first in `[game+93Ch]` (count `[game+940h]`, at most 10) and runs `uiRefreshEditorMenu`. Only the console handler calls it after a save, so a direct call of the save leaves the list alone. |
+| "Modified" flag | none found | unknown | [U] The save and its writer set no flag the editor reads back; a bounded look, not a proof. `editorAutosave` uses the undo manager and the last input instead. |
+
 ### The game setup lobby's player slots (for #81, 2026-11-21)
 
 REA (Ghidra 12.1.4) on the stock exe, `rea/evidence/age3y-b1a1dab7/r1121-f-lobby-slots.json`, and capstone (`cs`). WoL's DLL
