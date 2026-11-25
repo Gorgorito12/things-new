@@ -104,6 +104,15 @@ editor route compiles the same. That the text then shows "Benito Juárez" on scr
 trigger needs a homing pigeon or 15 Inquisitors). Fixed files: `wol-fixes/maps/fixed/` (made by applying
 the two edits to `C:\WoL-Test`'s files).
 
+**2026-11-25: a one-file fix, the pack `wol-fixes/trigger-names/`** (asked for by the user after the #81 tests hit
+the bug again in a Spanish copy). No new effect: the existing Overlay Text effect gets the text
+`"\"+kbGetPlayerName("+i+")+\" has entered the Great War Age!"`, which the game writes as
+`trOverlayText(""+kbGetPlayerName(2)+" has entered the Great War Age!", …)`, the same trick as WoL's
+`culture_music.xs`. `apply_fix.py` changes `RM3` and `RM4\triggers\triggerLoader.xs` (and `greatwar.xs`), keeping
+the originals. In `C:\AoE3-UHC-WoLReal2` in Spanish against Carlos el Diplomático: before, `Token Error 0008` on
+`ESOC_Adirondacks` and `Arabia`; after, no XS error on those and on `California`, `Ceylon` and `DansilAlaska`, and the
+Great War alarm showed "Carlos el Diplomático has entered the Great War Age!" on screen with the accent.
+
 **A DLL key instead?** One could make the XS tokenizer accept bytes above 7Fh inside strings, which would
 also cover other scripts. It needs REA work on the tokenizer (not started) and changes how every XS script
 compiles, while the data fix is two small edits in WoL's files. Recommended: the data fix. No key was
