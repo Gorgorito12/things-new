@@ -17,28 +17,46 @@ void UhcMenuNameHook();
 void UhcMenuTypeHook();
 void UhcMenuGetHook();
 void UhcMenuSetHook();
+void UhcMenuFlagHook();
+void UhcMenuBoolGetHook();
+void UhcMenuBoolSetHook();
 
-// Read by the hooks: the number of options, and each one's value (the dropdown's index), by slot. The count is
-// raised only once the slot's value is in place.
+// Read by the hooks: the number of options, and by slot each one's value (the dropdown's index, or 0/1 for a
+// CheckBox), its entry flags (0x40: may change during a match) and whether the screen read it as a CheckBox (then the
+// type getter answers bool, so that Apply writes it through the bool setter). The count is raised only once the
+// slot's value and flags are in place.
 std::int32_t g_uhcMenuOptionCount = 0;
 std::int32_t g_uhcMenuOptionValues[uhc::kMaxMenuOptions] = {};
+std::int32_t g_uhcMenuOptionFlags[uhc::kMaxMenuOptions] = {};
+std::int32_t g_uhcMenuOptionChecks[uhc::kMaxMenuOptions] = {};
 }
 
 namespace uhc {
 namespace {
 
 // The on/off keys that menuOptions may hand to the menu. One line per key: the key, the field's <name> in
-// data\options.xml. The stored line is `<key> on|off`. Only keys that change nothing of the simulation belong here,
-// since each player chooses alone.
+// data\options.xml, and whether it is live. The stored line is `<key> on|off`. Only keys that change nothing of the
+// simulation belong here, since each player chooses alone. A live key is applied whatever the choice, asks it through
+// FollowMenuSwitch and is told each new one at once; its entry may be changed during a match. The others are kept or
+// removed from the cfg at start, so a choice is used from the next start.
 struct MenuSwitch {
   const char* key;
   const wchar_t* name;
+  bool live;
 };
 constexpr MenuSwitch kMenuSwitches[] = {
-    {"bufferedFileReads", L"OptionBufferedReads"},
-    {"fastVertexFill", L"OptionFastVertexFill"},
-    {"fastLastInLine", L"OptionFastLastInLine"},
+    {"bufferedFileReads", L"OptionBufferedReads", false},
+    {"fastVertexFill", L"OptionFastVertexFill", false},
+    {"fastLastInLine", L"OptionFastLastInLine", false},
+    {"displayedRange", L"OptionDisplayedRange", true},
 };
+constexpr std::size_t kSwitchCount = sizeof(kMenuSwitches) / sizeof(kMenuSwitches[0]);
+
+constexpr std::int32_t kFlagInMatch = 0x40;  // the entry flag the screen asks for during a match (0xA41707)
+
+// Each switch's slot (-1: no entry) and its key's observer (FollowMenuSwitch).
+int g_switchSlots[kSwitchCount] = {-1, -1, -1, -1};
+void (*g_switchObservers[kSwitchCount])(bool) = {};
 
 constexpr std::uint32_t kSettingsKind = 0x24;  // [settings+24h]: 1 for the options settings (FUN_00518CC9)
 
@@ -48,7 +66,8 @@ struct Slot {
 };
 
 Slot g_slots[kMaxMenuOptions];
-int g_hooks = 0;  // 0 not tried, 1 installed, -1 failed
+int g_hooks = 0;       // 0 not tried, 1 installed, -1 failed
+int g_extraHooks = 0;  // the in-match flag test and the CheckBox accessors, the same
 
 std::string Lower(std::string s) {
   for (char& c : s) {
@@ -130,7 +149,7 @@ bool Store(const MenuOption& option, int value) {
     out += old + "\r\n";
   }
   if (out.empty()) {
-    out = "# The game's options menu writes this file: one option per line, used at the next start.\r\n";
+    out = "# The game's options menu writes this file: one option per line, read when the game starts.\r\n";
   }
   if (!replaced) {
     out += line + "\r\n";
@@ -161,6 +180,41 @@ bool InstallHooks() {
   return true;
 }
 
+// The in-match flag test 0xA41707 and the bool accessors 0x402CE9 / 0x518C7C, each with the same out-of-range path as
+// the int ones. Without them the options still work as dropdowns, greyed out during a match; logged once.
+bool InstallExtraHooks(const char* feature) {
+  if (g_extraHooks != 0) {
+    return g_extraHooks > 0;
+  }
+  g_extraHooks = -1;
+  if (!VerifyAll("menu options (match, CheckBox)", {&sites::kOptionFlagTest, &sites::kOptionBoolGetter,
+                                                     &sites::kOptionBoolGetRange, &sites::kOptionBoolSetter}) ||
+      !WriteJmp(sites::kOptionFlagTest.va + 9, reinterpret_cast<const void*>(&UhcMenuFlagHook), 5) ||
+      !WriteJmp(sites::kOptionBoolGetRange.va, reinterpret_cast<const void*>(&UhcMenuBoolGetHook), 5) ||
+      !WriteJmp(sites::kOptionBoolSetter.va + 0x46, reinterpret_cast<const void*>(&UhcMenuBoolSetHook), 5)) {
+    Log(L"%hs: the options menu's flag test or CheckBox sites are not stock: its options work as dropdowns only, "
+        L"greyed out during a match",
+        feature);
+    return false;
+  }
+  g_extraHooks = 1;
+  return true;
+}
+
+// From a live switch's option: tells its key.
+void SwitchSet(int slot, int value) {
+  for (std::size_t i = 0; i < kSwitchCount; ++i) {
+    if (g_switchSlots[i] != slot) {
+      continue;
+    }
+    if (g_switchObservers[i] != nullptr) {
+      g_switchObservers[i](value != 0);
+    } else {
+      Log(L"menuOptions: %hs did not apply; the choice is only stored", kMenuSwitches[i].key);
+    }
+  }
+}
+
 }  // namespace
 
 std::wstring MenuOptionsPath() { return ExeFolder() + kOptionsFile; }
@@ -182,8 +236,11 @@ int AddMenuOption(const MenuOption& option) {
     Log(L"%hs: the options menu's sites are not stock; no %ls entry", option.feature, option.name);
     return -1;
   }
+  InstallExtraHooks(option.feature);
   g_slots[slot].option = option;
   g_uhcMenuOptionValues[slot] = 0;
+  g_uhcMenuOptionFlags[slot] = option.live && g_extraHooks > 0 ? kFlagInMatch : 0;
+  g_uhcMenuOptionChecks[slot] = 0;
   g_uhcMenuOptionCount = slot + 1;
   return slot;
 }
@@ -246,8 +303,11 @@ extern "C" void __stdcall UhcMenuOptionSet(std::int32_t index, std::int32_t valu
     return;
   }
   const bool stored = SetMenuOptionValue(index, value, true);
-  Log(L"%hs: %ls chosen in the menu%ls; it takes effect at the next start", option.feature, Label(option, value),
-      stored ? L"" : L" (NOT stored)");
+  Log(L"%hs: %ls chosen in the menu%ls; it takes effect %ls", option.feature, Label(option, value),
+      stored ? L"" : L" (NOT stored)", option.onSet != nullptr ? L"at once" : L"at the next start");
+  if (option.onSet != nullptr) {
+    option.onSet(index, value);
+  }
 }
 
 void ApplyMenuSwitches(Config& config) {
@@ -255,7 +315,7 @@ void ApplyMenuSwitches(Config& config) {
   if (lines == nullptr) {
     return;
   }
-  constexpr std::size_t kCount = sizeof(kMenuSwitches) / sizeof(kMenuSwitches[0]);
+  constexpr std::size_t kCount = kSwitchCount;
   int following = 0;
   bool failed = false;
   bool named[kCount] = {};
@@ -286,27 +346,50 @@ void ApplyMenuSwitches(Config& config) {
     const MenuSwitch& menuSwitch = kMenuSwitches[i];
     // Until the player chooses, the key's own line decides: present, on; absent, off.
     const bool inCfg = config.Has(menuSwitch.key);
-    const int slot = AddMenuOption({menuSwitch.key, menuSwitch.name, menuSwitch.key, {"off", "on"}, {L"off", L"on"}});
+    MenuOption option{menuSwitch.key, menuSwitch.name, menuSwitch.key, {"off", "on"}, {L"off", L"on"}};
+    option.live = menuSwitch.live;
+    option.onSet = menuSwitch.live ? &SwitchSet : nullptr;
+    const int slot = AddMenuOption(option);
     if (slot < 0) {
       Log(L"menuOptions: %hs: no menu entry; the cfg alone decides", menuSwitch.key);
       failed = true;
       continue;
     }
     ++following;
+    g_switchSlots[i] = slot;
     const int stored = MenuOptionStored(slot);
     const int value = stored >= 0 ? stored : (inCfg ? 1 : 0);
     SetMenuOptionValue(slot, value, false);
-    Log(L"menuOptions: %hs follows %ls: %ls (%ls)", menuSwitch.key, menuSwitch.name, value != 0 ? L"on" : L"off",
+    Log(L"menuOptions: %hs follows %ls: %ls (%ls)%ls", menuSwitch.key, menuSwitch.name, value != 0 ? L"on" : L"off",
         stored >= 0         ? L"the player's choice"
         : inCfg             ? L"no choice stored yet: its cfg line"
-                            : L"no choice stored yet: no cfg line");
-    if (value == 0 && inCfg) {
+                            : L"no choice stored yet: no cfg line",
+        !menuSwitch.live    ? L""
+        : g_extraHooks > 0  ? L"; live: a change takes effect at once, also during a match"
+                            : L"; live: a change takes effect at once, from the main menu");
+    if (menuSwitch.live) {
+      if (!inCfg) {
+        config.Add(menuSwitch.key);  // applied with its defaults, on or off: it asks FollowMenuSwitch
+      }
+    } else if (value == 0 && inCfg) {
       config.Erase(menuSwitch.key);
     } else if (value != 0 && !inCfg) {
       config.Add(menuSwitch.key);  // with its defaults
     }
   }
   Log(L"menuOptions: %hs (%d keys follow the options menu)", failed ? "FAILED" : "applied", following);
+}
+
+bool FollowMenuSwitch(const char* key, void (*observer)(bool on), bool* on) {
+  for (std::size_t i = 0; i < kSwitchCount; ++i) {
+    if (_stricmp(key, kMenuSwitches[i].key) != 0 || !kMenuSwitches[i].live || g_switchSlots[i] < 0) {
+      continue;
+    }
+    g_switchObservers[i] = observer;
+    *on = g_uhcMenuOptionValues[g_switchSlots[i]] != 0;
+    return true;
+  }
+  return false;
 }
 
 }  // namespace uhc

@@ -782,6 +782,10 @@ Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44
 // when the unit has an attack on land units (the Grenzer's 6 m torch beside its musket). Two attacks on one ring size
 // share it, filled if either reaches land units. The caps count models: a filled ring is two.
 //
+// The options menu: with `menuOptions displayedRange` the player turns the rings on and off (OptionDisplayedRange), at
+// once, also during a match. The key is applied either way and asks the choice (FollowMenuSwitch); off, the tick and the
+// ghost update take down the rings they hung and draw none, and the arguments of the cfg line still hold.
+//
 // <Flag>: the proto flag parser 0x5F640A (stdcall(proto, name)) compares the name with each flag it knows and
 // returns with nothing for any other name. Its last compare, the call 0x5F726F of the string compare 0x4028B4, is
 // redirected: the compare runs, and a name it does not match is offered to this key.
@@ -800,6 +804,7 @@ Sites: `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44
 #include "../ghostobservers.h"
 #include "../generated/sites.h"
 #include "../log.h"
+#include "../menuoptions.h"
 #include "../patch.h"
 #include "../prototags.h"
 #include "../unitmodels.h"
@@ -884,6 +889,9 @@ std::uint32_t g_nextTick = 0;
 bool g_lastAlt = false;
 bool g_log = false;
 bool g_placement = true;      // the ghost's rings (option noPlacement: off)
+// The player's switch in the options menu (menuOptions displayedRange, FollowMenuSwitch): off, no rings are drawn and
+// the next tick and ghost update take down those hung. Always on when the key does not follow the menu.
+bool g_enabled = true;
 
 struct Ghost {
   char* visual = nullptr;
@@ -1241,6 +1249,13 @@ void Tick(char* world, std::int32_t) {
     g_world = world;
     g_nextTick = 0;
   }
+  if (!g_enabled) {  // turned off in the options menu: take down what is hung, draw nothing
+    for (const auto& [id, models] : g_hung) {
+      Release(world, id, models);
+    }
+    g_hung.clear();
+    return;
+  }
   if (now < g_nextTick) {
     return;
   }
@@ -1356,6 +1371,15 @@ void __stdcall OnGhost(char* ghost) {
   if (visual == nullptr || Field<const char*>(visual, 0xA8) == nullptr) {  // the model functions read its +0A8h
     return;
   }
+  if (!g_enabled) {  // turned off in the options menu
+    if (visual == g_ghost.visual) {
+      for (const std::int32_t model : g_ghost.models) {
+        uhc::RemoveVisualModel(visual, model);
+      }
+    }
+    g_ghost = Ghost{};  // turned on again, the rings are worked out anew
+    return;
+  }
   const std::int32_t protoId = Field<std::int32_t>(ui, 0x1FC);
   if (visual != g_ghost.visual) {
     g_ghost = Ghost{visual};  // another visual: what was hung on the old one went with it
@@ -1397,6 +1421,15 @@ void __stdcall OnGhost(char* ghost) {
       uhc::HangVisualModel(visual, model, g_bone);
     }
   }
+}
+
+// From the options menu's Apply (menuoptions.h, FollowMenuSwitch), on the game's thread. Only the flag changes here
+// (g_nextTick is left alone: 0 would read as another game and drop g_hung without taking its rings down); the world
+// tick (within 100 ms of game time) and the ghost update take the rings down or hang them, since only they know the
+// world.
+void OnMenuSwitch(bool on) {
+  g_enabled = on;
+  uhc::Log(L"displayedRange: %ls from the options menu", on ? L"on" : L"off");
 }
 
 }  // namespace
@@ -1442,8 +1475,11 @@ Outcome ApplyDisplayedRange(const Config& config) {
       !WriteCall(sites::kProtoFlagLastCompare.va + 6, reinterpret_cast<const void*>(&UhcProtoFlagCompareHook))) {
     return Outcome::kFailed;
   }
+  const bool follows = FollowMenuSwitch("displayedRange", &OnMenuSwitch, &g_enabled);
   Log(L"displayedRange: rings while Alt is held (<DisplayRange>) or always (<AlwaysDisplayRange>), one per ranged "
-      L"attack or <DisplayedRange>%ls", g_placement ? L"; on the placement ghost of a ranged building" : L"");
+      L"attack or <DisplayedRange>%ls%ls",
+      g_placement ? L"; on the placement ghost of a ranged building" : L"",
+      !follows ? L"" : g_enabled ? L"; on in the options menu" : L"; off in the options menu (none drawn until it is on)");
   return Outcome::kApplied;
 }
 

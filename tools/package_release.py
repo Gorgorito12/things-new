@@ -311,7 +311,8 @@ broadsideSoundSet [log]       a BroadsideAttack action's <BroadsideSoundSet> sou
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
 displayedRange [noPlacement] [log]   a selected unit shows a ring per ranged attack while Alt is
                               held (<AlwaysDisplayRange>: without Alt); a building being placed
-                              shows its rings (noPlacement: not)
+                              shows its rings (noPlacement: not); with menuOptions displayedRange
+                              the player turns them on or off in the options menu, at once
 steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit
                               instead of jumping with its animations
 inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]   while Alt is held,
@@ -442,7 +443,8 @@ preloadDll <file> ...         engine-ext.cfg only: dinput8.dll also loads these 
 rendererOption [vulkan|dx9] [folder=D] [log] [conf=...]   a Renderer entry in the options
                               menu: Vulkan (DXVK, from dxvk\\) at the next start, more fps
 menuOptions <key> ...         players switch bufferedFileReads / fastVertexFill / fastLastInLine
-                              on or off in the options menu, from the next start
+                              on or off in the options menu, from the next start, and the
+                              range rings of displayedRange at once, also during a match
 
 What each key needs from your mod, and how well it is tested: see the guide.
 Single player only: no feature has been tested in multiplayer. License: MIT, see LICENSE.txt.

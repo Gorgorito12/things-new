@@ -31,7 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Tuesday 2026-11-24 09:53 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24). |
+| Wednesday 2026-11-25 07:55 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`; the player turns them on or off in the options menu, at once. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24); the options-menu pack `wol-fixes/options-menu/` for the switch. |
 | Tuesday 2026-11-24 09:08 | [`techGadgets`](#techgadgets) | Filmed in WoL, with a control. Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. |
 | Tuesday 2026-11-24 09:08 | [`incomeRates`](#incomerates) | Filmed in WoL, with a control. A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). |
 | Monday 2026-11-23 13:56 | [`faithResource`](#faithresource) | Added. Optional: resource 4 becomes faith, gathered by villagers praying at their church or mosque, cut from the home city's skill points; a faith Gather plays its own animation. | The opt-in pack `wol-fixes/faith/` (and `wol-fixes/faith-panel/` for the panel row). |
@@ -85,7 +85,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-11-12 15:52 | [`stealthTargeting`](bug-fixes.md#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
-| Thursday 2026-11-12 11:40 | [`menuOptions`](bug-fixes.md#menuoptions) | Added. Lets the player switch `bufferedFileReads`, `fastVertexFill` and `fastLastInLine` on or off in the options menu, from the next start. | A field per key in `data\options.xml`. |
+| Thursday 2026-11-12 11:40 | [`menuOptions`](bug-fixes.md#menuoptions) | Added. Lets the player switch `bufferedFileReads`, `fastVertexFill` and `fastLastInLine` on or off in the options menu, from the next start, and the range rings of `displayedRange` at once, also during a match. | A field per key in `data\options.xml` (the pack `wol-fixes/options-menu` adds the rings' one). |
 | Thursday 2026-11-12 08:17 | [`fastLastInLine`](bug-fixes.md#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
 | Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
 | Wednesday 2026-11-11 15:49 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
@@ -8427,7 +8427,7 @@ What the panels and the fog of war show.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`abilitySlots`](#abilityslots) | Lets the command panel show up to N abilities per unit instead of 6. | **new** | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. | confirmed (single player, UI) |
-| [`displayedRange`](#displayedrange) | A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`. | **new** | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24). | confirmed (single player) |
+| [`displayedRange`](#displayedrange) | A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`; the player turns them on or off in the options menu, at once. | **new** | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24); the options-menu pack `wol-fixes/options-menu/` for the switch. | confirmed (single player) |
 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | **new** | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. | confirmed (single player, UI) |
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
@@ -8504,7 +8504,28 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 *A selected unit shows its range on the ground while Alt is held: a ring at the reach of its ranged attacks.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Tuesday 2026-11-24 09:53
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Wednesday 2026-11-25 07:55
+
+**Changed on 2026-11-25:** the player can turn the rings on and off in the options menu (UI Options → "Show Range
+Rings"), and the change shows at once, also during a match: `menuOptions displayedRange` and the pack
+`wol-fixes/options-menu` ("In the options menu", below).
+
+![The range rings switched in the options menu during a match](media/displayedRange-menu-wol.gif)
+
+*In WoL, with the pack `wol-fixes/options-menu` (test data `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the Fort; a
+scenario, the Fort selected, filmed 2026-11-25):* the rings are off. Menu (the game pauses) → Options → UI Options,
+"Show Range Rings" ticked, OK: as the game resumes, the Fort's 33 m ring and its dashed 47 m anti-ship ring are there.
+Menu → Options again, unticked, OK: they are gone. No restart. The bottom lines are the log's (`on chosen in the menu;
+it takes effect at once`, `on from the options menu`, then `off …`; the first ones are from earlier runs). [Full video (MP4)](media/displayedRange-menu-wol.mp4).
+
+![The options menu without the pack](media/displayedRange-menu-wol-control.gif)
+
+*In WoL as it is (no pack: no row and no `displayedRange` line; the same scene):* the UI Options page has no such
+row, and the selected Fort shows no ring. [Full video (MP4)](media/displayedRange-menu-wol-control.mp4).
+
+![The Show Range Rings row on the UI Options page](media/displayedRange-menu-wol.png)
+
+*The row on WoL's UI Options page, ticked, with its tooltip (1920×1080, part of the screen).*
 
 **Changed on 2026-11-24:** the rings are at the real reach (from a building's walls, plus the target's radius:
 "Where the ring is", below); the ring files had shown 0.615 of their radius and are now at true scale; an
@@ -8604,6 +8625,20 @@ displayedRange [log] [noPlacement]
 ```
 
 - **In WoL today:** nothing shows how far a unit shoots or an aura reaches.
+- **In the options menu** (2026-11-25): with `menuOptions displayedRange` in the cfg, the player turns all the rings
+  on or off with a check box. `python wol-fixes/options-menu/apply_fix.py "<WoL folder>"` puts it on the UI Options
+  page, after "ALT key shows hitpoint bars" ("Show Range Rings", with a tooltip), and adds `menuOptions
+  displayedRange` and a `displayedRange` line to `wol.cfg` when they are missing, so the rings start on; `--restore`
+  undoes it. The choice:
+  - takes effect when the player clicks OK, in the main menu or during a match (in single player every row of the
+    options screen can be changed in a match): the rings of the selected units and of a building being placed come or
+    go within a tenth of a second of game time;
+  - is kept in `uhc-options.cfg` next to the log, and wins over the cfg at the next start; until the player chooses,
+    the cfg decides (with the `displayedRange` line, on);
+  - leaves the line's arguments alone: `noPlacement` still keeps the rings off the ghost.
+
+  The key is applied whether the box is ticked or not (only the drawing stops), so it costs the same as before when
+  off. Details: [bug-fixes.md, menuOptions](bug-fixes.md#menuoptions).
 - **When:** a unit with `<DisplayRange>1</DisplayRange>` shows its rings while it is selected and Alt is held (JTMaston,
   2026-11-21), the key that already shows every HP bar; they go when Alt is released or the unit is deselected.
   `<AlwaysDisplayRange>1</AlwaysDisplayRange>`, or `<Flag>AlwaysDisplayRange</Flag>`, shows them whenever the unit is
@@ -8756,6 +8791,7 @@ displayedRange [log] [noPlacement]
 - **Multiplayer:** display only: the selection and the keyboard are this machine's, and a model is a visual. Every player
   can have it or not.
 - **Log:** `displayedRange: applied`, `hook reached: displayedRange: proto flag parser's last compare (0x5F726F)`, and
+  with the options menu `displayedRange: on from the options menu` / `off from the options menu` on each OK, and
   with `log` `proto Outpost: <Flag>AlwaysDisplayRange</Flag>`, `unittype Ship is 3635, Building 3636, Unit ...`,
   `Alt held`, `ring of 47 m on unit 6 (FortFrontier), no land unit (dashed), Alt held`, `ring of 33 m on unit 6
   (FortFrontier), Alt held`, `Alt released`, `rings off unit 6`.

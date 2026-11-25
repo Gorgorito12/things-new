@@ -1491,7 +1491,7 @@ and `perfFileLog` are for measuring, not for players: they are in [performance.m
 | [`fastVertexFill`](#fastvertexfill) | Builds the waving flags' vertices without reading back from video memory, for more frames per second when flags are on screen. | **new** | Nothing. | confirmed (single player) |
 | [`fastLastInLine`](#fastlastinline) | Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | **new** | Nothing. | confirmed (single player) |
 | [`rendererOption`](#rendereroption) | Adds a Renderer entry to the options menu: DirectX 9 or Vulkan, the second through DXVK for more frames per second, from the next start. | **new** | The field in `data\options.xml` and the `dxvk` folder. | confirmed (single player) |
-| [`menuOptions`](#menuoptions) | Lets the player switch `bufferedFileReads`, `fastVertexFill` and `fastLastInLine` on or off in the options menu, from the next start. | **new** | A field per key in `data\options.xml`. | confirmed (single player) |
+| [`menuOptions`](#menuoptions) | Lets the player switch `bufferedFileReads`, `fastVertexFill` and `fastLastInLine` on or off in the options menu, from the next start, and the range rings of `displayedRange` at once, also during a match. | **new** | A field per key in `data\options.xml` (the pack `wol-fixes/options-menu` adds the rings' one). | confirmed (single player) |
 
 #### bufferedFileReads
 
@@ -1760,7 +1760,9 @@ rendererOption [vulkan|dx9] [folder=<dir>] [log] [conf=<DXVK options>]
   where `d3d9.dll` is, relative to the exe or absolute (default `dxvk`); `log` logs every read and write of the entry;
   `conf=` replaces DXVK's options and takes the rest of the line (several options separated by `;`). A player who
   sets `DXVK_CONFIG` in Windows' environment keeps it.
-- **During a match** the entry is greyed out, as the other options that need a restart.
+- **During a match** the entry can be changed in single player, as every row of the options screen (the screen greys a
+  row only when a session value is set that is 0 in a scenario and in a skirmish, seen 2026-11-25); the choice is used
+  from the next start.
 - **If Vulkan fails:** no `dxvk` folder, a broken `d3d9.dll`, or no Vulkan on the PC: the game starts with DirectX 9
   and the log says why. If a start with Vulkan crashes or hangs before its first frame, the next start uses DirectX 9
   and stores it, so the player can always get back to the menu.
@@ -1816,9 +1818,30 @@ rendererOption [vulkan|dx9] [folder=<dir>] [log] [conf=<DXVK options>]
 
 #### menuOptions
 
-*Lets the player switch some of the performance keys on or off in the game's options menu.*
+*Lets the player switch some of the performance keys, and the range rings, on or off in the game's options menu.*
 
 **Added:** Thursday 2026-11-12 11:40
+
+**Changed on 2026-11-25:** `displayedRange` can be named too. It is a *live* switch: a check box "Show Range Rings"
+on the UI Options page, and the rings come or go as soon as the player clicks OK, also during a match (the pack
+`wol-fixes/options-menu` adds the field). A row of the options screen may now be a CheckBox as well as a DropDown. In
+single player every row of the screen can be changed during a match; the line here said they were greyed out, which
+is not so.
+
+![The range rings switched in the options menu during a match](media/displayedRange-menu-wol.gif)
+
+*In WoL, with the pack `wol-fixes/options-menu` (`menuOptions displayedRange`, `displayedRange`; test data
+`<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the Fort; a scenario, the Fort selected):* the rings start off (the
+player's stored choice). Menu (the game pauses) → Options → UI Options, "Show Range Rings" ticked, OK: as the match
+resumes the Fort's 33 m ring and its dashed 47 m anti-ship ring are there. Then unticked, OK: they are gone. The log
+lines at the bottom: `on chosen in the menu; it takes effect at once`, `on from the options menu`, then the same with
+`off` (the first lines are from earlier runs). [Full video
+(MP4)](media/displayedRange-menu-wol.mp4).
+
+![The options menu without the pack](media/displayedRange-menu-wol-control.gif)
+
+*In WoL as it is (no pack, no `menuOptions` line; the same scene):* the UI Options page has no such row, and the
+Fort shows no ring. [Full video (MP4)](media/displayedRange-menu-wol-control.mp4).
 
 ![menuOptions in WoL: Graphics Options](media/menuOptions-wol.png)
 
@@ -1827,11 +1850,16 @@ Options with the three entries switched (Vulkan, buffered reads Off, flag drawin
 switch itself is the same dropdown as the Renderer's, filmed in [`rendererOption`](#rendereroption).
 
 ```
-menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill, fastLastInLine
+menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill, fastLastInLine, displayedRange
 ```
 
 - **In WoL today:** `bufferedFileReads`, `fastVertexFill` and `fastLastInLine` are on or off for every player as
   `wol.cfg` says; a player who wants the other setting has to edit the cfg.
+- **The range rings, at once** (2026-11-25): `displayedRange` is a *live* switch. Its key is applied whatever the
+  choice (a `displayedRange` line with no arguments is added to the cfg when there is none), and the choice only turns
+  the drawing on or off: on OK the rings of the selected units and of a building being placed come or go, in the main
+  menu or during a match, with no restart. The cfg line's arguments (`noPlacement`, `log`) still hold. Until the player
+  chooses, the cfg line decides as for the other keys: with the pack's `displayedRange` line, the rings start on.
 - **Effect:** each key named on the line gets an Off / On entry in the options menu (Options → Graphics, next to
   [`rendererOption`](#rendereroption)'s Renderer). The choice is used from the next start and kept in
   `uhc-options.cfg` next to `UHC.log`, as the renderer's; the profile is not touched.
@@ -1843,8 +1871,25 @@ menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill
 
   So the mod keeps control: it decides which keys players may switch, what each starts as, and the arguments a key
   applies with. A key switched on in the menu with no line in the cfg applies with its defaults.
-- **WoL needs:** a field per key in `data\options.xml`, in the Graphics group (here after the Renderer field). The name
-  is fixed per key; the label and tooltip are free text; the first `<value>` is Off, the second On:
+- **WoL needs:** a field per key in `data\options.xml`. The name is fixed per key (`OptionBufferedReads`,
+  `OptionFastVertexFill`, `OptionFastLastInLine`, `OptionDisplayedRange`); the label and tooltip are free text. A field
+  may be a `CheckBox` (ticked = on) or a `DropDown` whose first `<value>` is Off and second On. Keep the file's Windows
+  line ends: a field written with Unix line ends into WoL's `options.xml` is left off the screen with no error (seen
+  2026-11-25).
+  - The rings: `python wol-fixes/options-menu/apply_fix.py "<WoL folder>"` adds the check box on the UI Options page,
+    right after "ALT key shows hitpoint bars", and the lines `menuOptions displayedRange` and `displayedRange` to
+    `wol.cfg` (and to `engine-ext\engine-ext.cfg` when there is one) when they are missing; `--restore` undoes it.
+    The field:
+
+    ```xml
+    <field>
+        CheckBox
+        <name>OptionDisplayedRange</name>
+        <label>Show Range Rings</label>
+        <tooltip>Shows how far the selected units and buildings shoot, as rings on the ground, and the range of a building while you place it. Takes effect at once.</tooltip>
+    </field>
+    ```
+  - The performance keys, in the Graphics group (here after the Renderer field):
 
   ```xml
   <field>
@@ -1873,8 +1918,10 @@ menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill
   </field>
   ```
 
-  Add a field only for a key named on the `menuOptions` line: a field whose key is not named shows as an empty list,
-  as any `<name>` the game does not know. Without the fields, the menu is the stock one.
+  Add a field only for a key named on the `menuOptions` line: a field whose key is not named shows as an empty list
+  (or an unticked check box that does nothing), as any `<name>` the game does not know. Without the fields, the menu
+  is the stock one. "Restore Defaults" leaves these options as they are (it resets the game's own, the screen
+  resolution included).
 - **Example** (`wol.cfg`): `bufferedFileReads` and `fastLastInLine` start on, `fastVertexFill` starts off, and players
   can switch all three:
 
@@ -1883,19 +1930,26 @@ menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill
   bufferedFileReads
   fastLastInLine
   ```
-- **During a match** the entries are greyed out, as the other options that need a restart.
+- **During a match:** in single player every row of the options screen can be changed, these too (the screen greys a
+  row only when a session value is set that is 0 in a scenario and in a skirmish). A performance key's choice is used
+  from the next start; the rings' takes effect at once. Where the screen does grey rows, the rings' row says it may
+  change during a match, as the game's own such rows do, and the others not.
 - **Log:**
   - at startup, before the keys: `menuOptions: bufferedFileReads follows OptionBufferedReads: on (no choice stored
-    yet: its cfg line)` (or `(the player's choice)`), one line per key, then `menuOptions: applied (2 keys follow the
-    options menu)`; then the key's own `applied` line, or none when it is off;
+    yet: its cfg line)` (or `(the player's choice)`), one line per key (the rings' adds `; live: a change takes effect
+    at once, also during a match`), then `menuOptions: applied (2 keys follow the options menu)`; then the key's own
+    `applied` line, or none when it is off (`displayedRange` always applies, and says `on in the options menu` or `off
+    in the options menu (none drawn until it is on)`);
   - when the options screen opens, `bufferedFileReads: options screen field OptionBufferedReads (…); shows on`;
   - on Apply, `bufferedFileReads: off chosen in the menu; it takes effect at the next start`, and the line
-    `bufferedFileReads off` in `uhc-options.cfg`;
+    `bufferedFileReads off` in `uhc-options.cfg`; for the rings `displayedRange: off chosen in the menu; it takes effect
+    at once`, `displayedRange: off from the options menu`, and with `log` `rings off unit <id>`;
   - a name that cannot follow the menu: `menuOptions: <name> cannot follow the options menu (these can: …); ignored`,
     and `menuOptions: FAILED`; the other names still work.
 - **Simulation:** no. `bufferedFileReads` and `fastVertexFill` change how the game reads its files or feeds the video
-  card, and `fastLastInLine` computes the same bits as stock faster, not what the game computes, so players may choose
-  differently. Only such keys can be named (one line each in the DLL's list).
+  card, `fastLastInLine` computes the same bits as stock faster, not what the game computes, and the rings are models
+  drawn for this machine's selection, so players may choose differently. Only such keys can be named (one line each in
+  the DLL's list).
 - **Status:** confirmed in single player (2026-11-12), in WoL with this DLL, beside `rendererOption`, over seven
   starts:
   - the three entries show in Graphics Options with the start values (Renderer DirectX 9, buffered reads On from its
@@ -1910,5 +1964,19 @@ menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill
   - WoL's own `options.xml` (no fields) with the line: the stock Graphics Options;
   - the profile was byte for byte the same after every OK.
 
-  Not tested: multiplayer, `dinput8.dll` beside WoL's DLL, a choice made during a match (the entries are greyed out
-  there).
+  The rings (2026-11-25, WoL with this DLL and the pack, a scenario with a Fort, an Outpost placed by a Settler):
+  - the check box shows the start value (ticked from the `displayedRange` line, then the stored choice); unticked and
+    OK in the main menu: `displayedRange off` in `uhc-options.cfg`, `it takes effect at once`;
+  - during the match, from Menu → Options: ticked, the Fort's 33 m filled ring and 47 m dashed ring are there as the
+    game resumes; unticked, they are gone (`rings off unit 0`); while an Outpost was being placed, its ghost had no
+    ring with the rings off, got its 27 m and dashed 43 m rings when they were turned on, and lost them when turned off
+    again, the placement still going on;
+  - the next start: `off (the player's choice)`; with `displayedRange log noPlacement`, noPlacement still held;
+  - beside the three performance keys as dropdowns in Graphics Options: their stored values showed, and one OK stored a
+    dropdown (`at the next start`) and the check box (`at once`); after a restart `bufferedFileReads` and
+    `fastLastInLine` applied and `fastVertexFill` (stored off) did not;
+  - with no `menuOptions` line none of the menu hooks is written; the rings' field, left in `options.xml`, showed as an
+    unticked box that stored nothing, and the game went on;
+  - the pack applied, `--check`ed and `--restore`d to byte-identical files.
+
+  Not tested: `dinput8.dll` beside WoL's DLL.
