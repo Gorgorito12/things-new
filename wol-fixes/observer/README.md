@@ -45,9 +45,8 @@ Found on the way, in WoL itself (not in these maps):
   (`trigtemp.xs: Token Error 0008: string not terminated`): `wotta_triggers()` in `RM4\triggers\triggerLoader.xs`
   writes each player's name into its overlay texts as a string literal, and the XS compiler refuses the byte.
   Seen on `ESOC_Adirondacks`; any map that calls `wotta_triggers()` would do the same with such a name, and then
-  has no trigger at all (King of the Hill, the observer panel, WoL's own). Not changed here (the file is
-  shared by 193 maps): writing the names with `kbGetPlayerName(<player>)` at run time instead of in the
-  literal would avoid it.
+  has no trigger at all (King of the Hill, the observer panel, WoL's own). Fixed in a pack of its own,
+  `wol-fixes/trigger-names/` (the name read with `kbGetPlayerName` when the trigger runs).
 - Observer mode in a single-player skirmish by accident: WoL's DLL reads the Observer box from setting 37h,
   which a single-player skirmish takes from `gamecampaignshownhcnote` in the profile. It was `false` in all 14
   WoL profiles on the test PC, and nothing in normal play was seen to set it. If it were `true`, a skirmish of 3

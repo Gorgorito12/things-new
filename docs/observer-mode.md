@@ -226,7 +226,8 @@ Scope: the 36 maps only (the user dropped "every map"), no DLL change. Pack and 
   its overlay texts as a string literal, and the XS compiler refuses the byte (`trigtemp.xs(251): Token Error
   0008: string not terminated`, then `Error 0003: could not compile file 'trigtemp.xs'`). [I] The same on
   every map that calls `wotta_triggers()`, with any player name that is not plain ASCII. The panel's own code
-  reads names at run time and is not affected.
+  reads names at run time and is not affected. Fixed by the pack `wol-fixes/trigger-names/` (wol-requests
+  "81 (names)").
 - [O] **Observer mode in a single-player skirmish by accident:** WoL's DLL reads setting 37h, which is
   `gamecampaignshownhcnote` in the profile's skirmish settings. It was `false` in all 14 WoL profiles on the
   test PC, and nothing in a normal single-player session was seen to set it. If it were `true`, a skirmish

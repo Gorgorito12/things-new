@@ -60,6 +60,8 @@ Pictures:
 - 04-age-icon-zoom-4x.jpg: the age I icon and the Great War icon.
 - 05-wol-tech-and-card-rows-2x.jpg: a WoL tech under "Techs Completed" and a WoL card under "Shipments Sent".
 - 06-team-defeated-victory-with-observers.jpg: one team defeated, victory for the other.
+- 07-accented-ai-name-great-war-message.jpg: the Great War message with an accented name, after the
+  trigger-name fix below.
 (These pictures were taken with the old observer interface, before the new interface files: the flags and the
 resource panel under the rows are fixed by the new files.)
 
@@ -70,9 +72,19 @@ Two things we found in WoL itself
    stops the whole trigger script of the map: the map then has no triggers at all (King of the Hill, the
    observer panel, your own triggers). The cause is wotta_triggers() in RM4\triggers\triggerLoader.xs: its
    messages ("... has entered the Great War Age!") put the player's name inside the text, and the script
-   compiler refuses the accented letter. We saw it on ESOC Adirondacks; any map that calls wotta_triggers()
-   would do the same with such a name. We did not change that file, since 193 maps use it. Would you like us to
-   prepare a change?
+   compiler refuses the accented letter (a quote in a name would do the same). Any map that calls
+   wotta_triggers() is affected: 193 maps.
+
+   We prepared the fix: wol-fixes/trigger-names (python apply_fix.py "<WoL folder>", with --check and
+   --restore; the originals are kept). The two messages no longer have the name written into them; they ask
+   the game for it when the trigger runs (kbGetPlayerName, as your culture_music.xs already does for the civ
+   name). It changes one file, RM4\triggers\triggerLoader.xs (and the same file in RM3, and greatwar.xs, which
+   has the same line but is not used today), and nothing else. It replaces our proposal of 2026-11-17, which
+   also needed a new trigger effect.
+   Tested in Spanish against Carlos el Diplomático: before the fix, ESOC Adirondacks and Arabia had no
+   triggers; after it, ESOC Adirondacks, Arabia, California, Ceylon and Dansil Alaska compile with no error,
+   and the Great War message showed "Carlos el Diplomático has entered the Great War Age!" with the accent
+   (picture 07-accented-ai-name-great-war-message.jpg).
 2. In a single-player skirmish your DLL reads the Observer box from a profile setting
    (gamecampaignshownhcnote). It was off in every profile we have, and we did not see anything in normal play
    turn it on; but if it were on, a skirmish of 3 or more players on one of these 36 maps would make the last
@@ -80,6 +92,6 @@ Two things we found in WoL itself
 
 Questions
 ---------
-1. Shall the 36 repaired maps and the new interface files go into your next patch?
+1. Shall the 36 repaired maps, the new interface files and the trigger-name fix go into your next patch?
 2. Export no longer shows in the panel (oil took its row, as in your own resource panel). Is that fine, or do
    you want export shown somewhere for the Asian civs?
