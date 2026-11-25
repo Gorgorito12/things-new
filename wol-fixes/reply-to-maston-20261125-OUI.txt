@@ -24,7 +24,9 @@ New resolutions: we also made 2560x1080, 1920x1200, 1440x900, 1600x1200, 2560x14
 1080p size, centred between the minimap and the unit panel. Two things are needed on your side:
 1. your uhc.dll has a list of the 7 resolutions it swaps files for; these new files are only used if you
    add them to that list (or tell us and we will do the swap in another way);
-2. 2560x1080 works as it is. The taller ones (1200, 1440, 2160 lines) still show the shipment counters
-   under the top flags too low: the maps need a preset per height for that, which we have not found yet.
+2. 2560x1080 works as it is. The taller ones (1200, 1440 and 2160 lines) each come with a preset in the
+   observer maps (a load<WxH>() with more line breaks in the panel's text), so the shipment counters stay
+   under the flags and the rows line up; checked in game at every one but 3840x2160, which our test PC could
+   not drive.
 
 Install: wol-fixes/observer/observer_ui.py build / apply (keeps your files as *.obs-orig) / revert.
