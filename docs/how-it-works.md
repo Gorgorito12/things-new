@@ -2104,7 +2104,7 @@ the tech's ID (`[[record]+0]`) in a table and takes the flag, which stock would 
 0x7108C3, 0x7108DB and the fall-through after the send-limit line, no push outstanding):
 `UhcQuickArrivalLine(out = [esp+44h], tech = [esp+4Ch], list = [esp+58h])`, then the replaced load and `jmp 0x71090F`.
 For a flagged tech it appends `<ttf><ttb>` and the text with the BString append 0x443960, as FUN_004C5076 does (a `\n`
-instead of the bullet in string mode). The text is *This is a quick-arrival card.*, or string N of the string table
+instead of the bullet in string mode). The text is *This is a QUICK-ARRIVAL card.*, or string N of the string table
 with `stringid N` (read at each rollover, so a language change follows; an empty string falls back to the English).
 So the line comes right after the send-limit line: after *This Card may be sent INFINITE times* for an infinite card,
 and between the card's rollover text (and its send limit) and the advanced info for the others.
@@ -2400,6 +2400,14 @@ are the proto's (`[ui+1FCh]`, the local player's copy through 0x45311B, its `<Di
 all its tactics) and are worked out once per proto; each frame only checks that the model still has them. A new proto
 takes the old rings off first; a new model object means the old one went with its rings. When the placement ends, the
 ghost's model goes, rings included (tested: Escape, a placed Outpost, `uiSetProtoCursorID(-1)`).
+
+**The options menu (2026-11-25).** With `menuOptions displayedRange` the key is a live switch of the options menu
+([menuOptions](#menuoptions)): it applies whatever the choice, asks it once (`FollowMenuSwitch`) and is told each new
+one on Apply. The observer sets `g_enabled` only. The tick reads it after its world check: off, it takes the models of
+`g_hung` off their units and clears it, and returns; on, it goes on as before, within 100 ms of game time. The ghost
+update reads it first: off, it takes its models off the ghost's model (when it is still the one they were hung on) and
+forgets the ghost, so turned on again the rings are worked out anew. Tested in a match: the Fort's rings went and came
+back with the game resumed, and an Outpost's ghost lost and got its rings with the placement still going on.
 
 **Player colour.** A particle's colour fields are `UsePalette`, `NumPaletteColors`, `PaletteColors`, `ColorStages`,
 `fWorldLightingInfluence` and the fixed `Color` (the exe's particle tag names, 0xBA41D0): nothing takes the owner's
@@ -3945,13 +3953,71 @@ at 0x5FEE1A). The attack code reads it at 0x4996C7: the multiplier is the unit's
 (0x6A4B83), and if it is above DamageFactorCap `[+48h]` and that is above 0, the cap (0x4996E8..0x49970A). The stat
 panel reads it too. The AutoGather rate getter 0x49EBE4, `float thiscall(action, resource)`, does not.
 
-The hook replaces the getter's first three instructions. Without the flag it re-executes them and goes on at
-0x49EBEA. With it, it calls the getter's body, so that the body's `ret 4` comes back to the hook, and multiplies
-ST0 by the factor, with the attack code's rule.
+The hook replaces the getter's first three instructions. Since 2026-11-25 it is shared (`autogatherrate.*`,
+`hooks/autogatherrate_hooks.asm`, `AddAutoGatherRateFilter`) with [`nurseryFactor`](#nurseryfactor): it asks
+`UhcAutoGatherRateAsk(action, resource)` (stdcall, C), which runs each key's filter in `kFeatures` order. When none
+applies, the hook re-executes the three instructions and goes on at 0x49EBEA, so the stock getter runs bit for bit.
+Otherwise it calls the getter's body, so that the body's `ret 4` comes back to the hook, and multiplies ST0 by the
+product of the factors, a float in `g_uhcAgFactor`. This key's filter follows the attack code's rule: the contained
+count, or the cap when the count is at least the cap and the cap is above 0. Both are exact as floats, so the product
+is the one the earlier hook computed on the x87 stack.
 
-**Why it is safe.** The hook sits at a function entry, so EAX, ECX and EDX are free. No branch lands in the six
+**Why it is safe.** The hook sits at a function entry, so EAX, ECX and EDX are free and the x87 stack is empty; the
+asker is a C function that keeps EBX, ESI, EDI and EBP, and the hook keeps ECX around it. No branch lands in the six
 bytes. Every caller gets the same rate: the update 0x48D16E, both panels (0x6992BD, 0x69B005), and the two that
 look for a resource with a rate (0x69D232, 0x9CFE1E). The factor comes from simulation state only.
+
+### nurseryFactor
+
+`src/features/nurseryfactor.cpp`; the shared `autogatherrate.*` (above), `prototags.*`, `techsubtypes.*`, `worldtick.*`,
+`unitpanel.*`, `datarefs.*` and `savedmarkers.h`. The design and the questions behind it are in
+[nursery-design.md](nursery-design.md). <!-- private -->
+
+- **Tags** (`AddProtoTagHandler`): the ten `NurseryFactor*` tags, by proto ID, each checked for its range; a bad value
+  is logged and the tag skipped. A proto has a factor only with a valid `NurseryFactorMax`. A per-proto-ID byte table
+  says which protos have one and trickle, for the rate filter.
+- **The factor of each unit** is a table by unit ID, in ID order, filled as `researchGrants`' set is: 256 slots of the
+  world's unit table `[world+0Ch]` per world update, round robin, and the whole table on a new game, a loaded one (another
+  world, the time going back or the step count jumping) or before a `NurseryFactor` effect. A unit found with no marker
+  gets `NurseryFactorInitial`. After each world update (`AddWorldTick`), each living unit is cut to its player's cap;
+  a built one (0x44DDB4) adds the game time `[world+108h]` since the last tick to its timer and grows a step per
+  interval (linear: the step; exponential: `max(step, floor(factor x GrowthRate))`), up to the cap; at the cap, or with
+  no interval, the timer is 0. Factor and timer are words 1 and 2 of a saved marker (`savedmarkers.h`, stat 6Bh, word 0
+  `NRSF`), written each tick, so a transform in place, which ends the unit's modifiers, has it written again at the next
+  tick. A unit gone, dead or of a proto without a factor leaves the table.
+- **The trickle:** the filter of the shared AutoGather rate getter multiplies a marked proto's rate by the unit's factor
+  (the initial value while the unit is not in the table yet). The AutoGather update FUN_0048D13E then pays as stock: to
+  the player through the add 0x49A98A (return 0x4C379D, which `incomeRates` counts), or, with the tactics flag
+  `AddResourcesToInventory` (bit 4 of `[action+64h]`, handler 0x5FC84D), into the unit's own resource list through
+  0x49A5E6, cut at its carry capacity 0x494503 when the proto asks for it. The first call of a game before its first
+  tick builds the table from the markers first.
+- **Data subtypes** (`AddTechSubtype`): `NurseryFactorMax`, `NurseryFactorInterval` and `NurseryFactorStep` keep a value
+  per player's copy of the proto (looked up by pointer, checked against the copy's ID), computed by the stock value
+  function 0x7F892A from the tag's value. `NurseryFactor` queues `(copy, amount, relativity)` for the next world tick,
+  which runs 0x7F892A on each of the player's built units of that copy, with the unit's factor as the value and the
+  initial value as the base, and clamps it to 0..cap.
+- **The load runs the Data effects again** (seen in game, 2026-11-25): after `loadGame`, each tech effect of these
+  subtypes came through the handlers again, before the first world tick, in the order of the techs in the techtree
+  (not the order they were researched): `NurseryFactorMax` +5 then `Assign` 4 gave a cap of 4 after the load where the
+  game had 9. The per-copy values come back that way. A `NurseryFactor` effect must not run twice, so a queue found
+  at the first tick of a loaded game (game time above 0) is dropped and logged. This is not the pass after a load
+  0x94DDEA, which runs only flag-20h effects (see `unitTypeTechs`).
+- **The shipment** (`AddTechPlayerSubtype`, as `shipmentCounts`): the techtree read stores `{unittype, nursery,
+  consume}` in a list and the list index in the effect's field `+10h`. When it applies, it takes (or counts) the factors
+  of the player's living, built units whose proto is `nursery` or of that abstract type (0x44D7FA), in ID order, and
+  returns the stock `FreeHomeCityUnit` (37h) with the proto and `amount x total`; nothing under 1 unit. A taken factor
+  restarts its timer.
+- **Panel:** `AddUnitPanelRow` (the minimized interface's AutoGather row, `[panel+33Ch]` / `+340h`) writes the name
+  as the label and `3/10` as the value, and `SetUnitPanelRowTip` (new in `unitpanel.*`) puts the two lines in the help
+  text `[gadget+68h]` of both gadgets (BString set 0x40196F); the shared hook clears it before the next refresh's rows,
+  so the stock row and the other keys' rows never show it. `{uhcNurseryFactor}` (`AddDataRef`, string) gives the first
+  selected unit's `3/10 minks`. Text IDs resolve through 0x58EA52.
+
+**Why it is safe.** Markers are made (0x4DD22D) only by the world tick, after the world update. The rate filter and the
+shipment read the table; the shipment's take writes the table only, the tick writes the markers. Deterministic: the
+table is keyed by unit ID, the copy map by pointer is only looked up, the time is game time, the order is the table's.
+The display reads only. Cost: per update, 256 slot reads and one marker walk per unit with a factor; per AutoGather
+rate call, one C call and a byte lookup for a proto without a factor.
 
 ### containedUnitsROF
 
@@ -6254,22 +6320,36 @@ With the key, two interleaved 150 s A/B pairs on the mod's save went from 12 and
 
 `menuOptions <key> …` hands on/off keys to the player, through the options menu's registry (see
 [rendererOption](#rendereroption), "The virtual options"). The keys that may be named are a table in `menuoptions.cpp`
-(`kMenuSwitches`: the key and its field's `<name>`), today `bufferedFileReads` (`OptionBufferedReads`) and
-`fastVertexFill` (`OptionFastVertexFill`) and `fastLastInLine` (`OptionFastLastInLine`); another key that changes nothing of the simulation takes one line there.
+(`kMenuSwitches`: the key, its field's `<name>` and whether it is live), today `bufferedFileReads`
+(`OptionBufferedReads`), `fastVertexFill` (`OptionFastVertexFill`), `fastLastInLine` (`OptionFastLastInLine`) and the
+live `displayedRange` (`OptionDisplayedRange`); another key that changes nothing of the simulation takes one line there.
 
 It runs in `ApplyFeatures` after the cfg is read and before the first key of `kFeatures`, and edits the cfg those keys
 then see:
 1. each named key gets an option (`AddMenuOption`), with the stored line `<key> on|off`;
 2. the value: the player's stored choice; with none stored, the key's own cfg line (present: on, absent: off);
-3. off with a cfg line: every line of the key is removed, so the key does not apply; on without one: an empty line is
-   added, so the key applies with its defaults; otherwise the cfg is left as it is, arguments included.
+3. a switch that is not live: off with a cfg line, every line of the key is removed, so the key does not apply; on
+   without one, an empty line is added, so the key applies with its defaults; otherwise the cfg is left as it is,
+   arguments included;
+4. a live switch: the key always applies (an empty line is added when there is none), whatever the value.
 
-So a key not named on a `menuOptions` line behaves as before, and nothing changes during a game: a choice is used from
-the next start. An unknown name, or the menu sites not being stock, logs `menuOptions: FAILED` and leaves those keys to
-the cfg.
+So a key not named on a `menuOptions` line behaves as before. For the others, a choice is used from the next start,
+but for a live one. An unknown name, or the menu sites not being stock, logs `menuOptions: FAILED` and leaves those
+keys to the cfg.
+
+**A live switch** (`displayedRange`). Its option is registered with `live` and an `onSet`. The key, when it applies,
+calls `FollowMenuSwitch(key, observer, &on)`: true if the menu follows it, with the current choice in `on`, and the
+observer kept. On Apply, `UhcMenuOptionSet` stores the choice, logs `it takes effect at once` and calls `onSet`, which
+calls the observer on the game's thread. `displayedRange`'s observer only sets a flag: its world tick (every 100 ms of
+game time) and the ghost update read it first, and off they take down the models they hung (`g_hung`,
+`g_ghost.models`) and hang none; on, the next tick hangs what the selection wants. Its next-tick time is left alone:
+0 would read as a new game and forget the hung models without taking them down. The option's entry flags hold 0x40
+(below), so a screen that greys rows during a match leaves this one enabled.
 
 A field of `options.xml` whose name is not registered gets -1 from the lookup, as in stock, and the screen
-shows it as an empty list (checked with and without the hooks), so a mod adds fields only for the keys it names.
+shows it as an empty list or an unticked check box that stores nothing (checked with and without the hooks), so a mod
+adds fields only for the keys it names. A field must keep the file's line ends: a DropDown written with LF line ends
+into a mod's CRLF `options.xml` was not built at all, with no lookup (seen 2026-11-25; the same field with CRLF showed).
 
 ### rendererOption
 
@@ -6287,12 +6367,19 @@ a name → ID map. The profile reads and writes the same entries as `<Setting Na
   called only by the four field builders), reads the type with 0x553028 and the value with 0x402E6A (int) or 0x9325C4
   (string), and maps the value to the selected entry (0x78C8BC; only IDs 9, 0Ah and 30h are mapped through lists, any
   other int is the entry's index);
-- in a running game the field is enabled only if the entry's flags hold 0x40 (0xA41707);
+- a CheckBox field (FUN_0078BE95 region, the builder at 0x78BEC5) reads its value with the bool getter 0x402CE9 and
+  no type check; Apply (FUN_0078D052) switches on the type from 0x553028: an int goes through 0x518AE0 (a dropdown's
+  selection mapped back by 0x78C76A), a bool through 0x518C7C;
+- each field builder then asks `[0xC67314]` (vtable `+6Ch`, 0x404E91: `[obj+38h] != 0`); only when that holds, the
+  field is enabled if the entry's flags hold 0x40 (the test 0xA41707 with mask 40h), else greyed. `[obj+38h]` was 0
+  in a scenario and in a skirmish (read in game, 2026-11-25), so in single player every field is enabled during a
+  match. That it is the multiplayer session is an inference;
 - on Apply, FUN_0078D052 maps the selection back (0x78C76A) and writes it with 0x518AE0 (int).
 
-Every accessor compares the ID with `[obj+8]` and fails beyond it: 0x553028 and 0x402E6A through cold blocks that only
-they reach (0x6B794B `xor al,al / ret 4`, 0x6B7676 `xor al,al / ret 8`), 0x518AE0 through its own failure return
-0x518B26.
+Every accessor compares the ID with `[obj+8]` and fails beyond it: 0x553028, 0x402E6A and 0x402CE9 through cold blocks
+that only they reach (0x6B794B `xor al,al / ret 4`, 0x6B7676 and 0x6B77B6 `xor al,al / ret 8`), 0x518AE0 and 0x518C7C
+through their own failure returns 0x518B26 and 0x518CC2 (`pop edi / xor al,al / pop esi / ret 8`), and the flag test
+0xA41707 (`thiscall(obj, id, mask)`) by falling through to `xor al,al / ret 8` at 0xA41710.
 
 **The virtual options (`menuoptions.*`, `hooks/menuoptions_hooks.asm`).** The options menu's registry, shared by
 `rendererOption` and [`menuOptions`](#menuoptions): more options, with nothing added to the table, the settings object
@@ -6307,12 +6394,24 @@ six sites and writes the four hooks:
 | 0x6B7676, the int getter's out-of-range return | `xor al,al / ret 8` | one of the IDs: writes the option's value to `*out`, returns 1 | its own `ret 8` |
 | 0x518B26, the int setter's failure return | `pop edi / xor al,al / pop esi / ret 8` | one of the IDs: `UhcMenuOptionSet(slot, value)` stores the choice, returns 1 | its own `ret 8` |
 
-Each hook tests `ID - 0x55480001 < count` as one unsigned compare, so the game's own IDs (below 93) never pass, and on
-the stock path the registers are as the stock code left them. The value is the dropdown's index: for
-`OptionRenderer`, 0 is the first `<value>` (DirectX 9), 1 the second (Vulkan). A new value is written at once to
-`uhc-options.cfg` next to the log, one line per option (`renderer dx9|vulkan`, `bufferedFileReads on|off`, …), to a
-temporary file moved over the old one, keeping the other lines. The entries have no flag 0x40, so they are greyed out
-during a match, as the stock options that need a restart are.
+A second group (2026-11-25), verified and written once by the first `AddMenuOption` too, but on its own: if its sites
+are not stock, the log says so and the options stay dropdowns, with no flag 0x40.
+
+| Site | Replaced | Hook does | Continues at |
+|---|---|---|---|
+| 0x6B77B6, the bool getter's out-of-range return (from 0x402CF2 only) | `xor al,al / ret 8` | one of the IDs: marks the option as read by a CheckBox, writes 0 or 1 to the byte `*out`, returns 1 | its own `ret 8` |
+| 0x518CC2, the bool setter's failure return (from 0x518C87 and 0x518CB1 only) | `pop edi / xor al,al / pop esi / ret 8` | one of the IDs: `UhcMenuOptionSet(slot, low byte of the value != 0)`, returns 1 | its own `ret 8` |
+| 0xA41710, the flag test's out-of-range return (fall-through of the `jb` at 0xA4170E) | `xor al,al / ret 8` | one of the IDs: `(flags & mask) & F0h != 0`, the flags 40h for a live option and 0 for the others, as an entry of the table would answer | its own `ret 8` |
+
+The type getter hook answers 5 (bool) for an option a CheckBox has read, 2 (int) for the others, so Apply writes each
+through the setter its field uses. Every hook tests `ID - 0x55480001 < count` as one unsigned compare, so the game's own
+IDs (below 93) never pass, and on the stock path the registers are as the stock code left them. The value is the
+dropdown's index, or 0/1 for a check box: for `OptionRenderer`, 0 is the first `<value>` (DirectX 9), 1 the second
+(Vulkan). A new value is written at once to `uhc-options.cfg` next to the log, one line per option (`renderer
+dx9|vulkan`, `bufferedFileReads on|off`, `displayedRange on|off`, …), to a temporary file moved over the old one,
+keeping the other lines. In single player every row of the screen can be changed during a match (the flag test is not
+asked, above); where it is asked, a live option answers 0x40, as the game's own rows that may change in a match, and
+the others do not, as those that need a restart.
 
 **The switch.** Everything happens in the DLL's start function, before the game's entry point, so before the game calls
 `Direct3DCreate9`:
@@ -6498,7 +6597,8 @@ most 64 characters; anything else is ignored and logged.
 
 **Why it exists.** The scenario editor's Objects palette, the Allowed list of its Forbidden Units/Techs dialog and its
 trigger editor's lists (218 effect types, a unit parameter's 3,634 protos, a tech parameter's 10,542 techs in a big
-mod) list everything, sorted by name, with no way to find an entry but scrolling.
+mod; a campaign scenario's dozens of triggers) list everything, sorted by name, with no way to find an entry but
+scrolling.
 
 **The lists** (`docs/engine-symbols.md`, "Scenario editor lists"):
 - The Objects palette is the `palette` gadget `EditorProtoPalette` (`uieditorpalettes.xml`; class vtable 0xB92768,
@@ -6523,6 +6623,15 @@ mod) list everything, sorted by name, with no way to find an entry but scrolling
   textField (gadtrigparam.cpp, 0x82888A) given its list by 0x5BECAA from an array the trigger system keeps: units
   `[[game+97Ch]+84h]` (0x828A27), unit types `+90h` (0x828A4E), techs `+6Ch` (0x8289D5). A pick gives the parameter
   the entry's text (event 10: 0x829E29, 0x829F2F), not an index.
+- The trigger editor's list of triggers, `trEdit-Trigger-list` (`[editor+178h]`, bound at 0x824347), is filled by
+  FUN_0082481C (thiscall(editor)): it empties the list, takes the current group (`[sys+0Ch][[sys+18h]]`, sys =
+  `[game+97Ch]`), and for each position in the group adds the trigger's name (`[trig+3Ch]`) through `0xAC9228` at
+  0x8248C3, then gives the row the add returned the **position as its data** (`0xAC6CC0(list, data, row)`). It then
+  selects the row whose data is the group's current position `[group+4]` (0x97B7C4, 0xAC7BB0) and shows that trigger's
+  name, priority and Active / Loop / Run Immediately. A click in the list (the list handler FUN_00825933, event 0Fh)
+  reads the clicked row's data (0xAC6CFE) and makes that position current (0x97B79B); a row is never read as a
+  position (the list is `alphasort` anyway). The group change, Insert, Delete, the panel fill and the editor's
+  refresh (0x825CE8) all refill the list through FUN_0082481C (REA, `ev_2242487d…`, `ev_336e9911…`).
 
 **What it does.**
 - The three add calls of the palette and the dialog are redirected (`hooks/editorsearch_hooks.asm`). Each asks `UhcEditorPaletteKeep` or
@@ -6541,24 +6650,35 @@ mod) list everything, sorted by name, with no way to find an entry but scrolling
   entries, since one field serves every list of the panel; a parameter's current value (`[[param+13Ch]+8]`, entry 0,
   as 0x992D36 reads it) stays in its list. A new text runs FUN_00825757 again, which rebuilds the type list and the
   open condition's or effect's parameters through the same hooks.
+- The trigger list has its own field, `trEdit-Trigger-search` in `trEditor`. The add at 0x8248C3 is redirected
+  (`UhcEditorTriggerAddHook`): `UhcEditorTriggerKeep(editor, group, position, name)` keeps a trigger whose name holds
+  every word, and always the group's current trigger (`[group+4]`), so the list keeps showing the one the panels edit.
+  A dropped trigger returns row -1, which the data setter 0xAC6CC0 ignores (`test esi,esi / jl`). Since a row carries
+  its trigger's position, a shorter list edits the trigger it shows. A new text runs FUN_00825757's own call,
+  FUN_0082481C, again, in any mode (the list shows beside all three panels). Its field matches only the list:
+  nothing found leaves only the current trigger.
 - The match: the text is split on spaces and lowered (`towlower`); every word must appear in the text the list shows,
   or, for a proto, in its internal name (`[proto+10h]`) or its display name (the string ID `[proto+144h]`, read through
   0x58EA52 only when a word is not found otherwise).
 
 **Why it is safe.**
 - UI only: the fills run in the editor, the entries are what the stock fill would add minus some, and nothing is
-  saved or sent. The DLL's state is three handles and the texts, cleared when the owner's handle goes stale.
+  saved or sent. The DLL's state is four handles and the texts, cleared when the owner's handle goes stale.
 - The trigger lists keep the game's own mapping: a type's entry data is filtered with its name, and a parameter's
   value is the text picked, so a value picked from a filtered list is the one the full list gives (saved and loaded
   again: the same). The type list hook keeps every register (`pushad`/`popad`); the continuation 0x8258B8 reads no
   flag, and no branch lands inside the 24 replaced bytes.
+- The trigger list keeps the game's mapping too: each row carries its trigger's position as data, a click reads that
+  data, and the hook drops an entry before it has a row. After the redirected add the fill reads EDI, EBP, EBX and ESI
+  (kept) and the add's EAX (-1 for a dropped trigger); the editor at `[esp+1Ch]` is pinned by the verified head
+  `EditorTriggerListFill` (the frame `sub esp,48h` / `mov [esp+4],ecx` and four pushes).
 - After each redirected call the fill reads no register the add sets (0x7F5382 reloads ECX; 0x9991D5 and 0x99954C
   free the BString), and the hooks keep ECX for the jump.
 - The refills are the game's own: the refresh slot the palette runs when shown, and the fill and layout calls the
   dialog's refresh makes, on the main thread (Present runs there), between frames.
 - A layout without a field leaves the list stock (found missing once per owner, logged with `log`). Every address is
   verified (`UiFindChild`, `UiFieldEditBox`, `UiEditBoxText`, the `EditorPalette*`, `EditorForbid*` and `EditorList*`
-  sites, `EditorProtoDisplayName`).
+  sites, `EditorProtoDisplayName`, the `EditorTrigger*` sites and `EditorListSetData`).
 - Cost: nothing outside the editor (two null checks a frame); in the editor, two handle lookups and a string compare
   a frame. A refill is the stock fill (see the table).
 
@@ -6596,6 +6716,16 @@ dialog; text typed with posted `WM_CHAR`, `testbed.py chars`, erased with posted
 | Triggers, key on, stock `uitriggereditor.xml` | pass: stock lists, `has no textField trEdit-CondEffPanel-search` logged |
 | Triggers, key off, the layout with the field | pass: the field takes text, every list stays full (filmed) |
 | Cost of a trigger refill | 0.1–13 ms (the type list and the parameters), 66 ms once with the tech list |
+| Trigger list (2026-11-25, a mod's campaign scenario, 27 triggers in Ungrouped), "captain" | pass: 4 shown, 23 hidden; with a current trigger elsewhere, 5 (it stays) |
+| Trigger list, "training", the second row (P2_LandTrainingKicker) clicked | pass: its name, 4 Units in Area and 5 Fire Event show, the same as when it is picked from the full list (where row 2 is Captain02) (filmed) |
+| Trigger list, Loop ticked on a trigger picked from a filtered list | pass: the full list shows Loop on that trigger and off on its neighbour |
+| Trigger list, a filtered trigger, then Effects | pass: its own effects (CaptainReact: Disable Trigger ×2, Move To Point, AI Create Defend Plan, Destroy) |
+| Trigger list, Insert and Del with "captain" | pass: the new Trigger_233 shows (current); after Del the next current (Win_02) shows |
+| Trigger list, another group with the text kept | pass: the group's matches (none for "captain" in Opening Scene); erased, its 5 triggers |
+| Trigger list, the condition/effect field still | pass: "create" keeps 10 of 218 effect types |
+| Trigger list, key on, the layout without `trEdit-Trigger-search` | pass: stock list, `the trigger list has no textField trEdit-Trigger-search` logged |
+| Trigger list, key off | pass: the field takes text, the list stays full (filmed) |
+| Cost of a trigger list refill | 0.1–0.2 ms (27 triggers) |
 
 The palette's refill is slow because the stock refresh is: it rebuilds every entry of the current player, and FUN_00ACF80E
 the buttons. That is why a refill waits for a pause in the typing. A/B with `perfprobe.py` (60 s, the editor with the
@@ -6604,6 +6734,76 @@ thread 29 % against 19 %; the difference follows the other games' load (render t
 whose check measured 1–2 µs a frame.
 
 Not tested: a real keyboard (posted messages only), another resolution than 1920 × 1080, IME input.
+
+### editorAutosave
+
+**Why it exists.** The scenario editor has no autosave: a crash loses everything since the last File > Save.
+
+**The save** (`docs/engine-symbols.md`, "Scenario editor save"):
+- The console command `saveScenario(name)` (handler 0x7D9798) returns at once unless the editor gate `[game+0B3Ah]` is
+  set, then calls the game's vtable +0C0h (the thunk 0x703ED3 to FUN_00834583) with the directory `[0xD6FDB4]`, the
+  name and 1, and afterwards puts the name first in the editor's recent scenarios list (FUN_008338F4).
+- FUN_00834583 refuses while `[game+0AB0h]` (a save running) is set, shows the "Saving" message, **sets the open
+  scenario's name** `[game+958h]` (a BString) to the name it saves under, and `[game+95Ch]` to its flag, copies an
+  existing file to `.bak`, and writes the scenario (`.tmp`, then the file). The editor's File > Save writes to
+  `[game+958h]` without asking once it is set: after a plain `saveScenario("autosave-1")`, File > Save wrote
+  `autosave-1` (seen in game).
+- The editor gate is 1 in the editor, 0 in the menu and during a playtest. The undo manager `[game+928h]` keeps the
+  undo entries `{[um+0], count [um+4]}` and the redo entries `{[um+0Ch], count [um+10h]}`. No "modified" flag was found.
+
+**What it does.**
+- A Present observer (`d3d9hooks.*`, after the Present, on the main thread): while the gate is 0 it does nothing but
+  forget the editor. When the gate turns on, the clock starts (GetTickCount64) and it notes the editor's undo state
+  (the undo manager, its undo count and last undo entry, its redo count). Each frame it also notes whether
+  GetLastInputInfo's time moved while a window of the game had the focus (input to the game, not to another program).
+- When the interval is up: if a save is running or a mouse button is held (GetAsyncKeyState), it waits for the next
+  frame. If the undo state is unchanged and the game got no input, it skips this round. Otherwise it picks
+  the slot (the first `autosave-K.age3Yscn` missing in `Documents\<string 42265>\Scenario\`, else the oldest by its
+  write time), copies the open scenario's name and flag, calls the save through the game object's own vtable +0C0h
+  (checked to be the stock 0x703ED3) with `autosave-K`, puts the name and the flag back (`BStringSet` 0x40196F with a
+  BString made by 0x401A12, then the byte), and deletes `autosave-K.bak`.
+- The notice: the editor has no chat (a chat line sent there never showed), so it reuses the editor's message dialog,
+  the one the save shows while it writes: the handle `[[game+920h]+12Ch]`, its child `ingame-messagedialog3-prompt`
+  given the text through the child's vtable +80h (as 0x83A2B8 does), shown with gadgetReal (0x447F7B) and hidden 2 s
+  later with gadgetUnreal (0x448F13, as 0x838CE8 does).
+- The save may draw a frame of its own (0x83A2B8 calls the game's vtable +78h after showing "Saving"): the observer
+  ignores any Present made during the save.
+
+**Why it is safe.**
+- The save is the game's own, called as the console command calls it, between two frames on the main thread, only in
+  the editor and never during a save of the game's own (`[game+0AB0h]`), so the file is the one File > Save would write.
+- The name and flag are put back with the game's own BString calls; nothing else the save sets is read by the editor
+  afterwards. The recent scenarios list is not touched, since the handler's call of 0x8338F4 is skipped.
+- Every address is verified: the gate (`EditorGate`), the undo manager and its counts (`EditorUndoManager`,
+  `EditorUndoCounts`), the handler's call (`EditorSaveCall`), the vtable slot (`EditorSaveSlot`), the thunk, the head and
+  the name write of the save (`EditorSaveThunk`, `EditorSaveHead`, `EditorSaveSetsName`), the directory getter
+  (`EditorSaveDir`), the message dialog's hide and its prompt's name (`EditorMessageHide`, `EditorMessagePromptName`),
+  the BString calls and the gadget calls (`uigadgets.*`).
+- Cost: outside the editor one byte read a frame; in the editor a tick compare a frame. A save pauses the editor for as
+  long as the game takes to write the file (see the tests).
+
+**Tests** (2026-11-25, a mod's editor with this DLL, a game copy with its own profile, `editorAutosave 1 keep 3 log`;
+the editor opened with `startRandomGame(true)`, units placed from the Objects palette with posted clicks, the game's
+memory read with ReadProcessMemory):
+
+| Test | Result |
+|---|---|
+| A minute after the editor opened, units placed | pass: `autosave-1.age3Yscn` written with a new time, notice shown 2 s, then hidden |
+| The open scenario's name `[game+958h]` after the autosave | pass: still `e2-base` (and the flag byte 1) |
+| File > Save (`uiSaveScenarioBrowser`) after autosaves | pass: wrote `e2-base.age3Yscn`, not an autosave |
+| Before the key, the same with a plain `saveScenario("autosave-1")` | the bug the key avoids: File > Save then wrote `autosave-1` |
+| A scenario never saved (empty name), autosaved, then File > Save | pass: the name stays empty, Save opens the Save File dialog with no name |
+| Rotation, keep 3, six saves | pass: autosave-1, 2, 3, then 1 and 2 overwritten (the oldest); 3 files, no `.bak` |
+| An autosave loaded in the editor (`loadScenario("autosave-2")`), `testbed.py units` | pass: the same 12 units at the same places as when it was saved |
+| A round with no placement and no input to the game | pass: `nothing changed since the last autosave; skipped`, no file written |
+| Playtest, main menu | the gate is 0 there (seen in memory); the key does nothing |
+| Key off, the same steps (filmed) | pass: no notice, no autosave file |
+| Bad arguments `editorAutosave 0 keep 99 keep x foo 2.5` | pass: each logged as ignored, applied with 2.5 min and keep 3 |
+| Pause of a save (the log's time of the save call) | 186–274 ms for a 180 KB scenario (9 runs); 1,020 ms for an 8-player random map, 2,499 objects, 657 KB |
+
+The recent scenarios list was not checked in game; the code path (0x8338F4) is only in the console handler, which the
+key does not call. Not tested: a real keyboard and mouse (posted messages only; the input watch was checked only in
+that it skipped a round when there was none), a save that fails (a read-only file, a full disk).
 
 ### techGadgets
 
@@ -6688,6 +6888,62 @@ counts gross or net income and over which window, was not found: a full REA anal
 strings, and about 42 % of its functions are encrypted on disk. So DE's per-minute display is confirmed; how DE
 computes it is not.
 <!-- private:end -->
+
+### selectFattened
+
+**Why it exists.** The stock interface has buttons that select idle villagers or every unit of a type, but none that
+selects the livestock that has stopped fattening: a player looks for it by hand. <!-- private -->WoL request #106.
+
+**How the stock selects many units** (REA, 2026-11-25: `ev_17025585…` 0x79F534, `ev_0a14fa33…` 0x930245,
+`ev_3023002d…` 0x9301D3; the UI command handlers by capstone). The UI command `uiFindAllOfType("Type")` (0x7E7AB9,
+registered at 0x530D50):
+- gets the local selection with `0x4051B6` (`thiscall(game)`: `[[game+91Ch]+4]`, 0 without the world UI) and empties
+  it with `0x9301D3(selection, 0)` (it removes the entries from index 0 on, clears their bits in the selection's
+  bitset `[sel+10h]`, and sets the "changed" byte `[sel+28h]`);
+- walks the local player (`0x407E8A`, the player `[game+3C0h]`) unit list `[player+F8h]` / count `+FCh` (`0x8D1CFB`),
+  skipping a unit whose state byte `[unit+88h]` is below 8 (`0x44DE2A`), one its vtable `+0A4h` refuses, and one inside
+  another (`[unit+6Ch] >= 0`), then tests the type (`0x44D7FA`);
+- adds each with the selection's vtable `+4` and a stack handle `{0B9E444h, 0, unit ID}`. The selection's vtable is
+  0xB9F8C4 (read in game), and `+4` is FUN_0079F534: it checks the handle (the unit exists, its ID matches), refuses
+  a unit of another player than `[game+3C0h]` once the selection is not empty (except in the mode `[game+0B3Ah]`),
+  compares a value of the new unit with the first one's (the selection's vtable `+18h`; read as a selection
+  priority, not traced): a smaller one empties the selection first, a larger one is refused but for some same-player
+  cases), refuses a unit whose state byte differs from the first one's, adds the
+  members of a unit's squad together, and ends in FUN_00930245(handle, 0): nothing past the cap `0x4E0BEE` (the
+  getter `selectionLimit` rewrites), nothing already in, then the add and `[sel+28h] = 1`.
+`uiLookAtAndSelectUnit` (0x7E5DFD) is the same clear and add for one unit, then a camera move.
+
+**What it does.**
+- `uhcSelectFattened()`, a UI syscall (`syscalls.*`, group UI), runs the same calls: the selection, its clear, the
+  same per-unit tests, and the add through the selection's vtable `+4` (checked to be 0x79F534 before the call; any
+  other and nothing is selected) with the same stack handle. The unit test is a herdable (abstract index 37h,
+  `0x44CAC4`) whose inventory `[[unit+0B4h]+94h]` is full by the engine's own test `0x4DC520` (`bool
+  thiscall(inventory)`: some resource held at or above its carry capacity `0x494503`, a capacity above 0). That is the
+  "full" the gather tick stops a herdable's fattening at (`bl` from 0x49A5E6, herdWalkAwayFix above).
+- Over the cap, it sorts the herdables by their distance to the camera's line of sight (`[game+148h]`: position
+  `+4`, forward `+10h`, read in game: the line through a unit `uiLookAtUnit` centred) and adds the nearest first, the
+  cap's number of them; the add would refuse the rest anyway. With no fattened herdable it changes nothing.
+- The count: in the world update (`worldtick.*`), every 100 ms of game time and at once in a new world or for another
+  player, the same walk; `{uhcFattened}` (`datarefs.*`, a string) gives the last count. The gadgets of the cfg line
+  (default `uhcFattened`) are shown while it is above 0 and hidden at 0 from Direct3D's Present, as techGadgets does
+  (`uigadgets.*`: found by name, shown or hidden only when their flags say the other state).
+<!-- private:begin -->
+- The button that was tested is a top-level gadget at the end of `uimainnew.xml`, at 249 594 270 623 (size1024): right
+  of the home city flag (`uimain-homeCityToggle`, 194 605 246 645, in
+  `uiminimappanelnew*.xml`, which a mock-up from a scenario with no home city did not show) and above the art of the
+  resource panel's 12 variants (from y 625). It is outside the panel's block, so the oil and faith panel packs, which
+  replace that block, do not touch it.
+<!-- private:end -->
+
+**Why it is safe.**
+- Interface only: it calls the stock clear and add on the local selection, as the stock command does from a button
+  or a hotkey; no command goes to the network and nothing of the simulation is written. A later order to the
+  selection is an ordinary command.
+- The add is the game's own, with its checks (owner, cap, duplicates, mixed states), so the key cannot build a
+  selection the game itself would refuse.
+- Cost: per 100 ms of game time, a walk of the player's units (a lookup, a byte test, a bit test and the full test
+  each). Measured over 249 units: 18 to 19 µs per count on average, 257 µs at most: about 0.2 ms per second of game
+  time.
 
 ### impactBoneFix
 

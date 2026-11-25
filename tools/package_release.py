@@ -296,7 +296,7 @@ ageFiveShipments              cards of <age>4</age> (Imperial Age) in the deck, 
 resendableCards [log]         <resendeveryage>1</resendeveryage> on a card: sendable again (its
                               maxcount) each time its player reaches a new age
 quickArrivalCards [stringid N] [log]  <Flag>QuickArrival</Flag> on a card's tech: the bullet line
-                              "This is a quick-arrival card." in the card's rollover
+                              "This is a QUICK-ARRIVAL card." in the card's rollover
 shipmentCounts [log]          cards shipped per player and card age, kept in saved games; Data
                               subtype FreeHomeCityUnitByShipmentCount, XS
                               xsGetShipmentCount and xsGetShipmentCountRange
@@ -311,7 +311,8 @@ broadsideSoundSet [log]       a BroadsideAttack action's <BroadsideSoundSet> sou
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
 displayedRange [noPlacement] [log]   a selected unit shows a ring per ranged attack while Alt is
                               held (<AlwaysDisplayRange>: without Alt); a building being placed
-                              shows its rings (noPlacement: not)
+                              shows its rings (noPlacement: not); with menuOptions displayedRange
+                              the player turns them on or off in the options menu, at once
 steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit
                               instead of jumping with its animations
 inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]   while Alt is held,
@@ -367,9 +368,14 @@ techGadgets <Tech> <GadgetAfter> [<GadgetBefore>]   (repeatable) a gadget of the
 incomeRates [seconds] [perMinute|perSecond] [log]   {{uhcIncome(<resource>)}} in a formatText
                               gadget: what the shown player gathered and trickled over the
                               last seconds (default 20), per second or per minute
+selectFattened [gadget <name>] [log]   the command uhcSelectFattened selects the player's
+                              fattened livestock; {{uhcFattened}} counts it; the gadget shows
+                              while there is some
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
+nurseryFactor [log]           <NurseryFactorMax> units keep a factor that grows with time;
+                              it multiplies their AutoGather rate and a shipment
 containedUnitsROF [log]       ScaleByContainedUnits target="ROF": an attack fires faster with
                               the units inside (ROF / count, at most DamageFactorCap)
 numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart before the
@@ -429,6 +435,8 @@ lanAutoStart [host [rules=N] | join <address>]   from the main menu straight to 
                               a LAN game; +uhcLanHost / uhcLanJoin="<address>" on the command line
 editorSearch [log]            search fields in the editor's Objects palette, Forbidden Units/Techs
                               dialog and trigger editor (the fields come in the layouts)
+editorAutosave [minutes] [keep N] [log]   the editor saves the open scenario every few minutes
+                              (default 5) to autosave-1 ... autosave-N (default 3), its name unchanged
 directionalAttack [log]       <DirectionalAttack>: a shot flies past its target and hits what it flies over
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed
@@ -444,7 +452,8 @@ preloadDll <file> ...         engine-ext.cfg only: dinput8.dll also loads these 
 rendererOption [vulkan|dx9] [folder=D] [log] [conf=...]   a Renderer entry in the options
                               menu: Vulkan (DXVK, from dxvk\\) at the next start, more fps
 menuOptions <key> ...         players switch bufferedFileReads / fastVertexFill / fastLastInLine
-                              on or off in the options menu, from the next start
+                              on or off in the options menu, from the next start, and the
+                              range rings of displayedRange at once, also during a match
 
 What each key needs from your mod, and how well it is tested: see the guide.
 Single player only: no feature has been tested in multiplayer. License: MIT, see LICENSE.txt.

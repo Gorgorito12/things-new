@@ -120,6 +120,9 @@ wonderPanelSkipAuras-wol-control 2 16 2
 overhealHitpointBars-damage-wol 2 20 2
 autoGatherScaleByContained-wol 2 36 3
 autoGatherScaleByContained-wol-control 2 36 3
+nurseryFactor-wol 14 36 3 800:50:0:110+800:520:730:330+800:110:790:975+800:80:0:1040
+nurseryFactor-wol-control 2 36 3 800:50:0:110+800:520:730:330+800:110:790:975+800:80:0:1040
+nurseryFactor-ship-wol 0 24 2 800:110:0:75+800:560:640:220+800:80:0:1040
 resourceDebt-autogather-wol 2 24 2
 resourceDebt-autogather-wol-control 2 24 2
 resourceDebt-wol 3 24 2
@@ -192,6 +195,8 @@ displayedRange-wol-placement-control 2 16 2
 displayedRange-wol-fire-fort 3 16 1.5
 displayedRange-wol-fire-outpost 3 16 1.5
 displayedRange-wol-fire-blockhouse 3 16 1.5
+displayedRange-menu-wol 4 48 4
+displayedRange-menu-wol-control 8 28 2.5
 linkedResource-wol 2 12 1
 linkedResource-wol-control 2 12 1
 linkedResource-model-wol 4 84 7
@@ -337,8 +342,8 @@ autoGatherFrom-wol 8 24 2
 autoGatherFrom-wol-control 8 24 2
 herdWalkAwayFix-wol 6 36 3
 herdWalkAwayFix-wol-control 6 36 3
-editorSearch-wol 3 12 1 800:70:240:30+800:240:0:100
-editorSearch-wol-control 3 12 1 800:70:240:30+800:240:0:100
+editorSearch-wol 3 18 1.5 800:70:240:30+800:330:0:90
+editorSearch-wol-control 3 18 1.5 800:70:240:30+800:330:0:90
 deadReplacementAtZeroInventory-wol 0 36 3
 deadReplacementAtZeroInventory-wol-control 5 36 3
 detonationDeath-onunit-wol 3 12 1
@@ -347,10 +352,12 @@ detonationDeath-building-wol 6 12 1
 detonationDeath-building-wol-control 6 12 1
 overhealSources-canoverheal-wol 5 36 3
 overhealSources-canoverheal-wol-control 0 36 3
-editorSearch-trigger-wol 6 18 2 800:40:0:478+800:430:200:190+800:36:0:790
-editorSearch-forbid-wol 1 16 2 800:920:0:0
-editorSearch-trigger-wol-control 6 18 2 800:40:0:478+800:430:200:190+800:36:0:790
-editorSearch-forbid-wol-control 1 16 2 800:920:0:0
+editorSearch-trigger-wol 3 22 2
+editorSearch-forbid-wol 1 16 2 800:980:0:0
+editorSearch-trigger-wol-control 3 22 2
+editorSearch-forbid-wol-control 1 16 2 800:980:0:0
+editorSearch-triggerlist-wol 3 30 2.5 800:460:0:0+800:460:700:0
+editorSearch-triggerlist-wol-control 3 30 2.5 800:460:0:0+800:460:700:0
 dismount-wol 0 24 2
 dismount-wol-control 0 24 2
 dismount-transitions-wol 0 20 1.6
@@ -380,3 +387,7 @@ techGadgets-wol-control 0 12 1
 incomeRates-wol 0 24 2
 incomeRates-wol-control 0 24 2
 turretArc-wol-control 0 12 1
+editorAutosave-wol 18 36 3 800:640:0:0
+editorAutosave-wol-control 18 36 3 800:640:0:0
+selectFattened-wol 5 36 3
+selectFattened-wol-control 5 36 3

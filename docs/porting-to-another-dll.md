@@ -862,6 +862,10 @@ Code: [game-files](porting-code/game-files.md#menuoptions).
   `uhc-options.cfg`), else the key's own line (present: on, absent: off), removes the key's lines (off) or adds an empty
   one (on without a line). The keys then apply as usual. In a DLL whose keys read the cfg each on their own, do the same
   before they run.
+- **A live switch** (`displayedRange`, field `OptionDisplayedRange`, a CheckBox): never removed from the cfg; the key
+  applies and reads the choice, and the setter hook calls it on each new one, so the rings come or go at once. In
+  `displayedRange`, a flag read first by the world tick and the ghost observer: off, they take down what they hung and
+  draw nothing.
 - **Why it can differ between players:** only keys that change nothing of the simulation can be named.
 
 ### rendererOption
@@ -881,6 +885,16 @@ Code: [game-files](porting-code/game-files.md#rendereroption).
     `xor al,al; ret 8` with ECX as it came;
   - `0x518B26` (5 B): EDI = the ID, `[esp+10h]` = the value; for an option call `UhcMenuOptionSet(slot, value)`, then
     `pop edi; mov al,1; pop esi; ret 8`, else the stock `pop edi; xor al,al; pop esi; ret 8`.
+
+  For CheckBox fields and the in-match flag (2026-11-25), three more, each 5 bytes, in their own group:
+  - `0x6B77B6` (the bool getter 0x402CE9's out-of-range return): ECX = the ID, `[esp+8]` = a byte out; for an option
+    mark it as a CheckBox, write 0 or 1, `mov al,1; ret 8`, else `xor al,al; ret 8` with ECX as it came. The type hook
+    then answers 5 (bool) for a marked option instead of 2;
+  - `0x518CC2` (the bool setter 0x518C7C's failure return, the same frame as 0x518B26): `UhcMenuOptionSet(slot, low
+    byte of [esp+10h] != 0)`, then as above;
+  - `0xA41710` (the flag test 0xA41707's out-of-range return): EAX = the ID, `[esp+8]` = the mask; for an option
+    `al = ((flags & mask) & 0F0h) != 0`, `ret 8`, the flags 40h for a live option; else `xor al,al; ret 8` with EAX
+    as it came.
 - **The store:** the choice goes to a file of the DLL (`uhc-options.cfg`, a line `renderer dx9|vulkan`) at once, not to
   the profile. If WoL's DLL has its own settings file, it can keep it there.
 - **The switch:** in the DLL's start function, before the game's entry point: with Vulkan, set `DXVK_LOG_PATH`,

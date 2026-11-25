@@ -118,7 +118,9 @@ PAGES = {
         "displayedRange": ["src/features/displayrange.cpp"],
         "workRateByAbstractType": ["src/features/workratetype.cpp", "src/hooks/workratetype_hooks.asm"],
         "cratePriority": ["src/features/cratepriority.cpp"],
-        "autoGatherScaleByContained": ["src/features/gatherscale.cpp", "src/hooks/gatherscale_hooks.asm"],
+        "autoGatherScaleByContained": ["src/features/gatherscale.cpp", "src/autogatherrate.h", "src/autogatherrate.cpp",
+                                       "src/hooks/autogatherrate_hooks.asm"],
+        "nurseryFactor": ["src/features/nurseryfactor.cpp"],
         "unitResourceAuras": ["src/features/unitresource.cpp", "src/hooks/unitresource_hooks.asm"],
         "linkedResource": ["src/features/linkedresource.cpp", "src/hooks/linkedresource_hooks.asm"],
         "resourceGatherAuras": ["src/features/gatherauras.cpp", "src/hooks/gatherauras_hooks.asm"],
@@ -182,8 +184,10 @@ PAGES = {
         "transformChecks": ["src/features/transformchecks.cpp", "src/hooks/transformchecks_hooks.asm",
                             "src/panelbuttons.cpp", "src/panelbuttons.h", "src/hooks/panelbuttons_hooks.asm"],
         "editorSearch": ["src/features/editorsearch.cpp", "src/hooks/editorsearch_hooks.asm"],
+        "editorAutosave": ["src/features/editorautosave.cpp"],
         "techGadgets": ["src/features/techgadgets.cpp"],
         "incomeRates": ["src/features/incomerates.cpp", "src/hooks/incomerates_hooks.asm", "src/income.h"],
+        "selectFattened": ["src/features/selectfattened.cpp"],
     }),
 }
 

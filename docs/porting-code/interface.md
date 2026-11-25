@@ -20,8 +20,10 @@ Contents:
 - [autoScout](#autoscout)
 - [transformChecks](#transformchecks)
 - [editorSearch](#editorsearch)
+- [editorAutosave](#editorautosave)
 - [techGadgets](#techgadgets)
 - [incomeRates](#incomerates)
+- [selectFattened](#selectfattened)
 
 ## abilitySlots
 
@@ -7491,7 +7493,7 @@ END
 
 Contract: [editorSearch](../porting-to-another-dll.md#editorsearch).
 
-Sites: `BStringFree` `0x4010CA` (31 B), `BStringFromId` `0x58EA52` (25 B), `EditorSetList` `0x5BECAA` (17 B), `EditorPaletteAddProto` `0x7F5371` (17 B), `EditorPaletteObjectsFill` `0x7F5C51` (10 B), `EditorTypeFillHead` `0x825757` (15 B), `EditorTypeListSet` `0x8258A0` (26 B), `EditorTypeFillMode` `0x8264F0` (11 B), `EditorParamTechList` `0x8289C3` (23 B), `EditorParamProtoList` `0x828A13` (25 B), `EditorParamUnitTypeList` `0x828A3A` (25 B), `EditorParamPickText` `0x829E65` (36 B), `EditorProtoDisplayName` `0x8F7A89` (9 B), `EditorForbidVtable` `0x9990CB` (6 B), `EditorFillAllowedUnits` `0x99912F` (11 B), `EditorForbidUnitAdd` `0x9991C7` (14 B), `EditorFillAllowedTechs` `0x999493` (10 B), `EditorForbidTechAdd` `0x999540` (12 B), `EditorForbidMode` `0x9996C6` (12 B), `EditorForbidRelayout` `0x9997C8` (19 B), `EditorForbidBind` `0x999B1F` (6 B), `EditorSetData` `0xAC19D9` (15 B), `EditorListAdd` `0xAC9228` (9 B), `EditorPaletteRefill` `0xACE8DF` (15 B), `EditorPaletteVtable` `0xACFBAA` (6 B), `EditorPaletteAdd` `0xAD0056` (11 B), `EditorPaletteRefresh` `0xAD01FD` (27 B), `EditorPaletteLayoutShow` `0xAD0262` (16 B), `EditorPaletteRefreshSlot` `0xB92788` (4 B).
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringFromId` `0x58EA52` (25 B), `EditorSetList` `0x5BECAA` (17 B), `EditorPaletteAddProto` `0x7F5371` (17 B), `EditorPaletteObjectsFill` `0x7F5C51` (10 B), `EditorTriggerListFill` `0x82481C` (74 B), `EditorTriggerListAdd` `0x8248A1` (57 B), `EditorTypeFillHead` `0x825757` (15 B), `EditorTypeListSet` `0x8258A0` (26 B), `EditorTriggerListClick` `0x825AE8` (16 B), `EditorTypeFillMode` `0x8264F0` (11 B), `EditorParamTechList` `0x8289C3` (23 B), `EditorParamProtoList` `0x828A13` (25 B), `EditorParamUnitTypeList` `0x828A3A` (25 B), `EditorParamPickText` `0x829E65` (36 B), `EditorProtoDisplayName` `0x8F7A89` (9 B), `EditorTriggerSetCurrent` `0x97B79B` (26 B), `EditorTriggerCurrent` `0x97B7C4` (30 B), `EditorForbidVtable` `0x9990CB` (6 B), `EditorFillAllowedUnits` `0x99912F` (11 B), `EditorForbidUnitAdd` `0x9991C7` (14 B), `EditorFillAllowedTechs` `0x999493` (10 B), `EditorForbidTechAdd` `0x999540` (12 B), `EditorForbidMode` `0x9996C6` (12 B), `EditorForbidRelayout` `0x9997C8` (19 B), `EditorForbidBind` `0x999B1F` (6 B), `EditorSetData` `0xAC19D9` (15 B), `EditorListSetData` `0xAC6CC0` (12 B), `EditorListAdd` `0xAC9228` (9 B), `EditorPaletteRefill` `0xACE8DF` (15 B), `EditorPaletteVtable` `0xACFBAA` (6 B), `EditorPaletteAdd` `0xAD0056` (11 B), `EditorPaletteRefresh` `0xAD01FD` (27 B), `EditorPaletteLayoutShow` `0xAD0262` (16 B), `EditorPaletteRefreshSlot` `0xB92788` (4 B).
 
 ### src/features/editorsearch.cpp
 
@@ -7501,9 +7503,10 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringFromId` `0x58EA52` (25 B), `Edit
 // the allowed list of the Forbidden Units/Techs dialog (uiforbiddenunitstechs.xml, field ForbiddenUnitsTechs_Search),
 // and the trigger editor's Type list and its unit, unit type and tech parameter lists (uitriggereditor.xml, field
 // trEdit-CondEffPanel-search in trEdit-CondEffPanel; there a list where nothing matches keeps all its entries, since
-// one field serves them all). The match is case-insensitive; every word of the text must appear in the text the
-// list shows, or in a proto's internal or display name (techs: their internal name, which the list shows). An
-// empty field is the stock list. A layout without the field is the stock dialog.
+// one field serves them all), and the trigger editor's list of triggers (field trEdit-Trigger-search in trEditor;
+// the trigger being edited always stays in it). The match is case-insensitive; every word of the text must appear in
+// the text the list shows, or in a proto's internal or display name (techs: their internal name, which the list
+// shows). An empty field is the stock list. A layout without the field is the stock dialog.
 //
 //   editorSearch [log]
 //
@@ -7515,8 +7518,10 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringFromId` `0x58EA52` (25 B), `Edit
 // FUN_007F501E and shows the buttons), and the dialog's fill of its display mode (FUN_0099912F units, FUN_00999493
 // techs) followed by the list's layout, as the dialog's own refresh does. The trigger editor's lists are set from
 // arrays (0x5BECAA, and 0xAC19D9 for the type list's entry data): those calls get filtered copies, and a change runs
-// the panel's own fill FUN_00825757 again. The editor only: no simulation, nothing saved but the values picked,
-// nothing sent.
+// the panel's own fill FUN_00825757 again. The trigger list's fill FUN_0082481C adds each trigger of the current
+// group through one call as well (0x8248C3) and gives each row the trigger's position in the group as its data, which
+// is what a click reads (0x825AE8), never the row: a shorter list edits the trigger it shows. A change runs that fill
+// again. The editor only: no simulation, nothing saved but the values picked, nothing sent.
 #include <windows.h>
 
 #include <algorithm>
@@ -7535,6 +7540,7 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringFromId` `0x58EA52` (25 B), `Edit
 extern "C" void UhcEditorPaletteAddHook();
 extern "C" void UhcEditorForbidUnitHook();
 extern "C" void UhcEditorForbidTechHook();
+extern "C" void UhcEditorTriggerAddHook();
 extern "C" void UhcEditorTypeFillHook();
 extern "C" void UhcEditorParamListHook();
 
@@ -7722,6 +7728,8 @@ const auto kSetData = reinterpret_cast<SetDataFn>(0x00AC19D9);
 
 Search g_trigger{"trigger editor", "trEdit-CondEffPanel-search"};
 std::uint32_t g_triggerVtable = 0;  // the editor object's, as its type fill saw it
+Search g_triggers{"trigger list", "trEdit-Trigger-search"};
+std::uint32_t g_triggersVtable = 0;  // the editor object's, as the trigger list fill saw it
 
 // The indices of the names that hold every word; none when the text is empty or nothing matches, in which case the
 // list keeps all its entries: one field serves the type list and the parameter lists, and a word meant for one of
@@ -7742,6 +7750,19 @@ std::vector<std::int32_t> Matching(const GameArray* names) {
 
 }  // namespace
 }  // namespace uhc
+
+// The trigger list (FUN_0082481C, at 0x8248C3): one call per trigger of the current group, `pos` its position there
+// (the data its row gets, what a click reads), `text` its name. The group's current trigger, [group+4] (0x97B7C4),
+// always stays, so the list keeps showing the trigger the panels edit.
+extern "C" bool UhcEditorTriggerKeep(void* editor, const char* group, std::int32_t pos, const uhc::BString* text) {
+  using namespace uhc;
+  Seen(g_triggers, ui::HandleOf(editor));
+  g_triggersVtable = Read<std::uint32_t>(editor, 0);
+  const bool keep = g_triggers.words.empty() || (group != nullptr && pos == Read<std::int32_t>(group, 4)) ||
+                    Matches(g_triggers.words, text == nullptr ? nullptr : text->text, nullptr);
+  Count(g_triggers, keep);
+  return keep;
+}
 
 // The condition/effect type list (FUN_00825757, at 0x8258A0): the names and their entry data (the type's index), set
 // together, filtered together.
@@ -7960,16 +7981,43 @@ void PollTrigger() {
   LogFill(g_trigger, start);
 }
 
+using TriggerListFillFn = void(__fastcall*)(void* editor, void* edx);
+const auto kTriggerListFill = reinterpret_cast<TriggerListFillFn>(0x0082481C);
+
+// The trigger list: a new text runs its fill FUN_0082481C again (what the group change, the panel fill and the
+// editor's refresh 0x825CE8 run): the list emptied, each trigger of the group through the hook above, the current one
+// selected, and its name, priority and Active / Loop / Run Immediately shown again, as they were. In any mode: the
+// list shows beside the Triggers, Conditions and Effects panels alike.
+void PollTriggerList() {
+  if (g_triggers.owner == 0) {
+    return;
+  }
+  void* editor = ui::Gadget(g_triggers.owner, ui::kAnyGadget);
+  if (editor == nullptr || Read<std::uint32_t>(editor, 0) != g_triggersVtable) {
+    Seen(g_triggers, 0);
+    return;
+  }
+  if (!ReadyToRefill(g_triggers, editor)) {
+    return;
+  }
+  g_triggers.kept = g_triggers.dropped = 0;
+  LARGE_INTEGER start;
+  QueryPerformanceCounter(&start);
+  kTriggerListFill(editor, nullptr);
+  LogFill(g_triggers, start);
+}
+
 // With `log`, the cost of the per-frame check while the editor's lists exist, every 5000 such frames (refills
 // included).
 int g_polls = 0;
 double g_pollMs = 0;
 
 void BeforePresent() {
-  if (!g_log || (g_palette.owner == 0 && g_forbid.owner == 0 && g_trigger.owner == 0)) {
+  if (!g_log || (g_palette.owner == 0 && g_forbid.owner == 0 && g_trigger.owner == 0 && g_triggers.owner == 0)) {
     PollPalette();
     PollForbid();
     PollTrigger();
+    PollTriggerList();
     return;
   }
   LARGE_INTEGER start;
@@ -7977,6 +8025,7 @@ void BeforePresent() {
   PollPalette();
   PollForbid();
   PollTrigger();
+  PollTriggerList();
   g_pollMs += Ms(start);
   if (++g_polls == 5000) {
     Log(L"editorSearch: the search fields' check took %.2f us a frame (5000 frames, refills included)",
@@ -8011,7 +8060,9 @@ Outcome ApplyEditorSearch(const Config& config) {
                   &sites::kBStringFromId, &sites::kBStringFree, &sites::kEditorTypeListSet,
                   &sites::kEditorTypeFillHead, &sites::kEditorTypeFillMode, &sites::kEditorParamTechList,
                   &sites::kEditorParamProtoList, &sites::kEditorParamUnitTypeList, &sites::kEditorSetList,
-                  &sites::kEditorSetData, &sites::kEditorParamPickText})) {
+                  &sites::kEditorSetData, &sites::kEditorParamPickText, &sites::kEditorTriggerListFill,
+                  &sites::kEditorTriggerListAdd, &sites::kEditorListSetData, &sites::kEditorTriggerListClick,
+                  &sites::kEditorTriggerSetCurrent, &sites::kEditorTriggerCurrent})) {
     return Outcome::kFailed;
   }
   if (!AddD3D9Observer({nullptr, nullptr, &BeforePresent, nullptr}, "editorSearch")) {
@@ -8023,12 +8074,13 @@ Outcome ApplyEditorSearch(const Config& config) {
       !WriteJmp(0x008258A0, reinterpret_cast<const void*>(&UhcEditorTypeFillHook), 0x18) ||
       !WriteCall(0x008289D5, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
       !WriteCall(0x00828A27, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
-      !WriteCall(0x00828A4E, reinterpret_cast<const void*>(&UhcEditorParamListHook))) {
+      !WriteCall(0x00828A4E, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
+      !WriteCall(0x008248C3, reinterpret_cast<const void*>(&UhcEditorTriggerAddHook))) {
     return Outcome::kFailed;
   }
-  Log(L"editorSearch: the Objects palette, the Forbidden Units/Techs dialog and the trigger editor filter by their "
-      L"search fields (%hs, %hs, %hs)%ls",
-      g_palette.fieldName, g_forbid.fieldName, g_trigger.fieldName, g_log ? L"; log on" : L"");
+  Log(L"editorSearch: the Objects palette, the Forbidden Units/Techs dialog, the trigger editor and its trigger list "
+      L"filter by their search fields (%hs, %hs, %hs, %hs)%ls",
+      g_palette.fieldName, g_forbid.fieldName, g_trigger.fieldName, g_triggers.fieldName, g_log ? L"; log on" : L"");
   return Outcome::kApplied;
 }
 
@@ -8038,7 +8090,7 @@ Outcome ApplyEditorSearch(const Config& config) {
 ### src/hooks/editorsearch_hooks.asm
 
 ```asm
-; editorSearch (editorsearch.cpp): three redirected calls of the scenario editor's list fills. Each asks the key
+; editorSearch (editorsearch.cpp): redirected calls of the scenario editor's list fills. Each asks the key
 ; whether the entry matches the search text and either goes on to the stock add (a jmp, so the stock routine returns
 ; to the fill as the original call did) or drops the entry with the add's own stack cleanup.
 .686
@@ -8050,6 +8102,7 @@ include common.inc
 UhcEditorPaletteKeep PROTO C pal:DWORD, unitProto:DWORD
 UhcEditorForbidKeep PROTO C dlg:DWORD, entryText:DWORD, entry:DWORD, isTech:DWORD
 
+UhcEditorTriggerKeep PROTO C editor:DWORD, trigGroup:DWORD, pos:DWORD, entryText:DWORD
 UhcEditorTypeFill PROTO C editor:DWORD, typeField:DWORD, names:DWORD, entryData:DWORD
 UhcEditorParamList PROTO C paramField:DWORD, names:DWORD, param:DWORD
 
@@ -8118,6 +8171,29 @@ drop:
     ret 4
 UhcEditorForbidTechHook ENDP
 
+; Replaces call 0AC9228h at 0x8248C3 in the trigger list fill FUN_0082481C. ECX = ESI = trEdit-Trigger-list,
+; EBP = the current group, EDI = the trigger's position in it, [esp+4] the BString of its name, [esp+1Ch] the editor
+; (the fill keeps it at [esp+4] of its frame, under four pushes and the argument). The fill gives the row the add
+; returns the position as its data (push eax / push edi / call 0AC6CC0h): a dropped entry returns -1, a row that
+; call ignores. After that call the loop reads no register but EDI, EBP, EBX and ESI, which are kept.
+UhcEditorTriggerAddHook PROC
+    TRACE_ONCE "editorSearch: trigger list entry (0x8248C3)"
+    push ecx
+    push dword ptr [esp+8]
+    push edi
+    push ebp
+    push dword ptr [esp+2Ch]
+    call UhcEditorTriggerKeep
+    add esp, 10h
+    pop ecx
+    test al, al
+    jz drop
+    jmp dword ptr [listAdd]
+drop:
+    or eax, -1
+    ret 4
+UhcEditorTriggerAddHook ENDP
+
 ; Replaces 0x8258A0..0x8258B7 in the trigger editor's type fill FUN_00825757: lea ecx,[esp+20h] / push ecx /
 ; mov ecx,ebx / call 5BECAAh (the names) and lea edx,[esp+2Ch] / push edx / mov ecx,ebx / call 0AC19D9h (each entry's
 ; type index). EBX = the "Type:" textField, EDI = the editor object, [esp+20h] and [esp+2Ch] the two arrays. Every
@@ -8155,6 +8231,391 @@ UhcEditorParamListHook PROC
 UhcEditorParamListHook ENDP
 
 END
+```
+
+## editorAutosave
+
+Contract: [editorAutosave](../porting-to-another-dll.md#editorautosave).
+
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `EditorSaveDir` `0x517BAA` (6 B), `BStringFromId` `0x58EA52` (25 B), `EditorSaveThunk` `0x703ED3` (5 B), `EditorGate` `0x7D97AF` (20 B), `EditorSaveCall` `0x7D980E` (21 B), `EditorUndoManager` `0x7DA8B9` (20 B), `EditorSaveHead` `0x834583` (13 B), `EditorSaveSetsName` `0x8345D5` (46 B), `EditorMessageHide` `0x838CE8` (22 B), `EditorUndoCounts` `0x9BE4E2` (15 B), `EditorSaveSlot` `0xB886E8` (4 B), `EditorMessagePromptName` `0xC11254` (29 B).
+
+### src/features/editorautosave.cpp
+
+```cpp
+// editorAutosave: the scenario editor saves the open scenario every few minutes to rotating files.
+//
+//   editorAutosave [minutes] [keep N] [log]
+//
+// Every `minutes` (default 5, 0.5 to 1440) of real time in the editor, the open scenario is saved as autosave-1,
+// autosave-2, ... autosave-N (keep N, default 3, 1 to 20): the first missing one, else the one written longest ago,
+// in the folder where the editor saves every scenario (Documents\My Games\<the game's folder>\Scenario).
+//
+// How (docs/engine-symbols.md, "Scenario editor save"): the save is the game's own, the one the console command
+// saveScenario reaches through the game's vtable +0C0h (FUN_00834583, thiscall(game, dir [0xD6FDB4], BString* name,
+// char flag)), called from the Direct3D Present observer (after a Present, on the main thread, between two frames).
+// The command itself is not used: after the save it puts the name in the editor's recent scenarios list. The save
+// makes the name the open scenario's ([game+958h], and the flag [game+95Ch]), so the next File > Save would write
+// the autosave: both are put back right after. Overwriting a scenario leaves the old file as .bak; the autosave's
+// .bak is deleted, so N autosaves are N files.
+//
+// When: the editor is open ([game+0B3Ah], the gate of the editor's console commands; 0 in a playtest) and no save is
+// running ([game+0AB0h]). Nothing is saved while a mouse button is held (a drag, a brush stroke): it waits. Nothing
+// is saved when nothing can have changed since the editor opened or the last autosave: the editor's undo list is the
+// same (its manager [game+928h]: the undo count, the last undo entry, the redo count) and the game window got no
+// keyboard or mouse input (GetLastInputInfo while it had the focus); then the next try is one interval later.
+// The notice: "Autosaved: autosave-K" for 2 s in the editor's own message dialog, the one the save shows while it
+// writes (the editor has no chat).
+//
+// Editor only: nothing runs outside it, nothing reaches a game.
+#include <windows.h>
+#include <shlobj.h>
+
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cwchar>
+#include <string>
+
+#include "../d3d9hooks.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../uigadgets.h"
+
+namespace uhc {
+namespace {
+
+struct BString {
+  wchar_t* text;
+};
+
+using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
+using BStringFromIdFn = BString*(__thiscall*)(BString* self, std::int32_t id);
+using BStringSetFn = void(__thiscall*)(BString* self, const BString* source);
+using BStringFreeFn = void(__thiscall*)(BString* self);
+const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
+const auto kBStringFromId = reinterpret_cast<BStringFromIdFn>(0x0058EA52);
+const auto kBStringSet = reinterpret_cast<BStringSetFn>(0x0040196F);
+const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+
+// The game's scenario save (vtable +0C0h, the thunk 0x703ED3 to FUN_00834583); ret 0Ch, true when written.
+using SaveScenarioFn = bool(__thiscall*)(char* game, std::int32_t dir, BString* name, std::int32_t flag);
+constexpr std::uint32_t kSaveThunk = 0x00703ED3;  // [0xB886E8], the slot +0C0h of the game's vtable 0xB88628
+constexpr std::uint32_t kSaveDir = 0x00D6FDB4;  // what 0x517BAA returns: the directory the handler saves to
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;
+constexpr std::uint32_t kScenarioName = 0x958;   // game: the open scenario's name, a BString
+constexpr std::uint32_t kScenarioFlag = 0x95C;   // game: a byte the save sets from its flag
+constexpr std::uint32_t kSaving = 0xAB0;         // game: a save is running
+constexpr std::uint32_t kEditorGate = 0xB3A;     // game: the editor is open (its commands test it)
+constexpr std::uint32_t kUndoManager = 0x928;    // game: the editor's undo manager
+constexpr std::int32_t kMyGamesFolderString = 42265;  // "My Games\<folder>": where the profile and Scenario live
+
+// The notice: the editor's own message dialog, the one the save shows while it writes ("Saving '%s' ...",
+// 0x83A2B8): its handle [editor+12Ch] (editor = [game+920h]), its text the child ingame-messagedialog3-prompt (set
+// through the gadget's vtable +80h), shown and hidden as gadgetReal / gadgetUnreal do (0x838CE8 hides it so).
+constexpr std::uint32_t kEditor = 0x920;
+constexpr std::uint32_t kEditorMessageDialog = 0x12C;
+constexpr char kMessagePrompt[] = "ingame-messagedialog3-prompt";
+constexpr ULONGLONG kNoticeMs = 2000;
+
+double g_minutes = 5;
+int g_keep = 3;
+bool g_log = false;
+
+bool g_open = false;      // the editor was open at the last frame
+bool g_busy = false;      // inside a save: the save draws a frame of its own
+ULONGLONG g_due = 0;      // GetTickCount64 at which the next save is due
+std::wstring g_folder;    // the Scenario folder, with a trailing backslash; empty until found
+
+// The editor's undo list at the last autosave (or when the editor opened).
+struct Snapshot {
+  const void* undoManager = nullptr;
+  std::int32_t undoCount = 0;
+  const void* undoTop = nullptr;
+  std::int32_t redoCount = 0;
+  bool operator==(const Snapshot& o) const {
+    return undoManager == o.undoManager && undoCount == o.undoCount && undoTop == o.undoTop &&
+           redoCount == o.redoCount;
+  }
+};
+Snapshot g_saved;
+DWORD g_lastInput = 0;     // GetLastInputInfo's time as last seen
+bool g_inputSince = false;  // keyboard or mouse input while the game had the focus, since the last autosave
+
+template <typename T>
+T Field(const char* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(base + offset);
+}
+
+char* Game() { return *reinterpret_cast<char* const*>(kGameGlobal); }
+
+bool EditorOpen(const char* game) { return game != nullptr && Field<std::uint8_t>(game, kEditorGate) != 0; }
+
+// The undo manager (0x9BE4E2): the undo entries {data [um+0], count [um+4]}, the redo entries {[um+0Ch], [um+10h]}.
+Snapshot Take(const char* game) {
+  Snapshot now;
+  const char* um = Field<const char*>(game, kUndoManager);
+  if (um != nullptr) {
+    now.undoManager = um;
+    now.undoCount = Field<std::int32_t>(um, 0x04);
+    const void* const* undo = Field<const void* const*>(um, 0x00);
+    if (undo != nullptr && now.undoCount > 0) {
+      now.undoTop = undo[now.undoCount - 1];
+    }
+    now.redoCount = Field<std::int32_t>(um, 0x10);
+  }
+  return now;
+}
+
+// Notes input the game window got: the system's last input changed while a window of this process had the focus.
+void WatchInput() {
+  LASTINPUTINFO input{sizeof(input), 0};
+  if (!GetLastInputInfo(&input) || input.dwTime == g_lastInput) {
+    return;
+  }
+  g_lastInput = input.dwTime;
+  DWORD pid = 0;
+  const HWND foreground = GetForegroundWindow();
+  if (foreground != nullptr && GetWindowThreadProcessId(foreground, &pid) != 0 && pid == GetCurrentProcessId()) {
+    g_inputSince = true;
+  }
+}
+
+// The Scenario folder: Documents\<string 42265>\Scenario\, where the editor writes its scenarios.
+const std::wstring& Folder() {
+  if (!g_folder.empty()) {
+    return g_folder;
+  }
+  wchar_t documents[MAX_PATH];
+  if (FAILED(SHGetFolderPathW(nullptr, CSIDL_PERSONAL, nullptr, SHGFP_TYPE_CURRENT, documents))) {
+    return g_folder;
+  }
+  BString games{nullptr};
+  kBStringFromId(&games, kMyGamesFolderString);
+  std::wstring sub = games.text == nullptr ? L"" : games.text;
+  kBStringFree(&games);
+  while (!sub.empty() && (sub.back() == L'\\' || sub.back() == L'/')) {
+    sub.pop_back();
+  }
+  if (!sub.empty()) {
+    g_folder = std::wstring(documents) + L"\\" + sub + L"\\Scenario\\";
+  }
+  return g_folder;
+}
+
+std::wstring SlotPath(int slot, const wchar_t* extension) {
+  wchar_t name[40];
+  swprintf_s(name, L"autosave-%d%ls", slot, extension);
+  return Folder() + name;
+}
+
+// The slot to write: the first missing one, else the one written longest ago.
+int NextSlot() {
+  int oldest = 1;
+  FILETIME oldestTime{0xFFFFFFFF, 0xFFFFFFFF};
+  for (int slot = 1; slot <= g_keep; ++slot) {
+    WIN32_FILE_ATTRIBUTE_DATA data;
+    if (!GetFileAttributesExW(SlotPath(slot, L".age3Yscn").c_str(), GetFileExInfoStandard, &data)) {
+      return slot;
+    }
+    if (CompareFileTime(&data.ftLastWriteTime, &oldestTime) < 0) {
+      oldestTime = data.ftLastWriteTime;
+      oldest = slot;
+    }
+  }
+  return oldest;
+}
+
+std::int32_t g_noticeDialog = 0;  // the message dialog shown by Notice, hidden at g_noticeEnd
+ULONGLONG g_noticeEnd = 0;
+
+// Shows `text` in the editor's message dialog for kNoticeMs.
+void Notice(const char* game, const wchar_t* text) {
+  const char* editor = Field<const char*>(game, kEditor);
+  if (editor == nullptr) {
+    return;
+  }
+  const std::int32_t dialog = Field<std::int32_t>(editor, kEditorMessageDialog);
+  void* dialogGadget = ui::Gadget(dialog, ui::kAnyGadget);
+  void* prompt = dialogGadget == nullptr ? nullptr : ui::Gadget(ui::FindChild(dialogGadget, kMessagePrompt), ui::kAnyGadget);
+  if (prompt == nullptr) {
+    return;
+  }
+  BString line{nullptr};
+  kBStringFromWide(&line, text);
+  using SetTextFn = void(__thiscall*)(void* gadget, const BString* text);
+  reinterpret_cast<SetTextFn>((*reinterpret_cast<void* const* const*>(prompt))[0x80 / 4])(prompt, &line);
+  kBStringFree(&line);
+  ui::Show(dialog, true);
+  g_noticeDialog = dialog;
+  g_noticeEnd = GetTickCount64() + kNoticeMs;
+}
+
+void HideNotice() {
+  if (g_noticeDialog != 0 && GetTickCount64() >= g_noticeEnd) {
+    ui::Show(g_noticeDialog, false);  // nothing for a handle gone stale
+    g_noticeDialog = 0;
+  }
+}
+
+double Ms(const LARGE_INTEGER& start) {
+  LARGE_INTEGER now, frequency;
+  QueryPerformanceCounter(&now);
+  QueryPerformanceFrequency(&frequency);
+  return 1000.0 * static_cast<double>(now.QuadPart - start.QuadPart) / static_cast<double>(frequency.QuadPart);
+}
+
+void Save(char* game) {
+  if (Folder().empty()) {
+    Log(L"editorAutosave: no Scenario folder (string %d is empty); nothing saved", kMyGamesFolderString);
+    return;
+  }
+  const int slot = NextSlot();
+  BString* nameField = reinterpret_cast<BString*>(game + kScenarioName);
+  const std::wstring name = nameField->text == nullptr ? L"" : nameField->text;
+  const std::uint8_t flag = Field<std::uint8_t>(game, kScenarioFlag);
+
+  wchar_t autosave[40];
+  swprintf_s(autosave, L"autosave-%d", slot);
+  BString target{nullptr};
+  kBStringFromWide(&target, autosave);
+  // The game object's own vtable +0C0h, which must be the stock thunk the verified slot holds.
+  const auto save = reinterpret_cast<SaveScenarioFn>(Field<void* const*>(game, 0)[0xC0 / 4]);
+  if (reinterpret_cast<std::uint32_t>(save) != kSaveThunk) {
+    Log(L"editorAutosave: the game's save is not the stock one (0x%08X); nothing saved",
+        reinterpret_cast<std::uint32_t>(save));
+    kBStringFree(&target);
+    return;
+  }
+  LARGE_INTEGER start;
+  QueryPerformanceCounter(&start);
+  g_busy = true;
+  const bool ok = save(game, *reinterpret_cast<const std::int32_t*>(kSaveDir), &target, 1);
+  g_busy = false;
+  const double ms = Ms(start);
+  kBStringFree(&target);
+
+  // The open scenario keeps its name: File > Save writes the user's file, not the autosave.
+  BString restored{nullptr};
+  kBStringFromWide(&restored, name.c_str());
+  kBStringSet(nameField, &restored);
+  kBStringFree(&restored);
+  *reinterpret_cast<std::uint8_t*>(game + kScenarioFlag) = flag;
+
+  DeleteFileW(SlotPath(slot, L".bak").c_str());
+  WIN32_FILE_ATTRIBUTE_DATA data{};
+  const bool written =
+      ok && GetFileAttributesExW(SlotPath(slot, L".age3Yscn").c_str(), GetFileExInfoStandard, &data) != 0;
+  if (written) {
+    wchar_t text[80];
+    swprintf_s(text, L"Autosaved: %ls", autosave);
+    Notice(game, text);
+  }
+  if (g_log || !written) {
+    Log(L"editorAutosave: %ls %ls (%.0f ms%ls); the open scenario keeps its name \"%ls\"",
+        written ? L"saved" : L"FAILED to save", autosave, ms,
+        written ? (L", " + std::to_wstring(data.nFileSizeLow) + L" bytes").c_str() : L"", name.c_str());
+  }
+}
+
+ULONGLONG IntervalMs() { return static_cast<ULONGLONG>(g_minutes * 60000.0); }
+
+void AfterPresent(HRESULT) {
+  if (g_busy) {
+    return;  // the save's own frame
+  }
+  HideNotice();
+  char* game = Game();
+  if (!EditorOpen(game)) {
+    if (g_open && g_log) {
+      Log(L"editorAutosave: the editor closed");
+    }
+    g_open = false;
+    return;
+  }
+  const ULONGLONG now = GetTickCount64();
+  WatchInput();
+  if (!g_open) {
+    g_open = true;
+    g_due = now + IntervalMs();  // the clock starts when the editor opens
+    g_saved = Take(game);
+    g_inputSince = false;
+    if (g_log) {
+      Log(L"editorAutosave: the editor is open; the first autosave in %.1f min", g_minutes);
+    }
+    return;
+  }
+  if (now < g_due) {
+    return;
+  }
+  if (Field<std::uint8_t>(game, kSaving) != 0 ||
+      ((GetAsyncKeyState(VK_LBUTTON) | GetAsyncKeyState(VK_RBUTTON) | GetAsyncKeyState(VK_MBUTTON)) & 0x8000) != 0) {
+    return;  // a save of the game's own, or a mouse button held: tried again next frame
+  }
+  const Snapshot current = Take(game);
+  g_due = now + IntervalMs();
+  if (current == g_saved && !g_inputSince) {
+    if (g_log) {
+      Log(L"editorAutosave: nothing changed since the last autosave; skipped");
+    }
+    return;
+  }
+  Save(game);
+  g_saved = Take(game);
+  g_inputSince = false;
+}
+
+}  // namespace
+
+Outcome ApplyEditorAutosave(const Config& config) {
+  const auto* args = config.First("editorAutosave");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (std::size_t i = 0; i < args->size(); ++i) {
+    const std::string& word = (*args)[i];
+    char* end = nullptr;
+    if (_stricmp(word.c_str(), "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(word.c_str(), "keep") == 0 && i + 1 < args->size()) {
+      const std::string& value = (*args)[++i];
+      const long keep = std::strtol(value.c_str(), &end, 10);
+      if (end == value.c_str() || *end != 0 || keep < 1 || keep > 20) {
+        Log(L"editorAutosave: keep \"%hs\" ignored (1 to 20)", value.c_str());
+      } else {
+        g_keep = static_cast<int>(keep);
+      }
+    } else if (const double minutes = std::strtod(word.c_str(), &end); end != word.c_str() && *end == 0) {
+      if (minutes < 0.5 || minutes > 1440) {
+        Log(L"editorAutosave: %hs minutes ignored (0.5 to 1440)", word.c_str());
+      } else {
+        g_minutes = minutes;
+      }
+    } else {
+      Log(L"editorAutosave: unknown argument \"%hs\" ignored (expected minutes, keep N, log)", word.c_str());
+    }
+  }
+  if (!ui::VerifyUiGadgets("editorAutosave") || !ui::VerifyUiShow("editorAutosave") ||
+      !VerifyAll("editorAutosave",
+                 {&sites::kBStringFromWide, &sites::kBStringFromId, &sites::kBStringSet, &sites::kBStringFree,
+                  &sites::kEditorGate, &sites::kEditorUndoManager, &sites::kEditorUndoCounts, &sites::kEditorSaveCall,
+                  &sites::kEditorSaveSlot, &sites::kEditorSaveThunk, &sites::kEditorSaveHead,
+                  &sites::kEditorSaveSetsName, &sites::kEditorSaveDir, &sites::kEditorMessageHide,
+                  &sites::kEditorMessagePromptName})) {
+    return Outcome::kFailed;
+  }
+  if (!AddD3D9Observer({nullptr, nullptr, nullptr, &AfterPresent}, "editorAutosave")) {
+    return Outcome::kFailed;
+  }
+  Log(L"editorAutosave: every %.1f min in the editor, to autosave-1 ... autosave-%d%ls", g_minutes, g_keep,
+      g_log ? L"; log on" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
 ```
 
 ## techGadgets
@@ -8893,6 +9354,436 @@ END
 namespace uhc {
 
 void CountIncome(const char* player, std::int32_t resource, float amount);
+
+}  // namespace uhc
+```
+
+## selectFattened
+
+Contract: [selectFattened](../porting-to-another-dll.md#selectfattened).
+
+Besides the core helpers, it needs: [`datarefs.h`](helpers.md#data-refs), [`worldtick.h`](helpers.md#world-tick).
+
+Sites: `SelectionOfGame` `0x4051B6` (14 B), `UiFindAnywhere` `0x433A2C` (14 B), `BStringAssign` `0x443BB8` (15 B), `IsAbstractIndex` `0x44CAC4` (70 B), `PlayerById` `0x44CB21` (30 B), `UnitById` `0x44CC6D` (58 B), `InventoryIsFull` `0x4DC520` (61 B), `SelectionAdd` `0x79F534` (13 B), `FindAllOfTypeLoop` `0x7E7B63` (114 B), `SelectionClear` `0x9301D3` (10 B), `SelectionAddCapped` `0x930245` (29 B).
+
+### src/features/selectfattened.cpp
+
+```cpp
+// selectFattened [gadget <name>]... [log]: a button and a hotkey that select the local player's fattened herdables.
+//
+// - The UI syscall `uhcSelectFattened()` (a button's or a keymap entry's <command>) selects, on the whole map, the
+//   herdables (abstract index 37h, 0x44CAC4) of the local player ([game+3C0h]) whose inventory is full: the engine's
+//   own test 0x4DC520 (a resource held at or above its carry capacity), the "full" a fattened herdable stops at. It
+//   repeats what the stock UI command uiFindAllOfType (0x7E7AB9) does: the selection 0x4051B6, emptied with 0x9301D3
+//   (from 0), and per unit the same tests (state byte [unit+88h] from 8, the unit's vtable +0A4h, not inside another
+//   unit: [unit+6Ch] < 0), then the add, the selection's vtable +4 (FUN_0079F534, checked before the call) with a
+//   handle {0B9E444h, 0, unit ID}; it refuses a unit past the selection limit (the getter 0x4E0BEE, which
+//   selectionLimit rewrites) or already in. Over that limit the key adds the herdables nearest the camera's line
+//   of sight first (the screen centre: [game+148h], position +4, forward +10h). With none, the selection stays.
+// - {uhcFattened}: their number, a text data ref (datarefs.h) for the button's label.
+// - The count runs in the world update (worldtick.h) every 100 ms of game time, never per frame. The gadgets named on
+//   the cfg line (default uhcFattened) are shown while it is above 0 and hidden at 0, from Direct3D's Present like
+//   techGadgets (uigadgets.h), or from the world update without the Present observer.
+// Interface only: the selection is the local player's, as a click; nothing goes to the network or the simulation.
+#include <windows.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstdarg>
+#include <cstdint>
+#include <cstdio>
+#include <string>
+#include <vector>
+
+#include "../d3d9hooks.h"
+#include "../datarefs.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../syscalls.h"
+#include "../uigadgets.h"
+#include "../worldtick.h"
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +148h camera, +3C0h the local player
+constexpr std::uint32_t kHandleVtable = 0x00B9E444;
+constexpr std::uint32_t kSelectionAdd = 0x0079F534;  // the selection's vtable +4 (vtable 0xB9F8C4)
+constexpr std::uint32_t kSelectionCapGetter = 0x004E0BEE;  // mov eax,32h / ret (selectionLimit writes the imm32)
+constexpr std::int32_t kHerdableIndex = 0x37;
+constexpr std::int32_t kStockCap = 50;
+constexpr std::int32_t kTickMs = 100;
+constexpr std::int32_t kMaxUnits = 100000;  // sanity bound on the player's unit list
+constexpr DWORD kRetryMs = 2000;
+constexpr int kMaxLogLines = 300;
+
+using SelectionOfGameFn = char*(__thiscall*)(const char* game);
+using SelectionClearFn = void(__thiscall*)(char* selection, std::int32_t from);
+using SelectionAddFn = void(__thiscall*)(char* selection, const void* handle);  // vtable +4, ret 4
+using SelectableFn = bool(__thiscall*)(const char* unit);                      // the unit's vtable +0A4h
+using UnitByIdFn = char*(__thiscall*)(const void* world, std::int32_t id);
+using PlayerByIdFn = char*(__thiscall*)(const void* world, std::int32_t id);
+using IsAbstractIndexFn = bool(__thiscall*)(const void* proto, std::int32_t index);
+using IsFullFn = bool(__thiscall*)(const void* inventory);
+using BStringAssignFn = void(__thiscall*)(wchar_t** self, const void* source, std::int32_t, std::int32_t);
+const auto kSelectionOfGame = reinterpret_cast<SelectionOfGameFn>(0x004051B6);
+const auto kSelectionClear = reinterpret_cast<SelectionClearFn>(0x009301D3);
+const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
+const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
+const auto kIsAbstractIndex = reinterpret_cast<IsAbstractIndexFn>(0x0044CAC4);
+const auto kIsFull = reinterpret_cast<IsFullFn>(0x004DC520);
+const auto kBStringAssign = reinterpret_cast<BStringAssignFn>(0x00443BB8);
+
+// The stack handle the stock command passes to the selection's add.
+struct UnitHandle {
+  std::uint32_t vtable;
+  std::int32_t zero;
+  std::int32_t id;
+};
+
+struct BString {
+  const wchar_t* text;
+};
+
+struct Slot {
+  std::string name;
+  std::int32_t handle = 0;
+  DWORD lastLookup = 0;
+  bool looked = false;
+  bool missingLogged = false;
+};
+
+std::vector<Slot> g_slots;
+bool g_log = false;
+int g_logLines = 0;
+bool g_present = false;
+const char* g_world = nullptr;  // the world g_count belongs to
+std::int32_t g_player = -1;
+std::int32_t g_count = -1;  // -1: not counted yet in this world
+std::int32_t g_elapsed = kTickMs;
+
+template <typename T>
+T Field(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
+
+const char* World(const char* game) { return game == nullptr ? nullptr : Field<const char*>(game, 0x13C); }
+
+void LogLine(const wchar_t* format, ...) {
+  if (!g_log || g_logLines >= kMaxLogLines) {
+    return;
+  }
+  ++g_logLines;
+  wchar_t text[512];
+  va_list args;
+  va_start(args, format);
+  _vsnwprintf_s(text, _TRUNCATE, format, args);
+  va_end(args);
+  uhc::Log(L"%ls", text);
+}
+
+// The tests of uiFindAllOfType's loop, then a herdable with a full inventory.
+bool Fattened(const char* unit) {
+  if (unit == nullptr || Field<std::uint8_t>(unit, 0x88) < 8 || Field<std::int32_t>(unit, 0x6C) >= 0) {
+    return false;
+  }
+  const void* proto = Field<const void*>(unit, 0x5C);
+  if (proto == nullptr || !kIsAbstractIndex(proto, kHerdableIndex)) {
+    return false;
+  }
+  const char* data = Field<const char*>(unit, 0xB4);
+  const void* inventory = data == nullptr ? nullptr : Field<const void*>(data, 0x94);
+  if (inventory == nullptr || !kIsFull(inventory)) {
+    return false;
+  }
+  const auto selectable = reinterpret_cast<SelectableFn>(Field<const void* const*>(unit, 0)[0xA4 / 4]);
+  return selectable(unit);
+}
+
+// The local player's fattened herdables, by unit pointer.
+void Collect(const char* game, std::vector<const char*>* out) {
+  const char* world = World(game);
+  if (world == nullptr) {
+    return;
+  }
+  const std::int32_t playerId = Field<std::int32_t>(game, 0x3C0);
+  const char* player = playerId < 0 ? nullptr : kPlayerById(world, playerId);
+  if (player == nullptr) {
+    return;
+  }
+  const std::int32_t* ids = Field<const std::int32_t*>(player, 0xF8);
+  const std::int32_t count = Field<std::int32_t>(player, 0xFC);
+  if (ids == nullptr || count <= 0 || count > kMaxUnits) {
+    return;
+  }
+  for (std::int32_t i = 0; i < count; ++i) {
+    const char* unit = ids[i] < 0 ? nullptr : kUnitById(world, ids[i]);
+    if (Fattened(unit)) {
+      out->push_back(unit);
+    }
+  }
+}
+
+std::int32_t SelectionCap() {
+  const auto* code = reinterpret_cast<const std::uint8_t*>(kSelectionCapGetter);
+  if (code[0] != 0xB8 || code[5] != 0xC3) {
+    return kStockCap;
+  }
+  const std::int32_t cap = *reinterpret_cast<const std::int32_t*>(code + 1);
+  return cap > 0 ? cap : kStockCap;
+}
+
+// Squared distance from the unit to the camera's line of sight, or 0 without a camera.
+float AxisDistance2(const char* camera, const char* unit) {
+  if (camera == nullptr) {
+    return 0.0f;
+  }
+  const float* eye = reinterpret_cast<const float*>(camera + 0x04);
+  const float* forward = reinterpret_cast<const float*>(camera + 0x10);
+  const float* at = reinterpret_cast<const float*>(unit + 0x14);
+  const float v[3] = {at[0] - eye[0], at[1] - eye[1], at[2] - eye[2]};
+  const float ff = forward[0] * forward[0] + forward[1] * forward[1] + forward[2] * forward[2];
+  if (!(ff > 1e-6f)) {
+    return 0.0f;
+  }
+  const float t = (v[0] * forward[0] + v[1] * forward[1] + v[2] * forward[2]) / ff;
+  const float d[3] = {v[0] - t * forward[0], v[1] - t * forward[1], v[2] - t * forward[2]};
+  return d[0] * d[0] + d[1] * d[1] + d[2] * d[2];
+}
+
+void __cdecl UhcSelectFattened() {
+  static bool reached = false;
+  const char* game = Game();
+  char* selection = game == nullptr || World(game) == nullptr ? nullptr : kSelectionOfGame(game);
+  if (selection == nullptr) {
+    return;
+  }
+  std::vector<const char*> units;
+  Collect(game, &units);
+  const std::int32_t cap = SelectionCap();
+  if (!reached) {
+    reached = true;
+    uhc::Log(L"hook reached: selectFattened uhcSelectFattened (player %d: %u fattened)",
+             Field<std::int32_t>(game, 0x3C0), static_cast<unsigned>(units.size()));
+  }
+  if (units.empty()) {
+    LogLine(L"selectFattened: no fattened herdable; the selection is left as it was");
+    return;
+  }
+  const char* camera = Field<const char*>(game, 0x148);
+  const auto found = static_cast<std::int32_t>(units.size());
+  if (found > cap) {
+    std::vector<std::pair<float, const char*>> byDistance;
+    byDistance.reserve(units.size());
+    for (const char* unit : units) {
+      byDistance.emplace_back(AxisDistance2(camera, unit), unit);
+    }
+    std::stable_sort(byDistance.begin(), byDistance.end(),
+                     [](const auto& a, const auto& b) { return a.first < b.first; });
+    units.clear();
+    for (std::int32_t i = 0; i < cap; ++i) {
+      units.push_back(byDistance[static_cast<std::size_t>(i)].second);
+    }
+    LogLine(L"selectFattened: over the limit: the farthest kept is %.1f m from the screen centre's line, the nearest "
+            L"left out %.1f m",
+            std::sqrt(static_cast<double>(byDistance[static_cast<std::size_t>(cap) - 1].first)),
+            std::sqrt(static_cast<double>(byDistance[static_cast<std::size_t>(cap)].first)));
+  }
+  const void* addSlot = Field<const void* const*>(selection, 0)[1];
+  if (addSlot != reinterpret_cast<const void*>(kSelectionAdd)) {
+    static bool warned = false;
+    if (!warned) {
+      warned = true;
+      uhc::Log(L"selectFattened: the selection's add is 0x%08X, not the stock 0x%08X; nothing selected",
+               reinterpret_cast<std::uint32_t>(addSlot), kSelectionAdd);
+    }
+    return;
+  }
+  kSelectionClear(selection, 0);
+  const auto add = reinterpret_cast<SelectionAddFn>(addSlot);
+  for (const char* unit : units) {
+    const UnitHandle handle{kHandleVtable, 0, Field<std::int32_t>(unit, 0x10)};
+    add(selection, &handle);
+  }
+  if (g_log && g_logLines < kMaxLogLines) {
+    const float* eye = camera == nullptr ? nullptr : reinterpret_cast<const float*>(camera + 0x04);
+    const float* forward = camera == nullptr ? nullptr : reinterpret_cast<const float*>(camera + 0x10);
+    LogLine(L"selectFattened: player %d, %d fattened, %u selected (limit %d), selection now %d; camera (%.1f, %.1f, "
+            L"%.1f) looking (%.2f, %.2f, %.2f)",
+            Field<std::int32_t>(game, 0x3C0), found, static_cast<unsigned>(units.size()), cap,
+            Field<std::int32_t>(selection, 0x08), eye ? eye[0] : 0.0f, eye ? eye[1] : 0.0f, eye ? eye[2] : 0.0f,
+            forward ? forward[0] : 0.0f, forward ? forward[1] : 0.0f, forward ? forward[2] : 0.0f);
+  }
+}
+
+// {uhcFattened}: the last count, as text.
+bool __stdcall FattenedRef(uhc::DataRefValue* value) {
+  if (value == nullptr || value->type != uhc::kDataRefString) {
+    return false;
+  }
+  const char* world = World(Game());
+  if (world == nullptr || world != g_world || g_count < 0) {
+    return false;
+  }
+  wchar_t text[16];
+  swprintf_s(text, L"%d", g_count);
+  const BString source{text};
+  kBStringAssign(&value->text, &source, -1, -1);
+  return true;
+}
+
+std::int32_t Resolve(Slot& slot) {
+  if (slot.handle != 0 && uhc::ui::Gadget(slot.handle, uhc::ui::kAnyGadget) != nullptr) {
+    return slot.handle;
+  }
+  const DWORD now = GetTickCount();
+  if (slot.looked && slot.handle == 0 && now - slot.lastLookup < kRetryMs) {
+    return 0;
+  }
+  slot.looked = true;
+  slot.lastLookup = now;
+  slot.handle = uhc::ui::FindAnywhere(slot.name.c_str());
+  if (slot.handle == 0 && !slot.missingLogged) {
+    slot.missingLogged = true;
+    LogLine(L"selectFattened: no gadget named %hs yet (looked up again every 2 s)", slot.name.c_str());
+  } else if (slot.handle != 0) {
+    slot.missingLogged = false;
+    LogLine(L"selectFattened: gadget %hs found", slot.name.c_str());
+  }
+  return slot.handle;
+}
+
+void ApplyGadgets() {
+  const char* world = World(Game());
+  if (world == nullptr || world != g_world || g_count < 0 || uhc::ui::Manager() == nullptr) {
+    return;
+  }
+  const bool visible = g_count > 0;
+  for (Slot& slot : g_slots) {
+    const std::int32_t handle = Resolve(slot);
+    if (handle != 0 && uhc::ui::ShownState(handle) != (visible ? 1 : 0)) {
+      uhc::ui::Show(handle, visible);
+    }
+  }
+}
+
+void BeforePresent() { ApplyGadgets(); }
+
+void Tick(char* world, std::int32_t deltaMs) {
+  const char* game = Game();
+  if (game == nullptr || world == nullptr) {
+    return;
+  }
+  const std::int32_t player = Field<std::int32_t>(game, 0x3C0);
+  const bool fresh = world != g_world || player != g_player;
+  g_elapsed += deltaMs;
+  if (!fresh && g_elapsed < kTickMs) {
+    return;
+  }
+  g_elapsed = 0;
+  g_world = world;
+  g_player = player;
+  LARGE_INTEGER t0{}, t1{};
+  if (g_log) {
+    QueryPerformanceCounter(&t0);
+  }
+  std::vector<const char*> units;
+  Collect(game, &units);
+  const auto count = static_cast<std::int32_t>(units.size());
+  if (g_log) {  // the count's cost, logged every 600 counts (a minute of game time)
+    static LARGE_INTEGER frequency{};
+    static double total = 0.0, worst = 0.0;
+    static int counts = 0;
+    QueryPerformanceCounter(&t1);
+    if (frequency.QuadPart == 0) {
+      QueryPerformanceFrequency(&frequency);
+    }
+    const double us = static_cast<double>(t1.QuadPart - t0.QuadPart) * 1e6 / static_cast<double>(frequency.QuadPart);
+    total += us;
+    worst = us > worst ? us : worst;
+    if (++counts == 600) {
+      const char* p = kPlayerById(world, player);
+      LogLine(L"selectFattened: count over %d units: %.1f us on average, %.1f us at most (600 counts)",
+              p == nullptr ? 0 : Field<std::int32_t>(p, 0xFC), total / counts, worst);
+      total = worst = 0.0;
+      counts = 0;
+    }
+  }
+  if (count != g_count) {
+    static bool first = true;
+    if (first) {
+      first = false;
+      uhc::Log(L"selectFattened: first count (player %d: %d fattened)", player, count);
+    }
+    LogLine(L"selectFattened: player %d has %d fattened herdable(s)", player, count);
+    g_count = count;
+  }
+  if (!g_present) {
+    ApplyGadgets();
+  }
+}
+
+}  // namespace
+
+namespace uhc {
+
+Outcome ApplySelectFattened(const Config& config) {
+  const Config::Args* args = config.First("selectFattened");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (std::size_t i = 0; i < args->size(); ++i) {
+    const std::string& arg = (*args)[i];
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else if (_stricmp(arg.c_str(), "gadget") == 0 && i + 1 < args->size()) {
+      Slot slot;
+      slot.name = (*args)[++i];
+      g_slots.push_back(slot);
+    } else {
+      Log(L"selectFattened: bad argument %hs (expected [gadget <name>]... [log]); not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (g_slots.empty()) {
+    Slot slot;
+    slot.name = "uhcFattened";
+    g_slots.push_back(slot);
+  }
+  if (!ui::VerifyUiGadgets("selectFattened") || !ui::VerifyUiShow("selectFattened") ||
+      !VerifyAll("selectFattened", {&sites::kSelectionOfGame, &sites::kSelectionClear, &sites::kFindAllOfTypeLoop,
+                                    &sites::kSelectionAdd, &sites::kSelectionAddCapped, &sites::kUnitById, &sites::kPlayerById, &sites::kIsAbstractIndex,
+                                    &sites::kInventoryIsFull, &sites::kBStringAssign, &sites::kUiFindAnywhere})) {
+    return Outcome::kFailed;
+  }
+  if (!InstallSyscallHooks("selectFattened")) {
+    return Outcome::kFailed;
+  }
+  SyscallDef def;
+  def.group = SyscallGroup::kUi;
+  def.retType = kSyscallVoid;
+  def.name = "uhcSelectFattened";
+  def.fn = reinterpret_cast<const void*>(&UhcSelectFattened);
+  def.comment = "Selects the local player's herdables that are fully fattened.";
+  def.source = "selectFattened";
+  AddSyscall(std::move(def));
+  if (!AddDataRef(L"uhcFattened", kDataRefString, &FattenedRef) || !AddWorldTick(&Tick)) {
+    return Outcome::kFailed;
+  }
+  g_present = AddD3D9Observer({nullptr, nullptr, &BeforePresent, nullptr}, "selectFattened");
+  std::string names;
+  for (const Slot& slot : g_slots) {
+    names += (names.empty() ? "" : ", ") + slot.name;
+  }
+  Log(L"selectFattened: UI syscall uhcSelectFattened() and {uhcFattened} added; gadget(s) %hs shown while the "
+      L"local player has a fattened herdable%ls%ls (interface only)",
+      names.c_str(), g_present ? L"" : L" (set from the world update: no Present observer)",
+      g_log ? L"; presses and counts logged" : L"");
+  return Outcome::kApplied;
+}
 
 }  // namespace uhc
 ```
