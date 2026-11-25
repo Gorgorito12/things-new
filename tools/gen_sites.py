@@ -1697,6 +1697,18 @@ SITES = [
     # rendererOption: the int setter 0x518AE0; its failure return pop edi / xor al,al / pop esi / ret 8 at 0x518B26
     # (out of range from 0x518AEB, wrong type from 0x518B15; nothing lands inside it) is replaced by the hook.
     ("OptionIntSetter", 0x518AE0, 0x4D),
+    # menuOptions (live options): the entry flag test 0xA41707, thiscall(settings, id, mask) -> al, ret 8; the options
+    # screen asks it with mask 40h during a match (0x78BF24, 0x78C10E, 0x78C458, 0x78D7F2; 0x8003C9 loops below the
+    # count). Its out-of-range return xor al,al / ret 8 at 0xA41710 is reached only by falling through the jb at
+    # 0xA4170E, and the hook replaces it.
+    ("OptionFlagTest", 0xA41707, 0x24),
+    # menuOptions (CheckBox fields): the bool getter 0x402CE9, which the CheckBox builder calls (0x78BEED); its
+    # out-of-range return xor al,al / ret 8 at 0x6B77B6 is reached only from the jae at 0x402CF2. The bool setter
+    # 0x518C7C, which Apply calls for a type-5 option (0x78D15B); its failure return pop edi / xor al,al / pop esi /
+    # ret 8 at 0x518CC2 (from 0x518C87 and 0x518CB1 only) is replaced, as the int setter's.
+    ("OptionBoolGetter", 0x402CE9, 0x3A),
+    ("OptionBoolGetRange", 0x6B77B6, 5),
+    ("OptionBoolSetter", 0x518C7C, 0x4B),
     # stealthTargeting: the head of 0x489ECC, int thiscall(tactic, attacker, target, ...), ret 1Ch, which picks
     # the attack action a unit would use on a target (-1: none). push ecx / push ebx / push ebp /
     # mov ebp,[esp+10h] (7 bytes, nothing branches inside) is replaced; the hook goes on at push esi (0x489ED3).
