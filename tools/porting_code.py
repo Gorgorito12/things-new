@@ -51,6 +51,10 @@ PAGES = {
         "Floating bars": ["src/floatingbars.h", "src/floatingbars.cpp", "src/hooks/floatingbars_hooks.asm"],
         "UI gadgets": ["src/uigadgets.h", "src/uigadgets.cpp"],
         "Progress pie": ["src/progresspie.h", "src/progresspie.cpp"],
+        "Stat panel rows (the normal interface)": ["src/statpanelrows.h", "src/statpanelrows.cpp",
+                                                  "src/hooks/statpanelrows_hooks.asm"],
+        "Garrison entries": ["src/garrisonobservers.h", "src/garrisonobservers.cpp",
+                             "src/hooks/garrisonobs_hooks.asm"],
     }),
     "game-files": ("Game files", {
         "bufferedFileReads": ["src/features/fileio.cpp"],
@@ -121,7 +125,7 @@ PAGES = {
         "cratePriority": ["src/features/cratepriority.cpp"],
         "autoGatherScaleByContained": ["src/features/gatherscale.cpp", "src/autogatherrate.h", "src/autogatherrate.cpp",
                                        "src/hooks/autogatherrate_hooks.asm"],
-        "nurseryFactor": ["src/features/nurseryfactor.cpp"],
+        "nurseryFactor": ["src/features/nurseryfactor.cpp", "src/hooks/nurserycmd_hooks.asm"],
         "unitResourceAuras": ["src/features/unitresource.cpp", "src/hooks/unitresource_hooks.asm"],
         "linkedResource": ["src/features/linkedresource.cpp", "src/hooks/linkedresource_hooks.asm"],
         "resourceGatherAuras": ["src/features/gatherauras.cpp", "src/hooks/gatherauras_hooks.asm"],
@@ -203,6 +207,7 @@ HELPER_OF = {
     "savedmarkers.h": "state-kept-for-a-saved-game", "researchpay.h": "research-payment",
     "canresearch.h": "can-research-test", "techrollover.h": "tech-rollover",
     "rofreads.h": "rof-reads", "floatingbars.h": "floating-bars", "progresspie.h": "progress-pie",
+    "statpanelrows.h": "stat-panel-rows-the-normal-interface", "garrisonobservers.h": "garrison-entries",
 }
 LANG = {".cpp": "cpp", ".h": "cpp", ".asm": "asm", ".inc": "asm"}
 

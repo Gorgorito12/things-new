@@ -1,0 +1,81 @@
+Reply to JTMaston, round of 2026-11-26: "Nursery mechanic" (#107), the second version
+=====================================================================================
+
+Thank you for the answers. The second version of nurseryFactor follows them; every point below was tested in single
+player in a copy of WoL, with a Bank given test tags (0.5 gold per mink, exponential growth with base 2, one step
+every 8 s, the default max of 10). GIFs: nurseryFactor-wol (growth, the progress pie, goats sent in),
+nurseryFactor-commands-wol (the two buttons), nurseryFactor-wol-control (key off), and the shipment one from last time.
+Panel pictures: 1-minimized-panel-pie, 2-minimized-panel-rollover, 3-normal-stat-panel-pie,
+4-normal-stat-panel-rollover, 5-button-greyed-1 and -2.
+
+
+What changed, answer by answer
+------------------------------
+1. Exponential: step t (t = 0, 1, 2...) adds b^t, with b set in the proto:
+
+       <NurseryFactorGrowth>exponential</NurseryFactorGrowth>
+       <NurseryFactorGrowthBase>2</NurseryFactorGrowthBase>     (default 2)
+
+   With b = 2 the Bank went 1, 3, 7, then 10 (15 cut at the max). The factor stays a whole number; the fraction of a
+   step (b = 1.5 gives 1, 1.5, 2.25...) is carried to the next one, so b = 1.5 adds 1, 1, 2, 4, 5... A tech can change
+   b too: subtype NurseryFactorGrowthBase. The old NurseryFactorGrowthRate tag is gone.
+2. As before: the shipment sums all the player's nurseries, and consume='all' empties them all.
+3. and 4. The command buttons (below): units bought with the factor appear at the nursery; units from a card still at
+   the home city gather point.
+5. A captured nursery keeps its factor (and a transform into another nursery keeps it too, no longer cut).
+6. As before: a tech hits all the player's nurseries of that unit.
+7. A lowered max no longer cuts anything. A nursery above it keeps the extra until it spends it; it just does not grow,
+   and nothing adds to it, while it is above. Tested: 10 minks, max lowered to 5, the Bank kept 10; a -2 tech left it
+   at 8 of 5.
+8. NurseryFactorMax is optional now, default 10. Any NurseryFactor tag makes the unit a nursery.
+9. The panel shows just "3/10 minks" (your NurseryFactorName), in both the minimized and the full interface, and while
+   the nursery grows the portrait shows the train button's blue pie filling up toward the next step (agent P's shared
+   pie). At the max, no pie. The rollover still has your two lines.
+10. to 12. As before.
+
+
+The garrison tag
+----------------
+    <NurseryFactorGarrisonUnit amount="3">ypGoat</NurseryFactorGarrisonUnit>
+
+A unit of that unit or unit type that enters the nursery is removed at once (no death, no corpse) and adds the amount.
+You can put several of these tags; the first that matches is used. The nursery also needs the normal garrison tags
+for that unit (<MaxContained> and a <Contain>). In the test, two goats sent into the Bank were taken: 3 -> 6 -> 9 minks.
+
+
+The command buttons
+-------------------
+    <NurseryFactorCommand factor="-4" unit="CrateofCoin" count="2">SellMinks</NurseryFactorCommand>
+    <NurseryFactorCommand factor="3" cost="Wood 100, Food 50">BuyMinks</NurseryFactorCommand>
+
+Each is a button, like the market's buy and sell buttons. factor is what it adds (negative: what it spends), cost is
+what it costs (resource names as in the techtree), unit and count are the units it makes at the nursery. Any of them
+can be left out, so one button can do both (pay resources and spend factor for units, for example).
+
+The button itself is a normal command: its name in data\uhc\customprotounitcommands.xml, an entry in
+protounitcommands.xml whose command is nurseryFactorCommand("SellMinks") (with your icon and rollover), and a
+<Command> on the nursery. Each selected nursery of the player with that command runs it.
+
+In the test: Sell took 4 minks and put 2 crates of coin beside the Bank (10 -> 6); Buy paid 100 wood and 50 food for 3
+(6 -> 9). When no selected nursery can do it, the button is greyed and its rollover says why in red: "2/10 minks: 4
+needed", "10/10 minks: full", or "Not enough resources".
+
+The commands travel through the game's own network command, so every player's game runs them the same way and saved
+games keep the result. (Single player tested only.)
+
+
+Questions
+---------
+1. t, the exponent: we set it back to 0 only when a nursery is emptied (a shipment with consume='all', or a sale down
+   to 0). A nursery sold down to 2 keeps its t, so with b = 2 its next step can fill it at once (the test: +8, then
+   +16, both cut at 10). Should t go back to 0 on any sale or shipment instead, or follow the factor (the t a nursery
+   would have reached at that many minks)?
+2. A unit sent into a full nursery: we leave it inside as a normal garrison, instead of taking it for nothing. When
+   there is room for only part of its amount (9 of 10, a goat worth 3), it is taken and the factor stops at 10. Right?
+3. The units a button makes ignore the population cap, and a button with no room around the nursery for all its units
+   does nothing. Should they respect the population cap?
+4. The panel: "3/10 minks" as one text (the game's own rows are "Label: value", e.g. "Minks: 3/10"). Is that the look
+   you want?
+5. The second rollover line ("Produces ... every ... seconds") still shows when the nursery is full. Hide it then?
+6. An ally's goat that enters your nursery counts too (today any unit that matches counts, whoever owns it). Should
+   only the owner's units count?

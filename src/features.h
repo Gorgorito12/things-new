@@ -355,6 +355,7 @@ inline constexpr Feature kFeatures[] = {
     {"incomeRates", ApplyIncomeRates},
     // After autoGatherScaleByContained: its filter of the shared AutoGather rate getter (autogatherrate.h) is asked
     // after that key's; the owner's trickle it multiplies reaches incomeRates through the add that key counts.
+    // After overhealHitpointBars too: its row of the shared stat panel hook (statpanelrows.h) comes after that key's.
     {"nurseryFactor", ApplyNurseryFactor},
     {"auraStacking", ApplyAuraStacking},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which

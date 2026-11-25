@@ -748,7 +748,7 @@ END
 
 Contract: [overhealHitpointBars](../porting-to-another-dll.md#overhealhitpointbars).
 
-Besides the core helpers, it needs: [`floatingbars.h`](helpers.md#floating-bars), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`floatingbars.h`](helpers.md#floating-bars), [`statpanelrows.h`](helpers.md#stat-panel-rows-the-normal-interface), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unitinfo.h`](helpers.md#unit-info-for-the-panels), [`unitpanel.h`](helpers.md#unit-panel-row-the-minimized-interface), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
 Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BStringFromWide` `0x401A12` (40 B), `GadgetRelease` `0x40431B` (44 B), `ProgressGadget` `0x44B8B8` (35 B), `IsA` `0x44D7FA` (105 B), `IsATrue` `0x44F139` (5 B), `HealthRatio` `0x45F295` (72 B), `OverhealBarRatio` `0x45FAA7` (17 B), `MaxHitpointsGetter` `0x480408` (38 B), `OverhealGroupRatio` `0x4C5012` (15 B), `GadgetRef` `0x4C519C` (27 B), `OverhealPortraitTail` `0x4C82E6` (258 B), `OverhealStatMax` `0x4D7560` (81 B), `OverhealStatBase` `0x4D75DA` (69 B), `OverhealTextStat` `0x4D7647` (21 B), `OverhealStatRow` `0x4D76DB` (9 B), `BStringFromId` `0x58EA52` (25 B), `ProgressFill` `0x590772` (73 B), `InitialHitpointsTag` `0x5F5CE3` (6 B), `MaxHitpointsTag` `0x5F5D39` (6 B), `OverhealPanelMax` `0x698B18` (38 B), `OverhealPortraitColours` `0x69A614` (22 B), `OverhealTextStatSplit` `0x69A9B0` (27 B), `GroupHealthRow` `0x69A9D3` (316 B), `OverhealInfoProto` `0x9AF33B` (25 B), `OverhealInfoBase` `0x9AFA07` (45 B), `OverhealInfoMax` `0x9AFA34` (35 B), `HealthBarGadgets` `0x9BAEE5` (135 B).
 
@@ -825,6 +825,7 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringSet` `0x40196F` (36 B), `BString
 #include "../unitpanel.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../statpanelrows.h"
 #include "../unittypes.h"
 
 namespace {
@@ -997,7 +998,6 @@ void UhcOverhealInfoMaxHook();
 void UhcOverhealTextStatHook();
 void UhcOverhealTextStatSplitHook();
 void UhcOverhealPortraitHook();
-void UhcOverhealStatRowHook();
 float UhcOverhealReferenceOf(const char* unit);  // overheal_hooks.asm, cdecl; the max for an unmarked unit
 std::int32_t UhcOverhealMarked(const char* proto);
 
@@ -1383,8 +1383,8 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  // mov edi,2 / mov [esp+2Ch],edi: the row counter after the HP row.
-  if (g_statRow && !WriteJmp(0x004D76DB, reinterpret_cast<const void*>(&UhcOverhealStatRowHook), 9)) {
+  // The row after the HP row: the shared stat panel row hook (statpanelrows.h), first of its keys.
+  if (g_statRow && !AddStatPanelRow(&UhcOverhealStatRow, "overhealHitpointBars stat")) {
     return Outcome::kFailed;
   }
   if (g_statRow && !AddUnitPanelRow(&UhcOverhealUnitPanel)) {
@@ -1465,7 +1465,6 @@ EXTERNDEF g_uhcOverhealFmtSplit:WORD     ; '<color=r, g, b>%d/%d (%d+%d)</color>
 
 UhcOverhealLogReference PROTO STDCALL unit:DWORD, reference:DWORD, maxHp:DWORD
 UhcOverhealPortrait PROTO STDCALL panel:DWORD, selGroup:DWORD
-UhcOverhealStatRow PROTO STDCALL panel:DWORD, unit:DWORD, row:DWORD
 
 
 .data
@@ -1483,7 +1482,6 @@ textStatNext    dd 004D7656h    ; push eax / call 444EFBh: the stat row's '%d/%d
 textStatSplitNext dd 0069A9C5h  ; push ecx / call 444EFBh: the stat row's '%d/%d (%d+%d)'
 bstringFree     dd 004010CAh    ; void thiscall(BString*): the free 0x4C83E3 calls
 portraitNext    dd 004C83E8h    ; mov ecx,[esp+1C4h] / call 4C83F6h: after the portrait bar
-statRowNext     dd 004D76E4h    ; mov edx,[0CF059Ch]: the rows after the HP row
 
 .code
 
@@ -1729,29 +1727,6 @@ UhcOverhealPortraitHook PROC
     jmp portraitNext
 UhcOverhealPortraitHook ENDP
 
-; Replaces mov edi,2 / mov [esp+2Ch],edi (9 bytes) at 0x4D76DB, the stat panel fill right after
-; the HP row: EDI and [esp+2Ch] are the next free row (the Group Health branch 0x69A9D3 writes row
-; EDI, then adds 1 to both). UhcOverhealStatRow writes the overheal row there for a marked unit
-; ([esp+38h], the panel [esp+50h]); when it did, the row is counted the same way. EAX, ECX, EDX
-; and the flags are dead at 0x4D76E4 (mov edx,[0CF059Ch] / mov eax,[edx] / ... / mov ecx,0C66500h).
-UhcOverhealStatRowHook PROC
-    TRACE_ONCE "overhealHitpointBars stat row (0x4D76DB)"
-    mov edi, 2                      ; stolen 0x4D76DB
-    mov dword ptr [esp+2Ch], edi    ; stolen 0x4D76E0
-    pushad
-    push edi                        ; row
-    push dword ptr [esp+24h+38h]    ; unit
-    push dword ptr [esp+28h+50h]    ; panel
-    call UhcOverhealStatRow
-    mov dword ptr [esp+1Ch], eax    ; the pushad slot of EAX: the result survives popad
-    popad
-    test al, al
-    jz done
-    add edi, 1
-    mov dword ptr [esp+2Ch], edi
-done:
-    jmp statRowNext
-UhcOverhealStatRowHook ENDP
 
 ; Public forms of the reference helpers for the other overheal keys (overhealSources,
 ; overhealDecay), cdecl so the C++ side can call them: the same definition, not a copy.

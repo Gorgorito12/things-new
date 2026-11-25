@@ -60,8 +60,9 @@
 // the building, as killSpawn places its animals). Each test that fails leaves everything as it was.
 //
 // Display only: the unit panel row (unitpanel.h, the minimized interface) and the stat panel row (statpanelrows.h, the
-// normal one) "3/10 minks" with the rollover as their help text, and the data ref {uhcNurseryFactor} (the first
-// selected unit's "3/10 minks").
+// normal one) "3/10 minks" with the rollover as their help text, the portrait's progress pie toward the next step
+// (progresspie.h), the command buttons greyed with their reason (panelbuttons.h), and the data ref {uhcNurseryFactor}
+// (the first selected unit's "3/10 minks").
 #include <windows.h>
 
 #include <algorithm>
@@ -85,6 +86,7 @@
 #include "../log.h"
 #include "../panelbuttons.h"
 #include "../patch.h"
+#include "../progresspie.h"
 #include "../prototags.h"
 #include "../savedmarkers.h"
 #include "../statpanelrows.h"
@@ -1637,6 +1639,17 @@ void NurseryButton(const uhc::PanelButton& button) {
   kAppend(button.Rollover(), line.c_str(), -1, -1);
 }
 
+// The portrait's progress pie (progresspie.h): the share of the interval done towards the next step, while the unit
+// grows (built, under its cap, with an interval); none at the cap.
+bool __stdcall NurseryPie(const char* unit, float* fraction, std::uint32_t*) {
+  Shown shown;
+  if (!ShownOf(unit, &shown) || !shown.built || shown.interval == 0 || shown.factor >= shown.cap) {
+    return false;
+  }
+  *fraction = static_cast<float>(shown.progress) / static_cast<float>(shown.interval);
+  return true;
+}
+
 // {uhcNurseryFactor}: the first selected unit's "3/10 minks", or nothing.
 bool __stdcall NurseryRef(uhc::DataRefValue* value) {
   if (value == nullptr || value->type != uhc::kDataRefString) {
@@ -1734,6 +1747,9 @@ Outcome ApplyNurseryFactor(const Config& config) {
   }
   if (!AddStatPanelRow(&NurseryStatRow, "nurseryFactor")) {
     Log(L"nurseryFactor: no row in the stat panel");
+  }
+  if (!AddProgressPieSource(&NurseryPie)) {
+    Log(L"nurseryFactor: no progress pie on the portrait");
   }
   if (!AddDataRef(L"uhcNurseryFactor", kDataRefString, &NurseryRef)) {
     Log(L"nurseryFactor: no data ref {uhcNurseryFactor}");
