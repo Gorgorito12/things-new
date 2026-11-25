@@ -132,6 +132,7 @@ set(UHC_SOURCES
   src/features/techgadgets.cpp
   src/features/incomerates.cpp
   src/features/nurseryfactor.cpp
+  src/features/garrisonconvert.cpp
   src/features/sharedlimit.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp

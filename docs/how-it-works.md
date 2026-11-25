@@ -171,6 +171,8 @@ The hooks are MASM files in `src/hooks/`.
   - `killobservers.*`, `AddKillObserver`: the killing blow, with the attacker (TakeDamage's kill path 0x4D4F37);
   - `transformcalls.*`, `AddTransformObserver`: the seven calls of the in-place transform 0x9C754C (a key's own
     transform calls `TransformUnit`);
+  - `garrisonobservers.*`, `AddGarrisonObserver`: each unit that enters another (the success tail 0x9C26E1 of the load
+    0x9C24B5); an observer only queues, and acts after the world update;
   - `researchpay.*`, `AddResearchPayer` and `AddResearchRefundObserver`: the payment of a research (0x9E67E1,
     0x9D54CF), the copies of its cost for a refund (0x9E68A0, 0x9D5548) and the refund of a cancel (0x9E6167, 0x9D56B5);
   - `canresearch.*`, `AddCanResearchFilter`: the can-research test's head (0x4C6968);
@@ -4018,6 +4020,43 @@ shipment read the table; the shipment's take writes the table only, the tick wri
 table is keyed by unit ID, the copy map by pointer is only looked up, the time is game time, the order is the table's.
 The display reads only. Cost: per update, 256 slot reads and one marker walk per unit with a factor; per AutoGather
 rate call, one C call and a byte lookup for a proto without a factor.
+
+### garrisonConvert
+
+`src/features/garrisonconvert.cpp`; the shared `garrisonobservers.*` (new with this key), `transformcalls.*`,
+`prototags.*`, `worldtick.*` and `savedmarkers.h`.
+
+- **Where a unit enters another:** FUN_009C24B5, `bool __thiscall(container, int unitId, int flag)`, `ret 8`, the load
+  every way in goes through (eleven direct callers: the garrison and load actions, the triggers, the random map
+  placement, the scenario load). It refuses a unit already inside one (`[unit+6Ch]` ≠ −1), a dead one, a full container
+  (`[c+74h]` against the proto's maximum, 0x49EB5A) or one whose rules refuse it (0x4C2EC8); on success it writes
+  `[unit+6Ch]` = the container's ID (0x9C25C2), appends the unit's ID to the list `[c+70h]` (0x401F74 at 0x9C26DC) and
+  returns 1 at 0x9C2701. The shared hook replaces the 7 bytes at 0x9C26E1 (`mov edi,[edi+58h]` / `test` / `je`), after
+  the append, with EDI = the container and ESI = the unit; it calls each observer, replays the three instructions and
+  jumps to 0x9C26E8 or 0x9C26FF. The function's head is verified too, so a detour of it fails the key instead of
+  leaving the hook unreached. Unload: 0x9C68C3.
+- **Tag** (`AddProtoTagHandler`): `<GarrisonConvertTo delay="S">Name</GarrisonConvertTo>`, by proto ID: the name, kept
+  as text and resolved (0x5A2346) against each database once, and the delay in ms (0 to 3600 s; a bad one is 0). A
+  second tag on the same proto replaces the first, with a log line.
+- **The entries** (`AddGarrisonObserver`): the observer runs inside the load, so it only adds the container's ID to a
+  set (in ID order) when its proto has the tag. The conversions run after the world update (`AddWorldTick`).
+- **The queue is the container's own list** `[c+70h]`, which is in entry order: the units of it that are still inside
+  (`[unit+6Ch]` = the container), alive, of the container's owner and not already of the target proto. Nothing else
+  is kept, so a unit that leaves drops out by itself, and a captured building converts its new owner's units.
+- **No delay:** each unit of the queue goes through `TransformUnit` (0x9C754C with the transform observers around it),
+  the container leaves the set.
+- **With a delay:** the game time `[world+108h]` since the last tick is added to the container's timer; each full delay
+  converts the first unit of the queue, and the rest carries over to the next one. When the unit in progress leaves
+  before its turn, the next starts from 0. An empty queue clears the timer and the container leaves the set. The timer,
+  the unit in progress and the game time of the write are words 1 to 3 of a saved marker on the container
+  (`savedmarkers.h`, stat 6Ch, word 0 `GCNV`), written each tick.
+- **A game that starts or loads** (another world, the time going back or the step count jumping, as `nurseryFactor`):
+  one walk of the world's unit table puts back every container of a tagged proto with units inside, with the timer of
+  its marker plus the game time since the marker's write (the update the save was made in).
+- **The transform in place** keeps the unit's ID, owner, container and share of hit points, and changes its
+  population to the new proto's (the stock `TransformUnit` effect does the same).
+- **Panels:** `GarrisonConvertProgress(building, &fraction, &waiting)` (`features.h`) gives the progress of the unit in
+  progress and the number of units that qualify.
 
 ### containedUnitsROF
 

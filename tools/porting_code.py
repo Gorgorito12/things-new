@@ -168,6 +168,8 @@ PAGES = {
         "transformUpdatesLOS": ["src/features/transform.cpp", "src/hooks/transform_hooks.asm"],
         "transformSpan": ["src/features/transformspan.cpp"],
         "transformInventory": ["src/features/transforminv.cpp", "src/hooks/transforminv_hooks.asm"],
+        "garrisonConvert": ["src/features/garrisonconvert.cpp", "src/garrisonobservers.h", "src/garrisonobservers.cpp",
+                            "src/hooks/garrisonobs_hooks.asm"],
     }),
     "interface": ("Interface", {
         "abilitySlots": ["src/features/abilityslots.cpp", "src/hooks/abilityslot_hooks.asm"],
