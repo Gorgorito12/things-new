@@ -23,6 +23,7 @@ set(UHC_SOURCES
   src/unittypes.cpp
   src/xmllist.cpp
   src/worldtick.cpp
+  src/autogatherrate.cpp
   src/panelbuttons.cpp
   src/researchpay.cpp
   src/canresearch.cpp
@@ -126,6 +127,7 @@ set(UHC_SOURCES
   src/features/faith.cpp
   src/features/techgadgets.cpp
   src/features/incomerates.cpp
+  src/features/nurseryfactor.cpp
   src/features/sharedlimit.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
@@ -246,7 +248,7 @@ set(UHC_SOURCES
   src/hooks/wonderpanel_hooks.asm
   src/hooks/workrate_hooks.asm
   src/hooks/workratetype_hooks.asm
-  src/hooks/gatherscale_hooks.asm
+  src/hooks/autogatherrate_hooks.asm
   src/hooks/containedrof_hooks.asm
   src/hooks/rofreads_hooks.asm
   src/hooks/floatingbars_hooks.asm

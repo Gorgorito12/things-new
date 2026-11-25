@@ -29,11 +29,14 @@ using GadgetTextFn = void(__thiscall*)(void* gadget, const BString* text);
 using GadgetUpdateFn = void(__thiscall*)(void* gadget);
 using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
 using BStringFreeFn = void(__thiscall*)(BString* self);
+using BStringSetFn = void(__thiscall*)(BString* self, const BString* source);
 using CurrentSelectionFn = const char*(__cdecl*)();  // reads globals only; the stock callers' ECX is unused
 const auto kGadgetRef = reinterpret_cast<GadgetRefFn>(0x004C519C);
 const auto kGadgetRelease = reinterpret_cast<GadgetReleaseFn>(0x0040431B);
 const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
 const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+const auto kBStringSet = reinterpret_cast<BStringSetFn>(0x0040196F);
+constexpr std::uint32_t kGadgetTip = 0x68;  // a gadget's help text, a BString, shown on hover
 const auto kCurrentSelection = reinterpret_cast<CurrentSelectionFn>(0x00453B28);
 
 template <typename T>
@@ -66,6 +69,20 @@ void SetGadget(void* gadget, std::uint32_t style, const wchar_t* text) {
   kBStringFree(&value);
 }
 
+// The help text of both row gadgets. A row that set one has it cleared before the next refresh's rows, so the stock
+// AutoGather row and the other keys' rows never show it.
+void SetTips(const char* panel, const wchar_t* text) {
+  BString tip{nullptr};
+  kBStringFromWide(&tip, text);
+  for (const std::uint32_t field : {kPanelRateLabel, kPanelRateValue}) {
+    if (void* gadget = PanelGadget(panel, field)) {
+      kBStringSet(reinterpret_cast<BString*>(static_cast<char*>(gadget) + kGadgetTip), &tip);
+    }
+  }
+  kBStringFree(&tip);
+}
+bool g_tipSet = false;
+
 uhc::UnitPanelRow g_rows[kMaxRows] = {};
 std::size_t g_rowCount = 0;
 uhc::UnitPanelGroupRow g_groupRow = nullptr;
@@ -97,6 +114,10 @@ void __stdcall UhcUnitPanelRows(const char* panel, const char* unit) {
   if (panel == nullptr || unit == nullptr) {
     return;
   }
+  if (g_tipSet) {
+    SetTips(panel, L"");
+    g_tipSet = false;
+  }
   const char* selection = kCurrentSelection();
   if (selection == nullptr || Field<std::uint8_t>(selection, 0x21) != 0) {
     return;
@@ -125,6 +146,15 @@ bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* val
   }
   SetGadget(labelGadget, kLabelStyle, label);
   SetGadget(valueGadget, kValueStyle, value);
+  return true;
+}
+
+bool SetUnitPanelRowTip(const char* panel, const wchar_t* tip) {
+  if (PanelGadget(panel, kPanelRateLabel) == nullptr || PanelGadget(panel, kPanelRateValue) == nullptr) {
+    return false;
+  }
+  SetTips(panel, tip);
+  g_tipSet = true;
   return true;
 }
 

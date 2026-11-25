@@ -3379,6 +3379,7 @@ Outcome ApplyFaithResource(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 Outcome ApplyTechGadgets(const Config& config);
 Outcome ApplyIncomeRates(const Config& config);
+Outcome ApplyNurseryFactor(const Config& config);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
 // which of the keys it names the list then sees.
@@ -3551,6 +3552,9 @@ inline constexpr Feature kFeatures[] = {
     // After resourceDebt, linkedResource, unitResourceAuras and pillageGold, which verify the stock bytes of the add
     // 0x49A98A whose head this key writes.
     {"incomeRates", ApplyIncomeRates},
+    // After autoGatherScaleByContained: its filter of the shared AutoGather rate getter (autogatherrate.h) is asked
+    // after that key's; the owner's trickle it multiplies reaches incomeRates through the add that key counts.
+    {"nurseryFactor", ApplyNurseryFactor},
     {"auraStacking", ApplyAuraStacking},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
@@ -3593,7 +3597,7 @@ inline constexpr const char* kHandledKeys[] = {
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
-    "techgadgets", "incomerates",
+    "techgadgets", "incomerates", "nurseryfactor",
 };
 
 }  // namespace uhc
@@ -6029,6 +6033,10 @@ using UnitPanelRow = bool(__stdcall*)(const char* panel, const char* unit);
 // The row's text, in the style of the stock AutoGather row; false if this interface has no such gadgets.
 bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* value);
 
+// The help text the row shows on hover (both gadgets), after SetUnitPanelRow; cleared again before the next
+// refresh's rows, so only the row that set it has it. False if this interface has no such gadgets.
+bool SetUnitPanelRowTip(const char* panel, const wchar_t* tip);
+
 // Writes the hook the first time (after checking the site's stock bytes) and adds row.
 bool AddUnitPanelRow(UnitPanelRow row);
 
@@ -6081,11 +6089,14 @@ using GadgetTextFn = void(__thiscall*)(void* gadget, const BString* text);
 using GadgetUpdateFn = void(__thiscall*)(void* gadget);
 using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
 using BStringFreeFn = void(__thiscall*)(BString* self);
+using BStringSetFn = void(__thiscall*)(BString* self, const BString* source);
 using CurrentSelectionFn = const char*(__cdecl*)();  // reads globals only; the stock callers' ECX is unused
 const auto kGadgetRef = reinterpret_cast<GadgetRefFn>(0x004C519C);
 const auto kGadgetRelease = reinterpret_cast<GadgetReleaseFn>(0x0040431B);
 const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
 const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+const auto kBStringSet = reinterpret_cast<BStringSetFn>(0x0040196F);
+constexpr std::uint32_t kGadgetTip = 0x68;  // a gadget's help text, a BString, shown on hover
 const auto kCurrentSelection = reinterpret_cast<CurrentSelectionFn>(0x00453B28);
 
 template <typename T>
@@ -6118,6 +6129,20 @@ void SetGadget(void* gadget, std::uint32_t style, const wchar_t* text) {
   kBStringFree(&value);
 }
 
+// The help text of both row gadgets. A row that set one has it cleared before the next refresh's rows, so the stock
+// AutoGather row and the other keys' rows never show it.
+void SetTips(const char* panel, const wchar_t* text) {
+  BString tip{nullptr};
+  kBStringFromWide(&tip, text);
+  for (const std::uint32_t field : {kPanelRateLabel, kPanelRateValue}) {
+    if (void* gadget = PanelGadget(panel, field)) {
+      kBStringSet(reinterpret_cast<BString*>(static_cast<char*>(gadget) + kGadgetTip), &tip);
+    }
+  }
+  kBStringFree(&tip);
+}
+bool g_tipSet = false;
+
 uhc::UnitPanelRow g_rows[kMaxRows] = {};
 std::size_t g_rowCount = 0;
 uhc::UnitPanelGroupRow g_groupRow = nullptr;
@@ -6149,6 +6174,10 @@ void __stdcall UhcUnitPanelRows(const char* panel, const char* unit) {
   if (panel == nullptr || unit == nullptr) {
     return;
   }
+  if (g_tipSet) {
+    SetTips(panel, L"");
+    g_tipSet = false;
+  }
   const char* selection = kCurrentSelection();
   if (selection == nullptr || Field<std::uint8_t>(selection, 0x21) != 0) {
     return;
@@ -6177,6 +6206,15 @@ bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* val
   }
   SetGadget(labelGadget, kLabelStyle, label);
   SetGadget(valueGadget, kValueStyle, value);
+  return true;
+}
+
+bool SetUnitPanelRowTip(const char* panel, const wchar_t* tip) {
+  if (PanelGadget(panel, kPanelRateLabel) == nullptr || PanelGadget(panel, kPanelRateValue) == nullptr) {
+    return false;
+  }
+  SetTips(panel, tip);
+  g_tipSet = true;
   return true;
 }
 
