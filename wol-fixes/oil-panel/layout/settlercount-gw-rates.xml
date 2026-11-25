@@ -660,10 +660,10 @@
 			
 			<gadget name="SettlerCountDialog-dance" type="formatText" transparent="" textcenterhoriz="" size1024="227 673 247 688" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numDancers}</gadget>
 	
-			<gadget name="minimapPanel-dance" type="formatText" mouseovertext="{danceDescription}" anchortooltiptopright="" size1024="283 673 335 688" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{danceQuickValue}</gadget>
+			<gadget name="minimapPanel-dance" type="formatText" mouseovertext="{danceDescription}" anchortooltiptopright="" size1024="278 673 335 688" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{danceQuickValue}</gadget>
 		
-		<gadget name="minimapPanel-fame" type="formatText" mouseovertext="$$1010114$$" anchortooltiptopright="" size1024="283 654 335 668" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
-		<gadget name="uhcIncome-fame" type="formatText" mouseovertext="$$1010114$$" anchortooltiptopright="" size1024="308 659 343 671" donthighlight="" datarefreshrate="100" textcolor="150 225 120" textfont="NumbersFont" textfontsize="9" textcentervert="" z="9" background="">+{uhcIncome(fame)}</gadget>
+		<gadget name="minimapPanel-fame" type="formatText" mouseovertext="$$1010114$$" anchortooltiptopright="" size1024="278 654 335 668" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
+		<gadget name="uhcIncome-fame" type="formatText" mouseovertext="$$1010114$$" anchortooltiptopright="" size1024="308 659 338 671" donthighlight="" datarefreshrate="100" textcolor="150 225 120" textfont="NumbersFont" textfontsize="9" textcentervert="" textjustifyright="" z="9" background="">+{uhcIncome(fame)}</gadget>
 		
 		<gadget name="SettlerCountDialog-fame" type="formatText" transparent="" textcenterhoriz="" size1024="227 655 247 669" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(fame)}</gadget>
 		<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="227 652 300 668" anchortooltiptopright="" mouseovertext="$$1010114$$" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
@@ -680,8 +680,8 @@
 	
 			<gadget name="SettlerCountDialog-food" type="formatText" transparent="" textcenterhoriz="" size1024="227 692 247 707" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(food)}</gadget>
 	
-			<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$1010111$$" anchortooltiptopright="" size1024="283 691 335 706" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
-			<gadget name="uhcIncome-food" type="formatText" mouseovertext="$$1010111$$" anchortooltiptopright="" size1024="308 696 343 709" donthighlight="" datarefreshrate="100" textcolor="150 225 120" textfont="NumbersFont" textfontsize="9" textcentervert="" z="9" background="">+{uhcIncome(food)}</gadget>
+			<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$1010111$$" anchortooltiptopright="" size1024="278 691 335 706" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+			<gadget name="uhcIncome-food" type="formatText" mouseovertext="$$1010111$$" anchortooltiptopright="" size1024="308 696 338 709" donthighlight="" datarefreshrate="100" textcolor="150 225 120" textfont="NumbersFont" textfontsize="9" textcentervert="" textjustifyright="" z="9" background="">+{uhcIncome(food)}</gadget>
 	
 			<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="226 711 277 727" mouseovertext="$$1010112$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
 				<command>uiFindResourceGatherers("wood")</command>
@@ -690,8 +690,8 @@
 	
 			<gadget name="SettlerCountDialog-wood" type="formatText" transparent="" textcenterhoriz="" size1024="227 711 247 726" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(wood)}</gadget>
 	
-			<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$1010112$$" anchortooltiptopright="" size1024="283 710 335 725" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
-			<gadget name="uhcIncome-wood" type="formatText" mouseovertext="$$1010112$$" anchortooltiptopright="" size1024="308 715 343 728" donthighlight="" datarefreshrate="100" textcolor="150 225 120" textfont="NumbersFont" textfontsize="9" textcentervert="" z="9" background="">+{uhcIncome(wood)}</gadget>
+			<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$1010112$$" anchortooltiptopright="" size1024="278 710 335 725" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+			<gadget name="uhcIncome-wood" type="formatText" mouseovertext="$$1010112$$" anchortooltiptopright="" size1024="308 715 338 728" donthighlight="" datarefreshrate="100" textcolor="150 225 120" textfont="NumbersFont" textfontsize="9" textcentervert="" textjustifyright="" z="9" background="">+{uhcIncome(wood)}</gadget>
 	
 			<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="227 730 277 747" mouseovertext="$$1010113$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
 				<command>uiFindResourceGatherers("gold")</command>
@@ -700,10 +700,10 @@
 	
 			<gadget name="SettlerCountDialog-gold" type="formatText" transparent="" textcenterhoriz="" size1024="227 730 247 746" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(gold)}</gadget>
 	
-			<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$1010113$$" anchortooltiptopright="" size1024="283 729 335 745" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
-			<gadget name="uhcIncome-gold" type="formatText" mouseovertext="$$1010113$$" anchortooltiptopright="" size1024="308 735 343 748" donthighlight="" datarefreshrate="100" textcolor="150 225 120" textfont="NumbersFont" textfontsize="9" textcentervert="" z="9" background="">+{uhcIncome(gold)}</gadget>
+			<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$1010113$$" anchortooltiptopright="" size1024="278 729 335 745" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+			<gadget name="uhcIncome-gold" type="formatText" mouseovertext="$$1010113$$" anchortooltiptopright="" size1024="308 735 338 748" donthighlight="" datarefreshrate="100" textcolor="150 225 120" textfont="NumbersFont" textfontsize="9" textcentervert="" textjustifyright="" z="9" background="">+{uhcIncome(gold)}</gadget>
 	
-			<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 749 332 765" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+			<gadget name="SettlerCountDialog-pop" type="formatText" size1024="278 749 332 765" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
 	
 			<gadget name="SettlerCountDialog-idleLabel" type="formatText" transparent="" size1024="227 749 247 765" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractVillager)}</gadget>
 	

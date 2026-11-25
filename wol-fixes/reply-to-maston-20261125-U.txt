@@ -21,7 +21,8 @@ line, so with the new DLL you get the capitals without changing anything.
 
 #105 "global gathering": more space between the income and the stock value
 --------------------------------------------------------------------------
-Status: the new layout is made and tested; it goes into the oil panel pack (apply_fix.py --rates) once approved.
+Done: the new layout is in the oil panel pack (apply_fix.py --rates; run --restore first if an older version is
+applied, then apply again).
 
 Where it overlapped: in the panels whose rows are too low for two lines (the 7-row Asian and Native panels with
 faith, default and advanced: 8 of the 24 panels with faith; your advanced Native panel: 1 of the 24 without), the
