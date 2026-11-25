@@ -296,7 +296,7 @@ ageFiveShipments              cards of <age>4</age> (Imperial Age) in the deck, 
 resendableCards [log]         <resendeveryage>1</resendeveryage> on a card: sendable again (its
                               maxcount) each time its player reaches a new age
 quickArrivalCards [stringid N] [log]  <Flag>QuickArrival</Flag> on a card's tech: the bullet line
-                              "This is a quick-arrival card." in the card's rollover
+                              "This is a QUICK-ARRIVAL card." in the card's rollover
 shipmentCounts [log]          cards shipped per player and card age, kept in saved games; Data
                               subtype FreeHomeCityUnitByShipmentCount, XS
                               xsGetShipmentCount and xsGetShipmentCountRange

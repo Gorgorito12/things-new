@@ -2104,7 +2104,7 @@ the tech's ID (`[[record]+0]`) in a table and takes the flag, which stock would 
 0x7108C3, 0x7108DB and the fall-through after the send-limit line, no push outstanding):
 `UhcQuickArrivalLine(out = [esp+44h], tech = [esp+4Ch], list = [esp+58h])`, then the replaced load and `jmp 0x71090F`.
 For a flagged tech it appends `<ttf><ttb>` and the text with the BString append 0x443960, as FUN_004C5076 does (a `\n`
-instead of the bullet in string mode). The text is *This is a quick-arrival card.*, or string N of the string table
+instead of the bullet in string mode). The text is *This is a QUICK-ARRIVAL card.*, or string N of the string table
 with `stringid N` (read at each rollover, so a language change follows; an empty string falls back to the English).
 So the line comes right after the send-limit line: after *This Card may be sent INFINITE times* for an infinite card,
 and between the card's rollover text (and its send limit) and the advanced info for the others.

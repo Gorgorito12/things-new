@@ -38,7 +38,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Monday 2026-11-23 09:18 | [`dmgPartBoneFix`](bug-fixes.md#dmgpartbonefix) | Added. Stops the game from reloading a 3D model in use when a damage template names a bone the model lacks, the other cause of the Granny crashes (WoL #78). | Nothing; `wol-fixes/art-dmg-bones-20261123/` fixes the data itself. |
 | Monday 2026-11-23 08:05 | [`modelCacheLimit`](bug-fixes.md#modelcachelimit) | Added. Stops the game from unloading 3D models that units still use, the cause of the Granny crashes in big games (WoL #78). | The two data fixes in `wol-fixes/art-dmg-bones-20261123/`. |
 | Monday 2026-11-23 07:59 | [`resendableCards`](#resendablecards) | Added. `<resendeveryage>1</resendeveryage>` in a home city card: the card can be sent again each time its player reaches a new age (its `<maxcount>` back, no stacking across ages). | The tag on the cards that want it. |
-| Monday 2026-11-23 07:59 | [`quickArrivalCards`](#quickarrivalcards) | Added. `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a quick-arrival card.* to the card's rollover, after its *may be sent ... | The flag on the cards' techs; a string in the string table to translate the line. |
+| Monday 2026-11-23 07:59 | [`quickArrivalCards`](#quickarrivalcards) | Added. `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a QUICK-ARRIVAL card.* to the card's rollover, after its *may be sent ... | The flag on the cards' techs; a string in the string table to translate the line. |
 | Monday 2026-11-23 07:56 | [`retargetInAction`](#retargetinaction) | Added. An attack with `<RetargetInAction>1</RetargetInAction>` whose target dies before the last shot of its attack animation (a machine gun's Attack tags, a burst's quick shot) fires the rest at a new target in range, instead of losing them. | The tag on the attacks that want it (the machine guns' `CannonAttack` in `organGun.tactics`). |
 | Sunday 2026-11-22 13:54 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Sunday 2026-11-22 12:35 | [`broadsideSoundSet`](#broadsidesoundset) | Filmed in WoL, with a control. A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). |
@@ -608,7 +608,7 @@ Caps that are fixed in the exe.
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | in WoL's DLL | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). | confirmed above the level table; see the section |
 | [`ageFiveShipments`](#agefiveshipments) | Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown at the right end of the Age IV row (the Age IV cards stay at the left), greyed until the Imperial Age, then sent like the others. | **new** | `<age>4</age>` on the cards that want it. | confirmed (single player) |
 | [`resendableCards`](#resendablecards) | `<resendeveryage>1</resendeveryage>` in a home city card: the card can be sent again each time its player reaches a new age (its `<maxcount>` back, no stacking across ages). | **new** | The tag on the cards that want it. | confirmed (single player) |
-| [`quickArrivalCards`](#quickarrivalcards) | `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a quick-arrival card.* to the card's rollover, after its *may be sent ... times* line. | **new** | The flag on the cards' techs; a string in the string table to translate the line. | confirmed (single player) |
+| [`quickArrivalCards`](#quickarrivalcards) | `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a QUICK-ARRIVAL card.* to the card's rollover, after its *may be sent ... times* line. | **new** | The flag on the cards' techs; a string in the string table to translate the line. | confirmed (single player) |
 | [`selectionLimit`](#selectionlimit) | A selection holds up to N units (50 in the exe). `wol.cfg` sets 75. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`noAILimit`](#noailimit) | Shows every `AI4\*.personality` file in game setup. WoL uses `noAILimitV2` instead. | in WoL's DLL | The personality files. | confirmed |
 | [`noAILimitV2`](#noailimitv2) | Shows WoL's 52 `AI4\*.personality` files in game setup. Without it, a random AI crashes the game. | **in `wol.cfg`** | The personality files. | confirmed |
@@ -962,20 +962,21 @@ resendableCards [log]
 
 #### quickArrivalCards
 
-*Adds the line "This is a quick-arrival card." to the rollover of the cards whose tech has the QuickArrival flag.*
+*Adds the line "This is a QUICK-ARRIVAL card." to the rollover of the cards whose tech has the QuickArrival flag.*
 
 **Added:** Monday 2026-11-23 07:59
 
 ![quickArrivalCards: an infinite card in the shipment panel](media/quickArrivalCards-panel-infinite.jpg)
 
-*In WoL (2026-11-23, a Dutch skirmish, the in-game shipment panel; `<Flag>QuickArrival</Flag>` added to
-`HCShipFoodCrates1` and `HCShipCoinCrates3` in the copy's `techtreey.xml`):* the infinite card "Crates of 300 food" ends
-with *This Card may be sent INFINITE times* and then *This is a quick-arrival card.*, as its own bullet.
+*In WoL (taken again on 2026-11-25 with the line in capitals; a Dutch skirmish, the in-game shipment panel;
+`<Flag>QuickArrival</Flag>` added to `HCShipFoodCrates1` and `HCShipCoinCrates3` in the copy's `techtreey.xml`):* the
+infinite card "Crates of 300 food" ends with *This Card may be sent INFINITE times* and then *This is a QUICK-ARRIVAL
+card.*, as its own bullet.
 
 ![quickArrivalCards: a card sent once, in the shipment panel](media/quickArrivalCards-panel-once.jpg)
 
-*The same panel, "Chests of 700 coin" (sent once):* its rollover text, *This Card may be sent ONE time*, then the new
-line.
+*The same panel, "Chests of 700 coin" (sent once, greyed in Age I):* the game's red *This Card cannot be sent until Age
+2*, its rollover text, *This Card may be sent ONE time*, then the new line.
 
 ![quickArrivalCards: the control card](media/quickArrivalCards-panel-control.jpg)
 
@@ -984,8 +985,9 @@ line.
 ![quickArrivalCards in Build a Deck](media/quickArrivalCards-deck-builder.jpg)
 
 *"Build a Deck" on the home city screen:* the same line on the card with the flag, after the game's red *This Card cannot
-be sent until Age 2*, its rollover text and its send limit. More: the infinite card and the control card in "Build a
-Deck", and the line taken from the string table (`stringid`), in `docs/media/quickArrivalCards-*.jpg`.
+be sent until Age 2*, its rollover text and its send limit. More: the infinite card (taken again on 2026-11-25 too) and
+the control card in "Build a Deck", and the line taken from the string table (`stringid`), in
+`docs/media/quickArrivalCards-*.jpg`. The control pictures and the `stringid` one show no default line, so they stayed.
 
 ```
 quickArrivalCards [stringid N] [log]
@@ -993,13 +995,15 @@ quickArrivalCards [stringid N] [log]
 
 - **In WoL today:** nothing in a card's rollover says that it arrives quickly. JTMaston's #99 (2026-11-23).
 - **What the key does:** for a card whose tech has `<Flag>QuickArrival</Flag>`, the card's rollover gets one more bullet,
-  *This is a quick-arrival card.*, right after the line *This Card may be sent INFINITE times* (or *ONE time*, or the
+  *This is a QUICK-ARRIVAL card.*, right after the line *This Card may be sent INFINITE times* (or *ONE time*, or the
   *N times* line), so it sits between the card's own rollover text and the advanced information (the detailed help, when
   that option is on). The line looks like the game's other lines of the card. The same rollover is used by the in-game
   shipment panel, "Build a Deck" and the deck chooser. Nothing else about the card changes: the flag does not change
   how fast a card arrives.
 - **`stringid N`:** the line is string N of the string table (`data\stringtabley.xml`), so it can be translated; an
-  empty or missing string falls back to the English text. Without it, the English text.
+  empty or missing string falls back to the English text. Without it, the English text, with *QUICK-ARRIVAL* in
+  capitals since 2026-11-25 (JTMaston's request; it read *quick-arrival* before). A string set with `stringid` is
+  shown as written.
 - **What a modder writes:** in the card's tech in `techtreey.xml`:
   ```xml
   <Tech name ='HCShipFoodCrates1' type ='Normal'>
@@ -1009,7 +1013,7 @@ quickArrivalCards [stringid N] [log]
   ```
 - **Off:** the game ignores the flag, as it ignores any name it does not know.
 - **Multiplayer:** display only; players may set it differently.
-- **Log:** `quickArrivalCards: the tech flag QuickArrival adds the line "This is a quick-arrival card." to a card's
+- **Log:** `quickArrivalCards: the tech flag QuickArrival adds the line "This is a QUICK-ARRIVAL card." to a card's
   rollover` (or `the line of string N`); with `log`, `tech 935 has the QuickArrival flag` per flagged tech and, once,
   `the line was added to the rollover of tech 935`; `hook reached: tech flags (0x620C2F)`, `... quickArrivalCards
   (0x710909)`.
@@ -1019,6 +1023,9 @@ quickArrivalCards [stringid N] [log]
   with `stringid 36865` the line read the text of that string. With `hcTargetTechs` on and `<Flag>HCTargetEnemy</Flag>`
   on a test tech, both keys read their flags through the shared hook (`hcTargetTechs: HCTargetEnemy read`). Not tested:
   the deck chooser (the same rollover builder), another language.
+- **Tested again (2026-11-25, `C:\AoE3-UHC-WoLReal3`, the same flags; the copy's own profile with `HCShipFoodCrates1`
+  in the Dutch deck):** the log reads `adds the line "This is a QUICK-ARRIVAL card."`, and the line shows in capitals
+  in the in-game panel and in "Build a Deck" (the four pictures above).
 
 #### selectionLimit
 

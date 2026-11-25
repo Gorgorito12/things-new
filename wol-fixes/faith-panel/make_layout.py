@@ -38,7 +38,9 @@ techGadgets swaps them by the tech GreatWarizeALL. With --no-faith, rows.json mu
 ({uhcIncome(<resource>)}, green, smaller), and the row's tooltip gets a second line (strings 1010111 to 1010116,
 written by wol-fixes\\oil-panel\\apply_fix.py --rates). A panel whose every row has room for two lines puts the
 income under the amount; one with a lower row (the 7-row Asian and Native panels with faith, WoL's advanced Native
-panel) puts it in a column right of the amount. The amount stays at NumbersFont 12 (at 11 the game draws another face).
+panel) puts it right of the amount, set to the panel's right edge, with the amounts' column a little closer to the icons
+(2026-11-25), so an amount of 8 digits keeps clear of it. The amount stays at NumbersFont 12 (at 11 the game draws
+another face).
 """
 import hashlib
 import json
@@ -328,7 +330,12 @@ RATE_IDS = {"food": 1010111, "wood": 1010112, "gold": 1010113, "fame": 1010114, 
 RATE_COLOR = "150 225 120"
 RATE_UNDER_MIN = 15        # every row body of a panel at least this high (1024 x 768 units): the rate under the amount
 RATE_ROOMY = 19            # and from this high the rate a size bigger (10, else 9)
-RATE_COLUMN = 25           # a panel with a lower row: the rate in a column this far right of the amount, a little lower
+RATE_COLUMN = 25           # a panel with a lower row: the rate's box starts this far right of the amount, a little lower,
+RATE_EDGE = 5              # and ends this far inside the panel's right edge, its text set to the right (textjustifyright);
+AMOUNT_LEFT = 5            # the amounts (and the other numbers of that column) this much closer to the icons. The amount
+                           # (left) and the rate (right) grow away from each other: an amount of 8 digits keeps clear of
+                           # the rate (#105, 2026-11-25: seen in game with 99,999,992 and 100,000,000)
+COLUMN_VALUES = ("{numUnits(AbstractVillager)}", "{danceQuickValue}")   # in the amounts' column: moved with them
 # The amount keeps NumbersFont 12: at 11 the game draws another, thinner face (seen in game).
 
 VALUE = re.compile(r'<gadget\b[^>]*>\{resource\((\w+)\)\}</gadget>')
@@ -341,6 +348,9 @@ def add_rates(v):
     heights = [int(attr(m.group(0), "size1024").split()[3]) - int(attr(m.group(0), "size1024").split()[1])
                for m in VALUE.finditer(v) if m.group(1) in RATE_IDS]
     low = min(heights) if heights else 0
+    right = int(attr(TAG.match(v).group(0), "size1024").split()[2]) - RATE_EDGE    # the panel's inner right edge
+    column = low < RATE_UNDER_MIN
+    column_x = set()
     out, last = [], 0
     for m in VALUE.finditer(v):
         res = m.group(1)
@@ -350,12 +360,15 @@ def add_rates(v):
         x0, y0, x1, y1 = (int(q) for q in attr(tag, "size1024").split())
         h = y1 - y0
         size, rate_size = "12", "10" if low >= RATE_ROOMY else "9"
-        if low >= RATE_UNDER_MIN:          # amount in the upper part, rate in the lower part, same column
+        justify = ""
+        if not column:                     # amount in the upper part, rate in the lower part, same column
             amount = (x0, y0 + round(h * 0.5) - 12, x1, y0 + round(h * 0.5) + 2)
             rate = (x0, y0 + round(h * 0.5), x1, y0 + round(h * 0.5) + 12)
-        else:                              # too low for two lines: the rate in a column right of the amount
-            amount = (x0, y0 - 1, x1, y1 - 1)
-            rate = (x0 + RATE_COLUMN, y0 + round(h * 0.3), x1 + 8, y1 + 2)
+        else:                              # too low for two lines: the rate right of the amount, set to the right
+            amount = (x0 - AMOUNT_LEFT, y0 - 1, x1, y1 - 1)
+            rate = (x0 + RATE_COLUMN, y0 + round(h * 0.3), right, y1 + 2)
+            justify = 'textjustifyright="" '
+            column_x.add(x0)
         new_tag = set_attr(set_attr(tag, "size1024", " ".join(str(q) for q in amount)), "textfontsize", size)
         ls = v.rfind("\n", 0, m.start()) + 1
         indent = v[ls:m.start()] if v[ls:m.start()].strip() == "" else ""
@@ -363,11 +376,20 @@ def add_rates(v):
         rate_gadget = (f'<gadget name="uhcIncome-{res}" type="formatText" mouseovertext="$${RATE_IDS[res]}$$" '
                        f'anchortooltiptopright="" size1024="{" ".join(str(q) for q in rate)}" donthighlight="" '
                        f'datarefreshrate="100" textcolor="{RATE_COLOR}" textfont="NumbersFont" textfontsize="{rate_size}" '
-                       f'textcentervert="" z="{z}" background="">+{{uhcIncome({res})}}</gadget>')
+                       f'textcentervert="" {justify}z="{z}" background="">+{{uhcIncome({res})}}</gadget>')
         out.append(v[last:m.start()] + new_tag + v[m.start() + len(tag):m.end()] + nl + indent + rate_gadget)
         last = m.end()
     out.append(v[last:])
     v = "".join(out)
+    if column_x:                           # the other numbers of the amounts' column move with them
+
+        def shift(m):
+            x0, y0, x1, y1 = (int(q) for q in attr(m.group(1), "size1024").split())
+            if x0 not in column_x:
+                return m.group(0)
+            return set_attr(m.group(1), "size1024", f"{x0 - AMOUNT_LEFT} {y0} {x1} {y1}") + m.group(2)
+        v = re.sub(r'(<gadget\b[^>]*type="formatText"[^>]*>)(%s)' % "|".join(re.escape(c) for c in COLUMN_VALUES),
+                   shift, v)
     # the tooltips of every gadget of a resource's row (its label button, its count, its amount)
     def tip(m):
         tag = m.group(1)
