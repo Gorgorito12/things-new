@@ -1,12 +1,15 @@
-Reply to JTMaston, round of 2026-11-25: "Nursery mechanic" (#107), the design and our questions
-=============================================================================================
+Reply to JTMaston, round of 2026-11-25: "Nursery mechanic" (#107), a first version and our questions
+==================================================================================================
 
-Nothing is built yet. This is how we plan to do it; your answers to the questions at the end decide the open
-points before we build the first version.
+A first version is built: new key nurseryFactor in our DLL. Where your request left a choice open we took the
+simplest reading (listed after the questions); your answers to the questions at the end may change those points.
+Tested in single player in a copy of WoL, with a Bank given the test tags (0.5 gold per mink, max 10, one more every
+5 s). GIFs: nurseryFactor-wol (the minks grow, a tech adds 3, the max goes to 15, the panel and its rollover),
+nurseryFactor-wol-control (key off), nurseryFactor-ship-wol (the shipment).
 
 
-How it would work
------------------
+How it works
+------------
 The trickle is the nursery's own AutoGather action, exactly as today (for the mink nursery: 0.5 gold in its tactics),
 and our DLL multiplies its rate by the building's factor. So:
 - to the owner: a plain AutoGather;
@@ -49,8 +52,26 @@ Tech effects (type Data):
 
 consume='all' empties the factor after the shipment; consume='2' takes 2 per nursery and ships for what it took.
 
-The UI: in the unit panel, a row "Minks 3/10" (both the full and the minimized interface), and on hover your two
-lines. We also add a text {uhcNurseryFactor} you can put in your own layouts.
+The UI: in the unit panel of the minimized interface, a row "Minks 3/10", and on hover your two lines as bullets
+("- 3 out of 10 minks." / "- Produces one mink every 5 seconds."). For a single nursery that row takes the place of
+the AutoGather rate row; a selection of several still shows the summed rate. The full interface's stat panel is not
+done yet. We also add a text {uhcNurseryFactor} ("3/10 minks") you can put in your own layouts.
+
+What we measured:
+- two Banks with 9 minks each: 9.06 gold per second (2 x 9 x 0.5 = 9.0 expected); key off: 1.00 per second;
+- each Bank counts its own minks; the techs add 3, raise the max and shorten the step as written;
+- a saved game keeps each Bank's minks and its timer (the next mink came at the same game time after the load);
+- in a skirmish, consume='2' brought 4 crates of coin for two Banks, then consume='all' brought 14 and emptied them;
+- 40 Banks with the tags: no measurable cost (the simulation's time per frame 0.1 ms with and without the key);
+- into the building's own inventory: a Bank at 10 minks stored 4.96 gold per second in itself (5.0 expected) and the
+  player got none. The building needs a <CarryCapacity> for that resource, the most it can hold: without one it
+  stores nothing;
+- exponential growth (rate 0.5): 1, 2, 3, 4, 6, 9, 10 minks.
+
+One thing to know about saved games, which is how the game itself works: when a game loads, the game applies the
+tech effects again in the order the techs have in the techtree file, not the order they were researched. A max set
+to 4 by one tech and raised by 5 by a tech researched later came back as 4 instead of 9. Effects that only add
+(Absolute) come back right; mixing Assign and Absolute on the same value across techs can change after a load.
 
 
 Questions
@@ -75,3 +96,20 @@ Questions
 11. A trickle to the owner shows in the global income rates; a trickle into the building's own inventory does not,
     since it is not in the stockpile yet. Is that right for you?
 12. The factor is always a whole number (minks), and a Percent tech rounds down. Right?
+
+
+What the first version does until you answer
+---------------------------------------------
+1. Exponential: each step adds max(step, factor x <NurseryFactorGrowthRate>), rounded down, so it can leave 0.
+2. The shipment counts all the player's units of the nursery type; consume='all' empties all of them.
+3. consume='2' takes at most 2 from each nursery; one with 1 mink left gives 1.
+4. The units come to the home city gather point, like any FreeHomeCityUnit.
+5. A captured nursery keeps its minks; a transform into another nursery unit keeps them, cut to its max; into a unit
+   that is not a nursery, they are lost.
+6. A factor tech changes all the player's built nurseries of that unit.
+7. A lowered max cuts the nurseries above it at once.
+8. NurseryFactorMax 0 means a max of 0 (no minks); there is no "no max" yet.
+9. The panel shows just "3/10"; the second rollover line shows whenever the nursery grows with time, full or not.
+10. Only the selected unit's panel.
+11. The owner's trickle shows in the global income; a trickle into the building's inventory does not.
+12. Whole numbers.

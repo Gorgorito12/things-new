@@ -1,8 +1,8 @@
-# Nursery mechanic: design (draft, waiting for approval)
+# Nursery mechanic: design and prototype
 
 Request #107 in [wol-requests.md](wol-requests.md), JTMaston, 2026-11-25, thread "Nursery mechanic". Provisional key name
-`nurseryFactor`. Nothing is built yet: this page is the design and the questions, for the user to approve before the
-prototype. Private doc.
+`nurseryFactor`. The user approved this design on 2026-11-25; the prototype follows it with the simplest reading of
+each open question (section 6). Private doc.
 
 ## 1. The request, in short
 
@@ -143,22 +143,21 @@ All `type='Data'`, relativities as stock (`Absolute`, `Assign`, `Percent`, `Base
 - The factor and the timer of each building: the marker (stat 6Bh), as `researchGrants`.
 - One-shot effects (`NurseryFactor`, the shipment) must never run again on a load: they are queued and applied by the
   world tick, and the first tick of a loaded game drops a queue built before it.
-- The per-player values (max, interval, step) live in the DLL, so they must come back after a load. **Open, to settle
-  in the prototype:** the docs disagree on whether the load runs Data effects again. REA today: the pass after a load
-  0x94DDEA (one caller, 0x94CCB5) runs only effects with flag 20h in `[effect+9]` (REA `ev_1fbf0dc8…`), and no stock
-  code sets that flag on a Data effect (byte scan: the stock constructors write 28h, kind 8 "general"); the guide says
-  of `researchGrants` and `costEscalationTechs` that "the load applies the techs again", the second one seen in a log.
-  The prototype logs a save and a load. If the handlers do not run, these subtypes set flag 20h, as `unitTypeTechs`
-  does, so the pass re-runs them on the fresh table. **The same question applies to `researchGrants`' Interval and Max
-  techs today** (a possible bug there, to check with the same test).
+- The per-player values (max, interval, step) live in the DLL, so they must come back after a load. **Settled in game
+  (2026-11-25):** the load runs every ProtoUnit Data effect of the active techs through the handlers again, before the
+  first world tick, so the values come back with no flag 20h. That replay is not the pass 0x94DDEA (REA `ev_1fbf0dc8…`,
+  flag-20h effects only); its caller is not identified. It goes in the order of the techs in the techtree, not the
+  order they were researched: `Assign 4` researched before `+5` came back as 4 instead of 9. `researchGrants`'
+  `ResearchGrantMax` came back the same way (2 -> 6 in the replay): **no loss there.** A Player-target effect (the
+  shipment) did not run again. The `NurseryFactor` effect did, and the first tick dropped it, as planned.
 
 ### 3.7 Order, determinism, cost
 
 - `kFeatures`: after `autoGatherScaleByContained` (shared getter filter) and after `incomeRates`.
 - Everything is simulation state read on every machine: unit IDs in ID order, game time, the techs. The UI is display
   only.
-- Cost: per world update, the sweep's 256 slots and one marker write per building that changed; one compare per
-  AutoGather rate call. An A/B with `perfprobe.py` and many nurseries is part of the test plan.
+- Cost: per world update, the sweep's 256 slots and one marker write per unit with a factor; one C call and a byte
+  lookup per AutoGather rate call. An A/B with `perfprobe.py` and many nurseries is part of the test plan.
 
 ### 3.8 Not covered by the first version
 
@@ -166,7 +165,7 @@ All `type='Data'`, relativities as stock (`Absolute`, `Assign`, `Percent`, `Base
   if the new proto is a nursery too, clamped to its max, else it is dropped (Q5).
 - XS calls (`xsGetUnitNurseryFactor(unitID)`, a setter) for the AI or triggers: easy with `AddSyscall`; only if asked.
 
-## 4. Test plan (after approval)
+## 4. Test plan
 
 WoLReal5, a test nursery on a public civ: the factor grows and stops at the max; the gold matches the hand count
 (rate x factor x time); two buildings with different factors; each tech changes what it should; the shipment ships
@@ -196,3 +195,33 @@ The English text sent to him is in `_share/maston-20261125/N/` and `wol-fixes/re
 11. **Global income:** a trickle to the owner shows in the global income rates (it already would). A trickle into the
     building's own inventory does not, as it is not in the stockpile yet. Is that what you want?
 12. **Whole numbers:** the factor is always a whole number (minks), with `Percent` techs rounded down. Right?
+
+## 6. The prototype (2026-11-25)
+
+Key `nurseryFactor [log]`, [modding guide](modding-guide.md#nurseryfactor), [how it works](how-it-works.md#nurseryfactor).
+Built as sections 3.1 to 3.6, with these readings of the open questions until JTMaston answers:
+
+| Question | Reading in the prototype |
+|---|---|
+| 1 Exponential | a step adds `max(step, floor(factor x NurseryFactorGrowthRate))` (default rate 0.25), so it leaves 0 |
+| 2 Shipment, several nurseries | the sum over the player's living, built units of `nursery` (a proto or an abstract type); `consume='all'` empties all |
+| 3 "2 by 2" | per unit, at most N: one with 1 left gives 1 |
+| 4 Where units appear | the home city gather point (stock `FreeHomeCityUnit`) |
+| 5 Capture, transform | kept (same unit ID); a transform into a tagged proto keeps it, cut to the cap; into another, dropped |
+| 6 Which buildings a factor tech hits | all the player's built units of the proto |
+| 7 Lowered max | cut at once |
+| 8 No max | not possible: `NurseryFactorMax` 0 is a cap of 0 |
+| 9 Panel | `Minks 3/10`; the second rollover line whenever the interval is above 0 |
+| 10 Other rollovers | none |
+| 11 Global income | the owner's trickle is counted (stock add), the inventory's is not |
+| 12 Whole numbers | yes, `Percent` rounds down |
+
+Seen in game (WoLReal5, single player): growth and cap; the three value techs and the add; two units with their own
+factors; gold 9.06/s against 9.0 expected; save and load (21 minks and the timers kept); the load's replay of the Data
+effects (3.6); the shipment in a skirmish (4 and 14 crates); the panel row and its rollover; 40 units A/B (update
+0.1 ms both); the trickle into the unit's own inventory (4.96 gold/s held at 10 minks, with a gold `<CarryCapacity>`
+of 500; without one the Bank stored nothing, the stock cut at the capacity); exponential growth (1, 2, 3, 4, 6, 9, 10
+with rate 0.5); a German AI played on (a Manor and 10 settlers at 2 min).
+
+Departures from the design: the panel row is only in the minimized interface (the normal stat panel needs its own hook,
+as `showGatherRate` has), and it replaces the stock AutoGather rate row for a single selected unit with a factor.
