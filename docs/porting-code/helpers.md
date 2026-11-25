@@ -7127,7 +7127,9 @@ constexpr std::uint32_t kSlot = 0x00B84164;
 constexpr int kCreateDeviceIndex = 16;  // IDirect3D9
 constexpr int kResetIndex = 16;         // IDirect3DDevice9
 constexpr int kPresentIndex = 17;       // IDirect3DDevice9
-constexpr int kMaxObservers = 4;
+// Seven keys observe the device (perfStats, rendererOption, lanAutoStart, editorSearch, editorAutosave, techGadgets,
+// selectFattened); with 4 slots and every key on, selectFattened got none.
+constexpr int kMaxObservers = 8;
 
 using CreateDeviceFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3D9*, UINT, D3DDEVTYPE, HWND, DWORD,
                                                    D3DPRESENT_PARAMETERS*, IDirect3DDevice9**);
