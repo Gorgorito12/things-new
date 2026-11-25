@@ -6630,6 +6630,55 @@ strings, and about 42 % of its functions are encrypted on disk. So DE's per-minu
 computes it is not.
 <!-- private:end -->
 
+### selectFattened
+
+**Why it exists.** The stock interface has buttons that select idle villagers or every unit of a type, but none that
+selects the livestock that has stopped fattening: a player looks for it by hand. <!-- private -->WoL request #106.
+
+**How the stock selects many units** (REA, 2026-11-25: `ev_17025585…` 0x79F534, `ev_0a14fa33…` 0x930245,
+`ev_3023002d…` 0x9301D3; the UI command handlers by capstone). The UI command `uiFindAllOfType("Type")` (0x7E7AB9,
+registered at 0x530D50):
+- gets the local selection with `0x4051B6` (`thiscall(game)`: `[[game+91Ch]+4]`, 0 without the world UI) and empties
+  it with `0x9301D3(selection, 0)` (it removes the entries from index 0 on, clears their bits in the selection's
+  bitset `[sel+10h]`, and sets the "changed" byte `[sel+28h]`);
+- walks the local player (`0x407E8A`, the player `[game+3C0h]`) unit list `[player+F8h]` / count `+FCh` (`0x8D1CFB`),
+  skipping a unit whose state byte `[unit+88h]` is below 8 (`0x44DE2A`), one its vtable `+0A4h` refuses, and one inside
+  another (`[unit+6Ch] >= 0`), then tests the type (`0x44D7FA`);
+- adds each with the selection's vtable `+4` and a stack handle `{0B9E444h, 0, unit ID}`. The selection's vtable is
+  0xB9F8C4 (read in game), and `+4` is FUN_0079F534: it checks the handle (the unit exists, its ID matches), refuses
+  a unit of another player than `[game+3C0h]` once the selection is not empty (except in the mode `[game+0B3Ah]`),
+  compares a value of the new unit with the first one's (the selection's vtable `+18h`; read as a selection
+  priority, not traced): a smaller one empties the selection first, a larger one is refused but for some same-player
+  cases), refuses a unit whose state byte differs from the first one's, adds the
+  members of a unit's squad together, and ends in FUN_00930245(handle, 0): nothing past the cap `0x4E0BEE` (the
+  getter `selectionLimit` rewrites), nothing already in, then the add and `[sel+28h] = 1`.
+`uiLookAtAndSelectUnit` (0x7E5DFD) is the same clear and add for one unit, then a camera move.
+
+**What it does.**
+- `uhcSelectFattened()`, a UI syscall (`syscalls.*`, group UI), runs the same calls: the selection, its clear, the
+  same per-unit tests, and the add through the selection's vtable `+4` (checked to be 0x79F534 before the call; any
+  other and nothing is selected) with the same stack handle. The unit test is a herdable (abstract index 37h,
+  `0x44CAC4`) whose inventory `[[unit+0B4h]+94h]` is full by the engine's own test `0x4DC520` (`bool
+  thiscall(inventory)`: some resource held at or above its carry capacity `0x494503`, a capacity above 0). That is the
+  "full" the gather tick stops a herdable's fattening at (`bl` from 0x49A5E6, herdWalkAwayFix above).
+- Over the cap, it sorts the herdables by their distance to the camera's line of sight (`[game+148h]`: position
+  `+4`, forward `+10h`, read in game: the line through a unit `uiLookAtUnit` centred) and adds the nearest first, the
+  cap's number of them; the add would refuse the rest anyway. With no fattened herdable it changes nothing.
+- The count: in the world update (`worldtick.*`), every 100 ms of game time and at once in a new world or for another
+  player, the same walk; `{uhcFattened}` (`datarefs.*`, a string) gives the last count. The gadgets of the cfg line
+  (default `uhcFattened`) are shown while it is above 0 and hidden at 0 from Direct3D's Present, as techGadgets does
+  (`uigadgets.*`: found by name, shown or hidden only when their flags say the other state).
+
+**Why it is safe.**
+- Interface only: it calls the stock clear and add on the local selection, as the stock command does from a button
+  or a hotkey; no command goes to the network and nothing of the simulation is written. A later order to the
+  selection is an ordinary command.
+- The add is the game's own, with its checks (owner, cap, duplicates, mixed states), so the key cannot build a
+  selection the game itself would refuse.
+- Cost: per 100 ms of game time, a walk of the player's units (a lookup, a byte test, a bit test and the full test
+  each). Measured over 249 units: 18 to 19 µs per count on average, 257 µs at most: about 0.2 ms per second of game
+  time.
+
 ### impactBoneFix
 
 A hit on a unit with a damage template picks one of its impact points (FUN_0049ABA1) and plays the projectile's
