@@ -1090,6 +1090,12 @@ SITES = [
     # the killing blows (killobservers.*: veterancyBonus, killSpawn): mov ecx,[0xC66234], the head of TakeDamage's
     # cold kill path; its only entry is the je at 0x49B746
     ("VeterancyKillPath", 0x4D4F37, 6),
+    # garrison entries (garrisonobservers.*: garrisonConvert, nurseryFactor): the success tail of the load of a unit
+    # into another, FUN_009C24B5 bool thiscall(container, unitId, flag), ret 8, after [unit+6Ch] and the append to
+    # [container+70h]: mov edi,[edi+58h] / test edi,edi / je 9C26FFh ... through the pop ebx at 0x9C26FF; and the
+    # head of the function, verify only, so a detour of the head fails the key instead of skipping the hook
+    ("GarrisonEnterTail", 0x9C26E1, 0x1F),
+    ("GarrisonLoadHead", 0x9C24B5, 0x10),
     # killSpawn: the head of the placement test PLACE FUN_0050703D (world vtable +14h, thiscall, 11 arguments,
     # ret 2Ch), sub esp,1A8h / push ebx / push ebp / xor ebx,ebx / mov ebp,ecx; verify only
     ("KillSpawnPlace", 0x50703D, 0x0C),

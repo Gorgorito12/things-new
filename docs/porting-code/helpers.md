@@ -1388,6 +1388,12 @@ inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTail
 inline constexpr std::uint8_t kVeterancyKillPathBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00};
 inline constexpr Site kVeterancyKillPath{"VeterancyKillPath", 0x004D4F37, kVeterancyKillPathBytes, sizeof(kVeterancyKillPathBytes)};
 
+inline constexpr std::uint8_t kGarrisonEnterTailBytes[] = {0x8B, 0x7F, 0x58, 0x85, 0xFF, 0x74, 0x17, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x91, 0x08, 0x01, 0x00, 0x00, 0x89, 0x97, 0x90, 0x00, 0x00, 0x00, 0x5B};
+inline constexpr Site kGarrisonEnterTail{"GarrisonEnterTail", 0x009C26E1, kGarrisonEnterTailBytes, sizeof(kGarrisonEnterTailBytes)};
+
+inline constexpr std::uint8_t kGarrisonLoadHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x24, 0x83, 0xB8, 0x3C, 0x01, 0x00, 0x00, 0x00, 0x57};
+inline constexpr Site kGarrisonLoadHead{"GarrisonLoadHead", 0x009C24B5, kGarrisonLoadHeadBytes, sizeof(kGarrisonLoadHeadBytes)};
+
 inline constexpr std::uint8_t kKillSpawnPlaceBytes[] = {0x81, 0xEC, 0xA8, 0x01, 0x00, 0x00, 0x53, 0x55, 0x33, 0xDB, 0x8B, 0xE9};
 inline constexpr Site kKillSpawnPlace{"KillSpawnPlace", 0x0050703D, kKillSpawnPlaceBytes, sizeof(kKillSpawnPlaceBytes)};
 
@@ -3311,6 +3317,7 @@ std::optional<int> Config::Int(const std::string& key) const {
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 #include "config.h"
 
@@ -3487,6 +3494,10 @@ Outcome ApplyIncomeRates(const Config& config);
 Outcome ApplySelectFattened(const Config& config);
 Outcome ApplyProgressPieDemo(const Config& config);
 Outcome ApplyNurseryFactor(const Config& config);
+Outcome ApplyGarrisonConvert(const Config& config);
+// garrisonConvert: the progress of a building's conversions, for the panels: false when nobody inside qualifies;
+// else the share of the delay the unit in progress has spent (1 with no delay) and how many units qualify.
+bool GarrisonConvertProgress(const char* building, float* fraction, std::int32_t* waiting);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
 // which of the keys it names the list then sees.
@@ -3665,6 +3676,8 @@ inline constexpr Feature kFeatures[] = {
     // After autoGatherScaleByContained: its filter of the shared AutoGather rate getter (autogatherrate.h) is asked
     // after that key's; the owner's trickle it multiplies reaches incomeRates through the add that key counts.
     {"nurseryFactor", ApplyNurseryFactor},
+    // After nurseryFactor: their observers of the shared garrison entries (garrisonobservers.h) run in that order.
+    {"garrisonConvert", ApplyGarrisonConvert},
     {"auraStacking", ApplyAuraStacking},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
@@ -3715,6 +3728,7 @@ inline constexpr const char* kHandledKeys[] = {
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
     "techgadgets", "incomerates", "editorautosave", "selectfattened", "nurseryfactor", "progresspiedemo",
+    "garrisonconvert",
 };
 
 }  // namespace uhc

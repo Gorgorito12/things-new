@@ -1,0 +1,54 @@
+Reply to JTMaston, round of 2026-11-26: GarrisonConvertTo, and the livestock hotkey on its own
+==============================================================================================
+
+1. GarrisonConvertTo
+--------------------
+Done, as a new DLL key: garrisonConvert (one line in wol.cfg: "garrisonConvert", or "garrisonConvert log" to see
+each conversion in the log). In a building's proto:
+
+    <GarrisonConvertTo>Pikeman</GarrisonConvertTo>               each unit that enters becomes a Pikeman
+    <GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>     one at a time, each after 5 seconds inside
+
+- The unit is changed in place, the same way a TransformUnit effect changes it: it keeps its hit points share and
+  stays inside the building. It comes out as the new unit when the garrison is ejected.
+- With delay, the units convert one by one in the order they entered. While one converts, the blue overlay of a
+  training button fills over the building's portrait (select the building to see it). A unit that leaves before its
+  turn leaves unconverted. A saved game keeps the progress.
+- It works whatever puts the unit inside: a garrison order, a trigger, a map script.
+- Tested: instant (a Blockhouse turning Settlers into Halberdiers), with a 5 s delay (a Town Center turning Settlers
+  into Pikemen, one every 5 s), ejecting half way, saving and loading in the middle of a conversion, and a skirmish
+  with the AI (it still runs).
+
+GIFs: garrisonConvert-wol (Greeks: four Settlers go into the Town Center, one becomes a Pikeman every 5 seconds with
+the pie on the portrait, then four Pikemen come out) and garrisonConvert-wol-control (the same without the key).
+
+Questions, so we can finish it the way you want (until you answer, the build does what is written after "Now:"):
+1. Does the converted unit stay inside the building, or come out as soon as it is converted?
+   Now: it stays inside.
+2. Does the new unit keep the hit points, experience and rank of the unit that went in?
+   Now: the same share of hit points (50% stays 50%), as a TransformUnit effect does; nothing else is copied.
+3. Population: the new unit's own population, or the old unit's? And at the population cap?
+   Now: the new unit's own, and the cap does not hold the conversion back.
+4. With a delay, what if the building is destroyed or captured in the middle?
+   Now: destroyed: the units come out as they are (the ones done stay converted). Captured: it goes on for the new
+   owner, with his units only.
+5. Should units of an ally that enter be converted too?
+   Now: no, only the building owner's units.
+6. Can a building have several tags, e.g. one per kind of unit that enters (an attribute like type="AbstractInfantry")?
+   Now: one tag per building; with several, the last one counts.
+7. Which units qualify? All, or only some types (villagers, infantry...)? Should explorers and heroes be left out?
+   Now: every unit of the owner, except one that already is the target unit.
+8. With a delay, should the timer of a unit start when it enters, or only when the one before it is done?
+   Now: only when the one before it is done (one at a time, like a training queue).
+9. Is the pie over the portrait enough, or do you also want the number of units waiting in the panel?
+   Now: only the pie.
+
+2. The fattened livestock: only the hotkey
+------------------------------------------
+"Disregard the button ... only the hotkey": the pack wol-fixes\select-fattened now has an option for that:
+
+    python apply_fix.py "<WoL folder>" --hotkey-only
+
+It installs the hotkey Shift+Ctrl+F ("Select Fattened Livestock", in the hotkey menu's "Find Unit Hotkeys"), its
+name in the string tables and the line selectFattened in wol.cfg. No button, no icon, no tooltip text. --check and
+--restore know which way it was installed, and --restore puts every file back byte for byte.

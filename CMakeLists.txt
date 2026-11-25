@@ -31,6 +31,7 @@ set(UHC_SOURCES
   src/deathobservers.cpp
   src/ghostobservers.cpp
   src/killobservers.cpp
+  src/garrisonobservers.cpp
   src/unitpanel.cpp
   src/datarefs.cpp
   src/unitmodels.cpp
@@ -133,6 +134,7 @@ set(UHC_SOURCES
   src/features/techgadgets.cpp
   src/features/incomerates.cpp
   src/features/nurseryfactor.cpp
+  src/features/garrisonconvert.cpp
   src/features/sharedlimit.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
@@ -293,6 +295,7 @@ set(UHC_SOURCES
   src/hooks/displayrange_hooks.asm
   src/hooks/trainbatch_hooks.asm
   src/hooks/killobservers_hooks.asm
+  src/hooks/garrisonobs_hooks.asm
   src/hooks/researchpay_hooks.asm
   src/hooks/researchgrant_hooks.asm
   src/hooks/canresearch_hooks.asm
