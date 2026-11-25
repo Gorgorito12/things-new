@@ -1,0 +1,43 @@
+Reply to JTMaston, round of 2026-11-25: the range rings in the options menu
+==========================================================================
+
+Tested in single player in a copy of WoL.
+
+
+Range rings on/off in the options menu
+--------------------------------------
+Players can now turn the range rings (displayedRange) on or off themselves, in the game's options:
+
+    Options -> UI Options -> Game UI Options -> "Show Range Rings"
+
+It is a check box like the other rows of that page, right under "ALT key shows hitpoint bars", with the tooltip
+"Shows how far the selected units and buildings shoot, as rings on the ground, and the range of a building while you
+place it. Takes effect at once."
+
+The change shows as soon as the player clicks OK, with no restart, also during a match (Menu -> Options): the rings
+of the selected units and of a building being placed appear or disappear as the game resumes. The choice is kept for
+the next starts (in uhc-options.cfg next to the log, not in the profile). Until a player chooses, the rings are on.
+
+To install it: the pack wol-fixes/options-menu (python apply_fix.py "<WoL folder>"; --check and --restore too). It
+adds the field to data\options.xml and two lines to wol.cfg:
+
+    menuOptions displayedRange
+    displayedRange
+
+A displayedRange line you already have keeps its arguments (noPlacement, log). The label and tooltip are plain text
+in options.xml, so you can change them or use string IDs. If you add the field by hand, keep the file's Windows line
+ends: a field with Unix line ends in options.xml is silently left off the screen.
+
+Tested: on and off from the main menu and during a match, both ways (a Fort's rings, and an Outpost's rings while it
+was being placed); the choice kept over a restart; noPlacement still honoured; the existing menu switches
+(bufferedFileReads, fastVertexFill, fastLastInLine) unchanged beside it; without the menuOptions line the menu is the
+stock one.
+
+Videos (GIF):
+- docs/media/displayedRange-menu-wol.gif: a selected Fort with no rings; Options, the box ticked, OK: the 33 m ring
+  and the dashed 47 m anti-ship ring appear; Options again, unticked, OK: they are gone.
+- docs/media/displayedRange-menu-wol-control.gif: WoL today, the same page without the row, no rings.
+Picture: docs/media/displayedRange-menu-wol.png, the UI Options page with the new row and its tooltip.
+
+A side note: in single player, every row of the options screen can be changed during a match; nothing there is
+greyed out.

@@ -2401,6 +2401,14 @@ all its tactics) and are worked out once per proto; each frame only checks that 
 takes the old rings off first; a new model object means the old one went with its rings. When the placement ends, the
 ghost's model goes, rings included (tested: Escape, a placed Outpost, `uiSetProtoCursorID(-1)`).
 
+**The options menu (2026-11-25).** With `menuOptions displayedRange` the key is a live switch of the options menu
+([menuOptions](#menuoptions)): it applies whatever the choice, asks it once (`FollowMenuSwitch`) and is told each new
+one on Apply. The observer sets `g_enabled` only. The tick reads it after its world check: off, it takes the models of
+`g_hung` off their units and clears it, and returns; on, it goes on as before, within 100 ms of game time. The ghost
+update reads it first: off, it takes its models off the ghost's model (when it is still the one they were hung on) and
+forgets the ghost, so turned on again the rings are worked out anew. Tested in a match: the Fort's rings went and came
+back with the game resumed, and an Outpost's ghost lost and got its rings with the placement still going on.
+
 **Player colour.** A particle's colour fields are `UsePalette`, `NumPaletteColors`, `PaletteColors`, `ColorStages`,
 `fWorldLightingInfluence` and the fixed `Color` (the exe's particle tag names, 0xBA41D0): nothing takes the owner's
 colour. So a range ring is a mesh (aoe3-blender-tools' `make_rings.py`): a flat annulus whose cut-out is the geometry,
@@ -6195,22 +6203,36 @@ With the key, two interleaved 150 s A/B pairs on the mod's save went from 12 and
 
 `menuOptions <key> …` hands on/off keys to the player, through the options menu's registry (see
 [rendererOption](#rendereroption), "The virtual options"). The keys that may be named are a table in `menuoptions.cpp`
-(`kMenuSwitches`: the key and its field's `<name>`), today `bufferedFileReads` (`OptionBufferedReads`) and
-`fastVertexFill` (`OptionFastVertexFill`) and `fastLastInLine` (`OptionFastLastInLine`); another key that changes nothing of the simulation takes one line there.
+(`kMenuSwitches`: the key, its field's `<name>` and whether it is live), today `bufferedFileReads`
+(`OptionBufferedReads`), `fastVertexFill` (`OptionFastVertexFill`), `fastLastInLine` (`OptionFastLastInLine`) and the
+live `displayedRange` (`OptionDisplayedRange`); another key that changes nothing of the simulation takes one line there.
 
 It runs in `ApplyFeatures` after the cfg is read and before the first key of `kFeatures`, and edits the cfg those keys
 then see:
 1. each named key gets an option (`AddMenuOption`), with the stored line `<key> on|off`;
 2. the value: the player's stored choice; with none stored, the key's own cfg line (present: on, absent: off);
-3. off with a cfg line: every line of the key is removed, so the key does not apply; on without one: an empty line is
-   added, so the key applies with its defaults; otherwise the cfg is left as it is, arguments included.
+3. a switch that is not live: off with a cfg line, every line of the key is removed, so the key does not apply; on
+   without one, an empty line is added, so the key applies with its defaults; otherwise the cfg is left as it is,
+   arguments included;
+4. a live switch: the key always applies (an empty line is added when there is none), whatever the value.
 
-So a key not named on a `menuOptions` line behaves as before, and nothing changes during a game: a choice is used from
-the next start. An unknown name, or the menu sites not being stock, logs `menuOptions: FAILED` and leaves those keys to
-the cfg.
+So a key not named on a `menuOptions` line behaves as before. For the others, a choice is used from the next start,
+but for a live one. An unknown name, or the menu sites not being stock, logs `menuOptions: FAILED` and leaves those
+keys to the cfg.
+
+**A live switch** (`displayedRange`). Its option is registered with `live` and an `onSet`. The key, when it applies,
+calls `FollowMenuSwitch(key, observer, &on)`: true if the menu follows it, with the current choice in `on`, and the
+observer kept. On Apply, `UhcMenuOptionSet` stores the choice, logs `it takes effect at once` and calls `onSet`, which
+calls the observer on the game's thread. `displayedRange`'s observer only sets a flag: its world tick (every 100 ms of
+game time) and the ghost update read it first, and off they take down the models they hung (`g_hung`,
+`g_ghost.models`) and hang none; on, the next tick hangs what the selection wants. Its next-tick time is left alone:
+0 would read as a new game and forget the hung models without taking them down. The option's entry flags hold 0x40
+(below), so a screen that greys rows during a match leaves this one enabled.
 
 A field of `options.xml` whose name is not registered gets -1 from the lookup, as in stock, and the screen
-shows it as an empty list (checked with and without the hooks), so a mod adds fields only for the keys it names.
+shows it as an empty list or an unticked check box that stores nothing (checked with and without the hooks), so a mod
+adds fields only for the keys it names. A field must keep the file's line ends: a DropDown written with LF line ends
+into a mod's CRLF `options.xml` was not built at all, with no lookup (seen 2026-11-25; the same field with CRLF showed).
 
 ### rendererOption
 
@@ -6228,12 +6250,19 @@ a name → ID map. The profile reads and writes the same entries as `<Setting Na
   called only by the four field builders), reads the type with 0x553028 and the value with 0x402E6A (int) or 0x9325C4
   (string), and maps the value to the selected entry (0x78C8BC; only IDs 9, 0Ah and 30h are mapped through lists, any
   other int is the entry's index);
-- in a running game the field is enabled only if the entry's flags hold 0x40 (0xA41707);
+- a CheckBox field (FUN_0078BE95 region, the builder at 0x78BEC5) reads its value with the bool getter 0x402CE9 and
+  no type check; Apply (FUN_0078D052) switches on the type from 0x553028: an int goes through 0x518AE0 (a dropdown's
+  selection mapped back by 0x78C76A), a bool through 0x518C7C;
+- each field builder then asks `[0xC67314]` (vtable `+6Ch`, 0x404E91: `[obj+38h] != 0`); only when that holds, the
+  field is enabled if the entry's flags hold 0x40 (the test 0xA41707 with mask 40h), else greyed. `[obj+38h]` was 0
+  in a scenario and in a skirmish (read in game, 2026-11-25), so in single player every field is enabled during a
+  match. That it is the multiplayer session is an inference;
 - on Apply, FUN_0078D052 maps the selection back (0x78C76A) and writes it with 0x518AE0 (int).
 
-Every accessor compares the ID with `[obj+8]` and fails beyond it: 0x553028 and 0x402E6A through cold blocks that only
-they reach (0x6B794B `xor al,al / ret 4`, 0x6B7676 `xor al,al / ret 8`), 0x518AE0 through its own failure return
-0x518B26.
+Every accessor compares the ID with `[obj+8]` and fails beyond it: 0x553028, 0x402E6A and 0x402CE9 through cold blocks
+that only they reach (0x6B794B `xor al,al / ret 4`, 0x6B7676 and 0x6B77B6 `xor al,al / ret 8`), 0x518AE0 and 0x518C7C
+through their own failure returns 0x518B26 and 0x518CC2 (`pop edi / xor al,al / pop esi / ret 8`), and the flag test
+0xA41707 (`thiscall(obj, id, mask)`) by falling through to `xor al,al / ret 8` at 0xA41710.
 
 **The virtual options (`menuoptions.*`, `hooks/menuoptions_hooks.asm`).** The options menu's registry, shared by
 `rendererOption` and [`menuOptions`](#menuoptions): more options, with nothing added to the table, the settings object
@@ -6248,12 +6277,24 @@ six sites and writes the four hooks:
 | 0x6B7676, the int getter's out-of-range return | `xor al,al / ret 8` | one of the IDs: writes the option's value to `*out`, returns 1 | its own `ret 8` |
 | 0x518B26, the int setter's failure return | `pop edi / xor al,al / pop esi / ret 8` | one of the IDs: `UhcMenuOptionSet(slot, value)` stores the choice, returns 1 | its own `ret 8` |
 
-Each hook tests `ID - 0x55480001 < count` as one unsigned compare, so the game's own IDs (below 93) never pass, and on
-the stock path the registers are as the stock code left them. The value is the dropdown's index: for
-`OptionRenderer`, 0 is the first `<value>` (DirectX 9), 1 the second (Vulkan). A new value is written at once to
-`uhc-options.cfg` next to the log, one line per option (`renderer dx9|vulkan`, `bufferedFileReads on|off`, …), to a
-temporary file moved over the old one, keeping the other lines. The entries have no flag 0x40, so they are greyed out
-during a match, as the stock options that need a restart are.
+A second group (2026-11-25), verified and written once by the first `AddMenuOption` too, but on its own: if its sites
+are not stock, the log says so and the options stay dropdowns, with no flag 0x40.
+
+| Site | Replaced | Hook does | Continues at |
+|---|---|---|---|
+| 0x6B77B6, the bool getter's out-of-range return (from 0x402CF2 only) | `xor al,al / ret 8` | one of the IDs: marks the option as read by a CheckBox, writes 0 or 1 to the byte `*out`, returns 1 | its own `ret 8` |
+| 0x518CC2, the bool setter's failure return (from 0x518C87 and 0x518CB1 only) | `pop edi / xor al,al / pop esi / ret 8` | one of the IDs: `UhcMenuOptionSet(slot, low byte of the value != 0)`, returns 1 | its own `ret 8` |
+| 0xA41710, the flag test's out-of-range return (fall-through of the `jb` at 0xA4170E) | `xor al,al / ret 8` | one of the IDs: `(flags & mask) & F0h != 0`, the flags 40h for a live option and 0 for the others, as an entry of the table would answer | its own `ret 8` |
+
+The type getter hook answers 5 (bool) for an option a CheckBox has read, 2 (int) for the others, so Apply writes each
+through the setter its field uses. Every hook tests `ID - 0x55480001 < count` as one unsigned compare, so the game's own
+IDs (below 93) never pass, and on the stock path the registers are as the stock code left them. The value is the
+dropdown's index, or 0/1 for a check box: for `OptionRenderer`, 0 is the first `<value>` (DirectX 9), 1 the second
+(Vulkan). A new value is written at once to `uhc-options.cfg` next to the log, one line per option (`renderer
+dx9|vulkan`, `bufferedFileReads on|off`, `displayedRange on|off`, …), to a temporary file moved over the old one,
+keeping the other lines. In single player every row of the screen can be changed during a match (the flag test is not
+asked, above); where it is asked, a live option answers 0x40, as the game's own rows that may change in a match, and
+the others do not, as those that need a restart.
 
 **The switch.** Everything happens in the DLL's start function, before the game's entry point, so before the game calls
 `Direct3DCreate9`:
