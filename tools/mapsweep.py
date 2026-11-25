@@ -19,6 +19,8 @@ Options:
   --teams | --ffa       skirmish: two teams (players 1..N/2 against the rest) or Free for All, set on
                         the setup screen by posted clicks; without either, the setup shows the human
                         in the profile's team and every AI as "Team ?"
+  --team-list 1,1,2,2,3,3  skirmish: the team (1-4) of each player, in slot order, by the same clicks
+                        (one --players count); e.g. 2v2 plus two observers in their own team
   --koth                skirmish: King of the Hill (the Game Rules list, by posted clicks)
   --difficulty N        skirmish: the AI difficulty written to the profile (gamedifficulty: 0 Sandbox,
                         1 Easy, 2 Moderate, 3 Hard, 4 Expert); default: the profile's
@@ -456,9 +458,12 @@ FFA_BOX, RULES_ARROW, RULES_KOTH = (1451, 987), (1739, 535), (1467, 845)
 
 def setup_clicks(players, opts):
     """Teams, Free for All and King of the Hill on the setup screen, by posted clicks."""
-    if opts.get("mode") == "teams":
+    if opts.get("mode") in ("teams", "list"):
         for k in range(1, players + 1):
-            team = 0 if k <= (players + 1) // 2 else 1
+            if opts.get("mode") == "list":
+                team = opts["team_list"][k - 1] - 1
+            else:
+                team = 0 if k <= (players + 1) // 2 else 1
             y = round(TEAM_ARROW[1] + (k - 1) * TEAM_ROW)
             T.scaled_click((TEAM_ARROW[0], y))
             time.sleep(1.5)
@@ -543,7 +548,7 @@ def set_skirmish(bed, map_name, players, ai, opts=None, seed=None):
     values.update(opts.get("settings") or {})  # --set name=value
     if opts.get("mode"):  # the setup screen's clicks set the teams or tick Free for All (setup_clicks)
         values["gamefreeforall"] = "false"
-        values["gameplayer1teamid"] = "0"
+        values["gameplayer1teamid"] = str(opts["team_list"][0] - 1) if opts.get("mode") == "list" else "0"
     for path in profiles(bed):
         text = path.read_bytes().decode("utf-16")
         b0 = text.find('<GameSettings Name="RandomMapGameSettings"')
@@ -623,8 +628,13 @@ def main(argv):
     opts = {"label": arg(argv, "--label"), "save_load": "--save-load" in argv,
             "difficulty": arg(argv, "--difficulty"),
             "settings": dict(argv[i + 1].split("=", 1) for i, a in enumerate(argv) if a == "--set"),
-            "mode": "teams" if "--teams" in argv else "ffa" if "--ffa" in argv else None,
+            "mode": "teams" if "--teams" in argv else "ffa" if "--ffa" in argv else
+            "list" if "--team-list" in argv else None,
+            "team_list": [int(t) for t in arg(argv, "--team-list", "").split(",") if t.strip()],
             "koth": True if "--koth" in argv else None}
+    if opts["mode"] == "list" and (len(players) != 1 or len(opts["team_list"]) != players[0]
+                                   or not all(1 <= t <= 4 for t in opts["team_list"])):
+        sys.exit("mapsweep: --team-list needs one team (1-4) per player and a single --players count")
     if route != "skirmish" and (opts["save_load"] or opts["mode"] or opts["koth"]):
         sys.exit("mapsweep: --teams, --ffa, --koth and --save-load are skirmish options")
     label = route + (f":{opts['label']}" if opts["label"] else "")
