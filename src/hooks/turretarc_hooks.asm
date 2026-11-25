@@ -10,6 +10,7 @@ UhcTurretFace PROTO STDCALL :DWORD, :DWORD
 UhcTurretLaunch PROTO STDCALL :DWORD, :DWORD, :DWORD, :DWORD
 
 EXTERNDEF g_uhcTurretOn:DWORD    ; above 0 while the key has a unit to serve
+EXTERNDEF g_uhcTurretPoint:DWORD ; the point the stock turn gets instead when UhcTurretFace returns 2
 
 .data
 faceContinue    dd 0048AAA5h    ; mov eax,[esi]: the stock body after the three instructions re-executed here
@@ -21,7 +22,10 @@ launchContinue  dd 004995DEh    ; fsub dword ptr [esp+20h]: the shot's direction
 ; Vector* point), ret 4: the unit turns to face the point (0x48AB4A stores the wanted forward at [[unit+4Ch]+18h]) and
 ; returns 1. The attack update calls it on every update (through 0x48AA5D for a unit target). UhcTurretFace returns 1
 ; when the unit's attack has the key's turret and the point is inside its arc: then the body keeps its facing and the
-; function returns 1 as the stock one does; otherwise the stock function runs.
+; function returns 1 as the stock one does; 2 when the arc is about a rest yaw that is not ahead and the point is beyond
+; it: the stock function runs with its argument replaced by g_uhcTurretPoint (the point turned by minus the rest yaw,
+; so the unit turns until the target sits at the rest yaw; the argument slot is the caller's, dead after the call,
+; ret 4); otherwise the stock function runs.
 UhcTurretFaceHook PROC
     TRACE_ONCE "turretArc facing (0x48AA9F)"
     cmp g_uhcTurretOn, 0
@@ -35,8 +39,12 @@ UhcTurretFaceHook PROC
     pop ecx
     test eax, eax
     je stock
+    cmp eax, 2
+    je redirect
     mov al, 1
     ret 4
+redirect:
+    mov dword ptr [esp+4], OFFSET g_uhcTurretPoint
 stock:
     sub esp, 18h
     push esi

@@ -4351,12 +4351,16 @@ bool AddGrannySampleObserver(GrannySampleObserver observer, const char* who) {
 // - the facing: the head of FUN_0048AA9F (the unit turns to face a point; the attack update calls it every update):
 //   with the turret, a point within the arc of the unit's forward [unit+20h] keeps the body still (the stock function
 //   is skipped and returns 1, as it does). The attack never waits for the facing (no tolerance), so it fires as before.
+//   An aim file of version 2 gives the gun's rest yaw (where its clips show it, e.g. +90: square to a camel's spine);
+//   the arc is then about that yaw, and a point beyond it turns the unit until the point sits at the rest yaw (the
+//   stock turn gets the point turned by minus that yaw, while the attack is the unit's current action).
 // - the shot's start: FUN_00499422 at 0x4995D5 (every way of placing a shot's start meets there): the start turns about
 //   the turret's pivot by the gun's yaw, the angle to the aim point clamped to the arc, so shots leave the turned muzzle.
 //
 // On screen (grannyhooks.h, after the game samples a model's pose): the gun's yaw bone and the model's turret bone
-// (which carries the launch point and the muzzle flash) turn by the shown yaw, which follows the game's yaw at the turn
-// rate and goes back to 0 half a second after the unit last aimed, or as soon as the gun or the gunner plays a clip
+// (which carries the launch point and the muzzle flash) turn by the shown yaw less the rest yaw (the clips show the rest),
+// the shown yaw following the game's yaw at the turn rate and going back to the rest yaw (0 before version 2 of the aim
+// file) half a second after the unit last aimed, or as soon as the gun or the gunner plays a clip
 // named for a reload, a death or a deploy (the gunner's new magazine comes to where the hopper is at rest, a corpse
 // shows the gun at rest, and the gunner holds the reins while the camel lies down or rises); the gunner's bones take
 // the aim table's pose for the clip and time the model plays, between the two nearest yaws.
@@ -4431,6 +4435,7 @@ struct AimFile {
   std::string gunBone, turretBone;
   float pivot[3] = {};
   float muzzle[3] = {};
+  float home = 0.0f;        // version 2: the gun's rest yaw, where its clips show it (degrees, the unit's right +)
   std::vector<float> yaws;
   std::vector<std::string> bones;
   std::map<std::string, Clip> clips;
@@ -4439,9 +4444,9 @@ struct AimFile {
   // or a shrinking one [1]: shown when the gun comes to rest, so no foot is left in the air
   std::vector<std::pair<float, float>> bands;
   std::map<std::string, std::pair<Clip, Clip>> settled;
-  // the arc each side the aim file covers (degrees): the gun turns no farther than its table goes
-  float left() const { return yaws.empty() ? 0.0f : -yaws.front(); }
-  float right() const { return yaws.empty() ? 0.0f : yaws.back(); }
+  // the yaws the aim file covers (degrees): the gun turns no farther than its table goes
+  float lowest() const { return yaws.empty() ? 0.0f : yaws.front(); }
+  float highest() const { return yaws.empty() ? 0.0f : yaws.back(); }
 };
 
 std::vector<AimFile> g_aims;
@@ -4476,7 +4481,8 @@ bool ReadAim(AimFile& aim) {
     return false;
   }
   at = 4;
-  if (u32() != 1) {
+  const std::uint32_t version = u32();
+  if (version != 1 && version != 2) {
     uhc::Log(L"turretArc: %ls: unknown version", aim.path.c_str());
     return false;
   }
@@ -4487,6 +4493,12 @@ bool ReadAim(AimFile& aim) {
   }
   for (float& p : aim.muzzle) {
     p = f32();
+  }
+  if (version >= 2) {
+    if (!need(4)) {
+      return false;
+    }
+    aim.home = f32();
   }
   const std::uint32_t nyaw = u32();
   if (nyaw < 2 || nyaw > 64 || !need(4 * nyaw + 4)) {
@@ -4604,9 +4616,30 @@ int AimOf(const char* unit) {
 
 struct Turret {
   const char* unitAction;
-  float arc;   // degrees each side
+  float arc;   // degrees each side of the rest yaw
   float rate;  // degrees a second
 };
+
+float HomeOf(int aim) { return aim >= 0 && aim < static_cast<int>(g_aims.size()) ? g_aims[aim].home : 0.0f; }
+
+// The action, or one of its children [action+40h] (the same list layout as the manager's), is `ua`.
+bool Holds(const char* action, const char* ua, int depth) {
+  if (action == nullptr || depth > 4) {
+    return false;
+  }
+  if (action == ua) {
+    return true;
+  }
+  const char* list = action + 0x40;
+  const std::int32_t count = Field<std::int32_t>(list, 0);
+  const char* const* actions = Field<const char* const*>(list, 8);
+  for (std::int32_t i = 0; actions != nullptr && i < count && i < 64; ++i) {
+    if (Holds(actions[i], ua, depth + 1)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 // The unit's attack action (an action of its manager's list [[unit+58h]+14h] {count +0, data +8} or their children
 // [action+40h], as src/modifiers.h walks them) whose tactics action has the turret (bit 25 and an arc). The list,
@@ -4665,15 +4698,34 @@ float AngleTo(const char* unit, const float* point) {
 
 float Clamp(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
-// The gun's reach each side: the tactics' arc, no farther than the aim file's table goes (a table from -30 to +90
-// gives -30 / +90 under an arc of 90; a table of -90..+90 keeps the arc symmetric, as before).
-void ArcOf(const Turret& turret, int aim, float* left, float* right) {
-  *left = turret.arc;
-  *right = turret.arc;
-  if (aim >= 0 && aim < static_cast<int>(g_aims.size())) {
-    *left = std::fmin(*left, g_aims[aim].left());
-    *right = std::fmin(*right, g_aims[aim].right());
+// An angle brought into (-180, 180].
+float Wrap(float a) {
+  while (a > 180.0f) {
+    a -= 360.0f;
   }
+  while (a <= -180.0f) {
+    a += 360.0f;
+  }
+  return a;
+}
+
+// The gun's reach: the tactics' arc each side of the rest yaw (the aim file's home, 0 before version 2), no farther
+// than the aim file's table goes (a table from -30 to +90 gives -30..+90 under an arc of 90; one of +30..+150 with
+// its rest at +90 gives +30..+150 under 60; a table of -90..+90 keeps the arc symmetric, as before).
+void ArcOf(const Turret& turret, int aim, float* lo, float* hi) {
+  const float home = HomeOf(aim);
+  *lo = home - turret.arc;
+  *hi = home + turret.arc;
+  if (aim >= 0 && aim < static_cast<int>(g_aims.size())) {
+    *lo = std::fmax(*lo, g_aims[aim].lowest());
+    *hi = std::fmin(*hi, g_aims[aim].highest());
+  }
+}
+
+// The aim's yaw for an angle to the target: inside the arc, measured about the rest yaw so an arc that does not hold
+// ahead is not cut where the angle wraps.
+float AimYaw(float angle, float home, float lo, float hi) {
+  return home + Clamp(Wrap(angle - home), lo - home, hi - home);
 }
 
 // The model's +z is the unit's forward and +x its right [unit+38h] (seen in game: a turn of +60 about the bones' y
@@ -5045,8 +5097,9 @@ void AfterSample(void* instance, int first, int count, void* pose) {
     float c = 0.0f;
     sh.home = IsHomeClip(PlayingClip(instance, &c));
   }
+  const float rest = HomeOf(sh.aim);
   const float target =
-      (!sh.home && sh.aimedAt >= 0 && Now(world) - sh.aimedAt <= kAimHoldMs) ? sh.gameYaw : 0.0f;
+      (!sh.home && sh.aimedAt >= 0 && Now(world) - sh.aimedAt <= kAimHoldMs) ? sh.gameYaw : rest;
   LARGE_INTEGER now;
   QueryPerformanceCounter(&now);
   const double dt = sh.lastReal.QuadPart == 0 ? 0.0 : Seconds(sh.lastReal, now);
@@ -5080,25 +5133,27 @@ void AfterSample(void* instance, int first, int count, void* pose) {
     }
   }
   const float modelYaw = kModelSense * (g_testYawOn ? g_testYaw : sh.shownYaw);
+  // the clips show the gun (and the camel's turret bone) at the rest yaw: the bones turn by the rest of the way
+  const float turn = modelYaw - kModelSense * rest;
   const void* skeleton = SkeletonOf(instance);
   const BoneMap& m = BonesFor(sh.aim, skeleton);
   const int end = first + count;
   switch (found->second.role) {
     case Role::kGun:
-      if (m.gun >= first && m.gun < end && modelYaw != 0.0f) {
-        TurnBone(pose, m.gun, modelYaw);
+      if (m.gun >= first && m.gun < end && turn != 0.0f) {
+        TurnBone(pose, m.gun, turn);
       }
       break;
     case Role::kBody:
-      if (m.turret >= first && m.turret < end && modelYaw != 0.0f) {
-        TurnBone(pose, m.turret, modelYaw);
+      if (m.turret >= first && m.turret < end && turn != 0.0f) {
+        TurnBone(pose, m.turret, turn);
       }
       break;
     case Role::kGunner: {
       float clock = 0.0f;
       const char* clip = PlayingClip(instance, &clock);
       if (clip != nullptr && !m.gunner.empty()) {
-        if (g_log && g_poseLines < 40 && modelYaw != 0.0f) {
+        if (g_log && g_poseLines < 40 && turn != 0.0f) {
           ++g_poseLines;
           uhc::Log(L"turretArc: unit %d gunner clip %hs at %.2f s, yaw %.1f", sh.unitId, clip, clock, modelYaw);
         }
@@ -5117,7 +5172,7 @@ void Tick(char* world, std::int32_t) {
   for (auto it = g_shown.begin(); it != g_shown.end();) {
     const char* unit = UnitById(world, it->first);
     const bool idle = it->second.aimedAt < 0 || now - it->second.aimedAt > 4 * kAimHoldMs;
-    if (unit == nullptr || (idle && it->second.shownYaw == 0.0f)) {
+    if (unit == nullptr || (idle && it->second.shownYaw == HomeOf(it->second.aim))) {
       it = g_shown.erase(it);
       continue;
     }
@@ -5131,7 +5186,11 @@ void Tick(char* world, std::int32_t) {
 
 extern "C" {
 
-// From the head of FUN_0048AA9F: 1 keeps the unit's facing (the point is inside its turret's arc).
+float g_uhcTurretPoint[3] = {};  // the point the stock facing gets instead (return 2), so the target ends at the rest yaw
+
+// From the head of FUN_0048AA9F: 1 keeps the unit's facing (the point is inside its turret's arc); 2 runs the stock
+// turn toward g_uhcTurretPoint (an arc about a rest yaw that is not ahead: the unit turns until the point sits at the
+// rest yaw); 0 runs it as it was.
 std::int32_t __stdcall UhcTurretFace(const char* unit, const float* point) {
   if (unit == nullptr || point == nullptr) {
     return 0;
@@ -5152,29 +5211,60 @@ std::int32_t __stdcall UhcTurretFace(const char* unit, const float* point) {
     return 0;
   }
   const float angle = AngleTo(unit, point);
-  float left, right;
-  ArcOf(turret, aim, &left, &right);
-  const bool inside = angle >= -left - 0.5f && angle <= right + 0.5f;  // a target on the arc's edge: the gun
+  const float home = HomeOf(aim);
+  float lo, hi;
+  ArcOf(turret, aim, &lo, &hi);
+  const float rel = Wrap(angle - home);
+  const bool inside = rel >= lo - home - 0.5f && rel <= hi - home + 0.5f;  // a target on the arc's edge: the gun
   Shown& sh = g_shown[id];
-  if (sh.unitId < 0) {
+  if (sh.unitId < 0 || sh.aim != aim) {   // new, or the unit changed type (another aim file)
+    sh = Shown{};
     sh.unitId = id;
     sh.aim = aim;
+    sh.shownYaw = home;
     MapInstances(unit, aim);
+  }
+  // beyond an arc about a rest yaw that is not ahead, the unit turns until the point sits at that yaw: the stock turn
+  // gets the point turned by minus the rest yaw about the unit (its attack must be the current action
+  // [[unit+58h]+24h], so no other caller of the turn is redirected)
+  bool redirect = false;
+  if (!inside && home != 0.0f) {
+    const char* manager = Field<const char*>(unit, 0x58);
+    redirect = manager != nullptr && Holds(Field<const char*>(manager, 0x24), turret.unitAction, 0);
+    if (redirect) {
+      const float* pos = reinterpret_cast<const float*>(unit + 0x14);
+      const float* fwd = reinterpret_cast<const float*>(unit + 0x20);
+      const float* up = reinterpret_cast<const float*>(unit + 0x2C);
+      const float* right = reinterpret_cast<const float*>(unit + 0x38);
+      const float d[3] = {point[0] - pos[0], point[1] - pos[1], point[2] - pos[2]};
+      const float f = d[0] * fwd[0] + d[1] * fwd[1] + d[2] * fwd[2];
+      const float r = d[0] * right[0] + d[1] * right[1] + d[2] * right[2];
+      const float u = d[0] * up[0] + d[1] * up[1] + d[2] * up[2];
+      const float a = -home * kPi / 180.0f;
+      const float nf = f * std::cos(a) - r * std::sin(a);
+      const float nr = f * std::sin(a) + r * std::cos(a);
+      for (int i = 0; i < 3; ++i) {
+        g_uhcTurretPoint[i] = pos[i] + nf * fwd[i] + nr * right[i] + u * up[i];
+      }
+    }
   }
   const bool logIt = g_log && g_logLines < kMaxLogLines &&
                      (sh.aimedAt < 0 || inside != sh.lastInside || std::fabs(angle - sh.lastLogged) > 5.0f);
-  sh.gameYaw = Clamp(angle, -left, right);
+  sh.gameYaw = AimYaw(angle, home, lo, hi);
   sh.aimedAt = Now(world);
   sh.rate = turret.rate;
   sh.lastInside = inside;
   if (logIt) {
     ++g_logLines;
     sh.lastLogged = angle;
-    uhc::Log(L"turretArc: %d ms, unit %d aims at %.1f degrees (arc -%.0f..+%.0f): %ls", Now(world), id,
-             static_cast<double>(angle), static_cast<double>(left), static_cast<double>(right),
-             inside ? L"the gun turns" : L"the unit turns");
+    uhc::Log(L"turretArc: %d ms, unit %d aims at %.1f degrees (arc %+.0f..%+.0f, rest %+.0f): %ls", Now(world), id,
+             static_cast<double>(angle), static_cast<double>(lo), static_cast<double>(hi), static_cast<double>(home),
+             inside ? L"the gun turns"
+                    : redirect ? L"the unit turns until it sits at the rest yaw"
+                               : home != 0.0f ? L"the unit turns (its attack is not the current action yet)"
+                                              : L"the unit turns");
   }
-  return inside ? 1 : 0;
+  return inside ? 1 : (redirect ? 2 : 0);
 }
 
 // From 0x4995D5 in the projectile launch: the shot's start (world) turned about the turret's pivot by the gun's yaw.
@@ -5187,9 +5277,10 @@ void __stdcall UhcTurretLaunch(const char* unitAction, const char* unit, float* 
   if (aim < 0 || !TurretOf(unit, &turret) || turret.unitAction != unitAction) {
     return;
   }
-  float arcLeft, arcRight;
-  ArcOf(turret, aim, &arcLeft, &arcRight);
-  const float yaw = Clamp(AngleTo(unit, aimPoint), -arcLeft, arcRight);
+  float lo, hi;
+  ArcOf(turret, aim, &lo, &hi);
+  const float home = HomeOf(aim);
+  const float yaw = AimYaw(AngleTo(unit, aimPoint), home, lo, hi);
   const float* pos = reinterpret_cast<const float*>(unit + 0x14);
   const float* fwd = reinterpret_cast<const float*>(unit + 0x20);
   const float* up = reinterpret_cast<const float*>(unit + 0x2C);
@@ -5200,12 +5291,12 @@ void __stdcall UhcTurretLaunch(const char* unitAction, const char* unit, float* 
   for (int i = 0; i < 3; ++i) {
     pivot[i] = pos[i] + kModelSense * pv[0] * right[i] + pv[1] * up[i] + pv[2] * fwd[i];
   }
-  // the muzzle (model space, at yaw 0) turned about the pivot by the yaw: the start of the shot
+  // the muzzle (model space, at the rest yaw) turned about the pivot by the rest of the way: the start of the shot
   const float* mz = g_aims[aim].muzzle;
   const float mf = mz[2] - pv[2];
   const float mr = kModelSense * (mz[0] - pv[0]);
   const float mu = mz[1] - pv[1];
-  const float a = yaw * kPi / 180.0f;
+  const float a = (yaw - home) * kPi / 180.0f;
   const float nf = mf * std::cos(a) - mr * std::sin(a);
   const float nr = mf * std::sin(a) + mr * std::cos(a);
   static unsigned launchLines = 0;
@@ -5263,11 +5354,11 @@ Outcome ApplyTurretArc(const Config& config) {
       return Outcome::kFailed;
     }
     Log(L"turretArc: %hs: %ls (gun bone %hs, turret bone %hs, pivot %.2f %.2f %.2f, %u gunner bones, %u clips, "
-        L"yaws %.0f..%.0f, %u step bands, %u settled clips)",
+        L"yaws %.0f..%.0f, rest %.0f, %u step bands, %u settled clips)",
         aim.proto.c_str(), aim.path.c_str(), aim.gunBone.c_str(), aim.turretBone.c_str(),
         static_cast<double>(aim.pivot[0]), static_cast<double>(aim.pivot[1]), static_cast<double>(aim.pivot[2]),
         static_cast<unsigned>(aim.bones.size()), static_cast<unsigned>(aim.clips.size()),
-        static_cast<double>(aim.yaws.front()), static_cast<double>(aim.yaws.back()),
+        static_cast<double>(aim.yaws.front()), static_cast<double>(aim.yaws.back()), static_cast<double>(aim.home),
         static_cast<unsigned>(aim.bands.size()), static_cast<unsigned>(aim.settled.size()));
     g_aims.push_back(std::move(aim));
   }
@@ -5308,6 +5399,7 @@ UhcTurretFace PROTO STDCALL :DWORD, :DWORD
 UhcTurretLaunch PROTO STDCALL :DWORD, :DWORD, :DWORD, :DWORD
 
 EXTERNDEF g_uhcTurretOn:DWORD    ; above 0 while the key has a unit to serve
+EXTERNDEF g_uhcTurretPoint:DWORD ; the point the stock turn gets instead when UhcTurretFace returns 2
 
 .data
 faceContinue    dd 0048AAA5h    ; mov eax,[esi]: the stock body after the three instructions re-executed here
@@ -5319,7 +5411,10 @@ launchContinue  dd 004995DEh    ; fsub dword ptr [esp+20h]: the shot's direction
 ; Vector* point), ret 4: the unit turns to face the point (0x48AB4A stores the wanted forward at [[unit+4Ch]+18h]) and
 ; returns 1. The attack update calls it on every update (through 0x48AA5D for a unit target). UhcTurretFace returns 1
 ; when the unit's attack has the key's turret and the point is inside its arc: then the body keeps its facing and the
-; function returns 1 as the stock one does; otherwise the stock function runs.
+; function returns 1 as the stock one does; 2 when the arc is about a rest yaw that is not ahead and the point is beyond
+; it: the stock function runs with its argument replaced by g_uhcTurretPoint (the point turned by minus the rest yaw,
+; so the unit turns until the target sits at the rest yaw; the argument slot is the caller's, dead after the call,
+; ret 4); otherwise the stock function runs.
 UhcTurretFaceHook PROC
     TRACE_ONCE "turretArc facing (0x48AA9F)"
     cmp g_uhcTurretOn, 0
@@ -5333,8 +5428,12 @@ UhcTurretFaceHook PROC
     pop ecx
     test eax, eax
     je stock
+    cmp eax, 2
+    je redirect
     mov al, 1
     ret 4
+redirect:
+    mov dword ptr [esp+4], OFFSET g_uhcTurretPoint
 stock:
     sub esp, 18h
     push esi

@@ -4255,29 +4255,44 @@ game; `docs/engine-symbols.md`, "Turrets, facing and the Granny pose", REA evide
   proto is listed, its attack with the tag is in its action list (`[unit+58h]+14h`, children at `[action+40h]`: the attack
   asks for the facing before it is the current action) and the point is within the arc (+ 0.5 degree) of the unit's
   forward `[unit+20h]`, the angle `atan2(right, forward)` in the ground plane; the hook then returns 1 (`mov al,1 / ret 4`)
-  without writing the wanted forward. Otherwise the stock function runs. The arc is per side: the tag's number, no
-  farther than the aim file's yaws go on that side (`min(arc, -first yaw)` to the left, `min(arc, last yaw)` to the
-  right), so a table of -30..+90 under `90` gives -30..+90, and a table of -90..+90 keeps the tag's symmetric arc.
+  without writing the wanted forward. Otherwise the stock function runs. The arc is the tag's number each side of the
+  gun's rest yaw (the aim file's, 0 before its version 2), no farther than the aim file's yaws go (`max(rest - arc,
+  first yaw)` to `min(rest + arc, last yaw)`; the angle is taken about the rest yaw, so an arc that does not hold ahead
+  is not cut where the angle wraps): a table of -30..+90 at rest 0 under `90` gives -30..+90, a table of -90..+90
+  keeps the tag's symmetric arc, and a table of +30..+150 at rest +90 under `60` gives +30..+150.
+- **Beyond an arc about a rest yaw that is not ahead** (round 6, 2026-11-26), the stock turn would bring the target
+  ahead, outside the arc. `UhcTurretFace` returns 2 and the hook writes `&g_uhcTurretPoint` over the stock argument
+  (`[esp+4]`, the caller's slot, dead after the call: the function is `ret 4`) before the stock code runs: the point
+  turned by minus the rest yaw about the unit (in its forward/right/up axes), so the wanted forward FUN_0048AB4A
+  stores puts the target at the rest yaw. Only while the unit's current action `[[unit+58h]+24h]` is the turret attack
+  (or holds it among its children `[action+40h]`): the other callers of the turn (10 direct, 21 through 0x48AA5D) keep
+  the stock behaviour. The turn under way goes on in the movement code after the target enters the arc (the hook
+  then keeps the facing), so the unit ends with the target at the rest yaw. Seen in game: a House at 180 degrees,
+  `the unit turns until it sits at the rest yaw` from 180 down to 151, then `the gun turns` while the camel turned on to
+  bring it to +90.
 - **Launch hook** (`UhcTurretLaunchHook`, 0x4995D5, 9 bytes `fld [esp+28h] / push 40A00000h` re-executed; continues at
   0x4995DE): for a listed unit whose current attack is the tagged one, the start becomes the aim file's pivot plus its
-  muzzle turned by the angle to the aim point clamped to the arc, in the unit's axes (`[unit+14h]` position, `+20h`
-  forward, `+2Ch` up, `+38h` right; the model's +x is the unit's right).
+  muzzle (given at the rest yaw) turned by the angle to the aim point clamped to the arc, less the rest yaw, in the
+  unit's axes (`[unit+14h]` position, `+20h` forward, `+2Ch` up, `+38h` right; the model's +x is the unit's right).
 - Both use only the unit, its action list, its tactics and the aim point: game state, the same on every machine. The
   key keeps no game state between updates.
 - **Display** (`grannyhooks.*`, the shared owner of the import slot 0xB847AC: `AddGrannySampleObserver`; the slot is
   checked against `GetProcAddress("_GrannySampleModelAnimations@16")` before it is written). After the stock sample,
   for the instances the key mapped (each world tick, `AddWorldTick`, from the units that aimed, through their visual and
   its attachments), the shown yaw moves toward the last aim at the turn rate in real time, and goes home half a second
-  after the last aim or at once while the gun or the gunner plays a clip named for a reload, a death or a deploy. The
-  gun's yaw bone and the camel's turret bone turn by it (a quaternion about their local y). The gunner's bones take the
+  after the last aim or at once while the gun or the gunner plays a clip named for a reload, a death or a deploy; home
+  is the rest yaw. The clips show the gun (and the camel's turret bone) at the rest yaw, so the gun's yaw bone and the
+  camel's turret bone turn by the shown yaw less the rest yaw (a quaternion about their local y): nothing at rest, and
+  nothing while a deploy clip swings the gun itself. The gunner's bones take the
   aim table's local transforms for the clip that weighs most among the instance's controls and its clock, blended
   between the two nearest frames and yaws (`granny2.dll`'s own exports). A gunner on foot steps round the post as the
   gun turns (his feet are part of the table); when the shown yaw stops, a step under way finishes in 0.2 s: the pose
   blends to the aim file's settled table for the way the gun last turned (his feet down at the end of the band, his
   hands still on the grips at the shown yaw), and back to the stepping table when the gun turns again, so the gun rests
   exactly on its target and no foot is left in the air. Display only: nothing of it reaches the game.
-- **Aim file** (`UHCA`, version 1): the gun's yaw bone and the turret bone (32 B names), the pivot and the muzzle (3
-  floats each, the camel's model space at the fire clip's first frame), the yaws, the gunner's bones, then per clip its
+- **Aim file** (`UHCA`, version 1 or 2): the gun's yaw bone and the turret bone (32 B names), the pivot and the muzzle (3
+  floats each, the camel's model space at the fire clip's first frame), in version 2 the rest yaw (a float, degrees,
+  the unit's right positive; version 1 rests ahead), the yaws, the gunner's bones, then per clip its
   rider animation's name, length and frames, `[frame][yaw][bone]` position and rotation. Optional sections follow, each
   a 4-byte tag and a count: `BAND`, the (from, to) yaw bands in which a gunner's foot is in the air (logged), and
   `SETL`, per clip its name, length and frames and two tables like the clip's (the step finished toward a growing yaw,
