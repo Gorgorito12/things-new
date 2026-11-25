@@ -4396,16 +4396,22 @@ turretArc <Proto> <aim file> [<Proto> <aim file> ...] [log]
 
   The number is the arc on each side of ahead, in degrees (90: the front half); `maxTurnAnglePerSecond` is how fast
   the gun turns on screen (240 when absent); `tracking="always"` is required. An attack without the tag, or a proto
-  not listed in the cfg, works as before.
+  not listed in the cfg, works as before. The gun turns no farther than its aim file goes on each side: the
+  deployed gatling camel's table covers -30 to +90 (30 degrees toward the gunner's side, 90 across the camel), so
+  under `90` its arc is -30..+90; a table of -90..+90 keeps the tag's arc on both sides.
 - **The aim file** of each listed proto (a path from the game folder) belongs to its model: aoe3-blender-tools'
   `tools/make_gun_camel.py` writes it beside the model (`gatling_camel_A55.aim`). It names the gun's turning bone
   (`bone_yaw`, on the post's top) and the model's turret bone (`bone_turret`, which carries the launch point and the
-  muzzle flash), gives the post's top and the muzzle in the model, and holds the gunner's pose every 15 degrees of
-  the gun's turn for the clips he works the gun in (idle, deployed, fire, reload).
+  muzzle flash), gives the post's top and the muzzle in the model, and holds the gunner's pose for the clips he works
+  the gun in, every 15 degrees of the gun's turn for a gunner in the saddle (idle, fire, reload) and every 2 for a
+  gunner on foot (deployed, fire, reload), whose feet step round the post with the gun. For him it also holds his
+  pose once a step under way has finished, shown when the gun comes to rest.
 - **In game:**
   - A target within the arc: the unit's body keeps its facing, and the gun turns to the target at its turn rate,
     the gunner's chest, arms and head following (his hands stay on the crank and the breech, or move to the casing
-    and the reins at the far side).
+    and the reins at the far side). A gunner on foot steps round the post with the gun, one foot at a time; when
+    the gun stops on its target, the step under way finishes in 0.2 s with his hands on the grips, so no foot is
+    left in the air.
   - A target beyond the arc (behind): the unit turns as before, to face it; the gun comes back to the middle.
   - Each shot leaves from the turned muzzle, so the tracers and the projectiles start where the gun points.
   - The gun goes back to the middle half a second after the unit last aimed, and at once while the unit plays a

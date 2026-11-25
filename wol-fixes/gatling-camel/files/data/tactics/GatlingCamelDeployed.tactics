@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The gatling camel that fires deployed: GatlingCamel.tactics with the deploy and undeploy lasting as long as their animations (the camel lies down with the gunner in the saddle: 3.33 s; it stands up: 2.17 s); the attack's <turret> (arc 90 each side) is read by the turretArc key, which turns the gun on its post instead of the camel. -->
+<!-- The gatling camel that fires deployed: GatlingCamel.tactics with the deploy and undeploy lasting as long as their animations (the camel lies down and the gunner gets off and walks to his station behind the gun: 5.33 s; he gets back on and it stands up: 4.17 s); the attack's <turret> (arc 90, the gun turning 100 degrees a second so the gunner's steps keep pace) is read by the turretArc key, which turns the gun on its post instead of the camel; the key keeps the gun inside the aim file's yaws (this unit's: -30 to +90). -->
 
 <tactics>
 	<action>
@@ -25,7 +25,7 @@
 		<rate type="All">1.0</rate>
 		<instantballistics>1</instantballistics>
 		<basedamagecap>1</basedamagecap>
-		<turret tracking="always" maxTurnAnglePerSecond="240">90</turret>
+		<turret tracking="always" maxTurnAnglePerSecond="100">90</turret>
 	</action>
 	<tactic>
 		Limber
@@ -36,7 +36,7 @@
 			<tactic>Bombard</tactic>
 			<action>Limber</action>
 			<anim>Bombard_unlimber</anim>
-			<length>3.33</length>
+			<length>5.33</length>
 			<exit>1</exit>
 			<commandautomatic>1</commandautomatic>
 			<automatic>1</automatic>
@@ -55,7 +55,7 @@
 			<tactic>Limber</tactic>
 			<action>Limber</action>
 			<anim>Bombard_limber</anim>
-			<length>2.17</length>
+			<length>4.17</length>
 			<exit>1</exit>
 		</transition>
 		<idleanim>Bombard_ranged_idle</idleanim>

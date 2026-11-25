@@ -57,6 +57,7 @@ constexpr float kPi = 3.14159265358979f;
 constexpr std::int32_t kAimHoldMs = 500;      // game time a shown yaw is kept after the last aim, then it goes home
 constexpr float kDefaultRate = 240.0f;        // degrees a second, when the tag gives none
 constexpr int kMaxChain = 16;
+constexpr double kSettleSeconds = 0.20;       // a step under way when the gun comes to rest finishes in this time
 
 template <typename T>
 T Field(const void* base, std::uint32_t offset) {
@@ -95,6 +96,14 @@ struct AimFile {
   std::vector<float> yaws;
   std::vector<std::string> bones;
   std::map<std::string, Clip> clips;
+  // optional, after the clips (a gunner on foot): "BAND", the yaw bands in which a foot is in the air (for the log);
+  // "SETL", per clip his pose once the step under way has finished, the gun having turned toward a growing yaw [0]
+  // or a shrinking one [1]: shown when the gun comes to rest, so no foot is left in the air
+  std::vector<std::pair<float, float>> bands;
+  std::map<std::string, std::pair<Clip, Clip>> settled;
+  // the arc each side the aim file covers (degrees): the gun turns no farther than its table goes
+  float left() const { return yaws.empty() ? 0.0f : -yaws.front(); }
+  float right() const { return yaws.empty() ? 0.0f : yaws.back(); }
 };
 
 std::vector<AimFile> g_aims;
@@ -155,6 +164,33 @@ bool ReadAim(AimFile& aim) {
   for (std::uint32_t i = 0; i < nbones; ++i) {
     aim.bones.push_back(str(32));
   }
+  auto readClip = [&](Clip& clip) {
+    clip.length = f32();
+    clip.frames = static_cast<int>(u32());
+    const std::size_t floats = static_cast<std::size_t>(clip.frames) * nyaw * nbones * 7;
+    if (clip.frames < 2 || clip.frames > 100000 || !need(floats * 4)) {
+      return false;
+    }
+    clip.data.resize(floats);
+    std::memcpy(clip.data.data(), &b[at], floats * 4);
+    at += floats * 4;
+    return true;
+  };
+  auto copyFrames = [&](Clip& to, const Clip& like) {
+    const std::size_t floats = static_cast<std::size_t>(like.frames) * nyaw * nbones * 7;
+    if (!need(floats * 4)) {
+      return false;
+    }
+    to.length = like.length;
+    to.frames = like.frames;
+    to.data.resize(floats);
+    std::memcpy(to.data.data(), &b[at], floats * 4);
+    at += floats * 4;
+    return true;
+  };
+  if (!need(4)) {
+    return false;
+  }
   const std::uint32_t nclips = u32();
   for (std::uint32_t c = 0; c < nclips; ++c) {
     if (!need(64 + 8)) {
@@ -162,16 +198,41 @@ bool ReadAim(AimFile& aim) {
     }
     std::string name = str(64);
     Clip clip;
-    clip.length = f32();
-    clip.frames = static_cast<int>(u32());
-    const std::size_t floats = static_cast<std::size_t>(clip.frames) * nyaw * nbones * 7;
-    if (clip.frames < 2 || !need(floats * 4)) {
+    if (!readClip(clip)) {
       return false;
     }
-    clip.data.resize(floats);
-    std::memcpy(clip.data.data(), &b[at], floats * 4);
-    at += floats * 4;
     aim.clips[name] = std::move(clip);
+  }
+  // the optional sections
+  while (need(8)) {
+    const bool band = std::memcmp(&b[at], "BAND", 4) == 0, setl = std::memcmp(&b[at], "SETL", 4) == 0;
+    if (!band && !setl) {
+      break;
+    }
+    at += 4;
+    const std::uint32_t count = u32();
+    if (count > 256) {
+      return false;
+    }
+    for (std::uint32_t i = 0; i < count; ++i) {
+      if (band) {
+        if (!need(8)) {
+          return false;
+        }
+        const float lo = f32();
+        aim.bands.emplace_back(lo, f32());
+        continue;
+      }
+      if (!need(64 + 8)) {
+        return false;
+      }
+      std::string name = str(64);
+      std::pair<Clip, Clip> both;
+      if (!readClip(both.first) || !copyFrames(both.second, both.first)) {
+        return false;
+      }
+      aim.settled[name] = std::move(both);
+    }
   }
   return true;
 }
@@ -266,6 +327,17 @@ float AngleTo(const char* unit, const float* point) {
 
 float Clamp(float v, float lo, float hi) { return v < lo ? lo : (v > hi ? hi : v); }
 
+// The gun's reach each side: the tactics' arc, no farther than the aim file's table goes (a table from -30 to +90
+// gives -30 / +90 under an arc of 90; a table of -90..+90 keeps the arc symmetric, as before).
+void ArcOf(const Turret& turret, int aim, float* left, float* right) {
+  *left = turret.arc;
+  *right = turret.arc;
+  if (aim >= 0 && aim < static_cast<int>(g_aims.size())) {
+    *left = std::fmin(*left, g_aims[aim].left());
+    *right = std::fmin(*right, g_aims[aim].right());
+  }
+}
+
 // The model's +z is the unit's forward and +x its right [unit+38h] (seen in game: a turn of +60 about the bones' y
 // took the gun to the unit's right), so the aim files' yaw (a turn taking +z toward +x) is the game angle.
 constexpr float kModelSense = 1.0f;
@@ -283,6 +355,8 @@ struct Shown {
   bool lastInside = false;     // for the log
   bool home = false;           // the gun or the gunner plays a reload or a death: the gun goes home
   float lastLogged = 0.0f;
+  int dir = 0;                 // the way the gun last turned on screen: +1 the yaw growing, -1 shrinking
+  float settle = 0.0f;         // 0..1: the gunner's step under way finished (the gun at rest), else stepping
 };
 
 std::unordered_map<std::int32_t, Shown> g_shown;  // unit ID -> its state
@@ -528,12 +602,19 @@ bool IsHomeClip(const char* name) {
 }
 
 void PoseGunner(void* pose, int count, const AimFile& aim, const BoneMap& m, const char* clipName, float clock,
-                float modelYaw) {
+                float modelYaw, int dir, float settle) {
   const auto found = aim.clips.find(clipName);
   if (found == aim.clips.end()) {
     return;
   }
   const Clip& c = found->second;
+  const Clip* settled = nullptr;  // his feet down at rest (the aim file's SETL), blended in by `settle`
+  if (settle > 0.0f && dir != 0) {
+    const auto s = aim.settled.find(clipName);
+    if (s != aim.settled.end() && s->second.first.frames == c.frames) {
+      settled = dir > 0 ? &s->second.first : &s->second.second;
+    }
+  }
   float t = c.length > 0.0f ? std::fmod(clock, c.length) : 0.0f;
   if (t < 0.0f) {
     t += c.length;
@@ -551,16 +632,28 @@ void PoseGunner(void* pose, int count, const AimFile& aim, const BoneMap& m, con
   const int y1 = y0 + 1;
   const float wy = Clamp((y - aim.yaws[y0]) / (aim.yaws[y1] - aim.yaws[y0]), 0.0f, 1.0f);
   const std::size_t nb = aim.bones.size();
-  auto at = [&](int f, int yy, std::size_t b) { return &c.data[((static_cast<std::size_t>(f) * ny + yy) * nb + b) * 7]; };
+  auto at = [&](const Clip& cl, int f, int yy, std::size_t b) {
+    return &cl.data[((static_cast<std::size_t>(f) * ny + yy) * nb + b) * 7];
+  };
+  const float ws = settled != nullptr ? settle : 0.0f;
   for (std::size_t b = 0; b < nb; ++b) {
     const int bone = m.gunner[b];
     if (bone < 0 || bone >= count) {
       continue;
     }
-    const float* s[4] = {at(f0, y0, b), at(f0, y1, b), at(f1, y0, b), at(f1, y1, b)};
-    const float w[4] = {(1 - wf) * (1 - wy), (1 - wf) * wy, wf * (1 - wy), wf * wy};
+    const float* s[8] = {at(c, f0, y0, b), at(c, f0, y1, b), at(c, f1, y0, b), at(c, f1, y1, b)};
+    float w[8] = {(1 - wf) * (1 - wy), (1 - wf) * wy, wf * (1 - wy), wf * wy};
+    int n = 4;
+    if (ws > 0.0f) {
+      for (int k = 0; k < 4; ++k) {
+        s[4 + k] = at(*settled, k < 2 ? f0 : f1, (k & 1) ? y1 : y0, b);
+        w[4 + k] = w[k] * ws;
+        w[k] *= 1.0f - ws;
+      }
+      n = 8;
+    }
     float p[3] = {}, q[4] = {};
-    for (int k = 0; k < 4; ++k) {
+    for (int k = 0; k < n; ++k) {
       const float sign = (s[k][3] * s[0][3] + s[k][4] * s[0][4] + s[k][5] * s[0][5] + s[k][6] * s[0][6]) < 0 ? -1.f : 1.f;
       for (int i = 0; i < 3; ++i) {
         p[i] += w[k] * s[k][i];
@@ -569,14 +662,14 @@ void PoseGunner(void* pose, int count, const AimFile& aim, const BoneMap& m, con
         q[i] += w[k] * sign * s[k][3 + i];
       }
     }
-    const float n = std::sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
+    const float len = std::sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
     GrannyTransform* tr = g_localTransform(pose, bone);
-    if (tr == nullptr || n < 1e-6f) {
+    if (tr == nullptr || len < 1e-6f) {
       continue;
     }
     std::memcpy(tr->position, p, sizeof p);
     for (int i = 0; i < 4; ++i) {
-      tr->orientation[i] = q[i] / n;
+      tr->orientation[i] = q[i] / len;
     }
     tr->flags |= 3;
   }
@@ -620,7 +713,17 @@ void AfterSample(void* instance, int first, int count, void* pose) {
   const double dt = sh.lastReal.QuadPart == 0 ? 0.0 : Seconds(sh.lastReal, now);
   sh.lastReal = now;
   const float step = static_cast<float>(sh.rate * (dt > 0.25 ? 0.25 : dt));
+  const float before = sh.shownYaw;
   sh.shownYaw = std::fabs(target - sh.shownYaw) <= step ? target : sh.shownYaw + (target > sh.shownYaw ? step : -step);
+  // the gunner's feet: while the gun turns he steps with it (the table at the shown yaw); at rest the step under
+  // way finishes in kSettleSeconds (the settled table), his hands staying on the grips
+  const float settleStep = static_cast<float>((dt > 0.25 ? 0.25 : dt) / kSettleSeconds);
+  if (sh.shownYaw != before) {
+    sh.dir = sh.shownYaw > before ? 1 : -1;
+    sh.settle = std::fmax(0.0f, sh.settle - settleStep);
+  } else {
+    sh.settle = std::fmin(1.0f, sh.settle + settleStep);
+  }
   const float modelYaw = kModelSense * (g_testYawOn ? g_testYaw : sh.shownYaw);
   const void* skeleton = SkeletonOf(instance);
   const BoneMap& m = BonesFor(sh.aim, skeleton);
@@ -644,7 +747,7 @@ void AfterSample(void* instance, int first, int count, void* pose) {
           ++g_poseLines;
           uhc::Log(L"turretArc: unit %d gunner clip %hs at %.2f s, yaw %.1f", sh.unitId, clip, clock, modelYaw);
         }
-        PoseGunner(pose, end, g_aims[sh.aim], m, clip, clock, modelYaw);
+        PoseGunner(pose, end, g_aims[sh.aim], m, clip, clock, modelYaw, sh.dir, sh.settle);
       }
       break;
     }
@@ -694,7 +797,9 @@ std::int32_t __stdcall UhcTurretFace(const char* unit, const float* point) {
     return 0;
   }
   const float angle = AngleTo(unit, point);
-  const bool inside = std::fabs(angle) <= turret.arc + 0.5f;  // a target on the arc's edge: the gun
+  float left, right;
+  ArcOf(turret, aim, &left, &right);
+  const bool inside = angle >= -left - 0.5f && angle <= right + 0.5f;  // a target on the arc's edge: the gun
   Shown& sh = g_shown[id];
   if (sh.unitId < 0) {
     sh.unitId = id;
@@ -703,15 +808,16 @@ std::int32_t __stdcall UhcTurretFace(const char* unit, const float* point) {
   }
   const bool logIt = g_log && g_logLines < kMaxLogLines &&
                      (sh.aimedAt < 0 || inside != sh.lastInside || std::fabs(angle - sh.lastLogged) > 5.0f);
-  sh.gameYaw = Clamp(angle, -turret.arc, turret.arc);
+  sh.gameYaw = Clamp(angle, -left, right);
   sh.aimedAt = Now(world);
   sh.rate = turret.rate;
   sh.lastInside = inside;
   if (logIt) {
     ++g_logLines;
     sh.lastLogged = angle;
-    uhc::Log(L"turretArc: %d ms, unit %d aims at %.1f degrees (arc %.0f): %ls", Now(world), id,
-             static_cast<double>(angle), static_cast<double>(turret.arc), inside ? L"the gun turns" : L"the unit turns");
+    uhc::Log(L"turretArc: %d ms, unit %d aims at %.1f degrees (arc -%.0f..+%.0f): %ls", Now(world), id,
+             static_cast<double>(angle), static_cast<double>(left), static_cast<double>(right),
+             inside ? L"the gun turns" : L"the unit turns");
   }
   return inside ? 1 : 0;
 }
@@ -726,7 +832,9 @@ void __stdcall UhcTurretLaunch(const char* unitAction, const char* unit, float* 
   if (aim < 0 || !TurretOf(unit, &turret) || turret.unitAction != unitAction) {
     return;
   }
-  const float yaw = Clamp(AngleTo(unit, aimPoint), -turret.arc, turret.arc);
+  float arcLeft, arcRight;
+  ArcOf(turret, aim, &arcLeft, &arcRight);
+  const float yaw = Clamp(AngleTo(unit, aimPoint), -arcLeft, arcRight);
   const float* pos = reinterpret_cast<const float*>(unit + 0x14);
   const float* fwd = reinterpret_cast<const float*>(unit + 0x20);
   const float* up = reinterpret_cast<const float*>(unit + 0x2C);
@@ -799,10 +907,13 @@ Outcome ApplyTurretArc(const Config& config) {
       Log(L"turretArc: %ls could not be read; feature not applied", aim.path.c_str());
       return Outcome::kFailed;
     }
-    Log(L"turretArc: %hs: %ls (gun bone %hs, turret bone %hs, pivot %.2f %.2f %.2f, %u gunner bones, %u clips)",
+    Log(L"turretArc: %hs: %ls (gun bone %hs, turret bone %hs, pivot %.2f %.2f %.2f, %u gunner bones, %u clips, "
+        L"yaws %.0f..%.0f, %u step bands, %u settled clips)",
         aim.proto.c_str(), aim.path.c_str(), aim.gunBone.c_str(), aim.turretBone.c_str(),
         static_cast<double>(aim.pivot[0]), static_cast<double>(aim.pivot[1]), static_cast<double>(aim.pivot[2]),
-        static_cast<unsigned>(aim.bones.size()), static_cast<unsigned>(aim.clips.size()));
+        static_cast<unsigned>(aim.bones.size()), static_cast<unsigned>(aim.clips.size()),
+        static_cast<double>(aim.yaws.front()), static_cast<double>(aim.yaws.back()),
+        static_cast<unsigned>(aim.bands.size()), static_cast<unsigned>(aim.settled.size()));
     g_aims.push_back(std::move(aim));
   }
   if (!LoadGranny()) {
