@@ -68,6 +68,7 @@
 #include "../unitpanel.h"
 #include "../log.h"
 #include "../patch.h"
+#include "../statpanelrows.h"
 #include "../unittypes.h"
 
 namespace {
@@ -240,7 +241,6 @@ void UhcOverhealInfoMaxHook();
 void UhcOverhealTextStatHook();
 void UhcOverhealTextStatSplitHook();
 void UhcOverhealPortraitHook();
-void UhcOverhealStatRowHook();
 float UhcOverhealReferenceOf(const char* unit);  // overheal_hooks.asm, cdecl; the max for an unmarked unit
 std::int32_t UhcOverhealMarked(const char* proto);
 
@@ -626,8 +626,8 @@ Outcome ApplyOverhealHitpointBars(const Config& config) {
       return Outcome::kFailed;
     }
   }
-  // mov edi,2 / mov [esp+2Ch],edi: the row counter after the HP row.
-  if (g_statRow && !WriteJmp(0x004D76DB, reinterpret_cast<const void*>(&UhcOverhealStatRowHook), 9)) {
+  // The row after the HP row: the shared stat panel row hook (statpanelrows.h), first of its keys.
+  if (g_statRow && !AddStatPanelRow(&UhcOverhealStatRow, "overhealHitpointBars stat")) {
     return Outcome::kFailed;
   }
   if (g_statRow && !AddUnitPanelRow(&UhcOverhealUnitPanel)) {

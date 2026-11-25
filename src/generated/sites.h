@@ -1325,6 +1325,21 @@ inline constexpr Site kGarrisonEnterTail{"GarrisonEnterTail", 0x009C26E1, kGarri
 inline constexpr std::uint8_t kGarrisonLoadHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x24, 0x83, 0xB8, 0x3C, 0x01, 0x00, 0x00, 0x00, 0x57};
 inline constexpr Site kGarrisonLoadHead{"GarrisonLoadHead", 0x009C24B5, kGarrisonLoadHeadBytes, sizeof(kGarrisonLoadHeadBytes)};
 
+inline constexpr std::uint8_t kNurseryCmdExecuteBytes[] = {0x83, 0xEC, 0x1C, 0x53, 0x55, 0x8B, 0x6C, 0x24, 0x28, 0x85, 0xED, 0x56, 0x57, 0x8B, 0xF1, 0x0F, 0x84, 0x5F, 0x02, 0x00, 0x00, 0x83};
+inline constexpr Site kNurseryCmdExecute{"NurseryCmdExecute", 0x007D64F7, kNurseryCmdExecuteBytes, sizeof(kNurseryCmdExecuteBytes)};
+
+inline constexpr std::uint8_t kNetCommandCreateBytes[] = {0x8B, 0x4C, 0x24, 0x08, 0x33, 0xC0, 0x83, 0xF9};
+inline constexpr Site kNetCommandCreate{"NetCommandCreate", 0x005695FC, kNetCommandCreateBytes, sizeof(kNetCommandCreateBytes)};
+
+inline constexpr std::uint8_t kNetCommandPlayersBytes[] = {0x53, 0x8B, 0x5C, 0x24, 0x08, 0x85, 0xDB, 0x56};
+inline constexpr Site kNetCommandPlayers{"NetCommandPlayers", 0x005683B9, kNetCommandPlayersBytes, sizeof(kNetCommandPlayersBytes)};
+
+inline constexpr std::uint8_t kNetCommandUnitsBytes[] = {0x51, 0x53, 0x8B, 0x5C, 0x24, 0x0C, 0x85, 0xDB};
+inline constexpr Site kNetCommandUnits{"NetCommandUnits", 0x005696E1, kNetCommandUnitsBytes, sizeof(kNetCommandUnitsBytes)};
+
+inline constexpr std::uint8_t kNetCommandQueueBytes[] = {0x51, 0x55, 0x8B, 0x6C, 0x24, 0x0C, 0x85, 0xED};
+inline constexpr Site kNetCommandQueue{"NetCommandQueue", 0x00568A1A, kNetCommandQueueBytes, sizeof(kNetCommandQueueBytes)};
+
 inline constexpr std::uint8_t kKillSpawnPlaceBytes[] = {0x81, 0xEC, 0xA8, 0x01, 0x00, 0x00, 0x53, 0x55, 0x33, 0xDB, 0x8B, 0xE9};
 inline constexpr Site kKillSpawnPlace{"KillSpawnPlace", 0x0050703D, kKillSpawnPlaceBytes, sizeof(kKillSpawnPlaceBytes)};
 

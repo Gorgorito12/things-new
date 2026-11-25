@@ -3838,7 +3838,7 @@ END
 
 Contract: [garrisonConvert](../porting-to-another-dll.md#garrisonconvert).
 
-Besides the core helpers, it needs: [`progresspie.h`](helpers.md#progress-pie), [`prototags.h`](helpers.md#proto-tags), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`transformcalls.h`](helpers.md#transform-calls), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
+Besides the core helpers, it needs: [`garrisonobservers.h`](helpers.md#garrison-entries), [`progresspie.h`](helpers.md#progress-pie), [`prototags.h`](helpers.md#proto-tags), [`savedmarkers.h`](helpers.md#state-kept-for-a-saved-game), [`transformcalls.h`](helpers.md#transform-calls), [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
 Sites: `XmlAttribute` `0x598F37` (16 B), `ProtoByName` `0x5A2346` (32 B), `GarrisonLoadHead` `0x9C24B5` (16 B), `GarrisonEnterTail` `0x9C26E1` (31 B), `UnitAliveSlot` `0xB9355C` (4 B).
 

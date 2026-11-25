@@ -40,6 +40,8 @@ Contents:
 - [Floating bars](#floating-bars)
 - [UI gadgets](#ui-gadgets)
 - [Progress pie](#progress-pie)
+- [Stat panel rows (the normal interface)](#stat-panel-rows-the-normal-interface)
+- [Garrison entries](#garrison-entries)
 
 ## Site table
 
@@ -1393,6 +1395,21 @@ inline constexpr Site kGarrisonEnterTail{"GarrisonEnterTail", 0x009C26E1, kGarri
 
 inline constexpr std::uint8_t kGarrisonLoadHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x24, 0x83, 0xB8, 0x3C, 0x01, 0x00, 0x00, 0x00, 0x57};
 inline constexpr Site kGarrisonLoadHead{"GarrisonLoadHead", 0x009C24B5, kGarrisonLoadHeadBytes, sizeof(kGarrisonLoadHeadBytes)};
+
+inline constexpr std::uint8_t kNurseryCmdExecuteBytes[] = {0x83, 0xEC, 0x1C, 0x53, 0x55, 0x8B, 0x6C, 0x24, 0x28, 0x85, 0xED, 0x56, 0x57, 0x8B, 0xF1, 0x0F, 0x84, 0x5F, 0x02, 0x00, 0x00, 0x83};
+inline constexpr Site kNurseryCmdExecute{"NurseryCmdExecute", 0x007D64F7, kNurseryCmdExecuteBytes, sizeof(kNurseryCmdExecuteBytes)};
+
+inline constexpr std::uint8_t kNetCommandCreateBytes[] = {0x8B, 0x4C, 0x24, 0x08, 0x33, 0xC0, 0x83, 0xF9};
+inline constexpr Site kNetCommandCreate{"NetCommandCreate", 0x005695FC, kNetCommandCreateBytes, sizeof(kNetCommandCreateBytes)};
+
+inline constexpr std::uint8_t kNetCommandPlayersBytes[] = {0x53, 0x8B, 0x5C, 0x24, 0x08, 0x85, 0xDB, 0x56};
+inline constexpr Site kNetCommandPlayers{"NetCommandPlayers", 0x005683B9, kNetCommandPlayersBytes, sizeof(kNetCommandPlayersBytes)};
+
+inline constexpr std::uint8_t kNetCommandUnitsBytes[] = {0x51, 0x53, 0x8B, 0x5C, 0x24, 0x0C, 0x85, 0xDB};
+inline constexpr Site kNetCommandUnits{"NetCommandUnits", 0x005696E1, kNetCommandUnitsBytes, sizeof(kNetCommandUnitsBytes)};
+
+inline constexpr std::uint8_t kNetCommandQueueBytes[] = {0x51, 0x55, 0x8B, 0x6C, 0x24, 0x0C, 0x85, 0xED};
+inline constexpr Site kNetCommandQueue{"NetCommandQueue", 0x00568A1A, kNetCommandQueueBytes, sizeof(kNetCommandQueueBytes)};
 
 inline constexpr std::uint8_t kKillSpawnPlaceBytes[] = {0x81, 0xEC, 0xA8, 0x01, 0x00, 0x00, 0x53, 0x55, 0x33, 0xDB, 0x8B, 0xE9};
 inline constexpr Site kKillSpawnPlace{"KillSpawnPlace", 0x0050703D, kKillSpawnPlaceBytes, sizeof(kKillSpawnPlaceBytes)};
@@ -3675,6 +3692,7 @@ inline constexpr Feature kFeatures[] = {
     {"incomeRates", ApplyIncomeRates},
     // After autoGatherScaleByContained: its filter of the shared AutoGather rate getter (autogatherrate.h) is asked
     // after that key's; the owner's trickle it multiplies reaches incomeRates through the add that key counts.
+    // After overhealHitpointBars too: its row of the shared stat panel hook (statpanelrows.h) comes after that key's.
     {"nurseryFactor", ApplyNurseryFactor},
     // After nurseryFactor: their observers of the shared garrison entries (garrisonobservers.h) run in that order.
     {"garrisonConvert", ApplyGarrisonConvert},
@@ -8824,4 +8842,323 @@ void HideGadgetPie(std::int32_t handle) {
 }
 
 }  // namespace uhc
+```
+
+## Stat panel rows (the normal interface)
+
+### src/statpanelrows.h
+
+```cpp
+// Rows of the normal interface's stat panel (uiunitstatpanel3, StackLabel/StackValue 0..8, filled by FUN_004D70ED),
+// right after its HP row: one hook at 0x4D76DB, shared by every key that adds a row there (overhealHitpointBars stat,
+// nurseryFactor). With the minimized interface the fill does not run; those keys write the unit panel's row instead
+// (unitpanel.h).
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// Asked for the panel's unit, in the order added, while rows are free: writes row `row` and returns true, or returns
+// false to leave it to the next one. Each row written moves the stock rows after it down by one.
+using StatPanelRow = bool(__stdcall*)(const char* panel, const char* unit, std::int32_t row);
+
+// Writes the hook the first time (after checking the site's stock bytes) and adds `row`.
+bool AddStatPanelRow(StatPanelRow row, const char* feature);
+
+// Writes row `row`'s label and value as the Group Health row does, and sets their help text (`tip` may be null: none).
+// False if the panel has no such row.
+bool SetStatPanelRow(const char* panel, std::int32_t row, const wchar_t* label, const wchar_t* value,
+                     const wchar_t* tip);
+
+}  // namespace uhc
+```
+
+### src/statpanelrows.cpp
+
+```cpp
+#include "statpanelrows.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcStatPanelRowsHook();
+
+namespace {
+
+constexpr std::size_t kMaxRows = 4;
+constexpr std::int32_t kStatPanelRows = 9;           // StackLabel/StackValue 0..8 (0x9BBAD1)
+constexpr std::uint32_t kLabelHandles = 0x174;       // the panel's 9 label handles, then (+198h) its 9 value handles
+constexpr std::uint32_t kValueHandles = 0x198;
+constexpr std::uint32_t kLabelStyle = 0x00D6F5D0;    // the Group Health row's label style (vtable +84h)
+constexpr std::uint32_t kValueStyle = 0x00C6657C;    // its value style
+
+struct BString {
+  wchar_t* text;
+};
+
+using GadgetRefFn = std::int32_t*(__thiscall*)(std::int32_t* ref, std::int32_t handle);  // ref: handle, gadget
+using GadgetReleaseFn = std::int32_t(__cdecl*)(std::int32_t handle);
+using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
+using BStringSetFn = BString*(__thiscall*)(BString* self, const BString* source);
+using BStringFreeFn = void(__thiscall*)(BString* self);
+using GadgetStyleFn = void(__thiscall*)(char* gadget, const void* style);
+using GadgetTextFn = void(__thiscall*)(char* gadget, const BString* text);
+using GadgetUpdateFn = void(__thiscall*)(char* gadget);
+const auto kGadgetRef = reinterpret_cast<GadgetRefFn>(0x004C519C);
+const auto kGadgetRelease = reinterpret_cast<GadgetReleaseFn>(0x0040431B);
+const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
+const auto kBStringSet = reinterpret_cast<BStringSetFn>(0x0040196F);
+const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+
+template <typename Fn>
+Fn VirtualAt(const char* object, std::uint32_t offset) {
+  return *reinterpret_cast<const Fn*>(*reinterpret_cast<const char* const*>(object) + offset);
+}
+
+uhc::StatPanelRow g_rows[kMaxRows] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+// A row gadget from its handle, as 0x69A9D3 gets it (the reference is released at once; the panel keeps the gadget).
+char* RowGadget(std::int32_t handle) {
+  std::int32_t ref[2] = {0, 0};
+  std::int32_t* result = kGadgetRef(ref, handle);
+  char* gadget = reinterpret_cast<char*>(static_cast<std::uintptr_t>(static_cast<std::uint32_t>(result[1])));
+  if (result[1] != 0) {
+    kGadgetRelease(result[0]);
+  }
+  return gadget;
+}
+
+// The style, the text, the update (vtable +84h, +80h, +54h), then the help text [gadget+68h].
+void SetRowText(char* gadget, const void* style, const wchar_t* text, const wchar_t* tip) {
+  BString value;
+  kBStringFromWide(&value, text != nullptr ? text : L"");
+  VirtualAt<GadgetStyleFn>(gadget, 0x84)(gadget, style);
+  VirtualAt<GadgetTextFn>(gadget, 0x80)(gadget, &value);
+  VirtualAt<GadgetUpdateFn>(gadget, 0x54)(gadget);
+  kBStringFree(&value);
+  BString help;
+  kBStringFromWide(&help, tip != nullptr ? tip : L"");
+  kBStringSet(reinterpret_cast<BString*>(gadget + 0x68), &help);
+  kBStringFree(&help);
+}
+
+}  // namespace
+
+// From the hook at 0x4D76DB: the rows written from `row` on (each key at most one), for the panel's unit.
+extern "C" std::int32_t __stdcall UhcStatPanelRows(const char* panel, const char* unit, std::int32_t row) {
+  if (panel == nullptr || unit == nullptr) {
+    return 0;
+  }
+  std::int32_t written = 0;
+  for (std::size_t i = 0; i < g_count && row + written < kStatPanelRows; ++i) {
+    if (g_rows[i](panel, unit, row + written)) {
+      ++written;
+    }
+  }
+  return written;
+}
+
+namespace uhc {
+
+bool AddStatPanelRow(StatPanelRow row, const char* feature) {
+  if (g_count == kMaxRows) {
+    Log(L"stat panel rows: more than %u keys (%hs)", static_cast<unsigned>(kMaxRows), feature);
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("stat panel rows", {&sites::kOverhealStatRow, &sites::kGroupHealthRow, &sites::kGadgetRef,
+                                       &sites::kGadgetRelease, &sites::kBStringFromWide, &sites::kBStringSet,
+                                       &sites::kBStringFree}) ||
+        !WriteJmp(sites::kOverhealStatRow.va, reinterpret_cast<const void*>(&UhcStatPanelRowsHook), 9)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_rows[g_count++] = row;
+  return true;
+}
+
+bool SetStatPanelRow(const char* panel, std::int32_t row, const wchar_t* label, const wchar_t* value,
+                     const wchar_t* tip) {
+  if (panel == nullptr || row < 0 || row >= kStatPanelRows) {
+    return false;
+  }
+  char* labelGadget = RowGadget(*reinterpret_cast<const std::int32_t*>(panel + kLabelHandles + row * 4));
+  char* valueGadget = RowGadget(*reinterpret_cast<const std::int32_t*>(panel + kValueHandles + row * 4));
+  if (labelGadget == nullptr || valueGadget == nullptr) {
+    return false;
+  }
+  SetRowText(labelGadget, reinterpret_cast<const void*>(kLabelStyle), label, tip);
+  SetRowText(valueGadget, reinterpret_cast<const void*>(kValueStyle), value, tip);
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/statpanelrows_hooks.asm
+
+```asm
+; The stat panel's rows after its HP row, shared by the keys that add one (src/statpanelrows.cpp). Entered through a
+; jmp written over the stock code; it leaves through an explicit jmp to the verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcStatPanelRows PROTO STDCALL panel:DWORD, unit:DWORD, row:DWORD
+
+.data
+statRowNext     dd 004D76E4h    ; mov edx,[0CF059Ch]: the rows after the HP row
+
+.code
+
+; Replaces mov edi,2 / mov [esp+2Ch],edi (9 bytes) at 0x4D76DB, the stat panel fill FUN_004D70ED right after the HP
+; row: EDI and [esp+2Ch] are the next free row (the Group Health branch 0x69A9D3 writes row EDI, then adds 1 to both).
+; UhcStatPanelRows writes the keys' rows from there for the panel's unit ([esp+38h], the panel [esp+50h]) and returns
+; how many; both counters move on by that many. EAX, ECX, EDX and the flags are dead at 0x4D76E4 (mov edx,[0CF059Ch] /
+; mov eax,[edx] / ... / mov ecx,0C66500h).
+UhcStatPanelRowsHook PROC
+    TRACE_ONCE "stat panel rows (0x4D76DB)"
+    mov edi, 2                      ; stolen 0x4D76DB
+    mov dword ptr [esp+2Ch], edi    ; stolen 0x4D76E0
+    pushad
+    push edi                        ; row
+    push dword ptr [esp+24h+38h]    ; unit
+    push dword ptr [esp+28h+50h]    ; panel
+    call UhcStatPanelRows
+    mov dword ptr [esp+1Ch], eax    ; the pushad slot of EAX: the result survives popad
+    popad
+    add edi, eax
+    mov dword ptr [esp+2Ch], edi
+    jmp statRowNext
+UhcStatPanelRowsHook ENDP
+
+END
+```
+
+## Garrison entries
+
+### src/garrisonobservers.h
+
+```cpp
+// Every unit that enters another (a building's garrison, a ship, a wagon), shared by the keys that act on it
+// (garrisonConvert, nurseryFactor). The load of a unit into another, FUN_009C24B5 bool thiscall(container, unitId,
+// flag), ret 8, has eleven direct callers (the garrison and load actions, triggers, the random map placement, the
+// scenario load); one jmp at its success tail 0x9C26E1, whichever keys are on, runs every observer there.
+#pragma once
+
+namespace uhc {
+
+// Called once per successful entry, inside the load: [unit+6Ch] is already the container's ID and the unit is the
+// last ID of [container+70h] (count [container+74h]). The load has not returned yet, and its caller may still read
+// the unit: an observer must not transform, kill, eject or move it there. It queues the unit's ID and acts after
+// the world update (worldtick.h), checking again that the unit is still inside.
+using GarrisonObserver = void (*)(char* container, char* unit);
+
+// Writes the jmp the first time (after checking the site's stock bytes and the function's head) and adds the
+// observer, in the order the keys add them (their kFeatures order, the same on every machine). `key` names the
+// caller in the log.
+bool AddGarrisonObserver(GarrisonObserver observer, const char* key);
+
+}  // namespace uhc
+```
+
+### src/garrisonobservers.cpp
+
+```cpp
+#include "garrisonobservers.h"
+
+#include <cstddef>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcGarrisonEnterHook();
+
+namespace {
+
+constexpr std::size_t kMaxObservers = 8;
+
+uhc::GarrisonObserver g_observers[kMaxObservers] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+// From the hook at 0x9C26E1: EDI = the container, ESI = the unit that just entered it.
+extern "C" void __stdcall UhcGarrisonDispatch(char* container, char* unit) {
+  if (container == nullptr || unit == nullptr) {
+    return;
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    g_observers[i](container, unit);
+  }
+}
+
+namespace uhc {
+
+bool AddGarrisonObserver(GarrisonObserver observer, const char* key) {
+  if (g_count == kMaxObservers) {
+    Log(L"garrison entries: more than %u observers (%hs)", static_cast<unsigned>(kMaxObservers), key);
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("garrison entries", {&sites::kGarrisonEnterTail, &sites::kGarrisonLoadHead}) ||
+        !WriteJmp(sites::kGarrisonEnterTail.va, reinterpret_cast<const void*>(&UhcGarrisonEnterHook), 7)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_observers[g_count++] = observer;
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/garrisonobs_hooks.asm
+
+```asm
+; The entries of a unit into another, shared by the keys that observe them (src/garrisonobservers.cpp). Entered
+; through a jmp written over the stock code; it leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcGarrisonDispatch PROTO STDCALL container:DWORD, unit:DWORD
+
+.data
+enterNext       dd 009C26E8h    ; mov eax,[0C66234h]: the store of the game time in the action manager
+enterDone       dd 009C26FFh    ; pop ebx: the load returns true
+
+.code
+
+; Replaces mov edi,[edi+58h] / test edi,edi / je 9C26FFh (7 bytes) at 0x9C26E1, the success tail of the load
+; FUN_009C24B5: EDI = the container, ESI = the unit, after [unit+6Ch] = the container's ID (0x9C25C2) and the
+; append of the unit's ID to [container+70h] (0x9C26DC). The stock code after it reads EDI (the action manager,
+; replayed here) and writes EAX, ECX and EDX before reading them; invoke keeps EBX, ESI and EDI.
+UhcGarrisonEnterHook PROC
+    TRACE_ONCE "garrison entries (0x9C26E1)"
+    invoke UhcGarrisonDispatch, edi, esi
+    mov edi, dword ptr [edi+58h]
+    test edi, edi
+    je skip
+    jmp enterNext
+skip:
+    jmp enterDone
+UhcGarrisonEnterHook ENDP
+
+END
 ```

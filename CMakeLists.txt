@@ -33,6 +33,7 @@ set(UHC_SOURCES
   src/killobservers.cpp
   src/garrisonobservers.cpp
   src/unitpanel.cpp
+  src/statpanelrows.cpp
   src/datarefs.cpp
   src/unitmodels.cpp
   src/actiontags.cpp
@@ -304,6 +305,8 @@ set(UHC_SOURCES
   src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm
+  src/hooks/statpanelrows_hooks.asm
+  src/hooks/nurserycmd_hooks.asm
   src/hooks/datarefs_hooks.asm
   src/hooks/editorsearch_hooks.asm
   src/hooks/minuistats_hooks.asm

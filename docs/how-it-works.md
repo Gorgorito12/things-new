@@ -3616,12 +3616,13 @@ reference is coloured the same.
   the label `L"Group Health"` (0xC36838, a literal) with style 0D6F5D0h, the value with style
   0C6657Ch (vtable +84h), the text (+80h), +54h, the help texts `[gadget+68h]` cleared (0x401A12
   from `L""`, 0x40196F), then `add edi,1 / mov [esp+2Ch],edi`.
-- *The hook* at 0x4D76DB (9 B): the two stolen moves, then `UhcOverhealStatRow(panel =
-  [esp+50h], unit = [esp+38h], row = EDI)`; for a marked unit it writes the row with the same calls
-  (label `Overheal`, the cfg text, or a string table entry through 0x58EA52; value
-  `overheal/capacity`, coloured with `segment` while above 0) and returns true, and the hook adds
-  1 to EDI and `[esp+2Ch]`, so the Group Health row and the rows after it move down. → 0x4D76E4
-  (EAX, ECX, EDX and the flags are written there before they are read).
+- *The hook* at 0x4D76DB (9 B) is shared since 2026-11-26 (`statpanelrows.*`, `AddStatPanelRow`, with
+  [`nurseryFactor`](#nurseryfactor)'s row after this one): the two stolen moves, then `UhcStatPanelRows(panel =
+  [esp+50h], unit = [esp+38h], row = EDI)`, which asks each key's row in `kFeatures` order while rows are free. This
+  key's, `UhcOverhealStatRow`, writes the row for a marked unit with the same calls (label `Overheal`, the cfg text, or
+  a string table entry through 0x58EA52; value `overheal/capacity`, coloured with `segment` while above 0) and returns
+  true; the hook adds the rows written to EDI and `[esp+2Ch]`, so the Group Health row and the rows after it move
+  down. → 0x4D76E4 (EAX, ECX, EDX and the flags are written there before they are read).
 - *Observed in game:* `Overheal 15/15` (orange) at 165/150, `0/15` when damaged, `16/16` under a
   MaxHP aura, `0/40` for a marked Explorer at its 100 % in a skirmish.
 
@@ -3973,33 +3974,42 @@ look for a resource with a rate (0x69D232, 0x9CFE1E). The factor comes from simu
 
 ### nurseryFactor
 
-`src/features/nurseryfactor.cpp`; the shared `autogatherrate.*` (above), `prototags.*`, `techsubtypes.*`, `worldtick.*`,
-`unitpanel.*`, `datarefs.*` and `savedmarkers.h`. The design and the questions behind it are in
-[nursery-design.md](nursery-design.md). <!-- private -->
+`src/features/nurseryfactor.cpp`, `hooks/nurserycmd_hooks.asm`; the shared `autogatherrate.*` (above),
+`garrisonobservers.*`, `statpanelrows.*`, `progresspie.*`, `panelbuttons.*`, `syscalls.*`, `prototags.*`,
+`techsubtypes.*`, `worldtick.*`, `unitpanel.*`, `datarefs.*` and `savedmarkers.h`. The design and the questions behind
+it are in [nursery-design.md](nursery-design.md). <!-- private -->
 
-- **Tags** (`AddProtoTagHandler`): the ten `NurseryFactor*` tags, by proto ID, each checked for its range; a bad value
-  is logged and the tag skipped. A proto has a factor only with a valid `NurseryFactorMax`. A per-proto-ID byte table
-  says which protos have one and trickle, for the rate filter.
+- **Tags** (`AddProtoTagHandler`): the fourteen `NurseryFactor*` tags, by proto ID, each checked for its range; a bad
+  value is logged and the tag skipped. Any of them makes the proto a nursery; the cap is 10 unless `NurseryFactorMax`
+  says otherwise. Two per-proto-ID byte tables say which protos have a factor and trickle (for the rate filter) and
+  which take garrisoned units (for the garrison observer). `NurseryFactorGarrisonUnit` and `NurseryFactorCommand` read
+  attributes through the XML getter 0x598F37; their names (units, types, resources) are resolved against the database
+  once per data load (the proto array `[db+54h]` tells a new load), with the type table `[db+190h]`, the proto lookup
+  0x5A2346 and the resource lookup 0x44709C. Each command name gets an index, the same on every machine (the order
+  the protos are read).
 - **The factor of each unit** is a table by unit ID, in ID order, filled as `researchGrants`' set is: 256 slots of the
   world's unit table `[world+0Ch]` per world update, round robin, and the whole table on a new game, a loaded one (another
   world, the time going back or the step count jumping) or before a `NurseryFactor` effect. A unit found with no marker
-  gets `NurseryFactorInitial`. After each world update (`AddWorldTick`), each living unit is cut to its player's cap;
-  a built one (0x44DDB4) adds the game time `[world+108h]` since the last tick to its timer and grows a step per
-  interval (linear: the step; exponential: `max(step, floor(factor x GrowthRate))`), up to the cap; at the cap, or with
-  no interval, the timer is 0. Factor and timer are words 1 and 2 of a saved marker (`savedmarkers.h`, stat 6Bh, word 0
-  `NRSF`), written each tick, so a transform in place, which ends the unit's modifiers, has it written again at the next
-  tick. A unit gone, dead or of a proto without a factor leaves the table.
+  gets `NurseryFactorInitial` (at most the cap). After each world update (`AddWorldTick`), a built unit (0x44DDB4)
+  under its player's cap adds the game time `[world+108h]` since the last tick to its timer and grows a step per
+  interval, up to the cap: linear, the step; exponential, `b^t` with `t` the steps taken since the factor was last
+  emptied, the fraction carried to the next step (b 1.5 adds 1, 1, 2, 4, 5...). At or above the cap, or with no interval, the
+  timer is 0. Nothing cuts a unit above its cap: growth and the additions stop there, so a lowered cap leaves the
+  extra until the unit spends it. Factor, timer, `t` and the fraction are words 1 to 3 of a saved marker
+  (`savedmarkers.h`, stat 6Bh, word 0 `NRSF`; word 3 `t | fraction x 65536 << 16`), written each tick, so a transform in
+  place, which ends the unit's modifiers, has it written again at the next tick. A unit gone, dead or of a proto
+  without a factor leaves the table. A factor emptied (a shipment, a command) sets `t` back to 0.
 - **The trickle:** the filter of the shared AutoGather rate getter multiplies a marked proto's rate by the unit's factor
   (the initial value while the unit is not in the table yet). The AutoGather update FUN_0048D13E then pays as stock: to
   the player through the add 0x49A98A (return 0x4C379D, which `incomeRates` counts), or, with the tactics flag
   `AddResourcesToInventory` (bit 4 of `[action+64h]`, handler 0x5FC84D), into the unit's own resource list through
   0x49A5E6, cut at its carry capacity 0x494503 when the proto asks for it. The first call of a game before its first
   tick builds the table from the markers first.
-- **Data subtypes** (`AddTechSubtype`): `NurseryFactorMax`, `NurseryFactorInterval` and `NurseryFactorStep` keep a value
-  per player's copy of the proto (looked up by pointer, checked against the copy's ID), computed by the stock value
-  function 0x7F892A from the tag's value. `NurseryFactor` queues `(copy, amount, relativity)` for the next world tick,
-  which runs 0x7F892A on each of the player's built units of that copy, with the unit's factor as the value and the
-  initial value as the base, and clamps it to 0..cap.
+- **Data subtypes** (`AddTechSubtype`): `NurseryFactorMax`, `NurseryFactorInterval`, `NurseryFactorStep` and
+  `NurseryFactorGrowthBase` keep a value per player's copy of the proto (looked up by pointer, checked against the copy's
+  ID), computed by the stock value function 0x7F892A from the tag's value. `NurseryFactor` queues `(copy, amount,
+  relativity)` for the next world tick, which runs 0x7F892A on each of the player's built units of that copy, with the
+  unit's factor as the value and the initial value as the base, and clamps it to 0..max(cap, the unit's factor).
 - **The load runs the Data effects again** (seen in game, 2026-11-25): after `loadGame`, each tech effect of these
   subtypes came through the handlers again, before the first world tick, in the order of the techs in the techtree
   (not the order they were researched): `NurseryFactorMax` +5 then `Assign` 4 gave a cap of 4 after the load where the
@@ -4011,17 +4021,52 @@ look for a resource with a rate (0x69D232, 0x9CFE1E). The factor comes from simu
   of the player's living, built units whose proto is `nursery` or of that abstract type (0x44D7FA), in ID order, and
   returns the stock `FreeHomeCityUnit` (37h) with the proto and `amount x total`; nothing under 1 unit. A taken factor
   restarts its timer.
-- **Panel:** `AddUnitPanelRow` (the minimized interface's AutoGather row, `[panel+33Ch]` / `+340h`) writes the name
-  as the label and `3/10` as the value, and `SetUnitPanelRowTip` (new in `unitpanel.*`) puts the two lines in the help
-  text `[gadget+68h]` of both gadgets (BString set 0x40196F); the shared hook clears it before the next refresh's rows,
-  so the stock row and the other keys' rows never show it. `{uhcNurseryFactor}` (`AddDataRef`, string) gives the first
-  selected unit's `3/10 minks`. Text IDs resolve through 0x58EA52.
+- **The garrison** (`AddGarrisonObserver`, the success tail of the load of a unit into another, 0x9C26E1): the
+  observer runs inside the load, so it only queues `{container ID, unit ID}` when the container's proto has a garrison
+  rule. The next world tick takes each entry whose unit is alive and still inside it (`[unit+6Ch]` the container's ID):
+  the first rule whose type is the unit's proto or one of its types (0x44D7FA); a container at or above its cap keeps
+  the unit; else the factor goes up by the amount, at most to the cap, the marker is written, and the unit is removed
+  with the world's unit removal 0x4726B2 `(world, id, 0, 1)`, the call of the trigger `Destroy` (no death, no corpse).
+- **The commands.** The UI syscall `nurseryFactorCommand(name)` (`AddSyscall`, group UI, so a `protounitcommands.xml`
+  `<command>` can run it) looks the name up and sends the network command `uiTransformSelectedUnit` sends (0x7E7193,
+  read with capstone, REA had no function there): `0x5695FC(player, 17h, 0, -1)`, the player list `0x5683B9(cmd, 1,
+  &player)`, `[cmd+2Ch] = 3`, `[cmd+3Ch] = 0`, the units `0x5696E1(cmd, count, ids)` (the local selection group
+  0x453B28's units of the local player whose proto has that command), then `[cmd+8Ch]`, where the transform keeps the
+  target proto ID, gets `'NR' << 16 | index`, and `0x568A1A([world+8], cmd, 0, 0)` queues it. Every machine runs it in
+  the world update: the command loop 0x7C86A4 calls the type's per-unit execute FUN_007D64F7 (vtable 0xB86F28 +54h,
+  `thiscall(cmd, unit)`, `ret 4`, AL) for each unit its player owns. The hook at its head (5 bytes, `sub esp,1Ch / push
+  ebx / push ebp`) sends a command with the magic to `UhcNurseryCommand(cmd, unit)` and returns its AL with `ret 4`;
+  any other command takes the stock code (re-executed, then 0x7D64FC). A proto ID never has the magic: the stock
+  execute itself refuses an ID out of the player's proto range (0x45311B, `cmp edx,[ecx+0E4h]`). The run, for a built
+  unit of the command's player with that command: a negative factor needs that many, a positive one room under the
+  cap; the units need room (PLACE, world vtable +14h, flags 2, on rings of 16 points from the building's edge, the
+  units found before counting, as `killSpawn` places its animals); then the cost: a ResList of the game's size
+  `[0C6DF38h]`, filled with 0 (0x4E2617) and set per resource (0x58EF83), paid with the stock payment 0x8D946A (which
+  tests the player's or the team's stock first). Any refusal changes nothing. Then the factor (as an addition, up to
+  the cap), the marker, and the units, created by 0x498ACC at the spots found.
+- **The buttons** (`AddPanelButtonFilter`): a button whose click is `nurseryFactorCommand("...")` asks, for the local
+  selection's units with that command, the same tests (the factor, the cap, the cost through 0x8D6BAE, or 0x8D6C1B with
+  `[world+6912h]` set); with none that passes it is greyed (state 1), its click and shift-click emptied, and its rollover
+  gets the last reason in red (0x443960): `2/10 minks: 4 needed`, `10/10 minks: full`, or string 41543 "Not enough
+  resources". Interface only.
+- **Panels:** `AddUnitPanelRow` (the minimized interface's AutoGather row, `[panel+33Ch]` / `+340h`) writes
+  `3/10 minks` as the label (`(once built)` on a foundation), and `SetUnitPanelRowTip` puts the two rollover lines in
+  the help text `[gadget+68h]` of both gadgets; the shared hook clears it before the next refresh's rows, so the stock
+  row and the other keys' rows never show it. In the normal interface, the shared stat panel row hook
+  (`statpanelrows.*`, 0x4D76DB, after the HP row; `overhealHitpointBars`' row moved there) writes the same text in the
+  value gadget of the next free row, with the same help text; the stock AutoGather row comes after it. The portrait's
+  progress pie (`AddProgressPieSource`) shows the share of the interval done while the unit grows. `{uhcNurseryFactor}`
+  (`AddDataRef`, string) gives the first selected unit's `3/10 minks`. Text IDs resolve through 0x58EA52.
 
-**Why it is safe.** Markers are made (0x4DD22D) only by the world tick, after the world update. The rate filter and the
-shipment read the table; the shipment's take writes the table only, the tick writes the markers. Deterministic: the
-table is keyed by unit ID, the copy map by pointer is only looked up, the time is game time, the order is the table's.
-The display reads only. Cost: per update, 256 slot reads and one marker walk per unit with a factor; per AutoGather
-rate call, one C call and a byte lookup for a proto without a factor.
+**Why it is safe.** Markers are made (0x4DD22D) only by the world tick and the commands, which run in the world update.
+The garrison observer only queues; the unit is removed after the update, by the call the trigger `Destroy` makes. The
+rate filter reads the table; the shipment and the commands write the table and the markers in the simulation, on every
+machine, in the order the commands come. Deterministic: the table is keyed by unit ID, the copy map by pointer is only
+looked up, the time is game time, the placement tests run in a fixed order, the command's index comes from the data.
+The syscall, the buttons and the panels only read. The command hook returns exactly as the stock execute does (`ret
+4`, AL; EBX, ESI, EDI and EBP kept by the stdcall C function). Cost: per update, 256 slot reads and one marker walk per
+unit with a factor; per AutoGather rate call, one C call and a byte lookup for a proto without a factor; per transform
+command, three compares.
 
 ### garrisonConvert
 
