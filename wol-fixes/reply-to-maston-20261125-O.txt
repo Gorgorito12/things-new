@@ -1,0 +1,85 @@
+Reply to JTMaston, round of 2026-11-25: the observer panel in the 36 maps (#81)
+==============================================================================
+
+Tested in single player in two copies of WoL 1.0.15c with your own uhc.dll. The new observer interface files
+(all resolutions) are in the other part of this reply.
+
+
+What changed in the 36 maps
+---------------------------
+The 36 maps that carry the ESOC observer panel (the 30 ESOC_* maps, NEWMagdalena and the five vividly* maps)
+are repaired by one script, wol-fixes/observer/observer_maps.py (apply / check / revert, originals kept). With
+the Observer box unticked, each repaired map generates exactly as before: we generated every map with the same
+seed at 3, 4 and 8 players, original against repaired, 108 times, and got the same units at the same places
+every time.
+
+With the box ticked, the panel now uses your data instead of the numbers of the stock game:
+- Oil is shown in the fourth resource row of each player, with your oil icon (it showed export, which your
+  own resource panel does not show either). All four display modes work for it.
+- A player in the Great War shows your age-6 icon. The Great War does not change the engine's age (it stays
+  at Imperial), so the panel looks for the civ's Great War tech (GreatWarButton).
+- Your units, techs and home city cards are in the panel's tables, about 7,400 rows in all, generated from
+  protoy.xml, techtreey.xml, civs.xml and the homecity files. So the unit rows show your villagers, military,
+  ships and buildings, and "Techs Completed" and "Shipments Sent" show your own techs and cards with their
+  icons.
+- The panel now watches all 10,542 of your techs (it only looked at the first 2,550).
+- Each observer used to get two techs by number: in your techtree those numbers are
+  PoliticianQuartermaster and IndustrializeSpanish. They are now the two ESOC meant: no XP trickle, and Spies
+  (the observer sees the whole map).
+- Revolutions, consulate techs, age-up progress and the shipment progress bar use your techs and civs.
+- The flags use your civ numbers, and the new interface files have a flag for every civ.
+- The six taller resolutions of the new interface files have their panel settings in the maps.
+
+The script must run again after a release that changes techtreey.xml, protoy.xml, civs.xml or the home city
+files; "check" tells you when that is needed. Every player in a game needs the same maps.
+
+Cost: the panel's code is bigger. On ESOC Arizona with 4 players and 2 observers, the game took about 12 s
+longer from Play to the start (63 s instead of 51 s on our PC), and the observer's frame rate went from 114 to
+103 fps. The panel only runs on the observer's PC, so the players' frame rate does not change.
+
+
+How it was tested
+-----------------
+- All 36 maps as 1v1 + 1 observer, 2v2 + 2 and 3v3 + 2, each observer an AI in the last slots, in a team of
+  its own: no script error in any of the 108 games, each observer had only its own unit, and every real
+  player got a start, with one exception from the map itself: on ESOC Great Basin in 3v3, one of the six
+  fixed 3v3 start points gives no town, so one player starts with nothing (a different player each time).
+- King of the Hill (3 maps): one hill, no error.
+- Save and load: the games load and go on.
+- One team defeated: the game ends at once with victory for the other team, with the observers still there.
+- The panel itself, by making our own player an observer for the test: oil, the Great War icon, your units,
+  techs and cards with their icons.
+- Not tested here: a human observer. That needs a second game joining a multiplayer lobby, so your DLL's own
+  observer part (the file swap, removing the observer's units) did not run in our tests. Please check it in
+  one of your games: the lobby's Observer box ticked, the teams in order, the observers in the last slots.
+
+Pictures:
+- 01-panel-start-full.jpg and 02-panel-great-war-full.jpg: the panel at the start and after one player
+  reached the Great War (a native, an Asian and two European civs).
+- 03-player-rows-before-after-2x.jpg: the player rows, with oil and the age icons.
+- 04-age-icon-zoom-4x.jpg: the age I icon and the Great War icon.
+- 05-wol-tech-and-card-rows-2x.jpg: a WoL tech under "Techs Completed" and a WoL card under "Shipments Sent".
+- 06-team-defeated-victory-with-observers.jpg: one team defeated, victory for the other.
+(These pictures were taken with the old observer interface, before the new interface files: the flags and the
+resource panel under the rows are fixed by the new files.)
+
+
+Two things we found in WoL itself
+---------------------------------
+1. With WoL in Spanish, an AI whose name has an accent ("Carlos el Diplomático", "Napoleón III" and 11 more)
+   stops the whole trigger script of the map: the map then has no triggers at all (King of the Hill, the
+   observer panel, your own triggers). The cause is wotta_triggers() in RM4\triggers\triggerLoader.xs: its
+   messages ("... has entered the Great War Age!") put the player's name inside the text, and the script
+   compiler refuses the accented letter. We saw it on ESOC Adirondacks; any map that calls wotta_triggers()
+   would do the same with such a name. We did not change that file, since 193 maps use it. Would you like us to
+   prepare a change?
+2. In a single-player skirmish your DLL reads the Observer box from a profile setting
+   (gamecampaignshownhcnote). It was off in every profile we have, and we did not see anything in normal play
+   turn it on; but if it were on, a skirmish of 3 or more players on one of these 36 maps would make the last
+   slot(s) observers. Your DLL could read the box only in multiplayer games.
+
+Questions
+---------
+1. Shall the 36 repaired maps and the new interface files go into your next patch?
+2. Export no longer shows in the panel (oil took its row, as in your own resource panel). Is that fine, or do
+   you want export shown somewhere for the Asian civs?
