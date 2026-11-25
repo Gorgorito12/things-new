@@ -51,6 +51,8 @@ set(UHC_SOURCES
   src/rofreads.cpp
   src/floatingbars.cpp
   src/uigadgets.cpp
+  src/progresspie.cpp
+  src/features/progresspiedemo.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
   src/features/accuracy.cpp

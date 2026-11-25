@@ -39,6 +39,7 @@ Contents:
 - [ROF reads](#rof-reads)
 - [Floating bars](#floating-bars)
 - [UI gadgets](#ui-gadgets)
+- [Progress pie](#progress-pie)
 
 ## Site table
 
@@ -2710,6 +2711,24 @@ inline constexpr Site kUiGadgetShowFlags{"UiGadgetShowFlags", 0x00447BBF, kUiGad
 inline constexpr std::uint8_t kUiGadgetHideFlagsBytes[] = {0x8A, 0x86, 0xA4, 0x00, 0x00, 0x00, 0xA8, 0x83, 0x75, 0x08};
 inline constexpr Site kUiGadgetHideFlags{"UiGadgetHideFlags", 0x00447CFF, kUiGadgetHideFlagsBytes, sizeof(kUiGadgetHideFlagsBytes)};
 
+inline constexpr std::uint8_t kPieFillSlotBytes[] = {0x53, 0x56, 0x8B, 0xF1, 0x33, 0xDB, 0x39, 0x9E, 0x30, 0x01, 0x00, 0x00, 0x75, 0x43, 0x6A, 0x20, 0xE8, 0x20, 0xA7, 0x94, 0xFF, 0x83, 0xC4, 0x04, 0x3B, 0xC3, 0x74, 0x2D, 0x89, 0x58, 0x10, 0x89, 0x58, 0x14, 0x89, 0x58, 0x18, 0xB1, 0x01, 0x89, 0x18, 0x88, 0x48, 0x1E, 0xC7, 0x40, 0x04, 0xFF, 0xFF, 0xFF, 0x88, 0xC7, 0x40, 0x08, 0xFF, 0xFF, 0xFF, 0xFF, 0x88, 0x48, 0x1C, 0x88, 0x58, 0x1D, 0xC7, 0x40, 0x0C, 0x00, 0x00, 0x80, 0x3F, 0xEB, 0x02, 0x33, 0xC0, 0x89, 0x86, 0x30, 0x01, 0x00, 0x00, 0x8B, 0x8E, 0x30, 0x01, 0x00, 0x00, 0x5E, 0x3B, 0xCB, 0x5B, 0x74, 0x35, 0xD9, 0x44, 0x24, 0x04, 0xD8, 0x15, 0xE4, 0x4B, 0xB8, 0x00, 0xDF, 0xE0, 0xF6, 0xC4, 0x05, 0x7A, 0x0D, 0xDD, 0xD8, 0xD9, 0x05, 0xE4, 0x4B, 0xB8, 0x00, 0xD9, 0x19, 0xC2, 0x04, 0x00, 0xD8, 0x15, 0xBC, 0x56, 0xB8, 0x00, 0xDF, 0xE0, 0xF6, 0xC4, 0x41, 0x75, 0x08, 0xDD, 0xD8, 0xD9, 0x05, 0xBC, 0x56, 0xB8, 0x00, 0xD9, 0x19, 0xC2, 0x04, 0x00};
+inline constexpr Site kPieFillSlot{"PieFillSlot", 0x00AB6C63, kPieFillSlotBytes, sizeof(kPieFillSlotBytes)};
+
+inline constexpr std::uint8_t kPieEnableBytes[] = {0x53, 0x8A, 0x5C, 0x24, 0x08, 0x84, 0xDB, 0x56, 0x8B, 0xF1, 0x0F, 0x85, 0x63, 0xCE, 0x20, 0x00, 0x8B, 0xB6, 0x30, 0x01, 0x00, 0x00, 0x85, 0xF6, 0x74, 0x03, 0x88, 0x5E, 0x1E, 0x5E, 0x5B, 0xC2, 0x04, 0x00};
+inline constexpr Site kPieEnable{"PieEnable", 0x004C51FA, kPieEnableBytes, sizeof(kPieEnableBytes)};
+
+inline constexpr std::uint8_t kPieEnableColdBytes[] = {0x83, 0xBE, 0x30, 0x01, 0x00, 0x00, 0x00, 0x0F, 0x85, 0x90, 0x31, 0xDF, 0xFF, 0x8B, 0x06, 0x6A, 0x00, 0xFF, 0x50, 0x6C, 0xE9, 0x84, 0x31, 0xDF, 0xFF};
+inline constexpr Site kPieEnableCold{"PieEnableCold", 0x006D206D, kPieEnableColdBytes, sizeof(kPieEnableColdBytes)};
+
+inline constexpr std::uint8_t kPieColourBytes[] = {0x83, 0xEC, 0x0C, 0x56, 0x8B, 0xF1, 0x83, 0xBE, 0x30, 0x01, 0x00, 0x00, 0x00, 0x74, 0x3C, 0x8B, 0x4C, 0x24, 0x18, 0x8B, 0x44, 0x24, 0x14, 0x8B, 0x54, 0x24, 0x1C, 0x89, 0x4C, 0x24, 0x08, 0x8D, 0x4C, 0x24, 0x04, 0x89, 0x44, 0x24, 0x04, 0x89, 0x54, 0x24, 0x0C, 0xE8, 0xF5, 0x73, 0xC3, 0xFF, 0x8B, 0x44, 0x24, 0x20, 0x50, 0x8D, 0x4C, 0x24, 0x08, 0x51, 0xE8, 0x83, 0xF1, 0x94, 0xFF, 0x8B, 0x96, 0x30, 0x01, 0x00, 0x00, 0x83, 0xC4, 0x08, 0x89, 0x42, 0x04, 0x5E, 0x83, 0xC4, 0x0C, 0xC2, 0x10, 0x00};
+inline constexpr Site kPieColour{"PieColour", 0x00AB5C34, kPieColourBytes, sizeof(kPieColourBytes)};
+
+inline constexpr std::uint8_t kPieMaterialBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x8B, 0x0D, 0x44, 0x60, 0xC6, 0x00, 0x57, 0x68, 0x04, 0x26, 0xBA, 0x00, 0x81, 0xC1, 0xDC, 0x68, 0x00, 0x00, 0xE8, 0x09, 0x69, 0x9B, 0xFF, 0x83, 0xBE, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x8B, 0xF8, 0x75, 0x24, 0x6A, 0x14, 0xE8, 0xC1, 0xB7, 0x94, 0xFF, 0x83, 0xC4, 0x04, 0x85, 0xC0, 0x74, 0x0A, 0x57, 0x8B, 0xC8, 0xE8, 0x34, 0x69, 0x9B, 0xFF, 0xEB, 0x02, 0x33, 0xC0, 0x85, 0xC0, 0x89, 0x86, 0x2C, 0x01, 0x00, 0x00, 0x74, 0x3C, 0x83, 0xBE, 0x30, 0x01, 0x00, 0x00, 0x00, 0x74, 0x33, 0x68, 0x44, 0xF3, 0xB9, 0x00, 0x8D, 0x4C, 0x24, 0x0C, 0xE8, 0x07, 0xBE, 0x94, 0xFF, 0x8B, 0x86, 0x30, 0x01, 0x00, 0x00, 0x83, 0xC0, 0x08, 0x50, 0x6A, 0x00, 0x8D, 0x4C, 0x24, 0x10, 0x51, 0x8B, 0x8E, 0x2C, 0x01, 0x00, 0x00, 0xE8, 0x60, 0x00, 0x95, 0xFF, 0x8D, 0x4C, 0x24, 0x08, 0xE8, 0x9A, 0xB4, 0x94, 0xFF, 0x5F, 0x5E, 0x59, 0xC3};
+inline constexpr Site kPieMaterial{"PieMaterial", 0x00AB5BAA, kPieMaterialBytes, sizeof(kPieMaterialBytes)};
+
+inline constexpr std::uint8_t kPiePortraitBindBytes[] = {0x68, 0xF0, 0x60, 0xC3, 0x00, 0x8D, 0x4C, 0x24, 0x1C, 0xE8, 0x44, 0x65, 0xA4, 0xFF, 0x6A, 0x01, 0x8D, 0x54, 0x24, 0x14, 0x52, 0x8D, 0x44, 0x24, 0x20, 0x50, 0x8B, 0xCE, 0xE8, 0xB0, 0xCD, 0x0F, 0x00, 0x8B, 0x08, 0x6A, 0xFF, 0x6A, 0xFF, 0x89, 0x8E, 0xE4, 0x02, 0x00, 0x00};
+inline constexpr Site kPiePortraitBind{"PiePortraitBind", 0x009BAE5E, kPiePortraitBindBytes, sizeof(kPiePortraitBindBytes)};
+
 inline constexpr std::uint8_t kIncomeTrickleCallBytes[] = {0x56, 0xE8, 0x8C, 0x9C, 0xFB, 0xFF};
 inline constexpr Site kIncomeTrickleCall{"IncomeTrickleCall", 0x004E0CF8, kIncomeTrickleCallBytes, sizeof(kIncomeTrickleCallBytes)};
 
@@ -3466,6 +3485,7 @@ Outcome ApplyEnableAllTeams(const Config& config);
 Outcome ApplyTechGadgets(const Config& config);
 Outcome ApplyIncomeRates(const Config& config);
 Outcome ApplySelectFattened(const Config& config);
+Outcome ApplyProgressPieDemo(const Config& config);
 Outcome ApplyNurseryFactor(const Config& config);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
@@ -3670,6 +3690,8 @@ inline constexpr Feature kFeatures[] = {
     {"techGadgets", ApplyTechGadgets},
     // After rendererOption: it shows its button from the Present of whichever Direct3DCreate9 the game gets.
     {"selectFattened", ApplySelectFattened},
+    // Dev key: the test bed of the shared progress pie (progresspie.h), an observer of the shared panel tail.
+    {"progressPieDemo", ApplyProgressPieDemo},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
 };
@@ -3692,7 +3714,7 @@ inline constexpr const char* kHandledKeys[] = {
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
-    "techgadgets", "incomerates", "editorautosave", "selectfattened", "nurseryfactor",
+    "techgadgets", "incomerates", "editorautosave", "selectfattened", "nurseryfactor", "progresspiedemo",
 };
 
 }  // namespace uhc
@@ -8584,4 +8606,208 @@ const wchar_t* FieldText(const void* field) {
 }
 
 }  // namespace uhc::ui
+```
+
+## Progress pie
+
+### src/progresspie.h
+
+```cpp
+// The progress pie: the engine's own pie chart filling, the overlay a train button shows while its unit trains
+// (gadget vtable +6Ch, 0x4C51FA, 0xAB5C34, 0xAB5BAA; generated/sites.h, "progresspie"), drawn over the unit
+// portrait of the selection panel in both interfaces. A key gives a source; once per panel refresh, while one
+// unit is selected, the sources are asked for that unit in the order added, and the first that answers sets the
+// pie; when none does, the pie is off. It adds no gadget and no art, and needs no layout change.
+//
+// Main thread only (the panel fill). No new jmp: it is an observer of the shared panel tail (AddUnitPanelTail).
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// The train button's colour (0x69D9BC: r 0, g 0, b 1, alpha 0.5), as ARGB. The default of every source.
+inline constexpr std::uint32_t kPieTrainBlue = 0x800000FFu;
+
+// Asked for the unit the panel shows (one unit selected). Return true to show the pie with `*fraction` done, 0 to 1
+// (clamped; the part not done is covered, as on a train button), and optionally a different `*argb` (preset to
+// kPieTrainBlue); false to leave the unit to the next source. Keep it cheap: it runs on every panel refresh.
+using ProgressPieSource = bool(__stdcall*)(const char* unit, float* fraction, std::uint32_t* argb);
+
+// Verifies the engine code the pie uses and the panel tail (once), then adds `source`. False, with a log line, when
+// a check fails or there are more than 8 sources: the key then shows no pie, and the rest of the key may go on.
+bool AddProgressPieSource(ProgressPieSource source);
+
+// True if the engine code the pie uses holds the stock bytes (checked once; `feature` names the caller in the log).
+// AddProgressPieSource calls it; a key that only uses the two calls below calls it from its apply function.
+bool VerifyProgressPie(const char* feature);
+
+// The same pie on any gadget of a layout, by handle (ui::FindChild / ui::FindAnywhere), for a key that draws it
+// somewhere else: Show turns it on with `fraction` done (made on first use), Hide turns it off. Nothing, and false,
+// for a stale handle or before VerifyProgressPie passed.
+bool ShowGadgetPie(std::int32_t handle, float fraction, std::uint32_t argb);
+void HideGadgetPie(std::int32_t handle);
+
+}  // namespace uhc
+```
+
+### src/progresspie.cpp
+
+```cpp
+#include "progresspie.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+#include "uigadgets.h"
+#include "unitpanel.h"
+
+namespace {
+
+constexpr std::size_t kMaxSources = 8;
+
+constexpr std::uint32_t kPanelPortrait = 0x2E4;  // [panel+2E4h] the unitselectionpanel-unitPortrait handle (0x9BAE85)
+constexpr std::uint32_t kGroupCount = 0x14;      // the selection group's unit count
+constexpr std::uint32_t kGadgetMaterial = 0x12C; // the filling's material, made by 0xAB5BAA
+constexpr std::uint32_t kGadgetPie = 0x130;      // the 20h-byte pie chart filling, made by vtable +6Ch
+constexpr std::uint32_t kPieColour = 0x04;       // ARGB, as 0x404DF6 packs it
+constexpr std::uint32_t kPieOn = 0x1E;           // byte, what 0x4C51FA writes
+constexpr std::uint32_t kFillSlot = 0x6C;        // every gadget vtable: 0xAB6C63
+
+using FillFn = void(__thiscall*)(void* gadget, float fraction);
+using EnableFn = void(__thiscall*)(void* gadget, bool on);
+using ColourFn = void(__thiscall*)(void* gadget, float r, float g, float b, float a);
+using MaterialFn = void(__thiscall*)(void* gadget);
+const auto kFill = reinterpret_cast<FillFn>(0x00AB6C63);
+const auto kEnable = reinterpret_cast<EnableFn>(0x004C51FA);
+const auto kColour = reinterpret_cast<ColourFn>(0x00AB5C34);
+const auto kMaterial = reinterpret_cast<MaterialFn>(0x00AB5BAA);
+
+template <typename T>
+T Field(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+uhc::ProgressPieSource g_sources[kMaxSources] = {};
+std::size_t g_sourceCount = 0;
+bool g_tailAdded = false;
+int g_verified = -1;  // -1 not checked, 0 failed, 1 passed
+bool g_slotWarned = false;
+
+// The gadget's fill slot must be the base one, which makes the filling this file reads.
+bool HasBaseFill(const void* gadget) {
+  const auto vtable = Field<const std::uintptr_t*>(gadget, 0);
+  if (vtable != nullptr && vtable[kFillSlot / 4] == reinterpret_cast<std::uintptr_t>(kFill)) {
+    return true;
+  }
+  if (!g_slotWarned) {
+    g_slotWarned = true;
+    uhc::Log(L"progress pie: a gadget's fill slot is not 0xAB6C63; no pie on it");
+  }
+  return false;
+}
+
+bool Show(void* gadget, float fraction, std::uint32_t argb) {
+  if (!HasBaseFill(gadget)) {
+    return false;
+  }
+  kFill(gadget, fraction);  // makes the filling on first use, clamps to [0, 1]
+  const char* pie = Field<const char*>(gadget, kGadgetPie);
+  if (pie == nullptr) {
+    return false;
+  }
+  if (Field<void*>(gadget, kGadgetMaterial) == nullptr) {
+    kMaterial(gadget);  // as the unit stack buttons do (0x9B8AD1)
+  }
+  if (Field<std::uint32_t>(pie, kPieColour) != argb) {
+    kColour(gadget, ((argb >> 16) & 0xFF) / 255.0f, ((argb >> 8) & 0xFF) / 255.0f, (argb & 0xFF) / 255.0f,
+            ((argb >> 24) & 0xFF) / 255.0f);
+  }
+  if (Field<std::uint8_t>(pie, kPieOn) == 0) {
+    kEnable(gadget, true);
+  }
+  return true;
+}
+
+void Hide(void* gadget) {
+  const char* pie = Field<const char*>(gadget, kGadgetPie);
+  if (pie != nullptr && Field<std::uint8_t>(pie, kPieOn) != 0) {
+    kEnable(gadget, false);
+  }
+}
+
+void __stdcall PortraitPie(char* panel, const char* selection, const char* unit, bool) {
+  void* portrait = uhc::ui::Gadget(Field<std::int32_t>(panel, kPanelPortrait), uhc::ui::kAnyGadget);
+  if (portrait == nullptr) {
+    return;
+  }
+  if (unit != nullptr && selection != nullptr && Field<std::int32_t>(selection, kGroupCount) == 1) {
+    for (std::size_t i = 0; i < g_sourceCount; ++i) {
+      float fraction = 0.0f;
+      std::uint32_t argb = uhc::kPieTrainBlue;
+      if (g_sources[i](unit, &fraction, &argb)) {
+        if (Show(portrait, fraction, argb)) {
+          return;
+        }
+        break;
+      }
+    }
+  }
+  Hide(portrait);
+}
+
+}  // namespace
+
+namespace uhc {
+
+bool VerifyProgressPie(const char* feature) {
+  if (g_verified < 0) {
+    g_verified = VerifyAll(feature, {&sites::kPieFillSlot, &sites::kPieEnable, &sites::kPieEnableCold,
+                                     &sites::kPieColour, &sites::kPieMaterial, &sites::kPiePortraitBind,
+                                     &sites::kGadgetLookup})
+                     ? 1
+                     : 0;
+  }
+  return g_verified == 1;
+}
+
+bool AddProgressPieSource(ProgressPieSource source) {
+  if (source == nullptr || !VerifyProgressPie("progress pie")) {
+    return false;
+  }
+  if (g_sourceCount == kMaxSources) {
+    Log(L"progress pie: more than %u sources", static_cast<unsigned>(kMaxSources));
+    return false;
+  }
+  if (!g_tailAdded) {
+    if (!AddUnitPanelTail(&PortraitPie)) {
+      return false;
+    }
+    g_tailAdded = true;
+  }
+  g_sources[g_sourceCount++] = source;
+  return true;
+}
+
+bool ShowGadgetPie(std::int32_t handle, float fraction, std::uint32_t argb) {
+  if (g_verified != 1) {
+    return false;
+  }
+  void* gadget = ui::Gadget(handle, ui::kAnyGadget);
+  return gadget != nullptr && Show(gadget, fraction, argb);
+}
+
+void HideGadgetPie(std::int32_t handle) {
+  if (g_verified != 1) {
+    return;
+  }
+  if (void* gadget = ui::Gadget(handle, ui::kAnyGadget)) {
+    Hide(gadget);
+  }
+}
+
+}  // namespace uhc
 ```
