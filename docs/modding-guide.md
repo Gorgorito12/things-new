@@ -10328,6 +10328,10 @@ selectFattened [gadget <name>]... [log]
   select them (Shift+Ctrl+F)."), and the hotkey Shift+Ctrl+F ("Select Fattened Livestock", in the hotkey menu's group
   "Find Unit Hotkeys").
 - **What it needs:** the button and the hotkey in the layout and the keymap: the pack.
+- **Only the hotkey** (2026-11-26; JTMaston: "Disregard the button, it can annoy players just like the idle villager
+  does"): `apply_fix.py "<WoL folder>" --hotkey-only` installs the keymap entry, the hotkey's name (string 690912) and
+  the cfg line, and leaves the layout, the icon and the tooltip string out. `--check` and `--restore` read the mode
+  from the backup's `manifest.json`. The key needs no other setting: with no button it looks for one every 2 s.
 - **Simulation:** none. It only changes the local player's selection, as a click, through the game's own selection
   calls: those of the stock command `uiFindAllOfType`.
 - **Log:** `selectFattened: UI syscall uhcSelectFattened() and {uhcFattened} added; gadget(s) uhcFattened shown while
