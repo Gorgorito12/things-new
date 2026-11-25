@@ -22,7 +22,15 @@ Where you will see it
 - The Nursery: the time to the next step (the next mink). The new Nursery version comes with it.
 - GarrisonConvertTo with a delay: the unit being converted, over the building's portrait.
 
-A question
-----------
-Is the portrait the right place, or would you rather have it smaller, next to the "X/Y minks" line? Both are possible
-with the same overlay; the portrait was the closest to what a train button shows.
+Your choice: where should it go?
+--------------------------------
+For the Nursery you wrote "Just X/Y <string>, don't add a 'next in Xs', we should generate a loading piechart for
+this one". The row stays just "Minks 3/10"; the open point is where the pie sits. Two pictures:
+
+  A. option-A-over-the-portrait.png: what is built now. The pie covers the selected unit's portrait, like the blue
+     overlay over a train button. Big and easy to see, in both interfaces, with no change to your UI files.
+  B. option-B-next-to-the-row-MOCKUP.png: a mock-up (drawn, not in the game yet). A small square pie right after
+     "Minks 3/10", the same blue overlay, the same fill.
+
+Which one do you want: A (over the portrait) or B (small, next to the "X/Y minks" row)? A is ready today; B needs a
+small square added to the unit panel layouts (we would send you the lines to add).
