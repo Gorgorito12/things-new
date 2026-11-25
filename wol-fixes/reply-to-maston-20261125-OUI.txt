@@ -1,0 +1,30 @@
+#81 Observer UI: the interface files (draft, waiting for our approval of the pictures)
+
+Your DLL loads its own interface files for a local observer: uimainnewobserver<W>x<H>.xml at 7 resolutions
+(plus the jp twins) and seven ...observer.xml panels. They were made from the older interface that is still
+inside data\Data3.bar, which is why the observer saw the resource column one row off (no oil), your own
+resource panel under the observer's player rows, and the stock game's flags.
+
+We rebuilt all of them on your current files (uimainnew.xml and the minimized panels), keeping ESOC's panel
+exactly as it was laid out at each resolution:
+- every gadget the panel code of the 36 observer maps uses is there (checked for all 36 maps and every
+  resolution);
+- your normal minimized UI no longer shows under the observer's panel: your resource panels, the command,
+  socket, treasure and unit stat panels and your top score panel are hidden for the observer (the observer
+  has no economy or units), and the minimap art stops at the minimap;
+- the flags are your civs' flags (one per civ in civs.xml, the same numbering the repaired maps use);
+- the home city button (the observer uses it to see the players' decks) sits at the left edge above the
+  minimap, where nothing covers it at any resolution or in 3v3;
+- your Menu > Icons row and building search row, if shown, sit below the observer's top band.
+
+Pictures (before and after at each resolution): [links to add]
+
+New resolutions: we also made 2560x1080, 1920x1200, 1440x900, 1600x1200, 2560x1440, 3440x1440 and
+3840x2160. ESOC's panel is drawn in pixels (fixed fonts, 49 px icon cells), so on a bigger screen it keeps its
+1080p size, centred between the minimap and the unit panel. Two things are needed on your side:
+1. your uhc.dll has a list of the 7 resolutions it swaps files for; these new files are only used if you
+   add them to that list (or tell us and we will do the swap in another way);
+2. 2560x1080 works as it is. The taller ones (1200, 1440, 2160 lines) still show the shipment counters
+   under the top flags too low: the maps need a preset per height for that, which we have not found yet.
+
+Install: wol-fixes/observer/observer_ui.py build / apply (keeps your files as *.obs-orig) / revert.
