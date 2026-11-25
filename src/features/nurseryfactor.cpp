@@ -1,29 +1,40 @@
 // nurseryFactor [log]: a whole number per building or unit (a "factor", e.g. the minks of a mink nursery) that grows
-// with game time up to a cap, is changed by techs, multiplies the unit's AutoGather rate, can multiply a home city
-// shipment, and shows in the unit panel as current/max with a two-line rollover.
+// with game time up to a cap, is changed by techs, by units that enter the building and by its command buttons,
+// multiplies the unit's AutoGather rate, can multiply a home city shipment, and shows in the unit panels as
+// "3/10 minks" with a two-line rollover.
 //
-//   <NurseryFactorMax>10</NurseryFactorMax>              the cap, a whole number 0..100000; required: it marks the proto
+//   <NurseryFactorMax>10</NurseryFactorMax>              the cap, a whole number 0..100000 (default 10)
 //   <NurseryFactorInitial>0</NurseryFactorInitial>       the value of a new unit (default 0)
 //   <NurseryFactorInterval>30</NurseryFactorInterval>    game seconds per growth step (default 0: no growth with time)
-//   <NurseryFactorStep>1</NurseryFactorStep>             the size of a step (default 1)
+//   <NurseryFactorStep>1</NurseryFactorStep>             linear: the size of a step (default 1)
 //   <NurseryFactorGrowth>linear</NurseryFactorGrowth>    linear (default) or exponential
-//   <NurseryFactorGrowthRate>0.25</NurseryFactorGrowthRate>  exponential: a step adds max(step, floor(factor x rate))
+//   <NurseryFactorGrowthBase>2</NurseryFactorGrowthBase> exponential: step t (0, 1, 2...) adds b^t (default 2)
 //   <NurseryFactorTrickle>1</NurseryFactorTrickle>       1 (default): the factor multiplies the unit's AutoGather rate
 //   <NurseryFactorName>minks</NurseryFactorName>         string table ID or text (default "")
 //   <NurseryFactorRolloverCount>...</...>                string ID or text, default "{current} out of {max} {name}."
 //   <NurseryFactorRolloverRate>...</...>                 string ID or text, default "Produces {step} {name} every
 //                                                        {seconds} seconds."; placeholders {current} {max} {name}
 //                                                        {seconds} {step}
+//   <NurseryFactorGarrisonUnit amount="3">ypGoat</NurseryFactorGarrisonUnit>
+//                                                        a unit of that proto or type that enters is removed and adds
+//                                                        amount (several tags: several rules, the first match wins)
+//   <NurseryFactorCommand factor="-5" unit="CrateofCoin" count="1" cost="Gold 100, Wood 50">SellMinks</...>
+//                                                        the command nurseryFactorCommand("SellMinks") of a button:
+//                                                        changes the factor by `factor` (a negative one needs that many),
+//                                                        pays `cost`, makes `count` units of `unit` at the building
 //
-// The tags are read once per data load, by proto ID, the same for every player. Data subtypes on a ProtoUnit target
-// change one player's copy of the proto: NurseryFactorMax, NurseryFactorInterval and NurseryFactorStep through the
-// stock value function 0x7F892A (base: the tags); NurseryFactor changes the factor of each of the player's built units
-// of that proto (Absolute adds, Assign sets; every relativity through the same function, the unit's factor as the
-// value and the initial value as the base), once, at the next world tick. The Player subtype
-// FreeHomeCityUnitByNurseryFactor (unittype = the proto shipped, nursery = a proto or abstract type, consume = all | N |
-// none) becomes the stock FreeHomeCityUnit (37h) with amount x the factors it takes from the player's built units of
-// that type: consume="all" takes each whole factor, consume="N" at most N from each, none (the default) counts them and
-// takes nothing.
+// Any NurseryFactor tag marks the proto. The tags are read once per data load, by proto ID, the same for every player.
+// Data subtypes on a ProtoUnit target change one player's copy of the proto: NurseryFactorMax, NurseryFactorInterval,
+// NurseryFactorStep and NurseryFactorGrowthBase through the stock value function 0x7F892A (base: the tags);
+// NurseryFactor changes the factor of each of the player's built units of that proto (Absolute adds, Assign sets;
+// every relativity through the same function, the unit's factor as the value and the initial value as the base),
+// once, at the next world tick. The Player subtype FreeHomeCityUnitByNurseryFactor (unittype = the proto shipped,
+// nursery = a proto or abstract type, consume = all | N | none) becomes the stock FreeHomeCityUnit (37h) with amount x
+// the factors it takes from the player's built units of that type: consume="all" takes each whole factor, consume="N"
+// at most N from each, none (the default) counts them and takes nothing.
+//
+// The cap stops growth and the additions (a tech's, a garrisoned unit's, a command's); it never takes away what a unit
+// already has, so a lowered cap leaves the extra until the unit loses it.
 //
 // The trickle: the AutoGather rate getter 0x49EBE4 is a shared hook (autogatherrate.h); this key's filter multiplies
 // the rate of a unit of a tagged proto by its factor. The AutoGather update then pays the owner (or, with the stock
@@ -32,15 +43,29 @@
 // The factors: a table by unit ID (in ID order), filled by a sweep of the world's unit table (256 slots per world
 // update; the whole table when a game starts or loads). After each world update (worldtick.h) each living, built unit
 // adds the game time [world+108h] that passed to its timer and grows a step per interval, up to the player's cap; at
-// the cap the timer waits at 0; a lowered cap cuts the factor at once. The factor and the timer are a saved marker on
-// the unit (savedmarkers.h, stat 6Bh), written each tick, so a save keeps them and the unit's death loses them; a
-// transform in place (which ends the markers) keeps the table's value when the new proto is tagged too, cut to its cap.
+// the cap the timer waits at 0. The factor, the timer, the step count t and the fraction an exponential step left are
+// a saved marker on the unit (savedmarkers.h, stat 6Bh), written each tick, so a save keeps them and the unit's death
+// loses them; a transform in place (which ends the markers) keeps the table's value when the new proto is tagged too.
+// t goes back to 0 when the factor is emptied.
 //
-// Display only: the unit panel row (unitpanel.h, the minimized interface) "<Name> 3/10" with the rollover as its
-// help text, and the data ref {uhcNurseryFactor} (the first selected unit's "3/10 minks").
+// The garrison: the shared observer of the load of a unit into another (garrisonobservers.h) queues the entries into a
+// tagged building; the world tick after them removes each unit that is still inside and matches a rule (0x4726B2, the
+// trigger Destroy's removal: no death, no corpse) and adds its amount, up to the cap. A full building keeps the unit.
+//
+// The commands: the UI syscall nurseryFactorCommand("Name") sends the network command uiTransformSelectedUnit sends
+// (type 17h, 0x5695FC), for the local player's selected units, with 'NR' << 16 | the command's index in [cmd+8Ch]
+// where that command carries a proto ID. Every machine runs it in the world update; the hook at the head of the
+// type's per-unit execute 0x7D64F7 (hooks/nurserycmd_hooks.asm) takes those and runs the unit's rule: the factor
+// (enough of it, or room under the cap), the cost (0x8D946A, the stock payment), the units (PLACE and 0x498ACC around
+// the building, as killSpawn places its animals). Each test that fails leaves everything as it was.
+//
+// Display only: the unit panel row (unitpanel.h, the minimized interface) and the stat panel row (statpanelrows.h, the
+// normal one) "3/10 minks" with the rollover as their help text, and the data ref {uhcNurseryFactor} (the first
+// selected unit's "3/10 minks").
 #include <windows.h>
 
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -55,27 +80,41 @@
 #include "../autogatherrate.h"
 #include "../datarefs.h"
 #include "../features.h"
+#include "../garrisonobservers.h"
 #include "../generated/sites.h"
 #include "../log.h"
+#include "../panelbuttons.h"
 #include "../patch.h"
 #include "../prototags.h"
 #include "../savedmarkers.h"
+#include "../statpanelrows.h"
+#include "../syscalls.h"
 #include "../techsubtypes.h"
 #include "../unitpanel.h"
 #include "../unittypes.h"
 #include "../worldtick.h"
 
+extern "C" void UhcNurseryCmdHook();
+
 namespace {
 
-constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database, +3C0h the local player
 constexpr std::int32_t kStat = 0x6B;               // savedmarkers.h: no other key uses it
 constexpr std::uint32_t kWord = 0x4E525346;        // word 0 of a unit's marker: 'NRSF'
 constexpr std::int32_t kSweepSlots = 256;
 constexpr std::int32_t kFreeHomeCityUnit = 0x37;
 constexpr std::int32_t kMaxValue = 100000;
+constexpr float kDefaultMax = 10.0f;
 constexpr int kMaxLogLines = 400;
 constexpr std::size_t kTypeNames = 0x190;       // in the database: the unit type name table
 constexpr std::size_t kFirstAbstract = 0x19B0;  // in the database: the first abstract type's ID
+constexpr std::size_t kProtoTable = 0x54;       // in the database: the proto array (a new one for each data load)
+constexpr std::int32_t kTransformCommand = 0x17;    // the network command uiTransformSelectedUnit sends
+constexpr std::uint32_t kCommandMagic = 0x4E520000;  // 'NR' << 16: [cmd+8Ch] of a nursery command
+constexpr std::int32_t kMaxCommands = 0x10000;
+constexpr std::uint32_t kPlaceSlot = 0x14;           // the world's placement test PLACE, FUN_0050703D
+constexpr std::int32_t kPlaceFlags = 2;              // as the stock death replacement: the units made count
+constexpr std::int32_t kMaxSpawn = 50;
 
 using IsBuiltFn = bool(__thiscall*)(const char* unit);
 using IsAliveFn = bool(__thiscall*)(const char* unit);
@@ -86,6 +125,25 @@ using XmlTextFn = const char*(__thiscall*)(const void* text);
 using NameBucketFn = std::int32_t(__thiscall*)(const void* table, const char* name);
 using NameFindFn = bool(__thiscall*)(const void* table, const char* name, std::int32_t bucket, std::int32_t* id);
 using SelectionFn = const char*(__cdecl*)();
+using ResourceByNameFn = std::int32_t(__thiscall*)(const void* database, const char* name);
+using ProtoByNameFn = std::int32_t(__thiscall*)(const char* database, const char* name);
+using PlayerByIdFn = char*(__thiscall*)(const char* world, std::int32_t id);
+using PlayerProtoFn = char*(__thiscall*)(const char* player, std::int32_t protoId);
+using ResListGetFn = float(__thiscall*)(const void* list, std::int32_t resource);
+using ResListSetFn = void(__thiscall*)(void* list, std::int32_t resource, float value);
+using ResListFillFn = void(__thiscall*)(void* list, float value);
+using PayFn = bool(__thiscall*)(char* player, const void* cost);
+using RemoveFn = void(__thiscall*)(char* world, std::int32_t id, std::int32_t a, std::int32_t b);
+using PlaceFn = bool(__thiscall*)(char* world, std::int32_t proto, std::int32_t player, const float* position,
+                                  const float* forward, const float* right, std::int32_t a, std::int32_t b,
+                                  std::int32_t c, std::int32_t d, std::int32_t e, std::int32_t f);
+using CreateFn = char*(__thiscall*)(char* world, std::int32_t proto, std::int32_t player, const float* position,
+                                    const float* forward, std::int32_t a, std::int32_t b, std::int32_t c, std::int32_t d);
+using CommandCreateFn = char*(__cdecl*)(std::int32_t player, std::int32_t type, std::int32_t a, std::int32_t b);
+using CommandPlayersFn = void(__thiscall*)(char* command, std::int32_t count, const std::int32_t* players);
+using CommandUnitsFn = bool(__thiscall*)(char* command, std::int32_t count, const std::int32_t* ids);
+using CommandQueueFn = void(__thiscall*)(void* queue, char* command, std::int32_t a, std::int32_t b);
+using CommandDestroyFn = void(__thiscall*)(char* command, std::int32_t flags);
 const auto kIsBuilt = reinterpret_cast<IsBuiltFn>(0x0044DDB4);
 const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 const auto kEffectValue = reinterpret_cast<EffectValueFn>(0x007F892A);
@@ -94,6 +152,26 @@ const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
 const auto kNameBucket = reinterpret_cast<NameBucketFn>(0x0058E685);
 const auto kNameFind = reinterpret_cast<NameFindFn>(0x0040295B);
 const auto kSelection = reinterpret_cast<SelectionFn>(0x00453B28);
+const auto kResourceByName = reinterpret_cast<ResourceByNameFn>(0x0044709C);
+const auto kProtoByName = reinterpret_cast<ProtoByNameFn>(0x005A2346);
+const auto kPlayerById = reinterpret_cast<PlayerByIdFn>(0x0044CB21);
+const auto kResListGet = reinterpret_cast<ResListGetFn>(0x0044EFFF);
+const auto kResListSet = reinterpret_cast<ResListSetFn>(0x0058EF83);
+const auto kResListFill = reinterpret_cast<ResListFillFn>(0x004E2617);
+const auto kPay = reinterpret_cast<PayFn>(0x008D946A);
+using AffordFn = bool(__thiscall*)(const char* player, const void* cost);
+const auto kAfford = reinterpret_cast<AffordFn>(0x008D6BAE);        // the payment's test of the player's stock
+const auto kSharedAfford = reinterpret_cast<AffordFn>(0x008D6C1B);  // ... of the team's, with [world+6912h] set
+using AppendFn = void(__thiscall*)(void* text, const wchar_t* more, std::int32_t length, std::int32_t start);
+const auto kAppend = reinterpret_cast<AppendFn>(0x00443960);
+constexpr std::int32_t kStringResources = 41543;  // "Not enough resources"
+const auto kRemove = reinterpret_cast<RemoveFn>(0x004726B2);
+const auto kCreate = reinterpret_cast<CreateFn>(0x00498ACC);
+const auto kCommandCreate = reinterpret_cast<CommandCreateFn>(0x005695FC);
+const auto kCommandPlayers = reinterpret_cast<CommandPlayersFn>(0x005683B9);
+const auto kCommandUnits = reinterpret_cast<CommandUnitsFn>(0x005696E1);
+const auto kCommandQueue = reinterpret_cast<CommandQueueFn>(0x00568A1A);
+constexpr std::uint32_t kResListCount = 0x00C6DF38;  // the entries of every ResList
 
 struct BString {
   wchar_t* text;
@@ -104,6 +182,12 @@ using BStringAssignFn = void(__thiscall*)(wchar_t** self, const BString* source,
 const auto kBStringFromId = reinterpret_cast<BStringFromIdFn>(0x0058EA52);
 const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
 const auto kBStringAssign = reinterpret_cast<BStringAssignFn>(0x00443BB8);
+
+// A ResList laid out as the game's: +0 the encoded entries, +4 the encoded total.
+struct ResList {
+  std::uint32_t* entries;
+  std::uint32_t total;
+};
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -116,33 +200,63 @@ struct Text {
   std::wstring text;
 };
 
+struct GarrisonRule {
+  std::string name;  // a proto or an abstract type
+  std::int32_t amount = 1;
+  std::int32_t type = -1;  // resolved for the current database
+};
+
+struct CostPart {
+  std::string name;
+  float amount = 0.0f;
+  std::int32_t resource = -1;  // resolved for the current database
+};
+
+struct CommandRule {
+  std::int32_t index = -1;  // in g_commandNames
+  std::string name;
+  std::int32_t factor = 0;
+  std::string unitName;
+  std::int32_t count = 1;
+  std::vector<CostPart> cost;
+  std::int32_t unitProto = -1;  // resolved for the current database
+};
+
 struct Tags {
-  bool marked = false;  // <NurseryFactorMax> was read
-  float max = 0.0f;
+  bool marked = false;  // a NurseryFactor tag was read
+  float max = kDefaultMax;
   float initial = 0.0f;
   float interval = 0.0f;  // seconds; 0: no growth with time
   float step = 1.0f;
   bool exponential = false;
-  float rate = 0.25f;
+  float base = 2.0f;
   bool trickle = true;
   Text name;
   Text countLine;
   Text rateLine;
+  std::vector<GarrisonRule> garrison;
+  std::vector<CommandRule> commands;
 };
 std::map<std::int32_t, Tags> g_tags;  // by proto ID; the data load fills it
 std::vector<std::uint8_t> g_marked;   // by proto ID: 1 for a marked proto that trickles (the rate filter's test)
+std::vector<std::uint8_t> g_garrisoned;  // by proto ID: 1 for a marked proto with a garrison rule
+std::vector<std::string> g_commandNames;  // lowercase; the index is the command's number in the network command
+const char* g_resolvedFor = nullptr;      // the proto array the names were resolved against
 
 struct TechValues {
   std::int32_t id;  // the proto ID the copy had: a reused pointer with another ID is ignored
   float max;
   float interval;
   float step;
+  float base;
 };
 std::unordered_map<const char*, TechValues> g_tech;  // by the player's copy of the proto; lookups only
 
 struct State {
   std::int32_t factor = 0;
   std::uint32_t progress = 0;  // ms of game time towards the next step
+  std::uint32_t steps = 0;     // t: the growth steps since the factor was last emptied
+  float carry = 0.0f;          // exponential: the fraction the steps left, 0..1
 };
 std::map<std::int32_t, State> g_units;  // by unit ID, in ID order: the same walk on every machine
 
@@ -153,6 +267,13 @@ struct PendingFactor {
   std::uint8_t relativity;
 };
 std::vector<PendingFactor> g_pending;  // NurseryFactor effects, for the next world tick
+
+struct Entry {
+  std::int32_t container;
+  std::int32_t unit;
+};
+std::vector<Entry> g_entries;  // garrison entries into a tagged building, for the next world tick
+const char* g_entriesWorld = nullptr;
 
 struct Shipment {
   std::int32_t shipped;  // the proto FreeHomeCityUnit ships
@@ -184,6 +305,11 @@ const char* MainWorld() {
   return game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
 }
 
+const char* Database() {
+  const char* game = Game();
+  return game == nullptr ? nullptr : Field<const char*>(game, 0x140);
+}
+
 char* UnitById(const char* world, std::int32_t id) {
   if (id < 0 || (id & 0x3FFFF) >= Field<std::int32_t>(world, 0x10)) {
     return nullptr;
@@ -204,6 +330,29 @@ const char* ProtoName(const char* proto) {
 std::int32_t PlayerIdOf(const char* unit) {
   const char* player = Field<const char*>(unit, 0x44);
   return player == nullptr ? -1 : Field<std::int32_t>(player, 0);
+}
+
+std::string Lower(std::string text) {
+  for (char& c : text) {
+    c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+  }
+  return text;
+}
+
+std::string Trim(const std::string& text) {
+  const auto first = text.find_first_not_of(" \t\r\n");
+  if (first == std::string::npos) {
+    return {};
+  }
+  return text.substr(first, text.find_last_not_of(" \t\r\n") - first + 1);
+}
+
+std::string Narrow(const wchar_t* text) {
+  std::string out;
+  for (; text != nullptr && *text != L'\0'; ++text) {
+    out += *text < 0x80 ? static_cast<char>(*text) : '?';
+  }
+  return out;
 }
 
 const Tags* TagsOf(const char* proto) {
@@ -250,17 +399,69 @@ std::int32_t StepOf(const char* copy, const Tags& tags) {
   return step < 1 ? 1 : step;
 }
 
-std::int32_t Grow(std::int32_t factor, std::int32_t step, const Tags& tags) {
+float BaseOf(const char* copy, const Tags& tags) {
+  const TechValues* tech = TechOf(copy);
+  const float base = tech != nullptr ? tech->base : tags.base;
+  return base > 0.0f ? base : 0.0f;
+}
+
+// What one growth step adds: the step (linear), or b^t with the fraction carried to the next step (exponential).
+std::int32_t StepAmount(const char* copy, const Tags& tags, State* state) {
   if (!tags.exponential) {
-    return factor + step;
+    return StepOf(copy, tags);
   }
-  const std::int32_t share = Whole(static_cast<float>(factor) * tags.rate);
-  return factor + (share > step ? share : step);
+  const double power = std::pow(static_cast<double>(BaseOf(copy, tags)), static_cast<double>(state->steps));
+  const double total = (power < static_cast<double>(kMaxValue) ? power : static_cast<double>(kMaxValue)) +
+                       static_cast<double>(state->carry);
+  const double whole = std::floor(total + 1e-6);
+  state->carry = static_cast<float>(std::clamp(total - whole, 0.0, 0.99998));
+  return static_cast<std::int32_t>(whole);
+}
+
+// A factor set by a take: emptied, the exponential curve starts again.
+void SetFactor(State* state, std::int32_t factor) {
+  state->factor = std::clamp(factor, 0, kMaxValue);
+  if (state->factor == 0) {
+    state->steps = 0;
+    state->carry = 0.0f;
+  }
+}
+
+// An addition, up to the cap; a unit already above it keeps what it has.
+std::int32_t AddUpToCap(std::int32_t factor, std::int32_t amount, std::int32_t cap) {
+  if (amount <= 0) {
+    return std::max(0, factor + amount);
+  }
+  if (factor >= cap) {
+    return factor;
+  }
+  return std::min(factor + amount, cap);
 }
 
 // --- Tags -----------------------------------------------------------------------------------------------------
 
 const wchar_t* NodeText(const char* node) { return *reinterpret_cast<const wchar_t* const*>(node + 0x14); }
+
+void Remark(std::int32_t id) {
+  if (id < 0 || id > 0xFFFFF) {
+    return;
+  }
+  const auto found = g_tags.find(id);
+  const bool marked = found != g_tags.end() && found->second.marked;
+  if (static_cast<std::size_t>(id) >= g_marked.size()) {
+    g_marked.resize(static_cast<std::size_t>(id) + 1, 0);
+    g_garrisoned.resize(static_cast<std::size_t>(id) + 1, 0);
+  }
+  g_marked[static_cast<std::size_t>(id)] = marked && found->second.trickle ? 1 : 0;
+  g_garrisoned[static_cast<std::size_t>(id)] = marked && !found->second.garrison.empty() ? 1 : 0;
+}
+
+// The proto's tags, marked: any NurseryFactor tag makes it a nursery.
+Tags& Mark(const char* proto) {
+  Tags& tags = g_tags[ProtoId(proto)];
+  tags.marked = true;
+  return tags;
+}
 
 bool ReadNumber(const char* node, char* proto, const wchar_t* tag, float low, float high, float* out) {
   const wchar_t* text = NodeText(node);
@@ -298,24 +499,31 @@ void ReadText(const char* node, char* proto, const wchar_t* tag, Text* out) {
   }
 }
 
-void Remark(std::int32_t id) {
-  const auto found = g_tags.find(id);
-  const bool on = found != g_tags.end() && found->second.marked && found->second.trickle;
-  if (id < 0 || id > 0xFFFFF) {
-    return;
+std::string Attribute(const char* node, const char* name, bool* present) {
+  const void* value = nullptr;
+  *present = node != nullptr && kXmlAttribute(node, name, &value) && value != nullptr;
+  if (!*present) {
+    return {};
   }
-  if (static_cast<std::size_t>(id) >= g_marked.size()) {
-    g_marked.resize(static_cast<std::size_t>(id) + 1, 0);
+  const char* text = kXmlText(value);
+  return text != nullptr ? text : "";
+}
+
+bool ParseInt(const std::string& text, long low, long high, std::int32_t* out) {
+  const std::string trimmed = Trim(text);
+  char* end = nullptr;
+  const long value = std::strtol(trimmed.c_str(), &end, 10);
+  if (trimmed.empty() || *end != '\0' || value < low || value > high) {
+    return false;
   }
-  g_marked[static_cast<std::size_t>(id)] = on ? 1 : 0;
+  *out = static_cast<std::int32_t>(value);
+  return true;
 }
 
 bool __cdecl ReadMax(void*, const char* node, char* proto) {
   float value = 0.0f;
   if (ReadNumber(node, proto, L"NurseryFactorMax", 0.0f, static_cast<float>(kMaxValue), &value)) {
-    Tags& tags = g_tags[ProtoId(proto)];
-    tags.max = std::floor(value);
-    tags.marked = true;
+    Mark(proto).max = std::floor(value);
     Remark(ProtoId(proto));
   }
   return true;
@@ -324,7 +532,8 @@ bool __cdecl ReadMax(void*, const char* node, char* proto) {
 bool __cdecl ReadInitial(void*, const char* node, char* proto) {
   float value = 0.0f;
   if (ReadNumber(node, proto, L"NurseryFactorInitial", 0.0f, static_cast<float>(kMaxValue), &value)) {
-    g_tags[ProtoId(proto)].initial = std::floor(value);
+    Mark(proto).initial = std::floor(value);
+    Remark(ProtoId(proto));
   }
   return true;
 }
@@ -332,7 +541,8 @@ bool __cdecl ReadInitial(void*, const char* node, char* proto) {
 bool __cdecl ReadInterval(void*, const char* node, char* proto) {
   float value = 0.0f;
   if (ReadNumber(node, proto, L"NurseryFactorInterval", 0.0f, 36000.0f, &value)) {
-    g_tags[ProtoId(proto)].interval = value;
+    Mark(proto).interval = value;
+    Remark(ProtoId(proto));
   }
   return true;
 }
@@ -340,15 +550,17 @@ bool __cdecl ReadInterval(void*, const char* node, char* proto) {
 bool __cdecl ReadStep(void*, const char* node, char* proto) {
   float value = 0.0f;
   if (ReadNumber(node, proto, L"NurseryFactorStep", 1.0f, static_cast<float>(kMaxValue), &value)) {
-    g_tags[ProtoId(proto)].step = std::floor(value);
+    Mark(proto).step = std::floor(value);
+    Remark(ProtoId(proto));
   }
   return true;
 }
 
-bool __cdecl ReadGrowthRate(void*, const char* node, char* proto) {
+bool __cdecl ReadGrowthBase(void*, const char* node, char* proto) {
   float value = 0.0f;
-  if (ReadNumber(node, proto, L"NurseryFactorGrowthRate", 0.0f, 100.0f, &value)) {
-    g_tags[ProtoId(proto)].rate = value;
+  if (ReadNumber(node, proto, L"NurseryFactorGrowthBase", 0.0f, 100.0f, &value)) {
+    Mark(proto).base = value;
+    Remark(ProtoId(proto));
   }
   return true;
 }
@@ -356,7 +568,8 @@ bool __cdecl ReadGrowthRate(void*, const char* node, char* proto) {
 bool __cdecl ReadGrowth(void*, const char* node, char* proto) {
   const wchar_t* text = NodeText(node);
   if (text != nullptr && (_wcsicmp(text, L"linear") == 0 || _wcsicmp(text, L"exponential") == 0)) {
-    g_tags[ProtoId(proto)].exponential = _wcsicmp(text, L"exponential") == 0;
+    Mark(proto).exponential = _wcsicmp(text, L"exponential") == 0;
+    Remark(ProtoId(proto));
     if (g_log) {
       uhc::Log(L"nurseryFactor: proto %d (%hs): NurseryFactorGrowth %ls", ProtoId(proto), ProtoName(proto), text);
     }
@@ -370,36 +583,191 @@ bool __cdecl ReadGrowth(void*, const char* node, char* proto) {
 bool __cdecl ReadTrickle(void*, const char* node, char* proto) {
   float value = 0.0f;
   if (ReadNumber(node, proto, L"NurseryFactorTrickle", 0.0f, 1.0f, &value)) {
-    g_tags[ProtoId(proto)].trickle = value >= 0.5f;
+    Mark(proto).trickle = value >= 0.5f;
     Remark(ProtoId(proto));
   }
   return true;
 }
 
 bool __cdecl ReadName(void*, const char* node, char* proto) {
-  ReadText(node, proto, L"NurseryFactorName", &g_tags[ProtoId(proto)].name);
+  ReadText(node, proto, L"NurseryFactorName", &Mark(proto).name);
+  Remark(ProtoId(proto));
   return true;
 }
 
 bool __cdecl ReadCountLine(void*, const char* node, char* proto) {
-  ReadText(node, proto, L"NurseryFactorRolloverCount", &g_tags[ProtoId(proto)].countLine);
+  ReadText(node, proto, L"NurseryFactorRolloverCount", &Mark(proto).countLine);
+  Remark(ProtoId(proto));
   return true;
 }
 
 bool __cdecl ReadRateLine(void*, const char* node, char* proto) {
-  ReadText(node, proto, L"NurseryFactorRolloverRate", &g_tags[ProtoId(proto)].rateLine);
+  ReadText(node, proto, L"NurseryFactorRolloverRate", &Mark(proto).rateLine);
+  Remark(ProtoId(proto));
+  return true;
+}
+
+// <NurseryFactorGarrisonUnit amount="3">ypGoat</NurseryFactorGarrisonUnit>
+bool __cdecl ReadGarrisonUnit(void*, const char* node, char* proto) {
+  GarrisonRule rule;
+  rule.name = Trim(Narrow(NodeText(node)));
+  bool present = false;
+  const std::string amount = Attribute(node, "amount", &present);
+  if (rule.name.empty() || (present && !ParseInt(amount, 1, kMaxValue, &rule.amount))) {
+    uhc::Log(L"nurseryFactor: proto %d (%hs): <NurseryFactorGarrisonUnit amount=\"%hs\">%hs</...> needs a unit name and "
+             L"a whole amount from 1; ignored",
+             ProtoId(proto), ProtoName(proto), amount.c_str(), rule.name.c_str());
+    return true;
+  }
+  Tags& tags = Mark(proto);
+  tags.garrison.push_back(rule);
+  Remark(ProtoId(proto));
+  if (g_log) {
+    uhc::Log(L"nurseryFactor: proto %d (%hs): a %hs that enters adds %d", ProtoId(proto), ProtoName(proto),
+             rule.name.c_str(), rule.amount);
+  }
+  return true;
+}
+
+// "Gold 100, Wood 50"
+bool ParseCost(const std::string& text, std::vector<CostPart>* out) {
+  std::size_t start = 0;
+  while (start <= text.size()) {
+    const std::size_t comma = text.find(',', start);
+    const std::string part = Trim(text.substr(start, comma == std::string::npos ? std::string::npos : comma - start));
+    if (!part.empty()) {
+      const std::size_t space = part.find_last_of(" \t");
+      if (space == std::string::npos) {
+        return false;
+      }
+      CostPart cost;
+      cost.name = Trim(part.substr(0, space));
+      const std::string number = Trim(part.substr(space + 1));
+      char* end = nullptr;
+      const double amount = std::strtod(number.c_str(), &end);
+      if (cost.name.empty() || number.empty() || *end != '\0' || !(amount >= 0.0) || amount > 1e7) {
+        return false;
+      }
+      cost.amount = static_cast<float>(amount);
+      out->push_back(cost);
+    }
+    if (comma == std::string::npos) {
+      break;
+    }
+    start = comma + 1;
+  }
+  return true;
+}
+
+// <NurseryFactorCommand factor="-5" unit="CrateofCoin" count="1" cost="Gold 100">SellMinks</NurseryFactorCommand>
+bool __cdecl ReadCommand(void*, const char* node, char* proto) {
+  CommandRule rule;
+  rule.name = Trim(Narrow(NodeText(node)));
+  bool present = false;
+  bool ok = !rule.name.empty();
+  const std::string factor = Attribute(node, "factor", &present);
+  ok = ok && (!present || ParseInt(factor, -kMaxValue, kMaxValue, &rule.factor));
+  rule.unitName = Trim(Attribute(node, "unit", &present));
+  const std::string count = Attribute(node, "count", &present);
+  ok = ok && (!present || ParseInt(count, 0, kMaxSpawn, &rule.count));
+  if (rule.unitName.empty()) {
+    rule.count = 0;
+  }
+  const std::string cost = Attribute(node, "cost", &present);
+  ok = ok && (!present || ParseCost(cost, &rule.cost));
+  if (!ok) {
+    uhc::Log(L"nurseryFactor: proto %d (%hs): <NurseryFactorCommand factor=\"%hs\" unit=\"%hs\" count=\"%hs\" "
+             L"cost=\"%hs\">%hs</...>: needs a name, a whole factor, a count from 0 to %d and a cost such as "
+             L"\"Gold 100, Wood 50\"; ignored",
+             ProtoId(proto), ProtoName(proto), factor.c_str(), rule.unitName.c_str(), count.c_str(), cost.c_str(),
+             rule.name.c_str(), kMaxSpawn);
+    return true;
+  }
+  const std::string key = Lower(rule.name);
+  const auto known = std::find(g_commandNames.begin(), g_commandNames.end(), key);
+  rule.index = static_cast<std::int32_t>(known - g_commandNames.begin());
+  if (known == g_commandNames.end()) {
+    if (g_commandNames.size() >= static_cast<std::size_t>(kMaxCommands)) {
+      return true;
+    }
+    g_commandNames.push_back(key);
+  }
+  Tags& tags = Mark(proto);
+  for (CommandRule& existing : tags.commands) {
+    if (existing.index == rule.index) {
+      uhc::Log(L"nurseryFactor: proto %d (%hs): command %hs is given twice; the second is kept", ProtoId(proto),
+               ProtoName(proto), rule.name.c_str());
+      existing = rule;
+      return true;
+    }
+  }
+  tags.commands.push_back(rule);
+  Remark(ProtoId(proto));
+  if (g_log) {
+    uhc::Log(L"nurseryFactor: proto %d (%hs): command %hs (%d): factor %+d, %d x %hs, cost \"%hs\"", ProtoId(proto),
+             ProtoName(proto), rule.name.c_str(), rule.index, rule.factor, rule.count,
+             rule.unitName.empty() ? "nothing" : rule.unitName.c_str(), cost.c_str());
+  }
   return true;
 }
 
 void ForgetOnDataLoad(char*) {
   g_tags.clear();
   g_marked.clear();
+  g_garrisoned.clear();
+  g_commandNames.clear();
+  g_resolvedFor = nullptr;
   g_tech.clear();
   g_pending.clear();
+  g_entries.clear();
   g_units.clear();
   g_shipments.clear();
   g_world = nullptr;
   g_cursor = 0;
+}
+
+std::int32_t TypeId(const void* db, const std::string& name) {
+  const char* table = static_cast<const char*>(db) + kTypeNames;
+  std::int32_t id = -1;
+  if (name.empty() || !kNameFind(table, name.c_str(), kNameBucket(table, name.c_str()), &id)) {
+    return -1;
+  }
+  return id;
+}
+
+// The names of the rules (units, types, resources), against the current database, once per data load.
+void Resolve() {
+  const char* database = Database();
+  if (database == nullptr || Field<const char*>(database, kProtoTable) == g_resolvedFor) {
+    return;
+  }
+  g_resolvedFor = Field<const char*>(database, kProtoTable);
+  const std::int32_t firstAbstract = Field<std::int32_t>(database, kFirstAbstract);
+  for (auto& [id, tags] : g_tags) {
+    for (GarrisonRule& rule : tags.garrison) {
+      rule.type = TypeId(database, rule.name);
+      if (rule.type < 0) {
+        uhc::Log(L"nurseryFactor: proto %d: <NurseryFactorGarrisonUnit> names %hs, no proto or unit type; ignored", id,
+                 rule.name.c_str());
+      }
+    }
+    for (CommandRule& rule : tags.commands) {
+      rule.unitProto = rule.count > 0 ? kProtoByName(database, rule.unitName.c_str()) : -1;
+      if (rule.count > 0 && (rule.unitProto < 0 || rule.unitProto >= firstAbstract)) {
+        uhc::Log(L"nurseryFactor: proto %d: command %hs names %hs as its unit, which is no proto; the command makes "
+                 L"no unit",
+                 id, rule.name.c_str(), rule.unitName.c_str());
+        rule.unitProto = -1;
+      }
+      for (CostPart& part : rule.cost) {
+        part.resource = kResourceByName(database, part.name.c_str());
+        if (part.resource < 0) {
+          uhc::Log(L"nurseryFactor: proto %d: command %hs: %hs is no resource; that part of the cost is ignored", id,
+                   rule.name.c_str(), part.name.c_str());
+        }
+      }
+    }
+  }
 }
 
 // --- Tech subtypes --------------------------------------------------------------------------------------------
@@ -409,7 +777,7 @@ TechValues* TechSlot(char* copy, const char* base) {
   if (tag == g_tags.end() || !tag->second.marked) {
     return nullptr;
   }
-  const TechValues fresh{ProtoId(copy), tag->second.max, tag->second.interval, tag->second.step};
+  const TechValues fresh{ProtoId(copy), tag->second.max, tag->second.interval, tag->second.step, tag->second.base};
   auto inserted = g_tech.emplace(copy, fresh);
   if (inserted.first->second.id != ProtoId(copy)) {
     inserted.first->second = fresh;
@@ -417,22 +785,24 @@ TechValues* TechSlot(char* copy, const char* base) {
   return &inserted.first->second;
 }
 
-enum class Value { kMax, kInterval, kStep };
+enum class Value { kMax, kInterval, kStep, kBase };
 
 void ChangeValue(char* copy, const char* base, float amount, std::uint8_t relativity, bool unapply, Value which) {
-  static const wchar_t* const kNames[] = {L"NurseryFactorMax", L"NurseryFactorInterval", L"NurseryFactorStep"};
+  static const wchar_t* const kNames[] = {L"NurseryFactorMax", L"NurseryFactorInterval", L"NurseryFactorStep",
+                                          L"NurseryFactorGrowthBase"};
   const wchar_t* name = kNames[static_cast<int>(which)];
   TechValues* slot = TechSlot(copy, base);
   if (slot == nullptr) {
-    uhc::Log(L"nurseryFactor: tech subtype %ls on proto %d (%hs), which has no <NurseryFactorMax>; ignored", name,
+    uhc::Log(L"nurseryFactor: tech subtype %ls on proto %d (%hs), which has no NurseryFactor tag; ignored", name,
              ProtoId(copy), ProtoName(copy));
     return;
   }
   const Tags& tags = g_tags[ProtoId(base)];
-  float* field = which == Value::kMax ? &slot->max : which == Value::kInterval ? &slot->interval : &slot->step;
-  const float from = which == Value::kMax ? tags.max : which == Value::kInterval ? tags.interval : tags.step;
+  float* fields[] = {&slot->max, &slot->interval, &slot->step, &slot->base};
+  const float froms[] = {tags.max, tags.interval, tags.step, tags.base};
+  float* field = fields[static_cast<int>(which)];
   const float before = *field;
-  kEffectValue(relativity, field, from, amount, unapply);
+  kEffectValue(relativity, field, froms[static_cast<int>(which)], amount, unapply);
   if (*field < 0.0f) {
     *field = 0.0f;  // never negative; the readers floor the step at 1
   }
@@ -456,13 +826,17 @@ void ChangeStep(char* copy, const char* base, float amount, std::uint8_t relativ
   ChangeValue(copy, base, amount, relativity, unapply, Value::kStep);
 }
 
+void ChangeBase(char* copy, const char* base, float amount, std::uint8_t relativity, bool unapply) {
+  ChangeValue(copy, base, amount, relativity, unapply, Value::kBase);
+}
+
 void ChangeFactor(char* copy, const char* base, float amount, std::uint8_t relativity, bool unapply) {
   if (unapply) {
     return;  // a change made is kept
   }
   const auto tag = g_tags.find(ProtoId(base));
   if (tag == g_tags.end() || !tag->second.marked) {
-    uhc::Log(L"nurseryFactor: tech subtype NurseryFactor on proto %d (%hs), which has no <NurseryFactorMax>; ignored",
+    uhc::Log(L"nurseryFactor: tech subtype NurseryFactor on proto %d (%hs), which has no NurseryFactor tag; ignored",
              ProtoId(copy), ProtoName(copy));
     return;
   }
@@ -477,6 +851,17 @@ void ChangeFactor(char* copy, const char* base, float amount, std::uint8_t relat
 // --- The units ------------------------------------------------------------------------------------------------
 
 char* MarkerOf(const char* unit) { return uhc::markers::Find(unit, kStat, kWord); }
+
+std::uint32_t PackSteps(const State& state) {
+  const std::uint32_t steps = state.steps > 0xFFFF ? 0xFFFF : state.steps;
+  const auto carry = static_cast<std::uint32_t>(std::clamp(state.carry, 0.0f, 0.99998f) * 65536.0f);
+  return steps | (carry << 16);
+}
+
+void UnpackSteps(std::uint32_t word, State* state) {
+  state->steps = word & 0xFFFF;
+  state->carry = static_cast<float>(word >> 16) / 65536.0f;
+}
 
 void Consider(const char* unit, bool fromMarkers) {
   if (unit == nullptr) {
@@ -496,11 +881,11 @@ void Consider(const char* unit, bool fromMarkers) {
   if (marker != nullptr) {
     state.factor = static_cast<std::int32_t>(uhc::markers::Word(const_cast<char*>(marker), 1));
     state.progress = uhc::markers::Word(const_cast<char*>(marker), 2);
+    UnpackSteps(uhc::markers::Word(const_cast<char*>(marker), 3), &state);
+    state.factor = std::clamp(state.factor, 0, kMaxValue);
   } else {
-    state.factor = Whole(tags->initial);
+    state.factor = std::min(Whole(tags->initial), Cap(copy, *tags));
   }
-  const std::int32_t cap = Cap(copy, *tags);
-  state.factor = std::clamp(state.factor, 0, cap);
   g_units.emplace(id, state);
 }
 
@@ -564,6 +949,17 @@ std::uint32_t Sync(const char* world) {
   return elapsed;
 }
 
+// The table's state of a living unit with a factor (made from its marker or its tags when the sweep has not reached
+// it yet); null for any other unit.
+State* StateOf(const char* world, const char* unit) {
+  if (world != g_world) {
+    Sync(world);
+  }
+  Consider(unit, true);
+  const auto found = g_units.find(Field<std::int32_t>(unit, 0x10));
+  return found != g_units.end() ? &found->second : nullptr;
+}
+
 void ApplyPending(const char* world) {
   SweepAll(world, true);
   for (const PendingFactor& pending : g_pending) {
@@ -580,11 +976,14 @@ void ApplyPending(const char* world) {
       float value = static_cast<float>(state.factor);
       kEffectValue(pending.relativity, &value, tags->initial, pending.amount, false);
       const std::int32_t before = state.factor;
-      state.factor = std::clamp(static_cast<std::int32_t>(std::floor(value + 1e-4f)), 0, Cap(pending.copy, *tags));
+      const std::int32_t cap = Cap(pending.copy, *tags);
+      // Up to the cap, or what the unit had when it was already above it; never below 0.
+      const std::int32_t upper = std::max(cap, before);
+      SetFactor(&state, std::clamp(static_cast<std::int32_t>(std::floor(value + 1e-4f)), 0, upper));
       if (LogOk()) {
         uhc::Log(L"nurseryFactor: unit %d (%hs), NurseryFactor relativity %u amount %g: %d -> %d/%d", id,
                  ProtoName(pending.copy), pending.relativity, static_cast<double>(pending.amount), before,
-                 state.factor, Cap(pending.copy, *tags));
+                 state.factor, cap);
       }
     }
   }
@@ -602,6 +1001,80 @@ void WriteMarker(char* unit, const State& state) {
   }
   uhc::markers::Word(marker, 1) = static_cast<std::uint32_t>(state.factor);
   uhc::markers::Word(marker, 2) = state.progress;
+  uhc::markers::Word(marker, 3) = PackSteps(state);
+}
+
+// --- The garrison ---------------------------------------------------------------------------------------------
+
+// From the shared garrison observer, inside the load: only queues (garrisonobservers.h).
+void OnGarrison(char* container, char* unit) {
+  if (g_garrisoned.empty()) {
+    return;
+  }
+  const char* copy = Field<const char*>(container, 0x5C);
+  const std::int32_t protoId = copy != nullptr ? ProtoId(copy) : -1;
+  if (protoId < 0 || static_cast<std::size_t>(protoId) >= g_garrisoned.size() ||
+      g_garrisoned[static_cast<std::size_t>(protoId)] == 0) {
+    return;
+  }
+  const char* world = MainWorld();
+  if (world != g_entriesWorld) {
+    g_entries.clear();
+    g_entriesWorld = world;
+  }
+  g_entries.push_back({Field<std::int32_t>(container, 0x10), Field<std::int32_t>(unit, 0x10)});
+}
+
+const GarrisonRule* RuleFor(const Tags& tags, const char* unitCopy) {
+  for (const GarrisonRule& rule : tags.garrison) {
+    if (rule.type >= 0 && (ProtoId(unitCopy) == rule.type || kProtoIsType(unitCopy, rule.type))) {
+      return &rule;
+    }
+  }
+  return nullptr;
+}
+
+void TakeGarrisoned(char* world) {
+  if (g_entriesWorld != world) {
+    g_entries.clear();
+    return;
+  }
+  Resolve();
+  const std::vector<Entry> entries = std::move(g_entries);
+  g_entries.clear();
+  for (const Entry& entry : entries) {
+    char* container = UnitById(world, entry.container);
+    char* unit = UnitById(world, entry.unit);
+    if (container == nullptr || unit == nullptr || !IsAlive(container) || !IsAlive(unit) ||
+        Field<std::int32_t>(unit, 0x6C) != entry.container) {
+      continue;  // gone, or already out again
+    }
+    const char* copy = Field<const char*>(container, 0x5C);
+    const Tags* tags = TagsOf(copy);
+    const char* unitCopy = Field<const char*>(unit, 0x5C);
+    const GarrisonRule* rule = tags != nullptr && unitCopy != nullptr ? RuleFor(*tags, unitCopy) : nullptr;
+    State* state = rule != nullptr ? StateOf(world, container) : nullptr;
+    if (state == nullptr) {
+      continue;
+    }
+    const std::int32_t cap = Cap(copy, *tags);
+    if (state->factor >= cap) {
+      if (LogOk()) {
+        uhc::Log(L"nurseryFactor: unit %d (%hs) entered unit %d (%hs), which is full (%d/%d): it stays inside",
+                 entry.unit, ProtoName(unitCopy), entry.container, ProtoName(copy), state->factor, cap);
+      }
+      continue;
+    }
+    const std::int32_t before = state->factor;
+    SetFactor(state, AddUpToCap(state->factor, rule->amount, cap));
+    WriteMarker(container, *state);
+    kRemove(world, entry.unit, 0, 1);
+    if (LogOk()) {
+      uhc::Log(L"nurseryFactor: unit %d (%hs) entered unit %d (%hs) of player %d and was taken: %d -> %d/%d", entry.unit,
+               ProtoName(unitCopy), entry.container, ProtoName(copy), PlayerIdOf(container), before, state->factor,
+               cap);
+    }
+  }
 }
 
 void Tick(char* world, std::int32_t) {
@@ -611,6 +1084,9 @@ void Tick(char* world, std::int32_t) {
   const std::uint32_t elapsed = Sync(world);
   if (!g_pending.empty()) {
     ApplyPending(world);
+  }
+  if (!g_entries.empty()) {
+    TakeGarrisoned(world);
   }
   SweepSlice(world);
   const std::uint32_t now = Field<std::uint32_t>(world, 0x108);
@@ -627,26 +1103,20 @@ void Tick(char* world, std::int32_t) {
     }
     State& state = it->second;
     const std::int32_t cap = Cap(copy, *tags);
-    if (state.factor > cap) {
-      if (LogOk()) {
-        uhc::Log(L"nurseryFactor: unit %d (%hs) is cut to its player's cap: %d -> %d", it->first, ProtoName(copy),
-                 state.factor, cap);
-      }
-      state.factor = cap;
-    }
     if (kIsBuilt(unit)) {
       const std::uint32_t interval = IntervalMs(copy, *tags);
       if (state.factor >= cap || interval == 0) {
         state.progress = 0;
       } else {
         state.progress += elapsed;
-        const std::int32_t step = StepOf(copy, *tags);
         while (state.progress >= interval && state.factor < cap) {
           state.progress -= interval;
-          state.factor = std::min(Grow(state.factor, step, *tags), cap);
+          const std::int32_t add = StepAmount(copy, *tags, &state);
+          ++state.steps;
+          state.factor = std::min(state.factor + add, cap);
           if (LogOk()) {
-            uhc::Log(L"nurseryFactor: unit %d (%hs) of player %d grows to %d/%d (game time %u ms)", it->first,
-                     ProtoName(copy), PlayerIdOf(unit), state.factor, cap, now);
+            uhc::Log(L"nurseryFactor: unit %d (%hs) of player %d grows by %d to %d/%d (step %u, game time %u ms)",
+                     it->first, ProtoName(copy), PlayerIdOf(unit), add, state.factor, cap, state.steps, now);
           }
         }
         if (state.factor >= cap) {
@@ -656,6 +1126,192 @@ void Tick(char* world, std::int32_t) {
     }
     WriteMarker(unit, state);
     ++it;
+  }
+}
+
+// --- The commands ---------------------------------------------------------------------------------------------
+
+const CommandRule* CommandOf(const Tags& tags, std::int32_t index) {
+  for (const CommandRule& rule : tags.commands) {
+    if (rule.index == index) {
+      return &rule;
+    }
+  }
+  return nullptr;
+}
+
+// Where `count` units of `proto` can stand around the building: rings of 16 points from its edge out, in a fixed
+// order, so every machine finds the same ones. Fewer than `count` found: false.
+bool FindSpots(char* world, const char* building, std::int32_t proto, std::int32_t player, std::int32_t count,
+               std::vector<float>* spots) {
+  const char* buildingProto = Field<const char*>(building, 0x5C);
+  const float radius = std::max(Field<float>(buildingProto, 0x88), Field<float>(buildingProto, 0x8C)) * 1.42f + 1.0f;
+  const float* center = reinterpret_cast<const float*>(building + 0x14);
+  const float* forward = reinterpret_cast<const float*>(building + 0x20);
+  const float* right = reinterpret_cast<const float*>(building + 0x38);
+  const auto place = (*reinterpret_cast<PlaceFn const* const*>(world))[kPlaceSlot / 4];
+  // A spot is tested with the units found before it as if they stood there already: at least 2 m apart.
+  for (int ring = 0; ring < 4 && static_cast<std::int32_t>(spots->size() / 3) < count; ++ring) {
+    const float distance = radius + 2.0f * static_cast<float>(ring);
+    for (int k = 0; k < 16 && static_cast<std::int32_t>(spots->size() / 3) < count; ++k) {
+      const float angle = static_cast<float>(k) * 0.39269908f;  // 22.5 degrees, from the building's front
+      const float c = std::cos(angle);
+      const float s = std::sin(angle);
+      float at[3] = {center[0] + distance * (c * forward[0] + s * right[0]), center[1],
+                     center[2] + distance * (c * forward[2] + s * right[2])};
+      bool clear = true;
+      for (std::size_t i = 0; i + 2 < spots->size() && clear; i += 3) {
+        const float dx = (*spots)[i] - at[0];
+        const float dz = (*spots)[i + 2] - at[2];
+        clear = dx * dx + dz * dz >= 4.0f;
+      }
+      if (clear && place(world, proto, player, at, forward, right, 0, kPlaceFlags, 0, 0, 0, 0)) {
+        spots->insert(spots->end(), at, at + 3);
+      }
+    }
+  }
+  return static_cast<std::int32_t>(spots->size() / 3) >= count;
+}
+
+// The cost as a ResList (the game's encoding through its setter); false when it has nothing to pay.
+bool BuildCost(const CommandRule& rule, std::vector<std::uint32_t>* storage, ResList* list) {
+  const std::int32_t count = *reinterpret_cast<const std::int32_t*>(kResListCount);
+  bool any = false;
+  for (const CostPart& part : rule.cost) {
+    any = any || (part.resource >= 0 && part.resource < count && part.amount > 0.0f);
+  }
+  if (!any || count <= 0) {
+    return false;
+  }
+  storage->assign(static_cast<std::size_t>(count), 0);
+  list->entries = storage->data();
+  list->total = 0;
+  kResListFill(list, 0.0f);
+  for (const CostPart& part : rule.cost) {
+    if (part.resource >= 0 && part.resource < count && part.amount > 0.0f) {
+      kResListSet(list, part.resource, kResListGet(list, part.resource) + part.amount);
+    }
+  }
+  return true;
+}
+
+// One unit's run of a command: the factor, the cost, the units, in that order of tests; nothing changes on a refusal.
+bool RunCommand(char* world, char* unit, std::int32_t playerId, std::int32_t index) {
+  const char* copy = Field<const char*>(unit, 0x5C);
+  const Tags* tags = TagsOf(copy);
+  const CommandRule* rule = tags != nullptr ? CommandOf(*tags, index) : nullptr;
+  const std::int32_t unitId = Field<std::int32_t>(unit, 0x10);
+  if (rule == nullptr || !IsAlive(unit) || !kIsBuilt(unit) || PlayerIdOf(unit) != playerId) {
+    return false;
+  }
+  State* state = StateOf(world, unit);
+  if (state == nullptr) {
+    return false;
+  }
+  const std::int32_t cap = Cap(copy, *tags);
+  const char* why = nullptr;
+  if (rule->factor < 0 && state->factor < -rule->factor) {
+    why = "not enough factor";
+  } else if (rule->factor > 0 && state->factor >= cap) {
+    why = "full";
+  }
+  std::vector<float> spots;
+  if (why == nullptr && rule->unitProto >= 0 && rule->count > 0 &&
+      !FindSpots(world, unit, rule->unitProto, playerId, rule->count, &spots)) {
+    why = "no room for the units";
+  }
+  char* player = kPlayerById(world, playerId);
+  std::vector<std::uint32_t> storage;
+  ResList cost{nullptr, 0};
+  if (why == nullptr && player != nullptr && BuildCost(*rule, &storage, &cost) && !kPay(player, &cost)) {
+    why = "not enough resources";
+  }
+  if (why != nullptr) {
+    if (LogOk()) {
+      uhc::Log(L"nurseryFactor: player %d, command %hs on unit %d (%hs) at %d/%d: refused, %hs", playerId,
+               rule->name.c_str(), unitId, ProtoName(copy), state->factor, cap, why);
+    }
+    return false;
+  }
+  const std::int32_t before = state->factor;
+  SetFactor(state, AddUpToCap(state->factor, rule->factor, cap));
+  WriteMarker(unit, *state);
+  std::int32_t made = 0;
+  const float* forward = reinterpret_cast<const float*>(unit + 0x20);
+  for (std::size_t i = 0; i + 2 < spots.size(); i += 3) {
+    if (kCreate(world, rule->unitProto, playerId, &spots[i], forward, 0, -1, 0, -1) != nullptr) {
+      ++made;
+    }
+  }
+  if (LogOk()) {
+    uhc::Log(L"nurseryFactor: player %d, command %hs on unit %d (%hs): %d -> %d/%d, %d unit(s) of proto %d made", playerId,
+             rule->name.c_str(), unitId, ProtoName(copy), before, state->factor, cap, made, rule->unitProto);
+  }
+  return true;
+}
+
+}  // namespace
+
+// From the hook at the head of the type 17h command's per-unit execute (hooks/nurserycmd_hooks.asm), on every machine,
+// for a command whose [cmd+8Ch] has the magic: the unit's run of the command whose index is the low half.
+extern "C" bool __stdcall UhcNurseryCommand(const char* command, char* unit) {
+  char* world = const_cast<char*>(MainWorld());
+  if (command == nullptr || unit == nullptr || world == nullptr || g_tags.empty()) {
+    return false;
+  }
+  Resolve();
+  const std::int32_t index = static_cast<std::int32_t>(Field<std::uint32_t>(command, 0x8C) & 0xFFFF);
+  return RunCommand(world, unit, Field<std::int32_t>(command, 0x20), index);
+}
+
+namespace {
+
+// The UI syscall nurseryFactorCommand("Name"): the network command for the local player's selected units that have
+// the command. Interface only: what it changes happens when every machine runs the command.
+void __cdecl NurseryFactorCommandSyscall(const char* name) {
+  const char* game = Game();
+  const char* world = MainWorld();
+  if (name == nullptr || game == nullptr || world == nullptr) {
+    return;
+  }
+  const std::string key = Lower(Trim(name));
+  const auto known = std::find(g_commandNames.begin(), g_commandNames.end(), key);
+  if (known == g_commandNames.end()) {
+    uhc::Log(L"nurseryFactor: nurseryFactorCommand(\"%hs\"): no proto has that command", name);
+    return;
+  }
+  const std::int32_t index = static_cast<std::int32_t>(known - g_commandNames.begin());
+  std::int32_t player = Field<std::int32_t>(game, 0x3C0);
+  const char* selection = kSelection();  // the local selection group: IDs [+10h], count [+14h]
+  const std::int32_t count = selection == nullptr ? 0 : Field<std::int32_t>(selection, 0x14);
+  const auto* ids = selection == nullptr ? nullptr : Field<const std::int32_t*>(selection, 0x10);
+  std::vector<std::int32_t> units;
+  for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+    const char* unit = UnitById(world, ids[i]);
+    const Tags* tags = unit != nullptr ? TagsOf(Field<const char*>(unit, 0x5C)) : nullptr;
+    if (tags != nullptr && PlayerIdOf(unit) == player && CommandOf(*tags, index) != nullptr) {
+      units.push_back(ids[i]);
+    }
+  }
+  if (units.empty()) {
+    return;
+  }
+  char* command = kCommandCreate(player, kTransformCommand, 0, -1);
+  if (command == nullptr) {
+    return;
+  }
+  kCommandPlayers(command, 1, &player);
+  *reinterpret_cast<std::int32_t*>(command + 0x2C) = 3;
+  *reinterpret_cast<std::int32_t*>(command + 0x3C) = 0;
+  if (!kCommandUnits(command, static_cast<std::int32_t>(units.size()), units.data())) {
+    (*reinterpret_cast<CommandDestroyFn const* const*>(command))[8 / 4](command, 1);
+    return;
+  }
+  *reinterpret_cast<std::uint32_t*>(command + 0x8C) = kCommandMagic | static_cast<std::uint32_t>(index);
+  kCommandQueue(Field<void*>(world, 8), command, 0, 0);
+  if (LogOk()) {
+    uhc::Log(L"nurseryFactor: player %d sends command %hs (%d) for %u unit(s)", player, key.c_str(), index,
+             static_cast<unsigned>(units.size()));
   }
 }
 
@@ -694,28 +1350,15 @@ bool NurseryRate(const char* unitAction, std::int32_t, float* factor) {
 
 // --- The shipment ---------------------------------------------------------------------------------------------
 
-std::string Attribute(const char* node, const char* name) {
-  const void* value = nullptr;
-  if (node == nullptr || !kXmlAttribute(node, name, &value) || value == nullptr) {
-    return {};
-  }
-  const char* text = kXmlText(value);
-  return text == nullptr ? std::string() : std::string(text);
-}
-
-std::int32_t TypeId(void* db, const std::string& name) {
-  const char* table = static_cast<const char*>(db) + kTypeNames;
-  std::int32_t id = -1;
-  if (name.empty() || !kNameFind(table, name.c_str(), kNameBucket(table, name.c_str()), &id)) {
-    return -1;
-  }
-  return id;
+std::string NodeAttribute(const char* node, const char* name) {
+  bool present = false;
+  return Attribute(node, name, &present);
 }
 
 bool ParseShipment(void* db, char* effect, const char* node) {
-  const std::string shipped = Attribute(node, "unittype");
-  const std::string nursery = Attribute(node, "nursery");
-  const std::string consume = Attribute(node, "consume");
+  const std::string shipped = NodeAttribute(node, "unittype");
+  const std::string nursery = NodeAttribute(node, "nursery");
+  const std::string consume = NodeAttribute(node, "consume");
   const std::int32_t firstAbstract = Field<std::int32_t>(static_cast<const char*>(db), kFirstAbstract);
   Shipment shipment{TypeId(db, shipped), TypeId(db, nursery), 0};
   if (shipment.shipped < 0 || shipment.shipped >= firstAbstract) {
@@ -735,15 +1378,14 @@ bool ParseShipment(void* db, char* effect, const char* node) {
   } else if (consume.empty() || _stricmp(consume.c_str(), "none") == 0) {
     shipment.consume = 0;
   } else {
-    char* end = nullptr;
-    const long n = std::strtol(consume.c_str(), &end, 10);
-    if (end == consume.c_str() || *end != '\0' || n < 1 || n > kMaxValue) {
+    std::int32_t n = 0;
+    if (!ParseInt(consume, 1, kMaxValue, &n)) {
       uhc::Log(L"nurseryFactor: a FreeHomeCityUnitByNurseryFactor effect has consume=\"%hs\"; expected all, none or a "
                L"whole number from 1; effect dropped",
                consume.c_str());
       return false;
     }
-    shipment.consume = static_cast<std::int32_t>(n);
+    shipment.consume = n;
   }
   *reinterpret_cast<std::int32_t*>(effect + 0x10) = static_cast<std::int32_t>(g_shipments.size());
   g_shipments.push_back(shipment);
@@ -785,7 +1427,7 @@ std::int32_t RunShipment(char* player, std::int32_t* field, float* amount) {
     total += take;
     ++buildings;
     if (shipment.consume != 0 && take > 0) {
-      state.factor -= take;
+      SetFactor(&state, state.factor - take);
       state.progress = 0;
     }
   }
@@ -806,7 +1448,7 @@ std::int32_t RunShipment(char* player, std::int32_t* field, float* amount) {
 
 // --- Display --------------------------------------------------------------------------------------------------
 
-std::wstring Resolve(const Text& text) {
+std::wstring ResolveText(const Text& text) {
   if (text.id < 0) {
     return text.text;
   }
@@ -848,6 +1490,10 @@ bool ShownOf(const char* unit, Shown* out) {
   if (found != g_units.end() && MainWorld() == g_world) {
     out->factor = found->second.factor;
     out->progress = found->second.progress;
+    if (out->tags->exponential) {
+      State copyState = found->second;
+      out->step = StepAmount(copy, *out->tags, &copyState);  // what the next step adds
+    }
   } else {
     out->factor = std::min(Whole(out->tags->initial), out->cap);
   }
@@ -855,7 +1501,7 @@ bool ShownOf(const char* unit, Shown* out) {
 }
 
 std::wstring Line(const Text& text, const wchar_t* fallback, const Shown& shown, const std::wstring& name) {
-  std::wstring line = text.id >= 0 || !text.text.empty() ? Resolve(text) : std::wstring(fallback);
+  std::wstring line = text.id >= 0 || !text.text.empty() ? ResolveText(text) : std::wstring(fallback);
   wchar_t number[32];
   swprintf_s(number, L"%d", shown.factor);
   Replace(&line, L"{current}", number);
@@ -874,39 +1520,121 @@ std::wstring Line(const Text& text, const wchar_t* fallback, const Shown& shown,
   return line;
 }
 
-std::wstring Fraction(const Shown& shown, const std::wstring& name) {
+// "3/10 minks", and "(once built)" on a foundation.
+std::wstring Fraction(const Shown& shown, const std::wstring& name, bool foundation) {
   wchar_t value[64];
   swprintf_s(value, L"%d/%d", shown.factor, shown.cap);
   std::wstring text = value;
   if (!name.empty()) {
     text += L" " + name;
   }
+  if (foundation && !shown.built) {
+    text += L" (once built)";
+  }
   return text;
 }
 
+std::wstring Tip(const Shown& shown, const std::wstring& name) {
+  std::wstring tip = L"\x2022 " + Line(shown.tags->countLine, L"{current} out of {max} {name}.", shown, name);
+  if (shown.interval > 0) {
+    tip += L"\n\x2022 " + Line(shown.tags->rateLine, L"Produces {step} {name} every {seconds} seconds.", shown, name);
+  }
+  return tip;
+}
+
+// The minimized interface's row: "3/10 minks" in the label gadget, the rollover as its help text.
 bool __stdcall NurseryRow(const char* panel, const char* unit) {
   Shown shown;
   if (!ShownOf(unit, &shown)) {
     return false;
   }
-  const std::wstring name = Resolve(shown.tags->name);
-  std::wstring value = Fraction(shown, std::wstring());
-  if (!shown.built) {
-    value += L" once built";
-  }
-  std::wstring label = name;
-  if (!label.empty()) {
-    label[0] = static_cast<wchar_t>(std::towupper(label[0]));
-  }
-  if (!uhc::SetUnitPanelRow(panel, label.c_str(), value.c_str())) {
+  const std::wstring name = ResolveText(shown.tags->name);
+  if (!uhc::SetUnitPanelRow(panel, Fraction(shown, name, true).c_str(), L"")) {
     return false;
   }
-  std::wstring tip = L"\x2022 " + Line(shown.tags->countLine, L"{current} out of {max} {name}.", shown, name);
-  if (shown.interval > 0) {
-    tip += L"\n\x2022 " + Line(shown.tags->rateLine, L"Produces {step} {name} every {seconds} seconds.", shown, name);
-  }
-  uhc::SetUnitPanelRowTip(panel, tip.c_str());
+  uhc::SetUnitPanelRowTip(panel, Tip(shown, name).c_str());
   return true;
+}
+
+// The normal interface's stat panel row (after the HP row): the same text and rollover.
+bool __stdcall NurseryStatRow(const char* panel, const char* unit, std::int32_t row) {
+  Shown shown;
+  if (!ShownOf(unit, &shown)) {
+    return false;
+  }
+  const std::wstring name = ResolveText(shown.tags->name);
+  const std::wstring tip = Tip(shown, name);
+  return uhc::SetStatPanelRow(panel, row, L"", Fraction(shown, name, true).c_str(), tip.c_str());
+}
+
+// The command panel's buttons (panelbuttons.h): a button whose click is nurseryFactorCommand("Name") is greyed, with
+// the reason in red in its rollover, while none of the local player's selected units could run that command (the
+// factor, the room under the cap, the cost); the units' placement is left to the command. Interface only.
+void NurseryButton(const uhc::PanelButton& button) {
+  static const char kPrefix[] = "nurseryFactorCommand(\"";
+  const char* click = button.Click();
+  if (_strnicmp(click, kPrefix, sizeof(kPrefix) - 1) != 0) {
+    return;
+  }
+  const char* start = click + sizeof(kPrefix) - 1;
+  const char* end = std::strchr(start, '"');
+  const std::string key = Lower(std::string(start, end != nullptr ? end : start + std::strlen(start)));
+  const auto known = std::find(g_commandNames.begin(), g_commandNames.end(), key);
+  const char* game = Game();
+  const char* world = MainWorld();
+  const char* selection = kSelection();
+  if (known == g_commandNames.end() || game == nullptr || world == nullptr || selection == nullptr) {
+    return;
+  }
+  Resolve();
+  const std::int32_t index = static_cast<std::int32_t>(known - g_commandNames.begin());
+  const std::int32_t playerId = Field<std::int32_t>(game, 0x3C0);
+  const char* player = kPlayerById(world, playerId);
+  const std::int32_t count = Field<std::int32_t>(selection, 0x14);
+  const auto* ids = Field<const std::int32_t*>(selection, 0x10);
+  std::wstring reason;
+  for (std::int32_t i = 0; ids != nullptr && i < count; ++i) {
+    char* unit = UnitById(world, ids[i]);
+    const char* copy = unit != nullptr ? Field<const char*>(unit, 0x5C) : nullptr;
+    const Tags* tags = TagsOf(copy);
+    const CommandRule* rule = tags != nullptr ? CommandOf(*tags, index) : nullptr;
+    if (rule == nullptr || PlayerIdOf(unit) != playerId || !kIsBuilt(unit)) {
+      continue;
+    }
+    Shown shown;
+    ShownOf(unit, &shown);
+    const std::wstring name = ResolveText(tags->name);
+    wchar_t text[160];
+    if (rule->factor < 0 && shown.factor < -rule->factor) {
+      swprintf_s(text, L"%d/%d %ls: %d needed", shown.factor, shown.cap, name.c_str(), -rule->factor);
+      reason = text;
+      continue;
+    }
+    if (rule->factor > 0 && shown.factor >= shown.cap) {
+      swprintf_s(text, L"%d/%d %ls: full", shown.factor, shown.cap, name.c_str());
+      reason = text;
+      continue;
+    }
+    std::vector<std::uint32_t> storage;
+    ResList cost{nullptr, 0};
+    if (player != nullptr && BuildCost(*rule, &storage, &cost) &&
+        !(Field<std::uint8_t>(world, 0x6912) != 0 ? kSharedAfford(player, &cost) : kAfford(player, &cost))) {
+      BString text41543{nullptr};
+      kBStringFromId(&text41543, kStringResources);
+      reason = text41543.text != nullptr ? text41543.text : L"Not enough resources";
+      kBStringFree(&text41543);
+      continue;
+    }
+    return;  // this unit can: the button stays as it is
+  }
+  if (reason.empty()) {
+    return;  // no selected unit has the command
+  }
+  button.State() = 1;
+  button.Click()[0] = 0;
+  button.ShiftClick()[0] = 0;
+  const std::wstring line = L"\n<color=1, 0.35, 0.35>" + reason + L"</color>";
+  kAppend(button.Rollover(), line.c_str(), -1, -1);
 }
 
 // {uhcNurseryFactor}: the first selected unit's "3/10 minks", or nothing.
@@ -926,7 +1654,7 @@ bool __stdcall NurseryRef(uhc::DataRefValue* value) {
   if (unit == nullptr || !ShownOf(unit, &shown)) {
     return false;
   }
-  const std::wstring text = Fraction(shown, Resolve(shown.tags->name));
+  const std::wstring text = Fraction(shown, ResolveText(shown.tags->name), false);
   const BString source{const_cast<wchar_t*>(text.c_str())};
   kBStringAssign(&value->text, &source, -1, -1);
   return true;
@@ -953,28 +1681,67 @@ Outcome ApplyNurseryFactor(const Config& config) {
       !AddProtoTagHandler("NurseryFactorMax", &ReadMax) || !AddProtoTagHandler("NurseryFactorInitial", &ReadInitial) ||
       !AddProtoTagHandler("NurseryFactorInterval", &ReadInterval) ||
       !AddProtoTagHandler("NurseryFactorStep", &ReadStep) || !AddProtoTagHandler("NurseryFactorGrowth", &ReadGrowth) ||
-      !AddProtoTagHandler("NurseryFactorGrowthRate", &ReadGrowthRate) ||
+      !AddProtoTagHandler("NurseryFactorGrowthBase", &ReadGrowthBase) ||
       !AddProtoTagHandler("NurseryFactorTrickle", &ReadTrickle) ||
       !AddProtoTagHandler("NurseryFactorName", &ReadName) ||
       !AddProtoTagHandler("NurseryFactorRolloverCount", &ReadCountLine) ||
       !AddProtoTagHandler("NurseryFactorRolloverRate", &ReadRateLine) ||
+      !AddProtoTagHandler("NurseryFactorGarrisonUnit", &ReadGarrisonUnit) ||
+      !AddProtoTagHandler("NurseryFactorCommand", &ReadCommand) ||
       !AddTechSubtype("NurseryFactor", &ChangeFactor) || !AddTechSubtype("NurseryFactorMax", &ChangeMax) ||
       !AddTechSubtype("NurseryFactorInterval", &ChangeInterval) ||
       !AddTechSubtype("NurseryFactorStep", &ChangeStep) ||
+      !AddTechSubtype("NurseryFactorGrowthBase", &ChangeBase) ||
       !AddTechPlayerSubtype("FreeHomeCityUnitByNurseryFactor", &ParseShipment, &RunShipment) ||
       !OnDatabaseLoad(&ForgetOnDataLoad) || !AddWorldTick(&Tick) ||
       !AddAutoGatherRateFilter("nurseryFactor", &NurseryRate)) {
     return Outcome::kFailed;
   }
+  // The garrison rule and the commands: each its own sites, so another DLL's patch there costs only that part.
+  const bool garrison = AddGarrisonObserver(&OnGarrison, "nurseryFactor");
+  if (!garrison) {
+    Log(L"nurseryFactor: no <NurseryFactorGarrisonUnit> (the garrison entry hook is not available)");
+  }
+  bool commands = VerifyAll("nurseryFactor commands",
+                            {&sites::kNurseryCmdExecute, &sites::kNetCommandCreate, &sites::kNetCommandPlayers,
+                             &sites::kNetCommandUnits, &sites::kNetCommandQueue,
+                             &sites::kPlayerById, &sites::kProtoByName, &sites::kResourceByName, &sites::kResListGet,
+                             &sites::kResListSet, &sites::kResListFill, &sites::kUnitCreate, &sites::kKillSpawnPlace,
+                             &sites::kUnitRemoveHead}) &&
+                  InstallSyscallHooks("nurseryFactor") &&
+                  WriteJmp(sites::kNurseryCmdExecute.va, reinterpret_cast<const void*>(&UhcNurseryCmdHook), 5);
+  if (commands) {
+    SyscallDef def;
+    def.group = SyscallGroup::kUi;
+    def.retType = kSyscallVoid;
+    def.name = "nurseryFactorCommand";
+    def.fn = reinterpret_cast<const void*>(&NurseryFactorCommandSyscall);
+    def.comment = "Runs the <NurseryFactorCommand> of that name on the local player's selected units.";
+    def.source = "nurseryFactor";
+    SyscallParam name;
+    name.type = kSyscallString;
+    def.params.push_back(name);
+    AddSyscall(std::move(def));
+    if (!VerifyAll("nurseryFactor buttons", {&sites::kBStringAppend, &sites::kPayAffordCheck,
+                                                    &sites::kPaySharedAffordCheck, &sites::kCurrentSelectionGroup}) || !AddPanelButtonFilter(&NurseryButton)) {
+      Log(L"nurseryFactor: the command buttons are not greyed when they cannot run");
+    }
+  } else {
+    Log(L"nurseryFactor: no <NurseryFactorCommand> (its sites are not stock)");
+  }
   if (!AddUnitPanelRow(&NurseryRow)) {
     Log(L"nurseryFactor: no row in the unit panel");
+  }
+  if (!AddStatPanelRow(&NurseryStatRow, "nurseryFactor")) {
+    Log(L"nurseryFactor: no row in the stat panel");
   }
   if (!AddDataRef(L"uhcNurseryFactor", kDataRefString, &NurseryRef)) {
     Log(L"nurseryFactor: no data ref {uhcNurseryFactor}");
   }
   Log(L"nurseryFactor: the proto tags NurseryFactor*, the Data subtypes NurseryFactor, NurseryFactorMax, "
-      L"NurseryFactorInterval, NurseryFactorStep and FreeHomeCityUnitByNurseryFactor, the AutoGather rate x the factor, "
-      L"the unit panel row and {uhcNurseryFactor} are on%ls (multiplayer unverified)",
+      L"NurseryFactorInterval, NurseryFactorStep, NurseryFactorGrowthBase and FreeHomeCityUnitByNurseryFactor, the "
+      L"AutoGather rate x the factor, %ls%lsthe panel rows and {uhcNurseryFactor} are on%ls (multiplayer unverified)",
+      garrison ? L"the garrison rule, " : L"", commands ? L"the UI syscall nurseryFactorCommand, " : L"",
       g_log ? L"; logged" : L"");
   return Outcome::kApplied;
 }

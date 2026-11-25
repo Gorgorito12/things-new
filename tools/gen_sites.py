@@ -1096,6 +1096,16 @@ SITES = [
     # head of the function, verify only, so a detour of the head fails the key instead of skipping the hook
     ("GarrisonEnterTail", 0x9C26E1, 0x1F),
     ("GarrisonLoadHead", 0x9C24B5, 0x10),
+    # nurseryFactor's commands: the network command uiTransformSelectedUnit sends (0x7E7193), verify only: the
+    # factory 0x5695FC (cdecl(player, type, 0, -1)), the players 0x5683B9 (thiscall(cmd, 1, &player)), the units
+    # 0x5696E1 (thiscall(cmd, count, ids)), the queue 0x568A1A (thiscall([world+8], cmd, 0, 0)); and the head of the
+    # type 17h command's per-unit execute FUN_007D64F7 (thiscall(cmd, unit), ret 4, al), through its
+    # cmp [esi+8Ch],-1: the jmp of nurseryFactor's command hook replaces its first 5 bytes
+    ("NurseryCmdExecute", 0x7D64F7, 0x16),
+    ("NetCommandCreate", 0x5695FC, 8),
+    ("NetCommandPlayers", 0x5683B9, 8),
+    ("NetCommandUnits", 0x5696E1, 8),
+    ("NetCommandQueue", 0x568A1A, 8),
     # killSpawn: the head of the placement test PLACE FUN_0050703D (world vtable +14h, thiscall, 11 arguments,
     # ret 2Ch), sub esp,1A8h / push ebx / push ebp / xor ebx,ebx / mov ebp,ecx; verify only
     ("KillSpawnPlace", 0x50703D, 0x0C),
