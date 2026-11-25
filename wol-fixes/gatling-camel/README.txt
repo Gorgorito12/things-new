@@ -77,6 +77,11 @@ Tested (2026-11-23, test copy of Wars of Liberty 1.0.15c, single player)
   takes the aim again), deaths while aiming (the corpse shows the gun at rest), 30 camels firing (no cost
   measured: 383 fps with the key, 379 without), a skirmish against an Ottoman AI (the AI plays). Filmed with
   the key off as the control.
+- Round 4 (2026-11-24, in preparation, not in this pack yet): the round-4 art replaces every art file of
+  this pack. The round-2 and round-3 art has two faults that round 4 fixes in every clip: the gunner's
+  forearm can turn over in a single frame (in idle, walk, jog, run, fire, deploy and the reloads), and in
+  jog and run the gun slides 13 to 24 cm off its post. Round 4 also brings back the dismount for
+  GatlingCamelDeployed, with long handles and a turning arc of -30 to +90 degrees.
 - Not seen in game: multiplayer.
 - Fixed on 2026-11-23 after the first films: the camel's left legs were drawn lifted (the stock clips' leg
   mirrors were copied in the clips' own axes); on death the gun stayed in the air, then turned on itself
@@ -140,6 +145,12 @@ Probado (2026-11-23, copia de prueba de Wars of Liberty 1.0.15c, un jugador)
   apuntar), muertes apuntando (el cadáver muestra el arma en reposo), 30 camellos disparando (sin coste medido:
   383 fps con la clave, 379 sin ella), una escaramuza contra una IA otomana (la IA juega). Grabado con la clave
   apagada como control.
+- Ronda 4 (2026-11-24, en preparación, todavía no en este paquete): el arte de la ronda 4 sustituye todos los
+  archivos de arte de este paquete. El arte de las rondas 2 y 3 tiene dos fallos que la ronda 4 corrige en
+  todas las animaciones: el antebrazo del artillero puede girar sobre sí mismo en un solo fotograma (en
+  reposo, paso, trote, galope, disparo, despliegue y recargas), y al trote y al galope el arma se separa de
+  13 a 24 cm de su poste. La ronda 4 también recupera el desmonte de GatlingCamelDeployed, con manijas
+  largas y un arco de giro de -30 a +90 grados.
 - No visto en el juego: multijugador.
 - Corregido el 2026-11-23 tras las primeras grabaciones: las patas izquierdas del camello se veían levantadas
   (las simetrías de las patas de los clips del juego se copiaban en los ejes del propio clip); al morir el arma
