@@ -32,7 +32,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
 | Wednesday 2026-11-25 08:22 | [`editorAutosave`](#editorautosave) | Added. The scenario editor saves the open scenario every few minutes to `autosave-1` ... | Nothing. |
-| Wednesday 2026-11-25 08:10 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
+| Wednesday 2026-11-25 08:11 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
 | Wednesday 2026-11-25 07:55 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`; the player turns them on or off in the options menu, at once. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24); the options-menu pack `wol-fixes/options-menu/` for the switch. |
 | Tuesday 2026-11-24 09:08 | [`techGadgets`](#techgadgets) | Filmed in WoL, with a control. Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. |
 | Tuesday 2026-11-24 09:08 | [`incomeRates`](#incomerates) | Filmed in WoL, with a control. A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). |
@@ -9785,7 +9785,7 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
 
 *In the scenario editor, a search field above the list of objects, in the Forbidden Units/Techs dialog, in the trigger editor and above its list of triggers: type part of a name and the list shows only what matches.*
 
-**Added:** Saturday 2026-11-21 11:23 · **Filmed in WoL:** Wednesday 2026-11-25 08:10
+**Added:** Saturday 2026-11-21 11:23 · **Filmed in WoL:** Wednesday 2026-11-25 08:11
 
 ![editorSearch in WoL](media/editorSearch-wol.gif)
 
