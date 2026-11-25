@@ -1534,6 +1534,19 @@ table: [wol-fixes/fonts/README.txt](../wol-fixes/fonts/README.txt).<!-- private 
 Not a font problem: text with accents inside an XS string literal fails because the XS tokenizer cuts a string at any
 byte above 0x7F ([wol-maps.md](wol-maps.md), lines 58–95).
 
+### The resource panel per culture (2026-11-25)
+
+For request #103 (an interface per culture).<!-- private -->
+REA on the stock exe (Ghidra 12.1.4), Evidence bundle `rea/evidence/age3y-b1a1dab7-u-uiculture-20261125.json`. The
+only interface the engine switches by culture is the resource panel; every other in-game panel file is one file for
+all civs (the full or minimized one, by the game option).
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| In-game UI build | FUN_0076166A (the xref of the name string 0xC04C94 at 0x7626A0) | confirmed (Evidence `ev_b4a4f8c0…`) | Loads `uimainnew.xml` and the panel files (`uiminimappanelnew[min].xml`, `uicommandpanelnew[min].xml`, ..., by the minimized-UI option `[ui+40Fh]`), then looks up the 12 hardcoded names `SettlerCountDialog-{default,advanced}Panel{Eur,Asi,Nat}{Max,Min}` (strings 0xC04C94–0xC04E4C) into `[ui+0E4h]`..`[ui+110h]`, and calls the chooser below. |
+| Resource panel chooser | FUN_00454F2F | confirmed (Evidence `ev_1acac662…`) | Hides all 12 (0x448F13), then shows one (0x447F7B): default or advanced by game option 0x28, Max or Min by option 0x49; within that, FUN_00453D37 (the native test, through 0x453D5E, which `nativeCivs` extends) picks Nat, else FUN_00454ED7 (the Asian test, which `asianCivs` extends) picks Asi, else Eur. Three cultures only: there is no slot for a fourth. |
+| Textures of the hidden variants | - | measured, not traced | All 12 variants are gadgets of `uimainnew.xml`, created when the UI is built, hidden or not; whether a hidden gadget's background is loaded then or at its first draw was measured, not read in code. |
+
 ### WoL requests #70–#73 (research for batch 2, 2026-11-20)
 
 REA 6.8 (Ghidra 12.1.4) on the stock exe, snapshot `rea/snapshots/age3y-b1a1dab7-rea68.json`, bundle
