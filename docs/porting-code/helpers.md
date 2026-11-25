@@ -2785,6 +2785,39 @@ inline constexpr Site kEditorSetData{"EditorSetData", 0x00AC19D9, kEditorSetData
 inline constexpr std::uint8_t kEditorParamPickTextBytes[] = {0x8B, 0x8D, 0x3C, 0x01, 0x00, 0x00, 0xE8, 0xB3, 0x8E, 0x16, 0x00, 0x8B, 0xCE, 0xE8, 0xA4, 0x6E, 0x29, 0x00, 0x83, 0xF8, 0xFF, 0x0F, 0x84, 0xA7, 0x0D, 0x00, 0x00, 0x50, 0x8B, 0xCE, 0xE8, 0x62, 0x70, 0x29, 0x00, 0x50};
 inline constexpr Site kEditorParamPickText{"EditorParamPickText", 0x00829E65, kEditorParamPickTextBytes, sizeof(kEditorParamPickTextBytes)};
 
+inline constexpr std::uint8_t kEditorGateBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0x91, 0x00, 0x00, 0x00, 0x80, 0xB8, 0x3A, 0x0B, 0x00, 0x00, 0x00};
+inline constexpr Site kEditorGate{"EditorGate", 0x007D97AF, kEditorGateBytes, sizeof(kEditorGateBytes)};
+
+inline constexpr std::uint8_t kEditorUndoManagerBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x80, 0xB8, 0x3A, 0x0B, 0x00, 0x00, 0x00, 0x74, 0x0B, 0x8B, 0x88, 0x28, 0x09, 0x00, 0x00};
+inline constexpr Site kEditorUndoManager{"EditorUndoManager", 0x007DA8B9, kEditorUndoManagerBytes, sizeof(kEditorUndoManagerBytes)};
+
+inline constexpr std::uint8_t kEditorUndoCountsBytes[] = {0x56, 0x8B, 0xF1, 0x83, 0x7E, 0x04, 0x00, 0x74, 0x38, 0x57, 0x33, 0xFF, 0x39, 0x7E, 0x10};
+inline constexpr Site kEditorUndoCounts{"EditorUndoCounts", 0x009BE4E2, kEditorUndoCountsBytes, sizeof(kEditorUndoCountsBytes)};
+
+inline constexpr std::uint8_t kEditorSaveCallBytes[] = {0x6A, 0x01, 0x51, 0xE8, 0x94, 0xE3, 0xD3, 0xFF, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x50, 0xFF, 0x96, 0xC0, 0x00, 0x00, 0x00};
+inline constexpr Site kEditorSaveCall{"EditorSaveCall", 0x007D980E, kEditorSaveCallBytes, sizeof(kEditorSaveCallBytes)};
+
+inline constexpr std::uint8_t kEditorSaveSlotBytes[] = {0xD3, 0x3E, 0x70, 0x00};
+inline constexpr Site kEditorSaveSlot{"EditorSaveSlot", 0x00B886E8, kEditorSaveSlotBytes, sizeof(kEditorSaveSlotBytes)};
+
+inline constexpr std::uint8_t kEditorSaveThunkBytes[] = {0xE9, 0xAB, 0x06, 0x13, 0x00};
+inline constexpr Site kEditorSaveThunk{"EditorSaveThunk", 0x00703ED3, kEditorSaveThunkBytes, sizeof(kEditorSaveThunkBytes)};
+
+inline constexpr std::uint8_t kEditorSaveHeadBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x80, 0xBE, 0xB0, 0x0A, 0x00, 0x00, 0x00, 0x74, 0x07};
+inline constexpr Site kEditorSaveHead{"EditorSaveHead", 0x00834583, kEditorSaveHeadBytes, sizeof(kEditorSaveHeadBytes)};
+
+inline constexpr std::uint8_t kEditorSaveSetsNameBytes[] = {0x8B, 0x8E, 0x20, 0x09, 0x00, 0x00, 0xE8, 0xD8, 0x5C, 0x00, 0x00, 0x8D, 0x54, 0x24, 0x18, 0x52, 0x8D, 0x8E, 0x58, 0x09, 0x00, 0x00, 0xE8, 0x7F, 0xD3, 0xBC, 0xFF, 0x8B, 0x5C, 0x24, 0x1C, 0x8D, 0x44, 0x24, 0x18, 0x50, 0x8D, 0x4C, 0x24, 0x10, 0x88, 0x9E, 0x5C, 0x09, 0x00, 0x00};
+inline constexpr Site kEditorSaveSetsName{"EditorSaveSetsName", 0x008345D5, kEditorSaveSetsNameBytes, sizeof(kEditorSaveSetsNameBytes)};
+
+inline constexpr std::uint8_t kEditorSaveDirBytes[] = {0xA1, 0xB4, 0xFD, 0xD6, 0x00, 0xC3};
+inline constexpr Site kEditorSaveDir{"EditorSaveDir", 0x00517BAA, kEditorSaveDirBytes, sizeof(kEditorSaveDirBytes)};
+
+inline constexpr std::uint8_t kEditorMessageHideBytes[] = {0x8B, 0x81, 0x2C, 0x01, 0x00, 0x00, 0x8B, 0x0D, 0x44, 0x62, 0xC6, 0x00, 0x8B, 0x49, 0x44, 0x50, 0xE8, 0x16, 0x02, 0xC1, 0xFF, 0xC3};
+inline constexpr Site kEditorMessageHide{"EditorMessageHide", 0x00838CE8, kEditorMessageHideBytes, sizeof(kEditorMessageHideBytes)};
+
+inline constexpr std::uint8_t kEditorMessagePromptNameBytes[] = {0x69, 0x6E, 0x67, 0x61, 0x6D, 0x65, 0x2D, 0x6D, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x64, 0x69, 0x61, 0x6C, 0x6F, 0x67, 0x33, 0x2D, 0x70, 0x72, 0x6F, 0x6D, 0x70, 0x74, 0x00};
+inline constexpr Site kEditorMessagePromptName{"EditorMessagePromptName", 0x00C11254, kEditorMessagePromptNameBytes, sizeof(kEditorMessagePromptNameBytes)};
+
 inline constexpr std::uint8_t kCardChildLoopBytes[] = {0x8B, 0x44, 0x24, 0x1C, 0x50, 0x8B, 0xCB};
 inline constexpr Site kCardChildLoop{"CardChildLoop", 0x0062FD1D, kCardChildLoopBytes, sizeof(kCardChildLoopBytes)};
 
@@ -3330,6 +3363,7 @@ Outcome ApplyXsErrorLog(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyLanAutoStart(const Config& config);
 Outcome ApplyEditorSearch(const Config& config);
+Outcome ApplyEditorAutosave(const Config& config);
 Outcome ApplyPlayerIcon(const Config& config);
 Outcome ApplyPlugins(const Config& config);
 Outcome ApplyAsianCivs(const Config& config);
@@ -3570,6 +3604,8 @@ inline constexpr Feature kFeatures[] = {
     {"playerIcon", ApplyPlayerIcon},
     // After rendererOption: it reads its search fields from the Present of whichever Direct3DCreate9 the game gets.
     {"editorSearch", ApplyEditorSearch},
+    // After rendererOption: its clock runs in the Present of whichever Direct3DCreate9 the game gets.
+    {"editorAutosave", ApplyEditorAutosave},
     // After rendererOption: it sets its gadgets from the Present of whichever Direct3DCreate9 the game gets.
     {"techGadgets", ApplyTechGadgets},
     // Last: plugins load once every other hook is in place.
@@ -3593,7 +3629,7 @@ inline constexpr const char* kHandledKeys[] = {
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
-    "techgadgets", "incomerates",
+    "techgadgets", "incomerates", "editorautosave",
 };
 
 }  // namespace uhc

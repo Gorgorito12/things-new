@@ -427,6 +427,8 @@ lanAutoStart [host [rules=N] | join <address>]   from the main menu straight to 
                               a LAN game; +uhcLanHost / uhcLanJoin="<address>" on the command line
 editorSearch [log]            search fields in the editor's Objects palette, Forbidden Units/Techs
                               dialog and trigger editor (the fields come in the layouts)
+editorAutosave [minutes] [keep N] [log]   the editor saves the open scenario every few minutes
+                              (default 5) to autosave-1 ... autosave-N (default 3), its name unchanged
 directionalAttack [log]       <DirectionalAttack>: a shot flies past its target and hits what it flies over
 buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change train,
                               research, Maintain, heal and build speed

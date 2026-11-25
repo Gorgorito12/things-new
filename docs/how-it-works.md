@@ -6546,6 +6546,75 @@ whose check measured 1–2 µs a frame.
 
 Not tested: a real keyboard (posted messages only), another resolution than 1920 × 1080, IME input.
 
+### editorAutosave
+
+**Why it exists.** The scenario editor has no autosave: a crash loses everything since the last File > Save.
+
+**The save** (`docs/engine-symbols.md`, "Scenario editor save"):
+- The console command `saveScenario(name)` (handler 0x7D9798) returns at once unless the editor gate `[game+0B3Ah]` is
+  set, then calls the game's vtable +0C0h (the thunk 0x703ED3 to FUN_00834583) with the directory `[0xD6FDB4]`, the
+  name and 1, and afterwards puts the name first in the editor's recent scenarios list (FUN_008338F4).
+- FUN_00834583 refuses while `[game+0AB0h]` (a save running) is set, shows the "Saving" message, **sets the open
+  scenario's name** `[game+958h]` (a BString) to the name it saves under, and `[game+95Ch]` to its flag, copies an
+  existing file to `.bak`, and writes the scenario (`.tmp`, then the file). The editor's File > Save writes to
+  `[game+958h]` without asking once it is set: after a plain `saveScenario("autosave-1")`, File > Save wrote
+  `autosave-1` (seen in game).
+- The editor gate is 1 in the editor, 0 in the menu and during a playtest. The undo manager `[game+928h]` keeps the
+  undo entries `{[um+0], count [um+4]}` and the redo entries `{[um+0Ch], count [um+10h]}`. No "modified" flag was found.
+
+**What it does.**
+- A Present observer (`d3d9hooks.*`, after the Present, on the main thread): while the gate is 0 it does nothing but
+  forget the editor. When the gate turns on, the clock starts (GetTickCount64) and it notes the editor's undo state
+  (the undo manager, its undo count and last undo entry, its redo count). Each frame it also notes whether
+  GetLastInputInfo's time moved while a window of the game had the focus (input to the game, not to another program).
+- When the interval is up: if a save is running or a mouse button is held (GetAsyncKeyState), it waits for the next
+  frame. If the undo state is unchanged and the game got no input, it skips this round. Otherwise it picks
+  the slot (the first `autosave-K.age3Yscn` missing in `Documents\<string 42265>\Scenario\`, else the oldest by its
+  write time), copies the open scenario's name and flag, calls the save through the game object's own vtable +0C0h
+  (checked to be the stock 0x703ED3) with `autosave-K`, puts the name and the flag back (`BStringSet` 0x40196F with a
+  BString made by 0x401A12, then the byte), and deletes `autosave-K.bak`.
+- The notice: the editor has no chat (a chat line sent there never showed), so it reuses the editor's message dialog,
+  the one the save shows while it writes: the handle `[[game+920h]+12Ch]`, its child `ingame-messagedialog3-prompt`
+  given the text through the child's vtable +80h (as 0x83A2B8 does), shown with gadgetReal (0x447F7B) and hidden 2 s
+  later with gadgetUnreal (0x448F13, as 0x838CE8 does).
+- The save may draw a frame of its own (0x83A2B8 calls the game's vtable +78h after showing "Saving"): the observer
+  ignores any Present made during the save.
+
+**Why it is safe.**
+- The save is the game's own, called as the console command calls it, between two frames on the main thread, only in
+  the editor and never during a save of the game's own (`[game+0AB0h]`), so the file is the one File > Save would write.
+- The name and flag are put back with the game's own BString calls; nothing else the save sets is read by the editor
+  afterwards. The recent scenarios list is not touched, since the handler's call of 0x8338F4 is skipped.
+- Every address is verified: the gate (`EditorGate`), the undo manager and its counts (`EditorUndoManager`,
+  `EditorUndoCounts`), the handler's call (`EditorSaveCall`), the vtable slot (`EditorSaveSlot`), the thunk, the head and
+  the name write of the save (`EditorSaveThunk`, `EditorSaveHead`, `EditorSaveSetsName`), the directory getter
+  (`EditorSaveDir`), the message dialog's hide and its prompt's name (`EditorMessageHide`, `EditorMessagePromptName`),
+  the BString calls and the gadget calls (`uigadgets.*`).
+- Cost: outside the editor one byte read a frame; in the editor a tick compare a frame. A save pauses the editor for as
+  long as the game takes to write the file (see the tests).
+
+**Tests** (2026-11-25, a mod's editor with this DLL, a game copy with its own profile, `editorAutosave 1 keep 3 log`;
+the editor opened with `startRandomGame(true)`, units placed from the Objects palette with posted clicks, the game's
+memory read with ReadProcessMemory):
+
+| Test | Result |
+|---|---|
+| A minute after the editor opened, units placed | pass: `autosave-1.age3Yscn` written with a new time, notice shown 2 s, then hidden |
+| The open scenario's name `[game+958h]` after the autosave | pass: still `e2-base` (and the flag byte 1) |
+| File > Save (`uiSaveScenarioBrowser`) after autosaves | pass: wrote `e2-base.age3Yscn`, not an autosave |
+| Before the key, the same with a plain `saveScenario("autosave-1")` | the bug the key avoids: File > Save then wrote `autosave-1` |
+| A scenario never saved (empty name), autosaved, then File > Save | pass: the name stays empty, Save opens the Save File dialog with no name |
+| Rotation, keep 3, six saves | pass: autosave-1, 2, 3, then 1 and 2 overwritten (the oldest); 3 files, no `.bak` |
+| An autosave loaded in the editor (`loadScenario("autosave-2")`), `testbed.py units` | pass: the same 12 units at the same places as when it was saved |
+| A round with no placement and no input to the game | pass: `nothing changed since the last autosave; skipped`, no file written |
+| Playtest, main menu | the gate is 0 there (seen in memory); the key does nothing |
+| Key off, the same steps (filmed) | pass: no notice, no autosave file |
+| Pause of a save (the log's time of the save call) | 186–274 ms for a 180 KB scenario (9 runs); 1,020 ms for an 8-player random map, 2,499 objects, 657 KB |
+
+The recent scenarios list was not checked in game; the code path (0x8338F4) is only in the console handler, which the
+key does not call. Not tested: a real keyboard and mouse (posted messages only; the input watch was checked only in
+that it skipped a round when there was none), a save that fails (a read-only file, a full disk).
+
 ### techGadgets
 
 **Why it exists.** Nothing in the stock interface depends on a tech: a layout can only show what its gadgets always

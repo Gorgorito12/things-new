@@ -1,0 +1,19 @@
+Scenario Editor: autosave (new key editorAutosave)
+
+The editor now saves the open scenario on its own every few minutes, so a crash only loses the last few minutes of
+work. One line in wol.cfg:
+
+    editorAutosave 5 keep 3
+
+- Every 5 minutes in the editor (the first number; 0.5 to 1440), the scenario is saved as autosave-1, autosave-2,
+  autosave-3 (keep 3; 1 to 20), the oldest one overwritten, in the usual Scenario folder
+  (Documents\My Games\Wars of Liberty\Scenario). They load like any scenario.
+- Your scenario keeps its own name: File > Save still writes your file, not the autosave (the game's own save command
+  would have renamed it), and the recent scenarios list is not touched.
+- It waits while a mouse button is held (dragging, painting), does nothing in a playtest or a game, and skips a round
+  when nothing changed (no undo step and no input to the game since the last autosave).
+- "Autosaved: autosave-2" shows for 2 seconds in the editor's own message box after each save.
+- The editor pauses while the file is written, as with File > Save: about 0.2 s for a small map, about 1 s for an
+  8-player random map (657 KB).
+
+GIF: docs/media/editorAutosave-wol.gif (and the key-off control, docs/media/editorAutosave-wol-control.gif)

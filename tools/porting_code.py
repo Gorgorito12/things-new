@@ -180,6 +180,7 @@ PAGES = {
         "transformChecks": ["src/features/transformchecks.cpp", "src/hooks/transformchecks_hooks.asm",
                             "src/panelbuttons.cpp", "src/panelbuttons.h", "src/hooks/panelbuttons_hooks.asm"],
         "editorSearch": ["src/features/editorsearch.cpp", "src/hooks/editorsearch_hooks.asm"],
+        "editorAutosave": ["src/features/editorautosave.cpp"],
         "techGadgets": ["src/features/techgadgets.cpp"],
         "incomeRates": ["src/features/incomerates.cpp", "src/hooks/incomerates_hooks.asm", "src/income.h"],
     }),
