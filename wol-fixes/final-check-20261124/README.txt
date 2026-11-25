@@ -1,10 +1,6 @@
 Final check of the 2026-11-24 round (joint smoke test before main, agent J)
 =========================================================================
 
-Note for this branch (claude/wol-feedback-20261124-pr): the test ran on the whole round, with turretArc and the
-gatling camel pack (round 3). The camel goes in a later PR, after the round-4/5 art, so check 5 and its screenshots
-(s8-s11) are not in this branch; they stay on claude/wol-feedback-20261124. The other checks do not depend on it.
-
 Build: branch claude/wol-feedback-20261124 at 2188b2d, build\Release\UHC.dll sha256 a20f7c27...6b56715 (not rebuilt).
 Bed: C:\AoE3-UHC-WoLReal5 (its own profile), English tables (already the English originals), single player.
 cfg: the bed's wol.cfg (WoL keys) + every key line of examples/Startup/uhc.cfg, 159 keys. Left out: faithResource
@@ -68,7 +64,26 @@ Check                                   Result                                  
                                         Outpost: 27 m filled, 43 m dashed. Log: "ring of
                                         33 m on unit 8 (FortFrontier)", "ring of 27 m on
                                         unit 9 (Outpost)"
-5. #102 turretArc + gatling camel       In the camel PR (see the note at the top).
+5. #102 turretArc + gatling camel       PASS. Log: "unit 18 aims at 27.3 / 49.6 / -55.6    s8-camel-gun-turned.png,
+                                        degrees (arc 90): the gun turns" (GatlingCamel),    s9-deployed-camel-gun-
+                                        "unit 19 aims at -55.6 / 27.3 ... the gun turns"    turned.png,
+                                        (GatlingCamelDeployed); a target behind (-152.7)    s10-camel-reload-frames.jpg,
+                                        "the unit turns". In the frames the camel's head     s11-camel-death-frames.jpg
+                                        points one way and the barrels and muzzle flash
+                                        toward the House; the deployed camel lies low with
+                                        the gun turned to its left. Reload (s10, 0.1 s a
+                                        frame): the gunner's arm up, the gun back to the
+                                        middle, then firing again; gun on its post, legs on
+                                        the ground. At this zoom (normalZoom 32) the small
+                                        magazine thrown away and the one drawn from the
+                                        pocket cannot be told apart in the frames: not
+                                        checked here (the pack's round 3 checked them
+                                        close). Death (deleted): camel, gun and rider
+                                        lie on the ground together and fade; nothing floats.
+                                        Ammo box: none comes from the camel. A wooden crate
+                                        and a grey block seen on the ground next to it fly
+                                        in from the House under fire (s10, frames n16-n23)
+                                        and fade: the House's debris
 6. AI plays                             PASS: player 2's objects 15 at 3 s, 24 at 293 s,    s12-skirmish-late-494s.jpg
                                         26 at 374 s, 29 at 455 s (17 Settlers, 4 Peasants,
                                         3 Manors, TC, Explorer); no XS error, no "Error

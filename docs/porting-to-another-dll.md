@@ -15,7 +15,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `scenarioCivs`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots`, `retargetInAction` | [combat](porting-code/combat.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots`, `retargetInAction`, `turretArc` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `buildingGather`, `herdWalkAwayFix`, `faithResource` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs`, `resendableCards`, `quickArrivalCards` | [techs](porting-code/techs.md) |
@@ -789,6 +789,28 @@ Code: [combat](porting-code/combat.md#retargetinaction). It needs `AddActionTagH
 - **No range of WoL's DLL overlaps** 0x487838..0x48783C or 0x48A359 (its 287 patched ranges, `wol-memdiff.txt`).
 - **Test:** WoL's Maxim gun with the tag against a line of infantry: after a kill the next Attack tag of the same burst
   hits another soldier (the log: `lost its target ... new target`); with the tag at 0 the burst stops at the kill.
+
+### turretArc
+
+Code: [combat](porting-code/combat.md#turretarc). It needs `AddWorldTick`, and `grannyhooks.*` (in the same section):
+the owner of the `GrannySampleModelAnimations` import slot.
+
+- **Facing hook** at `0x48AA9F`, the head of FUN_0048AA9F (`bool thiscall(unit, Vector* point)`, `ret 4`, the unit turns
+  to face a point), 6 bytes (`83 EC 18 56 8B F1`: `sub esp,18h / push esi / mov esi,ecx`), re-executed, continuing at
+  `0x48AAA5`. When the key keeps the facing: `mov al,1 / ret 4`.
+- **Launch hook** at `0x4995D5`, in the projectile launch FUN_00499422 where every way of finding the shot's start meets,
+  9 bytes (`D9 44 24 28 68 00 00 A0 40`: `fld dword [esp+28h] / push 40A00000h`), re-executed, continuing at `0x4995DE`.
+  Entry: EBX = the attack unit action, EDI = the unit, the start (world) at `[esp+1Ch]`, the aim point at `[esp+28h]`.
+- **IAT slot** `0xB847AC` (`GrannySampleModelAnimations`): written only if it still holds what `GetProcAddress` gives
+  for `_GrannySampleModelAnimations@16` (WoL's DLL leaves it alone in `wol-memdiff.txt`: that range only shows the
+  loader's resolved imports). If WoL's DLL wraps that import, chain the two.
+- **Must preserve:** ECX and EDX at the facing head (saved around the call; EAX is the return value when the facing is
+  kept), every register at the launch (`pushad` / `popad`).
+- **No range of WoL's DLL overlaps** 0x48AA9F..0x48AAA4 or 0x4995D5..0x4995DD (its 287 patched ranges, `wol-memdiff.txt`).
+- **Data:** `<Turret tracking="always" maxTurnAnglePerSecond="240">90</Turret>` on the attack, and the aim file of the
+  model (aoe3-blender-tools' `make_gun_camel.py`).
+- **Test:** the gatling camel pack: a target 45 degrees to one side turns the gun, not the camel (the log: `aims at
+  45.0 degrees (arc 90): the gun turns`), the tracers leave the turned muzzle; a target behind turns the camel.
 
 ### bufferedFileReads
 
