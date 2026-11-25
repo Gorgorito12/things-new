@@ -31,7 +31,8 @@ or with --faith its faith row. Faith is NOT needed: the default mode has no fait
 smaller ("+2.0"), and a second line to the row's tooltip ("Income: +2.0 per second"; Spanish "Ingresos: +2.0 por
 segundo"). It needs the DLL key incomeRates (per second is its default). A panel whose every row has room for two
 lines puts the income under the amount; the 7-row Asian and Native panels with faith (and WoL's advanced Native
-panel, whose rows are lower) put it in a column right of the amount, slightly lower.
+panel, whose rows are lower) put it right of the amount, slightly lower and set to the panel's right edge, with the
+amounts a little closer to their icons (2026-11-25, #105): an amount of 8 digits keeps clear of the rate.
 
 Installing
 ----------
@@ -63,9 +64,15 @@ With the DLL keys techGadgets and incomeRates (agent K's build of that day). The
 - --rates: the income matches the key's own log (food +2.0 for 3 gatherers, +120.6 a minute; wood +3.0, 179/min).
   The tooltip has its second line (seen with an earlier build, whose value was empty; the build tested shows the
   value in the panel).
+- --rates with big stocks (2026-11-25): all 24 panels of each mode side by side, every resource at 99,999,992 (the
+  game keeps resources as 32-bit floats: 99,999,999 cannot be shown, the nearest values are 99,999,992 and
+  100,000,000) and gold at 100,000,1xx: nothing overlaps or is cut; before the change, the amount ran into the rate
+  in the 9 panels with the rate beside the amount (seen with 8 and 9 digits). Estimated from the digit widths, not
+  seen: 9 digits beside a rate of two digits before the point (+12.5) would touch.
 ingame-loaded-after.jpg was taken with an earlier --rates layout (some amounts in NumbersFont 11, a thinner face; now
-always 12), ingame-12-nofaith-*.jpg with the income 1 unit closer to the amount than now; the other pictures and the
-videos show the layouts as they are.
+always 12), ingame-12-nofaith-before.jpg with the income 1 unit closer to the amount than now; ingame-12-*-after.jpg
+were taken again on 2026-11-25 with the rate set to the right edge (Ethiopians, a test map, 3 villagers on berries
+and 5 on wood); the other pictures and the videos show the layouts as they are.
 Not changed: the observer layouts (data\uimainnew*observer*.xml), which never showed oil.
 
 How it is made (to redo it)

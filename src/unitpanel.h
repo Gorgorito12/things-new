@@ -12,6 +12,10 @@ using UnitPanelRow = bool(__stdcall*)(const char* panel, const char* unit);
 // The row's text, in the style of the stock AutoGather row; false if this interface has no such gadgets.
 bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* value);
 
+// The help text the row shows on hover (both gadgets), after SetUnitPanelRow; cleared again before the next
+// refresh's rows, so only the row that set it has it. False if this interface has no such gadgets.
+bool SetUnitPanelRowTip(const char* panel, const wchar_t* tip);
+
 // Writes the hook the first time (after checking the site's stock bytes) and adds row.
 bool AddUnitPanelRow(UnitPanelRow row);
 

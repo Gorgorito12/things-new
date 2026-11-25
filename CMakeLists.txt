@@ -23,6 +23,7 @@ set(UHC_SOURCES
   src/unittypes.cpp
   src/xmllist.cpp
   src/worldtick.cpp
+  src/autogatherrate.cpp
   src/panelbuttons.cpp
   src/researchpay.cpp
   src/canresearch.cpp
@@ -105,6 +106,7 @@ set(UHC_SOURCES
   src/features/instances.cpp
   src/features/lanautostart.cpp
   src/features/editorsearch.cpp
+  src/features/editorautosave.cpp
   src/features/playericon.cpp
   src/features/lifespan.cpp
   src/features/limits.cpp
@@ -121,11 +123,13 @@ set(UHC_SOURCES
   src/features/lastinline.cpp
   src/features/renderer.cpp
   src/features/selection.cpp
+  src/features/selectfattened.cpp
   src/features/modelcache.cpp
   src/features/dmgpartbone.cpp
   src/features/faith.cpp
   src/features/techgadgets.cpp
   src/features/incomerates.cpp
+  src/features/nurseryfactor.cpp
   src/features/sharedlimit.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
@@ -246,7 +250,7 @@ set(UHC_SOURCES
   src/hooks/wonderpanel_hooks.asm
   src/hooks/workrate_hooks.asm
   src/hooks/workratetype_hooks.asm
-  src/hooks/gatherscale_hooks.asm
+  src/hooks/autogatherrate_hooks.asm
   src/hooks/containedrof_hooks.asm
   src/hooks/rofreads_hooks.asm
   src/hooks/floatingbars_hooks.asm

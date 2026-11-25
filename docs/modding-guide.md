@@ -31,14 +31,18 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Tuesday 2026-11-24 09:53 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24). |
+| Wednesday 2026-11-25 08:50 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time up to a cap and is changed by techs; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panel shows it as `3/10` with a two-line rollover. | The `NurseryFactor*` tags on the proto, an AutoGather action, and the techs that want the Data subtypes. |
+| Wednesday 2026-11-25 08:42 | [`selectFattened`](#selectfattened) | Filmed in WoL, with a control. A button and a hotkey select the player's livestock that has reached its maximum food, on the whole map; the button shows how many there are and hides at none. | The button and the hotkey: `wol-fixes/select-fattened`. |
+| Wednesday 2026-11-25 08:22 | [`editorAutosave`](#editorautosave) | Added. The scenario editor saves the open scenario every few minutes to `autosave-1` ... | Nothing. |
+| Wednesday 2026-11-25 08:11 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
+| Wednesday 2026-11-25 07:55 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`; the player turns them on or off in the options menu, at once. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24); the options-menu pack `wol-fixes/options-menu/` for the switch. |
 | Tuesday 2026-11-24 09:08 | [`techGadgets`](#techgadgets) | Filmed in WoL, with a control. Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. |
 | Tuesday 2026-11-24 09:08 | [`incomeRates`](#incomerates) | Filmed in WoL, with a control. A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). |
 | Monday 2026-11-23 13:56 | [`faithResource`](#faithresource) | Added. Optional: resource 4 becomes faith, gathered by villagers praying at their church or mosque, cut from the home city's skill points; a faith Gather plays its own animation. | The opt-in pack `wol-fixes/faith/` (and `wol-fixes/faith-panel/` for the panel row). |
 | Monday 2026-11-23 09:18 | [`dmgPartBoneFix`](bug-fixes.md#dmgpartbonefix) | Added. Stops the game from reloading a 3D model in use when a damage template names a bone the model lacks, the other cause of the Granny crashes (WoL #78). | Nothing; `wol-fixes/art-dmg-bones-20261123/` fixes the data itself. |
 | Monday 2026-11-23 08:05 | [`modelCacheLimit`](bug-fixes.md#modelcachelimit) | Added. Stops the game from unloading 3D models that units still use, the cause of the Granny crashes in big games (WoL #78). | The two data fixes in `wol-fixes/art-dmg-bones-20261123/`. |
 | Monday 2026-11-23 07:59 | [`resendableCards`](#resendablecards) | Added. `<resendeveryage>1</resendeveryage>` in a home city card: the card can be sent again each time its player reaches a new age (its `<maxcount>` back, no stacking across ages). | The tag on the cards that want it. |
-| Monday 2026-11-23 07:59 | [`quickArrivalCards`](#quickarrivalcards) | Added. `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a quick-arrival card.* to the card's rollover, after its *may be sent ... | The flag on the cards' techs; a string in the string table to translate the line. |
+| Monday 2026-11-23 07:59 | [`quickArrivalCards`](#quickarrivalcards) | Added. `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a QUICK-ARRIVAL card.* to the card's rollover, after its *may be sent ... | The flag on the cards' techs; a string in the string table to translate the line. |
 | Monday 2026-11-23 07:56 | [`retargetInAction`](#retargetinaction) | Added. An attack with `<RetargetInAction>1</RetargetInAction>` whose target dies before the last shot of its attack animation (a machine gun's Attack tags, a burst's quick shot) fires the rest at a new target in range, instead of losing them. | The tag on the attacks that want it (the machine guns' `CannonAttack` in `organGun.tactics`). |
 | Sunday 2026-11-22 13:54 | [`unitResourceAuras`](#unitresourceauras) | Filmed in WoL, with a control. An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | Nothing: WoL's `sawmill.tactics` already has such an aura. |
 | Sunday 2026-11-22 12:35 | [`broadsideSoundSet`](#broadsidesoundset) | Filmed in WoL, with a control. A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). |
@@ -54,7 +58,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 15:25 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Saturday 2026-11-21 15:06 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Saturday 2026-11-21 12:11 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
-| Saturday 2026-11-21 12:07 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
 | Saturday 2026-11-21 12:00 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only heal actions with `<CanOverheal>1</CanOverheal>` heal those units above `InitialHitpoints`, up to their `<OverhealCap>`, and techs can turn it on or off; every other heal stops there. | `overhealHitpointBars`, and the tags on the `Heal` actions that may overheal. |
 | Saturday 2026-11-21 11:55 | [`herdWalkAwayFix`](bug-fixes.md#herdwalkawayfix) | Added. A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in. | Nothing; for nomads, `wol-fixes/me-herdables`. |
 | Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
@@ -85,7 +88,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Thursday 2026-11-12 15:52 | [`stealthTargeting`](bug-fixes.md#stealthtargeting) | Filmed in WoL, with a control. A unit in stealth stays hidden from enemies, large units such as ships too, and no enemy attacks it while its player cannot see it. | Nothing. |
 | Thursday 2026-11-12 15:40 | [`researchGrants`](#researchgrants) | Filmed in WoL, with a control. A building with `<ResearchGrantInterval>` gathers grant points over game time, and each point makes one of its player's researches cheaper or free. | The tags on the buildings that grant; optional `Data` effects in `techtreey.xml`. |
 | Thursday 2026-11-12 13:25 | [`overhealHitpointBars`](#overhealhitpointbars) | Filmed in WoL, with a control. The HP bars and HP texts of marked units take `InitialHitpoints` as 100 %, not `MaxHitpoints`. | `MaxHitpoints` above `InitialHitpoints` on those units (no unit has it today), and the unit type on them, or an existing type such as `AbstractCavalryInfantry`. With `segment`, `art\ui\uhc\health_overheal.ddt` for the orange portrait end. |
-| Thursday 2026-11-12 11:40 | [`menuOptions`](bug-fixes.md#menuoptions) | Added. Lets the player switch `bufferedFileReads`, `fastVertexFill` and `fastLastInLine` on or off in the options menu, from the next start. | A field per key in `data\options.xml`. |
+| Thursday 2026-11-12 11:40 | [`menuOptions`](bug-fixes.md#menuoptions) | Added. Lets the player switch `bufferedFileReads`, `fastVertexFill` and `fastLastInLine` on or off in the options menu, from the next start, and the range rings of `displayedRange` at once, also during a match. | A field per key in `data\options.xml` (the pack `wol-fixes/options-menu` adds the rings' one). |
 | Thursday 2026-11-12 08:17 | [`fastLastInLine`](bug-fixes.md#fastlastinline) | Added. Removes the freeze of a third of a second after each home city shipment of any player: the game's check of which tech of each line is the last one runs through a list instead of testing every tech against every other. | Nothing. |
 | Wednesday 2026-11-11 15:50 | [`smartHealTargets`](#smarthealtargets) | Filmed in WoL, with a control. A healer's automatic search heals the best candidate, not the first: listed unit types, then the lowest HP ratio, the nearest, the lowest unit ID; with `switch`, a running heal moves to a much worse unit. | Nothing (unit types or proto names are optional). |
 | Wednesday 2026-11-11 15:49 | [`healNonIdle`](#healnonidle) | Filmed in WoL, with a control. Lets healers marked with a unit type heal units that are busy (moving, fighting or doing something else); options pick the states and a lower rate on busy units. | That unit type on the healers in `protoy.xml`, or the name of an existing type (`xpMedicineMan`, `AbstractMonk`). |
@@ -608,7 +611,7 @@ Caps that are fixed in the exe.
 | [`deckCardCount`](#deckcardcount) | Raises the 25-card deck cap. | in WoL's DLL | A higher `<maxdecksize>` in `data\homecitylevels.xml` (25 at all 132 levels today). | confirmed above the level table; see the section |
 | [`ageFiveShipments`](#agefiveshipments) | Home city cards of the Imperial Age (`<age>4</age>`) are in the deck, shown at the right end of the Age IV row (the Age IV cards stay at the left), greyed until the Imperial Age, then sent like the others. | **new** | `<age>4</age>` on the cards that want it. | confirmed (single player) |
 | [`resendableCards`](#resendablecards) | `<resendeveryage>1</resendeveryage>` in a home city card: the card can be sent again each time its player reaches a new age (its `<maxcount>` back, no stacking across ages). | **new** | The tag on the cards that want it. | confirmed (single player) |
-| [`quickArrivalCards`](#quickarrivalcards) | `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a quick-arrival card.* to the card's rollover, after its *may be sent ... times* line. | **new** | The flag on the cards' techs; a string in the string table to translate the line. | confirmed (single player) |
+| [`quickArrivalCards`](#quickarrivalcards) | `<Flag>QuickArrival</Flag>` on a card's tech adds the bullet line *This is a QUICK-ARRIVAL card.* to the card's rollover, after its *may be sent ... times* line. | **new** | The flag on the cards' techs; a string in the string table to translate the line. | confirmed (single player) |
 | [`selectionLimit`](#selectionlimit) | A selection holds up to N units (50 in the exe). `wol.cfg` sets 75. | **in `wol.cfg`** | Nothing. | confirmed |
 | [`noAILimit`](#noailimit) | Shows every `AI4\*.personality` file in game setup. WoL uses `noAILimitV2` instead. | in WoL's DLL | The personality files. | confirmed |
 | [`noAILimitV2`](#noailimitv2) | Shows WoL's 52 `AI4\*.personality` files in game setup. Without it, a random AI crashes the game. | **in `wol.cfg`** | The personality files. | confirmed |
@@ -962,20 +965,21 @@ resendableCards [log]
 
 #### quickArrivalCards
 
-*Adds the line "This is a quick-arrival card." to the rollover of the cards whose tech has the QuickArrival flag.*
+*Adds the line "This is a QUICK-ARRIVAL card." to the rollover of the cards whose tech has the QuickArrival flag.*
 
 **Added:** Monday 2026-11-23 07:59
 
 ![quickArrivalCards: an infinite card in the shipment panel](media/quickArrivalCards-panel-infinite.jpg)
 
-*In WoL (2026-11-23, a Dutch skirmish, the in-game shipment panel; `<Flag>QuickArrival</Flag>` added to
-`HCShipFoodCrates1` and `HCShipCoinCrates3` in the copy's `techtreey.xml`):* the infinite card "Crates of 300 food" ends
-with *This Card may be sent INFINITE times* and then *This is a quick-arrival card.*, as its own bullet.
+*In WoL (taken again on 2026-11-25 with the line in capitals; a Dutch skirmish, the in-game shipment panel;
+`<Flag>QuickArrival</Flag>` added to `HCShipFoodCrates1` and `HCShipCoinCrates3` in the copy's `techtreey.xml`):* the
+infinite card "Crates of 300 food" ends with *This Card may be sent INFINITE times* and then *This is a QUICK-ARRIVAL
+card.*, as its own bullet.
 
 ![quickArrivalCards: a card sent once, in the shipment panel](media/quickArrivalCards-panel-once.jpg)
 
-*The same panel, "Chests of 700 coin" (sent once):* its rollover text, *This Card may be sent ONE time*, then the new
-line.
+*The same panel, "Chests of 700 coin" (sent once, greyed in Age I):* the game's red *This Card cannot be sent until Age
+2*, its rollover text, *This Card may be sent ONE time*, then the new line.
 
 ![quickArrivalCards: the control card](media/quickArrivalCards-panel-control.jpg)
 
@@ -984,8 +988,9 @@ line.
 ![quickArrivalCards in Build a Deck](media/quickArrivalCards-deck-builder.jpg)
 
 *"Build a Deck" on the home city screen:* the same line on the card with the flag, after the game's red *This Card cannot
-be sent until Age 2*, its rollover text and its send limit. More: the infinite card and the control card in "Build a
-Deck", and the line taken from the string table (`stringid`), in `docs/media/quickArrivalCards-*.jpg`.
+be sent until Age 2*, its rollover text and its send limit. More: the infinite card (taken again on 2026-11-25 too) and
+the control card in "Build a Deck", and the line taken from the string table (`stringid`), in
+`docs/media/quickArrivalCards-*.jpg`. The control pictures and the `stringid` one show no default line, so they stayed.
 
 ```
 quickArrivalCards [stringid N] [log]
@@ -993,13 +998,15 @@ quickArrivalCards [stringid N] [log]
 
 - **In WoL today:** nothing in a card's rollover says that it arrives quickly. JTMaston's #99 (2026-11-23).
 - **What the key does:** for a card whose tech has `<Flag>QuickArrival</Flag>`, the card's rollover gets one more bullet,
-  *This is a quick-arrival card.*, right after the line *This Card may be sent INFINITE times* (or *ONE time*, or the
+  *This is a QUICK-ARRIVAL card.*, right after the line *This Card may be sent INFINITE times* (or *ONE time*, or the
   *N times* line), so it sits between the card's own rollover text and the advanced information (the detailed help, when
   that option is on). The line looks like the game's other lines of the card. The same rollover is used by the in-game
   shipment panel, "Build a Deck" and the deck chooser. Nothing else about the card changes: the flag does not change
   how fast a card arrives.
 - **`stringid N`:** the line is string N of the string table (`data\stringtabley.xml`), so it can be translated; an
-  empty or missing string falls back to the English text. Without it, the English text.
+  empty or missing string falls back to the English text. Without it, the English text, with *QUICK-ARRIVAL* in
+  capitals since 2026-11-25 (JTMaston's request; it read *quick-arrival* before). A string set with `stringid` is
+  shown as written.
 - **What a modder writes:** in the card's tech in `techtreey.xml`:
   ```xml
   <Tech name ='HCShipFoodCrates1' type ='Normal'>
@@ -1009,7 +1016,7 @@ quickArrivalCards [stringid N] [log]
   ```
 - **Off:** the game ignores the flag, as it ignores any name it does not know.
 - **Multiplayer:** display only; players may set it differently.
-- **Log:** `quickArrivalCards: the tech flag QuickArrival adds the line "This is a quick-arrival card." to a card's
+- **Log:** `quickArrivalCards: the tech flag QuickArrival adds the line "This is a QUICK-ARRIVAL card." to a card's
   rollover` (or `the line of string N`); with `log`, `tech 935 has the QuickArrival flag` per flagged tech and, once,
   `the line was added to the rollover of tech 935`; `hook reached: tech flags (0x620C2F)`, `... quickArrivalCards
   (0x710909)`.
@@ -1019,6 +1026,9 @@ quickArrivalCards [stringid N] [log]
   with `stringid 36865` the line read the text of that string. With `hcTargetTechs` on and `<Flag>HCTargetEnemy</Flag>`
   on a test tech, both keys read their flags through the shared hook (`hcTargetTechs: HCTargetEnemy read`). Not tested:
   the deck chooser (the same rollover builder), another language.
+- **Tested again (2026-11-25, `C:\AoE3-UHC-WoLReal3`, the same flags; the copy's own profile with `HCShipFoodCrates1`
+  in the Dutch deck):** the log reads `adds the line "This is a QUICK-ARRIVAL card."`, and the line shows in capitals
+  in the in-game panel and in "Build a Deck" (the four pictures above).
 
 #### selectionLimit
 
@@ -5311,6 +5321,7 @@ Resources, gatherers, and what pays for them.
 | [`linkedResource`](#linkedresource) | A resource building gathers the stock of a mine beside it. | **new** | The tags on a resource building of your own. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget. | confirmed (single player, UI) |
 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
+| [`nurseryFactor`](#nurseryfactor) | A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time up to a cap and is changed by techs; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panel shows it as `3/10` with a two-line rollover. | **new** | The `NurseryFactor*` tags on the proto, an AutoGather action, and the techs that want the Data subtypes. | prototype (single player) |
 | [`unitResourceAuras`](#unitresourceauras) | An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | **new** | Nothing: WoL's `sawmill.tactics` already has such an aura. | confirmed |
 | [`resourceGatherAuras`](#resourcegatherauras) | Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | **new** | A `<ModifyType>` with those names. | confirmed |
 | [`resourceDebt`](#resourcedebt) | Only trickles and the rates of units may take a stockpile below 0. | **new** | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. | confirmed |
@@ -5633,13 +5644,119 @@ autoGatherScaleByContained
 
 - **Not covered:** rate of fire, which is [`containedUnitsROF`](#containedunitsrof). WoL has no AutoGather action with the
   tag today, so the key changes nothing until one is added.
-- **Log:** `autoGatherScaleByContained: applied`, `hook reached: autoGatherScaleByContained (0x49EBE4)`.
+- **Log:** `autoGatherScaleByContained: applied`, `hook reached: AutoGather rate filters (0x49EBE4)` (before
+  2026-11-25: `hook reached: autoGatherScaleByContained (0x49EBE4)`; the hook is now shared with
+  [`nurseryFactor`](#nurseryfactor)).
 - **Simulation:** changes gathering: every player needs the same line.
 - **Saved games:** nothing to keep: the rate is computed from the units inside.
 - **Performance:** runs on every AutoGather update, a few instructions without the tag. With 40 Blockhouses with
   the tag, for 60 s: update 0.1 ms with and without, longest frame 10 and 9 ms, no frame over 50 ms in either.
 - **Status:** confirmed (single player, on WoL): the rates above; 6 inside with `<damagefactorcap>3`: 0.75/s; an
   argument: `FAILED`.
+
+#### nurseryFactor
+
+*A building keeps its own count of something, such as the minks of a nursery, that grows with time, multiplies its income and can multiply a shipment.*
+
+**Added:** Wednesday 2026-11-25 08:37 · **Filmed in WoL:** Wednesday 2026-11-25 08:50
+
+![nurseryFactor in WoL](media/nurseryFactor-wol.gif)
+
+*In WoL, with `nurseryFactor log` (a scenario, player 1 Ethiopian; two Banks given the test tags below, an AutoGather of
+0.5 gold, max 10 minks, one more every 5 s; the second Bank is created 6 s later; test techs set active by triggers:
+`NurseryFactor` +3 at 34 s, `NurseryFactorMax` +5 at 46 s, `NurseryFactorInterval` 2 s at 54 s; the first Bank stays
+selected, the cursor rests on its row; 3x speed):* each Bank counts its own minks (`unit 0 … grows to 10/10`, `unit 2
+… 9/10`), the tech adds 3 to both, the cap goes to 15 and the step to 2 s; the panel shows `Minks 10/10`, and its
+rollover the two lines of the proto. The gold rises faster as the minks grow. [Full video (MP4)](media/nurseryFactor-wol.mp4).
+
+![nurseryFactor in WoL, key off](media/nurseryFactor-wol-control.gif)
+
+*In WoL, key off (the same scene):* the game ignores the tags; the Banks pay 0.5 gold/s each all along (1.00 gold/s
+measured over 50 s), and the panel
+shows the stock row `Coin 0.50/s`. [Full video (MP4)](media/nurseryFactor-wol-control.mp4).
+
+![nurseryFactor in WoL, the shipment](media/nurseryFactor-ship-wol.gif)
+
+*In WoL, with `nurseryFactor log` (a skirmish on a test map, Dutch against a German AI; two Banks with the test tags
+and a Town Center; a trigger sets two test techs active: at 35 s `FreeHomeCityUnitByNurseryFactor` `CrateofCoin`
+`consume='2'`, at 55 s the same with `consume='all'`; both Banks stay selected; 2x speed):* the first tech takes 2
+minks from each Bank and 4 crates of coin come to the Town Center; the second takes the 7 of each and 14 crates come
+(`14 factor(s) from 2 unit(s), taken`), the Banks start again from 0 and the villagers gather the crates.
+[Full video (MP4)](media/nurseryFactor-ship-wol.mp4).
+
+```
+nurseryFactor [log]
+```
+
+- **Request:** JTMaston, 2026-11-25, "Nursery mechanic" (#107). This is the first version, built on the simplest
+  reading of each open question; the questions are in [nursery-design.md](nursery-design.md). <!-- private -->
+- **The proto block** (only `NurseryFactorMax` is required; it marks the proto):
+
+  ```xml
+  <NurseryFactorMax>10</NurseryFactorMax>              <!-- the cap, a whole number 0 to 100000 -->
+  <NurseryFactorInitial>0</NurseryFactorInitial>       <!-- a new unit's value (default 0) -->
+  <NurseryFactorInterval>30</NurseryFactorInterval>    <!-- game seconds per step; 0 or none: no growth with time -->
+  <NurseryFactorStep>1</NurseryFactorStep>             <!-- the size of a step (default 1) -->
+  <NurseryFactorGrowth>linear</NurseryFactorGrowth>    <!-- linear (default) or exponential -->
+  <NurseryFactorGrowthRate>0.25</NurseryFactorGrowthRate>  <!-- exponential: a step adds max(step, factor x rate) -->
+  <NurseryFactorTrickle>1</NurseryFactorTrickle>       <!-- 0: a counter only, the AutoGather is not multiplied -->
+  <NurseryFactorName>minks</NurseryFactorName>         <!-- a string table ID, or the text -->
+  <NurseryFactorRolloverCount>{current} out of {max} minks.</NurseryFactorRolloverCount>
+  <NurseryFactorRolloverRate>Produces one mink every {seconds} seconds.</NurseryFactorRolloverRate>
+  ```
+
+  The two rollover lines take a string table ID or the text, with `{current}`, `{max}`, `{name}`, `{seconds}` and
+  `{step}`. Without them: `{current} out of {max} {name}.` and `Produces {step} {name} every {seconds} seconds.`
+- **The trickle** is the unit's own AutoGather action: its rate, times the factor. To the owner as any AutoGather;
+  into the unit's own inventory with the stock tactics tag `<AddResourcesToInventory>1</AddResourcesToInventory>` on
+  the action; the proto then needs a `<CarryCapacity>` for that resource, the most it holds (without one, the test Bank
+  stored nothing). Techs that change the AutoGather rate work as before, and the panel's rate is the multiplied one.
+- **Each unit has its own factor**; the cap, the interval and the step are per player (the proto's, as his techs left
+  them). A unit grows only once built, one step per interval, and stops at the cap; a lower cap cuts it at once.
+- **Tech effects** (`type='Data'`, every stock relativity):
+
+  ```xml
+  <!-- adds 3 minks to each of the player's built Mink Nurseries (Assign sets them); at most the cap, never below 0 -->
+  <Effect type='Data' amount='3.00' subtype='NurseryFactor' relativity='Absolute'>
+      <Target type='ProtoUnit'>MinkNursery</Target></Effect>
+  <Effect type='Data' amount='5.00' subtype='NurseryFactorMax' relativity='Absolute'>
+      <Target type='ProtoUnit'>MinkNursery</Target></Effect>
+  <Effect type='Data' amount='20.00' subtype='NurseryFactorInterval' relativity='Assign'>
+      <Target type='ProtoUnit'>MinkNursery</Target></Effect>
+  <Effect type='Data' amount='2.00' subtype='NurseryFactorStep' relativity='Assign'>
+      <Target type='ProtoUnit'>MinkNursery</Target></Effect>
+  <!-- a crate of coin per mink of all the player's nurseries, which are emptied -->
+  <Effect type='Data' amount='1.00' subtype='FreeHomeCityUnitByNurseryFactor' unittype='CrateofCoin'
+          nursery='MinkNursery' consume='all' relativity='Absolute'>
+      <Target type='Player'/></Effect>
+  ```
+
+  `nursery` is a proto or an abstract type. `consume='all'` empties each nursery, `consume='2'` takes at most 2 from
+  each and ships for what it took, `consume='none'` (or no attribute) counts and takes nothing. The units come as
+  any `FreeHomeCityUnit`: at the home city gather point. `NurseryFactor` acts once, at the next world tick.
+- **UI:** in the unit panel of the minimized interface, a row `Minks 3/10` (the name as label, `once built` on a
+  foundation), and on hover the two lines as bullets. It takes the place of the AutoGather rate row for that unit.
+  `{uhcNurseryFactor}` in a `formatText` gadget shows the first selected unit's `3/10 minks`.
+- **Log:** `nurseryFactor: applied`, `hook reached: AutoGather rate filters (0x49EBE4)`; with `log`, each tag, each
+  step (`unit 0 (Bank) of player 1 grows to 4/10`), each tech and each shipment
+  (`FreeHomeCityUnitByNurseryFactor proto 426: 18 factor(s) from 2 unit(s) x 1.00 = 18.00 unit(s)`).
+- **Simulation:** changes gathering: every player needs the same line.
+- **Saved games:** each unit's factor and timer are kept on the unit. The load applies the tech effects again, in the
+  order the techs have in the techtree, not the order they were researched: a cap set by `Assign` and changed by
+  `Absolute` in another tech can come back different (the stock Data effects are applied again the same way). A
+  `NurseryFactor` effect is not applied again.
+- **Performance:** 40 Banks with the tags, a scenario, 60 s of `tools/perfprobe.py` after a first run (other test
+  games running on the machine): update 0.1 ms per frame with the key and without, longest frame 2.8 / 2.7 ms on
+  average, no frame over 50 ms in either; fps 656 with the key, 738 without (uncapped, render 1.4 / 1.2 ms).
+- **Not covered yet:** the normal (not minimized) interface's stat panel; the train button's rollover; XS calls. In
+  the minimized panel the row takes the place of the stock AutoGather rate row for a single unit with a factor (a
+  group still shows the summed rate).
+- **Status:** prototype (single player, WoL): growth, cap, the three value techs, the add, two units with their own
+  factors and the gold (2 Banks at 9 minks: 9.06 gold/s over 37 s, 9.0 expected) seen in game; save and load kept
+  21 minks on two Banks and their timers (each next step at the same game time, ±30 ms); in a skirmish the shipment
+  brought 4 crates with `consume='2'` and 14 with `consume='all'`, and emptied the Banks; with
+  `<AddResourcesToInventory>` and a gold `<CarryCapacity>` of 500, a Bank at 10 minks stored 4.96 gold/s in itself
+  (5.0 expected) and the player got none; exponential growth with rate 0.5 went 1, 2, 3, 4, 6, 9, 10.
 
 #### unitResourceAuras
 
@@ -8420,7 +8537,7 @@ What the panels and the fog of war show.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`abilitySlots`](#abilityslots) | Lets the command panel show up to N abilities per unit instead of 6. | **new** | Nothing: WoL's Explorer lists 8 abilities in `abilities.xml`. | confirmed (single player, UI) |
-| [`displayedRange`](#displayedrange) | A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`. | **new** | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24). | confirmed (single player) |
+| [`displayedRange`](#displayedrange) | A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`; the player turns them on or off in the options menu, at once. | **new** | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24); the options-menu pack `wol-fixes/options-menu/` for the switch. | confirmed (single player) |
 | [`wonderPanelSkipAuras`](#wonderpanelskipauras) | The wonder power panel shows a wonder's first available ability that is not a passive aura, instead of only its first ability. | **new** | The power listed after the aura in `abilities.xml`, on an `AbstractWonder` with an `Abilities` command. | confirmed (single player, UI) |
 | [`nativePreview`](#nativepreview) | Selecting an empty native socket shows the units and techs its Trading Post would offer, with their rollovers, read-only. | **new** | Nothing: WoL's 88 native sockets have `NativeSocket` and a `<SubCiv>`. With `tagged`, `<NativePreview/>` on the sockets that get it. | confirmed (single player, UI) |
 | [`explorerUnits`](#explorerunits) | WoL's listed protos (40 triples) get a hero's name and knockout message. | **in `wol.cfg`** | The string IDs. | confirmed for names |
@@ -8429,9 +8546,11 @@ What the panels and the fog of war show.
 | [`minUIStats`](#minuistats) | The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | **new** | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. | confirmed (single player, UI) |
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
 | [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. | confirmed (single player) |
-| [`editorSearch`](#editorsearch) | The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | **new** | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. | confirmed (editor, UI) |
+| [`editorSearch`](#editorsearch) | The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | **new** | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. | confirmed (editor, UI) |
+| [`editorAutosave`](#editorautosave) | The scenario editor saves the open scenario every few minutes to `autosave-1` ... `autosave-3`, the oldest overwritten, and the scenario keeps its own name. | **new** | Nothing. | confirmed (editor) |
 | [`techGadgets`](#techgadgets) | Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | **new** | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. | confirmed (single player, UI) |
 | [`incomeRates`](#incomerates) | A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | **new** | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). | confirmed (single player, UI) |
+| [`selectFattened`](#selectfattened) | A button and a hotkey select the player's livestock that has reached its maximum food, on the whole map; the button shows how many there are and hides at none. | **new** | The button and the hotkey: `wol-fixes/select-fattened`. | confirmed (single player, UI); hotkey not tested in game |
 
 #### nativePreview
 
@@ -8497,7 +8616,28 @@ nativePreview [tagged] [log] [<BuildingProto>]
 
 *A selected unit shows its range on the ground while Alt is held: a ring at the reach of its ranged attacks.*
 
-**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Tuesday 2026-11-24 09:53
+**Added:** Friday 2026-11-06 07:32 · **Filmed in WoL:** Wednesday 2026-11-25 07:55
+
+**Changed on 2026-11-25:** the player can turn the rings on and off in the options menu (UI Options → "Show Range
+Rings"), and the change shows at once, also during a match: `menuOptions displayedRange` and the pack
+`wol-fixes/options-menu` ("In the options menu", below).
+
+![The range rings switched in the options menu during a match](media/displayedRange-menu-wol.gif)
+
+*In WoL, with the pack `wol-fixes/options-menu` (test data `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the Fort; a
+scenario, the Fort selected, filmed 2026-11-25):* the rings are off. Menu (the game pauses) → Options → UI Options,
+"Show Range Rings" ticked, OK: as the game resumes, the Fort's 33 m ring and its dashed 47 m anti-ship ring are there.
+Menu → Options again, unticked, OK: they are gone. No restart. The bottom lines are the log's (`on chosen in the menu;
+it takes effect at once`, `on from the options menu`, then `off …`; the first ones are from earlier runs). [Full video (MP4)](media/displayedRange-menu-wol.mp4).
+
+![The options menu without the pack](media/displayedRange-menu-wol-control.gif)
+
+*In WoL as it is (no pack: no row and no `displayedRange` line; the same scene):* the UI Options page has no such
+row, and the selected Fort shows no ring. [Full video (MP4)](media/displayedRange-menu-wol-control.mp4).
+
+![The Show Range Rings row on the UI Options page](media/displayedRange-menu-wol.png)
+
+*The row on WoL's UI Options page, ticked, with its tooltip (1920×1080, part of the screen).*
 
 **Changed on 2026-11-24:** the rings are at the real reach (from a building's walls, plus the target's radius:
 "Where the ring is", below); the ring files had shown 0.615 of their radius and are now at true scale; an
@@ -8597,6 +8737,20 @@ displayedRange [log] [noPlacement]
 ```
 
 - **In WoL today:** nothing shows how far a unit shoots or an aura reaches.
+- **In the options menu** (2026-11-25): with `menuOptions displayedRange` in the cfg, the player turns all the rings
+  on or off with a check box. `python wol-fixes/options-menu/apply_fix.py "<WoL folder>"` puts it on the UI Options
+  page, after "ALT key shows hitpoint bars" ("Show Range Rings", with a tooltip), and adds `menuOptions
+  displayedRange` and a `displayedRange` line to `wol.cfg` when they are missing, so the rings start on; `--restore`
+  undoes it. The choice:
+  - takes effect when the player clicks OK, in the main menu or during a match (in single player every row of the
+    options screen can be changed in a match): the rings of the selected units and of a building being placed come or
+    go within a tenth of a second of game time;
+  - is kept in `uhc-options.cfg` next to the log, and wins over the cfg at the next start; until the player chooses,
+    the cfg decides (with the `displayedRange` line, on);
+  - leaves the line's arguments alone: `noPlacement` still keeps the rings off the ghost.
+
+  The key is applied whether the box is ticked or not (only the drawing stops), so it costs the same as before when
+  off. Details: [bug-fixes.md, menuOptions](bug-fixes.md#menuoptions).
 - **When:** a unit with `<DisplayRange>1</DisplayRange>` shows its rings while it is selected and Alt is held (JTMaston,
   2026-11-21), the key that already shows every HP bar; they go when Alt is released or the unit is deselected.
   `<AlwaysDisplayRange>1</AlwaysDisplayRange>`, or `<Flag>AlwaysDisplayRange</Flag>`, shows them whenever the unit is
@@ -8749,6 +8903,7 @@ displayedRange [log] [noPlacement]
 - **Multiplayer:** display only: the selection and the keyboard are this machine's, and a model is a visual. Every player
   can have it or not.
 - **Log:** `displayedRange: applied`, `hook reached: displayedRange: proto flag parser's last compare (0x5F726F)`, and
+  with the options menu `displayedRange: on from the options menu` / `off from the options menu` on each OK, and
   with `log` `proto Outpost: <Flag>AlwaysDisplayRange</Flag>`, `unittype Ship is 3635, Building 3636, Unit ...`,
   `Alt held`, `ring of 47 m on unit 6 (FortFrontier), no land unit (dashed), Alt held`, `ring of 33 m on unit 6
   (FortFrontier), Alt held`, `Alt released`, `rings off unit 6`.
@@ -9738,9 +9893,9 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
 
 #### editorSearch
 
-*In the scenario editor, a search field above the list of objects, in the Forbidden Units/Techs dialog and in the trigger editor: type part of a name and the list shows only what matches.*
+*In the scenario editor, a search field above the list of objects, in the Forbidden Units/Techs dialog, in the trigger editor and above its list of triggers: type part of a name and the list shows only what matches.*
 
-**Added:** Saturday 2026-11-21 11:23 · **Filmed in WoL:** Saturday 2026-11-21 12:07
+**Added:** Saturday 2026-11-21 11:23 · **Filmed in WoL:** Wednesday 2026-11-25 08:11
 
 ![editorSearch in WoL](media/editorSearch-wol.gif)
 
@@ -9774,6 +9929,19 @@ keeps the 13 cavalry units, plus CavalryArcher, the value already set. [Full vid
 
 *Key off, the same typing:* every list stays full. [Full video (MP4)](media/editorSearch-trigger-wol-control.mp4).
 
+![editorSearch in the trigger list](media/editorSearch-triggerlist-wol.gif)
+
+*The trigger list, WoL's campaign scenario First Barbary War (27 triggers in Ungrouped):* "training" keeps the two
+P2_…TrainingKicker triggers; the second one picked shows its own 4 conditions and 5 effects (in the full list the
+second row is Captain02). Erased, the full list comes back with it selected; "captain" keeps the four Captain triggers
+and the selected P2_LandTrainingKicker, and CaptainReact picked shows its own effects. The log lines at the bottom
+count each search. [Full video (MP4)](media/editorSearch-triggerlist-wol.mp4).
+
+![editorSearch in the trigger list, key off](media/editorSearch-triggerlist-wol-control.gif)
+
+*Key off, the same typing and clicks:* the field takes the text, the list stays full, and the clicks pick Captain02
+and CaptainReact from it. [Full video (MP4)](media/editorSearch-triggerlist-wol-control.mp4).
+
 ```
 editorSearch [log]
 ```
@@ -9783,9 +9951,17 @@ editorSearch [log]
   - `EditorProtoPaletteSearch` inside the `EditorProtoPalette` gadget of `uieditorpalettes.xml`, to the right of the
     palette's category list;
   - `ForbiddenUnitsTechs_Search` in `uiforbiddenunitstechs.xml`, under the Allowed list;
-  - `trEdit-CondEffPanel-search` in `trEdit-CondEffPanel` of `uitriggereditor.xml`, on the row of "Type:".
+  - `trEdit-CondEffPanel-search` in `trEdit-CondEffPanel` of `uitriggereditor.xml`, on the row of "Type:";
+  - `trEdit-Trigger-search` in `trEditor` of `uitriggereditor.xml`, above "Group:" and the list of triggers, its
+    search row level with the condition/effect panel's.
 
   Any of them can be left out: a list without its field stays as it is.
+- **Taller lists (2026-11-25, the pack's layouts only, no DLL code):** every bottom panel of the editor (Trigger
+  Editor, Triggers, Conditions / Effects, the Objects and Terrain palettes) starts at the same height, `size1024`
+  y 446 instead of 550 / 502, and the lists grow down to the old bottom. At 1920 × 1080: the list of triggers shows
+  11 rows (8 before), the trigger's Conditions and Effects lists 274 instead of 218 (`size1024`), a trigger's
+  condition or effect list 196 instead of 140, the Type dropdown about 9 rows (4), the Objects palette 12 rows (7);
+  the Forbidden Units/Techs dialog is 42 taller, its lists 24 rows (21). Nothing reaches the minimap.
 - **Effect:** while the field holds text, the list keeps only the entries in which every word of it appears, upper
   or lower case alike. A unit matches by the name the list shows, its internal name or its display name ("INF musk"
   finds `INF R-LU Musketeer`; "prowler" finds the Forest Prowler, `xpMusketWarrior`), a tech by its internal name
@@ -9798,6 +9974,13 @@ editorSearch [log]
   the Type list whole. A parameter's current value stays in its list, so its field keeps showing it. A value is the
   name picked, so a value picked from a short list is the same as from the full one (saved and loaded again: the
   same). The other parameter lists (players, resources, areas…) are left as they are.
+- **The list of triggers:** its own field filters the triggers of the group shown, by name. The trigger being edited
+  always stays in the list, highlighted, so its panels never edit a trigger the list hides. A trigger picked from a
+  short list is that trigger: the game gives each row its trigger's place in the group and a click reads that, not
+  the row (checked in game: conditions, effects and a Loop change all went to the trigger picked). The text stays
+  when the group changes, and Insert and Del work as usual (a new trigger shows, being the one edited; Copy was not
+  tested).
+  Nothing found leaves only the trigger being edited.
 - **With the rest of the lists:** the palette's category list still applies (Nature with "musk": the Musk Deer and
   the Musk Ox); an entry picked from a filtered palette is placed as usual; in the dialog, Add and Remove work on the
   filtered list, Display Units / Display Techs keep the search, and the dialog's own refresh (a new player, Cancel)
@@ -9806,13 +9989,61 @@ editorSearch [log]
   field, as in the trigger editor's name field.
 - **Simulation:** none. It runs in the editor's lists only: nothing is saved in the scenario but the values you pick,
   and nothing reaches a game.
-- **Log:** `editorSearch: the Objects palette, the Forbidden Units/Techs dialog and the trigger editor filter by their
-  search fields (EditorProtoPaletteSearch, ForbiddenUnitsTechs_Search, trEdit-CondEffPanel-search)`; with `log`,
+- **Log:** `editorSearch: the Objects palette, the Forbidden Units/Techs dialog, the trigger editor and its trigger
+  list filter by their search fields (EditorProtoPaletteSearch, ForbiddenUnitsTechs_Search, trEdit-CondEffPanel-search,
+  trEdit-Trigger-search)`; with `log`,
   `Objects palette search field found` (or `has no textField …; its list stays stock`), each search
   (`Objects palette "musk": 9 shown, 3202 hidden (181.5 ms)`, `trigger editor "create": 10 shown, 208 hidden (6.7 ms)`,
-  `trigger parameter list "cavalry": 13 of 3634`) and every 5000 frames the cost of the per-frame check.
+  `trigger parameter list "cavalry": 13 of 3634`, `trigger list "captain": 4 shown, 23 hidden (0.1 ms)`) and every
+  5000 frames the cost of the per-frame check.
 - **Status:** confirmed (2026-11-21, WoL, the editor, single player): see the pass/fail table in
   [how-it-works.md](how-it-works.md#editorsearch) and the screenshots in `wol-fixes/editor/media`.
+
+#### editorAutosave
+
+*In the scenario editor, the open scenario is saved every few minutes to autosave files, so a crash costs at most the last few minutes of work.*
+
+**Added:** Wednesday 2026-11-25 08:22 · **Filmed in WoL:** Wednesday 2026-11-25 08:22
+
+![editorAutosave in WoL](media/editorAutosave-wol.gif)
+
+*In WoL, with `editorAutosave 1 keep 3 log` (one minute, for the test), the scenario `e2-base` open in the editor:*
+monuments are placed from the Objects palette; a minute after the editor opened, "Autosaved: autosave-1" shows in the
+editor's message dialog, and the log line at the bottom says the save took 219 ms and the scenario kept its name
+`e2-base`. [Full video (MP4)](media/editorAutosave-wol.mp4).
+
+![editorAutosave in WoL, key off](media/editorAutosave-wol-control.gif)
+
+*Key off, the same steps:* no notice, and no autosave file is written. [Full video (MP4)](media/editorAutosave-wol-control.mp4).
+
+```
+editorAutosave [minutes] [keep N] [log]
+```
+
+- **Effect:** every `minutes` (default 5, 0.5 to 1440) of real time in the editor, the open scenario is saved as
+  `autosave-1`, then `autosave-2`, … `autosave-N` (`keep N`, default 3, 1 to 20); once there are N, the oldest is
+  overwritten. They go to the editor's own Scenario folder (`Documents\My Games\Wars of Liberty\Scenario` in WoL),
+  next to the user's scenarios, and load like any scenario (File > Load Scenario). Each save leaves exactly one file:
+  the `.bak` the game makes when it overwrites a scenario is deleted for the autosaves.
+- **The scenario keeps its name:** the game's save makes the name saved the open scenario's name, so the next
+  File > Save would go to the autosave. The key puts the name back right after each autosave: File > Save still writes
+  the user's own file (or asks for a name, for a scenario never saved). The editor's recent scenarios list is left
+  alone.
+- **When it does not save:** outside the editor (the main menu, a game, a playtest of the scenario); while a mouse
+  button is held (dragging units, painting terrain): it saves once the button is released; and when nothing can have
+  changed since the editor opened or the last autosave: the editor's undo list is the same and the game window got
+  no keyboard or mouse input. Then it tries again one interval later.
+- **On screen:** the editor's own message dialog, the one the game shows while it saves, says
+  `Autosaved: autosave-2` for 2 seconds after the save (the editor shows no chat).
+- **The pause:** the editor stops for as long as the game takes to write the scenario, as File > Save does: about
+  0.2 s for a small map (180 KB), 1 s for an 8-player random map with 2,500 objects (657 KB).
+- **Simulation:** none. Editor only: nothing reaches a game.
+- **Log:** `editorAutosave: every 5.0 min in the editor, to autosave-1 ... autosave-3`; with `log`, `the editor is
+  open; the first autosave in 5.0 min`, each save (`saved autosave-2 (180 ms, 184211 bytes); the open scenario keeps
+  its name "mymap"`), each skip (`nothing changed since the last autosave; skipped`) and `the editor closed`. A failed
+  save is logged without `log`.
+- **Status:** confirmed (2026-11-25, WoL, the editor, single player): the pass/fail table is in
+  [how-it-works.md](how-it-works.md#editorautosave).
 
 #### techGadgets
 
@@ -9976,6 +10207,78 @@ The frames over 50 ms (6 to 9 per 120 s, all over 100 ms) are as many with the k
 time per second of real time is the same on and off. Measured inside the game (`log`, a third run): from 3,400 adds
 in the first minute to 14,200 in the eighth (8 players, all their villagers, trickles and AutoGather), and 0.3 to
 0.8 ms a minute spent counting them: about 13 µs per second of game time.
+
+
+#### selectFattened
+
+*A button (and a hotkey) selects all your livestock that is fully fattened, so you no longer look for it by hand.*
+
+**Added:** Wednesday 2026-11-25 07:44 · **Filmed in WoL:** Wednesday 2026-11-25 08:42
+
+```
+selectFattened [gadget <name>]... [log]
+```
+
+- **The request (WoL #106):** a player asked for a button that selects only the livestock that has reached its maximum
+  food: with the Middle East civs and the Spanish immigrants, livestock matters more.
+- **Effect:** the command `uhcSelectFattened` (a button's or a hotkey's `<command>`) selects every herdable (unit type
+  `Herdable`) of the player whose food has reached its carry capacity: a Sheep at 300 of 300, a Fattened Goat from
+  birth, a Hen at 60. The whole map counts, not only the screen. The selection is replaced, as a click does. With none,
+  the selection stays as it was. Herdables that hold another resource (WoL's wool sheep with gold) count when that
+  resource is full.
+- **More than the selection limit** (50, or `selectionLimit`): the ones nearest the centre of the screen are kept.
+- **The count:** `{uhcFattened}`, a text for the button (how many there are now). Counted ten times a second of game
+  time, not per frame.
+- **The button:** the gadgets named by `gadget <name>` (default `uhcFattened`) are shown while the player has a
+  fattened herdable and hidden when it has none. `wol-fixes/select-fattened` adds the button above the resource panel's
+  left end, right of the home city flag, with the count in its corner and a tooltip ("Fattened livestock: 3. Click to
+  select them (Shift+Ctrl+F)."), and the hotkey Shift+Ctrl+F ("Select Fattened Livestock", in the hotkey menu's group
+  "Find Unit Hotkeys").
+- **What it needs:** the button and the hotkey in the layout and the keymap: the pack.
+- **Simulation:** none. It only changes the local player's selection, as a click, through the game's own selection
+  calls: those of the stock command `uiFindAllOfType`.
+- **Log:** `selectFattened: UI syscall uhcSelectFattened() and {uhcFattened} added; gadget(s) uhcFattened shown while
+  the local player has a fattened herdable`; with `log`, each change of the count (`player 1 has 9 fattened
+  herdable(s)`), each press (`player 1, 9 fattened, 9 selected (limit 75), selection now 9`), over the limit the
+  distances of the last one kept and the first one left out, and every minute of game time what counting cost.
+- **Status:** see the tests below.
+
+Tests (2026-11-25, copy of WoL, single player; first scenarios with the command run from the console,
+`uhcSelectFattened()`, then skirmishes on a test map with the pack and the button):
+
+| Test | Result |
+|---|---|
+| 6 Fattened Goats, 4 Sheep and 2 Cows (not fattened), 3 Hens at a Livestock Pen | pass: 6 selected; the Sheep and Cows not; the panel shows Fattened Goat, food 300 |
+| The Hens fatten at the pen (about 70 s) | pass: the count went 6, 7, 8, 9; a new press selected 9 (two stacks: goats and hens) |
+| Player 2's fattened goats on the same map | pass: not counted, not selected |
+| 90 Fattened Goats in two herds 40 m apart, `selectionLimit 75`, camera on one herd | pass: 75 selected: the whole herd under the camera and the 30 nearest of the other (the last kept 40.5 m from the screen centre's line, the first left out 42.0 m) |
+| Key off (the 249-unit scene) | pass: no syscall added, and `uhcSelectFattened()` from the console did nothing the log shows |
+| Persians (Middle East), full interface, advanced resource view, the oil panel pack applied after this pack: 3 Fattened Goats, 3 Settlers ordered to them at 40 s, 3 Hens at a pen | pass: the button shows 3; a click selects the 3 goats; as the Settlers take food the count goes 2, 1, 0 and the button hides; the Hens fatten, the button comes back (1, then 3) and a click selects them (video below) |
+| The tooltip | pass: "Fattened livestock: 3. Click to select them (Shift+Ctrl+F)." |
+| Key off, the same skirmish (pack applied, `selectFattened` not in the cfg) | pass: no button; a click on its place selects nothing (video below) |
+| WallMapu (Native panel), minimized interface; Ethiopians (an Asian panel in WoL), full interface | pass: the button right of the home city flag, above the panel |
+| The place against every gadget of the game screen's layouts (`uimainnew.xml`, `uiminimappanelnew*.xml`, the oil and faith packs' 6 panel layouts) | pass: only full-screen dialogs (hidden in play) meet its box; the panel variants' art starts at y 625 or lower, the button ends at 623 |
+| The 12 panel variants one by one with `gadgetReal` / `gadgetUnreal` | not possible: the engine keeps showing its own variant; the variants were covered by the games above and by the layout check |
+| The first place (the approved mock-up, 221 594 242 623) | moved: in a game with a home city the flag (`uimain-homeCityToggle`, 194 605 246 645) covers it; the mock-up came from a scenario, which has no flag. The button is now right of the flag, 249 594 270 623 |
+| Hotkey Shift+Ctrl+F | not tested in game: the copy runs with `multipleInstances background`, which ignores real keys, while other tests ran; the entry is in `DefaultKeyMapY.xml` (checked by `apply_fix.py --check`) |
+
+![selectFattened in WoL](media/selectFattened-wol.gif)
+
+*In WoL, Persians, with `selectFattened log` and the pack (full interface, advanced resource view, the oil panel pack
+too):* the button right of the flag shows 3; a click selects the three Fattened Goats; the Settlers butcher them and
+the count drops to 0: the button hides; the Hens at the pen fatten, the button comes back and a click selects them.
+The key's log lines at the bottom. [Full video (MP4)](media/selectFattened-wol.mp4).
+
+![selectFattened in WoL, key off](media/selectFattened-wol-control.gif)
+
+*The same skirmish, key off:* no button; the same clicks on its place select nothing.
+[Full video (MP4)](media/selectFattened-wol-control.mp4).
+
+**Performance:** 249 units of the player (100 Fattened Goats, 100 Sheep, 60 Settlers, less the goats that did not
+fit): the count took 18.9 µs on average and 72 µs at most (600 counts), 18.2 µs and 257 µs in a second run: about
+0.2 ms per second of game time. `perfprobe.py`, 60 s each, the same scenario, key on, off, on: 257 / 286 / 268 fps,
+update 0.36 / 0.31 / 0.34 ms per frame; render time moved as much (3.53 / 3.19 / 3.41 ms) with games of other tests
+running on the machine, and the count is not in the render: no difference that the count explains.
 
 
 ## 6. Editing the game data

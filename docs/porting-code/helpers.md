@@ -2197,6 +2197,18 @@ inline constexpr Site kOptionIntGetRange{"OptionIntGetRange", 0x006B7676, kOptio
 inline constexpr std::uint8_t kOptionIntSetterBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x8B, 0xF1, 0x3B, 0x7E, 0x08, 0x73, 0x39, 0x8B, 0x44, 0x24, 0x10, 0x8D, 0x0C, 0xBF, 0x03, 0x4E, 0x04, 0x50, 0x83, 0xEC, 0x04, 0x8A, 0x01, 0x24, 0x0F, 0x3C, 0x02, 0x0F, 0x85, 0x61, 0x93, 0x1A, 0x00, 0x8B, 0x54, 0x24, 0x04, 0x89, 0x51, 0x01, 0xB0, 0x01, 0x83, 0xC4, 0x08, 0x84, 0xC0, 0x74, 0x0F, 0x57, 0x8B, 0xCE, 0xE8, 0x8E, 0xFF, 0xFF, 0xFF, 0x5F, 0xB0, 0x01, 0x5E, 0xC2, 0x08, 0x00, 0x5F, 0x32, 0xC0, 0x5E, 0xC2, 0x08, 0x00};
 inline constexpr Site kOptionIntSetter{"OptionIntSetter", 0x00518AE0, kOptionIntSetterBytes, sizeof(kOptionIntSetterBytes)};
 
+inline constexpr std::uint8_t kOptionFlagTestBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x3B, 0x41, 0x08, 0x72, 0x05, 0x32, 0xC0, 0xC2, 0x08, 0x00, 0x8B, 0x49, 0x04, 0x8D, 0x04, 0x80, 0x8A, 0x14, 0x01, 0x22, 0x54, 0x24, 0x08, 0xF6, 0xC2, 0xF0, 0x0F, 0x95, 0xC0, 0xC2, 0x08, 0x00};
+inline constexpr Site kOptionFlagTest{"OptionFlagTest", 0x00A41707, kOptionFlagTestBytes, sizeof(kOptionFlagTestBytes)};
+
+inline constexpr std::uint8_t kOptionBoolGetterBytes[] = {0x8B, 0xC1, 0x8B, 0x4C, 0x24, 0x04, 0x3B, 0x48, 0x08, 0x0F, 0x83, 0xBE, 0x4A, 0x2B, 0x00, 0x8B, 0x54, 0x24, 0x08, 0x8D, 0x0C, 0x89, 0x03, 0x48, 0x04, 0x52, 0x83, 0xEC, 0x04, 0x8A, 0x01, 0x24, 0x0F, 0x3C, 0x05, 0x0F, 0x85, 0xD7, 0xF2, 0x2B, 0x00, 0x8A, 0x49, 0x01, 0x8B, 0x54, 0x24, 0x04, 0x88, 0x0A, 0xB0, 0x01, 0x83, 0xC4, 0x08, 0xC2, 0x08, 0x00};
+inline constexpr Site kOptionBoolGetter{"OptionBoolGetter", 0x00402CE9, kOptionBoolGetterBytes, sizeof(kOptionBoolGetterBytes)};
+
+inline constexpr std::uint8_t kOptionBoolGetRangeBytes[] = {0x32, 0xC0, 0xC2, 0x08, 0x00};
+inline constexpr Site kOptionBoolGetRange{"OptionBoolGetRange", 0x006B77B6, kOptionBoolGetRangeBytes, sizeof(kOptionBoolGetRangeBytes)};
+
+inline constexpr std::uint8_t kOptionBoolSetterBytes[] = {0x56, 0x57, 0x8B, 0x7C, 0x24, 0x0C, 0x8B, 0xF1, 0x3B, 0x7E, 0x08, 0x73, 0x39, 0x8B, 0x44, 0x24, 0x10, 0x8D, 0x0C, 0xBF, 0x03, 0x4E, 0x04, 0x50, 0x83, 0xEC, 0x04, 0x8A, 0x01, 0x24, 0x0F, 0x3C, 0x05, 0x0F, 0x85, 0xE3, 0x91, 0x1A, 0x00, 0x8A, 0x54, 0x24, 0x04, 0x88, 0x51, 0x01, 0xB0, 0x01, 0x83, 0xC4, 0x08, 0x84, 0xC0, 0x74, 0x0F, 0x57, 0x8B, 0xCE, 0xE8, 0xF2, 0xFD, 0xFF, 0xFF, 0x5F, 0xB0, 0x01, 0x5E, 0xC2, 0x08, 0x00, 0x5F, 0x32, 0xC0, 0x5E, 0xC2};
+inline constexpr Site kOptionBoolSetter{"OptionBoolSetter", 0x00518C7C, kOptionBoolSetterBytes, sizeof(kOptionBoolSetterBytes)};
+
 inline constexpr std::uint8_t kAttackActionForTargetBytes[] = {0x51, 0x53, 0x55, 0x8B, 0x6C, 0x24, 0x10, 0x56, 0x33, 0xDB, 0x3B, 0xEB, 0x8B, 0xF1};
 inline constexpr Site kAttackActionForTarget{"AttackActionForTarget", 0x00489ECC, kAttackActionForTargetBytes, sizeof(kAttackActionForTargetBytes)};
 
@@ -2704,6 +2716,21 @@ inline constexpr Site kResourceByName{"ResourceByName", 0x0044709C, kResourceByN
 inline constexpr std::uint8_t kPlayerIsAllyOrSelfBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x0F, 0x8C, 0x75, 0x44, 0x01, 0x00, 0x83, 0xF8, 0x10, 0x0F, 0x8D, 0x6C, 0x44, 0x01, 0x00, 0x8B, 0x84, 0x81, 0xD4};
 inline constexpr Site kPlayerIsAllyOrSelf{"PlayerIsAllyOrSelf", 0x004707EC, kPlayerIsAllyOrSelfBytes, sizeof(kPlayerIsAllyOrSelfBytes)};
 
+inline constexpr std::uint8_t kSelectionOfGameBytes[] = {0x8B, 0x81, 0x1C, 0x09, 0x00, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0xB2, 0xB7, 0x25, 0x00};
+inline constexpr Site kSelectionOfGame{"SelectionOfGame", 0x004051B6, kSelectionOfGameBytes, sizeof(kSelectionOfGameBytes)};
+
+inline constexpr std::uint8_t kSelectionClearBytes[] = {0x55, 0x8B, 0x6C, 0x24, 0x08, 0x85, 0xED, 0x56, 0x8B, 0xF1};
+inline constexpr Site kSelectionClear{"SelectionClear", 0x009301D3, kSelectionClearBytes, sizeof(kSelectionClearBytes)};
+
+inline constexpr std::uint8_t kFindAllOfTypeLoopBytes[] = {0x8A, 0x86, 0x88, 0x00, 0x00, 0x00, 0x88, 0x44, 0x24, 0x0C, 0x8B, 0x4C, 0x24, 0x0C, 0x51, 0xE8, 0xB3, 0x62, 0xC6, 0xFF, 0x83, 0xC4, 0x04, 0x84, 0xC0, 0x75, 0x57, 0x8B, 0x16, 0x8B, 0xCE, 0xFF, 0x92, 0xA4, 0x00, 0x00, 0x00, 0x84, 0xC0, 0x74, 0x49, 0x83, 0x7E, 0x6C, 0x00, 0x7D, 0x43, 0x8B, 0x4E, 0x5C, 0x85, 0xC9, 0x74, 0x3C, 0x8B, 0x44, 0x24, 0x10, 0x50, 0xE8, 0x57, 0x5C, 0xC6, 0xFF, 0x84, 0xC0, 0x74, 0x2E, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0xE8, 0x04, 0xD6, 0xC1, 0xFF, 0x8B, 0x4E, 0x10, 0x89, 0x4C, 0x24, 0x20, 0x8D, 0x4C, 0x24, 0x18, 0xC7, 0x44, 0x24, 0x18, 0x44, 0xE4, 0xB9, 0x00, 0xC7, 0x44, 0x24, 0x1C, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x10, 0x51, 0x8B, 0xC8, 0xFF, 0x52, 0x04};
+inline constexpr Site kFindAllOfTypeLoop{"FindAllOfTypeLoop", 0x007E7B63, kFindAllOfTypeLoopBytes, sizeof(kFindAllOfTypeLoopBytes)};
+
+inline constexpr std::uint8_t kSelectionAddBytes[] = {0x83, 0xEC, 0x14, 0x53, 0x55, 0x8B, 0x6C, 0x24, 0x20, 0x8B, 0x45, 0x04, 0x56};
+inline constexpr Site kSelectionAdd{"SelectionAdd", 0x0079F534, kSelectionAddBytes, sizeof(kSelectionAddBytes)};
+
+inline constexpr std::uint8_t kSelectionAddCappedBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x56, 0x8B, 0xF1, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x74, 0x11, 0xE8, 0x92, 0x09, 0xBB, 0xFF, 0x39, 0x46, 0x08, 0x7C, 0x0D, 0x80};
+inline constexpr Site kSelectionAddCapped{"SelectionAddCapped", 0x00930245, kSelectionAddCappedBytes, sizeof(kSelectionAddCappedBytes)};
+
 inline constexpr std::uint8_t kEditorPaletteAddProtoBytes[] = {0x8D, 0x54, 0x24, 0x58, 0x52, 0x8D, 0x44, 0x24, 0x14, 0x50, 0x8B, 0xCF, 0xE8, 0xD4, 0xAC, 0x2D, 0x00};
 inline constexpr Site kEditorPaletteAddProto{"EditorPaletteAddProto", 0x007F5371, kEditorPaletteAddProtoBytes, sizeof(kEditorPaletteAddProtoBytes)};
 
@@ -2784,6 +2811,57 @@ inline constexpr Site kEditorSetData{"EditorSetData", 0x00AC19D9, kEditorSetData
 
 inline constexpr std::uint8_t kEditorParamPickTextBytes[] = {0x8B, 0x8D, 0x3C, 0x01, 0x00, 0x00, 0xE8, 0xB3, 0x8E, 0x16, 0x00, 0x8B, 0xCE, 0xE8, 0xA4, 0x6E, 0x29, 0x00, 0x83, 0xF8, 0xFF, 0x0F, 0x84, 0xA7, 0x0D, 0x00, 0x00, 0x50, 0x8B, 0xCE, 0xE8, 0x62, 0x70, 0x29, 0x00, 0x50};
 inline constexpr Site kEditorParamPickText{"EditorParamPickText", 0x00829E65, kEditorParamPickTextBytes, sizeof(kEditorParamPickTextBytes)};
+
+inline constexpr std::uint8_t kEditorTriggerListFillBytes[] = {0x83, 0xEC, 0x48, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xB8, 0x3C, 0x01, 0x00, 0x00, 0x00, 0x89, 0x4C, 0x24, 0x04, 0x0F, 0x84, 0xA2, 0x03, 0x00, 0x00, 0x53, 0x8B, 0x98, 0x7C, 0x09, 0x00, 0x00, 0x85, 0xDB, 0x0F, 0x84, 0x92, 0x03, 0x00, 0x00, 0x56, 0x57, 0x8B, 0xB9, 0x78, 0x01, 0x00, 0x00, 0x57, 0xE8, 0xEE, 0x55, 0xDA, 0xFF, 0x8B, 0xF0, 0x83, 0xC4, 0x04, 0x85, 0xF6, 0x0F, 0x84, 0x75, 0x03, 0x00, 0x00, 0x55, 0x57, 0xE8, 0xB5, 0xFA, 0xBD, 0xFF};
+inline constexpr Site kEditorTriggerListFill{"EditorTriggerListFill", 0x0082481C, kEditorTriggerListFillBytes, sizeof(kEditorTriggerListFillBytes)};
+
+inline constexpr std::uint8_t kEditorTriggerListAddBytes[] = {0x57, 0x8B, 0xCD, 0xE8, 0x1E, 0x5B, 0x15, 0x00, 0x50, 0x8B, 0xCB, 0xE8, 0x2F, 0x6A, 0x15, 0x00, 0x50, 0x8B, 0xCB, 0xE8, 0x75, 0x13, 0xBE, 0xFF, 0x85, 0xC0, 0x74, 0x14, 0x83, 0xC0, 0x3C, 0x50, 0x8B, 0xCE, 0xE8, 0x60, 0x49, 0x2A, 0x00, 0x50, 0x57, 0x8B, 0xCE, 0xE8, 0xEF, 0x23, 0x2A, 0x00, 0x83, 0xC7, 0x01, 0x3B, 0x7C, 0x24, 0x10, 0x7C, 0xC7};
+inline constexpr Site kEditorTriggerListAdd{"EditorTriggerListAdd", 0x008248A1, kEditorTriggerListAddBytes, sizeof(kEditorTriggerListAddBytes)};
+
+inline constexpr std::uint8_t kEditorListSetDataBytes[] = {0x56, 0x8B, 0x74, 0x24, 0x0C, 0x85, 0xF6, 0x57, 0x8B, 0xF9, 0x7C, 0x2D};
+inline constexpr Site kEditorListSetData{"EditorListSetData", 0x00AC6CC0, kEditorListSetDataBytes, sizeof(kEditorListSetDataBytes)};
+
+inline constexpr std::uint8_t kEditorTriggerListClickBytes[] = {0x52, 0x8B, 0xCD, 0xE8, 0x0E, 0x12, 0x2A, 0x00, 0x50, 0x8B, 0xCB, 0xE8, 0xA3, 0x5C, 0x15, 0x00};
+inline constexpr Site kEditorTriggerListClick{"EditorTriggerListClick", 0x00825AE8, kEditorTriggerListClickBytes, sizeof(kEditorTriggerListClickBytes)};
+
+inline constexpr std::uint8_t kEditorTriggerSetCurrentBytes[] = {0x8B, 0x41, 0x18, 0x85, 0xC0, 0x7C, 0x1F, 0x3B, 0x41, 0x10, 0x7D, 0x1A, 0x8B, 0x54, 0x24, 0x04, 0x85, 0xD2, 0x7C, 0x12, 0x8B, 0x49, 0x0C, 0x8B, 0x04, 0x81};
+inline constexpr Site kEditorTriggerSetCurrent{"EditorTriggerSetCurrent", 0x0097B79B, kEditorTriggerSetCurrentBytes, sizeof(kEditorTriggerSetCurrentBytes)};
+
+inline constexpr std::uint8_t kEditorTriggerCurrentBytes[] = {0x8B, 0x41, 0x18, 0x85, 0xC0, 0x7C, 0x13, 0x3B, 0x41, 0x10, 0x7D, 0x0E, 0x8B, 0x49, 0x0C, 0x8B, 0x04, 0x81, 0x85, 0xC0, 0x74, 0x04, 0x8B, 0x40, 0x04, 0xC3, 0x83, 0xC8, 0xFF, 0xC3};
+inline constexpr Site kEditorTriggerCurrent{"EditorTriggerCurrent", 0x0097B7C4, kEditorTriggerCurrentBytes, sizeof(kEditorTriggerCurrentBytes)};
+
+inline constexpr std::uint8_t kEditorGateBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0x91, 0x00, 0x00, 0x00, 0x80, 0xB8, 0x3A, 0x0B, 0x00, 0x00, 0x00};
+inline constexpr Site kEditorGate{"EditorGate", 0x007D97AF, kEditorGateBytes, sizeof(kEditorGateBytes)};
+
+inline constexpr std::uint8_t kEditorUndoManagerBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x80, 0xB8, 0x3A, 0x0B, 0x00, 0x00, 0x00, 0x74, 0x0B, 0x8B, 0x88, 0x28, 0x09, 0x00, 0x00};
+inline constexpr Site kEditorUndoManager{"EditorUndoManager", 0x007DA8B9, kEditorUndoManagerBytes, sizeof(kEditorUndoManagerBytes)};
+
+inline constexpr std::uint8_t kEditorUndoCountsBytes[] = {0x56, 0x8B, 0xF1, 0x83, 0x7E, 0x04, 0x00, 0x74, 0x38, 0x57, 0x33, 0xFF, 0x39, 0x7E, 0x10};
+inline constexpr Site kEditorUndoCounts{"EditorUndoCounts", 0x009BE4E2, kEditorUndoCountsBytes, sizeof(kEditorUndoCountsBytes)};
+
+inline constexpr std::uint8_t kEditorSaveCallBytes[] = {0x6A, 0x01, 0x51, 0xE8, 0x94, 0xE3, 0xD3, 0xFF, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x50, 0xFF, 0x96, 0xC0, 0x00, 0x00, 0x00};
+inline constexpr Site kEditorSaveCall{"EditorSaveCall", 0x007D980E, kEditorSaveCallBytes, sizeof(kEditorSaveCallBytes)};
+
+inline constexpr std::uint8_t kEditorSaveSlotBytes[] = {0xD3, 0x3E, 0x70, 0x00};
+inline constexpr Site kEditorSaveSlot{"EditorSaveSlot", 0x00B886E8, kEditorSaveSlotBytes, sizeof(kEditorSaveSlotBytes)};
+
+inline constexpr std::uint8_t kEditorSaveThunkBytes[] = {0xE9, 0xAB, 0x06, 0x13, 0x00};
+inline constexpr Site kEditorSaveThunk{"EditorSaveThunk", 0x00703ED3, kEditorSaveThunkBytes, sizeof(kEditorSaveThunkBytes)};
+
+inline constexpr std::uint8_t kEditorSaveHeadBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x80, 0xBE, 0xB0, 0x0A, 0x00, 0x00, 0x00, 0x74, 0x07};
+inline constexpr Site kEditorSaveHead{"EditorSaveHead", 0x00834583, kEditorSaveHeadBytes, sizeof(kEditorSaveHeadBytes)};
+
+inline constexpr std::uint8_t kEditorSaveSetsNameBytes[] = {0x8B, 0x8E, 0x20, 0x09, 0x00, 0x00, 0xE8, 0xD8, 0x5C, 0x00, 0x00, 0x8D, 0x54, 0x24, 0x18, 0x52, 0x8D, 0x8E, 0x58, 0x09, 0x00, 0x00, 0xE8, 0x7F, 0xD3, 0xBC, 0xFF, 0x8B, 0x5C, 0x24, 0x1C, 0x8D, 0x44, 0x24, 0x18, 0x50, 0x8D, 0x4C, 0x24, 0x10, 0x88, 0x9E, 0x5C, 0x09, 0x00, 0x00};
+inline constexpr Site kEditorSaveSetsName{"EditorSaveSetsName", 0x008345D5, kEditorSaveSetsNameBytes, sizeof(kEditorSaveSetsNameBytes)};
+
+inline constexpr std::uint8_t kEditorSaveDirBytes[] = {0xA1, 0xB4, 0xFD, 0xD6, 0x00, 0xC3};
+inline constexpr Site kEditorSaveDir{"EditorSaveDir", 0x00517BAA, kEditorSaveDirBytes, sizeof(kEditorSaveDirBytes)};
+
+inline constexpr std::uint8_t kEditorMessageHideBytes[] = {0x8B, 0x81, 0x2C, 0x01, 0x00, 0x00, 0x8B, 0x0D, 0x44, 0x62, 0xC6, 0x00, 0x8B, 0x49, 0x44, 0x50, 0xE8, 0x16, 0x02, 0xC1, 0xFF, 0xC3};
+inline constexpr Site kEditorMessageHide{"EditorMessageHide", 0x00838CE8, kEditorMessageHideBytes, sizeof(kEditorMessageHideBytes)};
+
+inline constexpr std::uint8_t kEditorMessagePromptNameBytes[] = {0x69, 0x6E, 0x67, 0x61, 0x6D, 0x65, 0x2D, 0x6D, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x64, 0x69, 0x61, 0x6C, 0x6F, 0x67, 0x33, 0x2D, 0x70, 0x72, 0x6F, 0x6D, 0x70, 0x74, 0x00};
+inline constexpr Site kEditorMessagePromptName{"EditorMessagePromptName", 0x00C11254, kEditorMessagePromptNameBytes, sizeof(kEditorMessagePromptNameBytes)};
 
 inline constexpr std::uint8_t kCardChildLoopBytes[] = {0x8B, 0x44, 0x24, 0x1C, 0x50, 0x8B, 0xCB};
 inline constexpr Site kCardChildLoop{"CardChildLoop", 0x0062FD1D, kCardChildLoopBytes, sizeof(kCardChildLoopBytes)};
@@ -3330,6 +3408,7 @@ Outcome ApplyXsErrorLog(const Config& config);
 Outcome ApplyMultipleInstances(const Config& config);
 Outcome ApplyLanAutoStart(const Config& config);
 Outcome ApplyEditorSearch(const Config& config);
+Outcome ApplyEditorAutosave(const Config& config);
 Outcome ApplyPlayerIcon(const Config& config);
 Outcome ApplyPlugins(const Config& config);
 Outcome ApplyAsianCivs(const Config& config);
@@ -3379,6 +3458,8 @@ Outcome ApplyFaithResource(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 Outcome ApplyTechGadgets(const Config& config);
 Outcome ApplyIncomeRates(const Config& config);
+Outcome ApplySelectFattened(const Config& config);
+Outcome ApplyNurseryFactor(const Config& config);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
 // which of the keys it names the list then sees.
@@ -3551,6 +3632,9 @@ inline constexpr Feature kFeatures[] = {
     // After resourceDebt, linkedResource, unitResourceAuras and pillageGold, which verify the stock bytes of the add
     // 0x49A98A whose head this key writes.
     {"incomeRates", ApplyIncomeRates},
+    // After autoGatherScaleByContained: its filter of the shared AutoGather rate getter (autogatherrate.h) is asked
+    // after that key's; the owner's trickle it multiplies reaches incomeRates through the add that key counts.
+    {"nurseryFactor", ApplyNurseryFactor},
     {"auraStacking", ApplyAuraStacking},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
@@ -3570,8 +3654,12 @@ inline constexpr Feature kFeatures[] = {
     {"playerIcon", ApplyPlayerIcon},
     // After rendererOption: it reads its search fields from the Present of whichever Direct3DCreate9 the game gets.
     {"editorSearch", ApplyEditorSearch},
+    // After rendererOption: its clock runs in the Present of whichever Direct3DCreate9 the game gets.
+    {"editorAutosave", ApplyEditorAutosave},
     // After rendererOption: it sets its gadgets from the Present of whichever Direct3DCreate9 the game gets.
     {"techGadgets", ApplyTechGadgets},
+    // After rendererOption: it shows its button from the Present of whichever Direct3DCreate9 the game gets.
+    {"selectFattened", ApplySelectFattened},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
 };
@@ -3593,7 +3681,7 @@ inline constexpr const char* kHandledKeys[] = {
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
-    "techgadgets", "incomerates",
+    "techgadgets", "incomerates", "editorautosave", "selectfattened", "nurseryfactor",
 };
 
 }  // namespace uhc
@@ -4875,7 +4963,9 @@ const char* g_uhcSubtypeNode = nullptr;
 
 namespace {
 
-constexpr std::size_t kMaxSubtypes = 32;
+// The keys register 33 names today (nurseryFactor's five made it more than 32); the IDs are kFirstId + index and
+// the hooks check only the lower bound, so the room is the table's size alone.
+constexpr std::size_t kMaxSubtypes = 64;
 constexpr std::int32_t kFirstId = 0x100;  // above every stock subtype; the stock switches stop at 63h
 constexpr std::uint32_t kNameLookupHead = 0x0061FF5D;  // the lookup
 constexpr std::uint32_t kAttributeCall = 0x006206B2;   // setData's read of the attribute subtype
@@ -6029,6 +6119,10 @@ using UnitPanelRow = bool(__stdcall*)(const char* panel, const char* unit);
 // The row's text, in the style of the stock AutoGather row; false if this interface has no such gadgets.
 bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* value);
 
+// The help text the row shows on hover (both gadgets), after SetUnitPanelRow; cleared again before the next
+// refresh's rows, so only the row that set it has it. False if this interface has no such gadgets.
+bool SetUnitPanelRowTip(const char* panel, const wchar_t* tip);
+
 // Writes the hook the first time (after checking the site's stock bytes) and adds row.
 bool AddUnitPanelRow(UnitPanelRow row);
 
@@ -6081,11 +6175,14 @@ using GadgetTextFn = void(__thiscall*)(void* gadget, const BString* text);
 using GadgetUpdateFn = void(__thiscall*)(void* gadget);
 using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
 using BStringFreeFn = void(__thiscall*)(BString* self);
+using BStringSetFn = void(__thiscall*)(BString* self, const BString* source);
 using CurrentSelectionFn = const char*(__cdecl*)();  // reads globals only; the stock callers' ECX is unused
 const auto kGadgetRef = reinterpret_cast<GadgetRefFn>(0x004C519C);
 const auto kGadgetRelease = reinterpret_cast<GadgetReleaseFn>(0x0040431B);
 const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
 const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+const auto kBStringSet = reinterpret_cast<BStringSetFn>(0x0040196F);
+constexpr std::uint32_t kGadgetTip = 0x68;  // a gadget's help text, a BString, shown on hover
 const auto kCurrentSelection = reinterpret_cast<CurrentSelectionFn>(0x00453B28);
 
 template <typename T>
@@ -6118,6 +6215,20 @@ void SetGadget(void* gadget, std::uint32_t style, const wchar_t* text) {
   kBStringFree(&value);
 }
 
+// The help text of both row gadgets. A row that set one has it cleared before the next refresh's rows, so the stock
+// AutoGather row and the other keys' rows never show it.
+void SetTips(const char* panel, const wchar_t* text) {
+  BString tip{nullptr};
+  kBStringFromWide(&tip, text);
+  for (const std::uint32_t field : {kPanelRateLabel, kPanelRateValue}) {
+    if (void* gadget = PanelGadget(panel, field)) {
+      kBStringSet(reinterpret_cast<BString*>(static_cast<char*>(gadget) + kGadgetTip), &tip);
+    }
+  }
+  kBStringFree(&tip);
+}
+bool g_tipSet = false;
+
 uhc::UnitPanelRow g_rows[kMaxRows] = {};
 std::size_t g_rowCount = 0;
 uhc::UnitPanelGroupRow g_groupRow = nullptr;
@@ -6149,6 +6260,10 @@ void __stdcall UhcUnitPanelRows(const char* panel, const char* unit) {
   if (panel == nullptr || unit == nullptr) {
     return;
   }
+  if (g_tipSet) {
+    SetTips(panel, L"");
+    g_tipSet = false;
+  }
   const char* selection = kCurrentSelection();
   if (selection == nullptr || Field<std::uint8_t>(selection, 0x21) != 0) {
     return;
@@ -6177,6 +6292,15 @@ bool SetUnitPanelRow(const char* panel, const wchar_t* label, const wchar_t* val
   }
   SetGadget(labelGadget, kLabelStyle, label);
   SetGadget(valueGadget, kValueStyle, value);
+  return true;
+}
+
+bool SetUnitPanelRowTip(const char* panel, const wchar_t* tip) {
+  if (PanelGadget(panel, kPanelRateLabel) == nullptr || PanelGadget(panel, kPanelRateValue) == nullptr) {
+    return false;
+  }
+  SetTips(panel, tip);
+  g_tipSet = true;
   return true;
 }
 
@@ -6862,7 +6986,8 @@ void RemoveVisualModel(char* visual, std::int32_t model) {
 // Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay, 66h
 // researchGrants (two kinds, told apart by word 0), 67h shipmentCounts (per-player state on one carrier unit), 68h
 // randomCost (the game seed and the purchase counts, on one carrier unit), 69h shipTechLimit (a player's count, on
-// one of his units), 6Ah veterancyBonus (the rows a unit was given, when its rows name techs).
+// one of his units), 6Ah veterancyBonus (the rows a unit was given, when its rows name techs), 6Bh nurseryFactor (a
+// unit's factor and its growth timer).
 #pragma once
 
 #include <cstdint>
@@ -7002,7 +7127,9 @@ constexpr std::uint32_t kSlot = 0x00B84164;
 constexpr int kCreateDeviceIndex = 16;  // IDirect3D9
 constexpr int kResetIndex = 16;         // IDirect3DDevice9
 constexpr int kPresentIndex = 17;       // IDirect3DDevice9
-constexpr int kMaxObservers = 4;
+// Seven keys observe the device (perfStats, rendererOption, lanAutoStart, editorSearch, editorAutosave, techGadgets,
+// selectFattened); with 4 slots and every key on, selectFattened got none.
+constexpr int kMaxObservers = 8;
 
 using CreateDeviceFn = HRESULT(STDMETHODCALLTYPE*)(IDirect3D9*, UINT, D3DDEVTYPE, HWND, DWORD,
                                                    D3DPRESENT_PARAMETERS*, IDirect3DDevice9**);

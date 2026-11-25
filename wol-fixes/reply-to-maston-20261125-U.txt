@@ -1,0 +1,69 @@
+Reply to JTMaston, round of 2026-11-25: quick-arrival in capitals (#99), space between income and stock (#105),
+and what a themed interface per culture would cost (#103)
+=============================================================================================================
+
+Tested in single player in a copy of WoL 1.0.15c, 1920x1080.
+
+
+#99 "Quick arrival card": QUICK-ARRIVAL in capitals
+---------------------------------------------------
+Done. The line the DLL adds now reads:
+
+    This is a QUICK-ARRIVAL card.
+
+Checked in game on both screens that show it: the in-game shipment panel and "Build a Deck", on an infinite card
+(Crates of 300 food) and a card sent once (Chests of 700 coin). Pictures: quickArrivalCards-panel-infinite.jpg,
+quickArrivalCards-panel-once.jpg and quickArrivalCards-deck-builder*.jpg in the guide.
+If you use "quickArrivalCards stringid N" (the line taken from your string table, to translate it), the DLL shows
+your string exactly as written, so the capitals go in your string. Your current wol.cfg has no quickArrivalCards
+line, so with the new DLL you get the capitals without changing anything.
+
+
+#105 "global gathering": more space between the income and the stock value
+--------------------------------------------------------------------------
+Done: the new layout is in the oil panel pack (apply_fix.py --rates; run --restore first if an older version is
+applied, then apply again).
+
+Where it overlapped: in the panels whose rows are too low for two lines (the 7-row Asian and Native panels with
+faith, default and advanced: 8 of the 24 panels with faith; your advanced Native panel: 1 of the 24 without), the
+rate sat in a column starting
+just right of the amount, so a long amount ran into it. The other panels put the rate under the amount and had no
+overlap.
+
+The fix, in those panels only (every other panel is unchanged):
+- the rate is set to the panel's right edge (right-aligned), so the amount grows to the right and the rate to the
+  left, away from each other;
+- the amounts, and the other numbers of that column (villager count, dance value), sit a little closer to their
+  icons, which gives about 9 more pixels at 1920x1080.
+
+Tested with every resource (food, wood, gold, oil, export, faith) at 99,999,992 and gold at 100,000,1xx (9 digits,
+while factories made +4.6/s), all 24 panels of both modes (with and without faith) on screen at once: nothing
+overlaps or is cut, the amounts share one left edge and the rates one right edge.
+Note: the game keeps resources as 32-bit floats, so 99,999,999 cannot be shown (the nearest values are 99,999,992
+and 100,000,000). The limit of the new layout: 9 digits next to a rate with two digits before the point ("+12.5")
+would touch, and 8 digits should fit with any rate up to "+99.9" (both estimated from the digit widths; seen in
+game: 8 digits beside +0.0 and 9 digits beside +4.6).
+
+
+#103 "oil display": how much would a themed interface per culture cost?
+-----------------------------------------------------------------------
+Short answer: affordable. Measured with a synthetic copy (the whole in-game interface copied 8 times, one per
+culture, each copy with its own textures), against today's interface, in alternating games. Full report with the
+numbers: wol-fixes\ui-per-culture-cost-20261125.txt.
+
+- What the original game does: only the resource panel changes with the culture. uimainnew.xml has 12 copies of it
+  (European / Asian / Native x default / advanced x full / minimized); the game shows one by the options and by
+  whether the civ counts as native (your NativeCivs line) or Asian (your asianCivs line), else European. That gives
+  three looks for the resource panel, for free, but no fourth culture and no other panel.
+- With techGadgets (one hidden holder per culture in uimainnew.xml, one cfg line per culture):
+  - memory: the game loads a gadget's textures only when the gadget is first shown. Eight hidden copies (63.5 MB of
+    textures on disk) added about 10 MB; showing one culture's copy added 14 MB. A player only sees his own culture,
+    so the real cost is one culture's art, about 5-15 MB;
+  - speed: no measurable change in fps or in the game's update time; the key itself spends a few microseconds per
+    frame for 8 lines;
+  - loading: no measurable change;
+  - 32-bit room: the game used about 1.25-1.3 GB of its 4 GB in the test, so this is far from the limit.
+- One rule: one techGadgets line per culture holder, not one per small gadget. We tried 792 lines (one per piece):
+  the key could not find most nested names, kept looking them up, and the game slowed to seconds per frame.
+- You need a tech per culture that its civs have from the start (for example one tech per culture that each civ's
+  Age0 tech activates).

@@ -1697,6 +1697,18 @@ SITES = [
     # rendererOption: the int setter 0x518AE0; its failure return pop edi / xor al,al / pop esi / ret 8 at 0x518B26
     # (out of range from 0x518AEB, wrong type from 0x518B15; nothing lands inside it) is replaced by the hook.
     ("OptionIntSetter", 0x518AE0, 0x4D),
+    # menuOptions (live options): the entry flag test 0xA41707, thiscall(settings, id, mask) -> al, ret 8; the options
+    # screen asks it with mask 40h during a match (0x78BF24, 0x78C10E, 0x78C458, 0x78D7F2; 0x8003C9 loops below the
+    # count). Its out-of-range return xor al,al / ret 8 at 0xA41710 is reached only by falling through the jb at
+    # 0xA4170E, and the hook replaces it.
+    ("OptionFlagTest", 0xA41707, 0x24),
+    # menuOptions (CheckBox fields): the bool getter 0x402CE9, which the CheckBox builder calls (0x78BEED); its
+    # out-of-range return xor al,al / ret 8 at 0x6B77B6 is reached only from the jae at 0x402CF2. The bool setter
+    # 0x518C7C, which Apply calls for a type-5 option (0x78D15B); its failure return pop edi / xor al,al / pop esi /
+    # ret 8 at 0x518CC2 (from 0x518C87 and 0x518CB1 only) is replaced, as the int setter's.
+    ("OptionBoolGetter", 0x402CE9, 0x3A),
+    ("OptionBoolGetRange", 0x6B77B6, 5),
+    ("OptionBoolSetter", 0x518C7C, 0x4B),
     # stealthTargeting: the head of 0x489ECC, int thiscall(tactic, attacker, target, ...), ret 1Ch, which picks
     # the attack action a unit would use on a target (-1: none). push ecx / push ebx / push ebp /
     # mov ebp,[esp+10h] (7 bytes, nothing branches inside) is replaced; the hook goes on at push esi (0x489ED3).
@@ -2106,6 +2118,18 @@ SITES = [
     ("IncomeAutoGatherCall", 0x4C3796, 0x07),
     ("ResourceByName", 0x44709C, 0x10),
     ("PlayerIsAllyOrSelf", 0x4707EC, 0x19),
+    # selectFattened (verify only): the local selection 0x4051B6 (thiscall(game): [[game+91Ch]+4], 0 without the
+    # world UI), its clear 0x9301D3 (thiscall(selection, int from), ret 4; 0 empties it), and the loop of the UI
+    # command uiFindAllOfType 0x7E7AB9 that the key repeats: per unit of the local player, skip a state byte
+    # [unit+88h] below 8 (0x44DE2A), a unit whose vtable +0A4h says no, one inside another ([unit+6Ch] >= 0),
+    # then the add: a handle {0B9E444h, 0, unit ID} on the stack, passed to the selection's vtable +4. The selection
+    # (vtable 0xB9F8C4, seen in game) adds with FUN_0079F534 (thiscall(selection, handle*), ret 4), which ends in
+    # FUN_00930245(handle, 0): no more than the cap 0x4E0BEE, no unit twice.
+    ("SelectionOfGame", 0x4051B6, 0x0E),
+    ("SelectionClear", 0x9301D3, 0x0A),
+    ("FindAllOfTypeLoop", 0x7E7B63, 0x72),
+    ("SelectionAdd", 0x79F534, 0x0D),
+    ("SelectionAddCapped", 0x930245, 0x1D),
     # editorSearch: the Objects palette fill FUN_007F501E (the fill callback [palette+17Ch] that 0x7F5C51 gives
     # EditorProtoPalette) adds each proto with lea edx,[esp+58h] / push edx / lea eax,[esp+14h] / push eax /
     # mov ecx,edi / call 0AD0056h (0x7F537D, ESI = the player's proto), the add thiscall(palette, entry*,
@@ -2164,6 +2188,44 @@ SITES = [
     # editorSearch: a parameter's change (event 10, 0x829E29): the field's current index 0xAC0D1B, its entry's text
     # 0xAC0EEA, given to the parameter (0x82AC1C): the value is the text picked, not an index into the stock list.
     ("EditorParamPickText", 0x829E65, 0x24),
+    # editorSearch, trigger list: FUN_0082481C (thiscall(editor), plain ret; sub esp,48h / ... / mov [esp+4],ecx,
+    # then push ebx/esi/edi/ebp, so the editor is [esp+18h] at the add's call) fills trEdit-Trigger-list
+    # ([editor+178h], 0x824347) from the current group (0x97B65E: [sys+0Ch][[sys+18h]]): for each position EDI of
+    # the group (count [group+10h]) the trigger [group+0Ch][pos] (0x97A3C7, 0x97B2E0, 0x405C2E) adds its name
+    # [trig+3Ch] with push eax / mov ecx,esi / call 0AC9228h (0x8248C3), and the row it got gets the position as its
+    # data: push eax / push edi / mov ecx,esi / call 0AC6CC0h (thiscall(list, data, row), a row < 0 does nothing).
+    ("EditorTriggerListFill", 0x82481C, 0x4A),
+    ("EditorTriggerListAdd", 0x8248A1, 0x39),
+    ("EditorListSetData", 0xAC6CC0, 0x0C),
+    # editorSearch: a click in the trigger list (the list handler 0x825933, event 0Fh) reads the clicked row's data
+    # (0xAC6CFE) and makes that position the group's current trigger (0x97B79B: [group+4] = pos, 0 <= pos <
+    # [group+10h]); the fill selects the row whose data is [group+4] (0x97B7C4, 0xAC7BB0). A row is never read
+    # as a position, so a list with fewer rows edits the trigger it shows.
+    ("EditorTriggerListClick", 0x825AE8, 0x10),
+    ("EditorTriggerSetCurrent", 0x97B79B, 0x1A),
+    ("EditorTriggerCurrent", 0x97B7C4, 0x1E),
+    # editorAutosave: the editor's gate [game+0B3Ah], as the saveScenario handler 0x7D9798 tests it (mov eax,[0C66234h] /
+    # test eax,eax / je / cmp byte [eax+0B3Ah],0); the undo handler 0x7DA8B9 (same gate, then mov ecx,[eax+928h]: the
+    # undo manager) and its undo 0x9BE4E2 (the undo count [um+4], the redo count [um+10h]).
+    ("EditorGate", 0x7D97AF, 0x14),
+    ("EditorUndoManager", 0x7DA8B9, 0x14),
+    ("EditorUndoCounts", 0x9BE4E2, 0x0F),
+    # editorAutosave: the handler saves through the game's vtable +0C0h: push 1 / push ecx (&name) / call 517BAAh
+    # (mov eax,[0D6FDB4h] / ret: the directory) / mov ecx,[0C66234h] / push eax / call [esi+0C0h]. The slot holds the
+    # thunk 0x703ED3 (jmp 834583h); FUN_00834583 thiscall(game, dir, BString* name, char flag), ret 0Ch, returns at
+    # once while [esi+0AB0h] (a save running) is set, and sets the open scenario's name: lea ecx,[esi+958h] /
+    # call 40196Fh (BStringSet), then mov [esi+95Ch],bl (the flag).
+    ("EditorSaveCall", 0x7D980E, 0x15),
+    ("EditorSaveSlot", 0xB886E8, 4),
+    ("EditorSaveThunk", 0x703ED3, 5),
+    ("EditorSaveHead", 0x834583, 0x0D),
+    ("EditorSaveSetsName", 0x8345D5, 0x2E),
+    ("EditorSaveDir", 0x517BAA, 6),
+    # editorAutosave's notice: the editor's message dialog, handle [editor+12Ch], hidden by 0x838CE8 (mov eax,
+    # [ecx+12Ch] / mov ecx,[0C66244h] / mov ecx,[ecx+44h] / push eax / call 448F13h / ret); 0x83A2B8 sets the text of
+    # its child "ingame-messagedialog3-prompt" (0xC11254) through the child's vtable +80h and shows it.
+    ("EditorMessageHide", 0x838CE8, 0x16),
+    ("EditorMessagePromptName", 0xC11254, 29),
     # card tags (cardtags.*): the home city loader FUN_0062E6C9 reads each <card>'s children in a loop over the card
     # node EBX (mov eax,[esp+1Ch] / push eax / mov ecx,ebx at 0x62FD1D; the loop's end add eax,1 / cmp eax,[ebx+0Ch]
     # at 0x62FF42), then commits the card it built on the stack: lea edx,[esp+0A8h] / push edx / add ecx,204h /

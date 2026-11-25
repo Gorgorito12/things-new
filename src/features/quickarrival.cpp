@@ -1,5 +1,5 @@
 // quickArrivalCards [stringid N] [log]: <Flag>QuickArrival</Flag> on a home city card's tech adds the bullet line
-// "This is a quick-arrival card." to the card's rollover, right after its send-limit line ("This Card may be sent
+// "This is a QUICK-ARRIVAL card." to the card's rollover, right after its send-limit line ("This Card may be sent
 // INFINITE times" / "ONE time" / N times), before the advanced info. Display only.
 //
 // The card rollover builder FUN_007103CE(list, hc, tech, ...) is the one used by the in-game shipment panel
@@ -29,7 +29,7 @@ namespace {
 
 constexpr std::uint32_t kAdvancedJoin = 0x00710909;  // mov ecx,[0D6F6F0h]
 constexpr std::int32_t kMaxTech = 1 << 20;
-constexpr const wchar_t* kDefaultText = L"This is a quick-arrival card.";
+constexpr const wchar_t* kDefaultText = L"This is a QUICK-ARRIVAL card.";
 constexpr const wchar_t* kBullet = L"<ttf><ttb>";  // what FUN_004C5076(list, line, 1, 0) puts before a line
 
 // The engine's string: one pointer to a wide, reference-counted buffer; null is empty.
