@@ -2114,6 +2114,22 @@ SITES = [
     ("UiFindAnywhere", 0x433A2C, 0x0E),
     ("UiGadgetShowFlags", 0x447BBF, 0x14),
     ("UiGadgetHideFlags", 0x447CFF, 0x0A),
+    # progresspie (shared, verify only): a gadget's pie chart filling, the overlay of a train button. Every gadget
+    # vtable has the fill at +6Ch = 0xAB6C63 (thiscall(gadget, float), ret 4): it makes the 20h-byte filling
+    # [gadget+130h] when there is none (fill +0, colour +4 = 88FFFFFFh, texture +8 = -1, +0Ch 1.0, rotation +1Ch = 1
+    # (cw), fill flag +1Dh = 0, on +1Eh = 1) and stores the fraction clamped to [0, 1]. 0x4C51FA (thiscall(gadget,
+    # bool), ret 4) turns it on or off (+1Eh; on makes it through +6Ch(0) first, the cold 0x6D206D). 0xAB5C34
+    # (thiscall(gadget, float r, g, b, a), ret 10h) sets the colour through 0x404DF6 (ARGB). 0xAB5BAA (thiscall,
+    # plain ret) makes the material [gadget+12Ch] (defaultcolored_alphablend, diffuse = the texture +8), which the
+    # unit stack buttons (0x9B8AD1) make when there is none. The command panel's train buttons: +6Ch(progress),
+    # 0x4C51FA(1), 0xAB5C34(0, 0, 1, 0.5) (0x69D9BC, blue). The panel bind stores unitselectionpanel-unitPortrait
+    # (0xC360F0) at [panel+2E4h] (0x9BAE5E..0x9BAE8A).
+    ("PieFillSlot", 0xAB6C63, 0x95),
+    ("PieEnable", 0x4C51FA, 0x22),
+    ("PieEnableCold", 0x6D206D, 0x19),
+    ("PieColour", 0xAB5C34, 0x52),
+    ("PieMaterial", 0xAB5BAA, 0x8A),
+    ("PiePortraitBind", 0x9BAE5E, 0x2D),
     # incomeRates: the two income calls of the add 0x49A98A besides the gather tick's (GatherTickAddResource): the
     # global trickle's push esi / call 49A98Ah (returns to 0x4E0CFE) and the AutoGather update's push edi /
     # push ebx / call 49A98Ah (returns to 0x4C379D). The add's head push ecx / mov eax,[0C66234h] (6 bytes,
