@@ -5,6 +5,47 @@ was the diagnosis; round 2 (2026-11-22) follows his answers and adds the repair 
 the cause of the wrong icons, a single-player way to test observer mode, and the design for every map. Everything
 was tested on one PC, single player.
 
+## Round 3 (2026-11-25): the 36 maps finished for WoL
+
+Scope (the user's decision of 2026-11-25): only the 36 maps that carry ESOC's observer code; no other map,
+no DLL change. `observer_maps.py apply` now also writes step 3, WoL's own data (`--ids-only` leaves it out).
+
+### What step 3 changes in each map
+
+| Change | Why |
+|---|---|
+| Each observer's bat is found by its player (`rmGetUnitPlacedOfPlayer`), at the start and at the end of the game | The code took a range of unit IDs and assumed they followed each other and the player order |
+| The observers' two techs by name: `SPCKillXPTrickle`, `Spies` | Stock 529 and 446 are `PoliticianQuartermaster` and `IndustrializeSpanish` in WoL: observers got an age-up and no shared LOS |
+| Revolutions: every tech flagged `RevoltTech` and its civ (28) | The stock range 1531-1538 and the flag `tech - 1478` |
+| Consulate relations cleared after an intervention card (25), re-researchable consulate techs (18) | Stock 196-203, 2451, 2108-2112, 2228-2234 |
+| Age-up progress: 648 techs (ESOC's list by name, every `AgeUpgrade` tech except the wonder `...Disable` ones, each civ's researched age tech) | 148 stock numbers in RMS loops |
+| Tech upgrade pairs (`isPROGRESSION`): 224 pairs by name | 217 lines of stock numbers |
+| The view lock (an observer playing the Ottomans) uses WoL's civ ID of the Ottomans; the shipment bar's XP tables follow `civs.xml`'s shipment modifiers, with a generic curve for the four WoL modifiers ESOC had no table for; the rice paddy tracker runs for every civ | Stock civ numbers 1, 7, 8, 19-21 |
+| **Oil** in the fourth resource row, with WoL's oil icon (all four display modes); oil counts in the unspent total | The row showed export (resource 7), which WoL's own resource panel does not show |
+| **The Great War** shows WoL's age-6 icon once the civ's Age5 tech (`GreatWarButton`) is researched | No WoL tech sets an engine age 5: the Great War leaves the player in age 4 |
+| **WoL's units**: 1,378 rows (222 economic, 737 military, 43 navy, 376 heroes, armies and buildings): every proto a player can get (trained, built, shipped, granted, enabled or in a start) with a portrait and a name | The tables had the stock units only |
+| **WoL's techs and cards**: 3,013 tech rows and 3,059 card rows (every home city card of `homecity*.xml`; every other researched tech with an icon and a name that is not a Shadow tech); WoL's icons for ESOC's rows without one | The tables had ESOC's stock techs only |
+| The research scan covers all 10,542 techs (ten slices of 1,055, one each 100 ms) | It scanned the stock 0-2,549 in ten slices of 255: no WoL tech above 2,549 was ever seen, whatever `cNumAllTechs` said |
+| Per-player lists: 400 completed techs and shipments (ESOC 150), 60 unit types per row (30) | A full list drops the rest silently |
+| Long runs of rows go into generated functions of 250 rows, defined before `main()` | With all the rows in `main()` the map did not compile: `Error 0049: could not emit quads for 'main' function` |
+| A comment at the end of each map with the hashes of WoL's `techtreey.xml`, `protoy.xml`, `civs.xml` and `homecity*.xml` | `check` says "TABLES OUT OF DATE" when they changed: run `apply` again |
+
+`python -I observer_maps.py flags <WoL folder>` prints the 88 flag gadgets the observer layout needs
+(`Spec_Flag_<pos>_<civ ID>`, the civ's `homecityflagbuttonsetlarge`): the old layouts have the stock civ IDs
+only, so WoL Germans (17) showed the Aztec flag.
+
+### Cost (2v2 + 2 observers, `ESOC_Arizona`, the panel running on the test machine)
+
+| | Round 2 tables only | Round 3, all of WoL's data |
+|---|---|---|
+| Map file | 700 KB | 1.3 MB |
+| `trigtemp.xs` (the trigger script) | 772 KB | 1.83 MB |
+| From Play to the running game (setup clicks included) | 51.0 s | 62.9 s |
+| Frame rate with the panel updating, 60 s | 114 fps, update 6.4 ms, longest frame 25 ms | 103 fps, update 7.1 ms, longest frame 33 ms; 0 frames over 50 ms |
+
+The panel only updates on the observer's machine (it runs when the local player is an observer), so the
+players' frame rate does not change; the generation time is everyone's.
+
 ## Round 2 (2026-11-22)
 
 JTMaston's answers to round 1's six questions: players would like to reuse ESOC's observer, on every map, with a

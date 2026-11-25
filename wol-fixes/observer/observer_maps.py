@@ -492,6 +492,10 @@ def split_long(text):
 IMPERIAL_AGE = 4  # kbGetAgeForPlayer: 0 Discovery .. 4 Imperial; the Great War leaves the player in age 4
 GREAT_WAR_ICON = "WoL/ui/ingame/icon_age_6"  # WoL's own age icon; the stock score_age_1..5 stop at Imperial
 OIL = 3  # WoL's fourth resource (oil) is the game's resource 3 (Fame): minimapPanel-fame, {resource(fame)}
+# The taller resolutions of the rebuilt observer layouts (observer_ui.py): (resolution, preset it copies,
+# numLFs added, displayfinetuning added). 2560x1080 needs none: its layout picks the 1920x1080 preset.
+NEW_PRESETS = [("1440x900", "1366x768", 2, 4), ("1600x1200", "1600x900", 2, 16), ("1920x1200", "1920x1080", 1, 6),
+               ("2560x1440", "1920x1080", 8, 4), ("3440x1440", "1920x1080", 8, 4), ("3840x2160", "1920x1080", 24, 12)]
 PLAYER_TECHS = 400  # per-player lists of completed techs and shipments (ESOC: 150)
 PLAYER_UNIT_TYPES = 60  # per-player lists of unit types alive, queued or dead (ESOC: 30)
 TRADE = 7  # the export row ESOC shows fourth; WoL's own resource panel shows oil there and no export
@@ -739,6 +743,27 @@ def wolize(text, data, counts):
                "techs completed size", 7)
     text = one(r'(cEf\(" B[1-6]P"\+p\+"=xsArrayCreateInt\()30(,)', rf"\g<1>{PLAYER_UNIT_TYPES}\2", text,
                "unit types size", 6)
+
+    # 12d. Panel presets for the taller resolutions of the rebuilt observer layouts (observer_ui.py): each is a
+    # copy of the map's own preset for a smaller resolution with more lines (numLFs) and its fine tuning moved,
+    # picked by the layout's Spec_PresetConfig-<WxH>-1 gadget like the others.
+    block = r'^[ \t]*cEf\(" void load%s\(int wtv=-1\)\{ "\);.*?^[ \t]*cEf\(" \} "\);[^\r\n]*\r?\n'
+    added, chain = [], []
+    for new, src, more_lines, more_tuning in NEW_PRESETS:
+        m = re.search(block % src, text, flags=re.M | re.S)
+        if not m:
+            raise ValueError(f"preset load{src} not found")
+        copy = m.group(0).replace(f"void load{src}(", f"void load{new}(")
+        copy = one(r"numLFs=(\d+);", lambda n: f"numLFs={int(n.group(1)) + more_lines};", copy, f"numLFs {src}")
+        copy = one(r"displayfinetuning=(-?\d+);", lambda n: f"displayfinetuning={int(n.group(1)) + more_tuning};",
+                   copy, f"displayfinetuning {src}")
+        added.append(copy)
+        chain.append(cef(f' else if(trIsGadgetVisible(\\"Spec_PresetConfig-{new}-1\\")){{load{new}();}} '))
+    last = re.search(block % "1366x768", text, flags=re.M | re.S)
+    text = text[:last.end()] + "".join(added) + text[last.end():]
+    text = one(r'^([ \t]*cEf\(" else if\(trIsGadgetVisible\(\\"Spec_PresetConfig-1366x768-1\\"\)\)\{load1366x768\(\);\} "\);'
+               r'[^\r\n]*\r?\n)', lambda m: m.group(1) + nl.join(chain) + nl, text, "preset chain")
+    counts["presets"] = len(added)
 
     # 13. The helpers and arrays, declared with the panel's other globals and filled when it loads.
     gw = f'\\"<icon=16({GREAT_WAR_ICON})>\\"'
