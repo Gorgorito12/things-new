@@ -4963,7 +4963,9 @@ const char* g_uhcSubtypeNode = nullptr;
 
 namespace {
 
-constexpr std::size_t kMaxSubtypes = 32;
+// The keys register 33 names today (nurseryFactor's five made it more than 32); the IDs are kFirstId + index and
+// the hooks check only the lower bound, so the room is the table's size alone.
+constexpr std::size_t kMaxSubtypes = 64;
 constexpr std::int32_t kFirstId = 0x100;  // above every stock subtype; the stock switches stop at 63h
 constexpr std::uint32_t kNameLookupHead = 0x0061FF5D;  // the lookup
 constexpr std::uint32_t kAttributeCall = 0x006206B2;   // setData's read of the attribute subtype
