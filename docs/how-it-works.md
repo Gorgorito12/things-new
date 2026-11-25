@@ -3953,13 +3953,71 @@ at 0x5FEE1A). The attack code reads it at 0x4996C7: the multiplier is the unit's
 (0x6A4B83), and if it is above DamageFactorCap `[+48h]` and that is above 0, the cap (0x4996E8..0x49970A). The stat
 panel reads it too. The AutoGather rate getter 0x49EBE4, `float thiscall(action, resource)`, does not.
 
-The hook replaces the getter's first three instructions. Without the flag it re-executes them and goes on at
-0x49EBEA. With it, it calls the getter's body, so that the body's `ret 4` comes back to the hook, and multiplies
-ST0 by the factor, with the attack code's rule.
+The hook replaces the getter's first three instructions. Since 2026-11-25 it is shared (`autogatherrate.*`,
+`hooks/autogatherrate_hooks.asm`, `AddAutoGatherRateFilter`) with [`nurseryFactor`](#nurseryfactor): it asks
+`UhcAutoGatherRateAsk(action, resource)` (stdcall, C), which runs each key's filter in `kFeatures` order. When none
+applies, the hook re-executes the three instructions and goes on at 0x49EBEA, so the stock getter runs bit for bit.
+Otherwise it calls the getter's body, so that the body's `ret 4` comes back to the hook, and multiplies ST0 by the
+product of the factors, a float in `g_uhcAgFactor`. This key's filter follows the attack code's rule: the contained
+count, or the cap when the count is at least the cap and the cap is above 0. Both are exact as floats, so the product
+is the one the earlier hook computed on the x87 stack.
 
-**Why it is safe.** The hook sits at a function entry, so EAX, ECX and EDX are free. No branch lands in the six
+**Why it is safe.** The hook sits at a function entry, so EAX, ECX and EDX are free and the x87 stack is empty; the
+asker is a C function that keeps EBX, ESI, EDI and EBP, and the hook keeps ECX around it. No branch lands in the six
 bytes. Every caller gets the same rate: the update 0x48D16E, both panels (0x6992BD, 0x69B005), and the two that
 look for a resource with a rate (0x69D232, 0x9CFE1E). The factor comes from simulation state only.
+
+### nurseryFactor
+
+`src/features/nurseryfactor.cpp`; the shared `autogatherrate.*` (above), `prototags.*`, `techsubtypes.*`, `worldtick.*`,
+`unitpanel.*`, `datarefs.*` and `savedmarkers.h`. The design and the questions behind it are in
+[nursery-design.md](nursery-design.md). <!-- private -->
+
+- **Tags** (`AddProtoTagHandler`): the ten `NurseryFactor*` tags, by proto ID, each checked for its range; a bad value
+  is logged and the tag skipped. A proto has a factor only with a valid `NurseryFactorMax`. A per-proto-ID byte table
+  says which protos have one and trickle, for the rate filter.
+- **The factor of each unit** is a table by unit ID, in ID order, filled as `researchGrants`' set is: 256 slots of the
+  world's unit table `[world+0Ch]` per world update, round robin, and the whole table on a new game, a loaded one (another
+  world, the time going back or the step count jumping) or before a `NurseryFactor` effect. A unit found with no marker
+  gets `NurseryFactorInitial`. After each world update (`AddWorldTick`), each living unit is cut to its player's cap;
+  a built one (0x44DDB4) adds the game time `[world+108h]` since the last tick to its timer and grows a step per
+  interval (linear: the step; exponential: `max(step, floor(factor x GrowthRate))`), up to the cap; at the cap, or with
+  no interval, the timer is 0. Factor and timer are words 1 and 2 of a saved marker (`savedmarkers.h`, stat 6Bh, word 0
+  `NRSF`), written each tick, so a transform in place, which ends the unit's modifiers, has it written again at the next
+  tick. A unit gone, dead or of a proto without a factor leaves the table.
+- **The trickle:** the filter of the shared AutoGather rate getter multiplies a marked proto's rate by the unit's factor
+  (the initial value while the unit is not in the table yet). The AutoGather update FUN_0048D13E then pays as stock: to
+  the player through the add 0x49A98A (return 0x4C379D, which `incomeRates` counts), or, with the tactics flag
+  `AddResourcesToInventory` (bit 4 of `[action+64h]`, handler 0x5FC84D), into the unit's own resource list through
+  0x49A5E6, cut at its carry capacity 0x494503 when the proto asks for it. The first call of a game before its first
+  tick builds the table from the markers first.
+- **Data subtypes** (`AddTechSubtype`): `NurseryFactorMax`, `NurseryFactorInterval` and `NurseryFactorStep` keep a value
+  per player's copy of the proto (looked up by pointer, checked against the copy's ID), computed by the stock value
+  function 0x7F892A from the tag's value. `NurseryFactor` queues `(copy, amount, relativity)` for the next world tick,
+  which runs 0x7F892A on each of the player's built units of that copy, with the unit's factor as the value and the
+  initial value as the base, and clamps it to 0..cap.
+- **The load runs the Data effects again** (seen in game, 2026-11-25): after `loadGame`, each tech effect of these
+  subtypes came through the handlers again, before the first world tick, in the order of the techs in the techtree
+  (not the order they were researched): `NurseryFactorMax` +5 then `Assign` 4 gave a cap of 4 after the load where the
+  game had 9. The per-copy values come back that way. A `NurseryFactor` effect must not run twice, so a queue found
+  at the first tick of a loaded game (game time above 0) is dropped and logged. This is not the pass after a load
+  0x94DDEA, which runs only flag-20h effects (see `unitTypeTechs`).
+- **The shipment** (`AddTechPlayerSubtype`, as `shipmentCounts`): the techtree read stores `{unittype, nursery,
+  consume}` in a list and the list index in the effect's field `+10h`. When it applies, it takes (or counts) the factors
+  of the player's living, built units whose proto is `nursery` or of that abstract type (0x44D7FA), in ID order, and
+  returns the stock `FreeHomeCityUnit` (37h) with the proto and `amount x total`; nothing under 1 unit. A taken factor
+  restarts its timer.
+- **Panel:** `AddUnitPanelRow` (the minimized interface's AutoGather row, `[panel+33Ch]` / `+340h`) writes the name
+  as the label and `3/10` as the value, and `SetUnitPanelRowTip` (new in `unitpanel.*`) puts the two lines in the help
+  text `[gadget+68h]` of both gadgets (BString set 0x40196F); the shared hook clears it before the next refresh's rows,
+  so the stock row and the other keys' rows never show it. `{uhcNurseryFactor}` (`AddDataRef`, string) gives the first
+  selected unit's `3/10 minks`. Text IDs resolve through 0x58EA52.
+
+**Why it is safe.** Markers are made (0x4DD22D) only by the world tick, after the world update. The rate filter and the
+shipment read the table; the shipment's take writes the table only, the tick writes the markers. Deterministic: the
+table is keyed by unit ID, the copy map by pointer is only looked up, the time is game time, the order is the table's.
+The display reads only. Cost: per update, 256 slot reads and one marker walk per unit with a factor; per AutoGather
+rate call, one C call and a byte lookup for a proto without a factor.
 
 ### containedUnitsROF
 

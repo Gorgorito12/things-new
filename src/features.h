@@ -175,6 +175,7 @@ Outcome ApplyEnableAllTeams(const Config& config);
 Outcome ApplyTechGadgets(const Config& config);
 Outcome ApplyIncomeRates(const Config& config);
 Outcome ApplySelectFattened(const Config& config);
+Outcome ApplyNurseryFactor(const Config& config);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
 // which of the keys it names the list then sees.
@@ -347,6 +348,9 @@ inline constexpr Feature kFeatures[] = {
     // After resourceDebt, linkedResource, unitResourceAuras and pillageGold, which verify the stock bytes of the add
     // 0x49A98A whose head this key writes.
     {"incomeRates", ApplyIncomeRates},
+    // After autoGatherScaleByContained: its filter of the shared AutoGather rate getter (autogatherrate.h) is asked
+    // after that key's; the owner's trickle it multiplies reaches incomeRates through the add that key counts.
+    {"nurseryFactor", ApplyNurseryFactor},
     {"auraStacking", ApplyAuraStacking},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
@@ -393,7 +397,7 @@ inline constexpr const char* kHandledKeys[] = {
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
-    "techgadgets", "incomerates", "editorautosave", "selectfattened",
+    "techgadgets", "incomerates", "editorautosave", "selectfattened", "nurseryfactor",
 };
 
 }  // namespace uhc

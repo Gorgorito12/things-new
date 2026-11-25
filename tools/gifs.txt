@@ -120,6 +120,9 @@ wonderPanelSkipAuras-wol-control 2 16 2
 overhealHitpointBars-damage-wol 2 20 2
 autoGatherScaleByContained-wol 2 36 3
 autoGatherScaleByContained-wol-control 2 36 3
+nurseryFactor-wol 14 36 3 800:50:0:110+800:520:730:330+800:110:790:975+800:80:0:1040
+nurseryFactor-wol-control 2 36 3 800:50:0:110+800:520:730:330+800:110:790:975+800:80:0:1040
+nurseryFactor-ship-wol 0 24 2 800:110:0:75+800:560:640:220+800:80:0:1040
 resourceDebt-autogather-wol 2 24 2
 resourceDebt-autogather-wol-control 2 24 2
 resourceDebt-wol 3 24 2

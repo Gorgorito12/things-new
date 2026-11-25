@@ -374,6 +374,8 @@ selectFattened [gadget <name>] [log]   the command uhcSelectFattened selects the
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
+nurseryFactor [log]           <NurseryFactorMax> units keep a factor that grows with time;
+                              it multiplies their AutoGather rate and a shipment
 containedUnitsROF [log]       ScaleByContainedUnits target="ROF": an attack fires faster with
                               the units inside (ROF / count, at most DamageFactorCap)
 numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart before the

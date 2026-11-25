@@ -8,7 +8,8 @@
 // Stats: 60h and 61h transformSpan, 62h veterancyBonus, 63h and 64h damageOverTime, 65h overhealDecay, 66h
 // researchGrants (two kinds, told apart by word 0), 67h shipmentCounts (per-player state on one carrier unit), 68h
 // randomCost (the game seed and the purchase counts, on one carrier unit), 69h shipTechLimit (a player's count, on
-// one of his units), 6Ah veterancyBonus (the rows a unit was given, when its rows name techs).
+// one of his units), 6Ah veterancyBonus (the rows a unit was given, when its rows name techs), 6Bh nurseryFactor (a
+// unit's factor and its growth timer).
 #pragma once
 
 #include <cstdint>
