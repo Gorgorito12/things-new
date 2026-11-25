@@ -1,0 +1,412 @@
+uimainnewobserver1280x720.xml: base Data3.bar uimainnew.xml, current loose; 860 observer gadgets, 116 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+116 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+174 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 91 below the observer's top band (its population box ends at y 127)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1280x720.xml 6ed2f4e9
+uimainnewobserver1280x720jp.xml: base Data3.bar uimainnew.xml, current loose; 861 observer gadgets, 116 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+116 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+177 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 96 below the observer's top band (its population box ends at y 132)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1280x720jp.xml f293a226
+uimainnewobserver1280x768.xml: base Data3.bar uimainnew.xml, current loose; 860 observer gadgets, 116 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+116 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+174 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 94 below the observer's top band (its population box ends at y 130)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1280x768.xml 0b77dd76
+uimainnewobserver1280x768jp.xml: base Data3.bar uimainnew.xml, current loose; 861 observer gadgets, 116 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+116 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+177 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 94 below the observer's top band (its population box ends at y 130)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1280x768jp.xml 6240cfa4
+uimainnewobserver1280x800.xml: base Data3.bar uimainnew.xml, current loose; 860 observer gadgets, 116 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+116 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+174 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 91 below the observer's top band (its population box ends at y 127)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1280x800.xml 33b90566
+uimainnewobserver1280x800jp.xml: base Data3.bar uimainnew.xml, current loose; 861 observer gadgets, 116 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+116 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+177 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 91 below the observer's top band (its population box ends at y 127)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1280x800jp.xml 5f70432e
+uimainnewobserver1366x768.xml: base Data3.bar uimainnew.xml, current loose; 860 observer gadgets, 116 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+116 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+174 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 94 below the observer's top band (its population box ends at y 130)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1366x768.xml 16c463f0
+uimainnewobserver1366x768jp.xml: base Data3.bar uimainnew.xml, current loose; 861 observer gadgets, 116 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+116 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+177 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 94 below the observer's top band (its population box ends at y 130)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1366x768jp.xml bbcead89
+uimainnewobserver1600x900.xml: base Data3.bar uimainnew.xml, current loose; 944 observer gadgets, 114 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+114 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+186 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 88 below the observer's top band (its population box ends at y 124)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1600x900.xml 623540b6
+uimainnewobserver1600x900jp.xml: base Data3.bar uimainnew.xml, current loose; 945 observer gadgets, 114 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+114 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+189 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 88 below the observer's top band (its population box ends at y 124)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1600x900jp.xml db482fe4
+uimainnewobserver1680x1050.xml: base Data3.bar uimainnew.xml, current loose; 944 observer gadgets, 114 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+114 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+186 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 82 below the observer's top band (its population box ends at y 118)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1680x1050.xml 91cff8fc
+uimainnewobserver1680x1050jp.xml: base Data3.bar uimainnew.xml, current loose; 945 observer gadgets, 114 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+114 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+189 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 82 below the observer's top band (its population box ends at y 118)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1680x1050jp.xml ff27d5f6
+uimainnewobserver1920x1080.xml: base Data3.bar uimainnew.xml, current loose; 1033 observer gadgets, 116 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+116 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+201 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 82 below the observer's top band (its population box ends at y 118)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1920x1080.xml a4c4929f
+uimainnewobserver1920x1080jp.xml: base Data3.bar uimainnew.xml, current loose; 1034 observer gadgets, 116 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+116 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+204 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 74 below the observer's top band (its population box ends at y 110)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver1920x1080jp.xml 1efe62c5
+uimainnewobserver1920x1080.xml: base Data3.bar uimainnew.xml, current loose; 1033 observer gadgets, 116 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+116 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+201 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+retarget 1920x1080 -> 2560x1080: 1124 panel gadgets keep their pixel size (centre-anchored, top or bottom), 0 over the unit panel column stay stretched; preset Spec_PresetConfig-1920x1080-1 kept, so the map runs load1920x1080()
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 82 below the observer's top band (its population box ends at y 118)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver2560x1080.xml 954c0b00
+uimainnewobserver1920x1080jp.xml: base Data3.bar uimainnew.xml, current loose; 1034 observer gadgets, 116 edits, 4 containers
+wrapper uimain-Score-SpecContainer follows its panel, moved by WoL to 374 0 600 40
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: minimapPanel-firepit is gone from WoL's file
+wrapper SettlerCountDialog-advancedPanelNatMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelAsiMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+wrapper SettlerCountDialog-advancedPanelEurMin-SpecContainer: also holds WoL's SettlerCountDialog-houses, SettlerCountDialog-HousesLabel, minimapPanel-fame, SettlerCountDialog-fame, SettlerCountDialog-fameLabel
+4 containers put around WoL's panels
+116 attribute edits of the observer copy applied, 5 on attributes WoL changed too
+204 observer gadgets added
+top-level order of the observer copy kept
+  WoL changed it too: settlercountdialog-advancedpanelnatmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer '', WoL 'ui\\ingame\\nat_ui_max'
+  WoL changed it too: settlercountdialog-advancedpanelnatmin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.7217 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpanelasimin background: base 'ui\\ingame\\ingame_ui_small_01_asian', observer None, WoL 'ui\\ingame\\ASI_UI_MAX'
+  WoL changed it too: settlercountdialog-advancedpanelasimin texturecoords: base '0.4296875 0.443 0.669921875 0.72', observer None, WoL '0.4296875 0.72 0.669921875 1'
+  WoL changed it too: settlercountdialog-advancedpaneleurmin background: base 'ui\\ingame\\ingame_ui_small_01_ypack', observer None, WoL 'ui\\ingame\\eur_max_ui'
+retarget 1920x1080 -> 2560x1080: 1125 panel gadgets keep their pixel size (centre-anchored, top or bottom), 0 over the unit panel column stay stretched; preset Spec_PresetConfig-1920x1080-1 kept, so the map runs load1920x1080()
+rule: hidden for the observer: uimain-Score-SpecContainer
+rule: WoL's 13 resource panels put in the hidden Spec_WoLResourcePanels (the observer's own economy, drawn under the player rows)
+rule: WoL's icon and search rows (15 gadgets) moved down 74 below the observer's top band (its population box ends at y 110)
+rule: flags: 132 stock-numbered Spec_Flag gadgets replaced by 528 (88 WoL civs x 6 columns, named by kbGetCiv())
+  -> uimainnewobserver2560x1080jp.xml 262148fa
+uicommandpanelnewminobserver.xml: base Data3.bar uicommandpanelnewmin.xml, current loose; 3 observer gadgets, 15 edits, 3 containers
+3 containers put around WoL's panels
+15 attribute edits of the observer copy applied, 0 on attributes WoL changed too
+0 observer gadgets added
+rule: hidden for the observer: commandpanel2-SpecContainer, SocketPanel2-SpecContainer, TreasurePanel-SpecContainer
+  -> uicommandpanelnewminobserver.xml 0f9f4b67
+uicommandpanelnewminobserverjp.xml: base Data3.bar uicommandpanelnewmin.xml, current loose; 3 observer gadgets, 15 edits, 3 containers
+3 containers put around WoL's panels
+15 attribute edits of the observer copy applied, 0 on attributes WoL changed too
+0 observer gadgets added
+rule: hidden for the observer: commandpanel2-SpecContainer, SocketPanel2-SpecContainer, TreasurePanel-SpecContainer
+  -> uicommandpanelnewminobserverjp.xml 0f9f4b67
+uiminimappanelnewminobserver.xml: base Data3.bar uiminimappanelnewmin.xml, current loose; 1 observer gadgets, 7 edits, 0 containers
+0 containers put around WoL's panels
+7 attribute edits of the observer copy applied, 0 on attributes WoL changed too
+1 observer gadgets added
+rule: the minimap's art cut to x 0..214 (its right part was the resource panel's slot, under the rows)
+rule: the home city button and its counter (5 gadgets) at the screen's left edge, above the minimap
+  -> uiminimappanelnewminobserver.xml 67694098
+uiminimappanelnewminobserverjp.xml: base Data3.bar uiminimappanelnewmin.xml, current loose; 1 observer gadgets, 7 edits, 0 containers
+0 containers put around WoL's panels
+7 attribute edits of the observer copy applied, 0 on attributes WoL changed too
+1 observer gadgets added
+rule: the minimap's art cut to x 0..214 (its right part was the resource panel's slot, under the rows)
+rule: the home city button and its counter (5 gadgets) at the screen's left edge, above the minimap
+  -> uiminimappanelnewminobserverjp.xml 67694098
+uinativecommandpanel2minobserver.xml: base Data3.bar uinativecommandpanel2min.xml, current Data3.bar; 0 observer gadgets, 61 edits, 0 containers
+0 containers put around WoL's panels
+61 attribute edits of the observer copy applied, 0 on attributes WoL changed too
+0 observer gadgets added
+  -> uinativecommandpanel2minobserver.xml 80930894
+uinativecommandpanel2minobserverjp.xml: base Data3.bar uinativecommandpanel2min.xml, current Data3.bar; 0 observer gadgets, 61 edits, 0 containers
+0 containers put around WoL's panels
+61 attribute edits of the observer copy applied, 0 on attributes WoL changed too
+0 observer gadgets added
+  -> uinativecommandpanel2minobserverjp.xml 80930894
+uiunitselectionminobserver.xml: base Data3.bar uiunitselectionmin.xml, current loose; 10209 observer gadgets, 40 edits, 1 containers
+1 containers put around WoL's panels
+40 attribute edits of the observer copy applied, 2 on attributes WoL changed too
+unitselectionpanel-unitHealthBarGreen: WoL's own gadget kept, placed where the observer copy has it
+unitselectionpanel-unitHealthBarYellow: WoL's own gadget kept, placed where the observer copy has it
+unitselectionpanel-unitHealthBarRed: WoL's own gadget kept, placed where the observer copy has it
+10196 observer gadgets added
+  WoL changed it too: unitselectionpanel/unitselectionpanel-unit/unitselectionpanel-unitresistsvalue size1024: base '638 700 695 714', observer '962 665 1019 679', WoL '620 700 1000 714'
+  WoL changed it too: unitselectionpanel/unitselectionpanel-stackqueue/unitselectionpanel-buttonarea size1024: base '369 632 607 666', observer '693 597 931 775', WoL '369 697 669 666'
+rule: WoL's 9 later unit panel texts moved out of sight (SettlerCountDialog-pop-icon, TrainTime, TrainTimeinfo, unitselectionpanel-unitResource, unitselectionpanel-unitResourceValue2, unitselectionpanel-unitSpeedValue, unitselectionpanel-unitanything); the observer's panel shows speed and garrison in its own row
+  -> uiunitselectionminobserver.xml a064289a
+uiunitselectionminobserverjp.xml: base Data3.bar uiunitselectionmin.xml, current loose; 10209 observer gadgets, 40 edits, 1 containers
+1 containers put around WoL's panels
+40 attribute edits of the observer copy applied, 2 on attributes WoL changed too
+unitselectionpanel-unitHealthBarGreen: WoL's own gadget kept, placed where the observer copy has it
+unitselectionpanel-unitHealthBarYellow: WoL's own gadget kept, placed where the observer copy has it
+unitselectionpanel-unitHealthBarRed: WoL's own gadget kept, placed where the observer copy has it
+10196 observer gadgets added
+  WoL changed it too: unitselectionpanel/unitselectionpanel-unit/unitselectionpanel-unitresistsvalue size1024: base '638 700 695 714', observer '962 665 1019 679', WoL '620 700 1000 714'
+  WoL changed it too: unitselectionpanel/unitselectionpanel-stackqueue/unitselectionpanel-buttonarea size1024: base '369 632 607 666', observer '693 597 931 775', WoL '369 697 669 666'
+rule: WoL's 9 later unit panel texts moved out of sight (SettlerCountDialog-pop-icon, TrainTime, TrainTimeinfo, unitselectionpanel-unitResource, unitselectionpanel-unitResourceValue2, unitselectionpanel-unitSpeedValue, unitselectionpanel-unitanything); the observer's panel shows speed and garrison in its own row
+  -> uiunitselectionminobserverjp.xml e96d50ee
+uiunitstatpanel3minobserver.xml: base Data3.bar uiunitstatpanel3min.xml, current Data3.bar; 1 observer gadgets, 1 edits, 1 containers
+1 containers put around WoL's panels
+1 attribute edits of the observer copy applied, 0 on attributes WoL changed too
+0 observer gadgets added
+rule: hidden for the observer: unitstatpanel3-SpecContainer
+  -> uiunitstatpanel3minobserver.xml 479b7493
+uiunitstatpanel3minobserverjp.xml: base Data3.bar uiunitstatpanel3min.xml, current Data3.bar; 1 observer gadgets, 1 edits, 1 containers
+1 containers put around WoL's panels
+1 attribute edits of the observer copy applied, 0 on attributes WoL changed too
+0 observer gadgets added
+rule: hidden for the observer: unitstatpanel3-SpecContainer
+  -> uiunitstatpanel3minobserverjp.xml 479b7493
+uihomecitycommandpanelobserver.xml: base Data3.bar uihomecitycommandpanel.xml, current Data3.bar; 7 observer gadgets, 53 edits, 0 containers
+0 containers put around WoL's panels
+53 attribute edits of the observer copy applied, 0 on attributes WoL changed too
+7 observer gadgets added
+  -> uihomecitycommandpanelobserver.xml 47b19518
+uihomecitycommandpanelobserverjp.xml: base Data3.bar uihomecitycommandpanel.xml, current Data3.bar; 7 observer gadgets, 59 edits, 0 containers
+0 containers put around WoL's panels
+59 attribute edits of the observer copy applied, 0 on attributes WoL changed too
+7 observer gadgets added
+  -> uihomecitycommandpanelobserverjp.xml 9fead580
+uihomecitytransportpanelheaderobserver.xml: base Data3.bar uihomecitytransportpanelheader.xml, current Data3.bar; 1 observer gadgets, 2 edits, 1 containers
+1 containers put around WoL's panels
+2 attribute edits of the observer copy applied, 0 on attributes WoL changed too
+0 observer gadgets added
+  -> uihomecitytransportpanelheaderobserver.xml f049e2f8
+uihomecitytransportpanelheaderobserverjp.xml: base Data3.bar uihomecitytransportpanelheader.xml, current Data3.bar; 1 observer gadgets, 2 edits, 1 containers
+1 containers put around WoL's panels
+2 attribute edits of the observer copy applied, 0 on attributes WoL changed too
+0 observer gadgets added
+  -> uihomecitytransportpanelheaderobserverjp.xml f049e2f8
