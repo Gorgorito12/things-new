@@ -1,0 +1,33 @@
+Reply to JTMaston, round of 2026-11-25: scenario editor, a search for the list of triggers (#82)
+==============================================================================================
+
+Tested in single player in a copy of WoL and filmed. The guide section "editorSearch" has the details and the videos.
+
+
+"A search bar for ... triggers" (#82, third part)
+--------------------------------------------------
+The trigger editor's list of triggers now has its own "Search:" field, above "Group:". Type part of a trigger's name
+and the list keeps only the triggers of that group whose name holds every word (upper or lower case alike). The
+trigger you are editing always stays in the list, so the panels on the right never edit a trigger the list hides.
+
+Before building it we checked in the exe how the game knows which trigger a row is: each row carries its trigger's
+place in the group, and a click reads that, not the row's position. So a trigger picked from a short list is really
+that trigger. We tested it on your campaign's First Barbary War (27 triggers in Ungrouped): with "training" the list
+keeps the two P2_...TrainingKicker triggers; picking the second one shows its own 4 conditions and 5 effects (in the
+full list the second row is Captain02), and a Loop tick set there landed on that trigger and not on its neighbour.
+Insert and Del work with a search typed, and the text stays when you change group.
+
+To make room, the Trigger Editor panel on the left now starts as high as the Triggers panel next to it, and its
+search row is level with the search of the Conditions / Effects panel.
+
+  The search:            docs/media/editorSearch-triggerlist-wol.gif
+  The same, key off:     docs/media/editorSearch-triggerlist-wol-control.gif
+  A screenshot:          wol-fixes/editor/media/trigger-list-training.png
+
+To install: the same pack as before, wol-fixes/editor (the new uitriggereditor.xml has the field). It now has an
+apply_fix.py: "python apply_fix.py <WoL folder>" copies the three layouts and adds editorSearch to wol.cfg;
+"--restore" puts everything back.
+
+Coming next, if you like it: taller lists in the editor (the trigger list from 8 to 11 rows at 1920x1080, the
+Conditions and Effects lists, the Type list and the Objects palette from 7 to 12 rows). We are checking the layout
+first and will send pictures.
