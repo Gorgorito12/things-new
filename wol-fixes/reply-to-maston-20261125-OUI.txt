@@ -26,7 +26,7 @@ New resolutions: we also made 2560x1080, 1920x1200, 1440x900, 1600x1200, 2560x14
    add them to that list (or tell us and we will do the swap in another way);
 2. 2560x1080 works as it is. The taller ones (1200, 1440 and 2160 lines) each come with a preset in the
    observer maps (a load<WxH>() with more line breaks in the panel's text), so the shipment counters stay
-   under the flags and the rows line up; checked in game at every one but 3840x2160, which our test PC could
-   not drive.
+   under the flags and the rows line up; checked in game at every one but 3840x2160, which is built and
+   checked against the maps' gadget names but which our test PC could not drive.
 
 Install: wol-fixes/observer/observer_ui.py build / apply (keeps your files as *.obs-orig) / revert.

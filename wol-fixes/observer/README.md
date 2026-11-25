@@ -339,5 +339,8 @@ name their own preset gadget (`Spec_PresetConfig-<WxH>-1`). Seen in game with th
 Wider screens keep the panel at its 1080p size in pixels (the fonts and icon cells are fixed pixel sizes),
 centred between the minimap and the unit panel, with the wood background stretched to fill.
 
-The approved files (WoL's 7 resolutions and 2560x1080, with the 7 panels) are in `ui/`:
-`python -I observer_ui.py apply "<WoL folder>" --from ui`.
+The approved files are in `ui/` (all 14 resolutions with their `jp` twins, and the 7 panels with theirs):
+`python -I observer_ui.py apply "<WoL folder>" --from ui`. WoL's DLL only swaps in the 7 resolutions it
+knows; the 7 new ones are used once it adds them to its list (and the taller ones need the presets above in
+the maps). 3840x2160 was built and gadget-checked but not seen in game: the test PC could not drive the game
+at that size.
