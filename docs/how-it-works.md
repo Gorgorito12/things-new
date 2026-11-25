@@ -6609,6 +6609,7 @@ memory read with ReadProcessMemory):
 | A round with no placement and no input to the game | pass: `nothing changed since the last autosave; skipped`, no file written |
 | Playtest, main menu | the gate is 0 there (seen in memory); the key does nothing |
 | Key off, the same steps (filmed) | pass: no notice, no autosave file |
+| Bad arguments `editorAutosave 0 keep 99 keep x foo 2.5` | pass: each logged as ignored, applied with 2.5 min and keep 3 |
 | Pause of a save (the log's time of the save call) | 186–274 ms for a 180 KB scenario (9 runs); 1,020 ms for an 8-player random map, 2,499 objects, 657 KB |
 
 The recent scenarios list was not checked in game; the code path (0x8338F4) is only in the console handler, which the
