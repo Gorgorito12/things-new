@@ -69,8 +69,15 @@ JTMaston: "broke many versions ago and it doesnt work with all maps". Read from 
   `uimainnewobserver1920x1080.xml` lacks, among them the whole oil display (`minimapPanel-fame`,
   `SettlerCountDialog-fame`, `-fameLabel`: oil is WoL's fourth resource), the building search buttons
   (`search*Button`, `count*Field`), the colour picker (`farbSetz*`, `color0`-`color26`), `extraButton*` and
-  `mainGameMenuMP-PlayerStatusButton`. The minimized unit selection panel has WoL's idle-military buttons
-  (`Inf-/Cav-/Artillery-idle-button`, `IconALL` ...), which `uiunitselectionminobserver.xml` lacks.
+  `mainGameMenuMP-PlayerStatusButton`. ~~The minimized unit selection panel has WoL's idle-military buttons~~
+  Correction (2026-11-25): WoL's idle-military buttons (`Inf-/Cav-/Artillery-idle-button`, `IconALL` ...) are in
+  the big UI's `uiunitselection.xml`, and commented out in the minimized one; what the minimized observer copy
+  lacks are seven later texts (LOS, Train Points, Speed, Garrison, two empty ones).
+- [O] (2026-11-25) The observer copies were made from the interface WoL still ships in `data\Data3.bar`: every
+  gadget of Data3.bar's `uimainnew.xml` (but `minimapPanel-dptrade`) is in `uimainnewobserver1920x1080.xml`,
+  and the 30 attribute changes there are the observer's own (the replay control moved to the bottom right, the
+  text canvases ESOC writes its panel into, containers for the map to hide). The same holds for the seven panels.
+  `wol-fixes/observer/observer_ui.py` rebuilds them on the current files from that difference.
 - [O] The maps' observer UI (Aizamk's ESOC code, about 9,000 lines in each of the 36 maps) reads resources 0, 1,
   2, 6 and 7 (`kbResourceGet`), never oil, and shows ages with `score_age_(age+1)`, which has no WoL Great War
   icon.

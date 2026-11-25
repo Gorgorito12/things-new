@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layout>
+  <gadget name="homeCityCommandPanel" type="homeCityCommandPanel" size1024="170 107 854 402" background="" hidden="">
+    <gadget name="homeCityCardPanel-Panel" type="homeCityCardPanel" size1024="170 107 854 402" textcolor="255 255 255" background="ui\home_city\hc_deck_ui" tilebackgroundvert="" tilebackgroundhoriz="" textfont="GoalText" textfontsize="14" z="50" texturecoords="0.33203125 0.38671875 1 0.962890625">
+      <gadget name="homeCityCardPanel-DeckLabel" type="formatText" size1024="196 130 294 152" textcolor="255 255 255" textcentervert="" textfont="AgeText" textfontsize="12" z="30" textjustifyright="">$$37480$$Current Deck:</gadget>
+      <gadget name="homeCityCardPanel-DeckName" type="formatText" size1024="302 130 545 152" textcolor="255 255 255" textcentervert="" textfont="AgeText" textfontsize="12" z="30"/>
+      <gadget name="homeCityCardPanel-DeckLabel2" type="formatText" size1024="564 130 734 152" textcolor="255 255 255" textcentervert="" textfont="AgeText" textfontsize="12" z="30" textjustifyright="">$$37483$$Cards in Deck:</gadget>
+      <gadget name="homeCityCardPanel-DeckNumCards" type="formatText" size1024="738 130 833 152" textcolor="255 255 255" textcentervert="" textfont="AgeText" textfontsize="12" z="30"/>
+      <gadget name="homeCityCardPanel-button00" type="button" size1024="246 180 294 228" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button01" type="button" size1024="301 180 349 228" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button02" type="button" size1024="356 180 404 228" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button03" type="button" size1024="411 180 459 228" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button04" type="button" size1024="466 180 514 228" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button05" type="button" size1024="521 180 569 228" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button06" type="button" size1024="576 180 624 228" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button07" type="button" size1024="631 180 679 228" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button08" type="button" size1024="686 180 732 228" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button09" type="button" size1024="739 180 787 228" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button010" type="button" size1024="794 180 842 228" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button10" type="button" size1024="246 236 294 284" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button11" type="button" size1024="301 236 349 284" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button12" type="button" size1024="356 236 404 284" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button13" type="button" size1024="411 236 459 284" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button14" type="button" size1024="466 236 514 284" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button15" type="button" size1024="521 236 569 284" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button16" type="button" size1024="576 236 624 284" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button17" type="button" size1024="631 236 679 284" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button18" type="button" size1024="686 236 732 284" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button19" type="button" size1024="739 236 787 284" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button110" type="button" size1024="794 236 842 284" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button20" type="button" size1024="246 292 294 340" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button21" type="button" size1024="301 292 349 340" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button22" type="button" size1024="356 292 404 340" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button23" type="button" size1024="411 292 459 340" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button24" type="button" size1024="466 292 514 340" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button25" type="button" size1024="521 292 569 340" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button26" type="button" size1024="576 292 624 340" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button27" type="button" size1024="631 292 679 340" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button28" type="button" size1024="686 292 732 340" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button29" type="button" size1024="739 292 787 340" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button210" type="button" size1024="794 292 842 340" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button30" type="button" size1024="246 348 294 396" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button31" type="button" size1024="301 348 349 396" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button32" type="button" size1024="356 348 404 396" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button33" type="button" size1024="411 348 459 396" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button34" type="button" size1024="466 348 514 396" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button35" type="button" size1024="521 348 569 396" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button36" type="button" size1024="576 348 624 396" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button37" type="button" size1024="631 348 679 396" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button38" type="button" size1024="686 348 732 396" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button39" type="button" size1024="739 348 787 396" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-button310" type="button" size1024="794 348 842 396" z="51" textfont="Arial Nodrop For Cards" textfontsize="12" activateondown=""/>
+      <gadget name="homeCityCardPanel-SelectPanel" type="gadget" size1024="170 129 854 402" backgroundcolor="0 0 0" backgroundalpha="0.5" z="52" hidden="">
+        <gadget name="homeCityCardPanel-SelectButton" type="stateButton" size1024="461 246 622 278" bevelbutton="" z="53" statebuttonuseinternalstates="" textfont="PregameButtons" textfontsize="18" textcolor="255 255 255" textcenterhoriz="" textcentervert="" texturecoords="0 0 0.6328125 1" mouseovertext="$$42352$$" sound="UI_DefaultPregameClickSet">$$41593$$Select a Deck
+          <command>gadgetReal("UIHCDeckPicker")</command>
+          <stateentry background="ui\core_ui\button_large_normal"/>
+          <stateentry background="ui\core_ui\button_large_clicked"/>
+          <stateentry background="ui\core_ui\button_large_high"/>
+          <stateentry background="ui\core_ui\button_large_disable"/>
+        </gadget>
+      </gadget>
+      <gadget name="Spec_DeckPlayerLabel_P1" hidden="" type="formatText" transparent="" background="" textcentervert="" size1024="220 120 600 170" textfont="ScoreFont" textfontsize="12" textmarkup="" formattextusedatareplace="" datarefreshrate="200" z="10">&lt;color={playerColor(1)}&gt;{playerName(1)}&lt;/color&gt;</gadget>
+      <gadget name="Spec_DeckPlayerLabel_P2" hidden="" type="formatText" transparent="" background="" textcentervert="" size1024="220 120 600 170" textfont="ScoreFont" textfontsize="12" textmarkup="" formattextusedatareplace="" datarefreshrate="200" z="10">&lt;color={playerColor(2)}&gt;{playerName(2)}&lt;/color&gt;</gadget>
+      <gadget name="Spec_DeckPlayerLabel_P3" hidden="" type="formatText" transparent="" background="" textcentervert="" size1024="220 120 600 170" textfont="ScoreFont" textfontsize="12" textmarkup="" formattextusedatareplace="" datarefreshrate="200" z="10">&lt;color={playerColor(3)}&gt;{playerName(3)}&lt;/color&gt;</gadget>
+      <gadget name="Spec_DeckPlayerLabel_P4" hidden="" type="formatText" transparent="" background="" textcentervert="" size1024="220 120 600 170" textfont="ScoreFont" textfontsize="12" textmarkup="" formattextusedatareplace="" datarefreshrate="200" z="10">&lt;color={playerColor(4)}&gt;{playerName(4)}&lt;/color&gt;</gadget>
+      <gadget name="Spec_DeckPlayerLabel_P5" hidden="" type="formatText" transparent="" background="" textcentervert="" size1024="220 120 600 170" textfont="ScoreFont" textfontsize="12" textmarkup="" formattextusedatareplace="" datarefreshrate="200" z="10">&lt;color={playerColor(5)}&gt;{playerName(5)}&lt;/color&gt;</gadget>
+      <gadget name="Spec_DeckPlayerLabel_P6" hidden="" type="formatText" transparent="" background="" textcentervert="" size1024="220 120 600 170" textfont="ScoreFont" textfontsize="12" textmarkup="" formattextusedatareplace="" datarefreshrate="200" z="10">&lt;color={playerColor(6)}&gt;{playerName(6)}&lt;/color&gt;</gadget>
+    </gadget>
+    <gadget name="homeCityCommandPanel-CloseButton" type="stateButton" size1024="838 125 854 141" textcolor="255 208 0" statebuttonuseinternalstates="" z="51">
+			<command>gadgetUnReal("homeCityCommandPanel")</command>
+			<stateentry background="ui\file_system\close"/>
+			<stateentry background="ui\file_system\close_clicked"/>
+			<stateentry background="ui\file_system\close_rollover"/>
+			<stateentry background=""/>
+		</gadget>
+  </gadget>
+  <gadget type="dialog" name="hcconfirmdlg" size1024="304 192 738 408" bevel="" background="ui\file_system\file_system_background" tilebackground="" texturereplace="" windowzstyle="" hidden="" z="60" oulinecolor="255 208 0">
+    <gadget name="hcconfirmdlg-techButton" type="gadget" size1024="336 240 400 304" z="62"/>
+    <gadget name="hcconfirmdlg-techName" type="formatText" textcolor="180 180 180" textfont="PregameEntry" textfontsize="62" textcenterhoriz="" size1024="432 224 726 249"/>
+    <gadget name="hcconfirmdlg-techDetails" type="formatText" textcolor="180 180 180" textfont="PregameEntry" textfontsize="62" textcenterhoriz="" textmarkup="" size1024="432 256 726 347"/>
+    <gadget name="hcconfirmdlg-OKButton" type="stateButton" size1024="392 360 520 392" bevelbutton="" z="62" statebuttonuseinternalstates="" textfont="PregameButtons" textfontsize="18" textcolor="180 180 180" textcenterhoriz="" textcentervert="" texturecoords="0 0 1 1">$$18465$$OK
+      <stateentry background="ui\core_ui\button_128x32_normal"/>
+      <stateentry background="ui\core_ui\button_128x32_clicked"/>
+      <stateentry background="ui\core_ui\button_128x32_rollover"/>
+      <stateentry background=""/>
+    </gadget>
+    <gadget name="hcconfirmdlg-CancelButton" type="stateButton" size1024="536 360 664 392" bevelbutton="" z="62" statebuttonuseinternalstates="" textfont="PregameButtons" textfontsize="18" textcolor="180 180 180" textcenterhoriz="" textcentervert="" texturecoords="0 0 1 1">$$18466$$Cancel
+      <stateentry background="ui\core_ui\button_128x32_normal"/>
+      <stateentry background="ui\core_ui\button_128x32_clicked"/>
+      <stateentry background="ui\core_ui\button_128x32_rollover"/>
+      <stateentry background=""/>
+      <command>gadgetUnreal("hcconfirmdlg")</command>
+    </gadget>
+  </gadget>
+</layout>
