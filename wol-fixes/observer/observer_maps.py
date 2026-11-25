@@ -88,6 +88,7 @@ EMULATE_NEW = b'FP="+cNumberNonGaiaPlayers+"; if(trGetWorldDifficulty()'  # the 
 UTC_OLD = b'cEf(" int UTcorrect(int typeid=0){if(typeid<1463){return(typeid);}return(typeid+UTshift);} ");'
 UTC_NEW = (b'cEf(" int UTcorrect(int typeid=0){if(typeid>=100000){return(typeid-100000);} ",'
            b'"if(typeid<1463){return(typeid);}return(typeid+UTshift);} ");')
+CHUNK = 250  # rows per generated function
 MAX_LITERAL = 120  # the XS compiler refuses a string literal of 128 characters or more ("Token Error 0006")
 NAMED_TYPE_OLD = b'"kbGetUnitTypeID(\\""+unittypenm+"\\"),'
 NAMED_TYPE_NEW = b'"100000+kbGetUnitTypeID(\\""+unittypenm+"\\"),'
@@ -139,7 +140,11 @@ DATA_FILES = ("techtreey.xml", "protoy.xml", "civs.xml")
 
 def data_stamp(wol):
     """The short hash of each WoL data file the tables come from, as written at the end of a repaired map."""
-    return " ".join(f"{f} {hashlib.sha256((wol / 'data' / f).read_bytes()).hexdigest()[:12]}" for f in DATA_FILES)
+    parts = [f"{f} {hashlib.sha256((wol / 'data' / f).read_bytes()).hexdigest()[:12]}" for f in DATA_FILES]
+    cards = hashlib.sha256()
+    for hc in sorted((wol / "data").glob("homecity*.xml")):
+        cards.update(hc.name.encode() + hc.read_bytes())
+    return " ".join(parts + [f"homecity*.xml {cards.hexdigest()[:12]}"])
 
 
 class Data:
@@ -182,6 +187,13 @@ class WolTables:
                      for i, b in enumerate(re.findall(r"<civ>(.*?)</civ>", civ_text, flags=re.S | re.I))]
         self.civ_ids = {name.lower(): cid for cid, name, _ in self.civs}
         self.obtainable = self._obtainable(proto_text, tech_text, civ_text)
+        self.cards = set()
+        for hc in sorted((wol / "data").glob("homecity*.xml")):
+            for card in re.findall(r"<card>(.*?)</card>", read_xml(hc), flags=re.S | re.I):
+                self.cards |= {n.lower() for n in tags(card, "name")}
+
+    def tech_count(self):
+        return len(self.techs)
 
     def civ_id(self, name):
         return self.civ_ids.get(name.lower())
@@ -235,6 +247,29 @@ class WolTables:
             else:
                 kind = "AEU"  # fishing boats, wagons, crates, herds, priests, scouts: as ESOC's table
             rows[kind].append(f'{kind}(-1,"{name}",{sid},"{art_path(portrait)}");')
+        return rows
+
+    def tech_rows(self, have):
+        """ESOC's tech tables (ITT a tech, ITS a shipment) extended with WoL's own: every home city card of
+        data\\homecity*.xml as ITS, every other tech that is researched (ResearchPoints), has an icon and a
+        name and is not a Shadow tech as ITT; `have`: lower-case names already in the tables.
+        {"ITT": [row, ...], "ITS": [...]}"""
+        rows = {"ITT": [], "ITS": []}
+        for name, body in self.techs:
+            if name.lower() in have:
+                continue
+            icon = (tags(body, "Icon") or [""])[0]
+            sid = (tags(body, "DisplayNameID") or [""])[0]
+            if not icon or not sid.isdigit():
+                continue
+            if name.lower() in self.cards:
+                kind = "ITS"
+            elif re.search(r"<ResearchPoints>", body, flags=re.I) and \
+                    "shadow" not in {f.lower() for f in tags(body, "Flag")}:
+                kind = "ITT"
+            else:
+                continue
+            rows[kind].append(f'{kind}(-1,{sid},"{art_path(icon)}","{name}");')
         return rows
 
     def portrait(self, name):
@@ -457,6 +492,8 @@ def split_long(text):
 IMPERIAL_AGE = 4  # kbGetAgeForPlayer: 0 Discovery .. 4 Imperial; the Great War leaves the player in age 4
 GREAT_WAR_ICON = "WoL/ui/ingame/icon_age_6"  # WoL's own age icon; the stock score_age_1..5 stop at Imperial
 OIL = 3  # WoL's fourth resource (oil) is the game's resource 3 (Fame): minimapPanel-fame, {resource(fame)}
+PLAYER_TECHS = 400  # per-player lists of completed techs and shipments (ESOC: 150)
+PLAYER_UNIT_TYPES = 60  # per-player lists of unit types alive, queued or dead (ESOC: 30)
 TRADE = 7  # the export row ESOC shows fourth; WoL's own resource panel shows oil there and no export
 
 
@@ -485,7 +522,7 @@ def array_init(name, label, values, nl):
     for k, v in enumerate(values):
         value = f'kbGetTechID(\\"{v}\\")' if isinstance(v, str) else str(v)
         lines.append(cef(f" xsArraySetInt({name},{k},{value}); "))
-    return nl.join(lines)
+    return lines
 
 
 def wolize(text, data, counts):
@@ -493,6 +530,17 @@ def wolize(text, data, counts):
     the observers' bats, oil, the Great War age, WoL's own units."""
     wol = data.wol
     nl = "\r\n" if "\r\n" in text else "\n"
+    funcs = []
+
+    def chunked(prefix, lines):
+        """Long runs of rows go into functions of their own, defined before main(): the XS compiler
+        refuses a function that grows too big ("could not emit quads for 'main' function")."""
+        calls = []
+        for k in range(0, len(lines), CHUNK):
+            name = f"obsWoL{prefix}{k // CHUNK}"
+            funcs.append(f"void {name}(void){{{nl}" + nl.join(lines[k:k + CHUNK]) + f"{nl}}}{nl}")
+            calls.append(f"{name}();")
+        return calls
 
     # 1. The two techs every observer gets: no XP trickle, and Spies (shared LOS).
     def tech_set(m):
@@ -646,9 +694,51 @@ def wolize(text, data, counts):
             pass
         if not last:
             raise ValueError(f"no {kind} rows")
-        block = "".join(f"{r}{nl}" for r in rows[kind])
+        block = "".join(f"{c}{nl}" for c in chunked(kind, rows[kind]))
         text = text[:last.end()] + block + text[last.end():]
         counts[f"wol {kind}"] = len(rows[kind])
+
+    # 12a. Tech rows ESOC gave no icon use ESOC's own drawings spec\techs\TK_<tech ID>, numbered by the stock
+    # IDs; with WoL's IDs they would be other drawings or none: they take the tech's icon in WoL's data.
+    icons = {n.lower(): art_path((tags(b, "Icon") or [""])[0]) for n, b in wol.techs}
+
+    def tech_icon(m):
+        art = icons.get(m.group(3).lower(), "")
+        counts["tech icons filled"] = counts.get("tech icons filled", 0) + (1 if art else 0)
+        return f'{m.group(1)}"{art}","{m.group(3)}");' if art else m.group(0)
+    text = re.sub(r'^([ \t]*IT[TS]\(-?\d+,-?\d+,)("")?,"([^"]+)"\);', lambda m: tech_icon(m) if m.group(2) else m.group(0),
+                  text, flags=re.M)
+
+    # 12b. WoL's own techs and home city cards in the tech tables (after ESOC's last ITT/ITS row).
+    have = {n.lower() for n in re.findall(r'^[ \t]*IT[TS]\(-?\d+,-?\d+,"[^"]*","([^"]+)"\);', text, flags=re.M)}
+    trows = wol.tech_rows(have)
+    last = None
+    for last in re.finditer(r'^[ \t]*(?://obs: not in WoL[^\r\n]*?: )?IT[TS]\([^\r\n]*\r?\n', text, flags=re.M):
+        pass
+    if not last:
+        raise ValueError("no ITT/ITS rows")
+    text = text[:last.end()] + "".join(f"{c}{nl}" for c in chunked("Techs", trows["ITT"] + trows["ITS"])) + text[last.end():]
+    counts["wol ITT"], counts["wol ITS"] = len(trows["ITT"]), len(trows["ITS"])
+
+    # 12b2. The research scan: ten slices of 255 techs, one each 100 ms, so it never looked past the stock
+    # 2,550 techs (round 2's cNumAllTechs did not reach it). Ten slices of WoL's tech count now.
+    step = -(-data.wol_tech_count // 10)
+    if len(wol.techs) != data.wol_tech_count:
+        raise ValueError(f"techtreey.xml: {len(wol.techs)} <Tech> elements read, {data.wol_tech_count} names")
+    m = re.search(r'^[ \t]*cEf\(" if\(curupdatecycle==0\)\{updateimprovarrays\(0,255\);\} "\);\r?\n'
+                  r'(?:[ \t]*cEf\(" if\(curupdatecycle==\d\)\{updateimprovarrays\(\d+,\d+\);\} "\);\r?\n){9}',
+                  text, flags=re.M)
+    if not m:
+        raise ValueError("the research scan slices not found")
+    text = text[:m.start()] + cef(f" updateimprovarrays(curupdatecycle*{step},(curupdatecycle+1)*{step}); ") + nl \
+        + text[m.end():]
+
+    # 12c. Per-player list sizes: the techs and shipments a player completed (150 each in ESOC) and the unit
+    # types on screen per row (30) fill up sooner with WoL's tables; a full list drops the rest silently.
+    text = one(r'(cEf\(" C[2-8]P"\+p\+"=xsArrayCreateInt\()150(,)', rf"\g<1>{PLAYER_TECHS}\2", text,
+               "techs completed size", 7)
+    text = one(r'(cEf\(" B[1-6]P"\+p\+"=xsArrayCreateInt\()30(,)', rf"\g<1>{PLAYER_UNIT_TYPES}\2", text,
+               "unit types size", 6)
 
     # 13. The helpers and arrays, declared with the panel's other globals and filled when it loads.
     gw = f'\\"<icon=16({GREAT_WAR_ICON})>\\"'
@@ -666,14 +756,14 @@ def wolize(text, data, counts):
             'if(XP<(at+need)){r=100*(XP-at)/need; return(r);} '),
         cef(" at=at+need; need=need*1.15; if(need>2500){need=2500;}} return(0);} "),
         cef(" void obsInitWoL(int wtv=-1){ "),
-        array_init("OBREV", "obsRev", [n for n, _ in revs], nl),
-        array_init("OBREVC", "obsRevCiv", [c for _, c in revs], nl),
-        array_init("OBCON", "obsConsulate", cons, nl),
-        array_init("OBRR", "obsReResearch", rr, nl),
-        array_init("OBAGE", "obsAgeUps", ages, nl),
-        array_init("OBPN", "obsProgNew", [a for a, _ in pairs], nl),
-        array_init("OBPO", "obsProgOld", [b for _, b in pairs], nl),
-        array_init("OBGW", "obsGreatWar", gw_techs, nl),
+        *chunked("Init", array_init("OBREV", "obsRev", [n for n, _ in revs], nl)
+                 + array_init("OBREVC", "obsRevCiv", [c for _, c in revs], nl)
+                 + array_init("OBCON", "obsConsulate", cons, nl)
+                 + array_init("OBRR", "obsReResearch", rr, nl)
+                 + array_init("OBAGE", "obsAgeUps", ages, nl)
+                 + array_init("OBPN", "obsProgNew", [a for a, _ in pairs], nl)
+                 + array_init("OBPO", "obsProgOld", [b for _, b in pairs], nl)
+                 + array_init("OBGW", "obsGreatWar", gw_techs, nl)),
         cef(' OBPCIV=xsArrayCreateInt(9,-1,\\"obsPlayerCiv\\"); '),
         "for(obsCivP=1;<=cNumberNonGaiaPlayers){"
         'cEf(" xsArraySetInt(OBPCIV,"+obsCivP+","+rmGetPlayerCiv(obsCivP)+"); ");}',
@@ -683,6 +773,7 @@ def wolize(text, data, counts):
                text, "panel globals")
     text = one(r'^([ \t]*)(cEf\(" loadTPs\(\); loadprotoarrays\(\);)', lambda m: cef(" obsInitWoL(); ", m.group(1))
                + nl + m.group(1) + m.group(2), text, "panel loader")
+    text = one(r'^(void main\(void\))', lambda m: nl.join(funcs) + nl + m.group(1), text, "main")
     counts.update({"revolutions": len(revs), "consulate": len(cons), "re-research": len(rr), "age-ups": len(ages)})
     return text + f"{nl}// observer_maps.py tables: {wol.stamp}{nl}"
 
@@ -803,6 +894,7 @@ def main(argv):
               + ("" if switch_only or "--ids-only" in argv else
                  f"; WoL: {sum(counts.get('wol ' + k, 0) for k in ('AEU', 'AMU', 'AWU', 'ARU'))} unit rows added "
                  f"({', '.join(str(counts.get('wol ' + k, 0)) + ' ' + k for k in ('AEU', 'AMU', 'AWU', 'ARU'))}), "
+                 f"{counts.get('wol ITT', 0)} tech rows and {counts.get('wol ITS', 0)} card rows added, "
                  f"{counts.get('age-ups')} age-ups, {counts.get('revolutions')} revolutions, "
                  f"{counts.get('consulate')} consulate relations, {counts.get('re-research')} re-researchable, "
                  f"{counts.get('progression pairs')} upgrade pairs")

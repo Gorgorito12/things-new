@@ -14,6 +14,7 @@ Options:
   --normal             also check the normal game: King of the Hill off, the original map and the
                        --src map with the same seed (4 players, seed 1 and 8 players, seed 2) must
                        place the same units at the same points
+  --normal-only        only the --normal comparison (e.g. a map edit that must not change the normal game)
   --reach [seconds]    also play the --src map (4 players, seed 1, King of the Hill on) as a scenario,
                        with a trigger that sends all units of every player to the hill, and measure
                        after that much game time (default 240) how close each player got
@@ -594,10 +595,10 @@ def main(argv):
         for name in maps:
             copy = install_copy(bench, name, src)
             copies.append(copy)
-            runs = [(p, 2, s) for p in players for s in seeds] + [(p, p, 1) for p in ffa]
+            runs = [] if "--normal-only" in argv else [(p, 2, s) for p in players for s in seeds] + [(p, p, 1) for p in ffa]
             runs = [r for r in runs if (name, "koth", str(r[0]), "ffa" if r[1] == r[0] and r[0] > 2 else str(r[1]),
                                         str(r[2])) not in done]
-            if not bench.koth(True):
+            if runs and not bench.koth(True):
                 sys.exit("kothcheck: could not set GameKOTH")
             for p, teams, s in runs:
                 ok, detail = bench.generate(copy, p, s, teams, mapsize)
@@ -620,9 +621,9 @@ def main(argv):
                 append(out, row)
                 say(f"{name} p{p} t{row['teams']} s{s}: {row['result']} hill {row.get('hill_fx', '-')},{row.get('hill_fz', '-')} "
                     f"team ratio {row.get('team_ratio', '-')} ({row.get('dists', '')}) {detail[:120]}")
-            if "--normal" in argv and (name, "normal", "8", "2", "2") not in done:
+            if ("--normal" in argv or "--normal-only" in argv) and (name, "normal", "8", "2", "2") not in done:
                 bench.koth(False)
-                for p, s in ((4, 1), (8, 2)):
+                for p, s in (((3, 3),) if "--normal-only" in argv else ()) + ((4, 1), (8, 2)):
                     ok1, d1 = bench.generate(name, p, s, 2, mapsize)
                     a = sorted((u[1], u[2], u[3], u[4]) for u in bench.units()) if ok1 else None
                     ok2, d2 = bench.generate(copy, p, s, 2, mapsize)
@@ -634,10 +635,11 @@ def main(argv):
                         f"{side} {u[1]} p{u[0]} {u[2]},{u[3]}" for side, u in sym[:4])
                     row = {"map": name, "mode": "normal", "players": p, "teams": 2, "seed": s,
                            "result": "same" if same and not hills else "DIFFERENT", "hills": hills,
-                           "detail": f"{len(a or [])} units; {diff} {d1} {d2}".strip()}
+                           "detail": f"{len(a or [])} units{' (exact)' if a == b else ''}; {diff} {d1} {d2}".strip()}
                     append(out, row)
                     say(f"{name} normal p{p} s{s}: {row['result']} ({row['detail'][:120]})")
-                bench.koth(True)
+                if runs or reach_s:
+                    bench.koth(True)
             if reach_s and (name, "reach", "4", "2", "1") not in done:
                 rcopy = install_copy(bench, name, src, instrument=True, tag="uhckr_")
                 copies.append(rcopy)
