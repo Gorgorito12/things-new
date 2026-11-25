@@ -31,6 +31,7 @@ set(UHC_SOURCES
   src/deathobservers.cpp
   src/ghostobservers.cpp
   src/killobservers.cpp
+  src/garrisonobservers.cpp
   src/unitpanel.cpp
   src/datarefs.cpp
   src/unitmodels.cpp
@@ -291,6 +292,7 @@ set(UHC_SOURCES
   src/hooks/displayrange_hooks.asm
   src/hooks/trainbatch_hooks.asm
   src/hooks/killobservers_hooks.asm
+  src/hooks/garrisonobs_hooks.asm
   src/hooks/researchpay_hooks.asm
   src/hooks/researchgrant_hooks.asm
   src/hooks/canresearch_hooks.asm
