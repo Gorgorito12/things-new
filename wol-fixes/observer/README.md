@@ -319,16 +319,25 @@ files are loaded only if WoL's DLL adds the resolutions to its list of seven.
 | New resolution | Made from | Preset the map runs | Map change needed |
 |---|---|---|---|
 | 2560x1080 | 1920x1080 | `load1920x1080()` (the layout keeps `Spec_PresetConfig-1920x1080-1`) | none |
-| 1920x1200, 2560x1440, 3440x1440, 3840x2160 | 1920x1080 | `load1920x1080()` | see below |
-| 1440x900 | 1366x768 | `load1366x768()` | see below |
-| 1600x1200 | 1600x900 | `load1600x900()` | see below |
+| 1920x1200 | 1920x1080 | `load1920x1200()`: `load1920x1080()` with `numLFs` +1, `displayfinetuning` +6 | a new preset |
+| 2560x1440, 3440x1440 | 1920x1080 | `load2560x1440()` / `load3440x1440()`: `numLFs` +8, `displayfinetuning` +4 | a new preset |
+| 3840x2160 | 1920x1080 | `load3840x2160()`: `numLFs` +24, `displayfinetuning` +12 (not seen in game) | a new preset |
+| 1440x900 | 1366x768 | `load1440x900()`: `load1366x768()` with `numLFs` +2, `displayfinetuning` +4 | a new preset |
+| 1600x1200 | 1600x900 | `load1600x1200()`: `load1600x900()` with `numLFs` +2, `displayfinetuning` +16 | a new preset |
 
-Open point for the taller ones: the panel writes one text (the subtitle canvas) from the shipment counters
-under the top flags down to a layer of the player rows, with `numLFs` empty lines between. Anchored at the
-bottom, the rows are right and the counters sit lower than the flags by the height difference (360 px at a
-height of 1440); it needs a preset with its own `numLFs` (and perhaps `displayfinetuning`) per height, found in game
-with ESOC's adjust tool (`Spec_SetAdjustConfig`). Two tries at 2560x1440 (`numLFs` 29 and 30, canvas anchored
-at the top) put the counters right but tinted the row cells, so that is not solved.
+Why a preset per height: the panel writes one text (the subtitle canvas) from the shipment counters under
+the top flags down to a layer of the player rows' cells, with `displayfinetuning` lines of "GraphicLabel 10"
+and `numLFs` lines of "Graphicz 32" between them. The canvas starts at the top and ends at the bottom of the
+screen. A taller screen needs that much more space between the two, which is set in the map's preset. In game at
+2560x1440 a "Graphicz 32" line is 38 px and a "GraphicLabel 10" line 14 px (the cells' layer against the
+rows, pixel rows of the captures). One line too few or too many shows the rows' player colour over or
+under the cells. `observer_ui.py presets <map>` prints the code (a `load<WxH>()` copied from the map's own
+preset, and its line in `deployUI`'s preset chain); `--write <out>` writes the map with it. These layouts
+name their own preset gadget (`Spec_PresetConfig-<WxH>-1`). Seen in game with that code in a test copy:
+1920x1200, 1440x900, 1600x1200, 2560x1440, 3440x1440 (3840x2160 could not be driven on the test PC).
 
 Wider screens keep the panel at its 1080p size in pixels (the fonts and icon cells are fixed pixel sizes),
 centred between the minimap and the unit panel, with the wood background stretched to fill.
+
+The approved files (WoL's 7 resolutions and 2560x1080, with the 7 panels) are in `ui/`:
+`python -I observer_ui.py apply "<WoL folder>" --from ui`.

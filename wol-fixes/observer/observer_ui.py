@@ -5,6 +5,10 @@
     python -I observer_ui.py check  <WoL folder> [--from <folder>]
     python -I observer_ui.py revert <WoL folder>
     python -I observer_ui.py gadgets <map.xs> --from <folder> [--res ...]
+    python -I observer_ui.py presets <map.xs> [--write <out.xs>]
+
+`presets` prints the map code the taller new resolutions need (a load<WxH>() each, and its line in the
+preset chain), made from that map's own presets; --write writes the map with them (for a test).
 
 `gadgets` lists every gadget name a map's panel code shows, hides or tests (gadgetReal, gadgetUnreal,
 gadgetToggle, trIsGadgetVisible; names built at run time by their fixed prefix) and checks that the
@@ -45,9 +49,10 @@ Observer-only rules (observer_rules below), each seen in game:
 New resolutions (NEW_RES): the panel is laid out in pixels (the map's loadWxH() presets and its icons
 are pixel offsets and 49 px cells written into text, fonts are pixel sizes), so a new resolution starts
 from the widest existing one not wider, and each panel gadget keeps its pixel size and its place from
-the screen's centre and from the top or bottom edge (retarget). The layout keeps that resolution's
-Spec_PresetConfig gadget, so the map runs its loadWxH() and needs no new code. These files are only
-loaded if WoL's DLL adds the resolutions to its list.
+the screen's centre and from the top or bottom edge (retarget). A resolution of the source's height
+keeps its Spec_PresetConfig gadget, so the map runs that loadWxH() unchanged; a taller one names its own,
+and the map needs a preset with more lines (presets prints it). These files are only loaded if WoL's DLL
+adds the resolutions to its list.
 
 `apply` copies the built files into data\\, keeping each file it replaces as <file>.obs-orig (once);
 `revert` puts them back and deletes the files `apply` added (listed in data\\observer-ui.obs-added).
@@ -742,21 +747,37 @@ def observer_rules(merge, data, normal, res, log):
 
 # --- resolutions WoL's DLL does not know yet ---------------------------------------------------------
 
-# new resolution -> the existing layout it is made from (the widest one not wider). The map then runs
-# that layout's loadWxH() preset (the layout keeps its Spec_PresetConfig gadget), so the map needs no
-# new code. Used only if WoL's DLL adds the resolution to its list.
+# new resolution -> the existing layout it is made from (the widest one not wider). Used only if WoL's
+# DLL adds the resolution to its list.
 NEW_RES = {"1440x900": "1366x768", "1600x1200": "1600x900", "1920x1200": "1920x1080",
            "2560x1080": "1920x1080", "2560x1440": "1920x1080", "3440x1440": "1920x1080",
            "3840x2160": "1920x1080"}
 ZONE_X = {0, 214, 810, 1024}  # the panel's columns in 1024 units: minimap | player rows | unit panel
-# The subtitle canvases (SubtitleName, WideSubtitleName) hold the shipment counters under the top flags,
-# then numLFs empty lines of "Graphicz 32", then a layer of the player rows: one text from the top of the
-# screen to the bottom. They are anchored at the bottom with the rows (seen right at 2560x1440). At a
-# height other than the source's, the counters then sit lower by the difference (360 px at 1440): that needs
-# a preset with another numLFs in the map, which two tries (numLFs 29 and 30 at 2560x1440, the canvas
-# anchored at the top) did not find. Listed as open in README.md.
-TOP_CANVASES = set()
+# The subtitle canvases (SubtitleName, WideSubtitleName) hold one text from the top of the screen to the
+# bottom: the shipment counters under the top flags, then `displayfinetuning` lines of "GraphicLabel 10"
+# and `numLFs` lines of "Graphicz 32", then a layer of the player rows' cells (their icons; the row's own
+# cells, drawn by trShowWinLose, show the player's colour where that layer misses them). So their top stays
+# at the top and their bottom at the bottom, and at another height the map's preset adds lines: measured at
+# 2560x1440 (the cells' layer against the rows, pixel rows of the captures), a "Graphicz 32" line is 38 px
+# and a "GraphicLabel 10" line 14 px. 8 and 4 more give the 360 px of 1440 exactly (seen right in game).
+LINE_BIG, LINE_SMALL = 38, 14
+TOP_CANVASES = {"subtitlename", "widesubtitlename"}
 
+
+def extra_lines(delta):
+    """(numLFs to add, displayfinetuning to add) for a height `delta` px taller than the source: the
+    closest sum of 38 and 14 px lines, then the fewest lines."""
+    best = None
+    for a in range(0, delta // LINE_BIG + 2):
+        for b in range(0, 40):
+            diff = a * LINE_BIG + b * LINE_SMALL - delta
+            err = abs(diff)
+            # 2 px short shows the rows' colour as a line under the cells (seen at 1920x1200); 2 px over
+            # only widens the 2 px colour line the rows already show above them
+            key = (err > 2, err, diff < 0, a + b)
+            if best is None or key < best[0]:
+                best = (key, a, b)
+    return best[1], best[2]
 
 def wh(res):
     w, h = res.lower().split("x")
@@ -800,11 +821,59 @@ def retarget(merge, cur, src, dst, log):
         else:
             nx1, nx2 = (px[0] + dx) * 1024 / wd, (px[2] + dx) * 1024 / wd
         ny1, ny2 = (px[1] + dy) * 768 / hd, (px[3] + dy) * 768 / hd
+        if gname(g) in TOP_CANVASES:
+            ny2 = (px[3] + hd - hs) * 768 / hd  # its top stays at the top, its bottom follows the bottom
         U.set_attr(g, "size1024", " ".join(str(round(v)) for v in (nx1, ny1, nx2, ny2)))
         n += 1
+    if hd != hs:
+        # the map needs its own preset for this height (more lines in the subtitle text): see presets
+        for g in U.find(cur, f"Spec_PresetConfig-{src}-1"):
+            U.set_attr(g, "name", f"Spec_PresetConfig-{dst}-1")
+        a, b = extra_lines(hd - hs)
+        preset = f"Spec_PresetConfig-{dst}-1: the map needs load{dst}() = load{src}() with numLFs +{a}, displayfinetuning +{b}"
+    else:
+        preset = f"Spec_PresetConfig-{src}-1 kept: the map runs load{src}() as it is"
     log.append(f"retarget {src} -> {dst}: {n} panel gadgets keep their pixel size (centre-anchored, "
-               f"top or bottom), {kept} over the unit panel column stay stretched; preset "
-               f"Spec_PresetConfig-{src}-1 kept, so the map runs load{src}()")
+               f"top or bottom), {kept} over the unit panel column stay stretched; {preset}")
+
+
+PRESET_FN = re.compile(r'([ \t]*cEf\(" void load(\d+x\d+)\(int wtv=-1\)\{ "\);.*?cEf\(" \} "\);\r?\n)', re.S)
+PRESET_CHAIN = re.compile(r'([ \t]*cEf\(" else if\(trIsGadgetVisible\(\\"Spec_PresetConfig-1366x768-1\\"\)\)\{load1366x768\(\);\} "\);\r?\n)')
+
+
+def preset_code(map_text, resolutions=None):
+    """The map code a new resolution of another height needs, from a map's own load<WxH>() functions:
+    (functions, chain lines), as text in the map's style."""
+    fns = {m.group(2): m.group(1) for m in PRESET_FN.finditer(map_text)}
+    funcs, chain = [], []
+    for dst in resolutions or NEW_RES:
+        src = NEW_RES[dst]
+        delta = wh(dst)[1] - wh(src)[1]
+        if not delta or src not in fns:
+            continue
+        a, b = extra_lines(delta)
+        body = fns[src].replace(f"load{src}(", f"load{dst}(")
+        body = re.sub(r'numLFs=(\d+);', lambda m: f"numLFs={int(m.group(1)) + a};", body, count=1)
+        body = re.sub(r'displayfinetuning=(\d+);', lambda m: f"displayfinetuning={int(m.group(1)) + b};", body, count=1)
+        funcs.append(body)
+        chain.append(f'\tcEf(" else if(trIsGadgetVisible(\\"Spec_PresetConfig-{dst}-1\\")){{load{dst}();}} ");\n')
+    return funcs, chain
+
+
+def add_presets(map_text, resolutions=None):
+    """The map text with the new presets: the functions after the last load<WxH>(), the chain lines after
+    the 1366x768 one. Returns (text, count)."""
+    funcs, chain = preset_code(map_text, resolutions)
+    if not funcs:
+        return map_text, 0
+    last = list(PRESET_FN.finditer(map_text))[-1]
+    nl = "\r\n" if "\r\n" in map_text else "\n"
+    text = map_text[:last.end()] + "".join(f.replace("\n", nl) if nl == "\r\n" and "\r\n" not in f else f for f in funcs) + map_text[last.end():]
+    m = PRESET_CHAIN.search(text)
+    if not m:
+        raise ValueError("the map has no preset chain ending with 1366x768")
+    text = text[:m.end()] + "".join(c.replace("\n", nl) for c in chain) + text[m.end():]
+    return text, len(funcs)
 
 
 # --- build ------------------------------------------------------------------------------------------
@@ -977,8 +1046,19 @@ def check(wol, src):
 
 
 def main(argv):
-    if len(argv) < 2 or argv[0] not in ("build", "apply", "check", "revert", "gadgets"):
+    if len(argv) < 2 or argv[0] not in ("build", "apply", "check", "revert", "gadgets", "presets"):
         sys.exit(__doc__)
+    if argv[0] == "presets":
+        raw = pathlib.Path(argv[1]).read_bytes().decode("latin-1")
+        if "--write" in argv:
+            text, n = add_presets(raw)
+            pathlib.Path(argv[argv.index("--write") + 1]).write_bytes(text.encode("latin-1"))
+            print(f"observer_ui: {n} presets added")
+        else:
+            funcs, chain = preset_code(raw)
+            print("// after the last load<WxH>() function:\n" + "".join(funcs)
+                  + "// after the line that loads load1366x768() in the preset chain:\n" + "".join(chain))
+        return
     if argv[0] == "gadgets":
         res = argv[argv.index("--res") + 1].split(",") if "--res" in argv else RESOLUTIONS
         built = pathlib.Path(argv[argv.index("--from") + 1])
