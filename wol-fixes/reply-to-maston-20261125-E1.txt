@@ -28,6 +28,12 @@ To install: the same pack as before, wol-fixes/editor (the new uitriggereditor.x
 apply_fix.py: "python apply_fix.py <WoL folder>" copies the three layouts and adds editorSearch to wol.cfg;
 "--restore" puts everything back.
 
-Coming next, if you like it: taller lists in the editor (the trigger list from 8 to 11 rows at 1920x1080, the
-Conditions and Effects lists, the Type list and the Objects palette from 7 to 12 rows). We are checking the layout
-first and will send pictures.
+Taller lists in the editor
+--------------------------
+In the same pack, every bottom panel of the editor (Trigger Editor, Triggers, Conditions / Effects, the Objects
+and Terrain palettes) now starts at the same height, higher than before, so the lists show more at 1920x1080: the
+list of triggers 11 rows instead of 8, the Objects palette 12 instead of 7, the Type list about 9 instead of 4, and the
+trigger's Conditions and Effects lists about a quarter more. The Forbidden Units/Techs dialog is a little taller too
+(24 rows instead of 21). Nothing covers the minimap. All the editorSearch GIFs were filmed again with it:
+
+  docs/media/editorSearch-wol.gif, editorSearch-forbid-wol.gif, editorSearch-trigger-wol.gif (and their -control)

@@ -31,7 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Wednesday 2026-11-25 07:39 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
+| Wednesday 2026-11-25 08:10 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
 | Tuesday 2026-11-24 09:53 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24). |
 | Tuesday 2026-11-24 09:08 | [`techGadgets`](#techgadgets) | Filmed in WoL, with a control. Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. |
 | Tuesday 2026-11-24 09:08 | [`incomeRates`](#incomerates) | Filmed in WoL, with a control. A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). |
@@ -9740,7 +9740,7 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
 
 *In the scenario editor, a search field above the list of objects, in the Forbidden Units/Techs dialog, in the trigger editor and above its list of triggers: type part of a name and the list shows only what matches.*
 
-**Added:** Saturday 2026-11-21 11:23 · **Filmed in WoL:** Wednesday 2026-11-25 07:39
+**Added:** Saturday 2026-11-21 11:23 · **Filmed in WoL:** Wednesday 2026-11-25 08:10
 
 ![editorSearch in WoL](media/editorSearch-wol.gif)
 
@@ -9797,11 +9797,16 @@ editorSearch [log]
     palette's category list;
   - `ForbiddenUnitsTechs_Search` in `uiforbiddenunitstechs.xml`, under the Allowed list;
   - `trEdit-CondEffPanel-search` in `trEdit-CondEffPanel` of `uitriggereditor.xml`, on the row of "Type:";
-  - `trEdit-Trigger-search` in `trEditor` of `uitriggereditor.xml`, above "Group:" and the list of triggers (the
-    Trigger Editor panel starts at the Triggers panel's height to make room, and its search row is level with the
-    condition/effect panel's).
+  - `trEdit-Trigger-search` in `trEditor` of `uitriggereditor.xml`, above "Group:" and the list of triggers, its
+    search row level with the condition/effect panel's.
 
   Any of them can be left out: a list without its field stays as it is.
+- **Taller lists (2026-11-25, the pack's layouts only, no DLL code):** every bottom panel of the editor (Trigger
+  Editor, Triggers, Conditions / Effects, the Objects and Terrain palettes) starts at the same height, `size1024`
+  y 446 instead of 550 / 502, and the lists grow down to the old bottom. At 1920 × 1080: the list of triggers shows
+  11 rows (8 before), the trigger's Conditions and Effects lists 274 instead of 218 (`size1024`), a trigger's
+  condition or effect list 196 instead of 140, the Type dropdown about 9 rows (4), the Objects palette 12 rows (7);
+  the Forbidden Units/Techs dialog is 42 taller, its lists 24 rows (21). Nothing reaches the minimap.
 - **Effect:** while the field holds text, the list keeps only the entries in which every word of it appears, upper
   or lower case alike. A unit matches by the name the list shows, its internal name or its display name ("INF musk"
   finds `INF R-LU Musketeer`; "prowler" finds the Forest Prowler, `xpMusketWarrior`), a tech by its internal name

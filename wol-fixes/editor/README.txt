@@ -29,9 +29,14 @@ as from the full list (tested: saved, editor left, scenario loaded again).
 The list of triggers has its own field. A trigger picked from a short list is that trigger: the game gives each row
 its trigger's place in the group, and a click reads that, not the row (tested: its conditions, effects and a Loop
 change all went to the trigger picked, and the full list showed the same). The text stays when you change group;
-Insert and Del work as usual (the new trigger shows, being the one edited). To make room for the field, the Trigger
-Editor panel now starts as high as the Triggers panel next to it, and its search row is level with the Conditions /
-Effects panel's.
+Insert and Del work as usual (the new trigger shows, being the one edited). Its search row is level with the
+Conditions / Effects panel's.
+
+Taller lists (2026-11-25): every bottom panel of the editor (Trigger Editor, Triggers, Conditions / Effects, the
+Objects and Terrain palettes) now starts at the same height, higher than before, and the lists grow down to the old
+bottom. At 1920x1080 the list of triggers shows 11 rows (8 before), the Objects palette 12 (7), the Type list about
+9 (4), and the trigger's Conditions and Effects lists are about a quarter taller. The Forbidden Units/Techs dialog is
+a little taller too (24 rows in its lists, 21 before). Nothing covers the minimap.
 
 It works with everything else in those lists:
   - the palette's category list (All, Units, Buildings, Nature...) still applies: "musk" in Nature shows the Musk
@@ -48,12 +53,12 @@ Files
 -----
   files\data\uieditorpalettes.xml       the game's Objects and Terrain palettes, plus the field
                                         EditorProtoPaletteSearch and its "Search:" label inside the Objects
-                                        palette (copy of the file in Data3.bar)
+                                        palette (copy of the file in Data3.bar; both palettes taller)
   files\data\uiforbiddenunitstechs.xml  the Forbidden Units/Techs dialog, plus the field ForbiddenUnitsTechs_Search
-                                        and its label under the Allowed list (copy of the file in Data2.bar)
+                                        and its label under the Allowed list (copy of the file in Data2.bar; taller)
   files\data\uitriggereditor.xml        the trigger editor, plus the field trEdit-CondEffPanel-search and its label
                                         in the Conditions / Effects panel, and trEdit-Trigger-search and its label
-                                        above the list of triggers (copy of the file in Data3.bar)
+                                        above the list of triggers (copy of the file in Data3.bar; every panel taller)
   apply_fix.py                          installs the three files and the cfg line (see below)
   media\                                screenshots (English), taken in a WoL copy with the DLL
 
