@@ -1,5 +1,5 @@
 """Adds to Wars of Liberty's game screen the button of the DLL key `selectFattened` (WoL request #106): a square
-button just above the resource panel, at its left end, that shows how many of the player's livestock have reached
+button just above the resource panel's left end, beside the home city flag, that shows how many of the player's livestock have reached
 their maximum food and selects them when clicked; and a hotkey for the same command (Shift+Ctrl+F).
 
     python apply_fix.py <WoL folder>              apply (a backup of every file it changes goes to
@@ -45,17 +45,18 @@ STRINGS = {
 }
 HOTKEY = "shift-control-f"
 
-# 40 x 40 pixels at 1920 x 1080 (size1024 scales x by width / 1024 and y by height / 768), its left edge on the
-# resource panel's (x 221), its bottom on the top of the panel's art (y 625 in the tallest variants).
+# 40 x 40 pixels at 1920 x 1080 (size1024 scales x by width / 1024 and y by height / 768): right of the home city
+# flag (uimain-homeCityToggle, 194 605 246 645 in uiminimappanelnew*.xml), its bottom on the top of the panel's art
+# (y 625 in the tallest variants).
 GADGET = (
-    '\t<gadget name="uhcFattened" type="gadget" size1024="221 594 242 623" transparent="" z="12" hidden="">\r\n'
-    '\t\t<gadget name="uhcFattened-button" type="button" z="13" size1024="221 594 242 623" '
+    '\t<gadget name="uhcFattened" type="gadget" size1024="249 594 270 623" transparent="" z="12" hidden="">\r\n'
+    '\t\t<gadget name="uhcFattened-button" type="button" z="13" size1024="249 594 270 623" '
     'background="ui\\ingame\\uhc_select_fattened" foreground="" donthighlight="" activateondown="" '
     f'mouseovertext="$${TOOLTIP}$$Fattened livestock: {{uhcFattened}}" anchortooltiptopright="">\r\n'
     '\t\t\t<command>uhcSelectFattened</command>\r\n'
     '\t\t</gadget>\r\n'
-    '\t\t<gadget name="uhcFattened-count" type="formatText" size1024="228 609 241 623" datarefreshrate=".5" '
-    'textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" donthighlight="" '
+    '\t\t<gadget name="uhcFattened-count" type="formatText" size1024="260 609 270 623" datarefreshrate=".5" '
+    'textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" donthighlight="" '
     'transparent="" z="14" background="">{uhcFattened}</gadget>\r\n'
     '\t</gadget>\r\n'
 )

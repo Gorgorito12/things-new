@@ -4,12 +4,9 @@ SELECT THE FATTENED LIVESTOCK (request #106)
 AN OPTIONAL PACK. Nothing changes until apply_fix.py is run. It needs the DLL key selectFattened (apply_fix.py adds
 the line to Startup\wol.cfg).
 
-STATUS: the button's icon waits for approval. Until it is approved, files\art\ui\ingame\uhc_select_fattened.ddt is
-not in the pack and apply_fix.py refuses to run. The command, the count and the selection are tested by console.
-
 What it does
 ------------
-A square button just above the resource panel, at its left end, shows how many of your livestock (sheep, cows,
+A square button just above the resource panel's left end, beside the home city flag, shows how many of your livestock (sheep, cows,
 goats, llamas, camels, hens... any unit of type Herdable) have reached their maximum food. Clicking it selects all
 of them, on the whole map, as a click on them would; the selection panel then shows them as usual. With more than
 the selection limit (50, or the key selectionLimit: 75 in WoL), the ones nearest the centre of the screen are
@@ -20,14 +17,17 @@ It only changes your own selection: nothing goes to the other players, and the g
 
 Layout map (size1024 units; at 1920 x 1080 a unit is 1.875 px wide and 1.406 px high)
 -------------------------------------------------------------------------------------
-    uhcFattened            221 594 242 623   hidden; the key shows it while the count is above 0
-      uhcFattened-button   221 594 242 623   the icon (40 x 40 px at 1080p), <command>uhcSelectFattened</command>
-      uhcFattened-count    228 609 241 623   {uhcFattened}, NumbersFont 12, white, bottom right of the button
+    uhcFattened            249 594 270 623   hidden; the key shows it while the count is above 0
+      uhcFattened-button   249 594 270 623   the icon (40 x 40 px at 1080p), <command>uhcSelectFattened</command>
+      uhcFattened-count    260 609 270 623   {uhcFattened}, NumbersFont 12, white, centred in the button's bottom right
 
-The resource panel's 12 variants (SettlerCountDialog-*) start at x 220 to 222 and their art at y 625 to 639, so the
-button rests on the panel's left end in all of them (to be checked in game in each variant after approval). It is a
-top-level gadget at the end of data\uimainnew.xml, outside the panel's block, so the
-oil and faith panel packs (wol-fixes\oil-panel, wol-fixes\faith-panel) apply and restore as before, in any order.
+Why there: the home city flag (uimain-homeCityToggle, 194 605 246 645 in uiminimappanelnew.xml and
+uiminimappanelnewmin.xml) sits on the panel's left corner in a game with a home city, so the button is right of it.
+The resource panel's 12 variants (SettlerCountDialog-*) start their art at y 625 to 639, below the button. No other
+gadget of the game screen's layouts (uimainnew, uiminimappanelnew*, the oil and faith panel packs' 6 layouts) meets
+its box. It is a top-level gadget at the end of data\uimainnew.xml, outside the panel's block, so the oil and faith
+panel packs (wol-fixes\oil-panel, wol-fixes\faith-panel) apply and restore as before; with both, restore the oil
+pack first.
 
 Installing
 ----------

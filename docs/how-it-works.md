@@ -6668,6 +6668,13 @@ registered at 0x530D50):
   player, the same walk; `{uhcFattened}` (`datarefs.*`, a string) gives the last count. The gadgets of the cfg line
   (default `uhcFattened`) are shown while it is above 0 and hidden at 0 from Direct3D's Present, as techGadgets does
   (`uigadgets.*`: found by name, shown or hidden only when their flags say the other state).
+<!-- private:begin -->
+- The button that was tested is a top-level gadget at the end of `uimainnew.xml`, at 249 594 270 623 (size1024): right
+  of the home city flag (`uimain-homeCityToggle`, 194 605 246 645, in
+  `uiminimappanelnew*.xml`, which a mock-up from a scenario with no home city did not show) and above the art of the
+  resource panel's 12 variants (from y 625). It is outside the panel's block, so the oil and faith panel packs, which
+  replace that block, do not touch it.
+<!-- private:end -->
 
 **Why it is safe.**
 - Interface only: it calls the stock clear and add on the local selection, as the stock command does from a button

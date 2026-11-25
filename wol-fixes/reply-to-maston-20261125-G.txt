@@ -1,19 +1,27 @@
-DRAFT (agent G, 2026-11-25): to send only after the user approves the icon and the button is tested in game.
-
 === Select the fattened livestock (request #106, from a player in Discord) ===
 
 A player asked for a button that selects only the livestock that is fully fattened, since the Middle East civs and
 the Spanish immigrants make livestock more important.
 
-New DLL key: selectFattened. A square button above the resource panel, at its left end, shows how many of your
-herdables (sheep, cows, goats, llamas, camels, hens...) have reached their maximum food, and selects all of them when
-clicked, on the whole map; past the selection limit (75 in WoL), the ones nearest the centre of the screen. It hides
-when there are none. Shift+Ctrl+F does the same ("Select Fattened Livestock" in the hotkey menu). It only changes
-your own selection, like a click: nothing for the simulation or the other players. It uses the game's own selection
-calls, the ones its "find all of a type" hotkeys use.
+New DLL key: selectFattened. A small square button sits above the resource panel's left end, right of the home city
+flag. It shows how many of your herdables (sheep, cows, goats, llamas, camels, hens...) have reached their maximum
+food, and clicking it selects all of them, on the whole map; past the selection limit (75 in WoL), the ones nearest
+the centre of the screen. It hides when there are none. Shift+Ctrl+F does the same ("Select Fattened Livestock" in
+the hotkey menu, group "Find Unit Hotkeys"). The tooltip reads "Fattened livestock: 3. Click to select them
+(Shift+Ctrl+F)." It only changes your own selection, like a click: nothing for the simulation or the other players.
+It uses the game's own selection calls, the ones its "find all of a type" hotkeys use, and costs about 20
+microseconds ten times a second with 250 units.
 
 The pack wol-fixes/select-fattened adds the button to data\uimainnew.xml (outside the resource panel's block, so the
-oil and faith panel packs are not affected), the hotkey to data\DefaultKeyMapY.xml, two strings (English and
-Spanish), the icon, and the cfg line.
+oil and faith panel packs still apply; with both, restore the oil pack first), the hotkey to data\DefaultKeyMapY.xml,
+two strings (690911, 690912; English and Spanish), the icon art\ui\ingame\uhc_select_fattened.ddt, and the cfg line.
 
-[Links: the icon and the button picture; the GIF of the button and its control, after the in-game tests.]
+Seen in game (single player, Persians, full interface, with the oil panel pack too): the button shows 3, a click
+selects the three fattened goats, villagers butcher them and the button hides at 0, then three hens fatten at a pen
+and it comes back. Also checked with WallMapu (minimized interface) and Ethiopians.
+
+Links:
+- The button in action (Persians): docs/media/selectFattened-wol.gif
+- Key off, the same game: docs/media/selectFattened-wol-control.gif
+- The icon: _share/maston-20261125/G/icon-A-wood-frame-x4.png
+- The full description: docs/modding-guide.md, section "selectFattened"
