@@ -357,6 +357,7 @@ struct Shown {
   float lastLogged = 0.0f;
   int dir = 0;                 // the way the gun last turned on screen: +1 the yaw growing, -1 shrinking
   float settle = 0.0f;         // 0..1: the gunner's step under way finished (the gun at rest), else stepping
+  bool settleLogged = false;   // for the log: this rest's settling already told
 };
 
 std::unordered_map<std::int32_t, Shown> g_shown;  // unit ID -> its state
@@ -721,8 +722,24 @@ void AfterSample(void* instance, int first, int count, void* pose) {
   if (sh.shownYaw != before) {
     sh.dir = sh.shownYaw > before ? 1 : -1;
     sh.settle = std::fmax(0.0f, sh.settle - settleStep);
+    sh.settleLogged = false;
   } else {
     sh.settle = std::fmin(1.0f, sh.settle + settleStep);
+    static unsigned settleLines = 0;
+    if (g_log && sh.settle >= 1.0f && !sh.settleLogged && settleLines < 60 && sh.aim >= 0) {
+      sh.settleLogged = true;
+      const float y = kModelSense * sh.shownYaw;
+      for (const auto& band : g_aims[sh.aim].bands) {
+        if (y > band.first && y < band.second) {
+          ++settleLines;
+          uhc::Log(L"turretArc: unit %d: the gun rests at %.1f degrees, inside the step band %.0f..%.0f: the gunner's "
+                   L"step finishes (settled pose, the gun having turned toward %ls yaw)", sh.unitId,
+                   static_cast<double>(y), static_cast<double>(band.first), static_cast<double>(band.second),
+                   sh.dir > 0 ? L"a growing" : L"a shrinking");
+          break;
+        }
+      }
+    }
   }
   const float modelYaw = kModelSense * (g_testYawOn ? g_testYaw : sh.shownYaw);
   const void* skeleton = SkeletonOf(instance);

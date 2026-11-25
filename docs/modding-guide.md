@@ -31,7 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Tuesday 2026-11-24 11:39 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns as before. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
+| Wednesday 2026-11-25 08:53 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns as before. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
 | Tuesday 2026-11-24 09:53 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24). |
 | Tuesday 2026-11-24 09:08 | [`techGadgets`](#techgadgets) | Filmed in WoL, with a control. Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. |
 | Tuesday 2026-11-24 09:08 | [`incomeRates`](#incomerates) | Filmed in WoL, with a control. A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). |
@@ -4362,22 +4362,28 @@ retargetInAction [log]
 
 *A gun on a mount turns toward its target by itself, inside its arc, instead of the whole unit turning.*
 
-**Added:** Tuesday 2026-11-24 10:05 · **Filmed in WoL:** Tuesday 2026-11-24 11:39
+**Added:** Tuesday 2026-11-24 10:05 · **Filmed in WoL:** Wednesday 2026-11-25 08:53
 
 ![turretArc in WoL](media/gatlingCamel-wol.gif)
 
-*In WoL, with the gatling camel pack and `turretArc GatlingCamel ... log` (2 `GatlingCamel`, Ethiopians, selected,
-walked west, then three Houses to attack: two ahead at about 45 degrees left and right, one behind; filmed on
-2026-11-24):* each camel keeps still while its gun turns on its post to the House it fires at, the nearer one to its
-left, toward the camera, the other to its right; the gunner's hands stay on the crank and the breech, and the
-tracers leave the turned muzzle. On each reload the gun comes back to the middle while he throws the empty
-magazine away and pulls a full one from his hip. When the last House, behind them, is the target, the camels turn
-round to face it and fire ahead. [Full video (MP4)](media/gatlingCamel-wol.mp4).
+*In WoL, with the gatling camel pack (rounds 4 and 5) and `turretArc GatlingCamel ... log` (one `GatlingCamel`,
+selected, eight Houses all round brought to 50 HP; filmed on 2026-11-25):* the camel keeps still while its gun turns
+on its post to each House within 90 degrees of either side, the gunner's hands on the crank and the breech, the
+tracers leaving the turned muzzle; a House behind turns the camel round until it is inside the arc, then the gun
+takes over. [Full video (MP4)](media/gatlingCamel-wol.mp4).
+
+![turretArc in WoL, the gunner on foot](media/gatlingCamelDeployed-wol.gif)
+
+*The same Houses with a `GatlingCamelDeployed` (its arc -30..+90 from its aim file, 100 degrees a second; filmed on
+2026-11-25):* it deploys (the camel lies down, the gunner gets off, side-steps back and takes the two handles behind
+the gun), the gun turns between 30 degrees toward his side and 90 across the camel while he steps round the post,
+a House beyond turns the camel, he walks in to the breech to reload and back, and at the end he gets back on and
+the camel rises. [Full video (MP4)](media/gatlingCamelDeployed-wol.mp4).
 
 ![turretArc in WoL, key off](media/turretArc-wol-control.gif)
 
-*The same scene with the key off (the same pack, models and tactics):* each camel turns its whole body to the House
-it fires at, the gun fixed ahead. [Full video (MP4)](media/turretArc-wol-control.mp4).
+*The `GatlingCamel` scene with the key off (the same pack, models and tactics; filmed on 2026-11-25):* the camel
+turns its whole body to each House it fires at, the gun fixed ahead. [Full video (MP4)](media/turretArc-wol-control.mp4).
 
 ```
 turretArc <Proto> <aim file> [<Proto> <aim file> ...] [log]
@@ -4435,6 +4441,12 @@ turretArc <Proto> <aim file> [<Proto> <aim file> ...] [log]
   - A 120 s skirmish against an Ottoman AI with the pack: the AI played (8 settlers at 2 min).
   - Performance (`perfprobe.py`, 40 s, 30 `GatlingCamel` firing at invulnerable Houses all round): with the key 396 and
     370 fps, update 0.14 ms, main thread 92 %; key off 383 and 376 fps, 0.14 ms, 91 %. No cost measured.
+  - Rounds 4 and 5 (2026-11-25, `C:\AoE3-UHC-WoLReal7`, the new pack and DLL): `GatlingCamelDeployed`'s aims logged
+    with `arc -30..+90` (from its aim file; `GatlingCamel` `-90..+90`): the gun turned for targets from -30 to +90, a
+    target at -48, 127 or 180 turned the camel until it was inside the arc; a gun at rest inside a step band logged
+    `the gun rests at 41.8 degrees, inside the step band 24..44: the gunner's step finishes`; the deploy, the reload
+    walk, the undeploy, deaths mounted and deployed checked frame by frame in close films (`normalZoom` 14).
+    Performance was not measured again (the change is display only: a second table blended while the gun rests).
   - Not tested: multiplayer.
 
 #### broadsideMuzzleLimit
@@ -10344,7 +10356,8 @@ Line Infantry fall to their stones. The stones are too small to see at this zoom
 ### The gatling camel
 
 *WoL's new gatling camel: the zamburak's camel carrying the stock Gatling gun's barrels, casing, crank and magazine,
-cranked by its rider, in two units: one fires from the saddle, the other lies down and fires from the saddle.*
+cranked by its rider, in two units: one fires from the saddle, the other lies down and its gunner fires on foot from
+behind the gun.*
 
 Request #102 (JTMaston, 2026-11-24): "The current gatling camel model is very crude. Take the zamburak's model as the
 base, replace its weapon with the rotating part and the trunnion of the American gatling, and animate it." Today's
@@ -10367,35 +10380,41 @@ English and Spanish) delivers it:
   one from the pocket at his left hip and seats it (the user's choice, 2026-11-24; 3 s as before); the camel lowers
   its head out of the line of fire. Stats, cost, cards and strings unchanged.
 - **The turning gun** ([`turretArc`](#turretarc), 2026-11-24): the gun sits on `bone_yaw` at the post's top, and the
-  camel's `bone_turret` carries the launch point and the muzzle; with the key, a target within 90 degrees of either
-  side of ahead turns the gun, not the camel, and the shots leave the turned muzzle. Both attacks carry
-  `<turret tracking="always" maxTurnAnglePerSecond="240">90</turret>`, and the tool writes each unit's aim file
-  (`gatling_camel_A55.aim`, `_B55.aim`).
+  camel's `bone_turret` carries the launch point and the muzzle; with the key, a target within the arc turns the gun,
+  not the camel, and the shots leave the turned muzzle. Both attacks carry `<turret tracking="always"
+  maxTurnAnglePerSecond="...">90</turret>` (240 from the saddle, 100 on foot), and the tool writes each unit's aim file
+  (`gatling_camel_A55.aim`: -90..+90 every 15 degrees; `_B55.aim`: -30..+90 every 2 degrees, with the gunner's steps
+  and his settled feet), which also sets each unit's arc.
 - **`GatlingCamelDeployed`** (new, a copy of `GatlingCamel`, strings 690950 to 690952): keeps the deploy tactics
-  (`GatlingCamelDeployed.tactics`, the deploy 3.33 s and the undeploy 2.17 s, as long as their animations). The camel
+  (`GatlingCamelDeployed.tactics`, the deploy 5.33 s and the undeploy 4.17 s, as long as their animations). The camel
   lies down (the game's lying-down clips of its skeleton, the ones today's unit uses, turned upright and laid on the
-  ground) with the gunner in the saddle, the reins in his hands, and he fires from the saddle, the gun turning a full
-  90 degrees each way (the user's choice, 2026-11-24: until then he got off and fired on foot). Nothing trains it yet
-  (see the questions in `reply-to-maston-20261124-gcamel.txt`).
+  ground), the gunner gets off, side-steps back along its flank and works the gun on foot from behind the turret
+  (rounds 4 and 5, approved by the user on 2026-11-25): both hands in front of his chest on two long handles, a drop
+  crank for his left hand (a slanted shaft turns the gun's crank) and a traverse bar for his right. The gun turns 100
+  degrees a second from -30 (toward his side) to +90 (across the camel), and he steps round the post with it, one
+  foot at a time; when it stops, the step under way finishes (the settled table of the aim file), so no foot is left
+  in the air. To reload he walks in to the breech (0.5 s), does the same reload as from the saddle and walks back.
+  Every clip passed aoe3-blender-tools' `check_anim.py` (0 failures, with the rule that keeps his palms in front of
+  his chest). Nothing trains it yet (see the questions in `reply-to-maston-20261124-gcamel.txt`).
 
 ![The new gatling camel, from the saddle](media/gatlingCamel-wol.gif)
 
-*Two `GatlingCamel` (Ethiopians, selected, with `turretArc`; filmed on 2026-11-24) fire at three Houses, two ahead to
-the left and right and one behind: each gun turns on its post toward its House while the camel keeps still, and on
-each reload the gunner throws the empty magazine away and pulls a full one from his hip; for the House behind them
-the camels turn round.* [Full video (MP4)](media/gatlingCamel-wol.mp4). With the key off: [`turretArc`](#turretarc).
+*One `GatlingCamel` (selected, with `turretArc`; filmed on 2026-11-25 with the round-5 art) fires at eight Houses
+all round: the gun turns on its post toward each one while the camel keeps still, and for a House behind it the
+camel turns round.* [Full video (MP4)](media/gatlingCamel-wol.mp4). With the key off: [`turretArc`](#turretarc).
 
 ![The two gatling camels walking](media/gatlingCamel-move-wol.gif)
 
-*A `GatlingCamel` and a `GatlingCamelDeployed` (both mounted) walk back and forth, close up (`normalZoom` 18; filmed
-again on 2026-11-24 with the new gun bones): the legs on the ground, the gun at 0.55 on the post, the rider's hands at
-the reins and the gun.* [Full video (MP4)](media/gatlingCamel-move-wol.mp4).
+*A `GatlingCamel` and a `GatlingCamelDeployed` (both mounted) walk out and back, the camera following (filmed on
+2026-11-25 with the round-5 art): the legs on the ground, the gun on its post, the rider's hands at the reins and the
+gun.* [Full video (MP4)](media/gatlingCamel-move-wol.mp4).
 
 ![The new gatling camel, deployed](media/gatlingCamelDeployed-wol.gif)
 
-*Two `GatlingCamelDeployed` (Ethiopians, selected, with `turretArc`; filmed on 2026-11-24) ordered at a House: they
-lie down with their gunners in the saddle and fire, the guns turning to the other Houses around them; one is killed
-at its gun: the camel rolls over with the gun at rest, the gunner falls beside it.* [Full video (MP4)](media/gatlingCamelDeployed-wol.mp4).
+*One `GatlingCamelDeployed` (selected, with `turretArc`; filmed on 2026-11-25 with the round-5 art) deployed by its
+tactic button among eight Houses: the camel lies down, the gunner gets off, side-steps back and works the gun on foot
+from behind it, stepping round the post as it turns (-30..+90, 100 degrees a second); on reload he walks in to the
+breech and back; at the end he gets back on and the camel rises.* [Full video (MP4)](media/gatlingCamelDeployed-wol.mp4).
 
 ![Today's gatling camel (the control)](media/gatlingCamel-wol-control.gif)
 

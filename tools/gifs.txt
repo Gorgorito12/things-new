@@ -371,12 +371,12 @@ slinger-anims-attack-wol 3 13 1.2
 faithResource-wol 3 24 2
 faithResource-ottomans-wol 4 24 2
 faithResource-wol-control 3 24 2
-gatlingCamel-wol 2 24 2
+gatlingCamel-wol 0 12 1
 gatlingCamel-wol-control 0 22 2
 gatlingCamel-move-wol 1 24 2
-gatlingCamelDeployed-wol 12 24 2
+gatlingCamelDeployed-wol 1 24 2
 techGadgets-wol 0 12 1
 techGadgets-wol-control 0 12 1
 incomeRates-wol 0 24 2
 incomeRates-wol-control 0 24 2
-turretArc-wol-control 2 24 2
+turretArc-wol-control 0 12 1
