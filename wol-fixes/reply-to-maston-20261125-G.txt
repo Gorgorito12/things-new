@@ -13,7 +13,7 @@ It uses the game's own selection calls, the ones its "find all of a type" hotkey
 microseconds ten times a second with 250 units.
 
 The pack wol-fixes/select-fattened adds the button to data\uimainnew.xml (outside the resource panel's block, so the
-oil and faith panel packs still apply; with both, restore the oil pack first), the hotkey to data\DefaultKeyMapY.xml,
+oil and faith panel packs still apply; with both, restore them in the reverse order you applied them), the hotkey to data\DefaultKeyMapY.xml,
 two strings (690911, 690912; English and Spanish), the icon art\ui\ingame\uhc_select_fattened.ddt, and the cfg line.
 
 Seen in game (single player, Persians, full interface, with the oil panel pack too): the button shows 3, a click

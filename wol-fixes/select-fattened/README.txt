@@ -26,8 +26,9 @@ uiminimappanelnewmin.xml) sits on the panel's left corner in a game with a home 
 The resource panel's 12 variants (SettlerCountDialog-*) start their art at y 625 to 639, below the button. No other
 gadget of the game screen's layouts (uimainnew, uiminimappanelnew*, the oil and faith panel packs' 6 layouts) meets
 its box. It is a top-level gadget at the end of data\uimainnew.xml, outside the panel's block, so the oil and faith
-panel packs (wol-fixes\oil-panel, wol-fixes\faith-panel) apply and restore as before; with both, restore the oil
-pack first.
+panel packs (wol-fixes\oil-panel, wol-fixes\faith-panel) apply and restore as before. With both, restore in the
+reverse order of applying: each pack's backup holds the files as they were when it was applied, so restoring the
+first-applied pack first puts back files without the other pack's changes and leaves the other pack's backup wrong.
 
 Installing
 ----------
