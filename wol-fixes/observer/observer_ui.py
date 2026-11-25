@@ -547,7 +547,7 @@ ICON_ROW_TOP = 40  # where WoL puts the row (size1024 y)
 # the home city button and its shipment counter: WoL moved them above the minimap, into the observer's
 # options bar; the observer copy has them where the panel was laid out around them
 HC_BUTTON = ["shipsDisplay", "uimain-homeCityToggle", "shipsDisplayBG", "shipsTimerBG", "shipsTimerFG"]
-HC_BUTTON_MOVE = (-86, -39)  # the copy's 222..274 x 629..667 to 136..188 x 590..628 (the minimap starts at y 628)
+HC_BUTTON_MOVE = (-222, -103)  # the copy's 222..274 x 629..667 to 0..52 x 526..564: above the minimap (from y 566)
 
 
 def shift(el, dx, dy):
@@ -602,9 +602,10 @@ def move_icon_rows(merge, cur, log):
 
 
 def restore_hc_button(merge, cur, log):
-    """The observer copy's button group (flag, shipment count, XP bar), moved as one to just above the
-    minimap's top right corner, left of the panel's options toggle: in the copy's place, inside the player
-    rows' top left corner, the first row covers it at 1280 x 720 and in 3v3 (seen in game)."""
+    """The observer copy's button group (flag, shipment count, XP bar), moved as one to the screen's left
+    edge just above the minimap: in the copy's place, inside the player rows' top left corner, the first
+    row covers it at 1280 x 720 and in 3v3; at the minimap's top right the minimap is drawn over it (both
+    seen in game)."""
     n = 0
     for name in HC_BUTTON:
         o, c = first_named(merge.d.obs, name), first_named(cur, name)
@@ -614,7 +615,7 @@ def restore_hc_button(merge, cur, log):
             U.set_attr(c, "size1024", rect_text([r[0] + dx, r[1] + dy, r[2] + dx, r[3] + dy]))
             n += 1
     if n:
-        log.append(f"rule: the home city button and its counter ({n} gadgets) above the minimap's top right corner")
+        log.append(f"rule: the home city button and its counter ({n} gadgets) at the screen's left edge, above the minimap")
 
 
 def civ_flags(data):
@@ -683,8 +684,51 @@ def park_new_unit_panel_texts(merge, cur, log):
                    "the observer's panel shows speed and garrison in its own row")
 
 
+# WoL's panels the observer has no use for, which would show over the player rows' right end (x 700..810)
+# or under the top bar: their SpecContainer (put by the observer copy, hidden by the map only through its
+# console command fixui) is hidden from the start. Nothing shows them: the map only hides them, and the
+# engine shows the panels inside, which a hidden parent keeps from being drawn (seen with the resource
+# panels, which the engine shows by name).
+HIDDEN_CONTAINERS = {MAIN: ["uimain-Score-SpecContainer"],
+                     "uicommandpanelnewmin": ["commandpanel2-SpecContainer", "SocketPanel2-SpecContainer",
+                                              "TreasurePanel-SpecContainer"],
+                     "uiunitstatpanel3min": ["unitstatpanel3-SpecContainer"]}
+MINIMAP_ART = "minimapPanel-SpecContainer"
+MINIMAP_RIGHT = 214  # the minimap's own part of the panel art; 214..342 was the resource panel's slot
+
+
+def hide_containers(cur, normal, log):
+    names = HIDDEN_CONTAINERS.get(normal, [])
+    n = 0
+    for name in names:
+        for g in U.find(cur, name):
+            U.set_attr(g, "hidden", "")
+            n += 1
+    if n:
+        log.append(f"rule: hidden for the observer: {', '.join(names)}")
+
+
+def clip_minimap_art(cur, log):
+    """The minimap panel's art spans 0..342: its right part is the slot of WoL's resource panel, under the
+    player rows. Cut to the minimap's own 0..214, the texture coordinates cut the same way."""
+    for g in U.find(cur, MINIMAP_ART):
+        r = parse_rect(g.get("size1024"))
+        if not r or r[2] <= MINIMAP_RIGHT:
+            continue
+        share = (MINIMAP_RIGHT - r[0]) / (r[2] - r[0])
+        for attr in ("texturecoords", "clickthrucoords"):
+            tc = parse_rect(g.get(attr))
+            if tc:
+                U.set_attr(g, attr, " ".join(f"{v:.6g}" for v in (tc[0], tc[1], tc[0] + (tc[2] - tc[0]) * share, tc[3])))
+        U.set_attr(g, "size1024", rect_text([r[0], r[1], MINIMAP_RIGHT, r[3]]))
+        log.append(f"rule: the minimap's art cut to x {r[0]:g}..{MINIMAP_RIGHT} (its right part was the resource panel's slot, under the rows)")
+
+
 def observer_rules(merge, data, normal, res, log):
-    """The changes the observer needs beyond the copy's own: see README.md, "The rebuilt files"."""
+    """The changes the observer needs beyond the copy's own: see README.md, round 3."""
+    hide_containers(merge.cur, normal, log)
+    if normal == "uiminimappanelnewmin":
+        clip_minimap_art(merge.cur, log)
     cur = merge.cur
     if normal == MAIN:
         hide_resource_panels(cur, log)
@@ -705,10 +749,13 @@ NEW_RES = {"1440x900": "1366x768", "1600x1200": "1600x900", "1920x1200": "1920x1
            "2560x1080": "1920x1080", "2560x1440": "1920x1080", "3440x1440": "1920x1080",
            "3840x2160": "1920x1080"}
 ZONE_X = {0, 214, 810, 1024}  # the panel's columns in 1024 units: minimap | player rows | unit panel
-# the subtitle canvases the panel writes its text into: the shipment counters under the flags first, then
-# numLFs empty lines of "Graphicz 32", then the icons of the player rows. Kept at the top, so a resolution
-# of another height needs its own numLFs (the preset): see NEW_PRESETS.
-TOP_CANVASES = {"subtitlename", "widesubtitlename"}
+# The subtitle canvases (SubtitleName, WideSubtitleName) hold the shipment counters under the top flags,
+# then numLFs empty lines of "Graphicz 32", then a layer of the player rows: one text from the top of the
+# screen to the bottom. They are anchored at the bottom with the rows (seen right at 2560x1440). At a
+# height other than the source's, the counters then sit lower by the difference (360 px at 1440): that needs
+# a preset with another numLFs in the map, which two tries (numLFs 29 and 30 at 2560x1440, the canvas
+# anchored at the top) did not find. Listed as open in README.md.
+TOP_CANVASES = set()
 
 
 def wh(res):

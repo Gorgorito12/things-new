@@ -296,9 +296,11 @@ take). Then the observer-only rules, each seen in game:
 
 | Rule | Why |
 |---|---|
-| WoL's 13 resource panels (`SettlerCountDialog*`) in one hidden container, `Spec_WoLResourcePanels` | The observer's own (empty) economy was drawn under the player rows; the numbers overlapped. |
+| WoL's 13 resource panels (`SettlerCountDialog*`) in one hidden container, `Spec_WoLResourcePanels` | The observer's own (empty) economy was drawn under the player rows; the numbers overlapped. The engine itself shows one of the 12 variants by name when the interface is built (FUN_00454F2F, `docs/engine-symbols.md`); inside a hidden parent it is not drawn (seen at every resolution, pictures in `_share`). |
 | WoL's icon row (Menu > Icons) and building search row moved below the population box | They would cover the observer's top band. |
-| The home city button and its shipment counter where the observer copy has them | WoL moved them over the panel's options bar. |
+| The home city button, its shipment counter and XP bar: the observer copy's group, moved as one to the screen's left edge, just above the minimap | WoL moved them over the panel's options bar; where the observer copy has them, inside the rows' top left corner, the first row covers them at 1280x720 and in 3v3; at the minimap's top right the minimap circle is drawn over them (both seen in game). The observer needs the button: the home city view shows the players' decks. |
+| Hidden from the start: the containers of WoL's command panel, socket and treasure panels, unit stat panel (`commandpanel2-`, `SocketPanel2-`, `TreasurePanel-`, `unitstatpanel3-SpecContainer`) and of WoL's top score panel (`uimain-Score-SpecContainer`) | The observer has no use for them, and they would show over the right end of the player rows (x 700 to 810) or under the top bar. The map's code only hides them (its console command `fixui`); the engine shows the panels inside, and a hidden parent keeps them from being drawn. |
+| The minimap's art cut to the minimap (x 0 to 214, texture cut the same) | Its right part was the slot of WoL's resource panel, under the player rows. |
 | One `Spec_Flag_<column>_<civ ID>` per WoL civ, with its large flag button set | The panel asks for the flag by `kbGetCiv()`, which is the civ's place in `civs.xml` (commented-out civs left out) plus one: ESOC's gadgets used the stock numbers, so WoL's Germans showed the Aztec flag and Mapuche none. 88 civs x 6 columns, the same list as `observer_maps.py flags`. |
 | WoL's later unit panel texts (LOS, Train Points, Speed, Garrison, two empty) moved out of the screen | Placed for WoL's centre panel, they were drawn over the player rows; ESOC's own unit panel (at the right) shows speed and garrison in its own row. |
 
@@ -313,3 +315,20 @@ map's `loadWxH()` presets are pixel offsets. So a new resolution starts from the
 and each panel gadget keeps its size in pixels and its distance from the screen's centre and from the top or
 bottom edge; WoL's own panels and the panel's wood backgrounds stay stretched by the game as before. These
 files are loaded only if WoL's DLL adds the resolutions to its list of seven.
+
+| New resolution | Made from | Preset the map runs | Map change needed |
+|---|---|---|---|
+| 2560x1080 | 1920x1080 | `load1920x1080()` (the layout keeps `Spec_PresetConfig-1920x1080-1`) | none |
+| 1920x1200, 2560x1440, 3440x1440, 3840x2160 | 1920x1080 | `load1920x1080()` | see below |
+| 1440x900 | 1366x768 | `load1366x768()` | see below |
+| 1600x1200 | 1600x900 | `load1600x900()` | see below |
+
+Open point for the taller ones: the panel writes one text (the subtitle canvas) from the shipment counters
+under the top flags down to a layer of the player rows, with `numLFs` empty lines between. Anchored at the
+bottom, the rows are right and the counters sit lower than the flags by the height difference (360 px at a
+height of 1440); it needs a preset with its own `numLFs` (and perhaps `displayfinetuning`) per height, found in game
+with ESOC's adjust tool (`Spec_SetAdjustConfig`). Two tries at 2560x1440 (`numLFs` 29 and 30, canvas anchored
+at the top) put the counters right but tinted the row cells, so that is not solved.
+
+Wider screens keep the panel at its 1080p size in pixels (the fonts and icon cells are fixed pixel sizes),
+centred between the minimap and the unit panel, with the wood background stretched to fill.
