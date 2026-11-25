@@ -1,21 +1,24 @@
 # Tools
 
-Python 3 scripts, with no third-party packages except where noted. Run them with `python -I`
+Python 3 scripts, with no third-party packages except where noted (Pillow for `kothcheck.py`'s minimap crops,
+capstone for `re/pe64.py`'s listings). Run them with `python -I`
 (isolated mode) from the repository root.
 
 | Tool | What it does |
 |---|---|
 | [`gen_sites.py`](#gen_sitespy) | Writes `src/generated/sites.h` from the stock exe. |
 | [`package_release.py`](#package_releasepy) | Builds the release zip that modders download. |
+| `export_public.py` | `--check` builds the public export in memory and reports what it would refuse (a banned name, a link to a file or heading that is not exported, unbalanced markers); `--out <public clone>` empties the clone but for its `.git` and `KEEP_IN_CLONE` and writes the export there; commit and push the clone by hand, only when asked. |
 | [`bar.py`](#barpy) | Lists and extracts files from the game's `.bar` archives. |
 | [`xmbedit.py`](#xmbeditpy) | Checks, converts, compiles and edits compiled XML (`.xmb`). |
 | [`dot_testdata.py`](#dot_testdatapy) | Writes the `damageOverTime` test data into a test copy of the game. |
 | [`pop_testdata.py`](#pop_testdatapy) | Writes the `decimalPopulation` test data into a test copy of the game. |
 | [`protoy_testdata.py`](#protoy_testdatapy) | Edits protos in a test copy's `protoy.xml` and its XMB: marker unit types, flags, extra elements. |
-| `guide_dates.py` | Writes the day, date and time of every feature, and the "Latest changes" table, into `docs/modding-guide.md` and `docs/bug-fixes.md` from git; run it before the commit of a new key or test video. | <!-- private -->
+| `guide_dates.py` | Writes the day, date and time of every feature, and the "Latest changes" table, into `docs/modding-guide.md` and `docs/bug-fixes.md` from git; run it before the commit of a new key or test video. `--check` only reports what would change. | <!-- private -->
 | `porting_code.py` | Writes `docs/porting-code/*.md`, the code of the features in pages by theme, from `src/`. `--check` fails when a page differs. |
 | `make_gifs.py` | Makes every test GIF to one standard (800 px, 8 fps, 12 s, 4 MB) from the masters in `rea/media-masters`, with the cuts in `gifs.txt`. `--check` fails on one out of it. |
-| `rings/`, `bars/`, `playericons/` | Generated art, kept here because the release zip, the tests and the docs use it; the generators live in [aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools) (since 2026-11-13; new art tools go there too). From that repo's folder: `python -I tools/make_rings.py --out <this repo>\tools\rings --folder uhc_rings` (the coloured aura rings for `art/effects/uhc_rings/`, `aura_<resource>.xml` with a floating icon, `range_<metres>.xml` for `displayedRange`, `rank_<1-5>.xml` for `veterancyBonus`); `python -I tools/make_bar.py --out <this repo>\tools\bars\health_overheal.ddt` (the orange end of the portrait HP bar for `overhealHitpointBars segment`, for `art/ui/uhc/`; `--colour RRGGBB` for another colour, to name with `bar=`); `python -I tools/make_icons.py --out <this repo>\tools\playericons --prefix uhc_ --table avatar_uhctest.xml` (three test icons `uhc_blue`, `uhc_red`, `uhc_green` and their avatar table, for `playerIcon`; `--install <bed>` copies them to `data\` and `art\ui\playericons\`). Add `--check` to compare: all three match the files here. |
+| `rings/`, `bars/`, `playericons/` | Generated art, kept here because the release zip, the tests and the docs use it; the generators live in [aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools) (since 2026-11-13; new art tools go there too). From that repo's folder: `python -I tools/make_rings.py --out <this repo>\tools\rings --folder uhc_rings` (the coloured aura rings for `art/effects/uhc_rings/`, `aura_<resource>.xml` with a floating icon cut from `--icon-sheet <this repo>\tools\rings-source\gather-marker-icons.png`, `range_<metres>.xml` for `displayedRange`, `rank_<1-5>.xml` for `veterancyBonus`); `python -I tools/make_bar.py --out <this repo>\tools\bars\health_overheal.ddt` (the orange end of the portrait HP bar for `overhealHitpointBars segment`, for `art/ui/uhc/`; `--colour RRGGBB` for another colour, to name with `bar=`); `python -I tools/make_icons.py --out <this repo>\tools\playericons --prefix uhc_ --table avatar_uhctest.xml` (three test icons `uhc_blue`, `uhc_red`, `uhc_green` and their avatar table, for `playerIcon`; `--install <bed>` copies them to `data\` and `art\ui\playericons\`). Add `--check` to compare: all three match the files here. |
+| `rings-source/` | The source art of the rings: `gather-marker-icons.png`, the drawn sheet of the gather marker icons that `make_rings.py --icon-sheet` cuts and scales ([modding guide, "The marker of a gathered resource"](../docs/modding-guide.md#the-marker-of-a-gathered-resource)). |
 | `make_avatar_table.py` | `make_avatar_table.py <WoL folder> [--out <file>]` writes the avatar table of `playerIcon` (default `<WoL>\data\avatar_wol.xml`) from pictures WoL already ships: its player avatars `art\spec\avatars\*.ddt` (ID: the file name in lower case) and the `cpai_avatar_*` portrait of each public civ in `civs.xml` (ID: `civ_<name>`). A missing texture (not loose, not in `art\*.bar`) is skipped; prints the IDs; copies no art and changes nothing else in the WoL folder; refuses to overwrite a table it did not write. Its output stays out of git. |
 | `sharedlimit_testdata.py` | `<bed> [--restore]`: a real `OutpostWagon` at the Town Center and a team's `ypGoat` limit in a WoL bed, for `sharedBuildLimit`. |
 | `monastery_testdata.py` | `<bed> [--model\|--ai\|--restore]`: `UhcMonastery` and `UhcSmallMine` in a WoL bed, for `linkedResource`; buildable with a monastery's model, and an AI rule that builds one. |
@@ -25,6 +28,7 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, timed trigger effects, console commands, units, log, screenshots, videos. |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
+| `re/trace_frees.py` | `<out prefix> [--minutes N] [--parts]`: crash watch plus a log of what the game frees in Granny (model cache unloads and reloads, model instance frees; `--parts`: each part whose bone a model lacks instead of the instance frees), for a crash on a freed model or animation; `<prefix>.log`, `<prefix>.frees.tsv` and, on a crash, `<prefix>.crash.json`. See its docstring. |
 | [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
 | [`re/time_xs.py`](#retime_xspy) | Times the AI scripts in the running game: each XS compile (per file, per AI player, with the memory it adds) and each AI player's rule runs. |
 | [`xs_culture_split.py`](#xs_culture_splitpy) | Files the rules and functions of an AI script by culture and writes simulated splits (one culture kept, the others stubbed; or core plus culture files), for measuring what a split would change. |
@@ -46,8 +50,14 @@ Python 3 scripts, with no third-party packages except where noted. Run them with
 | `gameui.py` | Drives a game window for unattended tests: screenshots, clicks, keys. Select the window with `--process` (age3y.exe or AoE3DE_s.exe). It moves the real cursor, so use it only with the machine owner's permission. |
 
 Never point a tool that writes at the Steam install. The data tools write only the output file
-you name, `dot_testdata.py` and `pop_testdata.py` write only into the test copy you name, and `gen_sites.py` only
-reads the exe.
+you name, and `gen_sites.py` only reads the exe. These write into the test copy you name, keeping what they
+replace (`*-orig`, `AI4\_uhc-aside`) for their `--restore` / `reset` / `restore`: `dot_testdata.py`,
+`pop_testdata.py`, `protoy_testdata.py`, `sharedlimit_testdata.py`, `monastery_testdata.py`, `torp_testdata.py`,
+`ring_testdata.py`, `grant_testdata.py` and `ai_personality.py`; `testbed.py` writes there too (`deploy`, `map`, `lang` (it keeps `*.lang-orig`),
+`profile hc`/`isolate`/`video restore`). `dot_testdata.py`, `pop_testdata.py`, `protoy_testdata.py`, `grant_testdata.py`,
+`ai_personality.py` and `testbed.py` refuse a folder in a Steam library; the other test data tools do not check, so
+give them a test copy only. `make_avatar_table.py` writes one file into the WoL folder you name (a test copy, never
+Steam's).
 
 ## gen_sites.py
 
@@ -63,8 +73,12 @@ patching. It refuses any exe whose SHA-256 is not the stock build's. To add a si
 ## package_release.py
 
 ```
-python -I tools/package_release.py [--force]
+python -I tools/package_release.py [--force] [--dxvk <folder>] [--dinput8-only]
 ```
+
+`--dinput8-only` writes `dist\dinput8-x.y.z.zip` instead. It is a package without `UHC.dll`: `dinput8.dll`,
+`engine-ext\engine-ext.cfg`, the same art, DXVK and license, and a README for that route. Only
+`build\Release\dinput8.dll` is checked.
 
 Checks `build\Release\UHC.dll` and stops if it fails any check:
 - it must be a 32-bit DLL that exports `_UHCMain@0`;
@@ -78,7 +92,13 @@ An existing zip is kept unless `--force` is given. The procedure around it is in
 
 The zip also holds `beside-another-dll/`: `dinput8.dll` and `engine-ext/engine-ext.cfg`, for a game that keeps another
 `UHC.dll`. The script stops if `dinput8.dll` is missing, is not this version, or lacks `DirectInput8Create`, and
-prints its SHA-256 too. The aura rings of `tools/rings` go in `art/effects/uhc_rings/`, for a game's `art` folder.
+prints its SHA-256 too. The aura rings of `tools/rings` go in `art/effects/uhc_rings/`, for a game's `art` folder, and
+`tools/bars/health_overheal.ddt` in `art/ui/uhc/` (the orange end of the portrait HP bar, `overhealHitpointBars`).
+
+`dxvk/d3d9.dll` and `dxvk/LICENSE.txt` are DXVK 3.1.1's x32 `d3d9.dll` and its zlib license, for `rendererOption`. They
+are not in git: the script reads them from `rea/vendor/dxvk-3.1.1/` (gitignored), or the folder given with `--dxvk`
+(`d3d9.dll` and `LICENSE`), and stops if either is missing, if the DLL's SHA-256 is not the 3.1.1 release's, or if the
+license is not DXVK's zlib license.
 
 ## bar.py
 
@@ -216,9 +236,10 @@ python -I tools/testbed.py [--bed <folder>] <command> ...
 ```
 
 Drives the game of a test copy (default `C:\AoE3-UHC-Test`, or the `UHC_TESTBED` variable) with
-no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wait`, `state`,
-`units`, `explored`, `shot`, `record`, `click`/`rclick`, `hover`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `chars`, `log`, `safety`; the
-docstring lists their arguments. `chars <text>` posts `WM_CHAR`s to the window, so the text field that has the
+no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `skirmish`, `wait`, `state`,
+`units`, `explored`, `shot`, `record`, `click`/`rclick`, `hover`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `chars`, `log`,
+`profile`, `lang`, `monitors`, `safety`; the docstring lists their arguments. `units --los` adds each unit's own line of
+sight and its proto's; `monitors` lists the monitors and the one tests use (`UHC_TEST_MONITOR`). `chars <text>` posts `WM_CHAR`s to the window, so the text field that has the
 game's focus (click it first) takes them with no keyboard and no focus, in a `background` copy too; `key back` erases.
 
 A command that waits on the game ends with exit code 3 when the game dies meanwhile (the message gives
@@ -276,7 +297,8 @@ live text on every frame:
   its noise makes the GIF grow.
 - `--log-top`: draws the `--log` lines above the game's bottom panel, for a feature that shows in it.
 - `--gold 1,2`: a line with those players' gold, read from the game, for a test of resources where the second player's
-  stockpile shows nowhere on screen.
+  stockpile shows nowhere on screen; `--gold-resource N` shows resource N instead (e.g. 4, the faith of the
+  `faithResource` pack).
 - `--background`: leaves the focus alone. For a copy with `multipleInstances background`: it needs
   no window in front, so a test can run while somebody uses the PC.
 - `--hover <x>,<y>`: rests the cursor on a client point (a command panel button), so the button's
@@ -335,7 +357,7 @@ With several games running, set `UHC_GAME_DIR` to the copy's folder.
 ```
 python -I tools/mapsweep.py --bed <copy> --csv <out.csv> [--maps A,B | --list FILE | --match RE]
        [--players 2,4,8] [--seeds 1,2,3] [--seconds 30] [--route scenario|skirmish] [--ai wolOtto]
-       [--teams | --ffa] [--koth] [--save-load] [--label TEXT]
+       [--teams | --ffa] [--koth] [--difficulty N] [--set name=value ...] [--save-load] [--label TEXT]
        [--shard K/N] [--evidence DIR] [--no-debugger] [--dry-run]
 ```
 
@@ -475,7 +497,7 @@ a mismatch is a lead to read the script, not a verdict.
 
 ```
 python -I tools/kothcheck.py --bed <copy> --csv <out.csv> --maps A,B [--src <dir>] [--players 2,4,8]
-       [--seeds 1,2] [--ffa 4] [--normal] [--reach [seconds]] [--shots <dir>] [--survey]
+       [--seeds 1,2] [--ffa 4] [--normal] [--reach [seconds]] [--shots <dir>] [--mapsize N] [--survey]
 python -I tools/kothcheck.py --bed <copy> --uninstall
 ```
 

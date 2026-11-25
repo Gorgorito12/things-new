@@ -49,4 +49,4 @@ What stays as before
 - Only the first research of the queue advances; the next starts when it finishes.
 - Saved games keep the queue and its progress.
 
-Every player needs the same key and data (it changes the simulation). Not tested in multiplayer yet.
+Every player needs the same key and data (it changes the simulation). Not tested in multiplayer.

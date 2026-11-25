@@ -59,13 +59,13 @@ help text (e.g. `resourceMarket` 0x7DEEC5).
 | VA | Role | Source | Status | Evidence |
 |---|---|---|---|---|
 | 0xC66234 | main game object pointer | DLL/Civs.asm:295 | confirmed | cs. 12,458 refs; every site reads `+13Ch` (world) or `+140h` (database) from it. |
-| 0xC66664 | current player index | DLL/syscalls.h:10951 | unverified | 538 refs; role not checked. |
+| 0xC66664 | current player index (for a kb syscall, the player whose AI script calls it) | DLL/syscalls.h:10951 | confirmed (in game) | 538 refs. `kbUnitSyscalls` reads it as the calling player (`CurrentPlayer()`, `src/features/kbsyscalls.cpp`): the Maori AI `wolRauparaha` compiles and plays with it, and its `kbUnitGetNumberWorkersIfSeeable` counted 6 visible workers on a hunt ([wol-migration.md](wol-migration.md), Keys). `kbUnitVisible` 0x88596E tests the same index. |
 | 0xC6FB88 | Asian civ ID global | DLL/Civs.asm:216 | confirmed | cs. Compared in `isAsianCiv` 0x454ED7 and in 0x8D6AC4. 5 refs. |
 | 0xC6FB48, 0xC6FB4C | civ ID globals used by the wonder-civ check 0x49A2D8 | — | confirmed (role: civ IDs) | cs. Not in upstream. |
 | 0xC6FB50, 0xC6FB54 | native civ ID globals (always native): XPIroquois, XPSioux | — | confirmed | cs. Checked by `isNativeCiv` 0x453D37. Written by FUN_00512651 (0x51266C..0x5126BC) through 0x58E71F on each data load, which also writes 0xC6FB7C (`Japanese`). Not in upstream. |
 | 0xC6FB58, 0xC6FB5C | native civ ID globals: XPAztec, XPSPC; 5Ch counts only when the bool arg is set | DLL/Civs.asm:301, 325 | confirmed | cs (0x453D37). The four dance readers compare all four ("Dances" below). |
 | 0xC66588 | RNG object | DLL/Units.asm:518 | confirmed | E3 (0x422648 layout), 483 refs |
-| 0xD65600 / 0xD65604 | cheat array / count (16-byte entries) | DLL/Cheat.asm:33 | partial | E3 (0x5ACE63 is a 16-byte-entry array). 50 / 29 refs. The cheat role is not checked. |
+| 0xD65600 / 0xD65604 | cheat array / count (16-byte entries) | DLL/Cheat.asm:33 | confirmed (in game) | E3 (0x5ACE63 is a 16-byte-entry array). 50 / 29 refs. `customCheats` (`src/features/plugins.cpp`) appends the plugins' cheats there and they run: `kill 'em all` killed 50 Cannons in WoL ([wol-migration.md](wol-migration.md), Keys). |
 | 0xBE3A98 | `L"AI3\"` AI folder string | DLL/Patch.cpp:108 | confirmed | cs. WoL patches it to `AI4`. |
 | 0xC0B39C | `L".personality"` | DLL/Patch.cpp:109 | confirmed | cs |
 | 0xC0BBE0 | default farm radius (float 4.5) | DLL/Units.asm:525 | confirmed | cs. 2 refs, one of them the FarmRadius site. |
@@ -90,11 +90,11 @@ Database (`[game+140h]`):
 | Offset | Meaning | Status | Evidence |
 |---|---|---|---|
 | `+24h` / `+28h` | civs `{Civ*[], count}`; a civ's name is at `+4` | confirmed | E3 |
-| `+54h` / `+58h` | proto units `{Proto*[], count}`; a proto's name is at `+10h` | new | E3 |
+| `+54h` / `+58h` | proto units `{Proto*[], count}` by proto ID; a proto's name is at `+10h` | confirmed | E3; `damageOverTime` (`src/features/damageovertime.cpp`) takes its attachment proto as `[[db+54h]+4·id]`, `id` below `[db+58h]`, and finds its `Attaching` action there: poison confirmed in game |
 | `+80h` | resource count (the stat panel's AutoGather loop runs to it) | confirmed | cs, `showGatherRate` in game |
 | `+180h` / `+184h` | resource name string IDs `[[db+180h]+4·r]`, count (getter 0x60782A) | confirmed | cs, `showGatherRate` in game |
 | `+190h` | unit types | confirmed | cs; see "Unit types and healing" |
-| `+1FF0h` | tactics | upstream, unverified | |
+| `+1FF0h` / `+1FF4h` | tactic names: wide strings by name ID (the ID a tactic's `+8` holds), and their count (0x5E0CA6 looks one up) | confirmed | `autoScout` (`src/features/autoscout.cpp`) finds the name ID of `AutoScout` there and tells the units in that tactic by it: confirmed in game (WoL #68). Upstream's label was "tactics" |
 | `+3824h` | tech names: array of wide-string pointers by tech ID, count `[+3828h]` | confirmed | cs (getter 0x5C400B), `techPrereqRecheck` in game |
 | `+335Ch` / `+3360h` | effect type name table / its count (the next effect type ID) | confirmed | cs, `techRenameEffect` in game |
 | `+5D9Ch` | the database's tech tree (TT0) | confirmed | cs, `techRenameEffect` in game; see "Tech tree and tech effects" |
@@ -120,22 +120,22 @@ World (`[game+13Ch]`):
 | `+5Ch` | player count | confirmed | E3, 0x49A98A |
 | `+7Ch` | tech status manager: the 16 per-player tech trees, `[+4·playerId]` | confirmed | cs, `techPrereqRecheck` and `techRenameEffect` in game |
 | `+F8h` | step count: +1 per world update (0x481A87) | confirmed | cs, `damageOverTime` in game |
-| `+104h` | length of the current step (seconds, inferred) | new | cs (Maintain and regeneration updates) |
+| `+104h` | length of the current step, in seconds | confirmed | cs (Maintain and regeneration updates); `gatherFix` (`src/features/gatherfix.cpp`) adds it to each gatherer's timer and collects at the action's interval in seconds: in WoL 0.50 wood/s per settler at rate 0.5, as the data says |
 | `+108h` | game time, ms (advanced by the world update FUN_00481A57) | confirmed | cs, `damageOverTime` in game |
 | `+310h` | training rate (`trRateTrain`) | new | cs (Maintain update) |
-| `+318h` | gather multiplier: multiplies every gather tick's rate (0x4ED01B) and the AutoGather rate (0x49EDEC, scoping); meaning of its source unknown | new | cs (`showGatherRate`) |
+| `+318h` | gather multiplier: multiplies every gather tick's rate (0x4ED01B) and the AutoGather rate (0x49EDEC, scoping), and the build tick's rate (0x9D3D80); meaning of its source unknown | new | cs (`showGatherRate`, `minUIStats`). `minUIStats` multiplies a builder's rate by it, and its time to finish matched a stopwatch (WoL #67); that shows the read, not what sets the value, so the meaning stays open |
 | `+31Ch` | pop-cap-like limit read by PopLimit | new | cs |
 | `+330h` | dopple manager | new | cs; see "Dopples" |
 | `+56Ch` | ability manager (`abilities.xml`) | confirmed | cs, `abilitySlots` and `wonderPanelSkipAuras` in game |
 | `+5ACh` | global LOS multiplier (1.0) | new | cs (LOS getter 0x48206D) |
-| `+6912h` | shared-resources flag | new | E3 |
+| `+6912h` | shared-resources flag (byte) | observed | E3 (the add 0x49A98A splits among the team when it is 1). In game (`resourceDebt`, 2026-11-05) the team option split a trickle between two allies. `incomeRates` and `researchGrants` read it (`!= 0`) but were not tested with shared resources |
 
 Other objects:
 
 | Object | Fields | Status | Evidence |
 |---|---|---|---|
-| Player data | `[player+80h]+0Ch`; civ at `[[pd]+20h]`; team at `[pd+10h]` | upstream, unverified | |
-| Player | `+0` player ID; `+20h` pointer to the civ IDs, `+24h` their count (the dance readers take `[[player+20h]]`); `+50h` current age (compared by the ability code); `+80h` knowledge base (KB); `+84h` home city; `+E0h`/`+E4h` the player's proto copies; `+1D4h` stances toward each player, `[player+1D4h+4·id]` (2 = enemy, 0 or 1 = ally; 0x484D2D / 0x4707EC); `+338h` non-zero for a player the tech update and the gather tick skip (defeated, inferred); `+37Ch` a float that multiplies every gathered amount (0x4ED13A) and, when `0x485D2C(action, 16h)` is true, the Train update's rate (FUN_009EA28B); `+349h` bit 40h, player flag 14: the request for the town starting units, set through the flag setter 0x8D00E5 and cleared at 0x679B63; `+3E0h` the player's colony list (FUN_007C238E); `+4F0h` FirstTC, the unit ID of the first Town Center ("Starting town center"); `+507h` TC spawning allowed and `+50Ah` revolted (both inferred) | confirmed (reads), inferred where marked | cs; `danceBonusCivs`, `techPrereqRecheck`, `maintainWaitForPop`, `startingTC`, `civFirstTC` and `showGatherRate` in game |
+| Player data (upstream's reading) | `[player+80h]+0Ch`; civ at `[[pd]+20h]`; team at `[pd+10h]` | upstream, unverified | The team is confirmed at `[player+10h]` of the player itself (`[[world+58h]+4·id]`, "Player" below), not through `[player+80h]`, which is the knowledge base. The rest of this path is not checked. |
+| Player | `+0` player ID; `+10h` team (`kothTimer` counts the teams with it: 3 players in 2 teams counted 2, in game; Team XP `[[world+188h]+4·[player+10h]]`); `+20h` pointer to the civ IDs, `+24h` their count (the dance readers take `[[player+20h]]`); `+50h` current age (compared by the ability code); `+80h` knowledge base (KB); `+84h` home city; `+E0h`/`+E4h` the player's proto copies; `+1D4h` stances toward each player, `[player+1D4h+4·id]` (2 = enemy, 0 or 1 = ally; 0x484D2D / 0x4707EC); `+338h` non-zero for a player the tech update and the gather tick skip (defeated, inferred); `+37Ch` a float that multiplies every gathered amount (0x4ED13A) and, when `0x485D2C(action, 16h)` is true, the Train update's rate (FUN_009EA28B); `+349h` bit 40h, player flag 14: the request for the town starting units, set through the flag setter 0x8D00E5 and cleared at 0x679B63; `+3E0h` the player's colony list (FUN_007C238E); `+4F0h` FirstTC, the unit ID of the first Town Center ("Starting town center"); `+507h` TC spawning allowed and `+50Ah` revolted (both inferred) | confirmed (reads), inferred where marked | cs; `danceBonusCivs`, `techPrereqRecheck`, `maintainWaitForPop`, `startingTC`, `civFirstTC`, `showGatherRate` and `kothTimer` (`+10h`, `src/features/kothtimer.cpp`) in game |
 | Unit | proto at `[unit+5Ch]`; proto ID at `proto+8` (confirmed, E3 0x44CB0A) and also at `proto+4` | partial | E3; `proto+4` per FarmAnim #5 and RectFarm #1. TakeDamage's callers pass `[[unit+5Ch]+4]` as the attacker proto ID, which FUN_0045311B maps back to the proto (`damageOverTime` relies on it, confirmed in game). More unit fields: "Damage and poison" below. |
 
 Sources: `Documentation/Examples/UHCPluginDemo/syscalls.h` (~lines 11033-11088), `DLL/syscalls.h`, and the stock-code observations above.
@@ -1155,7 +1155,7 @@ movement".
 | Aura apply | FUN_009D033E, call 0x4DD22D at 0x9D0670; filter 0x9D0238; scan 0x9CFF9A → 0x4A1C55 ("Resource auras", below in this file's order, has their signatures) | confirmed for a completed building, in game | `0x4DD22D(target, stat, mult, −1f, −1f, 0, 2, 0 ms, −1, −1, exclusive)`. Filter: not the owner, same player unless tactic flag 20h, alive, complete (0x44DDB4), ModifyProtoID / ModifyAbstractType. Runs only when the multiplier is > 1e-6 and the owner is complete. Keeps {target ID, modifier ID} at `[ua+68h]`. In game, an Explorer's aura reached a completed BloodFactory. |
 | Aura update's steps | FUN_009D033E | confirmed (REA `ev_7ffb6afa…`), in game | Each update scans, keeps the targets in `[ua+68h]` still in the scan, removes the modifier of those that left (0x9C05B8), and sends each new target through the filter 0x9D0238 (one call, 0x9D0633) to 0x4DD22D. A target the filter refused is not kept, so every update asks again. The modifier of a dead carrier is gone at once (20.06 s; the next carrier's at 20.67 s, in game). |
 | Modifier fields | `+64h` stat, `+68h` value, `+6Ch`..`+74h` ramp, `+78h` op, `+7Ch`/`+80h` the two −1 arguments, `+84h` −1, `+88h` duration; saved by 0x9E3423, loaded by 0x9E355E | confirmed (REA `ev_fad68dd5…`, `ev_726c449d…`), in game | `+84h` is read by nothing but the save (`auraStacking` kept a mark there until 2026-11-21). Nothing on a modifier says which aura made it: `[+4]` is null on the 0x4DD22D path. `<ModifyExclusive>` is action flag 21h, passed as the last argument and stored as state bit 16h. |
-| Second aura applier | FUN_009D7328 (`[ua+6Ch]`, no range, no filter) | scoping | Same steps with a query by proto or abstract type. No direct caller in Ghidra; a vtable slot. Not covered by `auraStacking`. |
+| Second aura applier | FUN_009D7328 (`[ua+6Ch]`, no range, no filter); one caller, 0x9D7FFF, which is not inside a Ghidra function | confirmed (REA `ev_76e6d312…`) | Applies a modifier to every unit of a type `[action+9Ch]`/`[+9Eh]` of the player, with no range, with the same steps as the aura update and a query by proto or abstract type; a proto with flag 52h takes the value from the dancers. Call of 0x4DD22D after 0x9D769D. `auraStacking` does not cover it. (An earlier scoping pass found no direct caller and took it for a vtable slot: Ghidra had no function around the call 0x9D7FFF.) |
 | Modifier action classes | vtable 0xB97C08 (ctor 0x4DDA01, from 0x4B3D9E); vtable 0xB97C78 (ctor 0x9E36CC, factory case 46h) | scoping | Both carry runtime type 2Ch. WoL's ModifyActionFix retypes the second to 46h (0x9E36D0) and replaces the collector call 0x49F251. |
 | Collector call | 0x49F23C..0x49F251 in FUN_0049F1BA | confirmed | Clears the count `[0CF071Ch]`, then `mov ecx,[edi+58h] / push 0CF0718h / push 1 / push 2Ch / add ecx,14h / call 49F1A0h`; then per-stat helpers from 0x49F26A. |
 | GatherRate helper | 0x4B3B75 | confirmed | `[esp] = 1.0f`, `0x4B3C7D(&v, list, 0Bh)`; stores v only when it matched (cold 0x6A8972). The model for stat 40h. |
@@ -1220,7 +1220,6 @@ say "in game" were driven by the feature's test.
 | Build tick rate | call 0x9D3D7B of 0x487C45 | confirmed (`trace_exec`, in game) | 0x9D3B30, 0x9E033C, 0x9E5885, 0x9E59BB: same pattern, not reached by building, nor by a repair (traced). |
 | AutoRepair action | type 35h, name 0xBD7A50 at 0x522F9E; factory case 0x4EF5E3, `new(70h)`, ctor 0x9D0700, vtable 0xB971D8; update 0x9D0A4D | confirmed (`cs`, REA, in game: 0x9D0BCB hit 8910 times with `repairUnit`) | Started by the command type 3Ah (`commandAutoRepair`, console `repairUnit(id)`), on the building itself. HP added at 0x9D0BCB..0x9D0C16: `[world+318h]` × `[world+104h]` × `[action+64h]` × max HP / `[proto+CCh]`. 83 HP/s on a Barracks. `uiRepairAtPointer` on a villager does not start it. |
 | Dopple | `+0` time made, `+0Ch` unit, `+12Ch` proto, `+130h` owner, `+134h` flags, `+140h` HP ratio; manager `[world+330h]`: `[0]` players, `[4]` lists of 0Ch {data, count, cap}; update 0x491961 calls 0x49192B at 0x49198B, true removes through 0x5038E0 | confirmed (`cs`, in game) | |
-| Second aura applier | FUN_009D7328, one caller 0x9D7FFF, not in a Ghidra function | confirmed (REA `ev_76e6d312…`) | Applies a modifier to every unit of a type `[action+9Ch]`/`[+9Eh]` of the player, with no range; a proto with flag 52h takes the value from the dancers. Call of 0x4DD22D after 0x9D769D. `auraStacking` does not cover it. |
 | Inventory add callers | 0x49A5E6: 0x4C0F7B, 0x4ED124 (gather tick), 0x6A34B2, 0x6A8BB2, 0x8F9D43, 0x9C737B, 0x9DD90F, 0x9DD973 | confirmed (`cs`) | Eight callers. 0x9DD90F negates its amount, 0x9DD973 does not, and the others pass a value through. Only the gather tick was driven in game with `linkedResource`. |
 | Unit axes | `[unit+14h]` position, `+20h` forward, `+2Ch` up, `+38h` right, 3 floats each | confirmed, in game (2026-11-06) | Unrotated forward is (0, 0, −1); `trUnitCreate` with heading 90 gave (−1, 0, 0). |
 | Placed unit (ghost) | UI object `[0xC67300]`: `+1FCh` proto ID or −1, `+200h` the ghost's visual (its axes from `+4`), `+22Ch` placement valid | confirmed (`cs`), in game | 0x96DF2F copies the 12 dwords of `[+200h]+4` (position, forward, up, right). The mode's proto is also `[[game+91Ch]+D4h]`. |
@@ -1315,7 +1314,7 @@ ResList get in "Resource inventories".
 | Squad orders | `[squad+1Ch]` → `+28h` pointer array, `+2Ch` count; each element `+1Ch` array of 18h-byte entries, `+20h` count | inference | The path `kbUnitGetNumberTargeters` walks; the first dword of an entry is a target unit ID. Seen in another DLL's code, not traced in the exe. |
 | Resource inventory isFull | 0x4DC520, `bool thiscall(inventory)` | head confirmed | Inventory `[[unit+B4h]+94h]`; starts with the unit lookup of its `+0` unit ID. Site `InventoryIsFull`. |
 | Unit getCarryCapacity | 0x494503, `float thiscall(unit, int r)`, `ret 4` | confirmed (`cs`) | `0x4944E5([unit+5Ch], r)`: the proto's capacity. Site `UnitCarryCapacity`. |
-| Player unit list | `[player+F8h]` (unit IDs), `[player+FCh]` (count) | inference; in game (counts) | The list `kbUnitGetNumberTargeters` walks. |
+| Player unit list | `[player+F8h]` (unit IDs), `[player+FCh]` (count) | in game | The list `kbUnitGetNumberTargeters` walks (and the unit of type lookup 0x48195C). [O] 2026-11-20 (`transformChecks`): exactly the player's five living Pyrpolikon, after the maturing units had died. |
 
 ### Settings objects and the options screen (for `rendererOption`, 2026-11-10)
 
@@ -1618,7 +1617,6 @@ REA 6.8 (Ghidra 12.1.4) on the stock exe, snapshot `rea/snapshots/age3y-b1a1dab7
 | Proto DisplayNameID | `[proto+140h]` (also `+158h`) | memory | [O] Pyrpolikon 9001480 at both. Which one a `SetName` effect changes: not checked. |
 | Command panel: a command's button | layout 0x695D20..0x695E22 | `cs` | [O] Record `[db+2968h]` + 4Ch × ID; its command text copied to `[esp+1C0h]` (0x695D6E, frame offset), its `rollovertextid` `[rec+0Ch]` into the rollover BString `[esp+18h]` (0x695D82); then the cost predicate 0x4C6CD7. A custom command ID (above 80h) passes 0x4C7B1C's visibility test at once (`ja` at 0x4C7B27). |
 | Command panel button join | 0x462317 | `cs`, in game | [O] Shared hook `panelbuttons.*` (`nativePreview`, `transformChecks`). `[esp+18h]` rollover BString (the tech rollover builder gets `lea ecx,[esp+30h]` after six pushes, 0x4622BF), copied to the button at 0x462604 (0x40196F into `[button+68h]`). |
-| Player unit list | `[player+F8h]` (IDs), `[player+FCh]` (count) | in game | [O] 2026-11-20: exactly the player's five living Pyrpolikon, after the maturing units had died. |
 
 ### Particle emitter cycle (WoL #69, the works' smoke on and off, 2026-11-21)
 

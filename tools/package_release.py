@@ -1,6 +1,10 @@
 """Build the release zip that modders download: dist/UHC-<version>.zip.
 
-Usage: python -I tools/package_release.py [--force] [--dxvk <folder>]
+Usage: python -I tools/package_release.py [--force] [--dxvk <folder>] [--dinput8-only]
+
+--dinput8-only writes dist/dinput8-<version>.zip instead: dinput8.dll at the top with
+engine-ext/engine-ext.cfg, the same art, DXVK and LICENSE, and its own README.txt; no UHC.dll,
+no Startup folder and no check of build/Release/UHC.dll.
 
 Run it from the repository root after a Release build (docs/developer-guide.md, "Making a
 release"). It checks build/Release/UHC.dll first and stops if:
@@ -31,7 +35,7 @@ import sys
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-REPO_URL = "https://github.com/Gorgorito12/tad-engine-extensions"
+REPO_URL = "https://github.com/Gorgorito12/things-new"
 DXVK_VERSION = "3.1.1"
 DXVK_D3D9_SHA256 = "265888c31ca78dffa290c39cb7e50bfb02762590e41927906e46fb32f01497fa"
 
@@ -234,8 +238,8 @@ noDamageOnUnbuiltFoundations  unbuilt foundations take no damage
 truckAttackResourceFix [log] a TruckAttack no longer empties the buildings it hits
 deadReplacementAtZeroInventory [log] a hunt or herdable leaves its DeadReplacement when its body is used up
 fallenHeroTacticsFix          knocked-out or stunned units keep their tactic
-impactBoneFix [all]           impact effects hung on scaled bones keep their size
-customImpactTypes <names>     impact types after the 15 stock ones (.dmg, ImpactType)
+impactBoneFix [all] [log]     impact effects hung on scaled bones keep their size
+customImpactTypes <names> [log]   impact types after the 15 stock ones (.dmg, ImpactType)
 nowalkfarm                    farm gatherers keep their first spot
 repairWallGlobal              UI syscall repairWallGlobal(): repair all walls
 compatMode                    32-bit display modes also offered at 16 bits
@@ -305,7 +309,9 @@ broadsideMuzzleLimit N [UnitType] [log]   broadsides fire from up to N muzzles p
 broadsideSoundSet [log]       a BroadsideAttack action's <BroadsideSoundSet> sound set at each
                               shot instead of ShipCannonShoot (rocket ships)
 abilitySlots N [log]          command panel shows up to N abilities per unit (stock 6)
-displayedRange [log]          a selected unit shows a ring per ranged attack while Alt is held
+displayedRange [noPlacement] [log]   a selected unit shows a ring per ranged attack while Alt is
+                              held (<AlwaysDisplayRange>: without Alt); a building being placed
+                              shows its rings (noPlacement: not)
 steadyHitpointBars [UnitType ...] [log]   floating HP bars keep one height over each unit
                               instead of jumping with its animations
 inventoryBars [UnitType] [always] [noSites] [trees] [other=RRGGBB] [log]   while Alt is held,
@@ -320,7 +326,8 @@ lifespanAfterConstruction [UnitType] [log]   a marked building's Lifespan starts
 gaiaSocketsOnly [UnitType] [log]  socketed buildings only on sockets owned by Gaia
 customHotkeyContexts [log]    keymap contexts <ProtoName>Accel: hotkeys for new buildings
 snareOnlyHitUnit [log]        a snared unit no longer slows the group it moves with
-techRenameEffect [log]        tech effect SetTechName: rename a tech per player
+techRenameEffect [log]        tech effect SetTechName: rename a tech per player (alias
+                              enableTechRenameEffect)
 noCorpseDopples [UnitType] [expire=S] [log]   dead marked units (hunt carcasses) leave no dopple
 danceBonusCivs Civ ... [log]  fire pit train/XP/gather/regen dances for more civs
 startingTC [UnitType] [log]   marked buildings count as a player's first town center
@@ -330,6 +337,7 @@ civFirstTC [log]              a civ's <firstTC> in civs.xml replaces the TownCen
 firstTC [UnitType] [log]      civFirstTC, and startingTC when a type is named, in one line
 scenarioCivs [log]            data\\scenariocivs.xml: more civs after civs.xml, for scenarios
                               and campaigns, not in the skirmish list, in the editor's
+                              player civ list
 transformInventory [all] [scale] [UnitType] [log]   units transformed by a tech get the
                               resources (InitialResource) of their new proto
 noTrainNearEnemyTC M [UnitType] [near UnitType]... [nowarn | warn=Text] [refuse] [log]   marked units
@@ -354,6 +362,11 @@ multiplierDecimals [N]        the attack rows' bonus multipliers with N decimals
                               1.25x instead of 1.3x, in both panels and their tooltips
 attackTypeIcons T S P ...     a bonus multiplier against these unit types shows in the attack
                               rows, with that icon (P) and name (string S)
+techGadgets <Tech> <GadgetAfter> [<GadgetBefore>]   (repeatable) a gadget of the interface
+                              shows once the tech is active, the other one before it
+incomeRates [seconds] [perMinute|perSecond] [log]   {{uhcIncome(<resource>)}} in a formatText
+                              gadget: what the shown player gathered and trickled over the
+                              last seconds (default 20), per second or per minute
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
@@ -385,7 +398,8 @@ transformSpan [log]           transformspan on a TransformUnit effect turns the 
 hcTargetTechs [log]           tech flags HCTargetEnemy and HCTargetAll
 detonationDeath [log]         <DetonationProtoAction> fires an action when a unit dies
 accuracyTechs [log]           a Data tech effect may change an action's Accuracy
-cratePriority <Civ> <Res> <Res> <Res>   a civ's order of gathering crates
+cratePriority <Civ|all> <Res> <Res> <Res>   a civ's order of gathering crates (repeatable;
+                              a line "cratePriority log" logs)
 sharedBuildLimit [log]        protos share a build limit, by type, with weights, or by team
 annexFacing [log]             <AnnexOf> annexes face their parent building and fall with it
 customWalls [log]             <WallPiece> tags: a wallBuild proto lays its own posts and pieces
@@ -420,7 +434,8 @@ buildingWorkRateAuras [log]   auras with ModifyType BuildingWorkRate change trai
                               research, Maintain, heal and build speed
 bufferedFileReads [KB] [readahead] [verify]  buffered file reads: fewer stutters, faster
                               loading; readahead reads the next block on a worker thread
-fastVertexFill                waving flags drawn without reading video memory: more fps with flags on screen
+fastVertexFill [verify] [log]   waving flags drawn without reading video memory: more fps with
+                              flags on screen
 fastLastInLine [log] [verify]  no freeze after a home city shipment in a mod with many techs
 xsErrorLog [lines]            the XS compiler's and runtime's messages go to the log
 multipleInstances [background]  run beside a copy of the game from another folder
@@ -428,11 +443,11 @@ preloadDll <file> ...         engine-ext.cfg only: dinput8.dll also loads these 
                               folder before the game starts, as another dinput8.dll proxy would
 rendererOption [vulkan|dx9] [folder=D] [log] [conf=...]   a Renderer entry in the options
                               menu: Vulkan (DXVK, from dxvk\\) at the next start, more fps
-menuOptions <key> ...         players switch bufferedFileReads / fastVertexFill on or off in the
-                              options menu, from the next start
+menuOptions <key> ...         players switch bufferedFileReads / fastVertexFill / fastLastInLine
+                              on or off in the options menu, from the next start
 
 What each key needs from your mod, and how well it is tested: see the guide.
-No feature has been tested in multiplayer yet. License: MIT, see LICENSE.txt.
+Single player only: no feature has been tested in multiplayer. License: MIT, see LICENSE.txt.
 
 Vulkan renderer (rendererOption)
 --------------------------------
@@ -447,8 +462,81 @@ remove it, delete the dxvk folder.
     return text.replace("\n", "\r\n")
 
 
+def readme_dinput8(version):
+    """README.txt of the --dinput8-only package: dinput8.dll and engine-ext, no UHC.dll."""
+    full = readme(version).replace("\r\n", "\n")
+    rings = full[full.index("Aura rings\n"):full.index("A uhc.cfg written by the patcher")]
+    # The keys' default data folder is engine-ext\ in this build (src/engineext.cpp, kDataFolder).
+    keys = full[full.index("Keys that need data edits"):].replace("data\\uhc\\", "engine-ext\\")
+    text = f"""dinput8.dll {version} for Age of Empires III: The Asian Dynasties (Steam)
+=========================================================================
+
+dinput8.dll removes hard-coded limits of the game and adds new engine features. A mod turns each
+feature on in engine-ext\\engine-ext.cfg. It needs the Steam version of TAD (age3y.exe, SHA-256
+b1a1dab7...11d9d). It needs no loader and no patcher, and it also works in a game whose loader
+runs another UHC.dll: nothing of that game changes, not its exe, its UHC.dll, its cfg or data\\uhc.
+
+Full guide:  {REPO_URL}/blob/main/docs/modding-guide.md
+Downloads:   {REPO_URL}/releases
+
+Adding it to your mod
+---------------------
+1. Make your mod folder a complete game folder: a copy of the game's bin folder plus your
+   mod's files. Never modify the Steam install.
+2. Copy dinput8.dll and the engine-ext folder of this package next to the mod's age3y.exe.
+3. In engine-ext\\engine-ext.cfg, remove the "#" in front of the keys you want, and in front of
+   ignoreRegistryPath if nothing else in the mod folder makes the game read its data from there.
+   Data files that keys read by default go in engine-ext\\. Some keys need data or art from your
+   mod: see the guide.
+4. Start the mod's age3y.exe. engine-ext\\engine-ext.log appears: its first line is
+   "dinput8.dll {version}", and every key you enabled says "applied". A key fails, and changes
+   nothing, when another DLL of the game already patched a place it needs.
+5. Ship dinput8.dll and engine-ext\\engine-ext.cfg with your mod (not engine-ext.log). Players
+   install nothing else.
+To remove it, delete dinput8.dll and the engine-ext folder.
+If the game already has a dinput8.dll that loads another DLL (a mod's proxy), keep that file
+aside and put "preloadDll <its DLL>" in engine-ext\\engine-ext.cfg: this dinput8.dll then loads
+it at the same moment, before the game starts.
+
+"""
+    return (text + rings + keys).replace("\n", "\r\n")
+
+
+def main_dinput8(argv, force):
+    """dist/dinput8-<version>.zip: dinput8.dll with its engine-ext cfg, the art and DXVK; no UHC.dll."""
+    dxvk_folder = ROOT / "rea" / "vendor" / f"dxvk-{DXVK_VERSION}"
+    if "--dxvk" in argv:
+        dxvk_folder = pathlib.Path(argv[argv.index("--dxvk") + 1])
+    dxvk_dll, dxvk_license = read_dxvk(dxvk_folder)
+    version = read_version()
+    proxy = check_proxy(ROOT / "build" / "Release" / "dinput8.dll", version)
+    out = ROOT / "dist" / f"dinput8-{version}.zip"
+    if out.exists() and not force:
+        fail(f"{out.relative_to(ROOT)} already exists; pass --force to replace it")
+    out.parent.mkdir(exist_ok=True)
+    top = f"dinput8-{version}"
+    license_text = (ROOT / "LICENSE").read_text(encoding="utf-8").replace("\r\n", "\n").replace("\n", "\r\n")
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr(f"{top}/dinput8.dll", proxy)
+        z.writestr(f"{top}/engine-ext/engine-ext.cfg",
+                   template_cfg(version, f"# engine-ext\\engine-ext.cfg template for dinput8.dll {version}."))
+        for ring in sorted((ROOT / "tools" / "rings").glob("*")):
+            z.write(ring, f"{top}/art/effects/uhc_rings/{ring.name}")
+        for bar in sorted((ROOT / "tools" / "bars").glob("*.ddt")):
+            z.write(bar, f"{top}/art/ui/uhc/{bar.name}")
+        z.writestr(f"{top}/dxvk/d3d9.dll", dxvk_dll)
+        z.writestr(f"{top}/dxvk/LICENSE.txt", dxvk_license)
+        z.writestr(f"{top}/LICENSE.txt", license_text)
+        z.writestr(f"{top}/README.txt", readme_dinput8(version))
+    print(f"wrote {out.relative_to(ROOT)}")
+    print(f"  SHA-256 zip         {hashlib.sha256(out.read_bytes()).hexdigest()}")
+    print(f"  SHA-256 dinput8.dll {hashlib.sha256(proxy).hexdigest()}")
+
+
 def main(argv):
     force = "--force" in argv
+    if "--dinput8-only" in argv:
+        return main_dinput8(argv, force)
     dxvk_folder = ROOT / "rea" / "vendor" / f"dxvk-{DXVK_VERSION}"
     if "--dxvk" in argv:
         dxvk_folder = pathlib.Path(argv[argv.index("--dxvk") + 1])

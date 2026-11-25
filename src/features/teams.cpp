@@ -61,7 +61,8 @@ Outcome ApplyEnableAllTeams(const Config& config) {
                 sites::kTeamDropdownSp.size)) {
     return Outcome::kFailed;
   }
-  Log(L"enableAllTeams: Team 3 and Team 4 in the single-player setup (multiplayer lobby not changed yet)");
+  Log(L"enableAllTeams: Team 3 and Team 4 in the single-player setup "
+      L"(multiplayer lobby unchanged: single player only)");
   return Outcome::kApplied;
 }
 

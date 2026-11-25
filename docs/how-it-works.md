@@ -40,7 +40,7 @@ Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` mean
 
    Otherwise it logs `host is not a UHC-patched age3y.exe` and does nothing.
 4. **Working directory.** Right after the host guard, before it reads the cfg, the DLL makes the
-   exe's folder the working directory (`UseExeFolderAsWorkingDirectory` in `src/dllmain.cpp`).
+   exe's folder the working directory (`UseExeFolderAsWorkingDirectory` in `src/startup.cpp`).
    The original DLL does the same. <!-- private -->
    A mod then starts the same way from a double-click, a shortcut or a launcher, and `ignoreRegistryPath`
    reads the mod folder.
@@ -49,8 +49,9 @@ Notation: `[x]` is the 32-bit value at address x, `NNh` is hexadecimal, `B` mean
    parses it (`src/config.cpp`). The parser accepts both `key value …` and the older
    `key=value` syntax with `//` comments.
    That older syntax is the original DLL's, which its patcher writes. <!-- private -->
-   The DLL then runs every feature in the order of `kFeatures` in `src/features.h`. Each returns
-   *not configured*, *applied* or *failed*.
+   `ApplyFeatures` (`src/startup.cpp`) first applies `menuOptions`, which keeps, adds or removes the lines of the
+   keys it names by the player's stored choice, then runs every feature in the order of `kFeatures` in
+   `src/features.h`. Each returns *not configured*, *applied* or *failed*.
 
 ### Beside another DLL
 
@@ -153,10 +154,42 @@ The hooks are MASM files in `src/hooks/`.
   `techPrereqRecheck`, `maintainWaitForPop` and `lifespanAfterConstruction` use it to drop state
   that belongs to the old data.
 - **Shared hooks.** A site that two keys need is hooked once by a shared module that calls each key's
-  function in `kFeatures` order: the world update (`worldtick.cpp`, `AddWorldTick`), the unknown
-  tags of an action (`actiontags.cpp`, `AddActionTagHandler`, at 0x5FA11E) and every unit's death
-  (`deathobservers.cpp`, `AddDeathObserver`, the drain's call 0x493D8F; `detonationDeath`, `annexFacing`), with a
-  second list for the trigger `Destroy` (`AddDestroyObserver`, its call 0x9828E7 of the unit removal; `annexFacing`).
+  function in `kFeatures` order. A key adds to these and never writes a second `jmp` at their sites:
+  - `worldtick.*`, `AddWorldTick`: the world update (0x481A57);
+  - `actiontags.*`, `AddActionTagHandler`: the unknown tags of an action (0x5FA11E);
+  - `prototags.*`, `AddProtoTagHandler`: new tags of a proto (0x51DB0F);
+  - `civtags.*`, `AddCivTagHandler`: the unknown tags of a civ in `civs.xml` (0x52BB07);
+  - `cardtags.*`, `AddCardTagHandler`: new child tags of a home city card (the call 0x630017);
+  - `techtags.*`, `OnTechNode` and `AddTechTagHandler`: each `<Tech>` node of the tech parser (0x61FDB8);
+  - `techflags.*`, `AddTechFlagHandler`: new `<Flag>` names of a tech (the flag reader's head 0x620C2F);
+  - `techsubtypes.*`, `AddTechSubtype`, `AddTechActionSubtype`, `AddTechTypeSubtype`: new `Data` subtypes (the name
+    lookup 0x61FF5D, the call 0x6206B2, the switches 0x8F978D and 0x8FB051), and `AddTechPlayerSubtype` (0x8D843E);
+  - `modifytypes.*`, `AddModifyType`: new `<ModifyType>` names (0x5FE6D7);
+  - `syscalls.*`, `AddSyscall`: extra XS syscalls, at the first registration of each syscall module;
+  - `deathobservers.*`, `AddDeathObserver`: every unit's death (the drain's call 0x493D8F), with a second list,
+    `AddDestroyObserver`, for the trigger `Destroy` (its call 0x9828E7 of the unit removal);
+  - `killobservers.*`, `AddKillObserver`: the killing blow, with the attacker (TakeDamage's kill path 0x4D4F37);
+  - `transformcalls.*`, `AddTransformObserver`: the seven calls of the in-place transform 0x9C754C (a key's own
+    transform calls `TransformUnit`);
+  - `researchpay.*`, `AddResearchPayer` and `AddResearchRefundObserver`: the payment of a research (0x9E67E1,
+    0x9D54CF), the copies of its cost for a refund (0x9E68A0, 0x9D5548) and the refund of a cancel (0x9E6167, 0x9D56B5);
+  - `canresearch.*`, `AddCanResearchFilter`: the can-research test's head (0x4C6968);
+  - `techrollover.*`, `AddTechRolloverLine`: the command panel's call of the tech rollover builder (0x4622C5);
+  - `panelbuttons.*`, `AddPanelButtonFilter`: each button the command panel lays out (0x462317);
+  - `rofreads.*`, `AddRofFilter`: the five reads of an attack's tactics ROF (0x48A821, 0x48A99A, 0x48EA0C, 0x48F8B5,
+    0x4A1189);
+  - `ghostobservers.*`, `AddGhostObserver`: the update of a building's placement ghost (0x96E4E7);
+  - `unitpanel.*`, `AddUnitPanelRow` and `AddUnitPanelTail`: the unit panel's rate row (0x699456) and the selection
+    panel fill's tail (0x4C8281);
+  - `floatingbars.*`, `AddFloatingBarQueued` and `AddFloatingBarKind`: the HP bar queue (0x45FB6C) and its renderer
+    (0x45C4B9, 0x45CB72);
+  - `datarefs.*`, `AddDataRef`: new `{name}` texts for `formatText` gadgets (the registration's call 0x5D3229);
+  - `menuoptions.*`, `AddMenuOption`: options of this DLL in the options menu (0x9322A1, 0x6B794B, 0x6B7676,
+    0x518B26);
+  - `d3d9hooks.*`, `ReplaceDirect3DCreate9` and `AddD3D9Observer`: the IAT slot 0xB84164 of `Direct3DCreate9` and the
+    device's CreateDevice, Reset and Present;
+  - `income.h`, `CountIncome`: not a hook; a key that pays a player from the DLL calls it so that `incomeRates`
+    counts that income too.
 - **`TRACE_ONCE "text"`** (`src/hooks/common.inc`) writes `hook reached: text` to `UHC.log` the
   first time execution passes. It preserves every register, the flags and ESP, so it can sit at
   the top of any hook.
@@ -2326,8 +2359,8 @@ player's proto: its action entries are 12 bytes at `[tactic+44h]` (count `+48h`)
 set by its handler 0x5FAC6D) of `[action+64h]` are set; its range is 0x4946D6(action, −1), the entry the stat panel shows. The
 player's copy is read every tick, so a range tech shows at once. A tactic with no ranged attack (a cannon limbered to move)
 takes the ranged attacks of all the unit's tactics. Each radius goes to the nearest ring size (every metre from 4 to 50,
-then 55, 60, 65, 70, 80, 90, 100); equal sizes share a ring; at most 4 rings a unit, the largest first, and 60 rings in
-all, the units with the longest ranges first.
+then 55, 60, 65, 70, 80, 90, 100); equal sizes share a ring; at most 4 rings a unit, the largest first, and 60 models in
+all (`kMaxRings`; a filled ring is two models, its line and its fill), the units with the longest ranges first.
 
 **Where the ring goes (2026-11-24).** `MaxRange` is not measured from the unit's centre. The action's range test
 (0x48B6AA..0x48B779; the function is referenced from the table at 0xB97D94) compares the unit distance (unit vtable `+0BCh`,
@@ -2381,7 +2414,8 @@ key needs nothing for it.
 colour: about (48, 44, 213) for player 1's (45, 45, 245), 3 to 4 px wide at the default zoom. The range ring now matches
 it: `range_line.ddt` is white with alpha 0 across the whole line (until 2026-11-23 a 150-grey core between white edges of
 alpha 255), so the shader's `diffuse *= lerp(pixelxformColor, 1, diffuse.a)` gives the owner's colour itself. The line is
-0.31 m wide, +0.005 m per metre of radius (written as 0.5 and 0.008 in the old basis, the same on screen). The ring used to look pale (in game a core of (195, 178, 250) for blue and
+0.31 m wide, or 0.005 m per metre of radius where that is more (past 62 m; written as 0.5 and 0.008 in the old basis,
+the same on screen). The ring used to look pale (in game a core of (195, 178, 250) for blue and
 (255, 179, 162) for red) because of its bump map. `BumpPS` in the game's `sm3_shaders.hlsl` reads the bump as
 (x, y, z, shine) = (A, G, B, R), and adds the sun's shine, scaled by R, over the colour. The old flat bump was
 (R 128, G 128, B 255, A 255): half shine on a normal tilted 45° along the ring. `range_line_bump.ddt` is now
@@ -5039,7 +5073,7 @@ send gives to the shipment's models.
 ### researchOnTheMove
 
 `src/features/researchmove.cpp`, no asm. Found with traces and capstone reading.
-The rows: [engine-symbols](engine-symbols.md#wol-requests-70-73-research-for-batch-2-2026-11-20), "Research actions and moving". <!-- private -->
+The rows: [engine-symbols](engine-symbols.md#wol-requests-7073-research-for-batch-2-2026-11-20), "Research actions and moving". <!-- private -->
 
 **Why a unit with research stands still.** The research itself never holds the unit: the queue routine 0x9CCB39 adds
 the Research action with `immediate` 0, so it sits in the action list `[mgr+14h]` beside the current action
