@@ -2118,6 +2118,18 @@ SITES = [
     ("IncomeAutoGatherCall", 0x4C3796, 0x07),
     ("ResourceByName", 0x44709C, 0x10),
     ("PlayerIsAllyOrSelf", 0x4707EC, 0x19),
+    # selectFattened (verify only): the local selection 0x4051B6 (thiscall(game): [[game+91Ch]+4], 0 without the
+    # world UI), its clear 0x9301D3 (thiscall(selection, int from), ret 4; 0 empties it), and the loop of the UI
+    # command uiFindAllOfType 0x7E7AB9 that the key repeats: per unit of the local player, skip a state byte
+    # [unit+88h] below 8 (0x44DE2A), a unit whose vtable +0A4h says no, one inside another ([unit+6Ch] >= 0),
+    # then the add: a handle {0B9E444h, 0, unit ID} on the stack, passed to the selection's vtable +4. The selection
+    # (vtable 0xB9F8C4, seen in game) adds with FUN_0079F534 (thiscall(selection, handle*), ret 4), which ends in
+    # FUN_00930245(handle, 0): no more than the cap 0x4E0BEE, no unit twice.
+    ("SelectionOfGame", 0x4051B6, 0x0E),
+    ("SelectionClear", 0x9301D3, 0x0A),
+    ("FindAllOfTypeLoop", 0x7E7B63, 0x72),
+    ("SelectionAdd", 0x79F534, 0x0D),
+    ("SelectionAddCapped", 0x930245, 0x1D),
     # editorSearch: the Objects palette fill FUN_007F501E (the fill callback [palette+17Ch] that 0x7F5C51 gives
     # EditorProtoPalette) adds each proto with lea edx,[esp+58h] / push edx / lea eax,[esp+14h] / push eax /
     # mov ecx,edi / call 0AD0056h (0x7F537D, ESI = the player's proto), the add thiscall(palette, entry*,

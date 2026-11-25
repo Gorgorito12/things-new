@@ -1380,6 +1380,23 @@ capstone (`cs`) and in game (WoL copy, scenarios and a Persian skirmish). Observ
 | Full herdable walk-away | 0x6A8C47..0x6A8CA8 (cold part of the gather tick) | confirmed (`cs`, in game) | Full (`bl` = 1 from 0x49A5E6), the target LivestockPen (`[db+6030h]`), the paddy (`[db+607Ch]`) or of abstract type 5Bh: 0x4E3A37(mgr, targetId, 6.0f, 0) at 0x6A8C9C, then return; else `setState(0Ah)` (0x6A8CB1). In game the full herdable sits in Gather state 0Ch 6 to 10 m from the target. Site `HerdWalkAwayCall` (`herdWalkAwayFix`). |
 | Held amount | 0x4E5979, `float thiscall(unit, resource)` | confirmed (`cs`) | `[[unit+B4h]+94h]+4` list, values XORed with the keys 0xC6DF14 + 4·resource (count 0xC6DF38), read by 0x44EFFF. In game a sheep fattened to 300.0 food and stopped. |
 
+### The local selection: how UI commands select many units (for `selectFattened`, WoL #106, 2026-11-25)
+
+Evidence: REA `ev_3023002dd54b…` (0x9301D3), `ev_17025585f50e…` (0x79F534), `ev_0a14fa336e70…` (0x930245),
+`ev_63d02e346d73…` (xref of 0x93032B); bundle `rea/evidence/age3y-b1a1dab7/r1125-g-selection.json`. The command handlers
+have no Ghidra function: capstone (`cs`). Read in game (WoLReal8): the vtable and the camera.
+
+| Name | Address | Status | Notes |
+|---|---|---|---|
+| `uiFindAllOfType("Type")` | handler 0x7E7AB9, registered at 0x530D50 | confirmed (`cs`) | Selection 0x4051B6, clear 0x9301D3(0), local player 0x407E8A, type ID 0x58E772(db, name); per unit of `[player+F8h]` (0x8D1CFB): skip state byte `[unit+88h]` < 8 (0x44DE2A), vtable `+0A4h` false, `[unit+6Ch]` >= 0, not of the type (0x44D7FA); add: stack handle `{0B9E444h, 0, id}`, selection vtable `+4`. Site `FindAllOfTypeLoop` (0x7E7B63). |
+| Other selecting commands | `uiFindType` 0x7E774A (0x530F18), `uiFindIdleType` 0x7E7A50 (0x530C80, through 0x7E77E0), `uiClearSelection` 0x7E24C8 (0x531A0B), `uiLookAtAndSelectUnit` 0x7E5DFD (0x530570), `uiSelectNumberGroup` 0x7E0A5B, `uiFindResourceGatherers` 0x7E7D38, `uiSelectFirepit` 0x7E0BF6, `uiDoubleClickSelect` 0x7E1DE7 | registration (`cs`) | `uiLookAtAndSelectUnit`: the same clear and add for one unit, then 0x43A80A(world, handle) (the camera). `uiClearSelection` also resets three world-UI modes (0x840311, 0x8440AB, 0x840347 on `[game+91Ch]`). |
+| Local selection | 0x4051B6, `thiscall(game)`: `[[game+91Ch]+4]`, 0 without the world UI | confirmed (`cs`, in game) | Entries `[sel+4]` (12 bytes each: the handle), count `[sel+8]`, bitset of IDs `[sel+10h]` / size `+14h`, "changed" byte `[sel+28h]`, accept byte `[sel+2Bh]`. Site `SelectionOfGame`. |
+| Selection clear | FUN_009301D3, `thiscall(sel, int from)`, `ret 4` | confirmed (REA) | Removes entries from `from` on, clears their bits, 0x58F1A1, `[sel+28h] = 1`. Site `SelectionClear`. |
+| Selection vtable | 0xB9F8C4: `+0` 0x57F3D0, `+4` 0x79F534, `+8` 0x472ACB, `+0Ch` 0x79EF97 (`jmp 93032Bh`), `+10h` 0x456D3E, `+14h` 0x79F1B1 | in game | Read from the running game's selection. A second table 0xB9F8E8 differs at `+4` (0x931487). |
+| Selection add | FUN_0079F534, `bool thiscall(sel, handle*)`, `ret 4` (vtable `+4`) | confirmed (REA) | Checks the handle (unit exists, ID matches, a flag of `[unit+4]`); if the selection is not empty: refuses a unit not of `[game+3C0h]` (unless `[game+0B3Ah]`), compares vtable `+18h` of the new and the first entry (smaller: clear first; larger: refused, but for same-player cases), refuses a unit whose state byte `[unit+88h]` differs from the first one's; a unit in a squad (`[[unit+B4h]+C4h]` != -1) adds its squad's members; ends in 0x930245(handle, 0). Site `SelectionAdd`. |
+| Selection add, capped | FUN_00930245, `bool thiscall(sel, handle*, bool force)`, `ret 8` | confirmed (REA) | Without the world: false. Count `[sel+8]` below the cap 0x4E0BEE (or force): not already in (0x44E641), `[sel+2Bh]` set: 0x717FB6, 0x92F8F3, `[sel+28h] = 1`, true. FUN_0093032B (`thiscall(sel, handle*)`, `ret 4`) is the same without force, plus a duplicate test 0x44CC3C. Site `SelectionAddCapped`. |
+| Camera | `[game+148h]`: `+4` position, `+10h` forward, `+1Ch` up, `+28h` right (floats) | in game | After `uiLookAtUnit(88)` (unit at 63, 43): position (31.7, 47.5, 11.7), forward (0.48, -0.73, 0.48): the line meets the ground at (62.9, 42.9). |
+
 ### Auto scout: move orders, the explored grid, tactics and the leash (for `autoScout`, WoL #68, 2026-11-19)
 
 Evidence: REA `ev_3bf8e27c…` (string `trUnitMoveToPoint`), `ev_ff146c71…` (0x833532), `ev_d2636748…` (0x568A1A),

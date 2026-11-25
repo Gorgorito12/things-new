@@ -183,6 +183,7 @@ PAGES = {
         "editorAutosave": ["src/features/editorautosave.cpp"],
         "techGadgets": ["src/features/techgadgets.cpp"],
         "incomeRates": ["src/features/incomerates.cpp", "src/hooks/incomerates_hooks.asm", "src/income.h"],
+        "selectFattened": ["src/features/selectfattened.cpp"],
     }),
 }
 

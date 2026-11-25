@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-25 08:42 | [`selectFattened`](#selectfattened) | Filmed in WoL, with a control. A button and a hotkey select the player's livestock that has reached its maximum food, on the whole map; the button shows how many there are and hides at none. | The button and the hotkey: `wol-fixes/select-fattened`. |
 | Wednesday 2026-11-25 08:22 | [`editorAutosave`](#editorautosave) | Added. The scenario editor saves the open scenario every few minutes to `autosave-1` ... | Nothing. |
 | Wednesday 2026-11-25 08:11 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
 | Wednesday 2026-11-25 07:55 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`; the player turns them on or off in the options menu, at once. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24); the options-menu pack `wol-fixes/options-menu/` for the switch. |
@@ -8441,6 +8442,7 @@ What the panels and the fog of war show.
 | [`editorAutosave`](#editorautosave) | The scenario editor saves the open scenario every few minutes to `autosave-1` ... `autosave-3`, the oldest overwritten, and the scenario keeps its own name. | **new** | Nothing. | confirmed (editor) |
 | [`techGadgets`](#techgadgets) | Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | **new** | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. | confirmed (single player, UI) |
 | [`incomeRates`](#incomerates) | A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | **new** | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). | confirmed (single player, UI) |
+| [`selectFattened`](#selectfattened) | A button and a hotkey select the player's livestock that has reached its maximum food, on the whole map; the button shows how many there are and hides at none. | **new** | The button and the hotkey: `wol-fixes/select-fattened`. | confirmed (single player, UI); hotkey not tested in game |
 
 #### nativePreview
 
@@ -10097,6 +10099,78 @@ The frames over 50 ms (6 to 9 per 120 s, all over 100 ms) are as many with the k
 time per second of real time is the same on and off. Measured inside the game (`log`, a third run): from 3,400 adds
 in the first minute to 14,200 in the eighth (8 players, all their villagers, trickles and AutoGather), and 0.3 to
 0.8 ms a minute spent counting them: about 13 µs per second of game time.
+
+
+#### selectFattened
+
+*A button (and a hotkey) selects all your livestock that is fully fattened, so you no longer look for it by hand.*
+
+**Added:** Wednesday 2026-11-25 07:44 · **Filmed in WoL:** Wednesday 2026-11-25 08:42
+
+```
+selectFattened [gadget <name>]... [log]
+```
+
+- **The request (WoL #106):** a player asked for a button that selects only the livestock that has reached its maximum
+  food: with the Middle East civs and the Spanish immigrants, livestock matters more.
+- **Effect:** the command `uhcSelectFattened` (a button's or a hotkey's `<command>`) selects every herdable (unit type
+  `Herdable`) of the player whose food has reached its carry capacity: a Sheep at 300 of 300, a Fattened Goat from
+  birth, a Hen at 60. The whole map counts, not only the screen. The selection is replaced, as a click does. With none,
+  the selection stays as it was. Herdables that hold another resource (WoL's wool sheep with gold) count when that
+  resource is full.
+- **More than the selection limit** (50, or `selectionLimit`): the ones nearest the centre of the screen are kept.
+- **The count:** `{uhcFattened}`, a text for the button (how many there are now). Counted ten times a second of game
+  time, not per frame.
+- **The button:** the gadgets named by `gadget <name>` (default `uhcFattened`) are shown while the player has a
+  fattened herdable and hidden when it has none. `wol-fixes/select-fattened` adds the button above the resource panel's
+  left end, right of the home city flag, with the count in its corner and a tooltip ("Fattened livestock: 3. Click to
+  select them (Shift+Ctrl+F)."), and the hotkey Shift+Ctrl+F ("Select Fattened Livestock", in the hotkey menu's group
+  "Find Unit Hotkeys").
+- **What it needs:** the button and the hotkey in the layout and the keymap: the pack.
+- **Simulation:** none. It only changes the local player's selection, as a click, through the game's own selection
+  calls: those of the stock command `uiFindAllOfType`.
+- **Log:** `selectFattened: UI syscall uhcSelectFattened() and {uhcFattened} added; gadget(s) uhcFattened shown while
+  the local player has a fattened herdable`; with `log`, each change of the count (`player 1 has 9 fattened
+  herdable(s)`), each press (`player 1, 9 fattened, 9 selected (limit 75), selection now 9`), over the limit the
+  distances of the last one kept and the first one left out, and every minute of game time what counting cost.
+- **Status:** see the tests below.
+
+Tests (2026-11-25, copy of WoL, single player; first scenarios with the command run from the console,
+`uhcSelectFattened()`, then skirmishes on a test map with the pack and the button):
+
+| Test | Result |
+|---|---|
+| 6 Fattened Goats, 4 Sheep and 2 Cows (not fattened), 3 Hens at a Livestock Pen | pass: 6 selected; the Sheep and Cows not; the panel shows Fattened Goat, food 300 |
+| The Hens fatten at the pen (about 70 s) | pass: the count went 6, 7, 8, 9; a new press selected 9 (two stacks: goats and hens) |
+| Player 2's fattened goats on the same map | pass: not counted, not selected |
+| 90 Fattened Goats in two herds 40 m apart, `selectionLimit 75`, camera on one herd | pass: 75 selected: the whole herd under the camera and the 30 nearest of the other (the last kept 40.5 m from the screen centre's line, the first left out 42.0 m) |
+| Key off (the 249-unit scene) | pass: no syscall added, and `uhcSelectFattened()` from the console did nothing the log shows |
+| Persians (Middle East), full interface, advanced resource view, the oil panel pack applied after this pack: 3 Fattened Goats, 3 Settlers ordered to them at 40 s, 3 Hens at a pen | pass: the button shows 3; a click selects the 3 goats; as the Settlers take food the count goes 2, 1, 0 and the button hides; the Hens fatten, the button comes back (1, then 3) and a click selects them (video below) |
+| The tooltip | pass: "Fattened livestock: 3. Click to select them (Shift+Ctrl+F)." |
+| Key off, the same skirmish (pack applied, `selectFattened` not in the cfg) | pass: no button; a click on its place selects nothing (video below) |
+| WallMapu (Native panel), minimized interface; Ethiopians (an Asian panel in WoL), full interface | pass: the button right of the home city flag, above the panel |
+| The place against every gadget of the game screen's layouts (`uimainnew.xml`, `uiminimappanelnew*.xml`, the oil and faith packs' 6 panel layouts) | pass: only full-screen dialogs (hidden in play) meet its box; the panel variants' art starts at y 625 or lower, the button ends at 623 |
+| The 12 panel variants one by one with `gadgetReal` / `gadgetUnreal` | not possible: the engine keeps showing its own variant; the variants were covered by the games above and by the layout check |
+| The first place (the approved mock-up, 221 594 242 623) | moved: in a game with a home city the flag (`uimain-homeCityToggle`, 194 605 246 645) covers it; the mock-up came from a scenario, which has no flag. The button is now right of the flag, 249 594 270 623 |
+| Hotkey Shift+Ctrl+F | not tested in game: the copy runs with `multipleInstances background`, which ignores real keys, while other tests ran; the entry is in `DefaultKeyMapY.xml` (checked by `apply_fix.py --check`) |
+
+![selectFattened in WoL](media/selectFattened-wol.gif)
+
+*In WoL, Persians, with `selectFattened log` and the pack (full interface, advanced resource view, the oil panel pack
+too):* the button right of the flag shows 3; a click selects the three Fattened Goats; the Settlers butcher them and
+the count drops to 0: the button hides; the Hens at the pen fatten, the button comes back and a click selects them.
+The key's log lines at the bottom. [Full video (MP4)](media/selectFattened-wol.mp4).
+
+![selectFattened in WoL, key off](media/selectFattened-wol-control.gif)
+
+*The same skirmish, key off:* no button; the same clicks on its place select nothing.
+[Full video (MP4)](media/selectFattened-wol-control.mp4).
+
+**Performance:** 249 units of the player (100 Fattened Goats, 100 Sheep, 60 Settlers, less the goats that did not
+fit): the count took 18.9 µs on average and 72 µs at most (600 counts), 18.2 µs and 257 µs in a second run: about
+0.2 ms per second of game time. `perfprobe.py`, 60 s each, the same scenario, key on, off, on: 257 / 286 / 268 fps,
+update 0.36 / 0.31 / 0.34 ms per frame; render time moved as much (3.53 / 3.19 / 3.41 ms) with games of other tests
+running on the machine, and the count is not in the render: no difference that the count explains.
 
 
 ## 6. Editing the game data

@@ -368,6 +368,9 @@ techGadgets <Tech> <GadgetAfter> [<GadgetBefore>]   (repeatable) a gadget of the
 incomeRates [seconds] [perMinute|perSecond] [log]   {{uhcIncome(<resource>)}} in a formatText
                               gadget: what the shown player gathered and trickled over the
                               last seconds (default 20), per second or per minute
+selectFattened [gadget <name>] [log]   the command uhcSelectFattened selects the player's
+                              fattened livestock; {{uhcFattened}} counts it; the gadget shows
+                              while there is some
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions

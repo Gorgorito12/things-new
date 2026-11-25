@@ -2716,6 +2716,21 @@ inline constexpr Site kResourceByName{"ResourceByName", 0x0044709C, kResourceByN
 inline constexpr std::uint8_t kPlayerIsAllyOrSelfBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x0F, 0x8C, 0x75, 0x44, 0x01, 0x00, 0x83, 0xF8, 0x10, 0x0F, 0x8D, 0x6C, 0x44, 0x01, 0x00, 0x8B, 0x84, 0x81, 0xD4};
 inline constexpr Site kPlayerIsAllyOrSelf{"PlayerIsAllyOrSelf", 0x004707EC, kPlayerIsAllyOrSelfBytes, sizeof(kPlayerIsAllyOrSelfBytes)};
 
+inline constexpr std::uint8_t kSelectionOfGameBytes[] = {0x8B, 0x81, 0x1C, 0x09, 0x00, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0xB2, 0xB7, 0x25, 0x00};
+inline constexpr Site kSelectionOfGame{"SelectionOfGame", 0x004051B6, kSelectionOfGameBytes, sizeof(kSelectionOfGameBytes)};
+
+inline constexpr std::uint8_t kSelectionClearBytes[] = {0x55, 0x8B, 0x6C, 0x24, 0x08, 0x85, 0xED, 0x56, 0x8B, 0xF1};
+inline constexpr Site kSelectionClear{"SelectionClear", 0x009301D3, kSelectionClearBytes, sizeof(kSelectionClearBytes)};
+
+inline constexpr std::uint8_t kFindAllOfTypeLoopBytes[] = {0x8A, 0x86, 0x88, 0x00, 0x00, 0x00, 0x88, 0x44, 0x24, 0x0C, 0x8B, 0x4C, 0x24, 0x0C, 0x51, 0xE8, 0xB3, 0x62, 0xC6, 0xFF, 0x83, 0xC4, 0x04, 0x84, 0xC0, 0x75, 0x57, 0x8B, 0x16, 0x8B, 0xCE, 0xFF, 0x92, 0xA4, 0x00, 0x00, 0x00, 0x84, 0xC0, 0x74, 0x49, 0x83, 0x7E, 0x6C, 0x00, 0x7D, 0x43, 0x8B, 0x4E, 0x5C, 0x85, 0xC9, 0x74, 0x3C, 0x8B, 0x44, 0x24, 0x10, 0x50, 0xE8, 0x57, 0x5C, 0xC6, 0xFF, 0x84, 0xC0, 0x74, 0x2E, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0xE8, 0x04, 0xD6, 0xC1, 0xFF, 0x8B, 0x4E, 0x10, 0x89, 0x4C, 0x24, 0x20, 0x8D, 0x4C, 0x24, 0x18, 0xC7, 0x44, 0x24, 0x18, 0x44, 0xE4, 0xB9, 0x00, 0xC7, 0x44, 0x24, 0x1C, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x10, 0x51, 0x8B, 0xC8, 0xFF, 0x52, 0x04};
+inline constexpr Site kFindAllOfTypeLoop{"FindAllOfTypeLoop", 0x007E7B63, kFindAllOfTypeLoopBytes, sizeof(kFindAllOfTypeLoopBytes)};
+
+inline constexpr std::uint8_t kSelectionAddBytes[] = {0x83, 0xEC, 0x14, 0x53, 0x55, 0x8B, 0x6C, 0x24, 0x20, 0x8B, 0x45, 0x04, 0x56};
+inline constexpr Site kSelectionAdd{"SelectionAdd", 0x0079F534, kSelectionAddBytes, sizeof(kSelectionAddBytes)};
+
+inline constexpr std::uint8_t kSelectionAddCappedBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x56, 0x8B, 0xF1, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x74, 0x11, 0xE8, 0x92, 0x09, 0xBB, 0xFF, 0x39, 0x46, 0x08, 0x7C, 0x0D, 0x80};
+inline constexpr Site kSelectionAddCapped{"SelectionAddCapped", 0x00930245, kSelectionAddCappedBytes, sizeof(kSelectionAddCappedBytes)};
+
 inline constexpr std::uint8_t kEditorPaletteAddProtoBytes[] = {0x8D, 0x54, 0x24, 0x58, 0x52, 0x8D, 0x44, 0x24, 0x14, 0x50, 0x8B, 0xCF, 0xE8, 0xD4, 0xAC, 0x2D, 0x00};
 inline constexpr Site kEditorPaletteAddProto{"EditorPaletteAddProto", 0x007F5371, kEditorPaletteAddProtoBytes, sizeof(kEditorPaletteAddProtoBytes)};
 
@@ -3443,6 +3458,7 @@ Outcome ApplyFaithResource(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 Outcome ApplyTechGadgets(const Config& config);
 Outcome ApplyIncomeRates(const Config& config);
+Outcome ApplySelectFattened(const Config& config);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
 // which of the keys it names the list then sees.
@@ -3638,6 +3654,8 @@ inline constexpr Feature kFeatures[] = {
     {"editorAutosave", ApplyEditorAutosave},
     // After rendererOption: it sets its gadgets from the Present of whichever Direct3DCreate9 the game gets.
     {"techGadgets", ApplyTechGadgets},
+    // After rendererOption: it shows its button from the Present of whichever Direct3DCreate9 the game gets.
+    {"selectFattened", ApplySelectFattened},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
 };
@@ -3659,7 +3677,7 @@ inline constexpr const char* kHandledKeys[] = {
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
-    "techgadgets", "incomerates", "editorautosave",
+    "techgadgets", "incomerates", "editorautosave", "selectfattened",
 };
 
 }  // namespace uhc
