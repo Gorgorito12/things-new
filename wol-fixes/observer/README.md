@@ -264,3 +264,52 @@ all 36 (460 unit rows, 2,065 tech rows, 1,551 tracked techs, 102 checksums, 162 
 | 12 | `12-tech-icons-before-after.jpg` | Round 2: "Techs Completed" after Hunting Dogs and Gang Saw; top before the repair, bottom after |
 | 13 | `13-population-bar-before-after.jpg` | Round 2: the population bars; top before (villagers as military), bottom after |
 | 14 | `14-repaired-panel-1920x1080.jpg` | Round 2: the repaired map's panel, 150 s into a skirmish (test line on, the host shown as observer) |
+
+## Round 3 (2026-11-25): the interface files
+
+WoL's DLL loads these files for a local observer instead of the normal ones: `uimainnewobserver<W>x<H>.xml` at
+seven resolutions (and a `jp` twin each) and seven `...observer.xml` panels (the five minimized panels and two
+home city panels). They were made from the interface WoL still ships in `data\Data3.bar`, older than the
+loose files WoL uses now: 134 gadgets of today's `uimainnew.xml` are missing from them, the resource column was
+one row off (no oil), WoL's own resource panel showed under the observer's player rows, and the flags were the
+stock game's.
+
+`observer_ui.py` rebuilds all of them on WoL's current files:
+
+```
+python -I observer_ui.py build  "<WoL folder>" --out <folder> [--res 1920x1080,...] [--report <file>]
+python -I observer_ui.py gadgets "<WoL folder>\RM4\ESOC_Arizona.xs" --from <folder>
+python -I observer_ui.py apply  "<WoL folder>" --from <folder>     (replaced files kept as *.obs-orig)
+python -I observer_ui.py check  "<WoL folder>" [--from <folder>]
+python -I observer_ui.py revert "<WoL folder>"
+```
+
+It needs aoe3-blender-tools beside this repository (its `uilayout.py` keeps every byte of a layout that it
+does not change) and this repository's `tools/bar.py` and `tools/xmbedit.py`. WoL's folder is only read by
+`build` and `gadgets`; `apply` and `revert` refuse a Steam folder.
+
+How it works, per file: it compares WoL's observer copy with the Data3.bar file it was made from, and makes the
+same changes to the file WoL uses now: the ESOC panel's gadgets added where the copy has them, the containers the
+map hides (`...-SpecContainer`) put around the same panels (with WoL's current art), the attributes the copy
+changed changed again (5 of them WoL had changed too: the panel backgrounds it redrew, which the containers now
+take). Then the observer-only rules, each seen in game:
+
+| Rule | Why |
+|---|---|
+| WoL's 13 resource panels (`SettlerCountDialog*`) in one hidden container, `Spec_WoLResourcePanels` | The observer's own (empty) economy was drawn under the player rows; the numbers overlapped. |
+| WoL's icon row (Menu > Icons) and building search row moved below the population box | They would cover the observer's top band. |
+| The home city button and its shipment counter where the observer copy has them | WoL moved them over the panel's options bar. |
+| One `Spec_Flag_<column>_<civ ID>` per WoL civ, with its large flag button set | The panel asks for the flag by `kbGetCiv()`, which is the civ's place in `civs.xml` (commented-out civs left out) plus one: ESOC's gadgets used the stock numbers, so WoL's Germans showed the Aztec flag and Mapuche none. 88 civs x 6 columns, the same list as `observer_maps.py flags`. |
+| WoL's later unit panel texts (LOS, Train Points, Speed, Garrison, two empty) moved out of the screen | Placed for WoL's centre panel, they were drawn over the player rows; ESOC's own unit panel (at the right) shows speed and garrison in its own row. |
+
+`gadgets` checks that every gadget name the map's panel code shows, hides or tests (55 names and 8 prefixes in
+`ESOC_Arizona`) exists in the built files of each resolution; the six it lists as optional are absent from
+WoL's current observer files too (option switches that stay off, and the other layout family).
+
+### Resolutions WoL's DLL does not know
+
+The panel is drawn in pixels: its icons are 49 px cells written into text, its fonts have pixel sizes, and the
+map's `loadWxH()` presets are pixel offsets. So a new resolution starts from the widest existing one not wider,
+and each panel gadget keeps its size in pixels and its distance from the screen's centre and from the top or
+bottom edge; WoL's own panels and the panel's wood backgrounds stay stretched by the game as before. These
+files are loaded only if WoL's DLL adds the resolutions to its list of seven.
