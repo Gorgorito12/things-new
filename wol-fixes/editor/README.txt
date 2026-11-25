@@ -9,7 +9,9 @@ With the DLL key `editorSearch`, three places of the scenario editor get a searc
   - the Forbidden Units/Techs dialog (Scenario > Forbidden Units/Techs): a "Search:" field under the "Allowed" list,
     for units and for techs;
   - the trigger editor's Conditions / Effects panel: a "Search:" field on the row of "Type:". It filters the Type
-    list and the unit, unit type and tech lists of the condition or effect open below.
+    list and the unit, unit type and tech lists of the condition or effect open below;
+  - the trigger editor's list of triggers (the "Trigger Editor" panel on the left): a "Search:" field above "Group:".
+    It filters the triggers of the group shown, by name. The trigger being edited always stays in the list.
 
 Type part of a name and the list keeps only the entries that match. Upper and lower case do not matter. Several words
 narrow it down: every word must be found ("inf musk" finds "INF R-LU Musketeer" but not "Musk Ox"). A unit is found by
@@ -23,6 +25,18 @@ entries: "create" narrows the Type list to the ten "... Create ..." types and le
 matches no type, so the Type list stays whole, and narrows the unit list (ProtoName) to the musketeers. A parameter's
 current value always stays in its list, so its field keeps showing it. The value saved is the name you pick, exactly
 as from the full list (tested: saved, editor left, scenario loaded again).
+
+The list of triggers has its own field. A trigger picked from a short list is that trigger: the game gives each row
+its trigger's place in the group, and a click reads that, not the row (tested: its conditions, effects and a Loop
+change all went to the trigger picked, and the full list showed the same). The text stays when you change group;
+Insert and Del work as usual (the new trigger shows, being the one edited). Its search row is level with the
+Conditions / Effects panel's.
+
+Taller lists (2026-11-25): every bottom panel of the editor (Trigger Editor, Triggers, Conditions / Effects, the
+Objects and Terrain palettes) now starts at the same height, higher than before, and the lists grow down to the old
+bottom. At 1920x1080 the list of triggers shows 11 rows (8 before), the Objects palette 12 (7), the Type list about
+9 (4), and the trigger's Conditions and Effects lists are about a quarter taller. The Forbidden Units/Techs dialog is
+a little taller too (24 rows in its lists, 21 before). Nothing covers the minimap.
 
 It works with everything else in those lists:
   - the palette's category list (All, Units, Buildings, Nature...) still applies: "musk" in Nature shows the Musk
@@ -39,15 +53,24 @@ Files
 -----
   files\data\uieditorpalettes.xml       the game's Objects and Terrain palettes, plus the field
                                         EditorProtoPaletteSearch and its "Search:" label inside the Objects
-                                        palette (copy of the file in Data3.bar)
+                                        palette (copy of the file in Data3.bar; both palettes taller)
   files\data\uiforbiddenunitstechs.xml  the Forbidden Units/Techs dialog, plus the field ForbiddenUnitsTechs_Search
-                                        and its label under the Allowed list (copy of the file in Data2.bar)
+                                        and its label under the Allowed list (copy of the file in Data2.bar; taller)
   files\data\uitriggereditor.xml        the trigger editor, plus the field trEdit-CondEffPanel-search and its label
-                                        in the Conditions / Effects panel (copy of the file in Data3.bar)
+                                        in the Conditions / Effects panel, and trEdit-Trigger-search and its label
+                                        above the list of triggers (copy of the file in Data3.bar; every panel taller)
+  apply_fix.py                          installs the three files and the cfg line (see below)
   media\                                screenshots (English), taken in a WoL copy with the DLL
 
 To install
 ----------
+With Python 3:
+
+    python apply_fix.py <WoL folder>             copies the three files and adds the line below to Startup\wol.cfg
+    python apply_fix.py <WoL folder> --check     says what is applied
+    python apply_fix.py <WoL folder> --restore   puts everything back as it was (from <WoL folder>\editor-backup)
+
+By hand:
 1. Copy the three files of files\data into WoL's data folder (they are new loose files: nothing of WoL's is
    overwritten; WoL's own uieditormenu.xml is not touched).
 2. Add a line to Startup\wol.cfg:
@@ -55,7 +78,8 @@ To install
        editorSearch
 
    (`editorSearch log` also writes each search to UHC.log: "editorSearch: Objects palette "musk": 9 shown,
-   3202 hidden (181.5 ms)", "editorSearch: trigger parameter list "cavalry": 13 of 3634").
+   3202 hidden (181.5 ms)", "editorSearch: trigger parameter list "cavalry": 13 of 3634", "editorSearch: trigger list
+   "captain": 4 shown, 23 hidden (0.1 ms)").
 
 Without a file the key does nothing visible there (the list stays as it is, and the log says the field is missing).
 Without the key the fields show but do not filter.
@@ -75,7 +99,10 @@ Screenshots
   forbid-techs-musket.png       "Display Techs" with the same search
   forbid-cleared.png            the field erased: the full list, without the forbidden Musketeer
   nolayout.jpg                  the key on with the game's own palette and dialog layouts: stock
-  trigger-panel.png             the Effects panel with the new field next to "Type:"
+  trigger-panel.png             the Effects panel with the new field next to "Type:", and the list of triggers
+                                with its own field ("training")
+  trigger-list-training.png     "training": the list keeps 2 of 27 triggers; P2_LandTrainingKicker picked shows its
+                                own 4 conditions and 5 effects
   trigger-type-create.jpg       "create": the Type list keeps the 10 "... Create ..." effects
   trigger-unit-musket.jpg       "musket" with Unit Create: the Type list stays whole, ProtoName keeps 6 units
   trigger-tech-guard-musket.png condition Tech Status Equals, "guard musket": the Tech list keeps 2 of 10,542 techs
@@ -89,4 +116,4 @@ Screenshots
 Not covered
 -----------
 The other parameter lists of the trigger editor (players, resources, areas, sounds...) are not filtered; they are
-short. The trigger list itself (Trigger_0, ...) has no search.
+short.

@@ -2176,6 +2176,22 @@ SITES = [
     # editorSearch: a parameter's change (event 10, 0x829E29): the field's current index 0xAC0D1B, its entry's text
     # 0xAC0EEA, given to the parameter (0x82AC1C): the value is the text picked, not an index into the stock list.
     ("EditorParamPickText", 0x829E65, 0x24),
+    # editorSearch, trigger list: FUN_0082481C (thiscall(editor), plain ret; sub esp,48h / ... / mov [esp+4],ecx,
+    # then push ebx/esi/edi/ebp, so the editor is [esp+18h] at the add's call) fills trEdit-Trigger-list
+    # ([editor+178h], 0x824347) from the current group (0x97B65E: [sys+0Ch][[sys+18h]]): for each position EDI of
+    # the group (count [group+10h]) the trigger [group+0Ch][pos] (0x97A3C7, 0x97B2E0, 0x405C2E) adds its name
+    # [trig+3Ch] with push eax / mov ecx,esi / call 0AC9228h (0x8248C3), and the row it got gets the position as its
+    # data: push eax / push edi / mov ecx,esi / call 0AC6CC0h (thiscall(list, data, row), a row < 0 does nothing).
+    ("EditorTriggerListFill", 0x82481C, 0x4A),
+    ("EditorTriggerListAdd", 0x8248A1, 0x39),
+    ("EditorListSetData", 0xAC6CC0, 0x0C),
+    # editorSearch: a click in the trigger list (the list handler 0x825933, event 0Fh) reads the clicked row's data
+    # (0xAC6CFE) and makes that position the group's current trigger (0x97B79B: [group+4] = pos, 0 <= pos <
+    # [group+10h]); the fill selects the row whose data is [group+4] (0x97B7C4, 0xAC7BB0). A row is never read
+    # as a position, so a list with fewer rows edits the trigger it shows.
+    ("EditorTriggerListClick", 0x825AE8, 0x10),
+    ("EditorTriggerSetCurrent", 0x97B79B, 0x1A),
+    ("EditorTriggerCurrent", 0x97B7C4, 0x1E),
     # card tags (cardtags.*): the home city loader FUN_0062E6C9 reads each <card>'s children in a loop over the card
     # node EBX (mov eax,[esp+1Ch] / push eax / mov ecx,ebx at 0x62FD1D; the loop's end add eax,1 / cmp eax,[ebx+0Ch]
     # at 0x62FF42), then commits the card it built on the stack: lea edx,[esp+0A8h] / push edx / add ecx,204h /

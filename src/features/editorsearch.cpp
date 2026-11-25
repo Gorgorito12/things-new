@@ -3,9 +3,10 @@
 // the allowed list of the Forbidden Units/Techs dialog (uiforbiddenunitstechs.xml, field ForbiddenUnitsTechs_Search),
 // and the trigger editor's Type list and its unit, unit type and tech parameter lists (uitriggereditor.xml, field
 // trEdit-CondEffPanel-search in trEdit-CondEffPanel; there a list where nothing matches keeps all its entries, since
-// one field serves them all). The match is case-insensitive; every word of the text must appear in the text the
-// list shows, or in a proto's internal or display name (techs: their internal name, which the list shows). An
-// empty field is the stock list. A layout without the field is the stock dialog.
+// one field serves them all), and the trigger editor's list of triggers (field trEdit-Trigger-search in trEditor;
+// the trigger being edited always stays in it). The match is case-insensitive; every word of the text must appear in
+// the text the list shows, or in a proto's internal or display name (techs: their internal name, which the list
+// shows). An empty field is the stock list. A layout without the field is the stock dialog.
 //
 //   editorSearch [log]
 //
@@ -17,8 +18,10 @@
 // FUN_007F501E and shows the buttons), and the dialog's fill of its display mode (FUN_0099912F units, FUN_00999493
 // techs) followed by the list's layout, as the dialog's own refresh does. The trigger editor's lists are set from
 // arrays (0x5BECAA, and 0xAC19D9 for the type list's entry data): those calls get filtered copies, and a change runs
-// the panel's own fill FUN_00825757 again. The editor only: no simulation, nothing saved but the values picked,
-// nothing sent.
+// the panel's own fill FUN_00825757 again. The trigger list's fill FUN_0082481C adds each trigger of the current
+// group through one call as well (0x8248C3) and gives each row the trigger's position in the group as its data, which
+// is what a click reads (0x825AE8), never the row: a shorter list edits the trigger it shows. A change runs that fill
+// again. The editor only: no simulation, nothing saved but the values picked, nothing sent.
 #include <windows.h>
 
 #include <algorithm>
@@ -37,6 +40,7 @@
 extern "C" void UhcEditorPaletteAddHook();
 extern "C" void UhcEditorForbidUnitHook();
 extern "C" void UhcEditorForbidTechHook();
+extern "C" void UhcEditorTriggerAddHook();
 extern "C" void UhcEditorTypeFillHook();
 extern "C" void UhcEditorParamListHook();
 
@@ -224,6 +228,8 @@ const auto kSetData = reinterpret_cast<SetDataFn>(0x00AC19D9);
 
 Search g_trigger{"trigger editor", "trEdit-CondEffPanel-search"};
 std::uint32_t g_triggerVtable = 0;  // the editor object's, as its type fill saw it
+Search g_triggers{"trigger list", "trEdit-Trigger-search"};
+std::uint32_t g_triggersVtable = 0;  // the editor object's, as the trigger list fill saw it
 
 // The indices of the names that hold every word; none when the text is empty or nothing matches, in which case the
 // list keeps all its entries: one field serves the type list and the parameter lists, and a word meant for one of
@@ -244,6 +250,19 @@ std::vector<std::int32_t> Matching(const GameArray* names) {
 
 }  // namespace
 }  // namespace uhc
+
+// The trigger list (FUN_0082481C, at 0x8248C3): one call per trigger of the current group, `pos` its position there
+// (the data its row gets, what a click reads), `text` its name. The group's current trigger, [group+4] (0x97B7C4),
+// always stays, so the list keeps showing the trigger the panels edit.
+extern "C" bool UhcEditorTriggerKeep(void* editor, const char* group, std::int32_t pos, const uhc::BString* text) {
+  using namespace uhc;
+  Seen(g_triggers, ui::HandleOf(editor));
+  g_triggersVtable = Read<std::uint32_t>(editor, 0);
+  const bool keep = g_triggers.words.empty() || (group != nullptr && pos == Read<std::int32_t>(group, 4)) ||
+                    Matches(g_triggers.words, text == nullptr ? nullptr : text->text, nullptr);
+  Count(g_triggers, keep);
+  return keep;
+}
 
 // The condition/effect type list (FUN_00825757, at 0x8258A0): the names and their entry data (the type's index), set
 // together, filtered together.
@@ -462,16 +481,43 @@ void PollTrigger() {
   LogFill(g_trigger, start);
 }
 
+using TriggerListFillFn = void(__fastcall*)(void* editor, void* edx);
+const auto kTriggerListFill = reinterpret_cast<TriggerListFillFn>(0x0082481C);
+
+// The trigger list: a new text runs its fill FUN_0082481C again (what the group change, the panel fill and the
+// editor's refresh 0x825CE8 run): the list emptied, each trigger of the group through the hook above, the current one
+// selected, and its name, priority and Active / Loop / Run Immediately shown again, as they were. In any mode: the
+// list shows beside the Triggers, Conditions and Effects panels alike.
+void PollTriggerList() {
+  if (g_triggers.owner == 0) {
+    return;
+  }
+  void* editor = ui::Gadget(g_triggers.owner, ui::kAnyGadget);
+  if (editor == nullptr || Read<std::uint32_t>(editor, 0) != g_triggersVtable) {
+    Seen(g_triggers, 0);
+    return;
+  }
+  if (!ReadyToRefill(g_triggers, editor)) {
+    return;
+  }
+  g_triggers.kept = g_triggers.dropped = 0;
+  LARGE_INTEGER start;
+  QueryPerformanceCounter(&start);
+  kTriggerListFill(editor, nullptr);
+  LogFill(g_triggers, start);
+}
+
 // With `log`, the cost of the per-frame check while the editor's lists exist, every 5000 such frames (refills
 // included).
 int g_polls = 0;
 double g_pollMs = 0;
 
 void BeforePresent() {
-  if (!g_log || (g_palette.owner == 0 && g_forbid.owner == 0 && g_trigger.owner == 0)) {
+  if (!g_log || (g_palette.owner == 0 && g_forbid.owner == 0 && g_trigger.owner == 0 && g_triggers.owner == 0)) {
     PollPalette();
     PollForbid();
     PollTrigger();
+    PollTriggerList();
     return;
   }
   LARGE_INTEGER start;
@@ -479,6 +525,7 @@ void BeforePresent() {
   PollPalette();
   PollForbid();
   PollTrigger();
+  PollTriggerList();
   g_pollMs += Ms(start);
   if (++g_polls == 5000) {
     Log(L"editorSearch: the search fields' check took %.2f us a frame (5000 frames, refills included)",
@@ -513,7 +560,9 @@ Outcome ApplyEditorSearch(const Config& config) {
                   &sites::kBStringFromId, &sites::kBStringFree, &sites::kEditorTypeListSet,
                   &sites::kEditorTypeFillHead, &sites::kEditorTypeFillMode, &sites::kEditorParamTechList,
                   &sites::kEditorParamProtoList, &sites::kEditorParamUnitTypeList, &sites::kEditorSetList,
-                  &sites::kEditorSetData, &sites::kEditorParamPickText})) {
+                  &sites::kEditorSetData, &sites::kEditorParamPickText, &sites::kEditorTriggerListFill,
+                  &sites::kEditorTriggerListAdd, &sites::kEditorListSetData, &sites::kEditorTriggerListClick,
+                  &sites::kEditorTriggerSetCurrent, &sites::kEditorTriggerCurrent})) {
     return Outcome::kFailed;
   }
   if (!AddD3D9Observer({nullptr, nullptr, &BeforePresent, nullptr}, "editorSearch")) {
@@ -525,12 +574,13 @@ Outcome ApplyEditorSearch(const Config& config) {
       !WriteJmp(0x008258A0, reinterpret_cast<const void*>(&UhcEditorTypeFillHook), 0x18) ||
       !WriteCall(0x008289D5, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
       !WriteCall(0x00828A27, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
-      !WriteCall(0x00828A4E, reinterpret_cast<const void*>(&UhcEditorParamListHook))) {
+      !WriteCall(0x00828A4E, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
+      !WriteCall(0x008248C3, reinterpret_cast<const void*>(&UhcEditorTriggerAddHook))) {
     return Outcome::kFailed;
   }
-  Log(L"editorSearch: the Objects palette, the Forbidden Units/Techs dialog and the trigger editor filter by their "
-      L"search fields (%hs, %hs, %hs)%ls",
-      g_palette.fieldName, g_forbid.fieldName, g_trigger.fieldName, g_log ? L"; log on" : L"");
+  Log(L"editorSearch: the Objects palette, the Forbidden Units/Techs dialog, the trigger editor and its trigger list "
+      L"filter by their search fields (%hs, %hs, %hs, %hs)%ls",
+      g_palette.fieldName, g_forbid.fieldName, g_trigger.fieldName, g_triggers.fieldName, g_log ? L"; log on" : L"");
   return Outcome::kApplied;
 }
 

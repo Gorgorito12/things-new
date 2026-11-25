@@ -7491,7 +7491,7 @@ END
 
 Contract: [editorSearch](../porting-to-another-dll.md#editorsearch).
 
-Sites: `BStringFree` `0x4010CA` (31 B), `BStringFromId` `0x58EA52` (25 B), `EditorSetList` `0x5BECAA` (17 B), `EditorPaletteAddProto` `0x7F5371` (17 B), `EditorPaletteObjectsFill` `0x7F5C51` (10 B), `EditorTypeFillHead` `0x825757` (15 B), `EditorTypeListSet` `0x8258A0` (26 B), `EditorTypeFillMode` `0x8264F0` (11 B), `EditorParamTechList` `0x8289C3` (23 B), `EditorParamProtoList` `0x828A13` (25 B), `EditorParamUnitTypeList` `0x828A3A` (25 B), `EditorParamPickText` `0x829E65` (36 B), `EditorProtoDisplayName` `0x8F7A89` (9 B), `EditorForbidVtable` `0x9990CB` (6 B), `EditorFillAllowedUnits` `0x99912F` (11 B), `EditorForbidUnitAdd` `0x9991C7` (14 B), `EditorFillAllowedTechs` `0x999493` (10 B), `EditorForbidTechAdd` `0x999540` (12 B), `EditorForbidMode` `0x9996C6` (12 B), `EditorForbidRelayout` `0x9997C8` (19 B), `EditorForbidBind` `0x999B1F` (6 B), `EditorSetData` `0xAC19D9` (15 B), `EditorListAdd` `0xAC9228` (9 B), `EditorPaletteRefill` `0xACE8DF` (15 B), `EditorPaletteVtable` `0xACFBAA` (6 B), `EditorPaletteAdd` `0xAD0056` (11 B), `EditorPaletteRefresh` `0xAD01FD` (27 B), `EditorPaletteLayoutShow` `0xAD0262` (16 B), `EditorPaletteRefreshSlot` `0xB92788` (4 B).
+Sites: `BStringFree` `0x4010CA` (31 B), `BStringFromId` `0x58EA52` (25 B), `EditorSetList` `0x5BECAA` (17 B), `EditorPaletteAddProto` `0x7F5371` (17 B), `EditorPaletteObjectsFill` `0x7F5C51` (10 B), `EditorTriggerListFill` `0x82481C` (74 B), `EditorTriggerListAdd` `0x8248A1` (57 B), `EditorTypeFillHead` `0x825757` (15 B), `EditorTypeListSet` `0x8258A0` (26 B), `EditorTriggerListClick` `0x825AE8` (16 B), `EditorTypeFillMode` `0x8264F0` (11 B), `EditorParamTechList` `0x8289C3` (23 B), `EditorParamProtoList` `0x828A13` (25 B), `EditorParamUnitTypeList` `0x828A3A` (25 B), `EditorParamPickText` `0x829E65` (36 B), `EditorProtoDisplayName` `0x8F7A89` (9 B), `EditorTriggerSetCurrent` `0x97B79B` (26 B), `EditorTriggerCurrent` `0x97B7C4` (30 B), `EditorForbidVtable` `0x9990CB` (6 B), `EditorFillAllowedUnits` `0x99912F` (11 B), `EditorForbidUnitAdd` `0x9991C7` (14 B), `EditorFillAllowedTechs` `0x999493` (10 B), `EditorForbidTechAdd` `0x999540` (12 B), `EditorForbidMode` `0x9996C6` (12 B), `EditorForbidRelayout` `0x9997C8` (19 B), `EditorForbidBind` `0x999B1F` (6 B), `EditorSetData` `0xAC19D9` (15 B), `EditorListSetData` `0xAC6CC0` (12 B), `EditorListAdd` `0xAC9228` (9 B), `EditorPaletteRefill` `0xACE8DF` (15 B), `EditorPaletteVtable` `0xACFBAA` (6 B), `EditorPaletteAdd` `0xAD0056` (11 B), `EditorPaletteRefresh` `0xAD01FD` (27 B), `EditorPaletteLayoutShow` `0xAD0262` (16 B), `EditorPaletteRefreshSlot` `0xB92788` (4 B).
 
 ### src/features/editorsearch.cpp
 
@@ -7501,9 +7501,10 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringFromId` `0x58EA52` (25 B), `Edit
 // the allowed list of the Forbidden Units/Techs dialog (uiforbiddenunitstechs.xml, field ForbiddenUnitsTechs_Search),
 // and the trigger editor's Type list and its unit, unit type and tech parameter lists (uitriggereditor.xml, field
 // trEdit-CondEffPanel-search in trEdit-CondEffPanel; there a list where nothing matches keeps all its entries, since
-// one field serves them all). The match is case-insensitive; every word of the text must appear in the text the
-// list shows, or in a proto's internal or display name (techs: their internal name, which the list shows). An
-// empty field is the stock list. A layout without the field is the stock dialog.
+// one field serves them all), and the trigger editor's list of triggers (field trEdit-Trigger-search in trEditor;
+// the trigger being edited always stays in it). The match is case-insensitive; every word of the text must appear in
+// the text the list shows, or in a proto's internal or display name (techs: their internal name, which the list
+// shows). An empty field is the stock list. A layout without the field is the stock dialog.
 //
 //   editorSearch [log]
 //
@@ -7515,8 +7516,10 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringFromId` `0x58EA52` (25 B), `Edit
 // FUN_007F501E and shows the buttons), and the dialog's fill of its display mode (FUN_0099912F units, FUN_00999493
 // techs) followed by the list's layout, as the dialog's own refresh does. The trigger editor's lists are set from
 // arrays (0x5BECAA, and 0xAC19D9 for the type list's entry data): those calls get filtered copies, and a change runs
-// the panel's own fill FUN_00825757 again. The editor only: no simulation, nothing saved but the values picked,
-// nothing sent.
+// the panel's own fill FUN_00825757 again. The trigger list's fill FUN_0082481C adds each trigger of the current
+// group through one call as well (0x8248C3) and gives each row the trigger's position in the group as its data, which
+// is what a click reads (0x825AE8), never the row: a shorter list edits the trigger it shows. A change runs that fill
+// again. The editor only: no simulation, nothing saved but the values picked, nothing sent.
 #include <windows.h>
 
 #include <algorithm>
@@ -7535,6 +7538,7 @@ Sites: `BStringFree` `0x4010CA` (31 B), `BStringFromId` `0x58EA52` (25 B), `Edit
 extern "C" void UhcEditorPaletteAddHook();
 extern "C" void UhcEditorForbidUnitHook();
 extern "C" void UhcEditorForbidTechHook();
+extern "C" void UhcEditorTriggerAddHook();
 extern "C" void UhcEditorTypeFillHook();
 extern "C" void UhcEditorParamListHook();
 
@@ -7722,6 +7726,8 @@ const auto kSetData = reinterpret_cast<SetDataFn>(0x00AC19D9);
 
 Search g_trigger{"trigger editor", "trEdit-CondEffPanel-search"};
 std::uint32_t g_triggerVtable = 0;  // the editor object's, as its type fill saw it
+Search g_triggers{"trigger list", "trEdit-Trigger-search"};
+std::uint32_t g_triggersVtable = 0;  // the editor object's, as the trigger list fill saw it
 
 // The indices of the names that hold every word; none when the text is empty or nothing matches, in which case the
 // list keeps all its entries: one field serves the type list and the parameter lists, and a word meant for one of
@@ -7742,6 +7748,19 @@ std::vector<std::int32_t> Matching(const GameArray* names) {
 
 }  // namespace
 }  // namespace uhc
+
+// The trigger list (FUN_0082481C, at 0x8248C3): one call per trigger of the current group, `pos` its position there
+// (the data its row gets, what a click reads), `text` its name. The group's current trigger, [group+4] (0x97B7C4),
+// always stays, so the list keeps showing the trigger the panels edit.
+extern "C" bool UhcEditorTriggerKeep(void* editor, const char* group, std::int32_t pos, const uhc::BString* text) {
+  using namespace uhc;
+  Seen(g_triggers, ui::HandleOf(editor));
+  g_triggersVtable = Read<std::uint32_t>(editor, 0);
+  const bool keep = g_triggers.words.empty() || (group != nullptr && pos == Read<std::int32_t>(group, 4)) ||
+                    Matches(g_triggers.words, text == nullptr ? nullptr : text->text, nullptr);
+  Count(g_triggers, keep);
+  return keep;
+}
 
 // The condition/effect type list (FUN_00825757, at 0x8258A0): the names and their entry data (the type's index), set
 // together, filtered together.
@@ -7960,16 +7979,43 @@ void PollTrigger() {
   LogFill(g_trigger, start);
 }
 
+using TriggerListFillFn = void(__fastcall*)(void* editor, void* edx);
+const auto kTriggerListFill = reinterpret_cast<TriggerListFillFn>(0x0082481C);
+
+// The trigger list: a new text runs its fill FUN_0082481C again (what the group change, the panel fill and the
+// editor's refresh 0x825CE8 run): the list emptied, each trigger of the group through the hook above, the current one
+// selected, and its name, priority and Active / Loop / Run Immediately shown again, as they were. In any mode: the
+// list shows beside the Triggers, Conditions and Effects panels alike.
+void PollTriggerList() {
+  if (g_triggers.owner == 0) {
+    return;
+  }
+  void* editor = ui::Gadget(g_triggers.owner, ui::kAnyGadget);
+  if (editor == nullptr || Read<std::uint32_t>(editor, 0) != g_triggersVtable) {
+    Seen(g_triggers, 0);
+    return;
+  }
+  if (!ReadyToRefill(g_triggers, editor)) {
+    return;
+  }
+  g_triggers.kept = g_triggers.dropped = 0;
+  LARGE_INTEGER start;
+  QueryPerformanceCounter(&start);
+  kTriggerListFill(editor, nullptr);
+  LogFill(g_triggers, start);
+}
+
 // With `log`, the cost of the per-frame check while the editor's lists exist, every 5000 such frames (refills
 // included).
 int g_polls = 0;
 double g_pollMs = 0;
 
 void BeforePresent() {
-  if (!g_log || (g_palette.owner == 0 && g_forbid.owner == 0 && g_trigger.owner == 0)) {
+  if (!g_log || (g_palette.owner == 0 && g_forbid.owner == 0 && g_trigger.owner == 0 && g_triggers.owner == 0)) {
     PollPalette();
     PollForbid();
     PollTrigger();
+    PollTriggerList();
     return;
   }
   LARGE_INTEGER start;
@@ -7977,6 +8023,7 @@ void BeforePresent() {
   PollPalette();
   PollForbid();
   PollTrigger();
+  PollTriggerList();
   g_pollMs += Ms(start);
   if (++g_polls == 5000) {
     Log(L"editorSearch: the search fields' check took %.2f us a frame (5000 frames, refills included)",
@@ -8011,7 +8058,9 @@ Outcome ApplyEditorSearch(const Config& config) {
                   &sites::kBStringFromId, &sites::kBStringFree, &sites::kEditorTypeListSet,
                   &sites::kEditorTypeFillHead, &sites::kEditorTypeFillMode, &sites::kEditorParamTechList,
                   &sites::kEditorParamProtoList, &sites::kEditorParamUnitTypeList, &sites::kEditorSetList,
-                  &sites::kEditorSetData, &sites::kEditorParamPickText})) {
+                  &sites::kEditorSetData, &sites::kEditorParamPickText, &sites::kEditorTriggerListFill,
+                  &sites::kEditorTriggerListAdd, &sites::kEditorListSetData, &sites::kEditorTriggerListClick,
+                  &sites::kEditorTriggerSetCurrent, &sites::kEditorTriggerCurrent})) {
     return Outcome::kFailed;
   }
   if (!AddD3D9Observer({nullptr, nullptr, &BeforePresent, nullptr}, "editorSearch")) {
@@ -8023,12 +8072,13 @@ Outcome ApplyEditorSearch(const Config& config) {
       !WriteJmp(0x008258A0, reinterpret_cast<const void*>(&UhcEditorTypeFillHook), 0x18) ||
       !WriteCall(0x008289D5, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
       !WriteCall(0x00828A27, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
-      !WriteCall(0x00828A4E, reinterpret_cast<const void*>(&UhcEditorParamListHook))) {
+      !WriteCall(0x00828A4E, reinterpret_cast<const void*>(&UhcEditorParamListHook)) ||
+      !WriteCall(0x008248C3, reinterpret_cast<const void*>(&UhcEditorTriggerAddHook))) {
     return Outcome::kFailed;
   }
-  Log(L"editorSearch: the Objects palette, the Forbidden Units/Techs dialog and the trigger editor filter by their "
-      L"search fields (%hs, %hs, %hs)%ls",
-      g_palette.fieldName, g_forbid.fieldName, g_trigger.fieldName, g_log ? L"; log on" : L"");
+  Log(L"editorSearch: the Objects palette, the Forbidden Units/Techs dialog, the trigger editor and its trigger list "
+      L"filter by their search fields (%hs, %hs, %hs, %hs)%ls",
+      g_palette.fieldName, g_forbid.fieldName, g_trigger.fieldName, g_triggers.fieldName, g_log ? L"; log on" : L"");
   return Outcome::kApplied;
 }
 
@@ -8038,7 +8088,7 @@ Outcome ApplyEditorSearch(const Config& config) {
 ### src/hooks/editorsearch_hooks.asm
 
 ```asm
-; editorSearch (editorsearch.cpp): three redirected calls of the scenario editor's list fills. Each asks the key
+; editorSearch (editorsearch.cpp): redirected calls of the scenario editor's list fills. Each asks the key
 ; whether the entry matches the search text and either goes on to the stock add (a jmp, so the stock routine returns
 ; to the fill as the original call did) or drops the entry with the add's own stack cleanup.
 .686
@@ -8050,6 +8100,7 @@ include common.inc
 UhcEditorPaletteKeep PROTO C pal:DWORD, unitProto:DWORD
 UhcEditorForbidKeep PROTO C dlg:DWORD, entryText:DWORD, entry:DWORD, isTech:DWORD
 
+UhcEditorTriggerKeep PROTO C editor:DWORD, trigGroup:DWORD, pos:DWORD, entryText:DWORD
 UhcEditorTypeFill PROTO C editor:DWORD, typeField:DWORD, names:DWORD, entryData:DWORD
 UhcEditorParamList PROTO C paramField:DWORD, names:DWORD, param:DWORD
 
@@ -8117,6 +8168,29 @@ UhcEditorForbidTechHook PROC
 drop:
     ret 4
 UhcEditorForbidTechHook ENDP
+
+; Replaces call 0AC9228h at 0x8248C3 in the trigger list fill FUN_0082481C. ECX = ESI = trEdit-Trigger-list,
+; EBP = the current group, EDI = the trigger's position in it, [esp+4] the BString of its name, [esp+1Ch] the editor
+; (the fill keeps it at [esp+4] of its frame, under four pushes and the argument). The fill gives the row the add
+; returns the position as its data (push eax / push edi / call 0AC6CC0h): a dropped entry returns -1, a row that
+; call ignores. After that call the loop reads no register but EDI, EBP, EBX and ESI, which are kept.
+UhcEditorTriggerAddHook PROC
+    TRACE_ONCE "editorSearch: trigger list entry (0x8248C3)"
+    push ecx
+    push dword ptr [esp+8]
+    push edi
+    push ebp
+    push dword ptr [esp+2Ch]
+    call UhcEditorTriggerKeep
+    add esp, 10h
+    pop ecx
+    test al, al
+    jz drop
+    jmp dword ptr [listAdd]
+drop:
+    or eax, -1
+    ret 4
+UhcEditorTriggerAddHook ENDP
 
 ; Replaces 0x8258A0..0x8258B7 in the trigger editor's type fill FUN_00825757: lea ecx,[esp+20h] / push ecx /
 ; mov ecx,ebx / call 5BECAAh (the names) and lea edx,[esp+2Ch] / push edx / mov ecx,ebx / call 0AC19D9h (each entry's

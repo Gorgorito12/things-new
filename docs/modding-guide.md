@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-25 08:10 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
 | Wednesday 2026-11-25 07:55 | [`displayedRange`](#displayedrange) | Filmed in WoL, with a control. A selected unit shows the reach of its ranged attacks as rings on the ground, measured as the game measures it (from a building's walls, to the target's edge), while Alt is held, or always with `AlwaysDisplayRange`; the player turns them on or off in the options menu, at once. | `<DisplayRange>1</DisplayRange>` or `<AlwaysDisplayRange>1</AlwaysDisplayRange>` on the protos, and `tools/rings` in `art/effects/uhc_rings` (copy it again: the ring files changed on 2026-11-24); the options-menu pack `wol-fixes/options-menu/` for the switch. |
 | Tuesday 2026-11-24 09:08 | [`techGadgets`](#techgadgets) | Filmed in WoL, with a control. Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. |
 | Tuesday 2026-11-24 09:08 | [`incomeRates`](#incomerates) | Filmed in WoL, with a control. A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). |
@@ -54,7 +55,6 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Saturday 2026-11-21 15:25 | [`detonationDeath`](#detonationdeath) | Filmed in WoL, with a control. `<DetonationProtoAction>` makes a unit fire an action around itself when it dies, with the action's impact effect where it stood. | The tag, and an action with `DamageArea`. |
 | Saturday 2026-11-21 15:06 | [`veterancyBonus`](#veterancybonus) | Filmed in WoL, with a control. `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | The rows on the protos that want them. |
 | Saturday 2026-11-21 12:11 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Filmed in WoL, with a control. Lets a ship's broadside fire from up to N muzzles per side instead of 6. | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. |
-| Saturday 2026-11-21 12:07 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
 | Saturday 2026-11-21 12:00 | [`overhealSources`](#overhealsources) | Filmed in WoL, with a control. Only heal actions with `<CanOverheal>1</CanOverheal>` heal those units above `InitialHitpoints`, up to their `<OverhealCap>`, and techs can turn it on or off; every other heal stops there. | `overhealHitpointBars`, and the tags on the `Heal` actions that may overheal. |
 | Saturday 2026-11-21 11:55 | [`herdWalkAwayFix`](bug-fixes.md#herdwalkawayfix) | Added. A fattened herdable that walks away from its pen or nomad stays there, instead of walking back to where it stood before the pen or nomad drew it in. | Nothing; for nomads, `wol-fixes/me-herdables`. |
 | Saturday 2026-11-21 11:52 | [`autoGatherFrom`](#autogatherfrom) | Added. A unit idle for a few seconds gathers on its own from a unit of the type named in its gather action, if one is within the action's range. | `<AutogatherFrom>` in the gather action of the units that want it. |
@@ -8436,7 +8436,7 @@ What the panels and the fog of war show.
 | [`minUIStats`](#minuistats) | The minimized interface shows what the big one shows, and more: building armor, live speed, LOS, garrison, every attack, in rows a data file lists, and `{uhc...}` texts. | **new** | A `uiunitselectionmin.xml` with the rows: `wol-fixes/min-ui` has one from the stock panel. | confirmed (single player, UI) |
 | [`playerIcon`](#playericon) | In a LAN lobby, the player's slot shows an icon of the mod's choosing instead of the civ's portrait, and keeps it when the player changes civ. | **new** | `data\avatar_*.xml` naming the icons, and their `.ddt` files: `tools/make_avatar_table.py` lists WoL's own pictures in `data\avatar_wol.xml`. | confirmed (LAN lobby, one copy) |
 | [`autoScout`](#autoscout) | A unit explores the map on its own, unexplored ground first, as DE's envoys do, keeping away from enemy buildings that shoot and backing off when hit: a tactic in its tactics file switches it on, and any order switches it off. | **new** | A tactic `AutoScout` in the unit's tactics file and two buttons: `wol-fixes/auto-scout` does it for the raven, the parrots, the balloon, the envoy and the European explorers. | confirmed (single player) |
-| [`editorSearch`](#editorsearch) | The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists) get a search field: typing part of a name keeps only the entries that match. | **new** | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. | confirmed (editor, UI) |
+| [`editorSearch`](#editorsearch) | The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | **new** | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. | confirmed (editor, UI) |
 | [`techGadgets`](#techgadgets) | Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | **new** | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. | confirmed (single player, UI) |
 | [`incomeRates`](#incomerates) | A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | **new** | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). | confirmed (single player, UI) |
 
@@ -9781,9 +9781,9 @@ autoScout [ScoutTactic [ReturnTactic]] [noAvoid] [noBack] [log]
 
 #### editorSearch
 
-*In the scenario editor, a search field above the list of objects, in the Forbidden Units/Techs dialog and in the trigger editor: type part of a name and the list shows only what matches.*
+*In the scenario editor, a search field above the list of objects, in the Forbidden Units/Techs dialog, in the trigger editor and above its list of triggers: type part of a name and the list shows only what matches.*
 
-**Added:** Saturday 2026-11-21 11:23 · **Filmed in WoL:** Saturday 2026-11-21 12:07
+**Added:** Saturday 2026-11-21 11:23 · **Filmed in WoL:** Wednesday 2026-11-25 08:10
 
 ![editorSearch in WoL](media/editorSearch-wol.gif)
 
@@ -9817,6 +9817,19 @@ keeps the 13 cavalry units, plus CavalryArcher, the value already set. [Full vid
 
 *Key off, the same typing:* every list stays full. [Full video (MP4)](media/editorSearch-trigger-wol-control.mp4).
 
+![editorSearch in the trigger list](media/editorSearch-triggerlist-wol.gif)
+
+*The trigger list, WoL's campaign scenario First Barbary War (27 triggers in Ungrouped):* "training" keeps the two
+P2_…TrainingKicker triggers; the second one picked shows its own 4 conditions and 5 effects (in the full list the
+second row is Captain02). Erased, the full list comes back with it selected; "captain" keeps the four Captain triggers
+and the selected P2_LandTrainingKicker, and CaptainReact picked shows its own effects. The log lines at the bottom
+count each search. [Full video (MP4)](media/editorSearch-triggerlist-wol.mp4).
+
+![editorSearch in the trigger list, key off](media/editorSearch-triggerlist-wol-control.gif)
+
+*Key off, the same typing and clicks:* the field takes the text, the list stays full, and the clicks pick Captain02
+and CaptainReact from it. [Full video (MP4)](media/editorSearch-triggerlist-wol-control.mp4).
+
 ```
 editorSearch [log]
 ```
@@ -9826,9 +9839,17 @@ editorSearch [log]
   - `EditorProtoPaletteSearch` inside the `EditorProtoPalette` gadget of `uieditorpalettes.xml`, to the right of the
     palette's category list;
   - `ForbiddenUnitsTechs_Search` in `uiforbiddenunitstechs.xml`, under the Allowed list;
-  - `trEdit-CondEffPanel-search` in `trEdit-CondEffPanel` of `uitriggereditor.xml`, on the row of "Type:".
+  - `trEdit-CondEffPanel-search` in `trEdit-CondEffPanel` of `uitriggereditor.xml`, on the row of "Type:";
+  - `trEdit-Trigger-search` in `trEditor` of `uitriggereditor.xml`, above "Group:" and the list of triggers, its
+    search row level with the condition/effect panel's.
 
   Any of them can be left out: a list without its field stays as it is.
+- **Taller lists (2026-11-25, the pack's layouts only, no DLL code):** every bottom panel of the editor (Trigger
+  Editor, Triggers, Conditions / Effects, the Objects and Terrain palettes) starts at the same height, `size1024`
+  y 446 instead of 550 / 502, and the lists grow down to the old bottom. At 1920 × 1080: the list of triggers shows
+  11 rows (8 before), the trigger's Conditions and Effects lists 274 instead of 218 (`size1024`), a trigger's
+  condition or effect list 196 instead of 140, the Type dropdown about 9 rows (4), the Objects palette 12 rows (7);
+  the Forbidden Units/Techs dialog is 42 taller, its lists 24 rows (21). Nothing reaches the minimap.
 - **Effect:** while the field holds text, the list keeps only the entries in which every word of it appears, upper
   or lower case alike. A unit matches by the name the list shows, its internal name or its display name ("INF musk"
   finds `INF R-LU Musketeer`; "prowler" finds the Forest Prowler, `xpMusketWarrior`), a tech by its internal name
@@ -9841,6 +9862,13 @@ editorSearch [log]
   the Type list whole. A parameter's current value stays in its list, so its field keeps showing it. A value is the
   name picked, so a value picked from a short list is the same as from the full one (saved and loaded again: the
   same). The other parameter lists (players, resources, areas…) are left as they are.
+- **The list of triggers:** its own field filters the triggers of the group shown, by name. The trigger being edited
+  always stays in the list, highlighted, so its panels never edit a trigger the list hides. A trigger picked from a
+  short list is that trigger: the game gives each row its trigger's place in the group and a click reads that, not
+  the row (checked in game: conditions, effects and a Loop change all went to the trigger picked). The text stays
+  when the group changes, and Insert and Del work as usual (a new trigger shows, being the one edited; Copy was not
+  tested).
+  Nothing found leaves only the trigger being edited.
 - **With the rest of the lists:** the palette's category list still applies (Nature with "musk": the Musk Deer and
   the Musk Ox); an entry picked from a filtered palette is placed as usual; in the dialog, Add and Remove work on the
   filtered list, Display Units / Display Techs keep the search, and the dialog's own refresh (a new player, Cancel)
@@ -9849,11 +9877,13 @@ editorSearch [log]
   field, as in the trigger editor's name field.
 - **Simulation:** none. It runs in the editor's lists only: nothing is saved in the scenario but the values you pick,
   and nothing reaches a game.
-- **Log:** `editorSearch: the Objects palette, the Forbidden Units/Techs dialog and the trigger editor filter by their
-  search fields (EditorProtoPaletteSearch, ForbiddenUnitsTechs_Search, trEdit-CondEffPanel-search)`; with `log`,
+- **Log:** `editorSearch: the Objects palette, the Forbidden Units/Techs dialog, the trigger editor and its trigger
+  list filter by their search fields (EditorProtoPaletteSearch, ForbiddenUnitsTechs_Search, trEdit-CondEffPanel-search,
+  trEdit-Trigger-search)`; with `log`,
   `Objects palette search field found` (or `has no textField …; its list stays stock`), each search
   (`Objects palette "musk": 9 shown, 3202 hidden (181.5 ms)`, `trigger editor "create": 10 shown, 208 hidden (6.7 ms)`,
-  `trigger parameter list "cavalry": 13 of 3634`) and every 5000 frames the cost of the per-frame check.
+  `trigger parameter list "cavalry": 13 of 3634`, `trigger list "captain": 4 shown, 23 hidden (0.1 ms)`) and every
+  5000 frames the cost of the per-frame check.
 - **Status:** confirmed (2026-11-21, WoL, the editor, single player): see the pass/fail table in
   [how-it-works.md](how-it-works.md#editorsearch) and the screenshots in `wol-fixes/editor/media`.
 
