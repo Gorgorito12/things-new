@@ -1396,6 +1396,21 @@ inline constexpr Site kGarrisonEnterTail{"GarrisonEnterTail", 0x009C26E1, kGarri
 inline constexpr std::uint8_t kGarrisonLoadHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x24, 0x83, 0xB8, 0x3C, 0x01, 0x00, 0x00, 0x00, 0x57};
 inline constexpr Site kGarrisonLoadHead{"GarrisonLoadHead", 0x009C24B5, kGarrisonLoadHeadBytes, sizeof(kGarrisonLoadHeadBytes)};
 
+inline constexpr std::uint8_t kGarrisonUnloadHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x14, 0x56, 0x8B, 0xF1, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x75, 0x09, 0x32, 0xC0, 0x5E, 0x83, 0xC4, 0x14, 0xC2, 0x24, 0x00};
+inline constexpr Site kGarrisonUnloadHead{"GarrisonUnloadHead", 0x009C68C3, kGarrisonUnloadHeadBytes, sizeof(kGarrisonUnloadHeadBytes)};
+
+inline constexpr std::uint8_t kPlayerPopHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0xD1, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00};
+inline constexpr Site kPlayerPopHead{"PlayerPopHead", 0x0045805C, kPlayerPopHeadBytes, sizeof(kPlayerPopHeadBytes)};
+
+inline constexpr std::uint8_t kPlayerPopCapHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0xD1, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x83, 0xEC, 0x08, 0x85, 0xC9};
+inline constexpr Site kPlayerPopCapHead{"PlayerPopCapHead", 0x004581A1, kPlayerPopCapHeadBytes, sizeof(kPlayerPopCapHeadBytes)};
+
+inline constexpr std::uint8_t kPopCapToastBytes[] = {0x68, 0x4C, 0x46, 0x00, 0x00, 0x8D, 0x4C, 0x24, 0x38, 0xE8, 0x6E, 0x39, 0xBA, 0xFF, 0x8D, 0x4C, 0x24, 0x34, 0xE8, 0x5B, 0x62, 0xA1, 0xFF, 0x8B, 0x74, 0x24, 0x30, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x11, 0x56, 0x50, 0x68, 0x7C, 0x65, 0xC6, 0x00, 0x68, 0xD0, 0x07, 0x00, 0x00, 0x51, 0xFF, 0x52, 0x68};
+inline constexpr Site kPopCapToast{"PopCapToast", 0x009EB0D6, kPopCapToastBytes, sizeof(kPopCapToastBytes)};
+
+inline constexpr std::uint8_t kPopCapToastSoundBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x6A, 0x00, 0x6A, 0x04, 0xE8, 0x34, 0xA3, 0xB1, 0xFF};
+inline constexpr Site kPopCapToastSound{"PopCapToastSound", 0x009EB137, kPopCapToastSoundBytes, sizeof(kPopCapToastSoundBytes)};
+
 inline constexpr std::uint8_t kNurseryCmdExecuteBytes[] = {0x83, 0xEC, 0x1C, 0x53, 0x55, 0x8B, 0x6C, 0x24, 0x28, 0x85, 0xED, 0x56, 0x57, 0x8B, 0xF1, 0x0F, 0x84, 0x5F, 0x02, 0x00, 0x00, 0x83};
 inline constexpr Site kNurseryCmdExecute{"NurseryCmdExecute", 0x007D64F7, kNurseryCmdExecuteBytes, sizeof(kNurseryCmdExecuteBytes)};
 
@@ -5009,6 +5024,15 @@ bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
 using TechTypeSubtypeHandler = void (*)(char* proto, const char* base, std::int32_t type, bool unapply);
 bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler);
 
+// The same for a subtype on a ProtoUnit target whose key reads the effect's XML itself: `parse` runs while the techs
+// are read, with the effect and its XML node, may store what it reads in the effect's field +10h (an index into the
+// key's own table, say), and returns false to drop the effect. `handler` runs on each apply and unapply with that
+// field. Not flagged for the pass after a load: the load runs every ProtoUnit Data effect again by itself.
+using TechProtoSubtypeParse = bool (*)(void* db, char* effect, const char* node);
+using TechProtoSubtypeHandler = void (*)(char* proto, const char* base, std::int32_t field, float amount,
+                                         std::uint8_t relativity, bool unapply);
+bool AddTechProtoSubtype(const char* name, TechProtoSubtypeParse parse, TechProtoSubtypeHandler handler);
+
 // The same for a subtype on a Player target (<Target type="Player"/>), as stock's FreeHomeCityUnit. `parse` runs
 // while the techs are read, with the effect and its XML node: it may store what it reads in the effect's field
 // +10h (the action's ID for other subtypes), and returns false to drop the effect. `run` runs when the effect
@@ -5093,6 +5117,8 @@ struct Subtype {
   uhc::TechTypeSubtypeHandler typeHandler;      // or with a unit type
   uhc::TechPlayerSubtypeParse playerParse;      // or on a player
   uhc::TechPlayerSubtypeHandler playerHandler;
+  uhc::TechProtoSubtypeParse protoParse;        // or on a proto, with the key's own parse
+  uhc::TechProtoSubtypeHandler protoHandler;
 };
 
 Subtype g_subtypes[kMaxSubtypes] = {};
@@ -5233,6 +5259,10 @@ extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* nam
         !g_subtypes[i].playerParse(db, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
       return -1;
     }
+    if (g_subtypes[i].protoParse != nullptr &&
+        !g_subtypes[i].protoParse(db, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
+      return -1;
+    }
     return kFirstId + static_cast<std::int32_t>(i);
   }
   if (g_unknown != nullptr) {
@@ -5250,6 +5280,10 @@ extern "C" bool __stdcall UhcTechSubtypeRun(std::int32_t id, char* proto, const 
     return false;
   }
   const Subtype& subtype = g_subtypes[index];
+  if (subtype.protoHandler != nullptr) {
+    subtype.protoHandler(proto, base, actionId, amount, static_cast<std::uint8_t>(relativity), unapply != 0);
+    return true;
+  }
   if (subtype.typeHandler != nullptr) {
     subtype.typeHandler(proto, base, actionId, unapply != 0);
     return true;
@@ -5279,22 +5313,26 @@ extern "C" std::int32_t __stdcall UhcTechPlayerSubtypeRun(std::int32_t id, char*
 namespace uhc {
 
 bool AddTechSubtype(const char* name, TechSubtypeHandler handler) {
-  return Add({name, handler, nullptr, nullptr, nullptr, nullptr});
+  return Add({name, handler, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr});
 }
 
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler) {
-  return Add({name, nullptr, handler, nullptr, nullptr, nullptr});
+  return Add({name, nullptr, handler, nullptr, nullptr, nullptr, nullptr, nullptr});
 }
 
 bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler) {
-  return Add({name, nullptr, nullptr, handler, nullptr, nullptr});
+  return Add({name, nullptr, nullptr, handler, nullptr, nullptr, nullptr, nullptr});
+}
+
+bool AddTechProtoSubtype(const char* name, TechProtoSubtypeParse parse, TechProtoSubtypeHandler handler) {
+  return Add({name, nullptr, nullptr, nullptr, nullptr, nullptr, parse, handler});
 }
 
 bool AddTechPlayerSubtype(const char* name, TechPlayerSubtypeParse parse, TechPlayerSubtypeHandler run) {
   if (!InstallPlayer()) {
     return false;
   }
-  return Add({name, nullptr, nullptr, nullptr, parse, run});
+  return Add({name, nullptr, nullptr, nullptr, parse, run, nullptr, nullptr});
 }
 
 bool OnUnknownTechSubtype(UnknownTechSubtype callback) {
@@ -7076,7 +7114,8 @@ void RemoveVisualModel(char* visual, std::int32_t model) {
 // researchGrants (two kinds, told apart by word 0), 67h shipmentCounts (per-player state on one carrier unit), 68h
 // randomCost (the game seed and the purchase counts, on one carrier unit), 69h shipTechLimit (a player's count, on
 // one of his units), 6Ah veterancyBonus (the rows a unit was given, when its rows name techs), 6Bh nurseryFactor (a
-// unit's factor and its growth timer).
+// unit's factor and its growth timer), 6Ch garrisonConvert (on a building: its progress, word 0 'GCNV', and its round
+// robin cursor and population pause, word 0 'GCRR').
 #pragma once
 
 #include <cstdint>

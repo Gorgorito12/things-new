@@ -61,6 +61,8 @@ struct Subtype {
   uhc::TechTypeSubtypeHandler typeHandler;      // or with a unit type
   uhc::TechPlayerSubtypeParse playerParse;      // or on a player
   uhc::TechPlayerSubtypeHandler playerHandler;
+  uhc::TechProtoSubtypeParse protoParse;        // or on a proto, with the key's own parse
+  uhc::TechProtoSubtypeHandler protoHandler;
 };
 
 Subtype g_subtypes[kMaxSubtypes] = {};
@@ -201,6 +203,10 @@ extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* nam
         !g_subtypes[i].playerParse(db, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
       return -1;
     }
+    if (g_subtypes[i].protoParse != nullptr &&
+        !g_subtypes[i].protoParse(db, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
+      return -1;
+    }
     return kFirstId + static_cast<std::int32_t>(i);
   }
   if (g_unknown != nullptr) {
@@ -218,6 +224,10 @@ extern "C" bool __stdcall UhcTechSubtypeRun(std::int32_t id, char* proto, const 
     return false;
   }
   const Subtype& subtype = g_subtypes[index];
+  if (subtype.protoHandler != nullptr) {
+    subtype.protoHandler(proto, base, actionId, amount, static_cast<std::uint8_t>(relativity), unapply != 0);
+    return true;
+  }
   if (subtype.typeHandler != nullptr) {
     subtype.typeHandler(proto, base, actionId, unapply != 0);
     return true;
@@ -247,22 +257,26 @@ extern "C" std::int32_t __stdcall UhcTechPlayerSubtypeRun(std::int32_t id, char*
 namespace uhc {
 
 bool AddTechSubtype(const char* name, TechSubtypeHandler handler) {
-  return Add({name, handler, nullptr, nullptr, nullptr, nullptr});
+  return Add({name, handler, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr});
 }
 
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler) {
-  return Add({name, nullptr, handler, nullptr, nullptr, nullptr});
+  return Add({name, nullptr, handler, nullptr, nullptr, nullptr, nullptr, nullptr});
 }
 
 bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler) {
-  return Add({name, nullptr, nullptr, handler, nullptr, nullptr});
+  return Add({name, nullptr, nullptr, handler, nullptr, nullptr, nullptr, nullptr});
+}
+
+bool AddTechProtoSubtype(const char* name, TechProtoSubtypeParse parse, TechProtoSubtypeHandler handler) {
+  return Add({name, nullptr, nullptr, nullptr, nullptr, nullptr, parse, handler});
 }
 
 bool AddTechPlayerSubtype(const char* name, TechPlayerSubtypeParse parse, TechPlayerSubtypeHandler run) {
   if (!InstallPlayer()) {
     return false;
   }
-  return Add({name, nullptr, nullptr, nullptr, parse, run});
+  return Add({name, nullptr, nullptr, nullptr, parse, run, nullptr, nullptr});
 }
 
 bool OnUnknownTechSubtype(UnknownTechSubtype callback) {

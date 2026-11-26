@@ -1096,6 +1096,17 @@ SITES = [
     # head of the function, verify only, so a detour of the head fails the key instead of skipping the hook
     ("GarrisonEnterTail", 0x9C26E1, 0x1F),
     ("GarrisonLoadHead", 0x9C24B5, 0x10),
+    # garrisonConvert, verify only: the unload of one unit from a container FUN_009C68C3, bool thiscall(container,
+    # unitId, pos*, usePos, keepOrders, force, a6, goTo*, a8, a9), ret 24h (the eject of the command handler
+    # FUN_009CBEA1 calls it with pos (-1,-1,-1) 0xC665E4, the death eject FUN_009C6C79 with force 1); the population
+    # getters 0x45805C (used) and 0x4581A1 (cap), int thiscall(player); and the train's pop-capped message, 0x9EB0D6:
+    # push 464Ch (string 17996 cStringNoPopcapRoom) / BString / the game's vtable +68h (game, 2000 ms, 0xC6657C, text,
+    # name), and its sound, 0x50547A thiscall(game, 4, 0) at 0x9EB137
+    ("GarrisonUnloadHead", 0x9C68C3, 0x1E),
+    ("PlayerPopHead", 0x45805C, 0x0D),
+    ("PlayerPopCapHead", 0x4581A1, 0x12),
+    ("PopCapToast", 0x9EB0D6, 0x33),
+    ("PopCapToastSound", 0x9EB137, 0x0F),
     # nurseryFactor's commands: the network command uiTransformSelectedUnit sends (0x7E7193), verify only: the
     # factory 0x5695FC (cdecl(player, type, 0, -1)), the players 0x5683B9 (thiscall(cmd, 1, &player)), the units
     # 0x5696E1 (thiscall(cmd, count, ids)), the queue 0x568A1A (thiscall([world+8], cmd, 0, 0)); and the head of the

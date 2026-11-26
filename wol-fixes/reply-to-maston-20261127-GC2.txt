@@ -1,0 +1,75 @@
+Hi JTMaston,
+
+GarrisonConvertTo, version 2, built from your answers of 2026-11-26. The key is the same, one line in
+Startup\wol.cfg:
+
+    garrisonConvert
+
+(add "log" to see each conversion in UHC.log). The old tags keep working as they are.
+
+1. What changed
+- eject: <GarrisonConvertTo eject="true">Musketeer</GarrisonConvertTo> puts each unit out of the building as
+  soon as it is converted, the way the building's own eject command does it. eject="1" and eject="" work too;
+  eject="false", eject="0" or no attribute keep it inside. (A bare "eject" with no value is not valid XML, so
+  please write eject="true".)
+- Only hit points are kept: the unit keeps its share of HP, as a TransformUnit effect does.
+- Population: a conversion that would go over the population cap waits. The progress pie stays full, and the
+  player sees the game's own message, the one a Town Center shows when it cannot train:
+  "No population room for Hussar; training will be suspended." with its sound, once per pause. When there is
+  room again, the conversion goes on by itself. The check is the target's population minus the unit's, with
+  the usual AllowOverPopCap and AlwaysAllowOverPopCap flags.
+- Building destroyed: the units come out as they are (the one in progress unconverted).
+- Only the owner's units are converted (allies' units are left alone).
+- Several tags take turns (round robin). The rule: each building keeps a cursor, at the first tag at the start.
+  For each conversion it takes the first tag, from the cursor on (wrapping around), whose "from" matches the
+  unit; the unit converts with that tag's target, delay and eject, and the cursor moves to the next tag.
+  Example, with
+      <GarrisonConvertTo from="Settler" delay="3">Pikeman</GarrisonConvertTo>
+      <GarrisonConvertTo delay="3" eject="true">Musketeer</GarrisonConvertTo>
+  Settler, Settler, Missionary, Settler give Pikeman (stays inside), Musketeer (walks out), Musketeer (walks
+  out: the Missionary is not a Settler, so it skips the first tag), Pikeman (stays inside). The cursor is kept
+  in saved games.
+- from: from="Settler" (a unit) or from="AbstractVillager" (a unit type) converts only those units. Without it,
+  every unit of the owner converts.
+- A unit that already is the target of one of the building's tags is never converted again (so the tags above
+  do not turn the Pikemen inside into Musketeers).
+- Delay: one at a time, in the order they entered, as before. The pie as before.
+
+2. Techs (Data effects on a ProtoUnit target, per player, like the stock Data subtypes)
+The optional attribute tag="N" picks the N-th GarrisonConvertTo of the building (in the order of the data, then
+the ones techs added); without it the effect changes every tag.
+
+    <!-- every tag of the Town Center: delay 2 s (Assign, Absolute, BasePercent and Percent all work) -->
+    <Effect type="Data" amount="2" subtype="GarrisonConvertDelay" relativity="Assign">
+        <Target type="ProtoUnit">TownCenter</Target></Effect>
+    <!-- only the 2nd tag; or only the tags that convert to Pikeman: unittype="Pikeman" -->
+    <Effect type="Data" amount="2" subtype="GarrisonConvertDelay" relativity="Assign" tag="2">...</Effect>
+    <!-- eject on (1) or off (0) -->
+    <Effect type="Data" amount="1" subtype="GarrisonConvertEject" relativity="Assign">...</Effect>
+    <!-- the target of the 1st tag becomes Halberdier -->
+    <Effect type="Data" amount="0" subtype="GarrisonConvertTarget" relativity="Assign" unittype="Halberdier" tag="1">...</Effect>
+    <!-- from: a unit or a unit type; without unittype the tags take every unit again -->
+    <Effect type="Data" amount="0" subtype="GarrisonConvertFrom" relativity="Assign" unittype="AbstractVillager">...</Effect>
+    <!-- a new tag at the end: converts to Grenadier; amount = its delay in seconds -->
+    <Effect type="Data" amount="0" subtype="GarrisonConvertAdd" relativity="Assign" unittype="Grenadier">...</Effect>
+    <!-- removes the tags that convert to Hussar (or, with tag="N", that tag) -->
+    <Effect type="Data" amount="0" subtype="GarrisonConvertRemove" relativity="Assign" unittype="Hussar">...</Effect>
+
+A tech can give a building tags it did not have in protoy.xml (GarrisonConvertAdd).
+
+3. Limits
+- When a tech is taken away (a deactivated tech), Delay and Eject go back and Add removes its tag, but Target,
+  From and Remove stay as the tech left them.
+- A tag is picked by its number or by its target only.
+- A saved game applies the techs again when it loads, in the order of the techtree, not the order they were
+  researched. If one tech adds a tag and another tech then changes it with tag="N", put both effects in one
+  tech, or don't count on the numbers.
+- Up to 32 tags per building.
+
+4. Tested in game (WoL, Dutch against a British AI): the round robin with from and eject, from with a unit type,
+the building killed mid-way, save and load in the middle of a conversion and with the cursor on the 2nd tag, the
+population pause with the message and the resume, a tech changing delay, target, eject and from and adding and
+removing tags (and a save/load after it), bad values; the AI plays normally and the performance is the same with
+the key on and off. The videos and the full rules are in the guide, section garrisonConvert.
+
+Thanks!

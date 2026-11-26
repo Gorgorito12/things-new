@@ -29,6 +29,15 @@ bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
 using TechTypeSubtypeHandler = void (*)(char* proto, const char* base, std::int32_t type, bool unapply);
 bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler);
 
+// The same for a subtype on a ProtoUnit target whose key reads the effect's XML itself: `parse` runs while the techs
+// are read, with the effect and its XML node, may store what it reads in the effect's field +10h (an index into the
+// key's own table, say), and returns false to drop the effect. `handler` runs on each apply and unapply with that
+// field. Not flagged for the pass after a load: the load runs every ProtoUnit Data effect again by itself.
+using TechProtoSubtypeParse = bool (*)(void* db, char* effect, const char* node);
+using TechProtoSubtypeHandler = void (*)(char* proto, const char* base, std::int32_t field, float amount,
+                                         std::uint8_t relativity, bool unapply);
+bool AddTechProtoSubtype(const char* name, TechProtoSubtypeParse parse, TechProtoSubtypeHandler handler);
+
 // The same for a subtype on a Player target (<Target type="Player"/>), as stock's FreeHomeCityUnit. `parse` runs
 // while the techs are read, with the effect and its XML node: it may store what it reads in the effect's field
 // +10h (the action's ID for other subtypes), and returns false to drop the effect. `run` runs when the effect
