@@ -2346,6 +2346,21 @@ SITES = [
     # mov ecx,[0D6F6F0h] at 0x710F24 (6 bytes), reached after the send-limit line (0x710EDE, 0x710EF6, fall-through).
     ("CardTreeRolloverHead", 0x710991, 0x49),
     ("CardTreeRolloverAdvanced", 0x710F24, 6),
+    # cultureUI: the texture bind 0x407D27, bool thiscall(texMgr, stage, handle), ret 8, which every textured draw
+    # calls (the UI drawable's draw at 0x41E1D8 among its 56 callers). Head push ebp / mov ebp,[esp+8] / push esi /
+    # mov esi,ecx (8 bytes, nothing branches inside) is replaced; the hook goes on at cmp ebp,[esi+30E0h] (0x407D2F).
+    ("TextureBindHead", 0x407D27, 0x0E),
+    # cultureUI: the in-game HUD build FUN_0076166A (thiscall(screen), from 0x7637ED only), head mov eax,[0C672C0h]
+    # (5 bytes) then sub esp,60h at 0x76166F, where the hook goes on.
+    ("HudBuildHead", 0x76166A, 8),
+    # cultureUI (verify only): the texture handle by name 0x58E3EB, thiscall(texMgr, path, bool, int, int), ret 10h;
+    # the settings object by name 0x402C76, thiscall(0xC66688, name); the trigger by name 0x90DFB0, cdecl(name),
+    # -1 if none (it reads the trigger system [game+97Ch] without a test); a player's team 0x88396E, cdecl(player),
+    # -2 without a world or player.
+    ("TextureByName", 0x58E3EB, 0x0B),
+    ("SettingsByName", 0x402C76, 0x13),
+    ("TriggerByName", 0x90DFB0, 0x2B),
+    ("PlayerTeam", 0x88396E, 0x2B),
 ]
 
 

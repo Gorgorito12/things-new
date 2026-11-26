@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-26 16:24 | [`cultureUI`](#cultureui) | Filmed in WoL, with a control. The minimised in-game interface takes its own textures per family of civs, and others again from the Great War: `X_as.ddt` beside `X.ddt` restyles texture X for the Asian family. | The art, one `.ddt` per texture and family (`<texture>_<family>[_gw].ddt`, from aoe3-blender-tools' templates), and `data\uhc\cultureui.xml` with the nine families: `wol-fixes/culture-ui/`. |
 | Thursday 2026-11-26 11:34 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
 | Thursday 2026-11-26 10:26 | [`garrisonConvert`](#garrisonconvert) | Filmed in WoL, with a control. `<GarrisonConvertTo delay="5" eject="true" from="Settler">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, kept inside or put out, with the train button's pie over the building's portrait; several tags take turns, a conversion waits at the population cap, and techs change the tags. | The tag on the buildings that want it. |
 | Thursday 2026-11-26 10:14 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries; `art\ui\uhc\pie\` for the pie after the row. |
@@ -9080,6 +9081,7 @@ What the panels and the fog of war show.
 | [`techGadgets`](#techgadgets) | Shows one interface gadget once a tech is active for the player, and another before it: WoL's resource panel without the oil row before the Great War, with it after. | **new** | Two named children per panel variant in `uimainnew.xml` (the oil panel pack, `wol-fixes/oil-panel/`), and one line per variant. | confirmed (single player, UI) |
 | [`incomeRates`](#incomerates) | A text for the resource panel, `{uhcIncome(food)}`: what the player's gatherers, AutoGather units and trickles bring in per second, as DE's panel shows its gather rates. | **new** | The text in the panel's layout (the oil panel pack, `wol-fixes/oil-panel/` with `--rates`, has it under each amount and in the tooltips). | confirmed (single player, UI) |
 | [`selectFattened`](#selectfattened) | A button and a hotkey select the player's livestock that has reached its maximum food, on the whole map; the button shows how many there are and hides at none. | **new** | The button and the hotkey: `wol-fixes/select-fattened`. | confirmed (single player, UI); hotkey not tested in game |
+| [`cultureUI`](#cultureui) | The minimised in-game interface takes its own textures per family of civs, and others again from the Great War: `X_as.ddt` beside `X.ddt` restyles texture X for the Asian family. | **new** | The art, one `.ddt` per texture and family (`<texture>_<family>[_gw].ddt`, from aoe3-blender-tools' templates), and `data\uhc\cultureui.xml` with the nine families: `wol-fixes/culture-ui/`. | confirmed (single player, UI, test colours) |
 
 #### nativePreview
 
@@ -10813,6 +10815,117 @@ fit): the count took 18.9 µs on average and 72 µs at most (600 counts), 18.2 �
 update 0.36 / 0.31 / 0.34 ms per frame; render time moved as much (3.53 / 3.19 / 3.41 ms) with games of other tests
 running on the machine, and the count is not in the render: no difference that the count explains.
 
+#### cultureUI
+
+*The in-game interface looks different for each family of civs (Asian, Middle Eastern, ...), and changes again when the player reaches the Great War: only its textures change.*
+
+**Added:** Thursday 2026-11-26 15:47 · **Filmed in WoL:** Thursday 2026-11-26 16:24
+
+![cultureUI in WoL](media/cultureUI-wol.gif)
+
+*In WoL, Chinese, the minimised interface, with `cultureUI`, the nine-family `cultureui.xml` of `wol-fixes/culture-ui/`
+and the PROVISIONAL test styles of its `make_test_styles.py` (recoloured atlases, not art for the mod):* the frames and
+panels in the Asian family's red from the start; a trigger researches the Great War at 45 s of game time and the
+interface turns to the family's grey `_gw` look at once (the key's log line). The resource icons keep their colours.
+[Full video (MP4)](media/cultureUI-wol.mp4).
+
+![cultureUI in WoL, key off](media/cultureUI-wol-control.gif)
+
+*Key off, the same skirmish, test textures and trigger:* today's interface before and after the Great War.
+[Full video (MP4)](media/cultureUI-wol-control.mp4).
+
+```
+cultureUI [file.xml]
+```
+
+- **The request:** JTMaston's "Culture UI" (2026-11-25, answers of 2026-11-26): only textures change, his cultures are
+  the nine families of WoL's Great War techs, only the minimised interface, a second look from the Great War,
+  observers keep the default look.
+- **Effect:** while the local player plays a civ of a style, a texture `ui\ingame\X` of the game is drawn as
+  `ui\ingame\X_<suffix>` wherever that loose file `art\ui\ingame\X_<suffix>.ddt` (or `.tga`) exists. Once a stage's tech
+  is active for that player, `X_<stage suffix>`, else the style's `X_<suffix>`, else `X`. A style can start with one
+  texture and grow; a family with no files keeps today's look. The change is at once, in every gadget that draws the
+  texture, layouts and engine-drawn parts alike, without a new interface: the layouts' `textureCoords` stay as they are,
+  so a variant must keep the original's size and layout (the templates of aoe3-blender-tools' `make_ui_templates.py`).
+- **The data file,** `data\uhc\cultureui.xml` (or a file named on the line; `engine-ext\cultureui.xml` with
+  `dinput8.dll`):
+
+  ```xml
+  <CultureUI>
+    <Style suffix="as" civs="Chinese Indians Japanese Koreans">
+      <Stage tech="GreatWarizeALL" suffix="as_gw"/>
+    </Style>
+    ...
+  </CultureUI>
+  ```
+
+  The civ names are those of `civs.xml`; a civ takes the first style that names it. A stage's suffix is the whole
+  suffix (`as_gw`, so the files are `X_as_gw.ddt`). Any tech can be a stage; with several, the last active one wins.
+  WoL's Great War is not an engine age: every route to it activates `GreatWarizeALL`, so that is the stage's tech.
+- **No style:** for an observer (WoL's rule: the maps' observer mode makes a trigger named `StartInsertion`, and the
+  observers are the players from where the team changes, slot 3, 5 or 7), with the normal (not minimised) interface,
+  or for a civ in no style. Switching to the normal interface in a game drops the style at the next check.
+- **Dialogs in a game:** a texture with a variant changes wherever it is drawn during the game, in-game dialogs
+  included (approved by the user, 2026-11-26). Only textures the HUD shares with dialogs (`button`, `button_clicked`, ...)
+  would show it, and only if an artist ships their variant. The main menu, the home city screen and the post-game
+  screens after the game are unchanged.
+- **Memory:** a variant is read at its first draw, so a style costs the size of the textures it draws: the ten test
+  atlases are 6.9 MB per stage. They stay loaded until the game exits (the texture manager keeps every name).
+- **Simulation:** none. Display only: players may set it differently.
+- **Log:** `cultureUI: style as: 10 texture(s) with a variant, stage as_gw 10` (per style, at startup), then per game
+  `cultureUI: style as (10 texture(s))`, `cultureUI: style as, stage as_gw (10 texture(s))`, or
+  `cultureUI: no style (the normal interface | observer | a civ in no style | style af has no texture)`.
+- **The pack,** `wol-fixes/culture-ui/`: `apply_fix.py "<WoL folder>" [--styles <folder>] [--engine-ext]` writes the
+  nine families' `cultureui.xml`, adds `cultureUI` to `Startup\wol.cfg` and copies the textures of a styles folder
+  (`ui\ingame\<texture>_<family>[_gw].ddt`) to `art\ui\ingame`; `--check`, `--restore` (byte for byte).
+  `make_test_styles.py` makes the provisional test styles (`as`, `as_gw`, `me`, `me_gw`).
+- **Status:** see the tests below.
+
+Tests (2026-11-26, a copy of WoL, single player, posted input only, the test styles, a German AI):
+
+| Test | Result |
+|---|---|
+| Chinese (`as`), minimised interface, skirmish on a test map | pass: the Asian test style from the first frame; the HUD build and the bind hook reached |
+| The Great War (a trigger researches `GreatWarButton`, which activates `GreatWarizeALL`) | pass: `as_gw` at once (between two frames of the video) |
+| Saved after the Great War, loaded | pass: the loaded game shows `as_gw` from its first frame, while paused |
+| The next game of the same launch, Ethiopians (`af`, no textures) | pass: today's look (`no style (style af has no texture)`) |
+| Afghans (`me`), then the Great War | pass: `me`, then `me_gw` |
+| Normal interface (`optionminimizedui` off), Afghans | pass: today's look (`no style (the normal interface)`) |
+| The in-game menu open, Afghans | pass: the HUD styled, the menu's buttons unchanged (no variant of theirs) |
+| Key off, Chinese, the same trigger | pass: today's look before and after the Great War |
+| Our `dinput8.dll` beside WoL's own `UHC.dll` (`engine-ext\engine-ext.cfg`), Afghans | pass: `cultureUI: applied`, both hooks reached, style `me` |
+| The AI (a German AI, all the games above) | pass: no XS error; in the last game it went from 4 to 10 settlers in 120 s |
+| The resource icons | pass: the same colours as today in the four test styles (the test styles leave them out) |
+| Observer | not tested: an observer needs a second player in multiplayer (the host is slot 1) |
+
+![The screens of the tests](media/cultureUI-screens.jpg)
+
+*The screens of the tests above, in order.*
+
+**Where the player sees it** (the screens of the interface rules):
+
+| Screen | |
+|---|---|
+| The game, minimised interface | styled (pictures 1, 2, 5, 6 above) |
+| The game, normal interface | today's look, on purpose (picture 7) |
+| Menus and dialogs opened in a game | unchanged unless a texture of theirs has a variant (picture 8) |
+| Home city, deck builder, "View All Cards", tech tree | not applicable: their textures are `ui\home_city\...` and others, never the HUD's `ui\ingame` atlases; outside a game no style is active |
+| Observer | today's look, on purpose (WoL's rule); not run (multiplayer) |
+
+**Sites checked:** every texture is looked up by name in one place (0x58E3EB), and every textured draw binds its
+texture by handle through one function (0x407D27, 56 callers: the UI drawable's draw 0x41E0E5 at 0x41E1D8, and the
+terrain, models and effects); the key swaps the handle there, so all the gadgets that draw a texture follow it,
+including those the game sets after building the interface (the minimap filter button, `ui\ingame\ingame_minimap_small_all_*`).
+Checked and not used: a lookup filter limited to the interface build 0x76166A (it misses those later textures), the
+UI drawable's own texture setter (vtable `+78h`, it reaches only some drawables), the texture manager's entries
+(their index is also the memory bookkeeping's), and the minimised-UI switch 0x760547 (it rebuilds four panels, not
+the main layout). Details: [engine-symbols.md](engine-symbols.md#culture-ui-the-style-switch-during-a-game-k0-2026-11-26).
+
+**Performance:** `perfprobe.py`, 60 s each, the same skirmish and camera, the game alone on the machine: key on (style
+`as_gw` active) 795 fps, render 1.08 ms, main thread 83.5 %, private 974 MB; key off 748 fps, 1.14 ms, 82.6 %,
+980 MB. In the sampled main thread UHC.dll as a whole is 0.2 % with the key and 0.1 % without (of about 10,900
+samples), the bind 0x407D27 itself 0.3 % and 0.4 %: no cost that shows.
+
 
 ## 6. Editing the game data
 
@@ -11677,7 +11790,7 @@ the code. Saved games were tested only where a section says so.
   `customRevolutionBanners`, `overhealHitpointBars`, `showGatherRate`, `abilitySlots`,
   `wonderPanelSkipAuras`, `explorerUnits`, `nativePreview`, `displayedRange`, `steadyHitpointBars`, `politicianPlacesFix`, `xsErrorLog`, `dataLint`,
   `dodgeSoundSet`, `criticalSoundSet`, `broadsideSoundSet`, `quickArrivalCards`, `inventoryBars`, `attackTypeIcons`,
-  `minUIStats`, `editorSearch`, `techGadgets`, `incomeRates`, and from the bug fixes `multiplierDecimals`,
+  `minUIStats`, `editorSearch`, `techGadgets`, `cultureUI`, `incomeRates`, and from the bug fixes `multiplierDecimals`,
   `modelCacheLimit`, `dmgPartBoneFix` and `fastLastInLine`.
 - **Everything else changes the game state,** or a list every machine must agree on. A difference
   between players can desynchronize the game. Each section has a **Simulation** line.
@@ -11708,6 +11821,7 @@ the code. Saved games were tested only where a section says so.
 | `randomCost` | Goes on: the seed and the purchase counts are kept on a unit; the next prices are those the game would have had (tested: two loads in new processes). |
 | `incomeRates` | The rates are not saved: they start again and fill over the window (tested: 0.0 while the loaded game is paused). |
 | `techGadgets` | The layout's defaults show until the first tech check, then the gadgets follow the tech (tested: saved after the Great War, loaded: the panel with oil, also while paused). |
+| `cultureUI` | The style and its stage are chosen again when the loaded game's interface is built: the Great War look at once (tested: saved after the Great War, loaded, while paused). |
 
 ## 8. WoL's keys that are not implemented
 

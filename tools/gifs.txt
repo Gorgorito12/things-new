@@ -404,3 +404,5 @@ garrisonConvert-wol-control 0 14 1.5
 zamburakCannon-wol 6 40 4
 zamburakCannon-wol-control 6 40 4
 zamburakCannon-wol-limbered 36 24 2
+cultureUI-wol 9 12 1
+cultureUI-wol-control 9 12 1

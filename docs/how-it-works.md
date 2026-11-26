@@ -7254,6 +7254,53 @@ registered at 0x530D50):
   each). Measured over 249 units: 18 to 19 µs per count on average, 257 µs at most: about 0.2 ms per second of game
   time.
 
+### cultureUI
+
+**Why it exists.** The stock game has one in-game interface for every civ, but for the resource panel, which has
+three hardcoded looks chosen by the native and Asian civ tests. A mod that wants a look per group of civs, and
+another look once a tech is researched, would need a copy of every layout per look.
+JTMaston's "Culture UI" request (2026-11-25/26): nine families, a second look from the Great War. <!-- private -->
+
+**What it does.** A data file (`cultureui.xml`) lists styles: a suffix, civ names and optional stages (a tech and
+another suffix). At startup the key lists the loose textures under `art\ui\ingame` (subfolders too) and, per style
+and stage, pairs each texture `ui\ingame\X` with its variant `X_<suffix>` (a stage falls back to an earlier stage's
+variant, then to the style's). Two hooks:
+- The head of the in-game interface build FUN_0076166A (`mov eax,[0C672C0h]`, 5 bytes; it runs at each game start and
+  each load, with the world and the local player already there): it chooses the style before any gadget of the
+  interface exists.
+- The head of the texture bind 0x407D27 (`bool thiscall(texMgr, stage, handle)`, 8 bytes), which every textured draw
+  calls with the texture's handle (the UI drawable's draw at 0x41E1D8, and the terrain, model and effect draws): when
+  a table is active and the game's world is the one it was made for, the handle argument is replaced by
+  `table[handle]`. With no table it is one compare; a game that ended (another world, or none) switches the table off
+  in the hook itself.
+
+The table maps each texture's handle to its variant's, both from the texture manager's lookup by name 0x58E3EB, which
+makes an entry for a new name without reading its file: a variant is read at its first draw. The style is chosen at
+the interface build and checked again every 100 ms of game time in the world update (`worldtick.*`): the local
+player `[game+3C0h]`, its first civ (`namelists.*`), the stage techs through 0x94AF27 (IDs by name 0x600BE1, again
+after each data load), the minimised-interface option 49h (0x402C76 on `[0xC672BC]`, then 0x402CE9) and an observer
+rule: a trigger named `StartInsertion` exists (0x90DFB0) and the local player is at or above the first observer, the
+slot (3, 5 or 7) where a player's team differs from the previous one (0x88396E), else past the last player.
+That is WoL's DLL's rule (0x1005B710, 0x1005BA00; it also counts a state of its own that the key does not see). <!-- private -->
+No style for an observer, the normal interface, a civ in no style, or a style with no variant.
+
+**Why a remap at the bind.** The names are fixed when the interface is built and the texture data is kept by name for
+the whole launch, so a style per game could rename at the lookup; but the Great War comes during the game. Read with
+REA and tried in game (docs/engine-symbols.md, "Culture UI: the style switch during a game"):
+- a rename at the lookup during the build misses textures the game sets later by name (the minimap filter button);
+- the UI drawable's own setter (vtable 0xB988B0 `+78h`) keeps the layout's texture coordinates, but walking the
+  gadgets reaches only `[gadget+58h]` and the button states, not foregrounds or progress bars;
+- the texture manager's entry `+1Ch` is an alias the bind follows, but the same index is the memory bookkeeping's;
+- the minimised-interface switch 0x760547 rebuilds four panels, not the main layout.
+
+**Why it is safe.**
+- Display only: it changes which texture a draw binds, nothing the simulation reads. Players may differ.
+- The bind's argument is replaced, never the texture manager: the entries, their memory count and the LRU unload stay
+  the game's own. A handle out of the table, or negative, is left alone.
+- Cost: one compare per textured draw with no style; with one, a world check and a table load. `perfprobe.py` with a
+  style active against the key off, the same skirmish: no change beyond the run-to-run spread (795 / 748 fps; UHC.dll
+  0.2 % / 0.1 % of the main thread's samples).
+
 ### impactBoneFix
 
 A hit on a unit with a damage template picks one of its impact points (FUN_0049ABA1) and plays the projectile's

@@ -369,6 +369,9 @@ attackTypeIcons T S P ...     a bonus multiplier against these unit types shows 
                               rows, with that icon (P) and name (string S)
 techGadgets <Tech> <GadgetAfter> [<GadgetBefore>]   (repeatable) a gadget of the interface
                               shows once the tech is active, the other one before it
+cultureUI [file.xml]          the minimised in-game interface takes textures by the player's civ
+                              and by tech stages (data\\uhc\\cultureui.xml); a texture X is drawn
+                              as X_<suffix> where art\\ui\\ingame\\X_<suffix>.ddt exists
 incomeRates [seconds] [perMinute|perSecond] [log]   {{uhcIncome(<resource>)}} in a formatText
                               gadget: what the shown player gathered and trickled over the
                               last seconds (default 20), per second or per minute

@@ -133,6 +133,7 @@ set(UHC_SOURCES
   src/features/dmgpartbone.cpp
   src/features/faith.cpp
   src/features/techgadgets.cpp
+  src/features/cultureui.cpp
   src/features/incomerates.cpp
   src/features/nurseryfactor.cpp
   src/features/garrisonconvert.cpp
@@ -189,6 +190,7 @@ set(UHC_SOURCES
   src/features/gatherauras.cpp
   src/features/resourcedebt.cpp
   src/hooks/abilityslot_hooks.asm
+  src/hooks/cultureui_hooks.asm
   src/hooks/actiontag_hooks.asm
   src/hooks/buildgather_hooks.asm
   src/hooks/ai_hooks.asm
