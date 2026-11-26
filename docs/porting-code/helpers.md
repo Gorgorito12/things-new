@@ -39,6 +39,9 @@ Contents:
 - [ROF reads](#rof-reads)
 - [Floating bars](#floating-bars)
 - [UI gadgets](#ui-gadgets)
+- [Progress pie](#progress-pie)
+- [Stat panel rows (the normal interface)](#stat-panel-rows-the-normal-interface)
+- [Garrison entries](#garrison-entries)
 
 ## Site table
 
@@ -1387,6 +1390,27 @@ inline constexpr Site kProtoTagsTail{"ProtoTagsTail", 0x0051DB0F, kProtoTagsTail
 inline constexpr std::uint8_t kVeterancyKillPathBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00};
 inline constexpr Site kVeterancyKillPath{"VeterancyKillPath", 0x004D4F37, kVeterancyKillPathBytes, sizeof(kVeterancyKillPathBytes)};
 
+inline constexpr std::uint8_t kGarrisonEnterTailBytes[] = {0x8B, 0x7F, 0x58, 0x85, 0xFF, 0x74, 0x17, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x91, 0x08, 0x01, 0x00, 0x00, 0x89, 0x97, 0x90, 0x00, 0x00, 0x00, 0x5B};
+inline constexpr Site kGarrisonEnterTail{"GarrisonEnterTail", 0x009C26E1, kGarrisonEnterTailBytes, sizeof(kGarrisonEnterTailBytes)};
+
+inline constexpr std::uint8_t kGarrisonLoadHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x24, 0x83, 0xB8, 0x3C, 0x01, 0x00, 0x00, 0x00, 0x57};
+inline constexpr Site kGarrisonLoadHead{"GarrisonLoadHead", 0x009C24B5, kGarrisonLoadHeadBytes, sizeof(kGarrisonLoadHeadBytes)};
+
+inline constexpr std::uint8_t kNurseryCmdExecuteBytes[] = {0x83, 0xEC, 0x1C, 0x53, 0x55, 0x8B, 0x6C, 0x24, 0x28, 0x85, 0xED, 0x56, 0x57, 0x8B, 0xF1, 0x0F, 0x84, 0x5F, 0x02, 0x00, 0x00, 0x83};
+inline constexpr Site kNurseryCmdExecute{"NurseryCmdExecute", 0x007D64F7, kNurseryCmdExecuteBytes, sizeof(kNurseryCmdExecuteBytes)};
+
+inline constexpr std::uint8_t kNetCommandCreateBytes[] = {0x8B, 0x4C, 0x24, 0x08, 0x33, 0xC0, 0x83, 0xF9};
+inline constexpr Site kNetCommandCreate{"NetCommandCreate", 0x005695FC, kNetCommandCreateBytes, sizeof(kNetCommandCreateBytes)};
+
+inline constexpr std::uint8_t kNetCommandPlayersBytes[] = {0x53, 0x8B, 0x5C, 0x24, 0x08, 0x85, 0xDB, 0x56};
+inline constexpr Site kNetCommandPlayers{"NetCommandPlayers", 0x005683B9, kNetCommandPlayersBytes, sizeof(kNetCommandPlayersBytes)};
+
+inline constexpr std::uint8_t kNetCommandUnitsBytes[] = {0x51, 0x53, 0x8B, 0x5C, 0x24, 0x0C, 0x85, 0xDB};
+inline constexpr Site kNetCommandUnits{"NetCommandUnits", 0x005696E1, kNetCommandUnitsBytes, sizeof(kNetCommandUnitsBytes)};
+
+inline constexpr std::uint8_t kNetCommandQueueBytes[] = {0x51, 0x55, 0x8B, 0x6C, 0x24, 0x0C, 0x85, 0xED};
+inline constexpr Site kNetCommandQueue{"NetCommandQueue", 0x00568A1A, kNetCommandQueueBytes, sizeof(kNetCommandQueueBytes)};
+
 inline constexpr std::uint8_t kKillSpawnPlaceBytes[] = {0x81, 0xEC, 0xA8, 0x01, 0x00, 0x00, 0x53, 0x55, 0x33, 0xDB, 0x8B, 0xE9};
 inline constexpr Site kKillSpawnPlace{"KillSpawnPlace", 0x0050703D, kKillSpawnPlaceBytes, sizeof(kKillSpawnPlaceBytes)};
 
@@ -2710,6 +2734,24 @@ inline constexpr Site kUiGadgetShowFlags{"UiGadgetShowFlags", 0x00447BBF, kUiGad
 inline constexpr std::uint8_t kUiGadgetHideFlagsBytes[] = {0x8A, 0x86, 0xA4, 0x00, 0x00, 0x00, 0xA8, 0x83, 0x75, 0x08};
 inline constexpr Site kUiGadgetHideFlags{"UiGadgetHideFlags", 0x00447CFF, kUiGadgetHideFlagsBytes, sizeof(kUiGadgetHideFlagsBytes)};
 
+inline constexpr std::uint8_t kPieFillSlotBytes[] = {0x53, 0x56, 0x8B, 0xF1, 0x33, 0xDB, 0x39, 0x9E, 0x30, 0x01, 0x00, 0x00, 0x75, 0x43, 0x6A, 0x20, 0xE8, 0x20, 0xA7, 0x94, 0xFF, 0x83, 0xC4, 0x04, 0x3B, 0xC3, 0x74, 0x2D, 0x89, 0x58, 0x10, 0x89, 0x58, 0x14, 0x89, 0x58, 0x18, 0xB1, 0x01, 0x89, 0x18, 0x88, 0x48, 0x1E, 0xC7, 0x40, 0x04, 0xFF, 0xFF, 0xFF, 0x88, 0xC7, 0x40, 0x08, 0xFF, 0xFF, 0xFF, 0xFF, 0x88, 0x48, 0x1C, 0x88, 0x58, 0x1D, 0xC7, 0x40, 0x0C, 0x00, 0x00, 0x80, 0x3F, 0xEB, 0x02, 0x33, 0xC0, 0x89, 0x86, 0x30, 0x01, 0x00, 0x00, 0x8B, 0x8E, 0x30, 0x01, 0x00, 0x00, 0x5E, 0x3B, 0xCB, 0x5B, 0x74, 0x35, 0xD9, 0x44, 0x24, 0x04, 0xD8, 0x15, 0xE4, 0x4B, 0xB8, 0x00, 0xDF, 0xE0, 0xF6, 0xC4, 0x05, 0x7A, 0x0D, 0xDD, 0xD8, 0xD9, 0x05, 0xE4, 0x4B, 0xB8, 0x00, 0xD9, 0x19, 0xC2, 0x04, 0x00, 0xD8, 0x15, 0xBC, 0x56, 0xB8, 0x00, 0xDF, 0xE0, 0xF6, 0xC4, 0x41, 0x75, 0x08, 0xDD, 0xD8, 0xD9, 0x05, 0xBC, 0x56, 0xB8, 0x00, 0xD9, 0x19, 0xC2, 0x04, 0x00};
+inline constexpr Site kPieFillSlot{"PieFillSlot", 0x00AB6C63, kPieFillSlotBytes, sizeof(kPieFillSlotBytes)};
+
+inline constexpr std::uint8_t kPieEnableBytes[] = {0x53, 0x8A, 0x5C, 0x24, 0x08, 0x84, 0xDB, 0x56, 0x8B, 0xF1, 0x0F, 0x85, 0x63, 0xCE, 0x20, 0x00, 0x8B, 0xB6, 0x30, 0x01, 0x00, 0x00, 0x85, 0xF6, 0x74, 0x03, 0x88, 0x5E, 0x1E, 0x5E, 0x5B, 0xC2, 0x04, 0x00};
+inline constexpr Site kPieEnable{"PieEnable", 0x004C51FA, kPieEnableBytes, sizeof(kPieEnableBytes)};
+
+inline constexpr std::uint8_t kPieEnableColdBytes[] = {0x83, 0xBE, 0x30, 0x01, 0x00, 0x00, 0x00, 0x0F, 0x85, 0x90, 0x31, 0xDF, 0xFF, 0x8B, 0x06, 0x6A, 0x00, 0xFF, 0x50, 0x6C, 0xE9, 0x84, 0x31, 0xDF, 0xFF};
+inline constexpr Site kPieEnableCold{"PieEnableCold", 0x006D206D, kPieEnableColdBytes, sizeof(kPieEnableColdBytes)};
+
+inline constexpr std::uint8_t kPieColourBytes[] = {0x83, 0xEC, 0x0C, 0x56, 0x8B, 0xF1, 0x83, 0xBE, 0x30, 0x01, 0x00, 0x00, 0x00, 0x74, 0x3C, 0x8B, 0x4C, 0x24, 0x18, 0x8B, 0x44, 0x24, 0x14, 0x8B, 0x54, 0x24, 0x1C, 0x89, 0x4C, 0x24, 0x08, 0x8D, 0x4C, 0x24, 0x04, 0x89, 0x44, 0x24, 0x04, 0x89, 0x54, 0x24, 0x0C, 0xE8, 0xF5, 0x73, 0xC3, 0xFF, 0x8B, 0x44, 0x24, 0x20, 0x50, 0x8D, 0x4C, 0x24, 0x08, 0x51, 0xE8, 0x83, 0xF1, 0x94, 0xFF, 0x8B, 0x96, 0x30, 0x01, 0x00, 0x00, 0x83, 0xC4, 0x08, 0x89, 0x42, 0x04, 0x5E, 0x83, 0xC4, 0x0C, 0xC2, 0x10, 0x00};
+inline constexpr Site kPieColour{"PieColour", 0x00AB5C34, kPieColourBytes, sizeof(kPieColourBytes)};
+
+inline constexpr std::uint8_t kPieMaterialBytes[] = {0x51, 0x56, 0x8B, 0xF1, 0x8B, 0x0D, 0x44, 0x60, 0xC6, 0x00, 0x57, 0x68, 0x04, 0x26, 0xBA, 0x00, 0x81, 0xC1, 0xDC, 0x68, 0x00, 0x00, 0xE8, 0x09, 0x69, 0x9B, 0xFF, 0x83, 0xBE, 0x2C, 0x01, 0x00, 0x00, 0x00, 0x8B, 0xF8, 0x75, 0x24, 0x6A, 0x14, 0xE8, 0xC1, 0xB7, 0x94, 0xFF, 0x83, 0xC4, 0x04, 0x85, 0xC0, 0x74, 0x0A, 0x57, 0x8B, 0xC8, 0xE8, 0x34, 0x69, 0x9B, 0xFF, 0xEB, 0x02, 0x33, 0xC0, 0x85, 0xC0, 0x89, 0x86, 0x2C, 0x01, 0x00, 0x00, 0x74, 0x3C, 0x83, 0xBE, 0x30, 0x01, 0x00, 0x00, 0x00, 0x74, 0x33, 0x68, 0x44, 0xF3, 0xB9, 0x00, 0x8D, 0x4C, 0x24, 0x0C, 0xE8, 0x07, 0xBE, 0x94, 0xFF, 0x8B, 0x86, 0x30, 0x01, 0x00, 0x00, 0x83, 0xC0, 0x08, 0x50, 0x6A, 0x00, 0x8D, 0x4C, 0x24, 0x10, 0x51, 0x8B, 0x8E, 0x2C, 0x01, 0x00, 0x00, 0xE8, 0x60, 0x00, 0x95, 0xFF, 0x8D, 0x4C, 0x24, 0x08, 0xE8, 0x9A, 0xB4, 0x94, 0xFF, 0x5F, 0x5E, 0x59, 0xC3};
+inline constexpr Site kPieMaterial{"PieMaterial", 0x00AB5BAA, kPieMaterialBytes, sizeof(kPieMaterialBytes)};
+
+inline constexpr std::uint8_t kPiePortraitBindBytes[] = {0x68, 0xF0, 0x60, 0xC3, 0x00, 0x8D, 0x4C, 0x24, 0x1C, 0xE8, 0x44, 0x65, 0xA4, 0xFF, 0x6A, 0x01, 0x8D, 0x54, 0x24, 0x14, 0x52, 0x8D, 0x44, 0x24, 0x20, 0x50, 0x8B, 0xCE, 0xE8, 0xB0, 0xCD, 0x0F, 0x00, 0x8B, 0x08, 0x6A, 0xFF, 0x6A, 0xFF, 0x89, 0x8E, 0xE4, 0x02, 0x00, 0x00};
+inline constexpr Site kPiePortraitBind{"PiePortraitBind", 0x009BAE5E, kPiePortraitBindBytes, sizeof(kPiePortraitBindBytes)};
+
 inline constexpr std::uint8_t kIncomeTrickleCallBytes[] = {0x56, 0xE8, 0x8C, 0x9C, 0xFB, 0xFF};
 inline constexpr Site kIncomeTrickleCall{"IncomeTrickleCall", 0x004E0CF8, kIncomeTrickleCallBytes, sizeof(kIncomeTrickleCallBytes)};
 
@@ -3292,6 +3334,7 @@ std::optional<int> Config::Int(const std::string& key) const {
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 #include "config.h"
 
@@ -3466,7 +3509,12 @@ Outcome ApplyEnableAllTeams(const Config& config);
 Outcome ApplyTechGadgets(const Config& config);
 Outcome ApplyIncomeRates(const Config& config);
 Outcome ApplySelectFattened(const Config& config);
+Outcome ApplyProgressPieDemo(const Config& config);
 Outcome ApplyNurseryFactor(const Config& config);
+Outcome ApplyGarrisonConvert(const Config& config);
+// garrisonConvert: the progress of a building's conversions, for the panels: false when nobody inside qualifies;
+// else the share of the delay the unit in progress has spent (1 with no delay) and how many units qualify.
+bool GarrisonConvertProgress(const char* building, float* fraction, std::int32_t* waiting);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
 // which of the keys it names the list then sees.
@@ -3644,7 +3692,10 @@ inline constexpr Feature kFeatures[] = {
     {"incomeRates", ApplyIncomeRates},
     // After autoGatherScaleByContained: its filter of the shared AutoGather rate getter (autogatherrate.h) is asked
     // after that key's; the owner's trickle it multiplies reaches incomeRates through the add that key counts.
+    // After overhealHitpointBars too: its row of the shared stat panel hook (statpanelrows.h) comes after that key's.
     {"nurseryFactor", ApplyNurseryFactor},
+    // After nurseryFactor: their observers of the shared garrison entries (garrisonobservers.h) run in that order.
+    {"garrisonConvert", ApplyGarrisonConvert},
     {"auraStacking", ApplyAuraStacking},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
@@ -3670,6 +3721,8 @@ inline constexpr Feature kFeatures[] = {
     {"techGadgets", ApplyTechGadgets},
     // After rendererOption: it shows its button from the Present of whichever Direct3DCreate9 the game gets.
     {"selectFattened", ApplySelectFattened},
+    // Dev key: the test bed of the shared progress pie (progresspie.h), an observer of the shared panel tail.
+    {"progressPieDemo", ApplyProgressPieDemo},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
 };
@@ -3692,7 +3745,8 @@ inline constexpr const char* kHandledKeys[] = {
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
-    "techgadgets", "incomerates", "editorautosave", "selectfattened", "nurseryfactor",
+    "techgadgets", "incomerates", "editorautosave", "selectfattened", "nurseryfactor", "progresspiedemo",
+    "garrisonconvert",
 };
 
 }  // namespace uhc
@@ -8584,4 +8638,527 @@ const wchar_t* FieldText(const void* field) {
 }
 
 }  // namespace uhc::ui
+```
+
+## Progress pie
+
+### src/progresspie.h
+
+```cpp
+// The progress pie: the engine's own pie chart filling, the overlay a train button shows while its unit trains
+// (gadget vtable +6Ch, 0x4C51FA, 0xAB5C34, 0xAB5BAA; generated/sites.h, "progresspie"), drawn over the unit
+// portrait of the selection panel in both interfaces. A key gives a source; once per panel refresh, while one
+// unit is selected, the sources are asked for that unit in the order added, and the first that answers sets the
+// pie; when none does, the pie is off. It adds no gadget and no art, and needs no layout change.
+//
+// Main thread only (the panel fill). No new jmp: it is an observer of the shared panel tail (AddUnitPanelTail).
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// The train button's colour (0x69D9BC: r 0, g 0, b 1, alpha 0.5), as ARGB. The default of every source.
+inline constexpr std::uint32_t kPieTrainBlue = 0x800000FFu;
+
+// Asked for the unit the panel shows (one unit selected). Return true to show the pie with `*fraction` done, 0 to 1
+// (clamped; the part not done is covered, as on a train button), and optionally a different `*argb` (preset to
+// kPieTrainBlue); false to leave the unit to the next source. Keep it cheap: it runs on every panel refresh.
+using ProgressPieSource = bool(__stdcall*)(const char* unit, float* fraction, std::uint32_t* argb);
+
+// Verifies the engine code the pie uses and the panel tail (once), then adds `source`. False, with a log line, when
+// a check fails or there are more than 8 sources: the key then shows no pie, and the rest of the key may go on.
+bool AddProgressPieSource(ProgressPieSource source);
+
+// True if the engine code the pie uses holds the stock bytes (checked once; `feature` names the caller in the log).
+// AddProgressPieSource calls it; a key that only uses the two calls below calls it from its apply function.
+bool VerifyProgressPie(const char* feature);
+
+// The same pie on any gadget of a layout, by handle (ui::FindChild / ui::FindAnywhere), for a key that draws it
+// somewhere else: Show turns it on with `fraction` done (made on first use), Hide turns it off. Nothing, and false,
+// for a stale handle or before VerifyProgressPie passed.
+bool ShowGadgetPie(std::int32_t handle, float fraction, std::uint32_t argb);
+void HideGadgetPie(std::int32_t handle);
+
+}  // namespace uhc
+```
+
+### src/progresspie.cpp
+
+```cpp
+#include "progresspie.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+#include "uigadgets.h"
+#include "unitpanel.h"
+
+namespace {
+
+constexpr std::size_t kMaxSources = 8;
+
+constexpr std::uint32_t kPanelPortrait = 0x2E4;  // [panel+2E4h] the unitselectionpanel-unitPortrait handle (0x9BAE85)
+constexpr std::uint32_t kGroupCount = 0x14;      // the selection group's unit count
+constexpr std::uint32_t kGadgetMaterial = 0x12C; // the filling's material, made by 0xAB5BAA
+constexpr std::uint32_t kGadgetPie = 0x130;      // the 20h-byte pie chart filling, made by vtable +6Ch
+constexpr std::uint32_t kPieColour = 0x04;       // ARGB, as 0x404DF6 packs it
+constexpr std::uint32_t kPieOn = 0x1E;           // byte, what 0x4C51FA writes
+constexpr std::uint32_t kFillSlot = 0x6C;        // every gadget vtable: 0xAB6C63
+
+using FillFn = void(__thiscall*)(void* gadget, float fraction);
+using EnableFn = void(__thiscall*)(void* gadget, bool on);
+using ColourFn = void(__thiscall*)(void* gadget, float r, float g, float b, float a);
+using MaterialFn = void(__thiscall*)(void* gadget);
+const auto kFill = reinterpret_cast<FillFn>(0x00AB6C63);
+const auto kEnable = reinterpret_cast<EnableFn>(0x004C51FA);
+const auto kColour = reinterpret_cast<ColourFn>(0x00AB5C34);
+const auto kMaterial = reinterpret_cast<MaterialFn>(0x00AB5BAA);
+
+template <typename T>
+T Field(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+uhc::ProgressPieSource g_sources[kMaxSources] = {};
+std::size_t g_sourceCount = 0;
+bool g_tailAdded = false;
+int g_verified = -1;  // -1 not checked, 0 failed, 1 passed
+bool g_slotWarned = false;
+
+// The gadget's fill slot must be the base one, which makes the filling this file reads.
+bool HasBaseFill(const void* gadget) {
+  const auto vtable = Field<const std::uintptr_t*>(gadget, 0);
+  if (vtable != nullptr && vtable[kFillSlot / 4] == reinterpret_cast<std::uintptr_t>(kFill)) {
+    return true;
+  }
+  if (!g_slotWarned) {
+    g_slotWarned = true;
+    uhc::Log(L"progress pie: a gadget's fill slot is not 0xAB6C63; no pie on it");
+  }
+  return false;
+}
+
+bool Show(void* gadget, float fraction, std::uint32_t argb) {
+  if (!HasBaseFill(gadget)) {
+    return false;
+  }
+  kFill(gadget, fraction);  // makes the filling on first use, clamps to [0, 1]
+  const char* pie = Field<const char*>(gadget, kGadgetPie);
+  if (pie == nullptr) {
+    return false;
+  }
+  if (Field<void*>(gadget, kGadgetMaterial) == nullptr) {
+    kMaterial(gadget);  // as the unit stack buttons do (0x9B8AD1)
+  }
+  if (Field<std::uint32_t>(pie, kPieColour) != argb) {
+    kColour(gadget, ((argb >> 16) & 0xFF) / 255.0f, ((argb >> 8) & 0xFF) / 255.0f, (argb & 0xFF) / 255.0f,
+            ((argb >> 24) & 0xFF) / 255.0f);
+  }
+  if (Field<std::uint8_t>(pie, kPieOn) == 0) {
+    kEnable(gadget, true);
+  }
+  return true;
+}
+
+void Hide(void* gadget) {
+  const char* pie = Field<const char*>(gadget, kGadgetPie);
+  if (pie != nullptr && Field<std::uint8_t>(pie, kPieOn) != 0) {
+    kEnable(gadget, false);
+  }
+}
+
+void __stdcall PortraitPie(char* panel, const char* selection, const char* unit, bool) {
+  void* portrait = uhc::ui::Gadget(Field<std::int32_t>(panel, kPanelPortrait), uhc::ui::kAnyGadget);
+  if (portrait == nullptr) {
+    return;
+  }
+  if (unit != nullptr && selection != nullptr && Field<std::int32_t>(selection, kGroupCount) == 1) {
+    for (std::size_t i = 0; i < g_sourceCount; ++i) {
+      float fraction = 0.0f;
+      std::uint32_t argb = uhc::kPieTrainBlue;
+      if (g_sources[i](unit, &fraction, &argb)) {
+        if (Show(portrait, fraction, argb)) {
+          return;
+        }
+        break;
+      }
+    }
+  }
+  Hide(portrait);
+}
+
+}  // namespace
+
+namespace uhc {
+
+bool VerifyProgressPie(const char* feature) {
+  if (g_verified < 0) {
+    g_verified = VerifyAll(feature, {&sites::kPieFillSlot, &sites::kPieEnable, &sites::kPieEnableCold,
+                                     &sites::kPieColour, &sites::kPieMaterial, &sites::kPiePortraitBind,
+                                     &sites::kGadgetLookup})
+                     ? 1
+                     : 0;
+  }
+  return g_verified == 1;
+}
+
+bool AddProgressPieSource(ProgressPieSource source) {
+  if (source == nullptr || !VerifyProgressPie("progress pie")) {
+    return false;
+  }
+  if (g_sourceCount == kMaxSources) {
+    Log(L"progress pie: more than %u sources", static_cast<unsigned>(kMaxSources));
+    return false;
+  }
+  if (!g_tailAdded) {
+    if (!AddUnitPanelTail(&PortraitPie)) {
+      return false;
+    }
+    g_tailAdded = true;
+  }
+  g_sources[g_sourceCount++] = source;
+  return true;
+}
+
+bool ShowGadgetPie(std::int32_t handle, float fraction, std::uint32_t argb) {
+  if (g_verified != 1) {
+    return false;
+  }
+  void* gadget = ui::Gadget(handle, ui::kAnyGadget);
+  return gadget != nullptr && Show(gadget, fraction, argb);
+}
+
+void HideGadgetPie(std::int32_t handle) {
+  if (g_verified != 1) {
+    return;
+  }
+  if (void* gadget = ui::Gadget(handle, ui::kAnyGadget)) {
+    Hide(gadget);
+  }
+}
+
+}  // namespace uhc
+```
+
+## Stat panel rows (the normal interface)
+
+### src/statpanelrows.h
+
+```cpp
+// Rows of the normal interface's stat panel (uiunitstatpanel3, StackLabel/StackValue 0..8, filled by FUN_004D70ED),
+// right after its HP row: one hook at 0x4D76DB, shared by every key that adds a row there (overhealHitpointBars stat,
+// nurseryFactor). With the minimized interface the fill does not run; those keys write the unit panel's row instead
+// (unitpanel.h).
+#pragma once
+
+#include <cstdint>
+
+namespace uhc {
+
+// Asked for the panel's unit, in the order added, while rows are free: writes row `row` and returns true, or returns
+// false to leave it to the next one. Each row written moves the stock rows after it down by one.
+using StatPanelRow = bool(__stdcall*)(const char* panel, const char* unit, std::int32_t row);
+
+// Writes the hook the first time (after checking the site's stock bytes) and adds `row`.
+bool AddStatPanelRow(StatPanelRow row, const char* feature);
+
+// Writes row `row`'s label and value as the Group Health row does, and sets their help text (`tip` may be null: none).
+// False if the panel has no such row.
+bool SetStatPanelRow(const char* panel, std::int32_t row, const wchar_t* label, const wchar_t* value,
+                     const wchar_t* tip);
+
+}  // namespace uhc
+```
+
+### src/statpanelrows.cpp
+
+```cpp
+#include "statpanelrows.h"
+
+#include <cstddef>
+#include <cstdint>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcStatPanelRowsHook();
+
+namespace {
+
+constexpr std::size_t kMaxRows = 4;
+constexpr std::int32_t kStatPanelRows = 9;           // StackLabel/StackValue 0..8 (0x9BBAD1)
+constexpr std::uint32_t kLabelHandles = 0x174;       // the panel's 9 label handles, then (+198h) its 9 value handles
+constexpr std::uint32_t kValueHandles = 0x198;
+constexpr std::uint32_t kLabelStyle = 0x00D6F5D0;    // the Group Health row's label style (vtable +84h)
+constexpr std::uint32_t kValueStyle = 0x00C6657C;    // its value style
+
+struct BString {
+  wchar_t* text;
+};
+
+using GadgetRefFn = std::int32_t*(__thiscall*)(std::int32_t* ref, std::int32_t handle);  // ref: handle, gadget
+using GadgetReleaseFn = std::int32_t(__cdecl*)(std::int32_t handle);
+using BStringFromWideFn = BString*(__thiscall*)(BString* self, const wchar_t* text);
+using BStringSetFn = BString*(__thiscall*)(BString* self, const BString* source);
+using BStringFreeFn = void(__thiscall*)(BString* self);
+using GadgetStyleFn = void(__thiscall*)(char* gadget, const void* style);
+using GadgetTextFn = void(__thiscall*)(char* gadget, const BString* text);
+using GadgetUpdateFn = void(__thiscall*)(char* gadget);
+const auto kGadgetRef = reinterpret_cast<GadgetRefFn>(0x004C519C);
+const auto kGadgetRelease = reinterpret_cast<GadgetReleaseFn>(0x0040431B);
+const auto kBStringFromWide = reinterpret_cast<BStringFromWideFn>(0x00401A12);
+const auto kBStringSet = reinterpret_cast<BStringSetFn>(0x0040196F);
+const auto kBStringFree = reinterpret_cast<BStringFreeFn>(0x004010CA);
+
+template <typename Fn>
+Fn VirtualAt(const char* object, std::uint32_t offset) {
+  return *reinterpret_cast<const Fn*>(*reinterpret_cast<const char* const*>(object) + offset);
+}
+
+uhc::StatPanelRow g_rows[kMaxRows] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+// A row gadget from its handle, as 0x69A9D3 gets it (the reference is released at once; the panel keeps the gadget).
+char* RowGadget(std::int32_t handle) {
+  std::int32_t ref[2] = {0, 0};
+  std::int32_t* result = kGadgetRef(ref, handle);
+  char* gadget = reinterpret_cast<char*>(static_cast<std::uintptr_t>(static_cast<std::uint32_t>(result[1])));
+  if (result[1] != 0) {
+    kGadgetRelease(result[0]);
+  }
+  return gadget;
+}
+
+// The style, the text, the update (vtable +84h, +80h, +54h), then the help text [gadget+68h].
+void SetRowText(char* gadget, const void* style, const wchar_t* text, const wchar_t* tip) {
+  BString value;
+  kBStringFromWide(&value, text != nullptr ? text : L"");
+  VirtualAt<GadgetStyleFn>(gadget, 0x84)(gadget, style);
+  VirtualAt<GadgetTextFn>(gadget, 0x80)(gadget, &value);
+  VirtualAt<GadgetUpdateFn>(gadget, 0x54)(gadget);
+  kBStringFree(&value);
+  BString help;
+  kBStringFromWide(&help, tip != nullptr ? tip : L"");
+  kBStringSet(reinterpret_cast<BString*>(gadget + 0x68), &help);
+  kBStringFree(&help);
+}
+
+}  // namespace
+
+// From the hook at 0x4D76DB: the rows written from `row` on (each key at most one), for the panel's unit.
+extern "C" std::int32_t __stdcall UhcStatPanelRows(const char* panel, const char* unit, std::int32_t row) {
+  if (panel == nullptr || unit == nullptr) {
+    return 0;
+  }
+  std::int32_t written = 0;
+  for (std::size_t i = 0; i < g_count && row + written < kStatPanelRows; ++i) {
+    if (g_rows[i](panel, unit, row + written)) {
+      ++written;
+    }
+  }
+  return written;
+}
+
+namespace uhc {
+
+bool AddStatPanelRow(StatPanelRow row, const char* feature) {
+  if (g_count == kMaxRows) {
+    Log(L"stat panel rows: more than %u keys (%hs)", static_cast<unsigned>(kMaxRows), feature);
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("stat panel rows", {&sites::kOverhealStatRow, &sites::kGroupHealthRow, &sites::kGadgetRef,
+                                       &sites::kGadgetRelease, &sites::kBStringFromWide, &sites::kBStringSet,
+                                       &sites::kBStringFree}) ||
+        !WriteJmp(sites::kOverhealStatRow.va, reinterpret_cast<const void*>(&UhcStatPanelRowsHook), 9)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_rows[g_count++] = row;
+  return true;
+}
+
+bool SetStatPanelRow(const char* panel, std::int32_t row, const wchar_t* label, const wchar_t* value,
+                     const wchar_t* tip) {
+  if (panel == nullptr || row < 0 || row >= kStatPanelRows) {
+    return false;
+  }
+  char* labelGadget = RowGadget(*reinterpret_cast<const std::int32_t*>(panel + kLabelHandles + row * 4));
+  char* valueGadget = RowGadget(*reinterpret_cast<const std::int32_t*>(panel + kValueHandles + row * 4));
+  if (labelGadget == nullptr || valueGadget == nullptr) {
+    return false;
+  }
+  SetRowText(labelGadget, reinterpret_cast<const void*>(kLabelStyle), label, tip);
+  SetRowText(valueGadget, reinterpret_cast<const void*>(kValueStyle), value, tip);
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/statpanelrows_hooks.asm
+
+```asm
+; The stat panel's rows after its HP row, shared by the keys that add one (src/statpanelrows.cpp). Entered through a
+; jmp written over the stock code; it leaves through an explicit jmp to the verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcStatPanelRows PROTO STDCALL panel:DWORD, unit:DWORD, row:DWORD
+
+.data
+statRowNext     dd 004D76E4h    ; mov edx,[0CF059Ch]: the rows after the HP row
+
+.code
+
+; Replaces mov edi,2 / mov [esp+2Ch],edi (9 bytes) at 0x4D76DB, the stat panel fill FUN_004D70ED right after the HP
+; row: EDI and [esp+2Ch] are the next free row (the Group Health branch 0x69A9D3 writes row EDI, then adds 1 to both).
+; UhcStatPanelRows writes the keys' rows from there for the panel's unit ([esp+38h], the panel [esp+50h]) and returns
+; how many; both counters move on by that many. EAX, ECX, EDX and the flags are dead at 0x4D76E4 (mov edx,[0CF059Ch] /
+; mov eax,[edx] / ... / mov ecx,0C66500h).
+UhcStatPanelRowsHook PROC
+    TRACE_ONCE "stat panel rows (0x4D76DB)"
+    mov edi, 2                      ; stolen 0x4D76DB
+    mov dword ptr [esp+2Ch], edi    ; stolen 0x4D76E0
+    pushad
+    push edi                        ; row
+    push dword ptr [esp+24h+38h]    ; unit
+    push dword ptr [esp+28h+50h]    ; panel
+    call UhcStatPanelRows
+    mov dword ptr [esp+1Ch], eax    ; the pushad slot of EAX: the result survives popad
+    popad
+    add edi, eax
+    mov dword ptr [esp+2Ch], edi
+    jmp statRowNext
+UhcStatPanelRowsHook ENDP
+
+END
+```
+
+## Garrison entries
+
+### src/garrisonobservers.h
+
+```cpp
+// Every unit that enters another (a building's garrison, a ship, a wagon), shared by the keys that act on it
+// (garrisonConvert, nurseryFactor). The load of a unit into another, FUN_009C24B5 bool thiscall(container, unitId,
+// flag), ret 8, has eleven direct callers (the garrison and load actions, triggers, the random map placement, the
+// scenario load); one jmp at its success tail 0x9C26E1, whichever keys are on, runs every observer there.
+#pragma once
+
+namespace uhc {
+
+// Called once per successful entry, inside the load: [unit+6Ch] is already the container's ID and the unit is the
+// last ID of [container+70h] (count [container+74h]). The load has not returned yet, and its caller may still read
+// the unit: an observer must not transform, kill, eject or move it there. It queues the unit's ID and acts after
+// the world update (worldtick.h), checking again that the unit is still inside.
+using GarrisonObserver = void (*)(char* container, char* unit);
+
+// Writes the jmp the first time (after checking the site's stock bytes and the function's head) and adds the
+// observer, in the order the keys add them (their kFeatures order, the same on every machine). `key` names the
+// caller in the log.
+bool AddGarrisonObserver(GarrisonObserver observer, const char* key);
+
+}  // namespace uhc
+```
+
+### src/garrisonobservers.cpp
+
+```cpp
+#include "garrisonobservers.h"
+
+#include <cstddef>
+
+#include "generated/sites.h"
+#include "log.h"
+#include "patch.h"
+
+extern "C" void UhcGarrisonEnterHook();
+
+namespace {
+
+constexpr std::size_t kMaxObservers = 8;
+
+uhc::GarrisonObserver g_observers[kMaxObservers] = {};
+std::size_t g_count = 0;
+bool g_installed = false;
+
+}  // namespace
+
+// From the hook at 0x9C26E1: EDI = the container, ESI = the unit that just entered it.
+extern "C" void __stdcall UhcGarrisonDispatch(char* container, char* unit) {
+  if (container == nullptr || unit == nullptr) {
+    return;
+  }
+  for (std::size_t i = 0; i < g_count; ++i) {
+    g_observers[i](container, unit);
+  }
+}
+
+namespace uhc {
+
+bool AddGarrisonObserver(GarrisonObserver observer, const char* key) {
+  if (g_count == kMaxObservers) {
+    Log(L"garrison entries: more than %u observers (%hs)", static_cast<unsigned>(kMaxObservers), key);
+    return false;
+  }
+  if (!g_installed) {
+    if (!VerifyAll("garrison entries", {&sites::kGarrisonEnterTail, &sites::kGarrisonLoadHead}) ||
+        !WriteJmp(sites::kGarrisonEnterTail.va, reinterpret_cast<const void*>(&UhcGarrisonEnterHook), 7)) {
+      return false;
+    }
+    g_installed = true;
+  }
+  g_observers[g_count++] = observer;
+  return true;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/garrisonobs_hooks.asm
+
+```asm
+; The entries of a unit into another, shared by the keys that observe them (src/garrisonobservers.cpp). Entered
+; through a jmp written over the stock code; it leaves through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcGarrisonDispatch PROTO STDCALL container:DWORD, unit:DWORD
+
+.data
+enterNext       dd 009C26E8h    ; mov eax,[0C66234h]: the store of the game time in the action manager
+enterDone       dd 009C26FFh    ; pop ebx: the load returns true
+
+.code
+
+; Replaces mov edi,[edi+58h] / test edi,edi / je 9C26FFh (7 bytes) at 0x9C26E1, the success tail of the load
+; FUN_009C24B5: EDI = the container, ESI = the unit, after [unit+6Ch] = the container's ID (0x9C25C2) and the
+; append of the unit's ID to [container+70h] (0x9C26DC). The stock code after it reads EDI (the action manager,
+; replayed here) and writes EAX, ECX and EDX before reading them; invoke keeps EBX, ESI and EDI.
+UhcGarrisonEnterHook PROC
+    TRACE_ONCE "garrison entries (0x9C26E1)"
+    invoke UhcGarrisonDispatch, edi, esi
+    mov edi, dword ptr [edi+58h]
+    test edi, edi
+    je skip
+    jmp enterNext
+skip:
+    jmp enterDone
+UhcGarrisonEnterHook ENDP
+
+END
 ```

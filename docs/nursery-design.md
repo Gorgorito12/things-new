@@ -225,3 +225,51 @@ with rate 0.5); a German AI played on (a Manor and 10 settlers at 2 min).
 
 Departures from the design: the panel row is only in the minimized interface (the normal stat panel needs its own hook,
 as `showGatherRate` has), and it replaces the stock AutoGather rate row for a single selected unit with a factor.
+
+
+## 7. JTMaston's answers and the second version (2026-11-26)
+
+His answers to section 5, and what the second version does with them (agent N2, plan `ronda-20261126`, part 3):
+
+| Question | Answer | Second version |
+|---|---|---|
+| 1 Exponential | "a basic f(t)=b^t, where t increases by 1 with each iteration of NurseryFactorInterval, starting at 0; b is an attribute we can set in the proto; the result is added up to the building's current factor" | `<NurseryFactorGrowthBase>` (default 2) and the Data subtype of the same name; step t adds b^t, the fraction carried to the next step; t per unit, saved (marker word 3), back to 0 when the factor is emptied. `NurseryFactorGrowthRate` is gone. |
+| 2 Shipment, several nurseries | yes and yes | as built |
+| 3 "2 by 2" | a command like a market's buy and sell buttons: spend factor for units at the nursery, or resources for factor | `<NurseryFactorCommand factor cost unit count>Name</...>` and the UI syscall `nurseryFactorCommand("Name")` (below); `consume` of the shipment stays |
+| 4 Where units appear | cards at the gather point, the commands' at the nursery | as built; the command's units on rings around the building |
+| 5 Capture, transform | keeps the factor | as built; a transform no longer cuts to the new cap |
+| 6 Which buildings a tech hits | all | as built |
+| 7 Lowered max | "keeps the extra until they lose it" | no cut; growth and additions stop at the cap |
+| 8 No max | "no, add a default value of 10" | default 10; any NurseryFactor tag marks the proto |
+| 9 Panel | "Just X/Y \<string\>, dont add a 'next in Xs', we should generate a loading piechart" | `3/10 minks` in both interfaces; agent P's pie (`progresspie.*`) on the portrait while it grows |
+| 10 Other rollovers | no | none |
+| 11 Global income | yes | as built |
+| 12 Whole numbers | yes | as built |
+
+Added by him: `<NurseryFactorGarrisonUnit amount="X">ypGoat</NurseryFactorGarrisonUnit>`, a garrisoned unit of that
+type removed at once for X. Built on the shared observer of the load of a unit into another (agent GC's
+`garrisonobservers.*`, 0x9C26E1, also used by `garrisonConvert`): the observer queues, the world tick removes (0x4726B2,
+the trigger `Destroy`'s call) and adds, up to the cap.
+
+**How a button reaches the simulation.** A `protounitcommands.xml` command runs a console string on the local machine
+only. The UI syscall sends the network command `uiTransformSelectedUnit` sends (type 17h, read with capstone at
+0x7E7193: factory 0x5695FC, players 0x5683B9, units 0x5696E1, queue 0x568A1A), with `'NR' << 16 | index` where that
+command carries the target proto ID (`[cmd+8Ch]`). Every machine runs its per-unit execute FUN_007D64F7 (vtable
+0xB86F28 +54h) in the world update, after the command loop 0x7C86A4 checked that the command's player owns the unit; a
+hook at its head takes the commands with the magic and runs the nursery's rule. No new network command type, no
+cheat path. The buttons grey out with the reason (`AddPanelButtonFilter`).
+
+**The normal interface's stat panel.** The row after the HP row, 0x4D76DB, is now a shared hook (`statpanelrows.*`),
+first `overhealHitpointBars`' row, then this key's.
+
+**Readings still open** (in the English reply, `wol-fixes/reply-to-maston-20261126-N2.txt`):
+- t back to 0 only when the factor is emptied (a sale to 2 keeps t, so the next step can fill the nursery at once);
+- a full nursery keeps a garrisoned unit inside instead of taking it for nothing; an addition is cut at the cap;
+- the units of a command ignore the population cap, and a command with no room for all its units does nothing;
+- the panel shows `3/10 minks` as one text (the stock rows are `Label: value`); the second rollover line stays while
+  the nursery grows with time;
+- a lowered cap: a tech that adds factor to a unit above the cap adds nothing.
+- a matching unit of another player (an ally) that enters counts too.
+
+Seen in game (WoLReal5, single player, 2026-11-26): all of the above; the stat panel row of the normal interface; a save
+and a load keep `8/5` and t; 16 Banks A/B update 0.15 ms with and without; a skirmish AI ran.

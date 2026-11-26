@@ -36,6 +36,16 @@ Installing
     python apply_fix.py "<WoL folder>" --check      what is applied (exit code 0 only when all is)
     python apply_fix.py "<WoL folder>" --restore    the backed-up files back, byte for byte; the icon deleted
 
+Only the hotkey, without the button:
+
+    python apply_fix.py "<WoL folder>" --hotkey-only    the keymap entry, its name and the cfg line only
+
+This leaves data\uimainnew.xml alone, adds no icon and no tooltip string (690911): it changes data\DefaultKeyMapY.xml,
+string 690912 (the hotkey's name in the hotkey menu) in the three string tables, and Startup\wol.cfg. --check and
+--restore work the same way: they read which mode was applied from the backup (select-fattened-backup\manifest.json).
+The DLL key needs no other setting: with no button in the layout it only looks for one every 2 seconds (with
+"selectFattened log" it says so once in the log). To change modes, --restore first, then apply the other way.
+
 Files: adds art\ui\ingame\uhc_select_fattened.ddt (64 x 64, drawn by aoe3-blender-tools' make_command_icon.py
 --glyph fattened); changes data\uimainnew.xml (one gadget before </layout>), data\DefaultKeyMapY.xml (one entry after
 "Find Idle Military"; refused if shift-control-f is already bound), strings 690911 and 690912 in data\stringtabley.xml,
@@ -52,3 +62,4 @@ Limits
 Un botón encima del panel de recursos, a su izquierda, muestra cuántos animales de ganado tuyos llegaron a su máximo
 de comida y los selecciona al pulsarlo, en todo el mapa; si pasan del límite de selección, los más cercanos al centro
 de la pantalla. Se oculta cuando no hay ninguno. Mayús+Ctrl+F hace lo mismo. Solo cambia tu selección.
+Con --hotkey-only se instala solo la tecla (Mayús+Ctrl+F), sin el botón ni su icono.

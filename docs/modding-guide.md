@@ -31,8 +31,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Wednesday 2026-11-25 08:53 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns as before. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
-| Wednesday 2026-11-25 08:50 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time up to a cap and is changed by techs; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panel shows it as `3/10` with a two-line rollover. | The `NurseryFactor*` tags on the proto, an AutoGather action, and the techs that want the Data subtypes. |
+| Wednesday 2026-11-25 23:00 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
+| Wednesday 2026-11-25 14:30 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries. |
+| Wednesday 2026-11-25 14:03 | [`garrisonConvert`](#garrisonconvert) | Filmed in WoL, with a control. `<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, with the train button's pie over the building's portrait. | The tag on the buildings that want it. |
 | Wednesday 2026-11-25 08:42 | [`selectFattened`](#selectfattened) | Filmed in WoL, with a control. A button and a hotkey select the player's livestock that has reached its maximum food, on the whole map; the button shows how many there are and hides at none. | The button and the hotkey: `wol-fixes/select-fattened`. |
 | Wednesday 2026-11-25 08:22 | [`editorAutosave`](#editorautosave) | Added. The scenario editor saves the open scenario every few minutes to `autosave-1` ... | Nothing. |
 | Wednesday 2026-11-25 08:11 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
@@ -2788,7 +2789,7 @@ room above 100 % grows. [Full video (MP4)](media/overhealHitpointBars-maxonly-wo
   applied`. The portrait bar: `hook reached: overhealHitpointBars portrait bar (0x4C83DF)`; with `log`,
   `the portrait bar shows an overheal of 10.0 % of the bar (1 units; logged once)`.
   With `stat`: the startup line adds `an overheal stat row labelled 'Overheal'` (or `labelled by
-  string N`); in a game `hook reached: overhealHitpointBars stat row (0x4D76DB)`; with `log`,
+  string N`); in a game `hook reached: stat panel rows (0x4D76DB)`; with `log`,
   `stat row 2 of unit N (Tomahawk): overheal 15/15 (logged once)` (with its colour markup). A bad
   label stops the key: `overhealHitpointBars: stat=…: expected stat or stat=<label> (a word, '_'
   for a space, or a string table ID); feature not applied`.
@@ -3101,7 +3102,7 @@ Attacks, armor, and what a hit does.
 | [`containedUnitsROF`](#containedunitsrof) | An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | **new** | The attribute on the attacks that want it (none has it today). | confirmed |
 | [`numberOfShots`](#numberofshots) | An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, keeping its firing pose between them (`<BurstPose>`), before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | **new** | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. | confirmed (single player) |
 | [`retargetInAction`](#retargetinaction) | An attack with `<RetargetInAction>1</RetargetInAction>` whose target dies before the last shot of its attack animation (a machine gun's Attack tags, a burst's quick shot) fires the rest at a new target in range, instead of losing them. | **new** | The tag on the attacks that want it (the machine guns' `CannonAttack` in `organGun.tactics`). | confirmed (single player) |
-| [`turretArc`](#turretarc) | An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns as before. | **new** | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). | confirmed (single player) |
+| [`turretArc`](#turretarc) | An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | **new** | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). | confirmed (single player) |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
 | [`broadsideSoundSet`](#broadsidesoundset) | A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | **new** | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). | confirmed (single player) |
 | [`cantBeSlowed`](#cantbeslowed) | A unit with the type `CantBeSlowed` ignores `TargetSpeedBoost`; the attacker's type `CannotSnare` was retired on 2026-11-21 (take the snare out of the attack in its tactics). | **new** | The type on the protos that want it. | confirmed |
@@ -4372,23 +4373,25 @@ retargetInAction [log]
 
 *A gun on a mount turns toward its target by itself, inside its arc, instead of the whole unit turning.*
 
-**Added:** Tuesday 2026-11-24 10:05 · **Filmed in WoL:** Wednesday 2026-11-25 08:53
+**Added:** Tuesday 2026-11-24 10:05 · **Filmed in WoL:** Wednesday 2026-11-25 23:00
 
 ![turretArc in WoL](media/gatlingCamel-wol.gif)
 
-*In WoL, with the gatling camel pack (rounds 4 and 5) and `turretArc GatlingCamel ... log` (one `GatlingCamel`,
-selected, eight Houses all round brought to 50 HP; filmed on 2026-11-25):* the camel keeps still while its gun turns
+*In WoL, with the gatling camel pack (round 7: the post centred, the hump) and `turretArc GatlingCamel ... log` (one
+`GatlingCamel`, selected, eight Houses all round brought to 50 HP; filmed on 2026-11-26):* the camel keeps still while its gun turns
 on its post to each House within 90 degrees of either side, the gunner's hands on the crank and the breech, the
 tracers leaving the turned muzzle; a House behind turns the camel round until it is inside the arc, then the gun
 takes over. [Full video (MP4)](media/gatlingCamel-wol.mp4).
 
 ![turretArc in WoL, the gunner on foot](media/gatlingCamelDeployed-wol.gif)
 
-*The same Houses with a `GatlingCamelDeployed` (its arc -30..+90 from its aim file, 100 degrees a second; filmed on
-2026-11-25):* it deploys (the camel lies down, the gunner gets off, side-steps back and takes the two handles behind
-the gun), the gun turns between 30 degrees toward his side and 90 across the camel while he steps round the post,
-a House beyond turns the camel, he walks in to the breech to reload and back, and at the end he gets back on and
-the camel rises. [Full video (MP4)](media/gatlingCamelDeployed-wol.mp4).
+*The same Houses with a `GatlingCamelDeployed` (round 6: its gun rests at +90, square to the camel's spine, and
+turns from +30 to +150; 100 degrees a second; round 7: the camel kneels in the kush; filmed on 2026-11-26):* it
+deploys (the camel lies down and turns its
+neck aside, the gunner gets off, takes the two handles and swings the gun out over the camel's right side), a
+House behind turns the camel until the House sits at +90, the gun turns to the Houses inside its arc while he steps
+round the post, and he walks in to the breech to reload and back. In the full video he then gets back on (the gun
+swung back ahead) and the camel rises. [Full video (MP4)](media/gatlingCamelDeployed-wol.mp4).
 
 ![turretArc in WoL, key off](media/turretArc-wol-control.gif)
 
@@ -4410,11 +4413,13 @@ turretArc <Proto> <aim file> [<Proto> <aim file> ...] [log]
   </action>
   ```
 
-  The number is the arc on each side of ahead, in degrees (90: the front half); `maxTurnAnglePerSecond` is how fast
-  the gun turns on screen (240 when absent); `tracking="always"` is required. An attack without the tag, or a proto
-  not listed in the cfg, works as before. The gun turns no farther than its aim file goes on each side: the
-  deployed gatling camel's table covers -30 to +90 (30 degrees toward the gunner's side, 90 across the camel), so
-  under `90` its arc is -30..+90; a table of -90..+90 keeps the tag's arc on both sides.
+  The number is the arc on each side of the gun's rest, in degrees (90 with the gun resting ahead: the front half);
+  `maxTurnAnglePerSecond` is how fast the gun turns on screen (240 when absent); `tracking="always"` is required. An
+  attack without the tag, or a proto not listed in the cfg, works as before. The gun rests where its aim file says
+  (ahead, unless the file gives a rest yaw) and turns no farther than the file goes: the deployed gatling camel's gun
+  rests at +90, pointing out over the camel's right side, square to its spine, and its table covers +30 to +150, so
+  under `60` its arc is +30..+150; the saddle camel's rests ahead with a table of -90..+90, so `90` gives the front
+  half.
 - **The aim file** of each listed proto (a path from the game folder) belongs to its model: aoe3-blender-tools'
   `tools/make_gun_camel.py` writes it beside the model (`gatling_camel_A55.aim`). It names the gun's turning bone
   (`bone_yaw`, on the post's top) and the model's turret bone (`bone_turret`, which carries the launch point and the
@@ -4428,19 +4433,22 @@ turretArc <Proto> <aim file> [<Proto> <aim file> ...] [log]
     and the reins at the far side). A gunner on foot steps round the post with the gun, one foot at a time; when
     the gun stops on its target, the step under way finishes in 0.2 s with his hands on the grips, so no foot is
     left in the air.
-  - A target beyond the arc (behind): the unit turns as before, to face it; the gun comes back to the middle.
+  - A target beyond the arc: the unit turns until the target sits at the gun's rest (ahead: it faces it, as before;
+    the deployed gatling camel turns its right side to it), and the gun turns the rest of the way.
   - Each shot leaves from the turned muzzle, so the tracers and the projectiles start where the gun points.
-  - The gun goes back to the middle half a second after the unit last aimed, and at once while the unit plays a
+  - The gun goes back to its rest half a second after the unit last aimed, and at once while the unit plays a
     clip whose name holds `reload`, `death` or `deploy` (the gunner's new magazine is drawn to where the hopper is at
-    rest, the corpse shows the gun at rest, and the gunner holds the reins while the camel lies down or rises).
+    rest, the corpse shows the gun at rest, and a deploy clip swings the gun itself between ahead and its rest).
+  - A gun that rests off ahead needs the key: without it the game turns the unit to face its target, the gun pointing
+    to the side.
 - **Simulation:** changes where shots start: every player needs the same line and data. What a unit faces and where
   its shots start come from game state only (the unit, its target, its tactics); the turning on screen is display
   only.
 - **Saved games:** nothing to keep: after a load, the next aim turns the gun again.
-- **Log:** `turretArc: applied`, one line per aim file (its bones, pivot and clips), `hook reached: turretArc facing
-  (0x48AA9F)` and `turretArc launch (0x4995D5)`. With `log`: each new aim, at most 400 (`unit 0 aims at -51.9 degrees
-  (arc 90): the gun turns`, or `the unit turns`), the first 80 shots (the game's start and the turned muzzle's), and
-  the models found for each unit.
+- **Log:** `turretArc: applied`, one line per aim file (its bones, pivot, clips, yaws and rest), `hook reached:
+  turretArc facing (0x48AA9F)` and `turretArc launch (0x4995D5)`. With `log`: each new aim, at most 400 (`unit 0 aims
+  at 131.8 degrees (arc +30..+150, rest +90): the gun turns`, `the unit turns until it sits at the rest yaw`, or `the
+  unit turns`), the first 80 shots (the game's start and the turned muzzle's), and the models found for each unit.
 - **Tested in WoL (2026-11-24, single player, `C:\AoE3-UHC-WoLReal7`, the gatling camel pack):**
   - `GatlingCamel` and `GatlingCamelDeployed` against Houses and covered wagons placed all round them: aims logged
     from -90 to +90 degrees with the body still, the gun, the muzzle flash and the gunner's hands following; targets
@@ -4457,6 +4465,15 @@ turretArc <Proto> <aim file> [<Proto> <aim file> ...] [log]
     `the gun rests at 41.8 degrees, inside the step band 24..44: the gunner's step finishes`; the deploy, the reload
     walk, the undeploy, deaths mounted and deployed checked frame by frame in close films (`normalZoom` 14).
     Performance was not measured again (the change is display only: a second table blended while the gun rests).
+  - Round 6 (2026-11-26, `C:\AoE3-UHC-WoLReal7`, aim file version 2, the new pack): `GatlingCamelDeployed` logged
+    `yaws 30..150, rest 90` and every aim `(arc +30..+150, rest +90)`; Houses at 180, -143, -37 and 0 degrees each
+    turned the camel (`the unit turns until it sits at the rest yaw`) until they came inside the arc, then the gun took
+    over and the camel's turn ended with them at +90 (logged down to 90.0); a House found inside the arc turned only the
+    gun (`the gun rests at 131.8 degrees, inside the step band 121..134`). Checked frame by frame in
+    close films (`normalZoom` 11): the deploy with the swing out to +90, firing, the reload walk, the undeploy with the
+    swing back, the deployed death (the camel slumps with its head down and the gun across it, the gunner falls
+    backward away from it, the corpse fades with nothing floating) and the mounted death (the gun falls with the
+    camel). `GatlingCamel` with the same DLL: `yaws -90..90, rest 0`, aims and turns as before, its death unchanged.
   - Not tested: multiplayer.
 
 #### broadsideMuzzleLimit
@@ -5414,7 +5431,7 @@ Resources, gatherers, and what pays for them.
 | [`linkedResource`](#linkedresource) | A resource building gathers the stock of a mine beside it. | **new** | The tags on a resource building of your own. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget. | confirmed (single player, UI) |
 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
-| [`nurseryFactor`](#nurseryfactor) | A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time up to a cap and is changed by techs; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panel shows it as `3/10` with a two-line rollover. | **new** | The `NurseryFactor*` tags on the proto, an AutoGather action, and the techs that want the Data subtypes. | prototype (single player) |
+| [`nurseryFactor`](#nurseryfactor) | A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | **new** | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries. | second version (single player) |
 | [`unitResourceAuras`](#unitresourceauras) | An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | **new** | Nothing: WoL's `sawmill.tactics` already has such an aura. | confirmed |
 | [`resourceGatherAuras`](#resourcegatherauras) | Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | **new** | A `<ModifyType>` with those names. | confirmed |
 | [`resourceDebt`](#resourcedebt) | Only trickles and the rates of units may take a stockpile below 0. | **new** | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. | confirmed |
@@ -5749,67 +5766,112 @@ autoGatherScaleByContained
 
 #### nurseryFactor
 
-*A building keeps its own count of something, such as the minks of a nursery, that grows with time, multiplies its income and can multiply a shipment.*
+*A building keeps its own count of something, such as the minks of a nursery, that grows with time, multiplies its income, takes in units sent into it, can be spent with its own buttons and can multiply a shipment.*
 
-**Added:** Wednesday 2026-11-25 08:37 · **Filmed in WoL:** Wednesday 2026-11-25 08:50
+**Added:** Wednesday 2026-11-25 08:37 · **Filmed in WoL:** Wednesday 2026-11-25 14:30
 
 ![nurseryFactor in WoL](media/nurseryFactor-wol.gif)
 
-*In WoL, with `nurseryFactor log` (a scenario, player 1 Ethiopian; two Banks given the test tags below, an AutoGather of
-0.5 gold, max 10 minks, one more every 5 s; the second Bank is created 6 s later; test techs set active by triggers:
-`NurseryFactor` +3 at 34 s, `NurseryFactorMax` +5 at 46 s, `NurseryFactorInterval` 2 s at 54 s; the first Bank stays
-selected, the cursor rests on its row; 3x speed):* each Bank counts its own minks (`unit 0 … grows to 10/10`, `unit 2
-… 9/10`), the tech adds 3 to both, the cap goes to 15 and the step to 2 s; the panel shows `Minks 10/10`, and its
-rollover the two lines of the proto. The gold rises faster as the minks grow. [Full video (MP4)](media/nurseryFactor-wol.mp4).
+*In WoL, with `nurseryFactor log` (a scenario, player 1 Ethiopian; a Bank given the test tags below: exponential
+growth with base 2 every 8 s, the default cap of 10, an AutoGather of 0.5 gold, goats and Settlers as garrison rules; a
+trigger sends two goats into it at 20 s and two Settlers at 34 s; the Bank stays selected, the camera still):* the
+portrait's blue pie fills toward the next step and the panel reads `3/10 minks`; each goat that enters is taken at once
+(`unit 1 (ypGoat) entered unit 0 (Bank) ... and was taken: 3 -> 6/10`, then `6 -> 9/10`, `Garrison: 0 / 10`); the next
+step adds 4 and stops at the cap (`10/10 minks`, no pie); the Settlers that enter a full Bank stay inside
+(`Garrison: 2 / 10`). [Full video (MP4)](media/nurseryFactor-wol.mp4).
+
+![nurseryFactor in WoL, the command buttons](media/nurseryFactor-commands-wol.gif)
+
+*The same game, later (clicks on the Bank's two buttons, posted to the panel):* `NurserySellMinks` takes 4 minks and
+puts 2 crates of coin beside the Bank (`10 -> 6/10`); `NurseryBuyMinks` pays 100 wood and 50 food for 3 (`6 -> 9/10`),
+and then shows "Not enough resources" in red and is greyed; at `2/10 minks` the sell button is greyed with
+`2/10 minks: 4 needed`. Each step after a sale adds b^t with the count kept (8, then 16, both cut at the cap). Same MP4
+as above.
 
 ![nurseryFactor in WoL, key off](media/nurseryFactor-wol-control.gif)
 
-*In WoL, key off (the same scene):* the game ignores the tags; the Banks pay 0.5 gold/s each all along (1.00 gold/s
-measured over 50 s), and the panel
-shows the stock row `Coin 0.50/s`. [Full video (MP4)](media/nurseryFactor-wol-control.mp4).
+*In WoL, key off (the same scene and clicks):* the game ignores the tags; the goats and the Settlers stay inside
+(`Garrison: 4 / 10`), the buttons do nothing, and the panel shows the stock row `Coin 0.50/s`.
+[Full video (MP4)](media/nurseryFactor-wol-control.mp4).
 
 ![nurseryFactor in WoL, the shipment](media/nurseryFactor-ship-wol.gif)
 
-*In WoL, with `nurseryFactor log` (a skirmish on a test map, Dutch against a German AI; two Banks with the test tags
-and a Town Center; a trigger sets two test techs active: at 35 s `FreeHomeCityUnitByNurseryFactor` `CrateofCoin`
-`consume='2'`, at 55 s the same with `consume='all'`; both Banks stay selected; 2x speed):* the first tech takes 2
-minks from each Bank and 4 crates of coin come to the Town Center; the second takes the 7 of each and 14 crates come
-(`14 factor(s) from 2 unit(s), taken`), the Banks start again from 0 and the villagers gather the crates.
-[Full video (MP4)](media/nurseryFactor-ship-wol.mp4).
+*In WoL, with `nurseryFactor log`, the first version (a skirmish on a test map, Dutch against a German AI; two Banks
+with linear growth, one more every 5 s, and a Town Center; a trigger sets two test techs active: at 35 s
+`FreeHomeCityUnitByNurseryFactor` `CrateofCoin` `consume='2'`, at 55 s the same with `consume='all'`; both Banks stay
+selected; 2x speed):* the first tech takes 2 minks from each Bank and 4 crates of coin come to the Town Center; the
+second takes the 7 of each and 14 crates come (`14 factor(s) from 2 unit(s), taken`), the Banks start again from 0 and
+the villagers gather the crates. [Full video (MP4)](media/nurseryFactor-ship-wol.mp4).
 
 ```
 nurseryFactor [log]
 ```
 
-- **Request:** JTMaston, 2026-11-25, "Nursery mechanic" (#107). This is the first version, built on the simplest
-  reading of each open question; the questions are in [nursery-design.md](nursery-design.md). <!-- private -->
-- **The proto block** (only `NurseryFactorMax` is required; it marks the proto):
+- **Request:** JTMaston, 2026-11-25, "Nursery mechanic" (#107); his answers of 2026-11-26 made this second version.
+  The design and the answers are in [nursery-design.md](nursery-design.md). <!-- private -->
+- **The proto block** (any one of these tags makes the proto a nursery):
 
   ```xml
-  <NurseryFactorMax>10</NurseryFactorMax>              <!-- the cap, a whole number 0 to 100000 -->
+  <NurseryFactorMax>10</NurseryFactorMax>              <!-- the cap, a whole number 0 to 100000 (default 10) -->
   <NurseryFactorInitial>0</NurseryFactorInitial>       <!-- a new unit's value (default 0) -->
   <NurseryFactorInterval>30</NurseryFactorInterval>    <!-- game seconds per step; 0 or none: no growth with time -->
-  <NurseryFactorStep>1</NurseryFactorStep>             <!-- the size of a step (default 1) -->
   <NurseryFactorGrowth>linear</NurseryFactorGrowth>    <!-- linear (default) or exponential -->
-  <NurseryFactorGrowthRate>0.25</NurseryFactorGrowthRate>  <!-- exponential: a step adds max(step, factor x rate) -->
+  <NurseryFactorStep>1</NurseryFactorStep>             <!-- linear: what a step adds (default 1) -->
+  <NurseryFactorGrowthBase>2</NurseryFactorGrowthBase> <!-- exponential: step t adds b^t, t = 0, 1, 2... (default 2) -->
   <NurseryFactorTrickle>1</NurseryFactorTrickle>       <!-- 0: a counter only, the AutoGather is not multiplied -->
   <NurseryFactorName>minks</NurseryFactorName>         <!-- a string table ID, or the text -->
   <NurseryFactorRolloverCount>{current} out of {max} minks.</NurseryFactorRolloverCount>
   <NurseryFactorRolloverRate>Produces one mink every {seconds} seconds.</NurseryFactorRolloverRate>
+  <!-- a unit of this proto or type that enters is removed and adds `amount` (several tags: the first that matches) -->
+  <NurseryFactorGarrisonUnit amount="3">ypGoat</NurseryFactorGarrisonUnit>
+  <!-- a command button: see "Commands" below -->
+  <NurseryFactorCommand factor="-4" unit="CrateofCoin" count="2">SellMinks</NurseryFactorCommand>
+  <NurseryFactorCommand factor="3" cost="Wood 100, Food 50">BuyMinks</NurseryFactorCommand>
   ```
 
   The two rollover lines take a string table ID or the text, with `{current}`, `{max}`, `{name}`, `{seconds}` and
-  `{step}`. Without them: `{current} out of {max} {name}.` and `Produces {step} {name} every {seconds} seconds.`
+  `{step}` (exponential: what the next step adds). Without them: `{current} out of {max} {name}.` and
+  `Produces {step} {name} every {seconds} seconds.`
+- **Growth:** a unit grows only once built, one step per interval, up to the cap. Linear: the step. Exponential: step
+  `t` (counted from 0) adds `b^t`, the fraction carried to the next step (b 2: 1, 2, 4, 8...; b 1.5: 1, 1, 2, 4, 5...).
+  `t` goes back to 0 when the factor is emptied (by a shipment or a command).
+- **The cap** stops growth and every addition (a tech, a garrisoned unit, a command); it never takes away what a unit
+  has: after a tech lowers it, a unit above it keeps the extra until it spends it (`8/5 minks`).
+- **Garrison:** a unit that enters a nursery and matches a `<NurseryFactorGarrisonUnit>` (its proto, or an abstract type
+  it has) is removed at once (no death, no corpse) and adds its amount, up to the cap. A full nursery keeps it inside
+  as a normal garrison. The proto needs `<MaxContained>` and a `<Contain>` for that unit, as for any garrison.
+- **Commands:** a `<NurseryFactorCommand>` is the command `nurseryFactorCommand("Name")` of a button, like a market's
+  buy and sell. Each selected nursery of the local player with that command runs it on every machine: `factor` (a
+  negative one needs that many, a positive one room under the cap), `cost` (resource names as in the techtree, paid as
+  any purchase), then `count` units of `unit` made around the nursery (they need room). If one test fails, nothing
+  happens for that nursery. The button is greyed, with the reason in red in its rollover (`2/10 minks: 4 needed`,
+  `10/10 minks: full`, "Not enough resources"), while no selected nursery can run it. A button needs its command type
+  (`customProtoUnitCommands`), an entry in `protounitcommands.xml` and a `<Command>` on the proto:
+
+  ```xml
+  <!-- data\uhc\customprotounitcommands.xml -->
+  <CommandType>SellMinks</CommandType>
+  <!-- protounitcommands.xml -->
+  <protounitcommand>
+    <name>SellMinks</name>
+    <command>nurseryFactorCommand("SellMinks")</command>
+    <icon>art\ui\command\trade_sell_food</icon>
+    <rollovertextid>...</rollovertextid>
+  </protounitcommand>
+  <!-- the nursery's proto -->
+  <Command column="0" page="0">SellMinks</Command>
+  ```
+
 - **The trickle** is the unit's own AutoGather action: its rate, times the factor. To the owner as any AutoGather;
   into the unit's own inventory with the stock tactics tag `<AddResourcesToInventory>1</AddResourcesToInventory>` on
   the action; the proto then needs a `<CarryCapacity>` for that resource, the most it holds (without one, the test Bank
   stored nothing). Techs that change the AutoGather rate work as before, and the panel's rate is the multiplied one.
-- **Each unit has its own factor**; the cap, the interval and the step are per player (the proto's, as his techs left
-  them). A unit grows only once built, one step per interval, and stops at the cap; a lower cap cuts it at once.
+- **Each unit has its own factor**; the cap, the interval, the step and the base are per player (the proto's, as his
+  techs left them).
 - **Tech effects** (`type='Data'`, every stock relativity):
 
   ```xml
-  <!-- adds 3 minks to each of the player's built Mink Nurseries (Assign sets them); at most the cap, never below 0 -->
+  <!-- adds 3 minks to each of the player's built Mink Nurseries (Assign sets them); never above the cap, never below 0 -->
   <Effect type='Data' amount='3.00' subtype='NurseryFactor' relativity='Absolute'>
       <Target type='ProtoUnit'>MinkNursery</Target></Effect>
   <Effect type='Data' amount='5.00' subtype='NurseryFactorMax' relativity='Absolute'>
@@ -5817,6 +5879,8 @@ nurseryFactor [log]
   <Effect type='Data' amount='20.00' subtype='NurseryFactorInterval' relativity='Assign'>
       <Target type='ProtoUnit'>MinkNursery</Target></Effect>
   <Effect type='Data' amount='2.00' subtype='NurseryFactorStep' relativity='Assign'>
+      <Target type='ProtoUnit'>MinkNursery</Target></Effect>
+  <Effect type='Data' amount='1.50' subtype='NurseryFactorGrowthBase' relativity='Assign'>
       <Target type='ProtoUnit'>MinkNursery</Target></Effect>
   <!-- a crate of coin per mink of all the player's nurseries, which are emptied -->
   <Effect type='Data' amount='1.00' subtype='FreeHomeCityUnitByNurseryFactor' unittype='CrateofCoin'
@@ -5826,30 +5890,35 @@ nurseryFactor [log]
 
   `nursery` is a proto or an abstract type. `consume='all'` empties each nursery, `consume='2'` takes at most 2 from
   each and ships for what it took, `consume='none'` (or no attribute) counts and takes nothing. The units come as
-  any `FreeHomeCityUnit`: at the home city gather point. `NurseryFactor` acts once, at the next world tick.
-- **UI:** in the unit panel of the minimized interface, a row `Minks 3/10` (the name as label, `once built` on a
-  foundation), and on hover the two lines as bullets. It takes the place of the AutoGather rate row for that unit.
+  any `FreeHomeCityUnit`: at the home city gather point. `NurseryFactor` acts once, at the next world tick; above the
+  cap it adds nothing, and a unit above it keeps what it has.
+- **UI:** the unit panel shows `3/10 minks` (`(once built)` on a foundation), with the two rollover lines as bullets on
+  hover: in the minimized interface in the AutoGather row (in its place for a single unit with a factor; a group still
+  shows the summed rate), in the normal interface's stat panel right after the hit points (the stock `Coin` row stays
+  below it). While the unit grows, the portrait shows the train button's blue pie filling toward the next step.
   `{uhcNurseryFactor}` in a `formatText` gadget shows the first selected unit's `3/10 minks`.
-- **Log:** `nurseryFactor: applied`, `hook reached: AutoGather rate filters (0x49EBE4)`; with `log`, each tag, each
-  step (`unit 0 (Bank) of player 1 grows to 4/10`), each tech and each shipment
-  (`FreeHomeCityUnitByNurseryFactor proto 426: 18 factor(s) from 2 unit(s) x 1.00 = 18.00 unit(s)`).
-- **Simulation:** changes gathering: every player needs the same line.
-- **Saved games:** each unit's factor and timer are kept on the unit. The load applies the tech effects again, in the
-  order the techs have in the techtree, not the order they were researched: a cap set by `Assign` and changed by
-  `Absolute` in another tech can come back different (the stock Data effects are applied again the same way). A
-  `NurseryFactor` effect is not applied again.
-- **Performance:** 40 Banks with the tags, a scenario, 60 s of `tools/perfprobe.py` after a first run (other test
-  games running on the machine): update 0.1 ms per frame with the key and without, longest frame 2.8 / 2.7 ms on
-  average, no frame over 50 ms in either; fps 656 with the key, 738 without (uncapped, render 1.4 / 1.2 ms).
-- **Not covered yet:** the normal (not minimized) interface's stat panel; the train button's rollover; XS calls. In
-  the minimized panel the row takes the place of the stock AutoGather rate row for a single unit with a factor (a
-  group still shows the summed rate).
-- **Status:** prototype (single player, WoL): growth, cap, the three value techs, the add, two units with their own
-  factors and the gold (2 Banks at 9 minks: 9.06 gold/s over 37 s, 9.0 expected) seen in game; save and load kept
-  21 minks on two Banks and their timers (each next step at the same game time, ±30 ms); in a skirmish the shipment
-  brought 4 crates with `consume='2'` and 14 with `consume='all'`, and emptied the Banks; with
-  `<AddResourcesToInventory>` and a gold `<CarryCapacity>` of 500, a Bank at 10 minks stored 4.96 gold/s in itself
-  (5.0 expected) and the player got none; exponential growth with rate 0.5 went 1, 2, 3, 4, 6, 9, 10.
+- **Log:** `nurseryFactor: applied`, `hook reached: AutoGather rate filters (0x49EBE4)`, `hook reached: garrison entries
+  (0x9C26E1)`, `hook reached: nurseryFactor command (0x7D64F7)`; with `log`, each tag, each step (`unit 0 (Bank) of
+  player 1 grows by 4 to 7/10 (step 3, ...)`), each garrisoned unit taken or kept, each command sent and run or refused
+  (`refused, not enough factor`), each tech and each shipment.
+- **Simulation:** changes gathering: every player needs the same line. The commands travel as the game's own transform
+  command, so every machine runs them in the same order.
+- **Saved games:** each unit's factor, timer and step count are kept on the unit. The load applies the tech effects
+  again, in the order the techs have in the techtree, not the order they were researched: a cap set by `Assign` and
+  changed by `Absolute` in another tech can come back different (the stock Data effects are applied again the same
+  way). A `NurseryFactor` effect is not applied again.
+- **Performance:** 16 Banks with the tags (exponential, 10 goats sent in), a scenario, 60 s of `tools/perfprobe.py`
+  (other test games running on the machine): update 0.15 ms per frame with the key and without, render 1.30 / 1.34
+  ms, fps 691 / 674 (uncapped). The first version: 40 Banks, 0.1 ms both.
+- **Not covered:** the train button's rollover; XS calls. The units of a command ignore the population cap.
+- **Status:** second version (single player, WoL, 2026-11-26): exponential growth with base 2 (1, 3, 7, 10, cut at the
+  cap; after a sale +8 and +16 with the count kept), the default cap 10, a lowered cap kept the extra (`10 -> 8/5`
+  after a -2 tech, no growth, a full Bank kept its Settlers), goats taken (`3 -> 6 -> 9/10`), the sell and buy buttons
+  by posted clicks (2 crates beside the Bank, 100 wood and 50 food paid), their greyed states and reasons, the stat
+  panel row of the normal interface, the pie, a save and a load (`8/5` and the step count kept, the sale after the
+  load ran), the shipment emptying the Bank and starting `t` again; in a skirmish with the key on, the AI (the copy's preset civ) built a house and trained Settlers in 2 min, no XS error.
+  The first version's checks (gold 9.06/s for 9.0 expected, the inventory trickle, the techs) still hold: that code
+  did not change.
 
 #### unitResourceAuras
 
@@ -8088,6 +8157,7 @@ What happens when a tech activates or a unit changes proto.
 | [`shipmentCounts`](#shipmentcounts) | Counts the home city cards each player ships of each age, the age that enables the card (each once it arrives, kept in saved games), for the `Data` effect `FreeHomeCityUnitByShipmentCount` (one unit per card, one age or a range) and the XS calls `xsGetShipmentCount` and `xsGetShipmentCountRange`. | **new** | The effect in the cards or techs that want it. | confirmed (single player) |
 | [`kothTimer`](#kothtimer) | The King of the Hill time comes from a table by the number of players, or of teams. | **new** | Nothing. | confirmed (single player) |
 | [`transformChecks`](#transformchecks) | A transform button turns grey with the reason when none of the selected units can transform, and a transform respects the target's build limit. | **new** | Transform buttons (`uiTransformSelectedUnit`): `wol-fixes/special-transforms` makes them for the four kraal maturings and the fireship. | confirmed (single player) |
+| [`garrisonConvert`](#garrisonconvert) | `<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, with the train button's pie over the building's portrait. | **new** | The tag on the buildings that want it. | confirmed (single player); questions to JTMaston |
 
 #### hcTargetTechs
 
@@ -8622,6 +8692,74 @@ transformChecks [log]
   the kraal rule, `2 / 3` for a group, "Not enough resources" alone, the placement reason over the cost); picture 8
   (beside WoL's DLL) was removed, as it showed the old wording and the run beside WoL's DLL was not repeated (the text
   is the pack's data, the same with either DLL).
+
+#### garrisonConvert
+
+*The units that enter a building become another unit: at once, or one at a time with a delay.*
+
+**Added:** Wednesday 2026-11-25 13:44 · **Filmed in WoL:** Wednesday 2026-11-25 14:03
+
+![garrisonConvert in WoL](media/garrisonConvert-wol.gif)
+
+*In WoL, with `garrisonConvert log` (a skirmish on a test map, Greeks; the Town Center has
+`<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>`, four Settlers are ordered into it):* the Town Center stays
+selected; while a Settler converts, the train button's blue pie fills over its portrait, and every 5 seconds one more
+Settler becomes a Pikeman (the "Contains" row shows Settlers going down and Pikemen going up). At 34 s a trigger empties
+the Town Center: four Pikemen walk out. The key's log lines at the bottom (they cover the lower part of the portrait).
+[Full video (MP4)](media/garrisonConvert-wol.mp4).
+
+![garrisonConvert in WoL, key off](media/garrisonConvert-wol-control.gif)
+
+*The same skirmish, key off (the tag still in the data):* the Settlers go in, stay Settlers, no pie, and four Settlers
+come out. [Full video (MP4)](media/garrisonConvert-wol-control.mp4).
+
+```
+garrisonConvert [log]
+```
+
+```xml
+<!-- protoy.xml, inside the building's <Unit> -->
+<GarrisonConvertTo>Pikeman</GarrisonConvertTo>               <!-- each unit that enters becomes a Pikeman -->
+<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>     <!-- one at a time, each after 5 seconds inside -->
+```
+
+- **The request (WoL, JTMaston, 2026-11-26):** "if this tag is added the garrison units will be exchanged for the unit
+  specified as soon as they enter the building. A delay attribute can be added to make the process take time and go
+  unit by unit converting them", with a loading pie for the delay.
+- **Effect:** a unit of the building's owner that enters the building (by a garrison order, a trigger, the map script)
+  is changed into the tag's unit in place, the way a `TransformUnit` effect changes a unit: it keeps its ID, its owner
+  and its share of hit points, stays inside, and counts the new unit's population. A unit that already is the target
+  is left alone.
+- **`delay` (seconds, 0 to 3600):** the units convert one at a time, in the order they entered, each after `delay`
+  seconds of game time with nobody converting before it. A unit that leaves before its turn leaves unconverted, and the
+  next one starts from 0. The timer waits while nobody inside qualifies. The progress is kept in saved games.
+- **The pie:** with a delay, while the building is selected alone and a unit converts, the train button's blue pie
+  ([the progress pie](how-it-works.md#the-progress-pie-progresspie-and-progresspiedemo)) fills over its portrait, in both interfaces.
+- **Questions sent to the WoL team** (the simplest reading is built until they answer): whether the unit stays inside
+  or comes out, what it keeps (HP, experience, rank), population, a building destroyed or captured mid-way, allied
+  units, several tags per building, which units qualify. Today: it stays inside; HP share kept as a transform does;
+  the new unit's population, with no cap check; a captured building converts its new owner's units; allies' units are
+  not converted; one tag per building (the last one counts); every unit of the owner qualifies.
+- **Other keys:** the conversion goes through the shared transform, so `veterancyBonus` and the other transform
+  observers see it. The entry is the shared garrison observer (`nurseryFactor`'s `<NurseryFactorGarrisonUnit>` uses it
+  too). `dataLint` knows the tag.
+- **Simulation:** changes it: every player needs the same setting.
+- **Log:** `garrisonConvert: applied`, `hook reached: garrison entries (0x9C26E1)`; with `log`, each tag and each
+  conversion (`unit 2 (Settler) in TownCenter 0 became Pikeman (proto 294 -> 295, game time 14194 ms)`).
+
+Tests (2026-11-26, WoL copy, single player):
+
+| Test | Result |
+|---|---|
+| A Blockhouse with `<GarrisonConvertTo>Halberdier</GarrisonConvertTo>`, 3 Settlers ordered in by a trigger | pass: the three became Halberdiers as each entered (6387, 6857, 7305 ms) |
+| A Town Center with `delay="5"` and `Pikeman`, 4 Settlers ordered in | pass: one Pikeman every 5.000 s (9023, 14022, 19022, 24022 ms) |
+| 6 Settlers into it, the trigger `Ungarrison` at 32 s | pass: 5 converted (9 to 29 s), the sixth came out a Settler with the 5 Pikemen |
+| A save in the middle of a conversion (`saveGame` at 8.6 s, 1.5 s into the first unit), `loadGame` later | pass: after the load the same units converted at 12 085 and 17 084 ms, against 12 084 and 17 085 ms before (without the saved progress it would have been 13.6 s) |
+| Two Town Centers, 3 Settlers in each; at 16 s the trigger `Kill` on one and `Convert` (to player 2) on the other | killed: pass: 2 Pikemen and 1 Settler came out of the rubble, nothing converted after it. Captured: not tested: the `Convert` left player 2's rubble and the units (2 Pikemen, 1 Settler) came out, so the "goes on for the new owner" reading is untested |
+| The pie: the Town Center selected while it converts | pass: the pie fills over the portrait, 5 s per unit, and is gone when nobody waits (video above) |
+| Key off, the same skirmish | pass: the Settlers stay Settlers, no pie (video above) |
+| AI alive: a skirmish against the AI (ConvictLabourer villagers) with the tag on the Town Center and the Blockhouse | pass: no XS error; the AI trained villagers (18 then 20 units at 2:47 and 3:54) |
+| Performance, `perfprobe` 120 s of that skirmish, key on and off | same: fps 420 / 427, update 0.4 / 0.4 ms, simulation speed 1.3 / 1.3, frames over 50 ms 1 / 2 (other copies ran beside it) |
 
 ### Interface
 
@@ -10328,6 +10466,10 @@ selectFattened [gadget <name>]... [log]
   select them (Shift+Ctrl+F)."), and the hotkey Shift+Ctrl+F ("Select Fattened Livestock", in the hotkey menu's group
   "Find Unit Hotkeys").
 - **What it needs:** the button and the hotkey in the layout and the keymap: the pack.
+- **Only the hotkey** (2026-11-26; JTMaston: "Disregard the button, it can annoy players just like the idle villager
+  does"): `apply_fix.py "<WoL folder>" --hotkey-only` installs the keymap entry, the hotkey's name (string 690912) and
+  the cfg line, and leaves the layout, the icon and the tooltip string out. `--check` and `--restore` read the mode
+  from the backup's `manifest.json`. The key needs no other setting: with no button it looks for one every 2 s.
 - **Simulation:** none. It only changes the local player's selection, as a click, through the game's own selection
   calls: those of the stock command `uiFindAllOfType`.
 - **Log:** `selectFattened: UI syscall uhcSelectFattened() and {uhcFattened} added; gadget(s) uhcFattened shown while
@@ -10684,40 +10826,67 @@ English and Spanish) delivers it:
   its head out of the line of fire. Stats, cost, cards and strings unchanged.
 - **The turning gun** ([`turretArc`](#turretarc), 2026-11-24): the gun sits on `bone_yaw` at the post's top, and the
   camel's `bone_turret` carries the launch point and the muzzle; with the key, a target within the arc turns the gun,
-  not the camel, and the shots leave the turned muzzle. Both attacks carry `<turret tracking="always"
-  maxTurnAnglePerSecond="...">90</turret>` (240 from the saddle, 100 on foot), and the tool writes each unit's aim file
-  (`gatling_camel_A55.aim`: -90..+90 every 15 degrees; `_B55.aim`: -30..+90 every 2 degrees, with the gunner's steps
-  and his settled feet), which also sets each unit's arc.
+  not the camel, and the shots leave the turned muzzle. The attacks carry `<turret tracking="always"
+  maxTurnAnglePerSecond="...">` with 90 from the saddle (240 degrees a second) and 60 on foot (100), and the tool
+  writes each unit's aim file (`gatling_camel_A55.aim`: -90..+90 every 15 degrees, resting ahead; `_B55.aim`, version
+  2: +30..+150 every 2 degrees, resting at +90, with the gunner's steps and his settled feet), which also sets each
+  unit's arc.
 - **`GatlingCamelDeployed`** (new, a copy of `GatlingCamel`, strings 690950 to 690952): keeps the deploy tactics
   (`GatlingCamelDeployed.tactics`, the deploy 5.33 s and the undeploy 4.17 s, as long as their animations). The camel
   lies down (the game's lying-down clips of its skeleton, the ones today's unit uses, turned upright and laid on the
   ground), the gunner gets off, side-steps back along its flank and works the gun on foot from behind the turret
   (rounds 4 and 5, approved by the user on 2026-11-25): both hands in front of his chest on two long handles, a drop
   crank for his left hand (a slanted shaft turns the gun's crank) and a traverse bar for his right. The gun turns 100
-  degrees a second from -30 (toward his side) to +90 (across the camel), and he steps round the post with it, one
-  foot at a time; when it stops, the step under way finishes (the settled table of the aim file), so no foot is left
-  in the air. To reload he walks in to the breech (0.5 s), does the same reload as from the saddle and walks back.
-  Every clip passed aoe3-blender-tools' `check_anim.py` (0 failures, with the rule that keeps his palms in front of
-  his chest). Nothing trains it yet (see the questions in `reply-to-maston-20261124-gcamel.txt`).
+  degrees a second, and he steps round the post with it, one foot at a time; when it stops, the step under way
+  finishes (the settled table of the aim file), so no foot is left in the air. To reload he walks in to the breech
+  (0.5 s), does the same reload as from the saddle and walks back. Every clip passed aoe3-blender-tools'
+  `check_anim.py` (0 failures, with the rule that keeps his palms in front of his chest). Nothing trains it yet (see
+  the questions in `reply-to-maston-20261124-gcamel.txt`).
+- **Round 6** (JTMaston, 2026-11-25: "the arc's bisector perpendicular to the camel's spine"; the user chose 120
+  degrees, approved as a script with stills and as a preview on 2026-11-26): the deployed gun rests pointing out over
+  the camel's right side (+90, square to its spine) and turns from +30 to +150; the gunner works it from the camel's
+  left, at stations every 30 degrees. A target beyond the arc turns the camel until it sits at +90 (the aim file's
+  rest yaw, version 2 of the file, read by [`turretArc`](#turretarc)). The deploy ends with him swinging the gun out
+  from ahead to +90 while he steps round the post (the climb off 22 % quicker, so the deploy stays 5.33 s), the
+  undeploy starts with the swing back (4.17 s); the lying camel turns its neck 60 degrees to its right, out of his
+  way; killed deployed, the camel no longer rolls over (the barrels would go into the ground): it slumps and lays its
+  head down, and he falls backward, away from it (the game's `defend_death`). The deployed camel needs the key: without
+  it the camel faces its target with the gun to the side. Firing from the saddle is to be locked behind a card in
+  WoL's data (JTMaston); `GatlingCamel` is unchanged.
+- **Round 7** (the user, 2026-11-26, with the zamburak cannon's camel, in the same shared code of
+  `make_gun_camel.py`):
+  - **the kush:** the borrowed lying-down clips left the camel propped 0.32 up on its folded legs; now it lies with its
+    belly on the ground and its legs folded under it, its body level (check_anim's new `lying` check: belly 2.7 cm,
+    hump 57% of its standing height, knees 21 cm, legs inside its outline; round 6's camel fails it);
+  - **the post centred:** the zamburak camel's own forked post stood at the saddle's front-left edge, 0.24 off the
+    spine; it is cut out, and a round iron post rises from the front of the saddle over the withers, on the spine, as in
+    the user's references. The gun is straight in front of the rider (A); B's stations follow it, 27 cm nearer the camel;
+    A's right elbow points out and back, level (with the old pole it turned over for a frame of the fire);
+  - **the hump:** the stock camel's back was flat; it is lifted 0.28 into a dromedary hump under the saddle cloth
+    (the same vertices, triangles, bones and texture; written in the plain skinned layout, as the game did not draw the
+    packed stream edited in place); the rider sits 0.19 higher, on it, and the post's top rises with him;
+  - every clip passed `check_anim.py` again (A 368 checks, B 595, B's death 37).
 
 ![The new gatling camel, from the saddle](media/gatlingCamel-wol.gif)
 
-*One `GatlingCamel` (selected, with `turretArc`; filmed on 2026-11-25 with the round-5 art) fires at eight Houses
+*One `GatlingCamel` (selected, with `turretArc`; filmed on 2026-11-26 with the round-7 art: the hump, the post centred)
+fires at eight Houses
 all round: the gun turns on its post toward each one while the camel keeps still, and for a House behind it the
 camel turns round.* [Full video (MP4)](media/gatlingCamel-wol.mp4). With the key off: [`turretArc`](#turretarc).
 
 ![The two gatling camels walking](media/gatlingCamel-move-wol.gif)
 
-*A `GatlingCamel` and a `GatlingCamelDeployed` (both mounted) walk out and back, the camera following (filmed on
-2026-11-25 with the round-5 art): the legs on the ground, the gun on its post, the rider's hands at the reins and the
+*A `GatlingCamel` and a `GatlingCamelDeployed` (both mounted) walk out and back, the camera still (filmed on
+2026-11-26 with the round-7 art): the legs on the ground, the gun on its post, the rider's hands at the reins and the
 gun.* [Full video (MP4)](media/gatlingCamel-move-wol.mp4).
 
 ![The new gatling camel, deployed](media/gatlingCamelDeployed-wol.gif)
 
-*One `GatlingCamelDeployed` (selected, with `turretArc`; filmed on 2026-11-25 with the round-5 art) deployed by its
-tactic button among eight Houses: the camel lies down, the gunner gets off, side-steps back and works the gun on foot
-from behind it, stepping round the post as it turns (-30..+90, 100 degrees a second); on reload he walks in to the
-breech and back; at the end he gets back on and the camel rises.* [Full video (MP4)](media/gatlingCamelDeployed-wol.mp4).
+*One `GatlingCamelDeployed` (selected, with `turretArc`; filmed on 2026-11-26 with the round-7 art) deployed by its
+tactic button among eight Houses: the camel kneels with its belly on the ground, the gunner gets off and swings the gun out over the camel's
+right side, a House behind turns the camel until it sits at +90, the gun turns to the Houses inside +30..+150 while he
+steps round the post (100 degrees a second); on reload he walks in to the breech and back. In the full video he then
+gets back on and the camel rises.* [Full video (MP4)](media/gatlingCamelDeployed-wol.mp4).
 
 ![Today's gatling camel (the control)](media/gatlingCamel-wol-control.gif)
 
@@ -10764,6 +10933,91 @@ gun and its gunner on foot.* [Full video (MP4)](media/gatlingCamel-wol-control.m
   bump shader, so the gun's vertices carry the Gatling's tangents.
 - **Previews** (approved by the user before the game): `_share\maston-20261124\` (model sheet, the two variants, the
   move, where the rider looks).
+
+### The zamburak cannon
+
+*WoL's MEZamburak with a new model: a bronze cannon on a swivel on the camel's withers. Its rider limbers it to move
+and unlimbers it to fire. The camel lies down, and he stands at the breech and touches the vent with the hot tip of
+a short stick.*
+
+Request (JTMaston, 2026-11-26): a new model for the zamburak, the midfa's cannon on a swivel, limbered and
+unlimbered. The pack `wol-fixes/zamburak` (`apply_fix.py <WoL folder>`, `--check`, `--restore` byte for byte;
+README) delivers it for `MEZamburak` only:
+
+- **The model.** aoe3-blender-tools' `tools/make_zamburak.py` (branch `claude/r1126-Z`) builds it:
+  - the zamburak's camel without its lateral swivel gun;
+  - the midfa's barrel cut to 2/3 of its length, at 0.6 of its size, on a fork and socket on the withers;
+  - the rider is today's, with his model and hat by rank;
+  - the linstock is a plain wooden stick, 0.85 long, with a red hot tip (`bone_match`; no fire on it);
+  - the camel has a dromedary hump (2026-11-26, the user: the stock camel's back was flat): its back lifted 0.28 into one
+    hump under the saddle cloth, the same vertices, triangles, bones and texture (the mesh is written in the plain
+    skinned layout: the game did not draw the packed one edited in place). The rider sits 0.19 higher, on it;
+  - lying down it kneels in the kush (2026-11-26, the user: "the camel isn't properly lying on the ground"): its belly
+    on the ground, its legs folded under it, its body level, so the cannon is level at every yaw. The borrowed lying-down
+    clips of the game left it propped 0.32 up on its legs.
+- **One unit, two modes** (`zamburakCannon.tactics`):
+  - **Limber, as trained:** it walks and runs, the gun angled down beside the camel's neck, and cannot fire.
+  - **Unlimber (6.67 s):** an attack order, or the new unlimber button, makes the camel lie down. He swings the
+    gun out to +90 and stands at his station behind the breech.
+  - **Bombard:** the shot takes 2.0 s; he touches the vent. The reload takes 3.0 s: he pushes the gun round
+    through its back to 270, loads the charge and the ball by hand, and pushes it back.
+  - **Limber again (5.5 s):** the limber button, or a move order.
+  - **Deaths:** unlimbered, the camel slumps and he falls back. Limbered, three of today's camel deaths play; the
+    other five drove the cannon into the ground.
+- **The turning gun** (`turretArc`): the line below turns it on its swivel from +30 to +150. A target outside the
+  arc turns the camel until it sits at +90.
+  ```
+  turretArc MEZamburak art\WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon.aim
+  ```
+- **What changes in `protoy.xml`:** `MEZamburak`'s anim file and tactics; `RotateInPlace`, so it turns in place
+  when unlimbered; the unlimber and limber buttons, as the falconet has them.
+- **ROF: a proposal.** The CannonAttack ROF goes from 4.0 to 5.0, the fire (2.0 s) plus the reload (3.0 s) as
+  animated, for WoL's team to confirm.
+- **Checks:** every clip passed `check_anim.py`: 1222 checks, plus 80 for the unlimbered death and 179 for the
+  limbered deaths. They include the new checks: palms not behind the shoulders, the camel's head clear of the
+  barrel, crossed feet, the weapon not into the ground at death, prop sizes, and an animal lying in the kush
+  (`lying`: belly 2.7 cm up, hump 57% of its standing height, knees 21 cm, legs inside its outline).
+
+![The zamburak cannon in WoL](media/zamburakCannon-wol.gif)
+
+*In WoL (`C:\AoE3-UHC-WoLReal8`, the pack and the key, filmed on 2026-11-26 with the hump and the kush): the unlimber
+button pressed, the camel kneels with its belly on the ground, and he swings the gun out and takes his station. He
+fires at three Houses, the gun turning on its swivel; he plants his stick, swings the gun round to load it and back,
+and dies unlimbered (the camel slumps, he falls back, the stick lies beside him, and all three fade together).*
+[Full video (MP4)](media/zamburakCannon-wol.mp4).
+
+![The zamburak cannon, key off](media/zamburakCannon-wol-control.gif)
+
+*The same scene with the key off (filmed on 2026-11-26): the camel turns its whole body to each House and the gun
+stays at +90.* [Full video (MP4)](media/zamburakCannon-wol-control.mp4).
+
+![The zamburak cannon, limbered](media/zamburakCannon-wol-limbered.gif)
+
+*Two zamburaks (filmed on 2026-11-26 with the hump): the limber button pressed, the camels rise from the kush with the
+cannon angled down beside the neck, and the limbered death on the dead model, the cannon on the fallen camel's back.*
+[Full video (MP4)](media/zamburakCannon-wol-limbered.mp4).
+
+- **Tested in WoL** (2026-11-26, single player, `C:\AoE3-UHC-WoLReal8`, the round branch's DLL), checked frame by
+  frame in close films:
+  - limbered idle and walk;
+  - the unlimber from the button (an attack order needs a real right click, which the bed could not aim);
+  - shots logged at yaws 71 to 140, the gun turning; targets at 14 to 29 degrees turned the camel
+    (`the unit turns until it sits at the rest yaw`);
+  - the reload's swing;
+  - the limber from the button;
+  - both deaths;
+  - the control with the key off.
+  - Again on 2026-11-26 with the hump and the kush: the humped camel draws, shaded like the stock one beside it;
+    from a side camera (a scenario `Camera Cut`) the limbered barrel points 20 degrees down beside the neck and the
+    unlimbered one is level, the lying camel's belly on the ground and its legs folded under it, in the lie-down, the
+    idle, the fire, the reload, the get-up and the death.
+  - Fixed on the way:
+    - the camel edited in the game's packed vertex stream was not drawn at all (its header's unknown word must
+      check the data): the humped mesh is written in the plain skinned layout;
+    - the rider was missing (his anim file was cut inside an attachment);
+    - the cannon stood in the air while an unlimbered corpse faded (now a dead model of its own);
+    - the tactics file needs CRLF, which `apply_fix.py` now writes whatever the checkout gave.
+  - Not seen: multiplayer; the AI with the pack.
 
 ### Aura rings
 

@@ -374,8 +374,9 @@ selectFattened [gadget <name>] [log]   the command uhcSelectFattened selects the
 workRateByAbstractType [UnitType ...] [log | log=Proto]   WorkRate effects on an abstract
                               type also reach the rates units have for its protos
 autoGatherScaleByContained    ScaleByContainedUnits also works on AutoGather actions
-nurseryFactor [log]           <NurseryFactorMax> units keep a factor that grows with time;
-                              it multiplies their AutoGather rate and a shipment
+nurseryFactor [log]           NurseryFactor* units keep a factor that grows with time, takes in
+                              garrisoned units and has its own buttons; it multiplies their
+                              AutoGather rate and a shipment
 containedUnitsROF [log]       ScaleByContainedUnits target="ROF": an attack fires faster with
                               the units inside (ROF / count, at most DamageFactorCap)
 numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart before the
@@ -431,6 +432,8 @@ herdWalkAwayFix [log]         a fattened herdable that walks away from its pen o
 faithResource [log]           optional: resource 4 (SkillPoints) a plain resource, cut from the home city;
                               a Gather of it plays the action's own <anim>
 transformChecks [log]         transform buttons grey out with the reason; a transform respects BuildLimit
+garrisonConvert [log]         <GarrisonConvertTo delay="S">Unit</GarrisonConvertTo>: the units that
+                              enter a building become that unit, at once or one every S seconds
 lanAutoStart [host [rules=N] | join <address>]   from the main menu straight to hosting or joining
                               a LAN game; +uhcLanHost / uhcLanJoin="<address>" on the command line
 editorSearch [log]            search fields in the editor's Objects palette, Forbidden Units/Techs

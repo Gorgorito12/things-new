@@ -186,11 +186,14 @@ constexpr KnownTag kKnownTags[] = {
     {L"NurseryFactorInterval", "nurseryFactor"},
     {L"NurseryFactorStep", "nurseryFactor"},
     {L"NurseryFactorGrowth", "nurseryFactor"},
-    {L"NurseryFactorGrowthRate", "nurseryFactor"},
+    {L"NurseryFactorGrowthBase", "nurseryFactor"},
+    {L"NurseryFactorGarrisonUnit", "nurseryFactor"},
+    {L"NurseryFactorCommand", "nurseryFactor"},
     {L"NurseryFactorTrickle", "nurseryFactor"},
     {L"NurseryFactorName", "nurseryFactor"},
     {L"NurseryFactorRolloverCount", "nurseryFactor"},
     {L"NurseryFactorRolloverRate", "nurseryFactor"},
+    {L"GarrisonConvertTo", "garrisonConvert"},
 };
 
 std::map<std::wstring, Seen> g_seen[kKinds];

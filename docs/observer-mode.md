@@ -69,8 +69,15 @@ JTMaston: "broke many versions ago and it doesnt work with all maps". Read from 
   `uimainnewobserver1920x1080.xml` lacks, among them the whole oil display (`minimapPanel-fame`,
   `SettlerCountDialog-fame`, `-fameLabel`: oil is WoL's fourth resource), the building search buttons
   (`search*Button`, `count*Field`), the colour picker (`farbSetz*`, `color0`-`color26`), `extraButton*` and
-  `mainGameMenuMP-PlayerStatusButton`. The minimized unit selection panel has WoL's idle-military buttons
-  (`Inf-/Cav-/Artillery-idle-button`, `IconALL` ...), which `uiunitselectionminobserver.xml` lacks.
+  `mainGameMenuMP-PlayerStatusButton`. ~~The minimized unit selection panel has WoL's idle-military buttons~~
+  Correction (2026-11-25): WoL's idle-military buttons (`Inf-/Cav-/Artillery-idle-button`, `IconALL` ...) are in
+  the big UI's `uiunitselection.xml`, and commented out in the minimized one; what the minimized observer copy
+  lacks are seven later texts (LOS, Train Points, Speed, Garrison, two empty ones).
+- [O] (2026-11-25) The observer copies were made from the interface WoL still ships in `data\Data3.bar`: every
+  gadget of Data3.bar's `uimainnew.xml` (but `minimapPanel-dptrade`) is in `uimainnewobserver1920x1080.xml`,
+  and the 30 attribute changes there are the observer's own (the replay control moved to the bottom right, the
+  text canvases ESOC writes its panel into, containers for the map to hide). The same holds for the seven panels.
+  `wol-fixes/observer/observer_ui.py` rebuilds them on the current files from that difference.
 - [O] The maps' observer UI (Aizamk's ESOC code, about 9,000 lines in each of the 36 maps) reads resources 0, 1,
   2, 6 and 7 (`kbResourceGet`), never oil, and shows ages with `score_age_(age+1)`, which has no WoL Great War
   icon.
@@ -177,6 +184,65 @@ Pack and pictures: `wol-fixes/observer/` (README, `observer_maps.py`). Evidence:
   (`rmPlacePlayersLine`) and `rmPlacePlayer`, player areas, the two other preludes that write `cNumberPlayers`
   (0x719880, 0x9941B7: other script kinds), and what the world does with a player the map gave nothing to. Same DLL on
   every player's PC (it decides the generation). Nothing built.
+
+## Round 3 (2026-11-25, #81): the 36 maps finished
+
+Scope: the 36 maps only (the user dropped "every map"), no DLL change. Pack and results:
+`wol-fixes/observer/README.md` (round 3, with the table per map). The observer layouts are agent OUI's
+(`wol-fixes/observer/observer_ui.py`, same round).
+
+- [O] **More fixed stock numbers than round 2 found.** Besides the tables: the observers' two techs (stock 529
+  `SPCKillXPTrickle`, 446 `Spies`, WoL's `PoliticianQuartermaster` and `IndustrializeSpanish`: observers got an
+  age-up and no shared LOS), the revolutions (1531-1538, flag `tech - 1478`), the consulate techs (196-203,
+  2451, 2108-2112, 2228-2234), 148 age-up techs in RMS loops, 217 tech upgrade pairs, civ numbers (8 for the
+  view lock, 1/7/19-21 for the shipment bar's XP tables, 19-21 for the rice paddy tracker), and the research
+  scan, which read techs 0-2,549 in ten slices of 255 whatever `cNumAllTechs` said: no WoL tech above 2,549
+  was ever seen. All now come from WoL's data, in arrays filled by name when the panel loads.
+- [O] **The observers' bats** were found as a range of consecutive unit IDs (at the start and at the end of
+  the game); now by player (`rmGetUnitPlacedOfPlayer`).
+- [O] **`wotta_triggers()`** (`RM4\triggers\triggerLoader.xs`): its four triggers per player (a pigeon, 15
+  spies, 15 priests, 15 inquisitors) only play music, sound, text and lighting; none is a victory, and an
+  observer, with only its bat, never meets them. No change.
+- [O] **Oil and the Great War.** Oil is resource 3 (`Fame`); the panel's fourth row showed export (7), which
+  WoL's own panel does not show, and now shows oil. No WoL tech sets an engine age 5: the Great War leaves the
+  player in age 4, so the panel shows WoL's age-6 icon once the civ's Age5 tech (`GreatWarButton`) is done.
+- [O] **WoL's own units, techs and cards** are in the tables now (1,378 unit rows, 3,013 tech rows, 3,059
+  card rows). With them inside `main()` the map did not compile (`Error 0049: could not emit quads for 'main'
+  function`): long runs of rows go into generated functions of 250 rows. Cost on `ESOC_Arizona` 2v2+2:
+  `trigtemp.xs` 772 KB -> 1.83 MB, Play to a running game 51 -> 63 s, the observer's frame rate 114 -> 103
+  fps (0 frames over 50 ms); the panel's update runs only on an observer's machine.
+- [O] **Box off:** in all 36 maps the repaired map places the same units at the same points as the original
+  with the same seed, at 3, 4 and 8 players (108 of 108 generations; `tools/kothcheck.py --normal-only`).
+- [O] **Box on, single player** (1v1+1 and 2v2+2 before the six presets below were added, 3v3+2 with them;
+  `tools/mapsweep.py --set gamecampaignshownhcnote=true`, an AI in each
+  observer slot, `--team-list` for the three teams): all 36 maps at 1v1+1, 2v2+2 and 3v3+2, 0 XS errors, every
+  observer with only its bat. `ESOC_Great Basin` at 3v3+2 leaves one real player without a start (a different
+  one per seed): its six fixed 3v3 points (`rmSetRandomSpawn3v3`, ESOC's code) include one that takes no
+  town. King of the Hill on 3 maps: one hill each, no error. Save and load: the games load and run on
+  (`NEWMagdalena` checked by hand: the new world took the old one's address, which `mapsweep.py --save-load`
+  reads as no load; `ESOC_Thar Desert` gives the same tool result with its original map). A team set defeated
+  at 45 s: the game ends at once, "Victory is yours!" for the other team, with the observers in the game.
+- [O] The original maps with a third team (6 players, the box ignored): 8 of 36 leave one or two players
+  without a start; with the repair's observer mode (2v2+2) every real player starts.
+- [O] **The taller observer layouts** (OUI's) pick six new presets in the map by `Spec_PresetConfig-<WxH>-1`
+  gadgets; `observer_maps.py` writes them from each map's own presets (the same as `observer_ui.py presets`,
+  checked on all 36 maps), and they are in the 3v3+2 runs above.
+- [O] **A WoL fault found on the way, not ours:** with WoL in Spanish, an AI whose name has an accent
+  ("Carlos el Diplomatico" with an accent, "Napoleon III" with one: 13 of the personalities in a Spanish copy)
+  stopped the whole trigger script of `ESOC_Adirondacks`: `wotta_triggers()` writes the player's name into
+  its overlay texts as a string literal, and the XS compiler refuses the byte (`trigtemp.xs(251): Token Error
+  0008: string not terminated`, then `Error 0003: could not compile file 'trigtemp.xs'`). [I] The same on
+  every map that calls `wotta_triggers()`, with any player name that is not plain ASCII. The panel's own code
+  reads names at run time and is not affected. Fixed by the pack `wol-fixes/trigger-names/` (wol-requests
+  "81 (names)").
+- [O] **Observer mode in a single-player skirmish by accident:** WoL's DLL reads setting 37h, which is
+  `gamecampaignshownhcnote` in the profile's skirmish settings. It was `false` in all 14 WoL profiles on the
+  test PC, and nothing in a normal single-player session was seen to set it. If it were `true`, a skirmish
+  of 3 or more players on one of these 36 maps would make the last slot(s) observers. [I] WoL's DLL could
+  honour the box in multiplayer only.
+- Not tested here: a human observer. It needs a second game joining the host (multiplayer), so WoL's own
+  observer code (the file swap, removing the observer's units, the resolution message) was not run; WoL's team
+  checks it in their games.
 
 ## What can be done in legacy
 

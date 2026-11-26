@@ -12,30 +12,36 @@ What it is
   and the muzzle flashes leave from the muzzle. On reload he lifts the empty magazine off, throws it aside
   (it falls and sinks out of sight), pulls a full one from the pocket at his left hip and seats it.
 - The gun turns on its post, not the whole camel (with the turretArc key, below): a target within its arc
-  (GatlingCamel: 90 degrees either side of ahead; GatlingCamelDeployed: 30 degrees toward the gunner's side,
-  90 across the camel), the camel keeps still and the gun turns to it, the gunner's hands on the grips;
-  beyond that, the camel turns to face it as today and the gun comes back to the middle. Each shot leaves
-  from the turned muzzle. Without the key the unit plays as before, the gun facing ahead.
+  (GatlingCamel: 90 degrees either side of ahead; GatlingCamelDeployed: from +30 to +150, 60 degrees either
+  side of its rest at +90, pointing out over the camel's right side, square to its spine), the camel keeps still
+  and the gun turns to it, the gunner's hands on the grips; beyond that, the camel turns until the target sits
+  at the gun's rest (GatlingCamel: ahead, as today; GatlingCamelDeployed: +90, its right side to the target).
+  Each shot leaves from the turned muzzle. Without the key GatlingCamel plays as before, the gun facing ahead;
+  GatlingCamelDeployed needs the key (without it the camel faces its target with the gun to its side).
 - Two units:
   - GatlingCamel (the existing unit): fires from the saddle and moves like the zamburak, no deploying. Its
     stats, cost, cards (HCVickersPurchase, HCGatlingCamels1, SaloonGatlingCamel), name and description do not
     change; only its anim file and its tactics do.
-  - GatlingCamelDeployed (new): the camel lies down, the gunner gets off, side-steps back along its flank and
-    works the gun on foot from behind the turret, both hands in front of his chest on two long handles (a drop
-    crank for his left hand, a traverse bar for his right). The gun turns 100 degrees a second, from 30
-    degrees toward his side to 90 across the camel, and he steps round the post with it; when it stops, the
-    step under way finishes, so no foot is left in the air. To reload he walks in to the breech and back. It
-    must deploy before it fires, like today's unit (5.33 s; 4.17 s to get back on and rise). A copy of
+  - GatlingCamelDeployed (new): the camel lies down (turning its neck aside), the gunner gets off on its left,
+    takes the gun's two long handles (a drop crank for his left hand, a traverse bar for his right, both in front
+    of his chest) and swings the gun out over the camel's right side. The gun turns 100 degrees a second, from
+    +30 to +150, and he steps round the post with it on the camel's left; when it stops, the step under way
+    finishes, so no foot is left in the air. To reload he walks in to the breech and back. Killed deployed, the
+    camel slumps and lays its head down, and he falls backward, away from it. It must deploy before it fires,
+    like today's unit (5.33 s; 4.17 s to swing the gun back, get on and rise). A copy of
     GatlingCamel (same stats, marked for review); nothing trains it yet: a card, a building or a tech has to
     enable it.
 - Made with aoe3-blender-tools' tools/make_gun_camel.py (models, clips, every file checked by the game's
   granny2.dll). The camel lying down plays the game's own lying-down clips of its skeleton (the ones the
-  current unit uses), turned upright and laid on the ground.
+  current unit uses), turned upright, and ends kneeling in the kush: its belly on the ground, its legs folded
+  under it, its body level. The camel has a dromedary hump under the saddle cloth (round 7), and the gun's
+  post rises from the front of the saddle over the withers, on the camel's spine.
 
 Files it adds
   art\WoL\units\cavalry_ranged\gatling_camel\
-      gatling_camel_camel_nogun.gr2         the zamburak's camel without its swivel gun (its forked post stays as
-                                            the gun's mount), with the launch point at the gun's muzzle
+      gatling_camel_camel_nogun.gr2         the zamburak's camel without its swivel gun and its forked post (the
+                                            gun's own iron post is part of the gun model), with a hump, the launch
+                                            point at the gun's muzzle
       gatling_camel_gun_A55.gr2, _B55.gr2   the gun of each unit (bone_yaw on the post's top turns it)
       gatling_camel_A55.aim, _B55.aim       the turretArc key's aim tables: the gunner's pose for every 15
                                             degrees of the gun's turn (A, -90..+90) or every 2 (B, -30..+90,
@@ -48,10 +54,11 @@ Files it adds
   data\tactics\GatlingCamelSaddle.tactics   zamburakME.tactics with the gatling camel's attack action
   data\tactics\GatlingCamelDeployed.tactics GatlingCamel.tactics with the deploy lasting 5.33 s and the
                                             undeploy 4.17 s (the length of their animations)
-  Both attacks carry <turret tracking="always" maxTurnAnglePerSecond="...">90</turret>: the arc each side
-  and the gun's turn rate on screen (240 from the saddle, 100 on foot so his steps keep pace). The game reads
-  the tag and ignores it; the turretArc key uses it, and keeps the gun inside the yaws of the unit's aim
-  table (B: -30 to +90).
+  The attacks carry <turret tracking="always" maxTurnAnglePerSecond="...">: the arc each side of the gun's
+  rest (90 from the saddle, 60 on foot) and the gun's turn rate on screen (240 from the saddle, 100 on foot so
+  his steps keep pace). The game reads the tag and ignores it; the turretArc key uses it, and keeps the gun
+  inside the yaws of the unit's aim table (B: +30 to +150, resting at +90; the aim file's version 2, which
+  needs the DLL of 2026-11-26 or later: an older one refuses it and logs "unknown version").
 Files it changes
   data\protoy.xml                           GatlingCamel: <AnimFile> and <Tactics>; GatlingCamelDeployed added after it
   data\stringtabley.xml and translations\*\stringtabley.xml
@@ -98,6 +105,21 @@ Tested (2026-11-23, test copy of Wars of Liberty 1.0.15c, single player)
   band (logged: his step finishes, both feet down), the undeploy and remount, deaths mounted and deployed (the
   camel rolls over with the gun on it, he falls beside it, nothing left floating), and GatlingCamel firing,
   reloading and dying. The AI skirmish was not repeated this round (only art and this unit's tactics changed).
+- Round 6 (2026-11-26, JTMaston: "the arc's bisector perpendicular to the camel's spine"; approved by the user as a
+  script with stills and as a preview; this pack has its art for GatlingCamelDeployed's deployed clips, its dead
+  model and its aim file; GatlingCamel's files are unchanged, byte for byte): the deployed gun rests at +90 and
+  turns from +30 to +150; check_anim.py: B 0 failures of 561 checks, its death 0 of 31. In game (test copy, the new
+  DLL, single player), checked frame by frame in close films: the deploy with the swing out to +90, targets behind
+  and ahead turning the camel until they sit at +90 (logged), the gun turning to targets inside its arc while he
+  steps round the post, the reload walk, the undeploy with the swing back, the deployed death (the camel slumps,
+  the gun across it, he falls backward away from it) and the mounted death; GatlingCamel firing and dying as
+  before with the same DLL.
+- Round 7 (2026-11-26, the user; every art file of both units replaced): the lying camel kneels in the kush (it
+  was propped 0.32 m up on its folded legs), the gun's post is centred over the spine at the front of the saddle
+  (the zamburak camel's own post stood 0.24 m to the left), and the camel has a hump (the rider sits 0.19 m
+  higher). check_anim.py: A 0 failures of 368 checks, B 0 of 595, its death 0 of 37. In game (test copy, single
+  player): both units drawn, idle, walk, firing (A from the saddle with the centred gun, B on foot), the deploy
+  and the undeploy, both deaths, from the game's camera and from a side camera.
 - Not seen in game: multiplayer.
 - Fixed on 2026-11-23 after the first films: the camel's left legs were drawn lifted (the stock clips' leg
   mirrors were copied in the clips' own axes); on death the gun stayed in the air, then turned on itself
@@ -116,25 +138,30 @@ Qué es
   los disparos y los fogonazos salen de la boca. En la recarga saca el cargador vacío, lo tira a un lado (cae y
   se hunde fuera de la vista), saca uno lleno del bolsillo de su cadera izquierda y lo coloca.
 - El arma gira sobre su poste, no el camello entero (con la clave turretArc, abajo): con un objetivo dentro de su
-  arco (GatlingCamel: 90 grados a cada lado del frente; GatlingCamelDeployed: 30 grados hacia el lado del
-  artillero, 90 sobre el camello), el camello no se mueve y el arma gira hacia él, las manos del artillero en las
-  empuñaduras; más allá, el camello se gira hacia él como hoy y el arma vuelve al centro. Cada disparo
-  sale de la boca girada. Sin la clave la unidad juega como antes, el arma mirando al frente.
+  arco (GatlingCamel: 90 grados a cada lado del frente; GatlingCamelDeployed: de +30 a +150, 60 grados a cada lado
+  de su reposo en +90, apuntando por el costado derecho del camello, perpendicular a su lomo), el camello no se
+  mueve y el arma gira hacia él, las manos del artillero en las empuñaduras; más allá, el camello gira hasta que el
+  objetivo queda en el reposo del arma (GatlingCamel: al frente, como hoy; GatlingCamelDeployed: en +90, su costado
+  derecho hacia el objetivo). Cada disparo sale de la boca girada. Sin la clave GatlingCamel juega como antes, el
+  arma al frente; GatlingCamelDeployed necesita la clave (sin ella el camello encara al objetivo con el arma de lado).
 - Dos unidades:
   - GatlingCamel (la unidad existente): dispara desde la silla y se mueve como el zamburak, sin desplegarse. Sus
     estadísticas, coste, cartas (HCVickersPurchase, HCGatlingCamels1, SaloonGatlingCamel), nombre y descripción
     no cambian; solo su anim file y sus tácticas.
-  - GatlingCamelDeployed (nueva): el camello se tumba, el artillero baja, retrocede de lado a lo largo de su
-    flanco y maneja el arma a pie desde detrás de la torreta, las dos manos delante del pecho en dos manijas
-    largas (una manivela baja para la izquierda, una barra de giro para la derecha). El arma gira 100 grados
-    por segundo, de 30 grados hacia su lado a 90 sobre el camello, y él rodea el poste dando pasos con ella;
-    cuando se para, el paso en curso termina, así que ningún pie queda en el aire. Para recargar se acerca a
-    la recámara y vuelve. Tiene que desplegarse antes de disparar, como la unidad actual (5,33 s; 4,17 s para
-    subir y levantarse). Copia de GatlingCamel (mismas estadísticas, a revisar); todavía nada la entrena: una
+  - GatlingCamelDeployed (nueva): el camello se tumba (girando el cuello a un lado), el artillero baja por su
+    izquierda, toma las dos manijas largas del arma (una manivela baja para la izquierda, una barra de giro para
+    la derecha, las dos delante del pecho) y gira el arma hacia el costado derecho del camello. El arma gira 100
+    grados por segundo, de +30 a +150, y él rodea el poste dando pasos con ella por el lado izquierdo del camello;
+    cuando se para, el paso en curso termina, así que ningún pie queda en el aire. Para recargar se acerca a la
+    recámara y vuelve. Si muere desplegado, el camello se desploma y apoya la cabeza, y él cae hacia atrás, lejos
+    de él. Tiene que desplegarse antes de disparar, como la unidad actual (5,33 s; 4,17 s para devolver el arma al
+    frente, subir y levantarse). Copia de GatlingCamel (mismas estadísticas, a revisar); todavía nada la entrena: una
     carta, un edificio o una tecnología debe habilitarla.
 - Hecho con tools/make_gun_camel.py de aoe3-blender-tools (modelos, clips, cada archivo comprobado con el
   granny2.dll del juego). El camello tumbado usa las animaciones de tumbarse del propio juego para su esqueleto
-  (las que usa la unidad actual), enderezadas y apoyadas en el suelo.
+  (las que usa la unidad actual), enderezadas, y termina arrodillado: el vientre en el suelo, las patas plegadas
+  debajo y el cuerpo nivelado. El camello tiene una joroba bajo la manta de la silla (ronda 7) y el poste del arma
+  sale del frente de la silla sobre la cruz, sobre el lomo.
 
 Archivos que añade y cambia: ver la parte en inglés (los mismos). Los archivos actuales
 (art\KingsReturn\Units\Persian\GatlingCamel\, GatlingCamel.tactics) no se tocan.
@@ -147,8 +174,10 @@ Instalar
 Una carpeta bajo steamapps se rechaza salvo con --force.
 
 El arma que gira: la clave turretArc de la DLL, la línea de la parte en inglés en Startup\wol.cfg (el paquete
-no edita el cfg). La clave toma el <turret> del ataque de las tácticas; sin la línea las unidades funcionan,
-con el arma mirando al frente.
+no edita el cfg). La clave toma el <turret> del ataque de las tácticas (el arco a cada lado del reposo del arma:
+90 desde la silla, 60 a pie) y el archivo de puntería de cada unidad (el de GatlingCamelDeployed es de la versión 2,
+con su reposo en +90: necesita la DLL del 2026-11-26 o posterior). Sin la línea GatlingCamel funciona con el arma
+mirando al frente; GatlingCamelDeployed la necesita.
 
 Probado (2026-11-23, copia de prueba de Wars of Liberty 1.0.15c, un jugador)
 - Las dos unidades en un escenario contra infantería de WoL: reposo, caminar, el ataque (los cañones giran, los
@@ -180,6 +209,15 @@ Probado (2026-11-23, copia de prueba de Wars of Liberty 1.0.15c, un jugador)
   y la subida, las muertes montado y desplegado (el camello rueda con el arma encima, él cae a su lado, nada queda
   flotando), y GatlingCamel disparando, recargando y muriendo. La escaramuza contra la IA no se repitió en esta
   ronda (solo cambian el arte y las tácticas de esta unidad).
+- Ronda 6 (2026-11-26, JTMaston: "la bisectriz del arco perpendicular al lomo del camello"; aprobada por el usuario
+  como guion con imágenes y como vista previa; este paquete trae su arte para las animaciones de GatlingCamelDeployed
+  desplegado, su modelo muerto y su archivo de puntería; los archivos de GatlingCamel no cambian, byte a byte): el arma
+  desplegada reposa en +90 y gira de +30 a +150; check_anim.py: B 0 fallos de 561, su muerte 0 de 31. En el juego
+  (copia de prueba, la DLL nueva, un jugador), revisado fotograma a fotograma en grabaciones de cerca: el despliegue
+  con el giro del arma hasta +90, objetivos detrás y delante que hacen girar al camello hasta quedar en +90
+  (registrado), el arma girando hacia objetivos dentro de su arco mientras él rodea el poste, la recarga, el repliegue
+  con el giro de vuelta, la muerte desplegado (el camello se desploma con el arma encima, él cae hacia atrás) y la
+  muerte montado; GatlingCamel dispara y muere como antes con la misma DLL.
 - No visto en el juego: multijugador.
 - Corregido el 2026-11-23 tras las primeras grabaciones: las patas izquierdas del camello se veían levantadas
   (las simetrías de las patas de los clips del juego se copiaban en los ejes del propio clip); al morir el arma

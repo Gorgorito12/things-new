@@ -357,9 +357,14 @@ With several games running, set `UHC_GAME_DIR` to the copy's folder.
 ```
 python -I tools/mapsweep.py --bed <copy> --csv <out.csv> [--maps A,B | --list FILE | --match RE]
        [--players 2,4,8] [--seeds 1,2,3] [--seconds 30] [--route scenario|skirmish] [--ai wolOtto]
-       [--teams | --ffa] [--koth] [--difficulty N] [--set name=value ...] [--save-load] [--label TEXT]
-       [--shard K/N] [--evidence DIR] [--no-debugger] [--dry-run]
+       [--teams | --ffa | --team-list 1,1,2,2,3,3] [--koth] [--difficulty N] [--set name=value ...]
+       [--save-load] [--label TEXT] [--shard K/N] [--evidence DIR] [--no-debugger] [--dry-run]
 ```
+
+`--team-list` gives each player's team (1-4) in slot order, set on the setup screen by posted clicks, with a
+single `--players` count: e.g. two players per team and two observers in a third team. `--save-load` detects
+the load by a new world object; a world loaded at the old one's address reads as `timeout` (seen once on a map
+whose save did load).
 
 Plays each map of the copy's map folder (every `.xs` with an `.xml`; the include libraries are
 skipped) through `testbed.py scenario` (the editor's `startRandomGame2`, saved and loaded as a
@@ -497,9 +502,14 @@ a mismatch is a lead to read the script, not a verdict.
 
 ```
 python -I tools/kothcheck.py --bed <copy> --csv <out.csv> --maps A,B [--src <dir>] [--players 2,4,8]
-       [--seeds 1,2] [--ffa 4] [--normal] [--reach [seconds]] [--shots <dir>] [--mapsize N] [--survey]
+       [--seeds 1,2] [--ffa 4] [--normal | --normal-only] [--reach [seconds]] [--shots <dir>] [--mapsize N]
+       [--survey]
 python -I tools/kothcheck.py --bed <copy> --uninstall
 ```
+
+`--normal-only` runs only the normal-game comparison (King of the Hill off), at 3, 4 and 8 players, for a map
+edit that must not change the normal game; a row says `(exact)` when the two unit lists are identical, not
+only within the 6 m match.
 
 Needs the copy's game running (`testbed.py launch`) with `perfExecFile` and, beside other copies,
 `multipleInstances background`. `rmGetIsKOTH()` returns byte `[[[0xC66234]+92Ch]+1A98h]` of the random

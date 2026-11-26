@@ -1,0 +1,56 @@
+Hi JTMaston,
+
+The gatling camel (#102), round 6: the deployed camel's arc now has its bisector perpendicular to the camel's
+spine, as you asked.
+
+1. GatlingCamelDeployed: the gun across the camel
+- Deployed, the gun rests pointing straight out over the camel's right side (+90). It turns 60 degrees each
+  way of that, from +30 (forward-right) to +150 (back-right): a 120-degree arc opening on the right side.
+- The gunner stays on the opposite side, the camel's left, behind the gun with both hands on the two long
+  handles. He steps round the post with the gun, at stations every 30 degrees, one foot at a time; when the
+  gun stops, the step under way finishes, so no foot is left in the air.
+- A target beyond the arc makes the camel turn until the target sits at +90 (its right side toward the
+  target); then the gun turns the rest of the way. Before, the camel turned to face the target.
+- Deploying: the camel lies down, the gunner gets off on its left, takes the handles and swings the gun out
+  to +90 while he steps round the post. Undeploying: he swings it back to the front, gets on, and the camel
+  rises. The times are unchanged (5.33 s and 4.17 s).
+- Lying down, the camel turns its neck to its right, so its head is out of the gunner's way.
+- The reload is the same as before (he walks in to the breech, throws the empty magazine aside, draws a full
+  one from his pocket, seats it and walks back), with the gun at +90.
+- Killed while deployed, the camel no longer rolls over (the barrels would have gone into the ground): it
+  slumps and lays its head down, the gun still across it, and the gunner falls backward, away from it.
+- If you'd rather have the arc on the camel's left side, that is a mirror of all of this (the gunner would
+  get off on the right), so say so and I'll make it.
+
+2. Firing while mounted
+- Noted: you'll lock GatlingCamel's firing from the saddle behind a card in your data. Nothing changes on our
+  side; GatlingCamel is the same as before, file for file.
+
+3. The DLL key (turretArc), the same line in Startup\wol.cfg:
+    turretArc GatlingCamel art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_A55.aim GatlingCamelDeployed art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_B55.aim
+- The deployed camel's aim file now says where the gun rests (+90). The key keeps the gun within the <turret>
+  number each side of that rest (60 in GatlingCamelDeployed.tactics, so +30..+150; you can narrow it there),
+  and turns the camel so a target beyond the arc ends up at +90.
+- Please use the new DLL with this pack. The new aim file is version 2: an older DLL refuses it (turretArc is
+  then not applied). The deployed camel also needs the key: without it the game turns the camel to face its
+  target, and the gun would point to the side.
+- The code for WoL's DLL is in the porting pages (turretArc).
+
+Everything is in wol-fixes/gatling-camel (apply_fix.py with --check and --restore; README in English and
+Spanish).
+
+Tested in game (single player, a test copy of WoL with the new DLL and pack):
+- deploying with the swing out to +90;
+- Houses behind and ahead making the camel turn until they sat at +90;
+- the gun turning to Houses inside its arc while the gunner steps round;
+- the reload;
+- undeploying with the swing back;
+- the deployed death and the mounted death;
+- GatlingCamel firing and dying as before.
+Every animation passed our automatic checks before it went into the game.
+
+Video: gatlingCamelDeployed-wol.gif (deploy, the camel turning to put a House at +90, firing across the arc,
+the reload). The saddle unit's videos are unchanged.
+
+The questions from before (how players get GatlingCamelDeployed, its stats, whether the old model stays, the
+gun size) are still open.

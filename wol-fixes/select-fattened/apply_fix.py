@@ -6,6 +6,9 @@ their maximum food and selects them when clicked; and a hotkey for the same comm
                                                   <WoL folder>\\select-fattened-backup\\ first)
     python apply_fix.py <WoL folder> --restore    put the backed-up files back and delete the files it added
     python apply_fix.py <WoL folder> --check      say what is applied, change nothing (exit code 0 only when all is)
+    python apply_fix.py <WoL folder> --hotkey-only  only the hotkey: the keymap entry, its name (string 690912) and
+                                                  the cfg line; no button, no icon, no tooltip string. --check and
+                                                  --restore read the mode from the backup's manifest
     (a folder under steamapps is refused unless --force is given)
 
 What it changes (README.txt has the why):
@@ -35,6 +38,7 @@ KEYMAP = "data/DefaultKeyMapY.xml"
 TABLES = ["data/stringtabley.xml", "translations/_originals/stringtabley.xml", "translations/ES-LA/stringtabley.xml"]
 CFG = "Startup/wol.cfg"
 CHANGED = [LAYOUT, KEYMAP, CFG] + TABLES
+HOTKEY_ONLY_CHANGED = [KEYMAP, CFG] + TABLES
 
 TOOLTIP, HOTKEY_NAME = 690911, 690912
 STRINGS = {
@@ -136,10 +140,13 @@ def new_cfg(text):
     return text.rstrip("\r\n") + nl + "selectFattened" + nl
 
 
-def edited(root):
+def edited(root, hotkey_only=False):
     """{relative path: new bytes} for every file this pack changes that exists in the folder."""
     out = {}
-    for rel, change in ((LAYOUT, new_layout), (KEYMAP, new_keymap), (CFG, new_cfg)):
+    files = ((KEYMAP, new_keymap), (CFG, new_cfg))
+    if not hotkey_only:
+        files = ((LAYOUT, new_layout),) + files
+    for rel, change in files:
         path = root / rel
         if path.exists():
             text, kind = decode(path.read_bytes())
@@ -150,37 +157,40 @@ def edited(root):
             continue
         text, kind = decode(path.read_bytes())
         for sid, value in STRINGS[language(rel, text)].items():
-            text = set_string(text, sid, value)
+            if not (hotkey_only and sid == TOOLTIP):
+                text = set_string(text, sid, value)
         out[rel] = encode(text, kind)
     return out
 
 
-def apply(root):
+def apply(root, hotkey_only=False):
     backup = root / BACKUP
     if backup.exists():
         sys.exit(f"apply_fix: {backup} exists: applied already (run --restore first)")
-    for rel in (LAYOUT, KEYMAP):
+    for rel in (KEYMAP,) if hotkey_only else (LAYOUT, KEYMAP):
         if not (root / rel).exists():
             sys.exit(f"apply_fix: {root / rel} is missing: is this a Wars of Liberty folder?")
-    if not (FILES / ICON).exists():
-        sys.exit(f"apply_fix: the pack has no {ICON}")
-    changes = edited(root)  # made and checked before anything is written
+    if not hotkey_only:
+        if not (FILES / ICON).exists():
+            sys.exit(f"apply_fix: the pack has no {ICON}")
+        if (root / ICON).exists():
+            sys.exit(f"apply_fix: {root / ICON} exists already")
+    changes = edited(root, hotkey_only)  # made and checked before anything is written
     backup.mkdir()
-    manifest = {"changed": [], "added": []}
-    for rel in CHANGED:
+    manifest = {"mode": "hotkey-only" if hotkey_only else "full", "changed": [], "added": []}
+    for rel in HOTKEY_ONLY_CHANGED if hotkey_only else CHANGED:
         if (root / rel).exists():
             (backup / rel).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(root / rel, backup / rel)
             manifest["changed"].append(rel)
-    if (root / ICON).exists():
-        sys.exit(f"apply_fix: {root / ICON} exists already")
-    (root / ICON).parent.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(FILES / ICON, root / ICON)
-    manifest["added"].append(ICON)
+    if not hotkey_only:
+        (root / ICON).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(FILES / ICON, root / ICON)
+        manifest["added"].append(ICON)
     for rel, data in changes.items():
         (root / rel).write_bytes(data)
     (backup / "manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
-    print(f"applied; backup in {backup}")
+    print(f"applied{' (hotkey only)' if hotkey_only else ''}; backup in {backup}")
 
 
 def restore(root):
@@ -197,16 +207,36 @@ def restore(root):
     print("restored")
 
 
-def check(root):
+def applied_mode(root):
+    """The applied pack's mode from its backup's manifest ("full" for a backup made before the modes), or None."""
+    manifest_path = root / BACKUP / "manifest.json"
+    if not manifest_path.exists():
+        return None
+    return json.loads(manifest_path.read_text(encoding="utf-8")).get("mode", "full")
+
+
+def check(root, hotkey_only=False):
+    mode = applied_mode(root)
+    if mode is not None:
+        hotkey_only = mode == "hotkey-only"
+    print(f"mode: {'hotkey only' if hotkey_only else 'button and hotkey'}"
+          f"{'' if mode is not None else ' (no backup: not applied by this script)'}")
     ok = True
-    for rel, data in edited(root).items():
+    for rel, data in edited(root, hotkey_only).items():
         same = (root / rel).read_bytes() == data
         ok &= same
         print(f"{rel}: {'applied' if same else 'not applied'}")
-    present = (root / ICON).exists() and (FILES / ICON).exists() and \
-        (root / ICON).read_bytes() == (FILES / ICON).read_bytes()
-    ok &= present
-    print(f"{ICON}: {'present' if present else 'missing or different'}")
+    if hotkey_only:
+        layout = root / LAYOUT
+        clean = not (root / ICON).exists() and \
+            (not layout.exists() or 'name="uhcFattened"' not in decode(layout.read_bytes())[0])
+        ok &= clean
+        print(f"{LAYOUT}, {ICON}: {'no button, as it should be' if clean else 'the button is there'}")
+    else:
+        present = (root / ICON).exists() and (FILES / ICON).exists() and \
+            (root / ICON).read_bytes() == (FILES / ICON).read_bytes()
+        ok &= present
+        print(f"{ICON}: {'present' if present else 'missing or different'}")
     return 0 if ok else 1
 
 
@@ -216,12 +246,13 @@ def main():
     root = pathlib.Path(sys.argv[1])
     if "steamapps" in str(root).lower() and "--force" not in sys.argv:
         sys.exit("apply_fix: this is a Steam folder; work on a copy, or add --force to change it anyway")
+    hotkey_only = "--hotkey-only" in sys.argv
     if "--restore" in sys.argv:
         restore(root)
     elif "--check" in sys.argv:
-        sys.exit(check(root))
+        sys.exit(check(root, hotkey_only))
     else:
-        apply(root)
+        apply(root, hotkey_only)
 
 
 if __name__ == "__main__":

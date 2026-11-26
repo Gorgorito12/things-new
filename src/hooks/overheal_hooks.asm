@@ -19,7 +19,6 @@ EXTERNDEF g_uhcOverhealFmtSplit:WORD     ; '<color=r, g, b>%d/%d (%d+%d)</color>
 
 UhcOverhealLogReference PROTO STDCALL unit:DWORD, reference:DWORD, maxHp:DWORD
 UhcOverhealPortrait PROTO STDCALL panel:DWORD, selGroup:DWORD
-UhcOverhealStatRow PROTO STDCALL panel:DWORD, unit:DWORD, row:DWORD
 
 
 .data
@@ -37,7 +36,6 @@ textStatNext    dd 004D7656h    ; push eax / call 444EFBh: the stat row's '%d/%d
 textStatSplitNext dd 0069A9C5h  ; push ecx / call 444EFBh: the stat row's '%d/%d (%d+%d)'
 bstringFree     dd 004010CAh    ; void thiscall(BString*): the free 0x4C83E3 calls
 portraitNext    dd 004C83E8h    ; mov ecx,[esp+1C4h] / call 4C83F6h: after the portrait bar
-statRowNext     dd 004D76E4h    ; mov edx,[0CF059Ch]: the rows after the HP row
 
 .code
 
@@ -283,29 +281,6 @@ UhcOverhealPortraitHook PROC
     jmp portraitNext
 UhcOverhealPortraitHook ENDP
 
-; Replaces mov edi,2 / mov [esp+2Ch],edi (9 bytes) at 0x4D76DB, the stat panel fill right after
-; the HP row: EDI and [esp+2Ch] are the next free row (the Group Health branch 0x69A9D3 writes row
-; EDI, then adds 1 to both). UhcOverhealStatRow writes the overheal row there for a marked unit
-; ([esp+38h], the panel [esp+50h]); when it did, the row is counted the same way. EAX, ECX, EDX
-; and the flags are dead at 0x4D76E4 (mov edx,[0CF059Ch] / mov eax,[edx] / ... / mov ecx,0C66500h).
-UhcOverhealStatRowHook PROC
-    TRACE_ONCE "overhealHitpointBars stat row (0x4D76DB)"
-    mov edi, 2                      ; stolen 0x4D76DB
-    mov dword ptr [esp+2Ch], edi    ; stolen 0x4D76E0
-    pushad
-    push edi                        ; row
-    push dword ptr [esp+24h+38h]    ; unit
-    push dword ptr [esp+28h+50h]    ; panel
-    call UhcOverhealStatRow
-    mov dword ptr [esp+1Ch], eax    ; the pushad slot of EAX: the result survives popad
-    popad
-    test al, al
-    jz done
-    add edi, 1
-    mov dword ptr [esp+2Ch], edi
-done:
-    jmp statRowNext
-UhcOverhealStatRowHook ENDP
 
 ; Public forms of the reference helpers for the other overheal keys (overhealSources,
 ; overhealDecay), cdecl so the C++ side can call them: the same definition, not a copy.

@@ -2,6 +2,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 
 #include "config.h"
 
@@ -176,7 +177,12 @@ Outcome ApplyEnableAllTeams(const Config& config);
 Outcome ApplyTechGadgets(const Config& config);
 Outcome ApplyIncomeRates(const Config& config);
 Outcome ApplySelectFattened(const Config& config);
+Outcome ApplyProgressPieDemo(const Config& config);
 Outcome ApplyNurseryFactor(const Config& config);
+Outcome ApplyGarrisonConvert(const Config& config);
+// garrisonConvert: the progress of a building's conversions, for the panels: false when nobody inside qualifies;
+// else the share of the delay the unit in progress has spent (1 with no delay) and how many units qualify.
+bool GarrisonConvertProgress(const char* building, float* fraction, std::int32_t* waiting);
 
 // menuOptions is not in this list: ApplyFeatures applies it before the first key (menuoptions.h), since it decides
 // which of the keys it names the list then sees.
@@ -354,7 +360,10 @@ inline constexpr Feature kFeatures[] = {
     {"incomeRates", ApplyIncomeRates},
     // After autoGatherScaleByContained: its filter of the shared AutoGather rate getter (autogatherrate.h) is asked
     // after that key's; the owner's trickle it multiplies reaches incomeRates through the add that key counts.
+    // After overhealHitpointBars too: its row of the shared stat panel hook (statpanelrows.h) comes after that key's.
     {"nurseryFactor", ApplyNurseryFactor},
+    // After nurseryFactor: their observers of the shared garrison entries (garrisonobservers.h) run in that order.
+    {"garrisonConvert", ApplyGarrisonConvert},
     {"auraStacking", ApplyAuraStacking},
     // Last of the new keys: it redirects the four calls of the BuildingWorkRate getter, which
     // liveBuildingWorkRate and noTrainNearEnemyTC verify as stock bytes.
@@ -380,6 +389,8 @@ inline constexpr Feature kFeatures[] = {
     {"techGadgets", ApplyTechGadgets},
     // After rendererOption: it shows its button from the Present of whichever Direct3DCreate9 the game gets.
     {"selectFattened", ApplySelectFattened},
+    // Dev key: the test bed of the shared progress pie (progresspie.h), an observer of the shared panel tail.
+    {"progressPieDemo", ApplyProgressPieDemo},
     // Last: plugins load once every other hook is in place.
     {"customSyscalls/customCheats", ApplyPlugins},
 };
@@ -402,7 +413,8 @@ inline constexpr const char* kHandledKeys[] = {
     "transforminventory", "notrainnearenemytc", "overhealhitpointbars", "overhealsources", "overhealdecay", "steadyhitpointbars", "inventorybars", "showgatherrate", "multiplierdecimals", "attacktypeicons", "minuistats",
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
-    "techgadgets", "incomerates", "editorautosave", "selectfattened", "nurseryfactor",
+    "techgadgets", "incomerates", "editorautosave", "selectfattened", "nurseryfactor", "progresspiedemo",
+    "garrisonconvert",
 };
 
 }  // namespace uhc

@@ -31,7 +31,9 @@ set(UHC_SOURCES
   src/deathobservers.cpp
   src/ghostobservers.cpp
   src/killobservers.cpp
+  src/garrisonobservers.cpp
   src/unitpanel.cpp
+  src/statpanelrows.cpp
   src/datarefs.cpp
   src/unitmodels.cpp
   src/actiontags.cpp
@@ -49,6 +51,8 @@ set(UHC_SOURCES
   src/rofreads.cpp
   src/floatingbars.cpp
   src/uigadgets.cpp
+  src/progresspie.cpp
+  src/features/progresspiedemo.cpp
   src/features/abilityslots.cpp
   src/features/abstracttypes.cpp
   src/features/accuracy.cpp
@@ -131,6 +135,7 @@ set(UHC_SOURCES
   src/features/techgadgets.cpp
   src/features/incomerates.cpp
   src/features/nurseryfactor.cpp
+  src/features/garrisonconvert.cpp
   src/features/sharedlimit.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
@@ -291,6 +296,7 @@ set(UHC_SOURCES
   src/hooks/displayrange_hooks.asm
   src/hooks/trainbatch_hooks.asm
   src/hooks/killobservers_hooks.asm
+  src/hooks/garrisonobs_hooks.asm
   src/hooks/researchpay_hooks.asm
   src/hooks/researchgrant_hooks.asm
   src/hooks/canresearch_hooks.asm
@@ -299,6 +305,8 @@ set(UHC_SOURCES
   src/hooks/techsubtype_hooks.asm
   src/hooks/worldtick_hooks.asm
   src/hooks/unitpanelrow_hooks.asm
+  src/hooks/statpanelrows_hooks.asm
+  src/hooks/nurserycmd_hooks.asm
   src/hooks/datarefs_hooks.asm
   src/hooks/editorsearch_hooks.asm
   src/hooks/minuistats_hooks.asm

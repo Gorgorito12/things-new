@@ -1090,6 +1090,22 @@ SITES = [
     # the killing blows (killobservers.*: veterancyBonus, killSpawn): mov ecx,[0xC66234], the head of TakeDamage's
     # cold kill path; its only entry is the je at 0x49B746
     ("VeterancyKillPath", 0x4D4F37, 6),
+    # garrison entries (garrisonobservers.*: garrisonConvert, nurseryFactor): the success tail of the load of a unit
+    # into another, FUN_009C24B5 bool thiscall(container, unitId, flag), ret 8, after [unit+6Ch] and the append to
+    # [container+70h]: mov edi,[edi+58h] / test edi,edi / je 9C26FFh ... through the pop ebx at 0x9C26FF; and the
+    # head of the function, verify only, so a detour of the head fails the key instead of skipping the hook
+    ("GarrisonEnterTail", 0x9C26E1, 0x1F),
+    ("GarrisonLoadHead", 0x9C24B5, 0x10),
+    # nurseryFactor's commands: the network command uiTransformSelectedUnit sends (0x7E7193), verify only: the
+    # factory 0x5695FC (cdecl(player, type, 0, -1)), the players 0x5683B9 (thiscall(cmd, 1, &player)), the units
+    # 0x5696E1 (thiscall(cmd, count, ids)), the queue 0x568A1A (thiscall([world+8], cmd, 0, 0)); and the head of the
+    # type 17h command's per-unit execute FUN_007D64F7 (thiscall(cmd, unit), ret 4, al), through its
+    # cmp [esi+8Ch],-1: the jmp of nurseryFactor's command hook replaces its first 5 bytes
+    ("NurseryCmdExecute", 0x7D64F7, 0x16),
+    ("NetCommandCreate", 0x5695FC, 8),
+    ("NetCommandPlayers", 0x5683B9, 8),
+    ("NetCommandUnits", 0x5696E1, 8),
+    ("NetCommandQueue", 0x568A1A, 8),
     # killSpawn: the head of the placement test PLACE FUN_0050703D (world vtable +14h, thiscall, 11 arguments,
     # ret 2Ch), sub esp,1A8h / push ebx / push ebp / xor ebx,ebx / mov ebp,ecx; verify only
     ("KillSpawnPlace", 0x50703D, 0x0C),
@@ -2114,6 +2130,22 @@ SITES = [
     ("UiFindAnywhere", 0x433A2C, 0x0E),
     ("UiGadgetShowFlags", 0x447BBF, 0x14),
     ("UiGadgetHideFlags", 0x447CFF, 0x0A),
+    # progresspie (shared, verify only): a gadget's pie chart filling, the overlay of a train button. Every gadget
+    # vtable has the fill at +6Ch = 0xAB6C63 (thiscall(gadget, float), ret 4): it makes the 20h-byte filling
+    # [gadget+130h] when there is none (fill +0, colour +4 = 88FFFFFFh, texture +8 = -1, +0Ch 1.0, rotation +1Ch = 1
+    # (cw), fill flag +1Dh = 0, on +1Eh = 1) and stores the fraction clamped to [0, 1]. 0x4C51FA (thiscall(gadget,
+    # bool), ret 4) turns it on or off (+1Eh; on makes it through +6Ch(0) first, the cold 0x6D206D). 0xAB5C34
+    # (thiscall(gadget, float r, g, b, a), ret 10h) sets the colour through 0x404DF6 (ARGB). 0xAB5BAA (thiscall,
+    # plain ret) makes the material [gadget+12Ch] (defaultcolored_alphablend, diffuse = the texture +8), which the
+    # unit stack buttons (0x9B8AD1) make when there is none. The command panel's train buttons: +6Ch(progress),
+    # 0x4C51FA(1), 0xAB5C34(0, 0, 1, 0.5) (0x69D9BC, blue). The panel bind stores unitselectionpanel-unitPortrait
+    # (0xC360F0) at [panel+2E4h] (0x9BAE5E..0x9BAE8A).
+    ("PieFillSlot", 0xAB6C63, 0x95),
+    ("PieEnable", 0x4C51FA, 0x22),
+    ("PieEnableCold", 0x6D206D, 0x19),
+    ("PieColour", 0xAB5C34, 0x52),
+    ("PieMaterial", 0xAB5BAA, 0x8A),
+    ("PiePortraitBind", 0x9BAE5E, 0x2D),
     # incomeRates: the two income calls of the add 0x49A98A besides the gather tick's (GatherTickAddResource): the
     # global trickle's push esi / call 49A98Ah (returns to 0x4E0CFE) and the AutoGather update's push edi /
     # push ebx / call 49A98Ah (returns to 0x4C379D). The add's head push ecx / mov eax,[0C66234h] (6 bytes,

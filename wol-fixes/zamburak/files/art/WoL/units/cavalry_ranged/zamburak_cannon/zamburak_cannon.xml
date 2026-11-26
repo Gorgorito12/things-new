@@ -1,0 +1,251 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Wars of Liberty's zamburak cannon (MEZamburak): the zamburak's camel without its swivel gun, a bronze cannon on a swivel on its withers, its rider, who limbers and unlimbers it. Made with aoe3-blender-tools tools/make_zamburak.py. -->
+<animfile>
+	<definebone>HS Bone Hoof Frnt Lt</definebone>
+	<definebone>HS Bone Hoof Frnt Rt</definebone>
+	<definebone>HS Bone Hoof Back Lt</definebone>
+	<definebone>HS Bone Hoof Back Rt</definebone>
+	<definebone>bone_launchpoint</definebone>
+	<definebone>bone_muzzle</definebone>
+	<attachment>
+		rider
+		<include>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider.xml</include>
+	</attachment>
+	<attachment>
+		cannon
+		<include>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_gun.xml</include>
+	</attachment>
+	<component>
+		ModelComp
+		<assetreference type="GrannyModel">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel</file>
+		</assetreference>
+		<decal>
+			<effecttype>default</effecttype>
+			<texture isfakeshadow="1">shadows_selections\shadow_circle_128x128</texture>
+			<selectedtexture>shadows_selections\selection_oval_32x64</selectedtexture>
+			<width>2.00</width>
+			<height>3.00</height>
+			<zoffset>-0.10</zoffset>
+		</decal>
+		<attach a="rider" frombone="hotspot" tobone="ATTACHPOINT" syncanims="1"/>
+		<attach a="cannon" frombone="bone_zamburak_cannon_gun" tobone="ATTACHPOINT" syncanims="1"/>
+	</component>
+	<component>
+		DeadComp
+		<assetreference type="GrannyModel">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_dead</file>
+		</assetreference>
+		<decal>
+			<effecttype>default</effecttype>
+			<texture isfakeshadow="1">shadows_selections\shadow_circle_128x128</texture>
+			<selectedtexture>shadows_selections\selection_oval_32x64</selectedtexture>
+			<width>2.00</width>
+			<height>3.00</height>
+			<zoffset>-0.10</zoffset>
+		</decal>
+		<attach a="rider" frombone="hotspot" tobone="ATTACHPOINT" syncanims="1"/>
+	</component>
+	<component>
+		DeadCompDeployed
+		<assetreference type="GrannyModel">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_dead_deployed</file>
+		</assetreference>
+		<decal>
+			<effecttype>default</effecttype>
+			<texture isfakeshadow="1">shadows_selections\shadow_circle_128x128</texture>
+			<selectedtexture>shadows_selections\selection_oval_32x64</selectedtexture>
+			<width>2.00</width>
+			<height>3.00</height>
+			<zoffset>-0.10</zoffset>
+		</decal>
+		<attach a="rider" frombone="hotspot" tobone="ATTACHPOINT" syncanims="1"/>
+	</component>
+	<anim>
+		Idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_idle</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Walk
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_walk</file>
+			<tag type="FootstepLeft" footprinttype="Horse" footprintbone="HS BONE HOOF FRNT LT">1.00</tag>
+			<tag type="FootstepLeft" footprinttype="Horse" footprintbone="HS BONE HOOF BACK LT">0.83</tag>
+			<tag type="FootstepRight" footprinttype="Horse" footprintbone="HS BONE HOOF FRNT RT">0.70</tag>
+			<tag type="FootstepRight" footprinttype="Horse" footprintbone="HS BONE HOOF BACK RT">0.50</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Jog
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_jog</file>
+			<tag type="FootstepLeft" footprinttype="Horse" footprintbone="HS BONE HOOF FRNT LT">0.80</tag>
+			<tag type="FootstepLeft" footprinttype="Horse" footprintbone="HS BONE HOOF BACK LT">0.50</tag>
+			<tag type="FootstepRight" footprinttype="Horse" footprintbone="HS BONE HOOF FRNT RT">0.95</tag>
+			<tag type="FootstepRight" footprinttype="Horse" footprintbone="HS BONE HOOF BACK RT">0.75</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Run
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_run</file>
+			<tag type="FootstepLeft" footprinttype="Horse" footprintbone="HS BONE HOOF FRNT LT">0.73</tag>
+			<tag type="FootstepLeft" footprinttype="Horse" footprintbone="HS BONE HOOF BACK LT">0.50</tag>
+			<tag type="FootstepRight" footprinttype="Horse" footprintbone="HS BONE HOOF FRNT RT">1.00</tag>
+			<tag type="FootstepRight" footprinttype="Horse" footprintbone="HS BONE HOOF BACK RT">0.70</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bored
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_bored_a</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bored
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_bored_b</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bored
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_bored_c</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Cheer
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_cheer_a</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Cheer
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_cheer_b</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Cheer
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_cheer_c</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Cheer
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_cheer_d</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_unlimber
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_deploy</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_limber
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_undeploy</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_ranged_idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_deployed</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_bored
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_deployed</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_aim
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_deployed</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_ranged_attack
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_fire</file>
+			<tag type="Attack">0.45</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="FalconetShoot">0.45</tag>
+			<tag type="Particles" particlename="smallcannonmuzzle">0.45</tag>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_reload
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_reload</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_death
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_death</file>
+		</assetreference>
+		<component>DeadCompDeployed</component>
+	</anim>
+	<anim>
+		Death_by_melee
+		<assetreference type="GrannyAnim">
+			<file>units\asians\indians\sowar\sowarCamel_death00</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
+		</assetreference>
+		<component>DeadComp</component>
+	</anim>
+	<anim>
+		Death_by_melee
+		<assetreference type="GrannyAnim">
+			<file>units\asians\indians\sowar\sowarCamel_death01</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
+		</assetreference>
+		<component>DeadComp</component>
+	</anim>
+	<anim>
+		Death_by_range
+		<assetreference type="GrannyAnim">
+			<file>units\asians\indians\sowar\sowarCamel_death00</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
+		</assetreference>
+		<component>DeadComp</component>
+	</anim>
+	<anim>
+		Death_by_range
+		<assetreference type="GrannyAnim">
+			<file>units\asians\indians\sowar\sowarCamel_death01</file>
+			<tag type="SpecificSoundSet" checkvisible="1" set="RagdollImpact">0.62</tag>
+		</assetreference>
+		<component>DeadComp</component>
+	</anim>
+	<anim>
+		Death_by_havoc
+		<assetreference type="GrannyAnim">
+			<file>animation_library\cavalry\horse_death_right</file>
+		</assetreference>
+		<component>DeadComp</component>
+	</anim>
+</animfile>

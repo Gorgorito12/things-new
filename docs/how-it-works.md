@@ -171,6 +171,8 @@ The hooks are MASM files in `src/hooks/`.
   - `killobservers.*`, `AddKillObserver`: the killing blow, with the attacker (TakeDamage's kill path 0x4D4F37);
   - `transformcalls.*`, `AddTransformObserver`: the seven calls of the in-place transform 0x9C754C (a key's own
     transform calls `TransformUnit`);
+  - `garrisonobservers.*`, `AddGarrisonObserver`: each unit that enters another (the success tail 0x9C26E1 of the load
+    0x9C24B5); an observer only queues, and acts after the world update;
   - `researchpay.*`, `AddResearchPayer` and `AddResearchRefundObserver`: the payment of a research (0x9E67E1,
     0x9D54CF), the copies of its cost for a refund (0x9E68A0, 0x9D5548) and the refund of a cancel (0x9E6167, 0x9D56B5);
   - `canresearch.*`, `AddCanResearchFilter`: the can-research test's head (0x4C6968);
@@ -188,6 +190,8 @@ The hooks are MASM files in `src/hooks/`.
     0x518B26);
   - `d3d9hooks.*`, `ReplaceDirect3DCreate9` and `AddD3D9Observer`: the IAT slot 0xB84164 of `Direct3DCreate9` and the
     device's CreateDevice, Reset and Present;
+  - `progresspie.*`, `AddProgressPieSource`: not a hook of its own; an observer of the panel tail that draws the
+    engine's pie chart filling (a train button's overlay) over the unit portrait for the keys that give a source;
   - `income.h`, `CountIncome`: not a hook; a key that pays a player from the DLL calls it so that `incomeRates`
     counts that income too.
 - **`TRACE_ONCE "text"`** (`src/hooks/common.inc`) writes `hook reached: text` to `UHC.log` the
@@ -3612,12 +3616,13 @@ reference is coloured the same.
   the label `L"Group Health"` (0xC36838, a literal) with style 0D6F5D0h, the value with style
   0C6657Ch (vtable +84h), the text (+80h), +54h, the help texts `[gadget+68h]` cleared (0x401A12
   from `L""`, 0x40196F), then `add edi,1 / mov [esp+2Ch],edi`.
-- *The hook* at 0x4D76DB (9 B): the two stolen moves, then `UhcOverhealStatRow(panel =
-  [esp+50h], unit = [esp+38h], row = EDI)`; for a marked unit it writes the row with the same calls
-  (label `Overheal`, the cfg text, or a string table entry through 0x58EA52; value
-  `overheal/capacity`, coloured with `segment` while above 0) and returns true, and the hook adds
-  1 to EDI and `[esp+2Ch]`, so the Group Health row and the rows after it move down. → 0x4D76E4
-  (EAX, ECX, EDX and the flags are written there before they are read).
+- *The hook* at 0x4D76DB (9 B) is shared since 2026-11-26 (`statpanelrows.*`, `AddStatPanelRow`, with
+  [`nurseryFactor`](#nurseryfactor)'s row after this one): the two stolen moves, then `UhcStatPanelRows(panel =
+  [esp+50h], unit = [esp+38h], row = EDI)`, which asks each key's row in `kFeatures` order while rows are free. This
+  key's, `UhcOverhealStatRow`, writes the row for a marked unit with the same calls (label `Overheal`, the cfg text, or
+  a string table entry through 0x58EA52; value `overheal/capacity`, coloured with `segment` while above 0) and returns
+  true; the hook adds the rows written to EDI and `[esp+2Ch]`, so the Group Health row and the rows after it move
+  down. → 0x4D76E4 (EAX, ECX, EDX and the flags are written there before they are read).
 - *Observed in game:* `Overheal 15/15` (orange) at 165/150, `0/15` when damaged, `16/16` under a
   MaxHP aura, `0/40` for a marked Explorer at its 100 % in a skirmish.
 
@@ -3969,33 +3974,42 @@ look for a resource with a rate (0x69D232, 0x9CFE1E). The factor comes from simu
 
 ### nurseryFactor
 
-`src/features/nurseryfactor.cpp`; the shared `autogatherrate.*` (above), `prototags.*`, `techsubtypes.*`, `worldtick.*`,
-`unitpanel.*`, `datarefs.*` and `savedmarkers.h`. The design and the questions behind it are in
-[nursery-design.md](nursery-design.md). <!-- private -->
+`src/features/nurseryfactor.cpp`, `hooks/nurserycmd_hooks.asm`; the shared `autogatherrate.*` (above),
+`garrisonobservers.*`, `statpanelrows.*`, `progresspie.*`, `panelbuttons.*`, `syscalls.*`, `prototags.*`,
+`techsubtypes.*`, `worldtick.*`, `unitpanel.*`, `datarefs.*` and `savedmarkers.h`. The design and the questions behind
+it are in [nursery-design.md](nursery-design.md). <!-- private -->
 
-- **Tags** (`AddProtoTagHandler`): the ten `NurseryFactor*` tags, by proto ID, each checked for its range; a bad value
-  is logged and the tag skipped. A proto has a factor only with a valid `NurseryFactorMax`. A per-proto-ID byte table
-  says which protos have one and trickle, for the rate filter.
+- **Tags** (`AddProtoTagHandler`): the fourteen `NurseryFactor*` tags, by proto ID, each checked for its range; a bad
+  value is logged and the tag skipped. Any of them makes the proto a nursery; the cap is 10 unless `NurseryFactorMax`
+  says otherwise. Two per-proto-ID byte tables say which protos have a factor and trickle (for the rate filter) and
+  which take garrisoned units (for the garrison observer). `NurseryFactorGarrisonUnit` and `NurseryFactorCommand` read
+  attributes through the XML getter 0x598F37; their names (units, types, resources) are resolved against the database
+  once per data load (the proto array `[db+54h]` tells a new load), with the type table `[db+190h]`, the proto lookup
+  0x5A2346 and the resource lookup 0x44709C. Each command name gets an index, the same on every machine (the order
+  the protos are read).
 - **The factor of each unit** is a table by unit ID, in ID order, filled as `researchGrants`' set is: 256 slots of the
   world's unit table `[world+0Ch]` per world update, round robin, and the whole table on a new game, a loaded one (another
   world, the time going back or the step count jumping) or before a `NurseryFactor` effect. A unit found with no marker
-  gets `NurseryFactorInitial`. After each world update (`AddWorldTick`), each living unit is cut to its player's cap;
-  a built one (0x44DDB4) adds the game time `[world+108h]` since the last tick to its timer and grows a step per
-  interval (linear: the step; exponential: `max(step, floor(factor x GrowthRate))`), up to the cap; at the cap, or with
-  no interval, the timer is 0. Factor and timer are words 1 and 2 of a saved marker (`savedmarkers.h`, stat 6Bh, word 0
-  `NRSF`), written each tick, so a transform in place, which ends the unit's modifiers, has it written again at the next
-  tick. A unit gone, dead or of a proto without a factor leaves the table.
+  gets `NurseryFactorInitial` (at most the cap). After each world update (`AddWorldTick`), a built unit (0x44DDB4)
+  under its player's cap adds the game time `[world+108h]` since the last tick to its timer and grows a step per
+  interval, up to the cap: linear, the step; exponential, `b^t` with `t` the steps taken since the factor was last
+  emptied, the fraction carried to the next step (b 1.5 adds 1, 1, 2, 4, 5...). At or above the cap, or with no interval, the
+  timer is 0. Nothing cuts a unit above its cap: growth and the additions stop there, so a lowered cap leaves the
+  extra until the unit spends it. Factor, timer, `t` and the fraction are words 1 to 3 of a saved marker
+  (`savedmarkers.h`, stat 6Bh, word 0 `NRSF`; word 3 `t | fraction x 65536 << 16`), written each tick, so a transform in
+  place, which ends the unit's modifiers, has it written again at the next tick. A unit gone, dead or of a proto
+  without a factor leaves the table. A factor emptied (a shipment, a command) sets `t` back to 0.
 - **The trickle:** the filter of the shared AutoGather rate getter multiplies a marked proto's rate by the unit's factor
   (the initial value while the unit is not in the table yet). The AutoGather update FUN_0048D13E then pays as stock: to
   the player through the add 0x49A98A (return 0x4C379D, which `incomeRates` counts), or, with the tactics flag
   `AddResourcesToInventory` (bit 4 of `[action+64h]`, handler 0x5FC84D), into the unit's own resource list through
   0x49A5E6, cut at its carry capacity 0x494503 when the proto asks for it. The first call of a game before its first
   tick builds the table from the markers first.
-- **Data subtypes** (`AddTechSubtype`): `NurseryFactorMax`, `NurseryFactorInterval` and `NurseryFactorStep` keep a value
-  per player's copy of the proto (looked up by pointer, checked against the copy's ID), computed by the stock value
-  function 0x7F892A from the tag's value. `NurseryFactor` queues `(copy, amount, relativity)` for the next world tick,
-  which runs 0x7F892A on each of the player's built units of that copy, with the unit's factor as the value and the
-  initial value as the base, and clamps it to 0..cap.
+- **Data subtypes** (`AddTechSubtype`): `NurseryFactorMax`, `NurseryFactorInterval`, `NurseryFactorStep` and
+  `NurseryFactorGrowthBase` keep a value per player's copy of the proto (looked up by pointer, checked against the copy's
+  ID), computed by the stock value function 0x7F892A from the tag's value. `NurseryFactor` queues `(copy, amount,
+  relativity)` for the next world tick, which runs 0x7F892A on each of the player's built units of that copy, with the
+  unit's factor as the value and the initial value as the base, and clamps it to 0..max(cap, the unit's factor).
 - **The load runs the Data effects again** (seen in game, 2026-11-25): after `loadGame`, each tech effect of these
   subtypes came through the handlers again, before the first world tick, in the order of the techs in the techtree
   (not the order they were researched): `NurseryFactorMax` +5 then `Assign` 4 gave a cap of 4 after the load where the
@@ -4007,17 +4021,89 @@ look for a resource with a rate (0x69D232, 0x9CFE1E). The factor comes from simu
   of the player's living, built units whose proto is `nursery` or of that abstract type (0x44D7FA), in ID order, and
   returns the stock `FreeHomeCityUnit` (37h) with the proto and `amount x total`; nothing under 1 unit. A taken factor
   restarts its timer.
-- **Panel:** `AddUnitPanelRow` (the minimized interface's AutoGather row, `[panel+33Ch]` / `+340h`) writes the name
-  as the label and `3/10` as the value, and `SetUnitPanelRowTip` (new in `unitpanel.*`) puts the two lines in the help
-  text `[gadget+68h]` of both gadgets (BString set 0x40196F); the shared hook clears it before the next refresh's rows,
-  so the stock row and the other keys' rows never show it. `{uhcNurseryFactor}` (`AddDataRef`, string) gives the first
-  selected unit's `3/10 minks`. Text IDs resolve through 0x58EA52.
+- **The garrison** (`AddGarrisonObserver`, the success tail of the load of a unit into another, 0x9C26E1): the
+  observer runs inside the load, so it only queues `{container ID, unit ID}` when the container's proto has a garrison
+  rule. The next world tick takes each entry whose unit is alive and still inside it (`[unit+6Ch]` the container's ID):
+  the first rule whose type is the unit's proto or one of its types (0x44D7FA); a container at or above its cap keeps
+  the unit; else the factor goes up by the amount, at most to the cap, the marker is written, and the unit is removed
+  with the world's unit removal 0x4726B2 `(world, id, 0, 1)`, the call of the trigger `Destroy` (no death, no corpse).
+- **The commands.** The UI syscall `nurseryFactorCommand(name)` (`AddSyscall`, group UI, so a `protounitcommands.xml`
+  `<command>` can run it) looks the name up and sends the network command `uiTransformSelectedUnit` sends (0x7E7193,
+  read with capstone, REA had no function there): `0x5695FC(player, 17h, 0, -1)`, the player list `0x5683B9(cmd, 1,
+  &player)`, `[cmd+2Ch] = 3`, `[cmd+3Ch] = 0`, the units `0x5696E1(cmd, count, ids)` (the local selection group
+  0x453B28's units of the local player whose proto has that command), then `[cmd+8Ch]`, where the transform keeps the
+  target proto ID, gets `'NR' << 16 | index`, and `0x568A1A([world+8], cmd, 0, 0)` queues it. Every machine runs it in
+  the world update: the command loop 0x7C86A4 calls the type's per-unit execute FUN_007D64F7 (vtable 0xB86F28 +54h,
+  `thiscall(cmd, unit)`, `ret 4`, AL) for each unit its player owns. The hook at its head (5 bytes, `sub esp,1Ch / push
+  ebx / push ebp`) sends a command with the magic to `UhcNurseryCommand(cmd, unit)` and returns its AL with `ret 4`;
+  any other command takes the stock code (re-executed, then 0x7D64FC). A proto ID never has the magic: the stock
+  execute itself refuses an ID out of the player's proto range (0x45311B, `cmp edx,[ecx+0E4h]`). The run, for a built
+  unit of the command's player with that command: a negative factor needs that many, a positive one room under the
+  cap; the units need room (PLACE, world vtable +14h, flags 2, on rings of 16 points from the building's edge, the
+  units found before counting, as `killSpawn` places its animals); then the cost: a ResList of the game's size
+  `[0C6DF38h]`, filled with 0 (0x4E2617) and set per resource (0x58EF83), paid with the stock payment 0x8D946A (which
+  tests the player's or the team's stock first). Any refusal changes nothing. Then the factor (as an addition, up to
+  the cap), the marker, and the units, created by 0x498ACC at the spots found.
+- **The buttons** (`AddPanelButtonFilter`): a button whose click is `nurseryFactorCommand("...")` asks, for the local
+  selection's units with that command, the same tests (the factor, the cap, the cost through 0x8D6BAE, or 0x8D6C1B with
+  `[world+6912h]` set); with none that passes it is greyed (state 1), its click and shift-click emptied, and its rollover
+  gets the last reason in red (0x443960): `2/10 minks: 4 needed`, `10/10 minks: full`, or string 41543 "Not enough
+  resources". Interface only.
+- **Panels:** `AddUnitPanelRow` (the minimized interface's AutoGather row, `[panel+33Ch]` / `+340h`) writes
+  `3/10 minks` as the label (`(once built)` on a foundation), and `SetUnitPanelRowTip` puts the two rollover lines in
+  the help text `[gadget+68h]` of both gadgets; the shared hook clears it before the next refresh's rows, so the stock
+  row and the other keys' rows never show it. In the normal interface, the shared stat panel row hook
+  (`statpanelrows.*`, 0x4D76DB, after the HP row; `overhealHitpointBars`' row moved there) writes the same text in the
+  value gadget of the next free row, with the same help text; the stock AutoGather row comes after it. The portrait's
+  progress pie (`AddProgressPieSource`) shows the share of the interval done while the unit grows. `{uhcNurseryFactor}`
+  (`AddDataRef`, string) gives the first selected unit's `3/10 minks`. Text IDs resolve through 0x58EA52.
 
-**Why it is safe.** Markers are made (0x4DD22D) only by the world tick, after the world update. The rate filter and the
-shipment read the table; the shipment's take writes the table only, the tick writes the markers. Deterministic: the
-table is keyed by unit ID, the copy map by pointer is only looked up, the time is game time, the order is the table's.
-The display reads only. Cost: per update, 256 slot reads and one marker walk per unit with a factor; per AutoGather
-rate call, one C call and a byte lookup for a proto without a factor.
+**Why it is safe.** Markers are made (0x4DD22D) only by the world tick and the commands, which run in the world update.
+The garrison observer only queues; the unit is removed after the update, by the call the trigger `Destroy` makes. The
+rate filter reads the table; the shipment and the commands write the table and the markers in the simulation, on every
+machine, in the order the commands come. Deterministic: the table is keyed by unit ID, the copy map by pointer is only
+looked up, the time is game time, the placement tests run in a fixed order, the command's index comes from the data.
+The syscall, the buttons and the panels only read. The command hook returns exactly as the stock execute does (`ret
+4`, AL; EBX, ESI, EDI and EBP kept by the stdcall C function). Cost: per update, 256 slot reads and one marker walk per
+unit with a factor; per AutoGather rate call, one C call and a byte lookup for a proto without a factor; per transform
+command, three compares.
+
+### garrisonConvert
+
+`src/features/garrisonconvert.cpp`; the shared `garrisonobservers.*` (new with this key), `transformcalls.*`,
+`prototags.*`, `worldtick.*` and `savedmarkers.h`.
+
+- **Where a unit enters another:** FUN_009C24B5, `bool __thiscall(container, int unitId, int flag)`, `ret 8`, the load
+  every way in goes through (eleven direct callers: the garrison and load actions, the triggers, the random map
+  placement, the scenario load). It refuses a unit already inside one (`[unit+6Ch]` ≠ −1), a dead one, a full container
+  (`[c+74h]` against the proto's maximum, 0x49EB5A) or one whose rules refuse it (0x4C2EC8); on success it writes
+  `[unit+6Ch]` = the container's ID (0x9C25C2), appends the unit's ID to the list `[c+70h]` (0x401F74 at 0x9C26DC) and
+  returns 1 at 0x9C2701. The shared hook replaces the 7 bytes at 0x9C26E1 (`mov edi,[edi+58h]` / `test` / `je`), after
+  the append, with EDI = the container and ESI = the unit; it calls each observer, replays the three instructions and
+  jumps to 0x9C26E8 or 0x9C26FF. The function's head is verified too, so a detour of it fails the key instead of
+  leaving the hook unreached. Unload: 0x9C68C3.
+- **Tag** (`AddProtoTagHandler`): `<GarrisonConvertTo delay="S">Name</GarrisonConvertTo>`, by proto ID: the name, kept
+  as text and resolved (0x5A2346) against each database once, and the delay in ms (0 to 3600 s; a bad one is 0). A
+  second tag on the same proto replaces the first, with a log line.
+- **The entries** (`AddGarrisonObserver`): the observer runs inside the load, so it only adds the container's ID to a
+  set (in ID order) when its proto has the tag. The conversions run after the world update (`AddWorldTick`).
+- **The queue is the container's own list** `[c+70h]`, which is in entry order: the units of it that are still inside
+  (`[unit+6Ch]` = the container), alive, of the container's owner and not already of the target proto. Nothing else
+  is kept, so a unit that leaves drops out by itself, and a captured building converts its new owner's units.
+- **No delay:** each unit of the queue goes through `TransformUnit` (0x9C754C with the transform observers around it),
+  the container leaves the set.
+- **With a delay:** the game time `[world+108h]` since the last tick is added to the container's timer; each full delay
+  converts the first unit of the queue, and the rest carries over to the next one. When the unit in progress leaves
+  before its turn, the next starts from 0. An empty queue clears the timer and the container leaves the set. The timer,
+  the unit in progress and the game time of the write are words 1 to 3 of a saved marker on the container
+  (`savedmarkers.h`, stat 6Ch, word 0 `GCNV`), written each tick.
+- **A game that starts or loads** (another world, the time going back or the step count jumping, as `nurseryFactor`):
+  one walk of the world's unit table puts back every container of a tagged proto with units inside, with the timer of
+  its marker plus the game time since the marker's write (the update the save was made in).
+- **The transform in place** keeps the unit's ID, owner, container and share of hit points, and changes its
+  population to the new proto's (the stock `TransformUnit` effect does the same).
+- **Panels:** `GarrisonConvertProgress(building, &fraction, &waiting)` (`features.h`) gives the progress of the unit in
+  progress and the number of units that qualify.
 
 ### containedUnitsROF
 
@@ -4255,33 +4341,62 @@ game; `docs/engine-symbols.md`, "Turrets, facing and the Granny pose", REA evide
   proto is listed, its attack with the tag is in its action list (`[unit+58h]+14h`, children at `[action+40h]`: the attack
   asks for the facing before it is the current action) and the point is within the arc (+ 0.5 degree) of the unit's
   forward `[unit+20h]`, the angle `atan2(right, forward)` in the ground plane; the hook then returns 1 (`mov al,1 / ret 4`)
-  without writing the wanted forward. Otherwise the stock function runs. The arc is per side: the tag's number, no
-  farther than the aim file's yaws go on that side (`min(arc, -first yaw)` to the left, `min(arc, last yaw)` to the
-  right), so a table of -30..+90 under `90` gives -30..+90, and a table of -90..+90 keeps the tag's symmetric arc.
+  without writing the wanted forward. Otherwise the stock function runs. The arc is the tag's number each side of the
+  gun's rest yaw (the aim file's, 0 before its version 2), no farther than the aim file's yaws go (`max(rest - arc,
+  first yaw)` to `min(rest + arc, last yaw)`; the angle is taken about the rest yaw, so an arc that does not hold ahead
+  is not cut where the angle wraps): a table of -30..+90 at rest 0 under `90` gives -30..+90, a table of -90..+90
+  keeps the tag's symmetric arc, and a table of +30..+150 at rest +90 under `60` gives +30..+150.
+- **Beyond an arc about a rest yaw that is not ahead** (round 6, 2026-11-26), the stock turn would bring the target
+  ahead, outside the arc. `UhcTurretFace` returns 2 and the hook writes `&g_uhcTurretPoint` over the stock argument
+  (`[esp+4]`, the caller's slot, dead after the call: the function is `ret 4`) before the stock code runs: the point
+  turned by minus the rest yaw about the unit (in its forward/right/up axes), so the wanted forward FUN_0048AB4A
+  stores puts the target at the rest yaw. Only while the unit's current action `[[unit+58h]+24h]` is the turret attack
+  (or holds it among its children `[action+40h]`): the other callers of the turn (10 direct, 21 through 0x48AA5D) keep
+  the stock behaviour. The turn under way goes on in the movement code after the target enters the arc (the hook
+  then keeps the facing), so the unit ends with the target at the rest yaw. Seen in game: a House at 180 degrees,
+  `the unit turns until it sits at the rest yaw` from 180 down to 151, then `the gun turns` while the camel turned on to
+  bring it to +90.
 - **Launch hook** (`UhcTurretLaunchHook`, 0x4995D5, 9 bytes `fld [esp+28h] / push 40A00000h` re-executed; continues at
   0x4995DE): for a listed unit whose current attack is the tagged one, the start becomes the aim file's pivot plus its
-  muzzle turned by the angle to the aim point clamped to the arc, in the unit's axes (`[unit+14h]` position, `+20h`
-  forward, `+2Ch` up, `+38h` right; the model's +x is the unit's right).
+  muzzle (given at the rest yaw) turned by the angle to the aim point clamped to the arc, less the rest yaw, in the
+  unit's axes (`[unit+14h]` position, `+20h` forward, `+2Ch` up, `+38h` right; the model's +x is the unit's right).
 - Both use only the unit, its action list, its tactics and the aim point: game state, the same on every machine. The
   key keeps no game state between updates.
 - **Display** (`grannyhooks.*`, the shared owner of the import slot 0xB847AC: `AddGrannySampleObserver`; the slot is
   checked against `GetProcAddress("_GrannySampleModelAnimations@16")` before it is written). After the stock sample,
   for the instances the key mapped (each world tick, `AddWorldTick`, from the units that aimed, through their visual and
   its attachments), the shown yaw moves toward the last aim at the turn rate in real time, and goes home half a second
-  after the last aim or at once while the gun or the gunner plays a clip named for a reload, a death or a deploy. The
-  gun's yaw bone and the camel's turret bone turn by it (a quaternion about their local y). The gunner's bones take the
+  after the last aim or at once while the gun or the gunner plays a clip named for a reload, a death or a deploy; home
+  is the rest yaw. The clips show the gun (and the camel's turret bone) at the rest yaw, so the gun's yaw bone and the
+  camel's turret bone turn by the shown yaw less the rest yaw (a quaternion about their local y): nothing at rest, and
+  nothing while a deploy clip swings the gun itself. The gunner's bones take the
   aim table's local transforms for the clip that weighs most among the instance's controls and its clock, blended
   between the two nearest frames and yaws (`granny2.dll`'s own exports). A gunner on foot steps round the post as the
   gun turns (his feet are part of the table); when the shown yaw stops, a step under way finishes in 0.2 s: the pose
   blends to the aim file's settled table for the way the gun last turned (his feet down at the end of the band, his
   hands still on the grips at the shown yaw), and back to the stepping table when the gun turns again, so the gun rests
   exactly on its target and no foot is left in the air. Display only: nothing of it reaches the game.
-- **Aim file** (`UHCA`, version 1): the gun's yaw bone and the turret bone (32 B names), the pivot and the muzzle (3
-  floats each, the camel's model space at the fire clip's first frame), the yaws, the gunner's bones, then per clip its
+- **Aim file** (`UHCA`, version 1 or 2): the gun's yaw bone and the turret bone (32 B names), the pivot and the muzzle (3
+  floats each, the camel's model space at the fire clip's first frame), in version 2 the rest yaw (a float, degrees,
+  the unit's right positive; version 1 rests ahead), the yaws, the gunner's bones, then per clip its
   rider animation's name, length and frames, `[frame][yaw][bone]` position and rotation. Optional sections follow, each
   a 4-byte tag and a count: `BAND`, the (from, to) yaw bands in which a gunner's foot is in the air (logged), and
   `SETL`, per clip its name, length and frames and two tables like the clip's (the step finished toward a growing yaw,
   then toward a shrinking one). A reader without them stops after the clips.
+<!-- private:begin -->
+- **A gun its own clips swing (the zamburak cannon, 2026-11-26).** Its reload turns the gun from
+  +90 round through its back to 270 and back, inside the clip (the gun's `bone_yaw` and the camel's `bone_turret`
+  keyed in the clip). The key adds only `aim − rest`, and `IsHomeClip` returns the shown yaw to the rest at the turn
+  rate while a clip whose animation name holds `reload`, `death` or `deploy` plays. So the reload's swing shows as
+  animated, with no offset once the gun is home: from an aim of 140 that takes 0.5 s at 100 degrees a second, while he
+  plants his linstock. The pack names its unlimber and limber clips `…_deploy` and `…_undeploy`, so they are home
+  clips too. No DLL change was needed. Its aim table holds the artillerist's arm and head for the idle and the shot
+  at every 2 degrees, standing at his rest station; there is no `BAND` and no `SETL`, because he does not step.
+- **The camels' round 7 (2026-11-26: the kush, the gatling post centred, the hump).** Art only: the key reads the
+  pivot and the muzzle from the aim files, which the tools write again from the moved post and the lowered, levelled
+  lying body, so the gun turns about the new post and the shots leave its turned muzzle with no DLL change. The humped
+  camel's mesh is in the plain skinned vertex layout: the game drew nothing of the packed stream edited in place.
+<!-- private:end -->
 
 ### unitResourceAuras
 
@@ -6999,6 +7114,70 @@ spawn, the caller reads the chosen entry again by type (`0x49D884`, `cmp eax,0Fh
 custom type that read gives nothing, so no units are thrown out, as for a type with no entry. Evidence:
 `ev_89da6b7d…` (FUN_004F04FE, FUN_0059F436), `ev_7d29d565…` (FUN_005FE922, FUN_005FEABF), `ev_107075e1…`
 (FUN_005FE875, FUN_005FE8CD), `ev_a040ef98…` (FUN_0049C18C, FUN_00401F74, FUN_0051E1DF), `ev_79c38552…` (FUN_0049C1E5).
+
+### The progress pie (`progresspie.*`) and progressPieDemo
+
+A shared piece, not a key: a key that has a timed process on a unit (a growth step, a conversion) shows how far it
+has gone as the overlay a train button shows while its unit trains, drawn over the unit's portrait in the selection
+panel, in the minimized interface and the normal one. The dev key `progressPieDemo` is its test bed.
+
+**The engine's pie** (REA `ev_18d1be98…` FUN_00629A7A, `ev_0ba07671…` 0xAB6C63, `ev_0ef63318…` 0x4C51FA,
+`ev_b5dcc5c5…` 0xAB5C34, `ev_bdb706ee…` 0xAB5BAA, `ev_6cb3ea96…` FUN_0070ADE9; capstone for the callers):
+- Every gadget can hold one: the base layout parser FUN_00629A7A reads a `<pieChartFilling color="R G B A"
+  rotation="cw|ccw" fill="true|false" texture="...">` child into a 20h-byte record at `[gadget+130h]`: the fraction
+  `+0`, the colour `+4` (ARGB, packed by 0x404DF6), the texture `+8` (-1: none), `+0Ch` 1.0, the rotation `+1Ch`
+  (1 = cw), the fill flag `+1Dh`, on `+1Eh`; and a material `[gadget+12Ch]` (`defaultcolored_alphablend`, diffuse =
+  the texture). The layouts tested put one on each command panel button and on the training panel's buttons.
+- Every gadget vtable has the same fill at +6Ch, 0xAB6C63 (`thiscall(gadget, float)`, `ret 4`): with no record it
+  makes one (colour 88FFFFFFh, no texture, cw, fill false, on), then stores the fraction clamped to [0, 1].
+  0x4C51FA (`thiscall(gadget, bool)`, `ret 4`) turns the record on or off (`+1Eh`). 0xAB5C34
+  (`thiscall(gadget, r, g, b, a)` floats, `ret 10h`) sets the colour. 0xAB5BAA (`thiscall`, plain `ret`) makes the
+  material when there is none and gives it the record's texture.
+- The command panel fills its train buttons every refresh: `+6Ch(progress)`, `0x4C51FA(1)`, then the colour
+  `0xAB5C34(0, 0, 1, 0.5)`, blue at half alpha (0x69D9BC); other buttons of that panel use green (0x69D99F),
+  magenta (0x69C383), yellow (0x69C572) or blue (0x69C92B) the same way. The unit stack buttons (FUN_009B85C7) call
+  0xAB5BAA first when the button has no material, since their layout has no `<pieChartFilling>`. The special
+  powers panel (FUN_0070ADE9) adds a mask texture, `ui\core_ui\default_piechart_mask`, for its round buttons.
+- Seen in game (the train button of a Town Center's queue): the covered part is the part not done; the uncovered
+  wedge starts at 12 o'clock and grows clockwise. The pie covers the whole square of the gadget (no texture, no mask).
+
+**The module** adds no hook and no gadget. `AddProgressPieSource` verifies the four functions above, the portrait's
+bind (0x9BAE5E: `unitselectionpanel-unitPortrait` → `[panel+2E4h]`, the same field in both layouts) and the gadget
+lookup, then adds an observer to the shared panel tail (`AddUnitPanelTail`, 0x4C8281), which both interfaces reach. On
+each refresh the observer takes the portrait gadget from its handle; with one unit selected (the group's count
+`[+14h]` = 1) it asks the sources in the order added; the first that answers sets the pie as the command panel does
+(fill through the gadget's own slot +6Ch, which must be 0xAB6C63, else nothing is drawn and the log says so once;
+the material through 0xAB5BAA if missing; the colour through 0xAB5C34 when it changed; on through 0x4C51FA). When no
+source answers, or for a group, an on pie is turned off. `ShowGadgetPie` / `HideGadgetPie` do the same on any gadget
+handle, for a key that wants the pie elsewhere.
+
+**Why it is safe:** display only, on the main thread, from the panel fill. The record is the engine's own, made by the
+engine's function, and freed with the gadget as every button's is; nothing is written to the portrait but its record
+and material. The portrait has no `<pieChartFilling>` in the layouts tested and no stock code fills it, so no stock pie is
+overwritten. A stale handle gives no gadget (the lookup checks its generation).
+
+**progressPieDemo** `[seconds] [RRGGBBAA]` (dev key, not in `uhc.cfg`): a source that answers for every unit with
+the game time `[world+108h]` modulo the period (default 10 s, 1 to 600), in the train button's blue or the colour
+given. Bad values are logged and the key is not applied.
+
+**Tested** (2026-11-26, a modded copy, scenario, a Musketeer and a Town Center; `progressPieDemo 8`):
+(The WoL copy `C:\AoE3-UHC-WoLReal3`, Ethiopians.) <!-- private -->
+- minimized interface: the pie over the Musketeer's and the Town Center's portrait, filling clockwise from 12 o'clock
+  as the Town Center's queue button does next to it (the same colour and direction);
+- normal interface: the same over the big portrait; three villagers selected: no pie;
+- the key absent (control): the stock portrait;
+- the panel refreshes it with the frame: 16 changes in 40 frames of a 10 fps capture of a background copy.
+
+**Performance**, `perfprobe.py` 60 s each, the Musketeer selected, minimized interface, other agents' games running:
+
+| Run | fps | main thread CPU | frames over 50 ms |
+|---|---|---|---|
+| key absent | 714 (median 721) | 83.8 % | 0 |
+| `progressPieDemo 8` | 662 (median 689) | 79.7 % | 0 |
+
+The render time per frame went from 1.2 to 1.4 ms with the pie on (one more alpha-blended pie, the cost of a train
+button's); the main thread and the frames over 50 ms did not rise.
+Films: [with the pie](media/progressPie-wol.gif), [control, key absent](media/progressPie-wol-control.gif). <!-- private -->
 
 ## 5. Rules that keep multiplayer deterministic
 
