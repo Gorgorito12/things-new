@@ -762,6 +762,7 @@ Modders download a zip, so they never need a compiler. The version has a single 
        art\effects\uhc_rings\  tools/rings: the aura rings and icons, the range rings (every size, dashed,
                                filled) and the rank marks
        art\ui\uhc\health_overheal.ddt  the portrait bar's overheal end, of tools/bars (aoe3-blender-tools' make_bar.py)
+       art\ui\uhc\pie\     tools/pie: the 32 frames of nurseryFactor's small progress pie (make_pie.py)
        dxvk\d3d9.dll, dxvk\LICENSE.txt   DXVK 3.1.1 (x32) and its zlib license, for rendererOption
        README.txt          the modder's quick start
        LICENSE.txt

@@ -1382,6 +1382,12 @@ inline constexpr Site kBuildCountTooltip2{"BuildCountTooltip2", 0x0070F5EF, kBui
 inline constexpr std::uint8_t kPlayerProtoEntryBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x85, 0xD2, 0x0F, 0x8C};
 inline constexpr Site kPlayerProtoEntry{"PlayerProtoEntry", 0x0045311B, kPlayerProtoEntryBytes, sizeof(kPlayerProtoEntryBytes)};
 
+inline constexpr std::uint8_t kPlayerPopulationBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B};
+inline constexpr Site kPlayerPopulation{"PlayerPopulation", 0x0045805C, kPlayerPopulationBytes, sizeof(kPlayerPopulationBytes)};
+
+inline constexpr std::uint8_t kPlayerPopCapBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B};
+inline constexpr Site kPlayerPopCap{"PlayerPopCap", 0x004581A1, kPlayerPopCapBytes, sizeof(kPlayerPopCapBytes)};
+
 inline constexpr std::uint8_t kTrainBatchProtoArgBytes[] = {0x8B, 0x4C, 0x24, 0x30};
 inline constexpr Site kTrainBatchProtoArg{"TrainBatchProtoArg", 0x009CE6DE, kTrainBatchProtoArgBytes, sizeof(kTrainBatchProtoArgBytes)};
 

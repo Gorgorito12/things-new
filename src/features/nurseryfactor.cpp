@@ -43,10 +43,14 @@
 // The factors: a table by unit ID (in ID order), filled by a sweep of the world's unit table (256 slots per world
 // update; the whole table when a game starts or loads). After each world update (worldtick.h) each living, built unit
 // adds the game time [world+108h] that passed to its timer and grows a step per interval, up to the player's cap; at
-// the cap the timer waits at 0. The factor, the timer, the step count t and the fraction an exponential step left are
-// a saved marker on the unit (savedmarkers.h, stat 6Bh), written each tick, so a save keeps them and the unit's death
-// loses them; a transform in place (which ends the markers) keeps the table's value when the new proto is tagged too.
-// t goes back to 0 when the factor is emptied.
+// the cap the timer waits at 0. The factor and the timer are a saved marker on the unit (savedmarkers.h, stat 6Bh),
+// written each tick, so a save keeps them and the unit's death loses them; a transform in place (which ends the
+// markers) keeps the table's value when the new proto is tagged too.
+//
+// Exponential growth: t follows the factor. With S(t) = b^0 + ... + b^(t-1) (S(0) = 0), t is the largest t with
+// floor(S(t)) <= factor, and the next step adds floor(S(t+1)) - floor(S(t)) (b^t for a whole b). So t is a function
+// of the factor and the player's b, never stored: a sale, a shipment, a garrisoned unit, a command, a tech or a
+// capture moves t with the factor. b 2: S = 0, 1, 3, 7, 15...; 0 -> t 0, 2 -> t 1 (next +2), 3 -> t 2 (next +4).
 //
 // The garrison: the shared observer of the load of a unit into another (garrisonobservers.h) queues the entries into a
 // tagged building; the world tick after them removes each unit that is still inside and matches a rule (0x4726B2, the
@@ -56,12 +60,14 @@
 // (type 17h, 0x5695FC), for the local player's selected units, with 'NR' << 16 | the command's index in [cmd+8Ch]
 // where that command carries a proto ID. Every machine runs it in the world update; the hook at the head of the
 // type's per-unit execute 0x7D64F7 (hooks/nurserycmd_hooks.asm) takes those and runs the unit's rule: the factor
-// (enough of it, or room under the cap), the cost (0x8D946A, the stock payment), the units (PLACE and 0x498ACC around
-// the building, as killSpawn places its animals). Each test that fails leaves everything as it was.
+// (enough of it, or room under the cap), room for the units (PLACE around the building, as killSpawn places its
+// animals) and under the population cap (the stock maintain spawn's test, for all of them), the cost (0x8D946A, the
+// stock payment), then the units (0x498ACC). Each test that fails leaves everything as it was.
 //
 // Display only: the unit panel row (unitpanel.h, the minimized interface) and the stat panel row (statpanelrows.h, the
-// normal one) "3/10 minks" with the rollover as their help text, the portrait's progress pie toward the next step
-// (progresspie.h), the command buttons greyed with their reason (panelbuttons.h), and the data ref {uhcNurseryFactor}
+// normal one) "3/10 minks" with the rollover as their help text, a small progress pie toward the next step after that
+// text (an inline icon, art\ui\uhc\pie; without those files the portrait's pie, progresspie.h), the command buttons
+// greyed with their reason (panelbuttons.h), and the data ref {uhcNurseryFactor}
 // (the first selected unit's "3/10 minks").
 #include <windows.h>
 
@@ -161,6 +167,17 @@ const auto kResListGet = reinterpret_cast<ResListGetFn>(0x0044EFFF);
 const auto kResListSet = reinterpret_cast<ResListSetFn>(0x0058EF83);
 const auto kResListFill = reinterpret_cast<ResListFillFn>(0x004E2617);
 const auto kPay = reinterpret_cast<PayFn>(0x008D946A);
+// The population test of the stock maintain spawn (docs/engine-symbols.md, "Maintain spawn"): the player's copy of
+// the proto (0x45311B), its PopulationCount [proto+0D8h], the flags AllowOverPopCap 9Fh and AlwaysAllowOverPopCap
+// A3h (0x45EE02), the population (0x45805C, plus [player+78h]) and the cap (0x4581A1).
+using PlayerCountFn = std::int32_t(__thiscall*)(const char* player);
+using ProtoFlagFn = bool(__thiscall*)(const char* proto, std::int32_t bit);
+const auto kPlayerProto = reinterpret_cast<PlayerProtoFn>(0x0045311B);
+const auto kProtoFlag = reinterpret_cast<ProtoFlagFn>(0x0045EE02);
+const auto kPlayerPop = reinterpret_cast<PlayerCountFn>(0x0045805C);
+const auto kPlayerPopCap = reinterpret_cast<PlayerCountFn>(0x004581A1);
+constexpr std::int32_t kAllowOverPopCap = 0x9F;
+constexpr std::int32_t kAlwaysAllowOverPopCap = 0xA3;
 using AffordFn = bool(__thiscall*)(const char* player, const void* cost);
 const auto kAfford = reinterpret_cast<AffordFn>(0x008D6BAE);        // the payment's test of the player's stock
 const auto kSharedAfford = reinterpret_cast<AffordFn>(0x008D6C1B);  // ... of the team's, with [world+6912h] set
@@ -257,8 +274,6 @@ std::unordered_map<const char*, TechValues> g_tech;  // by the player's copy of 
 struct State {
   std::int32_t factor = 0;
   std::uint32_t progress = 0;  // ms of game time towards the next step
-  std::uint32_t steps = 0;     // t: the growth steps since the factor was last emptied
-  float carry = 0.0f;          // exponential: the fraction the steps left, 0..1
 };
 std::map<std::int32_t, State> g_units;  // by unit ID, in ID order: the same walk on every machine
 
@@ -407,27 +422,54 @@ float BaseOf(const char* copy, const Tags& tags) {
   return base > 0.0f ? base : 0.0f;
 }
 
-// What one growth step adds: the step (linear), or b^t with the fraction carried to the next step (exponential).
-std::int32_t StepAmount(const char* copy, const Tags& tags, State* state) {
-  if (!tags.exponential) {
-    return StepOf(copy, tags);
+// Exponential growth, t following the factor: with S(t) = b^0 + ... + b^(t-1), t is the largest t with
+// floor(S(t)) <= factor (at most kMaxT), and the next step adds floor(S(t+1)) - floor(S(t)). A pure function of the
+// factor and b, so every change of the factor moves t with it. b 1: t = factor, +1. b below 1: S stops growing, and
+// once floor(S) is reached every t qualifies (t = kMaxT, +0).
+constexpr std::uint32_t kMaxT = 0xFFFF;
+
+struct Growth {
+  std::uint32_t t = 0;
+  std::int32_t next = 0;  // what the next step adds
+};
+
+Growth ExpGrowth(float base, std::int32_t factor) {
+  const double b = base;
+  const double f = factor;
+  if (b == 1.0) {
+    return {static_cast<std::uint32_t>(std::min<std::int32_t>(factor, static_cast<std::int32_t>(kMaxT))), 1};
   }
-  const double power = std::pow(static_cast<double>(BaseOf(copy, tags)), static_cast<double>(state->steps));
-  const double total = (power < static_cast<double>(kMaxValue) ? power : static_cast<double>(kMaxValue)) +
-                       static_cast<double>(state->carry);
-  const double whole = std::floor(total + 1e-6);
-  state->carry = static_cast<float>(std::clamp(total - whole, 0.0, 0.99998));
-  return static_cast<std::int32_t>(whole);
+  // b 0: S is 1 from t 1 on. 0 < b < 1: S rises towards 1 / (1 - b) without reaching it, so every t qualifies once
+  // the factor is at least the whole part of that limit (b 0.5: 2 is never reached, 1 is the most there is).
+  if (b <= 0.0 ? factor >= 1 : b < 1.0 && std::floor(1.0 / (1.0 - b) - 1e-9) <= f) {
+    return {kMaxT, 0};
+  }
+  double s = 0.0;  // S(t)
+  double p = 1.0;  // b^t
+  std::uint32_t t = 0;
+  while (t < kMaxT && std::floor(s + p + 1e-9) <= f) {
+    s += p;
+    p *= b;
+    ++t;
+  }
+  if (t >= kMaxT) {
+    return {kMaxT, 0};
+  }
+  const double add = std::floor(s + p + 1e-9) - std::floor(s + 1e-9);
+  return {t, add >= static_cast<double>(kMaxValue) ? kMaxValue : static_cast<std::int32_t>(add)};
 }
 
-// A factor set by a take: emptied, the exponential curve starts again.
-void SetFactor(State* state, std::int32_t factor) {
-  state->factor = std::clamp(factor, 0, kMaxValue);
-  if (state->factor == 0) {
-    state->steps = 0;
-    state->carry = 0.0f;
-  }
+// What one growth step adds: the step (linear), or the exponential step of the unit's t.
+std::int32_t StepAmount(const char* copy, const Tags& tags, std::int32_t factor) {
+  return tags.exponential ? ExpGrowth(BaseOf(copy, tags), factor).next : StepOf(copy, tags);
 }
+
+// The unit's t for the log: exponential only, else -1.
+std::int32_t TOf(const char* copy, const Tags& tags, std::int32_t factor) {
+  return tags.exponential ? static_cast<std::int32_t>(ExpGrowth(BaseOf(copy, tags), factor).t) : -1;
+}
+
+void SetFactor(State* state, std::int32_t factor) { state->factor = std::clamp(factor, 0, kMaxValue); }
 
 // An addition, up to the cap; a unit already above it keeps what it has.
 std::int32_t AddUpToCap(std::int32_t factor, std::int32_t amount, std::int32_t cap) {
@@ -854,17 +896,6 @@ void ChangeFactor(char* copy, const char* base, float amount, std::uint8_t relat
 
 char* MarkerOf(const char* unit) { return uhc::markers::Find(unit, kStat, kWord); }
 
-std::uint32_t PackSteps(const State& state) {
-  const std::uint32_t steps = state.steps > 0xFFFF ? 0xFFFF : state.steps;
-  const auto carry = static_cast<std::uint32_t>(std::clamp(state.carry, 0.0f, 0.99998f) * 65536.0f);
-  return steps | (carry << 16);
-}
-
-void UnpackSteps(std::uint32_t word, State* state) {
-  state->steps = word & 0xFFFF;
-  state->carry = static_cast<float>(word >> 16) / 65536.0f;
-}
-
 void Consider(const char* unit, bool fromMarkers) {
   if (unit == nullptr) {
     return;
@@ -882,8 +913,7 @@ void Consider(const char* unit, bool fromMarkers) {
   const char* marker = fromMarkers ? MarkerOf(unit) : nullptr;
   if (marker != nullptr) {
     state.factor = static_cast<std::int32_t>(uhc::markers::Word(const_cast<char*>(marker), 1));
-    state.progress = uhc::markers::Word(const_cast<char*>(marker), 2);
-    UnpackSteps(uhc::markers::Word(const_cast<char*>(marker), 3), &state);
+    state.progress = uhc::markers::Word(const_cast<char*>(marker), 2);  // word 3: t before 2026-11-26, unread
     state.factor = std::clamp(state.factor, 0, kMaxValue);
   } else {
     state.factor = std::min(Whole(tags->initial), Cap(copy, *tags));
@@ -983,9 +1013,9 @@ void ApplyPending(const char* world) {
       const std::int32_t upper = std::max(cap, before);
       SetFactor(&state, std::clamp(static_cast<std::int32_t>(std::floor(value + 1e-4f)), 0, upper));
       if (LogOk()) {
-        uhc::Log(L"nurseryFactor: unit %d (%hs), NurseryFactor relativity %u amount %g: %d -> %d/%d", id,
+        uhc::Log(L"nurseryFactor: unit %d (%hs), NurseryFactor relativity %u amount %g: %d -> %d/%d, t %d -> %d", id,
                  ProtoName(pending.copy), pending.relativity, static_cast<double>(pending.amount), before,
-                 state.factor, cap);
+                 state.factor, cap, TOf(pending.copy, *tags, before), TOf(pending.copy, *tags, state.factor));
       }
     }
   }
@@ -1003,7 +1033,7 @@ void WriteMarker(char* unit, const State& state) {
   }
   uhc::markers::Word(marker, 1) = static_cast<std::uint32_t>(state.factor);
   uhc::markers::Word(marker, 2) = state.progress;
-  uhc::markers::Word(marker, 3) = PackSteps(state);
+  uhc::markers::Word(marker, 3) = 0;
 }
 
 // --- The garrison ---------------------------------------------------------------------------------------------
@@ -1072,9 +1102,9 @@ void TakeGarrisoned(char* world) {
     WriteMarker(container, *state);
     kRemove(world, entry.unit, 0, 1);
     if (LogOk()) {
-      uhc::Log(L"nurseryFactor: unit %d (%hs) entered unit %d (%hs) of player %d and was taken: %d -> %d/%d", entry.unit,
-               ProtoName(unitCopy), entry.container, ProtoName(copy), PlayerIdOf(container), before, state->factor,
-               cap);
+      uhc::Log(L"nurseryFactor: unit %d (%hs) entered unit %d (%hs) of player %d and was taken: %d -> %d/%d, t %d -> %d",
+               entry.unit, ProtoName(unitCopy), entry.container, ProtoName(copy), PlayerIdOf(container), before,
+               state->factor, cap, TOf(copy, *tags, before), TOf(copy, *tags, state->factor));
     }
   }
 }
@@ -1113,12 +1143,13 @@ void Tick(char* world, std::int32_t) {
         state.progress += elapsed;
         while (state.progress >= interval && state.factor < cap) {
           state.progress -= interval;
-          const std::int32_t add = StepAmount(copy, *tags, &state);
-          ++state.steps;
-          state.factor = std::min(state.factor + add, cap);
+          const std::int32_t before = state.factor;
+          const std::int32_t add = StepAmount(copy, *tags, before);
+          state.factor = std::min(before + add, cap);
           if (LogOk()) {
-            uhc::Log(L"nurseryFactor: unit %d (%hs) of player %d grows by %d to %d/%d (step %u, game time %u ms)",
-                     it->first, ProtoName(copy), PlayerIdOf(unit), add, state.factor, cap, state.steps, now);
+            uhc::Log(L"nurseryFactor: unit %d (%hs) of player %d grows by %d to %d/%d (t %d -> %d, game time %u ms)",
+                     it->first, ProtoName(copy), PlayerIdOf(unit), add, state.factor, cap, TOf(copy, *tags, before),
+                     TOf(copy, *tags, state.factor), now);
           }
         }
         if (state.factor >= cap) {
@@ -1175,6 +1206,26 @@ bool FindSpots(char* world, const char* building, std::int32_t proto, std::int32
   return static_cast<std::int32_t>(spots->size() / 3) >= count;
 }
 
+// True when `count` units of `proto` would pass the player's population cap, as the stock maintain spawn tests one:
+// a unit with no population (or AlwaysAllowOverPopCap) never does; with AllowOverPopCap the cap needs only one free
+// slot; else the cap must hold the population and all of them.
+bool PopBlocked(const char* player, std::int32_t proto, std::int32_t count) {
+  const char* copy = player != nullptr && proto >= 0 && count > 0 ? kPlayerProto(player, proto) : nullptr;
+  if (copy == nullptr) {
+    return false;
+  }
+  const std::int32_t pop = Field<std::int32_t>(copy, 0xD8);
+  if (pop <= 0 || kProtoFlag(copy, kAlwaysAllowOverPopCap)) {
+    return false;
+  }
+  const std::int64_t used = static_cast<std::int64_t>(Field<std::int32_t>(player, 0x78)) + kPlayerPop(player);
+  const std::int64_t cap = kPlayerPopCap(player);
+  if (kProtoFlag(copy, kAllowOverPopCap)) {
+    return cap - used <= 0;
+  }
+  return cap < used + static_cast<std::int64_t>(pop) * count;
+}
+
 // The cost as a ResList (the game's encoding through its setter); false when it has nothing to pay.
 bool BuildCost(const CommandRule& rule, std::vector<std::uint32_t>* storage, ResList* list) {
   const std::int32_t count = *reinterpret_cast<const std::int32_t*>(kResListCount);
@@ -1223,6 +1274,9 @@ bool RunCommand(char* world, char* unit, std::int32_t playerId, std::int32_t ind
     why = "no room for the units";
   }
   char* player = kPlayerById(world, playerId);
+  if (why == nullptr && rule->unitProto >= 0 && PopBlocked(player, rule->unitProto, rule->count)) {
+    why = "population cap reached";
+  }
   std::vector<std::uint32_t> storage;
   ResList cost{nullptr, 0};
   if (why == nullptr && player != nullptr && BuildCost(*rule, &storage, &cost) && !kPay(player, &cost)) {
@@ -1246,8 +1300,10 @@ bool RunCommand(char* world, char* unit, std::int32_t playerId, std::int32_t ind
     }
   }
   if (LogOk()) {
-    uhc::Log(L"nurseryFactor: player %d, command %hs on unit %d (%hs): %d -> %d/%d, %d unit(s) of proto %d made", playerId,
-             rule->name.c_str(), unitId, ProtoName(copy), before, state->factor, cap, made, rule->unitProto);
+    uhc::Log(L"nurseryFactor: player %d, command %hs on unit %d (%hs): %d -> %d/%d, t %d -> %d, %d unit(s) of proto %d "
+             L"made",
+             playerId, rule->name.c_str(), unitId, ProtoName(copy), before, state->factor, cap,
+             TOf(copy, *tags, before), TOf(copy, *tags, state->factor), made, rule->unitProto);
   }
   return true;
 }
@@ -1429,8 +1485,15 @@ std::int32_t RunShipment(char* player, std::int32_t* field, float* amount) {
     total += take;
     ++buildings;
     if (shipment.consume != 0 && take > 0) {
+      const std::int32_t before = state.factor;
       SetFactor(&state, state.factor - take);
       state.progress = 0;
+      if (const Tags* tags = TagsOf(copy); tags != nullptr && LogOk()) {
+        uhc::Log(L"nurseryFactor: player %d, FreeHomeCityUnitByNurseryFactor takes %d from unit %d (%hs): %d -> %d, "
+                 L"t %d -> %d",
+                 playerId, take, id, ProtoName(copy), before, state.factor, TOf(copy, *tags, before),
+                 TOf(copy, *tags, state.factor));
+      }
     }
   }
   const float units = *amount * static_cast<float>(total);
@@ -1485,20 +1548,16 @@ bool ShownOf(const char* unit, Shown* out) {
     return false;
   }
   out->cap = Cap(copy, *out->tags);
-  out->step = StepOf(copy, *out->tags);
   out->interval = IntervalMs(copy, *out->tags);
   out->built = kIsBuilt(unit);
   const auto found = g_units.find(Field<std::int32_t>(unit, 0x10));
   if (found != g_units.end() && MainWorld() == g_world) {
     out->factor = found->second.factor;
     out->progress = found->second.progress;
-    if (out->tags->exponential) {
-      State copyState = found->second;
-      out->step = StepAmount(copy, *out->tags, &copyState);  // what the next step adds
-    }
   } else {
     out->factor = std::min(Whole(out->tags->initial), out->cap);
   }
+  out->step = StepAmount(copy, *out->tags, out->factor);  // what the next step adds
   return true;
 }
 
@@ -1520,6 +1579,37 @@ std::wstring Line(const Text& text, const wchar_t* fallback, const Shown& shown,
   Replace(&line, L"{seconds}", number);
   Replace(&line, L"{name}", name);
   return line;
+}
+
+// The small progress pie after the row's text: one of kPieFrames pictures (art\ui\uhc\pie\pie_00 to pie_31, the
+// share of the interval done towards the next step), as an inline icon, so the text layout puts it after the text, on
+// the row's line and as tall as it. Shown while the unit grows (built, under its cap, with an interval). Only when
+// the pictures are in the game folder; without them the pie is the portrait's (progresspie.h).
+constexpr int kPieFrames = 32;
+constexpr wchar_t kPieFirstFile[] = L"art\\ui\\uhc\\pie\\pie_00.ddt";
+constexpr wchar_t kPieLastFile[] = L"art\\ui\\uhc\\pie\\pie_31.ddt";
+bool g_pieInRow = false;
+
+// An inline icon <icon="(N)(texture)"> is drawn N + 1 pixels wide and as tall as its text line, so N = the line - 1
+// draws the square picture square. The lines, measured in game (2026-11-26; minuistats.cpp, IconSize, for the font
+// switch at 960): the minimized row 17 px on a screen 960 px tall or more (1920 x 1080) and 14 px below (1366 x 768);
+// the normal interface's stat panel 22 and 17 px. The screen's height: [[0C66044h]+608h].
+int PieIconSize(bool statPanel) {
+  const char* ui = *reinterpret_cast<const char* const*>(0x00C66044);
+  const int height = ui == nullptr ? 0 : Field<std::int32_t>(ui, 0x608);
+  const bool small = height > 0 && height < 960;
+  return statPanel ? (small ? 16 : 21) : (small ? 13 : 16);
+}
+
+std::wstring PieTag(const Shown& shown, bool statPanel) {
+  if (!g_pieInRow || !shown.built || shown.interval == 0 || shown.factor >= shown.cap) {
+    return {};
+  }
+  const int frame = static_cast<int>(std::min<std::uint64_t>(
+      static_cast<std::uint64_t>(shown.progress) * kPieFrames / shown.interval, kPieFrames - 1));
+  wchar_t tag[80];
+  swprintf_s(tag, L" <icon=\"(%d)(ui\\uhc\\pie\\pie_%02d)\">", PieIconSize(statPanel), frame);
+  return tag;
 }
 
 // "3/10 minks", and "(once built)" on a foundation.
@@ -1551,7 +1641,7 @@ bool __stdcall NurseryRow(const char* panel, const char* unit) {
     return false;
   }
   const std::wstring name = ResolveText(shown.tags->name);
-  if (!uhc::SetUnitPanelRow(panel, Fraction(shown, name, true).c_str(), L"")) {
+  if (!uhc::SetUnitPanelRow(panel, (Fraction(shown, name, true) + PieTag(shown, false)).c_str(), L"")) {
     return false;
   }
   uhc::SetUnitPanelRowTip(panel, Tip(shown, name).c_str());
@@ -1566,12 +1656,13 @@ bool __stdcall NurseryStatRow(const char* panel, const char* unit, std::int32_t 
   }
   const std::wstring name = ResolveText(shown.tags->name);
   const std::wstring tip = Tip(shown, name);
-  return uhc::SetStatPanelRow(panel, row, L"", Fraction(shown, name, true).c_str(), tip.c_str());
+  return uhc::SetStatPanelRow(panel, row, L"", (Fraction(shown, name, true) + PieTag(shown, true)).c_str(), tip.c_str());
 }
 
 // The command panel's buttons (panelbuttons.h): a button whose click is nurseryFactorCommand("Name") is greyed, with
 // the reason in red in its rollover, while none of the local player's selected units could run that command (the
-// factor, the room under the cap, the cost); the units' placement is left to the command. Interface only.
+// factor, the room under the cap, the population cap for its units, the cost); the units' placement is left to the
+// command. Interface only.
 void NurseryButton(const uhc::PanelButton& button) {
   static const char kPrefix[] = "nurseryFactorCommand(\"";
   const char* click = button.Click();
@@ -1617,6 +1708,10 @@ void NurseryButton(const uhc::PanelButton& button) {
       reason = text;
       continue;
     }
+    if (rule->unitProto >= 0 && PopBlocked(player, rule->unitProto, rule->count)) {
+      reason = L"Population cap reached";
+      continue;
+    }
     std::vector<std::uint32_t> storage;
     ResList cost{nullptr, 0};
     if (player != nullptr && BuildCost(*rule, &storage, &cost) &&
@@ -1639,8 +1734,8 @@ void NurseryButton(const uhc::PanelButton& button) {
   kAppend(button.Rollover(), line.c_str(), -1, -1);
 }
 
-// The portrait's progress pie (progresspie.h): the share of the interval done towards the next step, while the unit
-// grows (built, under its cap, with an interval); none at the cap.
+// Without the pie pictures, the portrait's progress pie (progresspie.h): the share of the interval done towards the
+// next step, while the unit grows (built, under its cap, with an interval); none at the cap.
 bool __stdcall NurseryPie(const char* unit, float* fraction, std::uint32_t*) {
   Shown shown;
   if (!ShownOf(unit, &shown) || !shown.built || shown.interval == 0 || shown.factor >= shown.cap) {
@@ -1720,7 +1815,8 @@ Outcome ApplyNurseryFactor(const Config& config) {
                              &sites::kNetCommandUnits, &sites::kNetCommandQueue,
                              &sites::kPlayerById, &sites::kProtoByName, &sites::kResourceByName, &sites::kResListGet,
                              &sites::kResListSet, &sites::kResListFill, &sites::kUnitCreate, &sites::kKillSpawnPlace,
-                             &sites::kUnitRemoveHead}) &&
+                             &sites::kUnitRemoveHead, &sites::kPlayerProtoEntry, &sites::kProtoFlag,
+                             &sites::kPlayerPopulation, &sites::kPlayerPopCap}) &&
                   InstallSyscallHooks("nurseryFactor") &&
                   WriteJmp(sites::kNurseryCmdExecute.va, reinterpret_cast<const void*>(&UhcNurseryCmdHook), 5);
   if (commands) {
@@ -1748,8 +1844,15 @@ Outcome ApplyNurseryFactor(const Config& config) {
   if (!AddStatPanelRow(&NurseryStatRow, "nurseryFactor")) {
     Log(L"nurseryFactor: no row in the stat panel");
   }
-  if (!AddProgressPieSource(&NurseryPie)) {
-    Log(L"nurseryFactor: no progress pie on the portrait");
+  g_pieInRow = GetFileAttributesW(kPieFirstFile) != INVALID_FILE_ATTRIBUTES &&
+               GetFileAttributesW(kPieLastFile) != INVALID_FILE_ATTRIBUTES;
+  if (g_pieInRow) {
+    Log(L"nurseryFactor: the progress pie goes after the panel row's text (art\\ui\\uhc\\pie)");
+  } else if (AddProgressPieSource(&NurseryPie)) {
+    Log(L"nurseryFactor: art\\ui\\uhc\\pie\\pie_00.ddt to pie_31.ddt are not in the game folder: the progress pie goes "
+        L"over the portrait");
+  } else {
+    Log(L"nurseryFactor: no progress pie");
   }
   if (!AddDataRef(L"uhcNurseryFactor", kDataRefString, &NurseryRef)) {
     Log(L"nurseryFactor: no data ref {uhcNurseryFactor}");

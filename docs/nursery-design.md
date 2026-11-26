@@ -273,3 +273,24 @@ first `overhealHitpointBars`' row, then this key's.
 
 Seen in game (WoLReal5, single player, 2026-11-26): all of the above; the stat panel row of the normal interface; a save
 and a load keep `8/5` and t; 16 Banks A/B update 0.15 ms with and without; a skirmish AI ran.
+
+
+## 8. The third version (2026-11-26)
+
+JTMaston's answers to the six questions of the second version (`wol-fixes/reply-to-maston-20261126-N2.txt` and `-P.txt`),
+and what agent N3 built (plan of 2026-11-26, part N3):
+
+| Question | Answer | Third version |
+|---|---|---|
+| 1 `t` back to 0 only when emptied? | "make it follow the factor" | `t` is the largest t with `floor(S(t)) <= factor`, `S(t) = b^0 + ... + b^(t-1)`; the step adds `floor(S(t+1)) - floor(S(t))`. Worked out each time from the factor and the player's b, never stored (marker word 3 no longer read), so every change of the factor moves it. b 2: 0 -> t 0, 1-2 -> t 1, 3-6 -> t 2, 7-14 -> t 3. b 1: t = factor. b below 1: growth stops at the whole part of `1 / (1 - b)`. |
+| 2 A full nursery keeps the unit; a partial fill is cut at the cap | "right" | as built |
+| 3 Should a button's units respect the population cap? | "What units are we talking about?" | The units a `<NurseryFactorCommand unit count>` makes (crates have no population, but Settlers do). Read as `GarrisonConvertTo`'s new rule: refused when the cap would not hold them all (the stock maintain spawn's test), the button greyed with "Population cap reached", normal again when there is room. The clarified question is in the English reply. |
+| 4 Hide the second rollover line when full? | "no" | as built |
+| 5 An ally's goat counts? | "counts too" | as built; an ally's Settler was taken in game. A goat changes owner by itself to the nearest player's units, so an ally's goat at your nursery is usually yours already. |
+| 6 The pie: A over the portrait, or B after the row? | "B" | An inline icon after `3/10 minks`, in both interfaces: 32 frames (`art\ui\uhc\pie\`, aoe3-blender-tools' `make_pie.py`, approved by the user 2026-11-26), square at the row's height (17 / 22 px at 1920 x 1080, 14 / 17 px at 1366 x 768). Without the frames, the portrait's pie (A). `garrisonConvert` keeps A. |
+
+Seen in game (WoLReal5, single player, 2026-11-26): the log's `t` after a sale, a `consume='2'` shipment, a goat and the
+Settlers button; the greyed Settlers button and its recovery with a House; an ally's Settler taken (a 3-player
+scenario); the pie in both interfaces and at both sizes; a save and a load; 16 Banks A/B (update 0.2 ms both); a German
+AI on a real map (20 Settlers, 3 Manors at 404 s), `trace_xs.py` with no error. Review pictures:
+`_share/maston-20261127/N3/`.
