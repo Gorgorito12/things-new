@@ -3992,13 +3992,18 @@ it are in [nursery-design.md](nursery-design.md). <!-- private -->
   world, the time going back or the step count jumping) or before a `NurseryFactor` effect. A unit found with no marker
   gets `NurseryFactorInitial` (at most the cap). After each world update (`AddWorldTick`), a built unit (0x44DDB4)
   under its player's cap adds the game time `[world+108h]` since the last tick to its timer and grows a step per
-  interval, up to the cap: linear, the step; exponential, `b^t` with `t` the steps taken since the factor was last
-  emptied, the fraction carried to the next step (b 1.5 adds 1, 1, 2, 4, 5...). At or above the cap, or with no interval, the
-  timer is 0. Nothing cuts a unit above its cap: growth and the additions stop there, so a lowered cap leaves the
-  extra until the unit spends it. Factor, timer, `t` and the fraction are words 1 to 3 of a saved marker
-  (`savedmarkers.h`, stat 6Bh, word 0 `NRSF`; word 3 `t | fraction x 65536 << 16`), written each tick, so a transform in
-  place, which ends the unit's modifiers, has it written again at the next tick. A unit gone, dead or of a proto
-  without a factor leaves the table. A factor emptied (a shipment, a command) sets `t` back to 0.
+  interval, up to the cap: linear, the step; exponential, the step of `t`, where **`t` follows the factor** (third
+  version, 2026-11-26): with `S(t) = b^0 + ... + b^(t-1)`, `t` is the largest t with `floor(S(t)) <= factor` and the step
+  adds `floor(S(t+1)) - floor(S(t))` (b^t for a whole b). `ExpGrowth(b, factor)` works it out each time it is needed
+  (a step, the log, the panel's `{step}`): a loop over t in doubles, about log_b(factor) turns, with b 1 (t = factor)
+  and b at most 0 or below 1 (every t once the factor reaches the whole part of `1 / (1 - b)`: t 65535, +0) handled
+  first, so it ends. Nothing about `t` is stored: a sale, a shipment, a garrisoned unit, a tech, a capture or a new b
+  moves it with the factor. At or above the cap, or with no interval, the timer is 0. Nothing cuts a unit above its
+  cap: growth and the additions stop there, so a lowered cap leaves the extra until the unit spends it. Factor and
+  timer are words 1 and 2 of a saved marker (`savedmarkers.h`, stat 6Bh, word 0 `NRSF`; word 3, `t` and a fraction
+  in the second version, is written 0 and not read), written each tick, so a transform in place, which ends the
+  unit's modifiers, has it written again at the next tick. A unit gone, dead or of a proto without a factor leaves
+  the table.
 - **The trickle:** the filter of the shared AutoGather rate getter multiplies a marked proto's rate by the unit's factor
   (the initial value while the unit is not in the table yet). The AutoGather update FUN_0048D13E then pays as stock: to
   the player through the add 0x49A98A (return 0x4C379D, which `incomeRates` counts), or, with the tactics flag
@@ -4040,22 +4045,38 @@ it are in [nursery-design.md](nursery-design.md). <!-- private -->
   execute itself refuses an ID out of the player's proto range (0x45311B, `cmp edx,[ecx+0E4h]`). The run, for a built
   unit of the command's player with that command: a negative factor needs that many, a positive one room under the
   cap; the units need room (PLACE, world vtable +14h, flags 2, on rings of 16 points from the building's edge, the
-  units found before counting, as `killSpawn` places its animals); then the cost: a ResList of the game's size
+  units found before counting, as `killSpawn` places its animals) and under the population cap, with the stock
+  maintain spawn's test (0x9E2F79) for all of them: the player's copy of the proto (0x45311B), its `PopulationCount`
+  `[proto+0D8h]`; none (0 or less) or the flag `AlwaysAllowOverPopCap` (A3h, 0x45EE02) never stops them; with
+  `AllowOverPopCap` (9Fh) the cap 0x4581A1 needs one free slot over the population `[player+78h] + 0x45805C`; else
+  the cap must hold the population plus count x PopulationCount (sites `PlayerPopulation`, `PlayerPopCap`; this runs
+  on every machine, from simulation state); then the cost: a ResList of the game's size
   `[0C6DF38h]`, filled with 0 (0x4E2617) and set per resource (0x58EF83), paid with the stock payment 0x8D946A (which
   tests the player's or the team's stock first). Any refusal changes nothing. Then the factor (as an addition, up to
   the cap), the marker, and the units, created by 0x498ACC at the spots found.
 - **The buttons** (`AddPanelButtonFilter`): a button whose click is `nurseryFactorCommand("...")` asks, for the local
-  selection's units with that command, the same tests (the factor, the cap, the cost through 0x8D6BAE, or 0x8D6C1B with
-  `[world+6912h]` set); with none that passes it is greyed (state 1), its click and shift-click emptied, and its rollover
-  gets the last reason in red (0x443960): `2/10 minks: 4 needed`, `10/10 minks: full`, or string 41543 "Not enough
-  resources". Interface only.
+  selection's units with that command, the same tests (the factor, the cap, the population cap above, the cost through
+  0x8D6BAE, or 0x8D6C1B with `[world+6912h]` set); with none that passes it is greyed (state 1: the panel darkens its
+  icon; the hover highlight shows it bright while the cursor is on it), its click and shift-click emptied, and its
+  rollover gets the last reason in red (0x443960): `2/10 minks: 4 needed`, `10/10 minks: full`, `Population cap
+  reached`, or string 41543 "Not enough resources". The filter runs at every refresh, so the button is normal again
+  as soon as a unit passes (seen when a House came). Interface only.
 - **Panels:** `AddUnitPanelRow` (the minimized interface's AutoGather row, `[panel+33Ch]` / `+340h`) writes
   `3/10 minks` as the label (`(once built)` on a foundation), and `SetUnitPanelRowTip` puts the two rollover lines in
   the help text `[gadget+68h]` of both gadgets; the shared hook clears it before the next refresh's rows, so the stock
   row and the other keys' rows never show it. In the normal interface, the shared stat panel row hook
   (`statpanelrows.*`, 0x4D76DB, after the HP row; `overhealHitpointBars`' row moved there) writes the same text in the
-  value gadget of the next free row, with the same help text; the stock AutoGather row comes after it. The portrait's
-  progress pie (`AddProgressPieSource`) shows the share of the interval done while the unit grows. `{uhcNurseryFactor}`
+  value gadget of the next free row, with the same help text; the stock AutoGather row comes after it. While the unit
+  grows (built, under its cap, with an interval), both rows end with a small progress pie: an inline icon
+  ` <icon="(N)(ui\uhc\pie\pie_KK)">`, frame KK = 32 x the share of the interval done (rounded down), one of the 32
+  pictures of `art\ui\uhc\pie\` (aoe3-blender-tools' `make_pie.py`: 32 x 32 BGRA, the train overlay's blue at half
+  alpha over grey, a gold frame, a clockwise wedge from 12 o'clock). The text layout puts an inline icon after the
+  text on the same line, N + 1 px wide and as tall as the line, so N is the line minus 1, measured in game: the
+  minimized row 17 px at a screen 960 px tall or more and 14 px below (N 16 / 13, as `minUIStats`), the stat panel 22
+  and 17 px (N 21 / 16); the screen height is `[[0C66044h]+608h]`. No gadget is added and nothing can overlap: the
+  icon moves with the text. The frames are looked for once, at startup (`GetFileAttributesW` of `pie_00.ddt` and
+  `pie_31.ddt` relative to the game folder); without them the key gives the portrait's progress pie
+  (`AddProgressPieSource`) instead, as the second version did. `{uhcNurseryFactor}`
   (`AddDataRef`, string) gives the first selected unit's `3/10 minks`. Text IDs resolve through 0x58EA52.
 
 **Why it is safe.** Markers are made (0x4DD22D) only by the world tick and the commands, which run in the world update.

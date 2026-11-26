@@ -31,8 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-26 10:14 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries; `art\ui\uhc\pie\` for the pie after the row. |
 | Wednesday 2026-11-25 23:00 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
-| Wednesday 2026-11-25 14:30 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries. |
 | Wednesday 2026-11-25 14:03 | [`garrisonConvert`](#garrisonconvert) | Filmed in WoL, with a control. `<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, with the train button's pie over the building's portrait. | The tag on the buildings that want it. |
 | Wednesday 2026-11-25 08:42 | [`selectFattened`](#selectfattened) | Filmed in WoL, with a control. A button and a hotkey select the player's livestock that has reached its maximum food, on the whole map; the button shows how many there are and hides at none. | The button and the hotkey: `wol-fixes/select-fattened`. |
 | Wednesday 2026-11-25 08:22 | [`editorAutosave`](#editorautosave) | Added. The scenario editor saves the open scenario every few minutes to `autosave-1` ... | Nothing. |
@@ -5431,7 +5431,7 @@ Resources, gatherers, and what pays for them.
 | [`linkedResource`](#linkedresource) | A resource building gathers the stock of a mine beside it. | **new** | The tags on a resource building of your own. | confirmed |
 | [`showGatherRate`](#showgatherrate) | Shows a gathering unit's rate per second in WoL's unit panel, and through the data ref `{currentUnitGatherRateString}`. | **new** | Nothing; for the data ref, a `formatText` gadget. | confirmed (single player, UI) |
 | [`autoGatherScaleByContained`](#autogatherscalebycontained) | `<ScaleByContainedUnits>` also works on AutoGather actions: the rate is multiplied by the units inside. | **new** | `<scalebycontainedunits>1</scalebycontainedunits>` on the action. | confirmed |
-| [`nurseryFactor`](#nurseryfactor) | A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | **new** | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries. | second version (single player) |
+| [`nurseryFactor`](#nurseryfactor) | A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | **new** | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries; `art\ui\uhc\pie\` for the pie after the row. | third version (single player) |
 | [`unitResourceAuras`](#unitresourceauras) | An `AutoRangedModify` action with `<ModifyType>UnitResource</ModifyType>` gathers from the units around it, with DE's tags. | **new** | Nothing: WoL's `sawmill.tactics` already has such an aura. | confirmed |
 | [`resourceGatherAuras`](#resourcegatherauras) | Auras can change the gather rate of one kind of target (`MineGatherRate`, …) or one resource (`GoldGatherRate`, …). | **new** | A `<ModifyType>` with those names. | confirmed |
 | [`resourceDebt`](#resourcedebt) | Only trickles and the rates of units may take a stockpile below 0. | **new** | A negative `ResourceTrickleRate` and `MinimumResourceTrickleRate`, or a negative AutoGather. | confirmed |
@@ -5768,29 +5768,31 @@ autoGatherScaleByContained
 
 *A building keeps its own count of something, such as the minks of a nursery, that grows with time, multiplies its income, takes in units sent into it, can be spent with its own buttons and can multiply a shipment.*
 
-**Added:** Wednesday 2026-11-25 08:37 · **Filmed in WoL:** Wednesday 2026-11-25 14:30
+**Added:** Wednesday 2026-11-25 08:37 · **Filmed in WoL:** Thursday 2026-11-26 10:14
 
 ![nurseryFactor in WoL](media/nurseryFactor-wol.gif)
 
-*In WoL, with `nurseryFactor log` (a scenario, player 1 Ethiopian; a Bank given the test tags below: exponential
-growth with base 2 every 8 s, the default cap of 10, an AutoGather of 0.5 gold, goats and Settlers as garrison rules; a
-trigger sends two goats into it at 20 s and two Settlers at 34 s; the Bank stays selected, the camera still):* the
-portrait's blue pie fills toward the next step and the panel reads `3/10 minks`; each goat that enters is taken at once
-(`unit 1 (ypGoat) entered unit 0 (Bank) ... and was taken: 3 -> 6/10`, then `6 -> 9/10`, `Garrison: 0 / 10`); the next
-step adds 4 and stops at the cap (`10/10 minks`, no pie); the Settlers that enter a full Bank stay inside
-(`Garrison: 2 / 10`). [Full video (MP4)](media/nurseryFactor-wol.mp4).
+*In WoL, with `nurseryFactor log` and the pie frames in the game's `art/ui/uhc/pie/` (a skirmish on a test map, British against a
+German AI; a Bank given the test tags below: exponential growth with base 2 every 8 s, the default cap of 10, an
+AutoGather of 0.5 gold, goats and Settlers as garrison rules, three buttons; a trigger sends two goats into it at 28 s
+and sets a `consume='2'` shipment at 48 s; the Bank stays selected, the camera still):* the small blue pie after
+`1/10 minks` fills toward the next step, and each step adds b^t (1, 3, 7: `t 0 -> 1`, `1 -> 2`, `2 -> 3` in the log);
+the first goat is taken (`7 -> 10/10, t 3 -> 3`) and the pie goes at the cap; the second goat stays inside
+(`Garrison: 1 / 10`); the shipment takes 2 (`10 -> 8, t 3 -> 3`: 8 minks still mean t 3), the pie comes back and the
+next step adds 8, cut at 10. [Full video (MP4)](media/nurseryFactor-wol.mp4).
 
 ![nurseryFactor in WoL, the command buttons](media/nurseryFactor-commands-wol.gif)
 
-*The same game, later (clicks on the Bank's two buttons, posted to the panel):* `NurserySellMinks` takes 4 minks and
-puts 2 crates of coin beside the Bank (`10 -> 6/10`); `NurseryBuyMinks` pays 100 wood and 50 food for 3 (`6 -> 9/10`),
-and then shows "Not enough resources" in red and is greyed; at `2/10 minks` the sell button is greyed with
-`2/10 minks: 4 needed`. Each step after a sale adds b^t with the count kept (8, then 16, both cut at the cap). Same MP4
-as above.
+*The same game, later (clicks on the Bank's buttons, posted to the panel):* `NurserySellMinks` takes 4 minks and puts 2
+crates of coin beside the Bank (`10 -> 6/10, t 3 -> 2`), and the next step adds 4, not 8 (t follows the minks). The
+third button, `NurserySettlers` (1 mink for 3 Settlers), is greyed, its icon darkened, with "Population cap reached" in
+red while the player has no house; a House comes at 96 s and the button is normal again; a click puts 3 Settlers
+beside the Bank (`10 -> 9/10`). At the cap, `NurseryBuyMinks` is greyed (`10/10 minks: full`). Same MP4 as above.
 
 ![nurseryFactor in WoL, key off](media/nurseryFactor-wol-control.gif)
 
-*In WoL, key off (the same scene and clicks):* the game ignores the tags; the goats and the Settlers stay inside
+*In WoL, key off (filmed 2026-11-26 in the second version's scene, a scenario with player 1 Ethiopian; with the key
+off nothing of this version shows, so it stays the control):* the game ignores the tags; the goats and the Settlers stay inside
 (`Garrison: 4 / 10`), the buttons do nothing, and the panel shows the stock row `Coin 0.50/s`.
 [Full video (MP4)](media/nurseryFactor-wol-control.mp4).
 
@@ -5833,19 +5835,43 @@ nurseryFactor [log]
   `{step}` (exponential: what the next step adds). Without them: `{current} out of {max} {name}.` and
   `Produces {step} {name} every {seconds} seconds.`
 - **Growth:** a unit grows only once built, one step per interval, up to the cap. Linear: the step. Exponential: step
-  `t` (counted from 0) adds `b^t`, the fraction carried to the next step (b 2: 1, 2, 4, 8...; b 1.5: 1, 1, 2, 4, 5...).
-  `t` goes back to 0 when the factor is emptied (by a shipment or a command).
+  `t` adds `b^t`, and **`t` follows the factor** (JTMaston, 2026-11-26): with `S(t) = b^0 + b^1 + ... + b^(t-1)` (the
+  minks a nursery has after t steps from 0; `S(0) = 0`), `t` is the largest t with `S(t) <= factor`, and the next step
+  adds `S(t+1) - S(t)`. `t` is worked out from the factor each time, so a sale, a shipment, a garrisoned unit, a button,
+  a tech or a capture moves it with the minks. With b 2 (S = 0, 1, 3, 7, 15, 31...):
+
+  | Minks | t | The next step adds | Then |
+  |---|---|---|---|
+  | 0 | 0 | 1 | 1 |
+  | 1 or 2 | 1 | 2 | 3 or 4 |
+  | 3 to 6 | 2 | 4 | 7 to 10 |
+  | 7 to 14 | 3 | 8 | 15 to 22 (cut at the cap) |
+
+  So a nursery sold from 10 down to 2 is back at t 1: it adds 2, then 4 (2, 4, 8, 10 with a cap of 10), not 8 at once.
+  - *A b that is not a whole number:* the minks are whole, so S counts in whole minks: `t` is the largest t with
+    `floor(S(t)) <= factor`, and a step adds `floor(S(t+1)) - floor(S(t))`. With b 1.5, S = 0, 1, 2.5, 4.75, 8.125,
+    13.19..., whole 0, 1, 2, 4, 8, 13: from 0 the steps add 1, 1, 2, 4, 5 (1, 2, 4, 8, 13); 3 minks are t 2 and add 2
+    (to 5); 5 minks are t 3 and add 4 (to 9).
+  - *b 1:* `t` is the factor and every step adds 1. *b below 1:* S never passes `1 / (1 - b)`, so the growth stops at
+    its whole part (b 0.5: 1 mink; b 0: 1 mink).
+  - *The cap* plays no part in `t`: a step cut at the cap leaves the factor at the cap and `t` is the cap's, and a unit
+    above a lowered cap keeps its `t` and does not grow.
 - **The cap** stops growth and every addition (a tech, a garrisoned unit, a command); it never takes away what a unit
   has: after a tech lowers it, a unit above it keeps the extra until it spends it (`8/5 minks`).
 - **Garrison:** a unit that enters a nursery and matches a `<NurseryFactorGarrisonUnit>` (its proto, or an abstract type
   it has) is removed at once (no death, no corpse) and adds its amount, up to the cap. A full nursery keeps it inside
-  as a normal garrison. The proto needs `<MaxContained>` and a `<Contain>` for that unit, as for any garrison.
+  as a normal garrison; with room for only part of its amount it is taken and the factor stops at the cap. Any
+  player's unit counts: an ally's Settler that entered the test Bank was taken (`1 -> 2/10`). A goat changes owner by
+  itself to the player whose units are nearest, so an ally's goat at your nursery is usually yours before it enters.
+  The proto needs `<MaxContained>` and a `<Contain>` for that unit, as for any garrison.
 - **Commands:** a `<NurseryFactorCommand>` is the command `nurseryFactorCommand("Name")` of a button, like a market's
   buy and sell. Each selected nursery of the local player with that command runs it on every machine: `factor` (a
-  negative one needs that many, a positive one room under the cap), `cost` (resource names as in the techtree, paid as
-  any purchase), then `count` units of `unit` made around the nursery (they need room). If one test fails, nothing
-  happens for that nursery. The button is greyed, with the reason in red in its rollover (`2/10 minks: 4 needed`,
-  `10/10 minks: full`, "Not enough resources"), while no selected nursery can run it. A button needs its command type
+  negative one needs that many, a positive one room under the cap), `count` units of `unit` made around the nursery
+  (they need room, and the player's population cap must hold them all, as for trained units; units with no
+  population, such as crates, are never stopped), then `cost` (resource names as in the techtree, paid as any
+  purchase). If one test fails, nothing happens for that nursery. The button is greyed, its icon darkened, with the
+  reason in red in its rollover (`2/10 minks: 4 needed`, `10/10 minks: full`, "Population cap reached", "Not enough
+  resources"), while no selected nursery can run it, and is normal again as soon as one can. A button needs its command type
   (`customProtoUnitCommands`), an entry in `protounitcommands.xml` and a `<Command>` on the proto:
 
   ```xml
@@ -5895,23 +5921,43 @@ nurseryFactor [log]
 - **UI:** the unit panel shows `3/10 minks` (`(once built)` on a foundation), with the two rollover lines as bullets on
   hover: in the minimized interface in the AutoGather row (in its place for a single unit with a factor; a group still
   shows the summed rate), in the normal interface's stat panel right after the hit points (the stock `Coin` row stays
-  below it). While the unit grows, the portrait shows the train button's blue pie filling toward the next step.
+  below it). While the unit grows, a small square pie follows that text: the train button's blue overlay (half-alpha
+  blue over grey, in a thin gold frame), a clear wedge opening clockwise from 12 o'clock toward the next step. It is an
+  icon in the row's text, so it sits on the row's line, as tall as the line and square: 17 px in the minimized row and
+  22 px in the stat panel at 1920 x 1080, 14 and 17 px at 1366 x 768. At the cap, or with no interval, there is no pie.
+  - **WoL copies one folder:** `art\ui\uhc\pie\` (in the release zip: `pie_00.ddt` to `pie_31.ddt`, the 32 frames,
+    drawn by `tools/make_pie.py` of aoe3-blender-tools) into the game's `art\ui\uhc\`. Every player needs it. Without
+    it (checked at startup) the pie is drawn over the unit's portrait instead, as in the second version.
+
   `{uhcNurseryFactor}` in a `formatText` gadget shows the first selected unit's `3/10 minks`.
 - **Log:** `nurseryFactor: applied`, `hook reached: AutoGather rate filters (0x49EBE4)`, `hook reached: garrison entries
   (0x9C26E1)`, `hook reached: nurseryFactor command (0x7D64F7)`; with `log`, each tag, each step (`unit 0 (Bank) of
-  player 1 grows by 4 to 7/10 (step 3, ...)`), each garrisoned unit taken or kept, each command sent and run or refused
-  (`refused, not enough factor`), each tech and each shipment.
+  player 1 grows by 4 to 7/10 (t 2 -> 3, ...)`), each garrisoned unit taken or kept, each command sent and run or
+  refused (`refused, not enough factor`, `refused, population cap reached`), each tech and each shipment, each with the
+  factor and `t` before and after (`10 -> 6/10, t 3 -> 2`). At startup, where the pie goes: `the progress pie goes
+  after the panel row's text (art\ui\uhc\pie)`, or `... are not in the game folder: the progress pie goes over the
+  portrait`.
 - **Simulation:** changes gathering: every player needs the same line. The commands travel as the game's own transform
   command, so every machine runs them in the same order.
-- **Saved games:** each unit's factor, timer and step count are kept on the unit. The load applies the tech effects
+- **Saved games:** each unit's factor and timer are kept on the unit (`t` comes from the factor). The load applies the tech effects
   again, in the order the techs have in the techtree, not the order they were researched: a cap set by `Assign` and
   changed by `Absolute` in another tech can come back different (the stock Data effects are applied again the same
   way). A `NurseryFactor` effect is not applied again.
-- **Performance:** 16 Banks with the tags (exponential, 10 goats sent in), a scenario, 60 s of `tools/perfprobe.py`
-  (other test games running on the machine): update 0.15 ms per frame with the key and without, render 1.30 / 1.34
-  ms, fps 691 / 674 (uncapped). The first version: 40 Banks, 0.1 ms both.
-- **Not covered:** the train button's rollover; XS calls. The units of a command ignore the population cap.
-- **Status:** second version (single player, WoL, 2026-11-26): exponential growth with base 2 (1, 3, 7, 10, cut at the
+- **Performance:** the third version, 16 Banks growing (exponential, b 2), a scenario, 60 s of `tools/perfprobe.py`
+  each (other test games running on the machine): update 0.2 ms per frame with the key and without, render 1.6 /
+  1.7 ms, main thread 85.3 / 85.2 %, fps 558 / 529 (uncapped), no frame over 50 ms in either. `t` is worked out only
+  on a growth step, a change of the factor and the panel refresh of one selected nursery (a loop of about log_b(cap)
+  turns). The second version: 0.15 ms both; the first: 40 Banks, 0.1 ms both.
+- **Not covered:** the train button's rollover; XS calls.
+- **Status:** third version (single player, WoL, 2026-11-26; a skirmish, British against a German AI): `t` followed the
+  factor in the log after a sale (`10 -> 6/10, t 3 -> 2`, then +4), a shipment with `consume='2'` (`10 -> 8, t 3 -> 3`,
+  then +8 cut at 10), a garrisoned goat and the Settlers button (`10 -> 9/10, t 3 -> 3`); the Settlers button greyed
+  with "Population cap reached" without a house (`refused, population cap reached` when sent from the console), normal
+  again when the House came, then 3 Settlers made; an ally's Settler taken (a 3-player scenario); the pie after the row
+  in both interfaces at 1920 x 1080 and 1366 x 768; a save and a load (6 minks kept and the next step at the same
+  game time, 177 990 ms against 177 959 before the load); the AI (Germans) on a real map: 20 Settlers and 3 Manors at
+  404 s, and `tools/re/trace_xs.py` logged 25 compiles with no error.
+- **Status before:** second version (single player, WoL, 2026-11-26): exponential growth with base 2 (1, 3, 7, 10, cut at the
   cap; after a sale +8 and +16 with the count kept), the default cap 10, a lowered cap kept the extra (`10 -> 8/5`
   after a -2 tech, no growth, a full Bank kept its Settlers), goats taken (`3 -> 6 -> 9/10`), the sell and buy buttons
   by posted clicks (2 crates beside the Bank, 100 wood and 50 food paid), their greyed states and reasons, the stat

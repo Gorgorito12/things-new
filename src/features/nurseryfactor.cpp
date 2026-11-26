@@ -65,8 +65,9 @@
 // stock payment), then the units (0x498ACC). Each test that fails leaves everything as it was.
 //
 // Display only: the unit panel row (unitpanel.h, the minimized interface) and the stat panel row (statpanelrows.h, the
-// normal one) "3/10 minks" with the rollover as their help text, the portrait's progress pie toward the next step
-// (progresspie.h), the command buttons greyed with their reason (panelbuttons.h), and the data ref {uhcNurseryFactor}
+// normal one) "3/10 minks" with the rollover as their help text, a small progress pie toward the next step after that
+// text (an inline icon, art\ui\uhc\pie; without those files the portrait's pie, progresspie.h), the command buttons
+// greyed with their reason (panelbuttons.h), and the data ref {uhcNurseryFactor}
 // (the first selected unit's "3/10 minks").
 #include <windows.h>
 
@@ -912,7 +913,7 @@ void Consider(const char* unit, bool fromMarkers) {
   const char* marker = fromMarkers ? MarkerOf(unit) : nullptr;
   if (marker != nullptr) {
     state.factor = static_cast<std::int32_t>(uhc::markers::Word(const_cast<char*>(marker), 1));
-    state.progress = uhc::markers::Word(const_cast<char*>(marker), 2);  // word 3: t before 2026-11-27, unread
+    state.progress = uhc::markers::Word(const_cast<char*>(marker), 2);  // word 3: t before 2026-11-26, unread
     state.factor = std::clamp(state.factor, 0, kMaxValue);
   } else {
     state.factor = std::min(Whole(tags->initial), Cap(copy, *tags));
@@ -1590,7 +1591,7 @@ constexpr wchar_t kPieLastFile[] = L"art\\ui\\uhc\\pie\\pie_31.ddt";
 bool g_pieInRow = false;
 
 // An inline icon <icon="(N)(texture)"> is drawn N + 1 pixels wide and as tall as its text line, so N = the line - 1
-// draws the square picture square. The lines, measured in WoL (2026-11-27; minuistats.cpp, IconSize, for the font
+// draws the square picture square. The lines, measured in game (2026-11-26; minuistats.cpp, IconSize, for the font
 // switch at 960): the minimized row 17 px on a screen 960 px tall or more (1920 x 1080) and 14 px below (1366 x 768);
 // the normal interface's stat panel 22 and 17 px. The screen's height: [[0C66044h]+608h].
 int PieIconSize(bool statPanel) {
