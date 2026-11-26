@@ -8,6 +8,7 @@ capstone for `re/pe64.py`'s listings). Run them with `python -I`
 |---|---|
 | [`gen_sites.py`](#gen_sitespy) | Writes `src/generated/sites.h` from the stock exe. |
 | [`package_release.py`](#package_releasepy) | Builds the release zip that modders download. |
+| [`make_release.py`](#make_releasepy) | The release in one command: a clean checkout of `origin/main` (or `--ref`), the Release build, `package_release.py`, the zip in `dist\`. |
 | `export_public.py` | `--check` builds the public export in memory and reports what it would refuse (a banned name, a link to a file or heading that is not exported, unbalanced markers); `--out <public clone>` empties the clone but for its `.git` and `KEEP_IN_CLONE` and writes the export there; commit and push the clone by hand, only when asked. |
 | [`bar.py`](#barpy) | Lists and extracts files from the game's `.bar` archives. |
 | [`xmbedit.py`](#xmbeditpy) | Checks, converts, compiles and edits compiled XML (`.xmb`). |
@@ -69,6 +70,26 @@ Reads the bytes of every patch site in its `SITES` list from the stock exe and w
 arrays, to `src/generated/sites.h` (or `out.h`). The DLL compares live memory with them before
 patching. It refuses any exe whose SHA-256 is not the stock build's. To add a site, see
 [developer-guide.md, section 3](../docs/developer-guide.md#3-adding-a-feature-step-by-step).
+
+## make_release.py
+
+```
+python -I tools/make_release.py [--ref REF] [--out DIR] [--force] [--dinput8-only] [--dxvk DIR] [--cmake EXE] [--keep]
+```
+
+Makes the release zip in one command, the same way every time:
+1. `git fetch`, then a temporary detached worktree of `REF` (default `origin/main`), so that nothing
+   uncommitted in the working folder gets in;
+2. CMake (`Visual Studio 18 2026`, `-A Win32`) and the Release build of `UHC.dll` and `dinput8.dll` there;
+3. `package_release.py` in that worktree, with its checks;
+4. the zip copied to `dist\` (or `--out`), with the commit it was built from and its SHA-256;
+5. the worktree removed (`--keep` keeps it).
+
+The version is the one of `REF`'s `CMakeLists.txt`: commit the bump first, and pass its branch as `--ref` until it is
+merged. DXVK comes from `reaendor\dxvk-3.1.1\` (or `--dxvk`); cmake from `--cmake`, `UHC_CMAKE`, Visual Studio
+2026 (vswhere) or `PATH`. An existing zip is kept unless `--force`. Two builds of the same commit give the same files
+except the two DLLs: their time stamp and the order of their global data differ (MSVC builds are not bit-for-bit
+reproducible), not their code.
 
 ## package_release.py
 

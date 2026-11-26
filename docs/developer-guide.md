@@ -739,6 +739,10 @@ Modders download a zip, so they never need a compiler. The version has a single 
 - the first line of `UHC.log`, `UHC.dll x.y.z`;
 - the file's Properties → Details.
 
+**In one command:** `python -I tools/make_release.py` does steps 2 and 3 from a clean checkout of `origin/main`
+(`--ref <branch>` for a bump not merged yet) and puts the zip in `dist\` ([tools/README.md](../tools/README.md#make_releasepy)).
+The steps by hand:
+
 1. **Bump the version** in `CMakeLists.txt`:
    - the third number for fixes;
    - the second for new features;
