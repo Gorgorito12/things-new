@@ -1492,6 +1492,19 @@ SITES = [
     # eax,3FFFFh.
     ("RetargetNoTarget", 0x487838, 0x1B),
     ("RetargetUpdateTarget", 0x48A359, 0x1F),
+    # retargetInAction, power-launched attacks: the alliance test 0x484E01 (bool thiscall(player, other player ID),
+    # ret 4), called by the key as 0x489ECC calls it (with the rate lookup 0x487C45, RateLookupHead).
+    ("PlayerIsAlly", 0x484E01, 0x13),
+    # powerShots: an Attack tag of a power-launched attack (the attack's power use [ebp+6Ch] not 0) asks the power
+    # manager whether the power is ready: push 2 / mov ecx,esi / call 48BB7Eh / cmp al,1 / jne 48F7F1h / cmp
+    # [esi+1Ch],ebx / jl / ... / call 6EDB7Eh (unit ID, the ability record [use+1Ch]) / jmp 4B7766h (0x48EA3D..
+    # 0x48EAA1). There: test al,al / jne 48F7F1h (replaced, 8 B; only 0x48EA9D jumps there, no branch lands inside)
+    # / jmp 48CF7Bh (no shot: pop edi / pop esi / pop ebp / pop ebx / add esp,2B0h / ret 4). 0x48F7F1, the shot's
+    # path (mov ecx,[ebp+4] / push 9 / sub esp,4), is where the hook goes on for a shot.
+    ("PowerShotsGate", 0x48EA3D, 0x65),
+    ("PowerShotsReady", 0x4B7766, 0x0D),
+    ("PowerShotsNoShot", 0x48CF7B, 0x0D),
+    ("PowerShotsFire", 0x48F7F1, 8),
     # turretArc: the head of FUN_0048AA9F (the unit turns to face a point): sub esp,18h / push esi / mov esi,ecx (6 B,
     # replaced; no branch lands inside) / mov eax,[esi] / mov eax,[eax+8Ch] (the continuation 0x48AAA5).
     ("TurretFaceHead", 0x48AA9F, 0x0E),
