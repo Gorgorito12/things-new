@@ -1126,6 +1126,10 @@ SITES = [
     ("BuildCountTooltip1", 0x4C8B81, 5),
     ("BuildCountTooltip2", 0x70F5EF, 5),
     ("PlayerProtoEntry", 0x45311B, 8),
+    # nurseryFactor: the population getters a command's units are tested with, as the maintain spawn
+    # 0x9E2F79 tests one (thiscall(player), int): the population and the cap (basePop's PopLimit is inside it)
+    ("PlayerPopulation", 0x45805C, 6),
+    ("PlayerPopCap", 0x4581A1, 6),
     ("TrainBatchProtoArg", 0x9CE6DE, 4),
     # pillageGold: TakeDamage's call of 0x49BD52, on every hit with an attacking player, and the
     # instructions that load its arguments: EBX the player [esp+20h], and the frame it relies on
