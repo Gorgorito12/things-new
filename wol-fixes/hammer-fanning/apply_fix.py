@@ -13,7 +13,10 @@ What it changes (README.txt has the why):
 - art\\WoL\\units\\explorers\\europeans\\explorer.xml: the anim RangedAttackSharpshoot uses the new clip
   explorer_fanning_attack with six Attack tags (each with the shot's sound and muzzle flash, as before) instead of
   the outlaw's nuggets\\outlaw_kidnap\\outlaw_pistol_attackA, and the anim SharpshootIdle (named by explorer.tactics,
-  defined nowhere until now) is added;
+  defined nowhere until now) is added; the six muzzle flashes name the particle set fanningshot;
+- art\\effects\\particlesets_wol.xml: the particle set fanningshot is added (the stock musketshot's four
+  musket particles, drawn on the bone Prop2, which the new clips key on the pistol's muzzle; musketshot draws
+  them on R Hand, so the flash showed at the hand);
 - art\\WoL\\units\\explorers\\europeans\\fanning\\ (new): the two clips and their tag files (.gr2.precomp);
 - data\\protoy.xml: the Explorer's ProtoActions SharpshooterAttack and CrackshotAttack get
   <RetargetInAction>1</RetargetInAction> and <PowerShots>6</PowerShots>;
@@ -33,7 +36,9 @@ CLIP_DIR = "art/WoL/units/explorers/europeans/fanning"
 CLIPS = ["explorer_fanning_attack.gr2", "explorer_fanning_attack.gr2.precomp",
          "explorer_fanning_idle.gr2", "explorer_fanning_idle.gr2.precomp"]
 NEW_FILES = [f"{CLIP_DIR}/{name}" for name in CLIPS]
-CHANGED = [ANIM_FILE, "data/protoy.xml", "Startup/wol.cfg"]
+PARTICLES = "art/effects/particlesets_wol.xml"
+PARTICLE_SET = "fanningshot"
+CHANGED = [ANIM_FILE, PARTICLES, "data/protoy.xml", "Startup/wol.cfg"]
 UNIT = "Explorer"
 ACTIONS = ["SharpshooterAttack", "CrackshotAttack"]
 TAGS = ["<RetargetInAction>1</RetargetInAction>", "<PowerShots>6</PowerShots>"]
@@ -85,6 +90,26 @@ def new_anim_file(text):
     return text[:span[0]] + blocks + text[span[1]:]
 
 
+def particle_set_present(text):
+    return re.search(r'<particleset\s+name="%s"' % PARTICLE_SET, text) is not None
+
+
+def new_particle_file(text):
+    """particlesets_wol.xml with the set fanningshot before its closing tag; refuses a file it does not expect."""
+    if particle_set_present(text):
+        sys.exit(f"apply_fix: {PARTICLES} has a particle set {PARTICLE_SET} already")
+    end = text.rfind("</particlesetdef>")
+    if end < 0:
+        sys.exit(f"apply_fix: {PARTICLES} has no </particlesetdef>; nothing changed")
+    block = crlf((FILES / "particleset.xml").read_text(encoding="utf-8"))
+    if not block.endswith("\r\n"):
+        block += "\r\n"
+    head = text[:end]
+    if not head.endswith("\n"):
+        head += "\r\n"
+    return head + block + text[end:]
+
+
 def unit_block(text, name):
     m = re.search(r'<Unit\b[^>]*\bname="%s"[^>]*>' % re.escape(name), text)
     if m is None:
@@ -110,11 +135,13 @@ def apply(root):
     backup = root / BACKUP
     if (backup / "manifest.json").exists():
         sys.exit(f"apply_fix: already applied ({backup} exists); run --restore first")
-    for rel in (ANIM_FILE, "data/protoy.xml"):
+    for rel in (ANIM_FILE, PARTICLES, "data/protoy.xml"):
         if not (root / rel).exists():
             sys.exit(f"apply_fix: {root / rel} is missing: is this a Wars of Liberty folder?")
     anim_text, anim_enc = read_text(root / ANIM_FILE)
     anim_text = new_anim_file(anim_text)          # made and checked before anything is written
+    part_text, part_enc = read_text(root / PARTICLES)
+    part_text = new_particle_file(part_text)
     proto_text, proto_enc = read_text(root / "data/protoy.xml")
     proto_text = edit_protoy(proto_text)
     for rel in NEW_FILES:
@@ -133,6 +160,7 @@ def apply(root):
         shutil.copy2(FILES / rel, dst)
         manifest["added"].append(rel)
     write_text(root / ANIM_FILE, anim_text, anim_enc)
+    write_text(root / PARTICLES, part_text, part_enc)
     write_text(root / "data/protoy.xml", proto_text, proto_enc)
     path = root / "Startup/wol.cfg"
     if path.exists():
@@ -168,6 +196,10 @@ def check(root):
     print("explorer.xml RangedAttackSharpshoot:",
           "new clip" if span and NEW_CLIP in text[span[0]:span[1]] else "stock (outlaw clip)")
     print("explorer.xml SharpshootIdle:", "present" if anim_block(text, "SharpshootIdle") else "missing")
+    print("explorer.xml muzzle flashes:", "fanningshot" if span and PARTICLE_SET in text[span[0]:span[1]]
+          else "musketshot (at the hand)")
+    text, _ = read_text(root / PARTICLES)
+    print(f"particlesets_wol.xml {PARTICLE_SET}:", "present" if particle_set_present(text) else "missing")
     text, _ = read_text(root / "data/protoy.xml")
     start, end = unit_block(text, UNIT)
     block = text[start:end]
