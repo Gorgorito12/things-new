@@ -1,0 +1,15 @@
+11:04:33 waiting for age3y.exe
+11:04:35 attached to pid 14980 (23 threads)
+11:04:46 compile: 0 error(s) before it (chain ['0x5b532c', '0x5b5238', '0x720bda', '0x40118c', '0x717f92'])
+11:04:46 compile: 0 error(s) before it (chain ['0xa4ba40', '0x6c042d', '0x5b4f53', '0x5b532c', '0x5b5238'])
+11:04:46 compile: 0 error(s) before it (chain ['0xa4ba40', '0x6c042d', '0x5b4f53', '0x5b532c', '0x5b5238'])
+11:04:46 compile: 0 error(s) before it (chain ['0xa4ba40', '0x6c042d', '0x5b4f53', '0x5b532c', '0x5b5238'])
+11:04:47 compile: 0 error(s) before it (chain ['0x5b532c', '0x5b5238', '0x908ebe', '0x765aed', '0x765cc9'])
+11:04:47 compile: 0 error(s) before it (chain ['0xa4ba40', '0x6c042d', '0x5b4f53', '0x5b532c', '0x5b5238'])
+11:04:47 compile: 0 error(s) before it (chain ['0xa4ba40', '0x6c042d', '0x5b4f53', '0x5b532c', '0x5b5238'])
+11:04:47 compile: 0 error(s) before it (chain ['0xa4ba40', '0x6c042d', '0x5b4f53', '0x5b532c', '0x5b5238'])
+11:04:47 compile: 0 error(s) before it (chain ['0xa4ba40', '0x6c042d', '0x5b4f53', '0x5b532c', '0x5b5238'])
+11:04:47 compile: 0 error(s) before it (chain ['0xa4ba40', '0x6c042d', '0x5b4f53', '0xa4ba40', '0x6c042d'])
+11:04:49 compile: 0 error(s) before it (chain ['0x5b532c', '0x5b5238', '0x994402', '0x40118c', '0x4011bc'])
+11:11:10 game exited
+11:11:10 11 line(s) logged

@@ -1,0 +1,2492 @@
+﻿UHC.dll 0.5.0
+UHCMain: working directory C:\AoE3-UHC-WoLReal5\
+UHCMain: C:\AoE3-UHC-WoLReal5\Startup\wol.cfg, 165 keys
+menuOptions: displayedRange follows OptionDisplayedRange: on (no choice stored yet: its cfg line); live: a change takes effect at once, also during a match
+menuOptions: applied (1 keys follow the options menu)
+customAbstractTypes: 47 abstract types from C:\AoE3-UHC-WoLReal5\data\uhc\customabstracttypes.xml (20 with a stringId, not used yet); IDs are logged as `unit types:` on each data load
+customAbstractTypes: applied
+removeConversionRestriction: applied
+ignoreRegistryPath: applied
+deckCardCount: limit 40
+deckCardCount: applied
+basePop/extraPop: base 300, extra 100 (stock 250 cap and world clamp removed; shared team population at 0x679641 keeps its 200-per-player cap)
+basePop/extraPop: applied
+decimalPopulation: population in 1/10 steps (<PopulationCount> and <PopulationCapAddition> take decimals; caps (basePop/extraPop limits), effects, 19 XS syscalls and the population texts scaled)
+decimalPopulation: applied
+noAILimit: 1 personalities from C:\AoE3-UHC-WoLReal5\AI4\*.personality
+noAILimit/noAILimitV2: applied
+customRevolutionBanners: applied
+removeFameRestriction: icons need Art\ui\home_city\xp_hc_icon.ddt and Art\ui\home_city\fame_hc_icon.ddt from the mod; without them those resources keep the stock (no) icon
+removeFameRestriction: applied
+hcShipmentPointFallback: 5 extra types after the stock list (multiplayer unverified)
+hcShipmentPointFallback: applied
+healNonIdle: healers of unittype AbstractHealNonIdle heal busy targets (multiplayer unverified)
+healNonIdle: applied
+smartHealTargets: automatic heal searches pick the best candidate: lowest HP ratio, nearest, lowest unit ID (multiplayer unverified)
+smartHealTargets: applied
+damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage over time, with <AttachMaxStacks>, <AttachSnare>, <AttachTickText> and <AttachModel> (multiplayer unverified)
+damageOverTime: applied
+dodgeChance: rule 1: units of AbstractDodge dodge 25.0 % of ranged hits, with tech ypDodge (multiplayer unverified)
+dodgeAnyUnit: units of unittype AbstractDodge can dodge like ypMonkJapanese (tech ypDodge, 15 %) (multiplayer unverified)
+dodgeSoundSet: units of AbstractDodge play sound set PowerEvade when they dodge
+criticalSoundSet: units of ypMonkChinese play sound set PowerCriticalStrike when they land a critical hit
+dodgeAnyUnit/dodgeChance/dodgeSoundSet/criticalSoundSet: applied
+spreadAnyAccuracy: <MaxSpread> and <SpreadFactor> are read per action (stock 5.0 and 0.25) and every miss uses them; units of unittype AbstractSpreadAnyAccuracy scatter every precalculated and InstantBallistics shot, and a stray shot hits what it lands on (multiplayer unverified)
+spreadAnyAccuracy: applied
+liveBuildingWorkRate: train, research and Maintain speed follow the proto's current BuildingWorkRate, and queued, training and Maintain units their current TrainPoints (multiplayer unverified)
+liveBuildingWorkRate: applied
+workRateByAbstractType: WorkRate effects on AbstractMine also change the rates units have for the protos of those types (multiplayer unverified)
+workRateByAbstractType: applied
+autoGatherScaleByContained: AutoGather actions with ScaleByContainedUnits multiply their rate by the units inside (multiplayer unverified)
+autoGatherScaleByContained: applied
+containedUnitsROF: attacks with <ScaleByContainedUnits target="ROF"> fire faster with the units inside (multiplayer unverified)
+containedUnitsROF: applied
+numberOfShots: attacks read <NumberOfShots>, <ShotInterval> (default 0.25 s) and <BurstPose> (default hold: the firing pose between a burst's shots) (multiplayer unverified)
+numberOfShots: applied
+retargetInAction: an attack with <RetargetInAction>1 whose target is lost during its attack animation fires the rest of its shots at a new target in range; tags, shots and retargets logged (multiplayer unverified)
+retargetInAction: applied
+powerShots: an attack launched by a power whose action has <PowerShots>N fires a shot at each Attack tag of its animation, up to N a use; tags and shots logged (multiplayer unverified)
+powerShots: applied
+turretArc: GatlingCamel: C:\AoE3-UHC-WoLReal5\art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_A55.aim (gun bone bone_yaw, turret bone bone_turret, pivot -0.00 2.64 0.27, 9 gunner bones, 3 clips, yaws -90..90, rest 0, 0 step bands, 0 settled clips)
+turretArc: GatlingCamelDeployed: C:\AoE3-UHC-WoLReal5\art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_B55.aim (gun bone bone_yaw, turret bone bone_turret, pivot 0.32 1.58 0.55, 15 gunner bones, 3 clips, yaws 30..150, rest 90, 8 step bands, 2 settled clips)
+turretArc: MEZamburak: C:\AoE3-UHC-WoLReal5\art\WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon.aim (gun bone bone_yaw, turret bone bone_turret, pivot 0.32 1.13 0.79, 4 gunner bones, 2 clips, yaws 30..150, rest 90, 0 step bands, 0 settled clips)
+turretArc: 3 unit type(s): an attack with <Turret tracking="always"> turns the gun, not the unit, toward a target inside its arc; aims and shots logged (multiplayer unverified)
+turretArc: applied
+unitResourceAuras: AutoRangedModify actions with ModifyType UnitResource gather from units in range (multiplayer unverified)
+unitResourceAuras: applied
+displayedRange: rings while Alt is held (<DisplayRange>) or always (<AlwaysDisplayRange>), one per ranged attack or <DisplayedRange>; on the placement ghost of a ranged building; on in the options menu
+displayedRange: applied
+costEscalationTechs: the Data subtype CostEscalation is on
+costEscalationTechs: applied
+randomCost: <RandomCost> is read; the cost getter, the Train payments, entry costs and refunds are hooked
+randomCost: applied
+shipmentCounts: shipments are counted per player and the age of each card (its <age>; none: Age I), and kept in saved games; the Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount and xsGetShipmentCountRange read them (multiplayer unverified)
+shipmentCounts: applied
+ageFiveShipments: cards of the fifth age (<age>4</age>) are in the game's deck, shown at the right of the fourth age's row of the shipment panel and the deck panels (the Age IV cards at the left), and sendable in the fifth age (multiplayer unverified)
+ageFiveShipments: applied
+resendableCards: a card with <resendeveryage>1</resendeveryage> gets its sends back (its maxcount) each time its player reaches a new age (multiplayer unverified)
+resendableCards: applied
+quickArrivalCards: the tech flag QuickArrival adds the line "This is a QUICK-ARRIVAL card." to a card's rollover
+quickArrivalCards: applied
+kothTimer: the King of the Hill time by the number of players: 2=900 3=750 4=600 s (multiplayer unverified)
+kothTimer: applied
+unitTypeTechs: Data effects AddUnitType and RemoveUnitType change one player's copy of a proto
+unitTypeTechs: applied
+trainBatchSize: the proto tags TrainBatchSize, DontTrainInBatches and ForceBatchTrain are on, and the Data subtype TrainBatchSize
+trainBatchSize: applied
+pillageGold: AbstractCanPillage units steal gold with an action's <PillageAmount>
+pillageGold: applied
+veterancyBonus: the proto tag VeterancyBonus is on (tech= rows too), and the Data subtypes VeterancyEnable and VeterancyBonus; rank marks on; no rank text (notext)
+veterancyBonus: no default rows and no rank names (C:\AoE3-UHC-WoLReal5\data\uhc\veterancy.xml)
+veterancyBonus: applied
+killSpawn: the civ tags killSpawn, killSpawnChance, killSpawnVictims and killSpawnKillers and the Data subtype KillSpawnChance are on (multiplayer unverified)
+killSpawn: applied
+hcTargetTechs: the tech flags HCTargetEnemy and HCTargetAll are on
+hcTargetTechs: applied
+accuracyTechs: the Data subtype Accuracy is on
+accuracyTechs: applied
+cratePriority: 1 lines
+cratePriority: applied
+sharedBuildLimit: the proto tags are on, the civ tag SettlerProtoName and the Data subtype EnableSharedBuildLimit
+sharedBuildLimit: applied
+doNotQueue: the proto tag DoNotQueue and the cards with the tech flag DoNotQueue are on
+doNotQueue: applied
+nextResearchFree: the Data subtype NextResearchIsFree is on
+nextResearchFree: applied
+researchGrants: the proto tags ResearchGrant* and the Data subtypes ResearchGrantInterval, ResearchGrantMax and ResearchGrantPoints are on; the tech buttons show the price with a point; a floating text over the building that pays a point (multiplayer unverified)
+researchGrants: applied
+shipTechLimit: the civ tag <ShipTechLimit> is on; the tech rollover shows the count (multiplayer unverified)
+shipTechLimit: applied
+homeCityTechsInUnits: HomeCity techs listed in a proto are researched there; they wait for a land gather point (multiplayer unverified)
+homeCityTechsInUnits: applied
+killBountyTechs: the Data subtypes KillBounty and Bounty are on
+killBountyTechs: applied
+teamKillBounty: the abstract type TeamKillBounty is on
+teamKillBounty: applied
+resourceBounty: <Bounty resourcetype> is on
+resourceBounty: applied
+techPrereqRecheck: techs with TypeCount prerequisites are re-checked every 1 world update(s); a change starts the stock re-check (multiplayer unverified)
+techPrereqRecheck: applied
+orPrereqsQty: <Flag qty="N">OrPrereqs</Flag> needs N of the tech's prerequisites (multiplayer unverified)
+orPrereqsQty: applied
+maintainWaitForPop: buildings of unittype AbstractMaintainWaitForPop keep a finished Maintain unit until there is population room (multiplayer unverified)
+maintainWaitForPop: applied
+transformUpdatesLOS: units transformed in place (TransformUnit, revolution) take their new proto's LOS (multiplayer unverified)
+transformUpdatesLOS: applied
+broadsideMuzzleLimit: ships of unittype ypTekkousen use up to 11 muzzles per side in a broadside (stock 6; SingleUsePlayer attacks keep 1), and <NumberProjectiles> fires that many per side over its muzzles (multiplayer unverified)
+broadsideMuzzleLimit: applied
+broadsideSoundSet: broadside shots play their action's <BroadsideSoundSet> (default ShipCannonShoot)
+broadsideSoundSet: applied
+abilitySlots: the command panel asks for 12 abilities per unit (stock 6)
+abilitySlots: applied
+wonderPanelSkipAuras: the wonder power panel shows a wonder's first available ability that is not a passive aura (AlwaysDisabledInGrid) (UI only)
+wonderPanelSkipAuras: applied
+nativePreview: an empty native socket shows the panel of TradingPost for its native, read-only
+nativePreview: applied
+lifespanAfterConstruction: units of unittype AbstractLifespanAfterConstruction keep their Lifespan and its fade-out until their construction is finished (multiplayer unverified)
+lifespanAfterConstruction: applied
+gaiaSocketsOnly: sockets of unittype AbstractGaiaOnlySocket take a socketed building only while Gaia owns them (multiplayer unverified)
+gaiaSocketsOnly: applied
+customHotkeyContexts: a keymap context named <ProtoName>Accel that the game does not know becomes that proto's hotkey context
+customHotkeyContexts: applied
+snareOnlyHitUnit: a snared unit (TargetSpeedBoost) no longer slows its group; the group neither paces at nor waits for it while the snare lasts (multiplayer unverified)
+snareOnlyHitUnit: applied
+cantBeSlowed: the abstract type CantBeSlowed (on the target) is on
+cantBeSlowed: applied
+snareValues: <SnareFactor>, <SnareDuration> and their Data subtypes are on, and the strongest snare counts (multiplayer unverified)
+snareValues: applied
+stealthTargeting: stealthed units, large ones too, are hidden from enemies and no target for a player that does not see them (multiplayer unverified)
+stealthTargeting: applied
+autoScout: units in tactic 'AutoScout' explore the map on their own (multiplayer unverified)
+autoScout: keeps away from enemy buildings that shoot; backs off when hit
+autoScout: applied
+autoGatherFrom: units with an <AutogatherFrom> action tag gather on their own once idle (multiplayer unverified)
+autoGatherFrom: applied
+buildingGather: a building with a Gather action gathers from a target within the action's range (multiplayer unverified)
+buildingGather: applied
+herdWalkAwayFix: a herdable walked away from its pen or magnet keeps its leash anchor there
+herdWalkAwayFix: applied
+researchOnTheMove: a unit of the abstract type ResearchOnTheMove takes orders while it researches (multiplayer unverified)
+researchOnTheMove: applied
+transformChecks: uiTransformSelectedUnit buttons grey out with the reason, and a transform respects the target's build limit (multiplayer unverified)
+transformChecks: applied
+customWalls: a WallBuild proto with <WallPiece> tags lays its own wall pieces
+customWalls: applied
+directionalAttack: actions with <DirectionalAttack> or <DirectionalFiringRange> fly past their target and hit what they fly over (multiplayer unverified)
+directionalAttack: applied
+techRenameEffect: the tech effect SetTechName (tech, newName, newRolloverTextID, newLongRolloverTextID) renames a tech for the players it reaches (multiplayer unverified)
+techRenameEffect/enableTechRenameEffect: applied
+noCorpseDopples: dead units of unittype Huntable leave no dopple in the fog of war (multiplayer unverified)
+noCorpseDopples: applied
+danceBonusCivs: civs Spanish, British get the fire pit's Training, XPTrickle, Gathering and Regeneration dances like the native civs (multiplayer unverified)
+danceBonusCivs: applied
+asianCivs: 5 civ(s) count as Asian civs; civ IDs are logged when civs.xml is read
+asianCivs: applied
+twoScoutCivs: 1 civ(s) get the two-hero UI; civ IDs are logged when civs.xml is read
+twoScoutCivs: applied
+marketUnits: 6 proto(s) count as a Market for trading; resolved when protoy.xml is read
+marketUnits: applied
+explorerUnits: 39 hero proto(s); resolved when protoy.xml is read
+explorerUnits: applied
+nativeCivs: 3 civ(s) count as native civs (fire pit dances through the shared dance gates)
+nativeCivs: applied
+bigButtonCivs/noBigButtonBlds: 3 civ(s) get the native big button, 12 building proto(s) never show it
+bigButtonCivs/noBigButtonBlds: applied
+ageUpBuildings: 1 proto(s) open the age-up dialog besides the Town Center, with the politicians they list
+ageUpBuildings: applied
+politicianPlacesFix: the European age-up dialog lists only the politicians its layout has places for
+politicianPlacesFix: applied
+politicianEnablesTech: the European age-up dialog shows each politician's <PoliticianEnablesTech> techs (flag 0.7500 x 0.5833)
+politicianEnablesTech: applied
+enableFarmAnim/enableRectFarmAnim: 5 proto(s) work like a Mill, 1 like a Rice Paddy; resolved when protoy.xml is read
+enableFarmAnim/enableRectFarmAnim: applied
+farmingRadius: 2 farm proto(s) get their own gather area (stock 4.5 x 4.5)
+farmingRadius: applied
+wonderCivUnitType: 1 proto(s) may place the age-up wonder of a wonder civ
+wonderCivUnitType: applied
+trainSingleAbstractType: units of unittype AbstractTrainLimitOne are trained one at a time
+trainSingleAbstractType: applied
+kbUnitSyscalls: 5 kb syscalls added
+kbUnitSyscalls: applied
+customProtoUnitCommands: 58 command type(s) from C:\AoE3-UHC-WoLReal5\data\uhc\customprotounitcommands.xml; 188 command records
+customProtoUnitCommands: applied
+multiarmor: protos keep one armor per damage type; Armor effects follow their damagetype
+multiarmor: applied
+betterfreedynamicunit: dynamic free units grow with game time (2-minute steps, unrounded, at most 15)
+betterfreedynamicunit: applied
+nowalkfarm: farm gatherers keep their first spot
+nowalkfarm: applied
+repairWallGlobal: UI syscall repairWallGlobal() added
+repairWallGlobal: applied
+compatMode: 32-bit display modes are also offered at 16 bits
+compatMode: applied
+gatherFix: gatherers collect on a fixed interval, not per animation loop
+gatherFix: applied
+rofFix: giving an order no longer clears the unit's timer
+rofFix: applied
+stunMovingTargetFix: a stun action no longer ends when its target check fails
+stunMovingTargetFix: applied
+noDamageOnUnbuiltFoundations: foundations whose construction has not started take no damage
+noDamageOnUnbuiltFoundations: applied
+truckAttackResourceFix: a TruckAttack no longer empties the buildings it hits (multiplayer unverified)
+truckAttackResourceFix: applied
+fallenHeroTacticsFix: units keep their tactic when knocked out, stunned or building
+fallenHeroTacticsFix: applied
+impactBoneFix: effects attached to impact bones get unit-length axes
+impactBoneFix: applied
+customImpactTypes: ShipMetal (15)
+customImpactTypes: applied
+selectionLimit: a selection holds up to 75 units (stock 50)
+selectionLimit: applied
+modelCacheLimit: models are never unloaded for the cache budget (stock: above 30 MB)
+modelCacheLimit: applied
+dmgPartBoneFix: a damage part whose bone a model lacks no longer reloads the model
+dmgPartBoneFix: applied
+enableAllTeams: Team 3 and Team 4 in the single-player setup (multiplayer lobby unchanged: single player only)
+enableAllTeams: applied
+startingTC: units of unittype AbstractStartingTC can be a player's first town center (FirstTC) like TownCenter, and replace one that is gone, dead or has a pending lifespan (multiplayer unverified)
+startingTC: applied
+civFirstTC: a civ's <firstTC> proto in civs.xml replaces the TownCenter random maps place for its players (not in a Nomad start) and is their first town center (FirstTC) (multiplayer unverified)
+civFirstTC: applied
+scenarioCivs: data\scenariocivs.xml is read after civs.xml, its civs appended and kept out of the skirmish list
+scenarioCivs: applied
+transformInventory: units transformed in place (TransformUnit, revolution) take their new proto's InitialResource when the resource types differ (multiplayer unverified)
+transformInventory: applied
+transformSpan: TransformUnit effects take transformspan
+transformSpan: applied
+noTrainNearEnemyTC: units of unittype AbstractDaimyo do not train within 65.0 m (from the trainer's centre to the edge of the building) of an enemy's first Town Center (FirstTC), with a warning over the local player's held units (multiplayer unverified)
+noTrainNearEnemyTC: applied
+overhealHitpointBars: art\ui\uhc\health_overheal.ddt is not in the game folder: the portrait bar shows the overheal with ui\ingame\ingame_ui_health_yellow
+overhealHitpointBars: HP bars and HP texts of units of unittype AbstractOverheal take InitialHitpoints as 100 %, HP above it shown as a segment and texts coloured FF8C00, the portrait bar's end with ui\ingame\ingame_ui_health_yellow, an overheal stat row labelled 'Overheal', the first unit of each proto logged (display only)
+overhealHitpointBars: applied
+overhealSources: only heal actions with <CanOverheal>1</CanOverheal> (Data subtypes CanOverheal and OverhealCap) heal marked units above their 100 %; every other heal stops there (multiplayer unverified)
+overhealSources: applied
+overhealDecay: marked units above their 100 % lose their <OverhealDecay> (% of it per second, after its delay; Data subtypes OverhealDecay and OverhealDecayDelay), or 2.00 % of it per second of game time 0.0 s after their last gain, down to it (multiplayer unverified)
+overhealDecay: applied
+detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold, DetonationHitpointDecay, DetonationImpactEffect and DetonationOnKnockout are on (multiplayer unverified)
+detonationDeath: applied
+annexFacing: the proto tags AnnexOf and AnnexRange are on (multiplayer unverified)
+annexFacing: applied
+deadReplacementAtZeroInventory: a unit with DoNotDieAtZeroHitpoints and DieAtZeroResources leaves its DeadReplacement when its body is used up, not when it falls (multiplayer unverified)
+deadReplacementAtZeroInventory: applied
+steadyHitpointBars: floating HP bars hold their position (every unit) (display only)
+steadyHitpointBars: applied
+inventoryBars: units with resources show what they hold under their HP bar while Alt is held; units with no HP bar but trees (mines, bushes) too (display only)
+inventoryBars: applied
+showGatherRate: the stat panel shows the gather rate per second of a selected gathering unit, and {currentUnitGatherRateString} returns it (UI only)
+showGatherRate: applied
+multiplierDecimals: bonus multipliers with 2 decimals (format written), their rollover lines too
+multiplierDecimals: applied
+attackTypeIcons: 11 unit types get an icon in the attack rows' bonus multipliers
+attackTypeIcons: applied
+minUIStats: 7 rows and the normal interface's stat rows from (built-in rows; no C:\AoE3-UHC-WoLReal5\data\uhc\minuirows.xml); building armor shown in the minimized panel's resists; 31 data refs {uhc...} (UI only); rows give way to the stack portraits and 2 avoid gadgets; 0 stock labels; attack rows: the original ones written by the key, ROF after the damage, projectiles per reload after it (the tags as the data writes them), ability attacks only when enabled
+minUIStats: multipliers without their trailing zeros; help text lines for ROF on and projectiles on
+minUIStats: applied
+resourceGatherAuras: modifiers can change the gather rate of one kind of target or one resource (multiplayer unverified)
+resourceGatherAuras: applied
+resourceDebt: trickles and unit rates may take Food Wood Gold below 0 (multiplayer unverified)
+resourceDebt: applied
+linkedResource: the proto tags LinkedResourceType and LinkedResourceRange and the action tag GatherLinkedResource are on (multiplayer unverified)
+linkedResource: applied
+incomeRates: {uhcIncome(<resource>)} = income per second over the last 20 s of game time (gathering, AutoGather, trickles), the shown player's logged every 60 s
+incomeRates: applied
+nurseryFactor: the progress pie goes after the panel row's text (art\ui\uhc\pie)
+nurseryFactor: the proto tags NurseryFactor*, the Data subtypes NurseryFactor, NurseryFactorMax, NurseryFactorInterval, NurseryFactorStep, NurseryFactorGrowthBase and FreeHomeCityUnitByNurseryFactor, the AutoGather rate x the factor, the garrison rule, the UI syscall nurseryFactorCommand, the panel rows and {uhcNurseryFactor} are on; logged (multiplayer unverified)
+nurseryFactor: applied
+garrisonConvert: <GarrisonConvertTo> converts the units that enter a building (several tags in turn, eject, from, the population cap, six tech subtypes); the progress pie over the portrait; logged
+garrisonConvert: applied
+auraStacking: auras read <ForbidUnitType> and <ForbidAbstractType> (changes the simulation); <NoStack> is retired, <ModifyExclusive> does it
+auraStacking: applied
+buildingWorkRateAuras: the Train call at 0x009EA410 is already hooked (noTrainNearEnemyTC); Train speed gets the factor only through that hook's call of g_uhcBwrTrainGetter
+buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x40) scale train, research, Maintain, heal and build speed (multiplayer unverified)
+buildingWorkRateAuras: applied
+dataLint: warns of what the data asks and the game drops, 3 of 3 shared sources
+dataLint: applied
+rendererOption: C:\AoE3-UHC-WoLReal5\uhc-options.cfg: no choice stored yet
+rendererOption: DirectX 9
+rendererOption: applied
+perfExecFile: polling C:\AoE3-UHC-WoLReal5\uhc-exec.txt
+perfStats: large-address-aware yes, user address space 4095 MB, 16 logical CPUs, 8 cores
+perfStats/perfAutoExec: applied
+bufferedFileReads: read-only files get a 64 KB read-ahead buffer (multiplayer-safe: same bytes)
+bufferedFileReads/perfFileLog: applied
+fastVertexFill: the cloth flags' vertices are built without reading the locked vertex buffer (display only: same bytes)
+fastVertexFill: applied
+fastLastInLine: "last in line" is recomputed through an index of the TechStatus prerequisites (same bits as stock)
+fastLastInLine: applied
+xsErrorLog: the XS messages go to this log, at most 200 lines
+xsErrorLog: applied
+multipleInstances: this copy may run beside copies in other folders (semaphore suffix -02AD39C5); background: windows stay at the bottom and are never activated
+multipleInstances: applied
+playerIcon: the local player's lobby icon is avatar "my_avatar"
+playerIcon: applied
+editorSearch: the Objects palette, the Forbidden Units/Techs dialog, the trigger editor and its trigger list filter by their search fields (EditorProtoPaletteSearch, ForbiddenUnitsTechs_Search, trEdit-CondEffPanel-search, trEdit-Trigger-search)
+editorSearch: applied
+editorAutosave: every 5.0 min in the editor, to autosave-1 ... autosave-3; log on
+editorAutosave: applied
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelEurMax-postGW shown, before it: SettlerCountDialog-defaultPanelEurMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelEurMin-postGW shown, before it: SettlerCountDialog-defaultPanelEurMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelAsiMax-postGW shown, before it: SettlerCountDialog-defaultPanelAsiMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelAsiMin-postGW shown, before it: SettlerCountDialog-defaultPanelAsiMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelNatMax-postGW shown, before it: SettlerCountDialog-defaultPanelNatMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelNatMin-postGW shown, before it: SettlerCountDialog-defaultPanelNatMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelEurMax-postGW shown, before it: SettlerCountDialog-advancedPanelEurMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelEurMin-postGW shown, before it: SettlerCountDialog-advancedPanelEurMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelAsiMax-postGW shown, before it: SettlerCountDialog-advancedPanelAsiMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelAsiMin-postGW shown, before it: SettlerCountDialog-advancedPanelAsiMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelNatMax-postGW shown, before it: SettlerCountDialog-advancedPanelNatMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelNatMin-postGW shown, before it: SettlerCountDialog-advancedPanelNatMin-preGW
+techGadgets: 12 rule(s), changes logged (interface only)
+techGadgets: applied
+selectFattened: UI syscall uhcSelectFattened() and {uhcFattened} added; gadget(s) uhcFattened shown while the local player has a fattened herdable (interface only)
+selectFattened: applied
+customSyscalls: wolPlugin.upl: 1 syscalls, 33 cheats (UHCPluginMain returned 0)
+customSyscalls: wolai.upl: 16 syscalls, 0 cheats (UHCPluginMain returned 0)
+customSyscalls: 2 of 2 plugin(s) loaded, 27 syscalls queued, 33 cheats for customCheats
+customSyscalls/customCheats: applied
+alpha2coverage: not implemented yet; ignored
+enablerandomtecheffect: not implemented yet; ignored
+flagoverrideeffect: not implemented yet; ignored
+loadingscreencount: not implemented yet; ignored
+map: not implemented yet; ignored
+optionhighpolycliff: not implemented yet; ignored
+UHCMain: 148 applied, 0 failed
+multipleInstances background: window of class OleMainThreadWndClass placed at the bottom, never activated
+multipleInstances background: window of class Age3 placed at the bottom, never activated
+multipleInstances background: window of class CicMarshalWndClass placed at the bottom, never activated
+multipleInstances: single-instance semaphore "Global\Age3" renamed to "Global\Age3-02AD39C5"
+hook reached: customCheats cheat table (0x551FE6)
+customCheats: 33 plugin cheat(s) added to the cheat table (56 entries)
+hook reached: compatMode (0x54D6D1): 640x480 also offered at 16 bits
+perfStats: CreateDevice adapter 0, type 1, behavior flags 0x00000084; after it x87 control word 0x007F, MXCSR 0x00001FA0
+perfStats: CreateDevice 1920x1080 fmt 21, 1 back buffer(s), swap 1, interval 0x00000001, windowed 1, refresh 0 -> hr 0x00000000
+hook reached: customImpactTypes name lookup (0x59F464)
+hook reached: syscall group UI (0x539542)
+syscalls: group UI: 3 added, 0 refused
+hook reached: syscall group UI2 (0x53575E)
+hook reached: techRenameEffect register (0x524CB5)
+techRenameEffect: effect type SetTechName -> 17
+hook reached: customProtoUnitCommands (0x5269FB)
+customProtoUnitCommands: 58 command type(s) added (IDs 129..186), 0 already known, 0 refused
+hook reached: civ tags civs.xml (0x52BB07)
+hook reached: scenarioCivs civs.xml end (0x52B485)
+hook reached: nativeCivs civ flags (0x52B581)
+nativeCivs: 3 of 3 civ(s) marked native in civs.xml
+hook reached: proto tags (0x51DB0F)
+hook reached: abstract unit types (0x51BA31)
+unit types: AbstractWoLCavalry -> 3838 (bit 203 of 204), added
+unit types: AbstractWoLRangedCavalry -> 3839 (bit 204 of 205), added
+unit types: AbstractWoLHandCavalry -> 3840 (bit 205 of 206), added
+unit types: AbstractWoLTent -> 3841 (bit 206 of 207), added
+unit types: AbstractWoLAssault -> 3842 (bit 207 of 208), added
+unit types: AbstractWoLInfantry -> 3843 (bit 208 of 209), added
+unit types: AbstractTrainLimitOne -> 3844 (bit 209 of 210), added
+unit types: AbstractWoLImmigrantMilitary -> 3845 (bit 210 of 211), added
+unit types: AbstractWoLImmigrantMilitaryNotArt -> 3846 (bit 211 of 212), added
+unit types: AbstractWoLImmigrantInfantry -> 3847 (bit 212 of 213), added
+unit types: AbstractWoLImmigrantCavalry -> 3848 (bit 213 of 214), added
+unit types: AbstractWoLImmigrantArtillery -> 3849 (bit 214 of 215), added
+unit types: AbstractWoLImmigrantArtilleryIII -> 3850 (bit 215 of 216), added
+unit types: AbstractWoLImmigrantArtilleryIV -> 3851 (bit 216 of 217), added
+unit types: AbstractWoLImmigrantTC -> 3852 (bit 217 of 218), added
+unit types: AbstractImmigrantHouse -> 3853 (bit 218 of 219), added
+unit types: AbstractWoLUltimateBuildingLA -> 3854 (bit 219 of 220), added
+unit types: AbstractWoLLightShip -> 3855 (bit 220 of 221), added
+unit types: AbstractWoLHeavyShip -> 3856 (bit 221 of 222), added
+unit types: AbstractWoLSiegeShip -> 3857 (bit 222 of 223), added
+unit types: AbstractWoLImmigrantWorker -> 3858 (bit 223 of 224), added
+unit types: AbstractWoLOutlaw -> 3859 (bit 224 of 225), added
+unit types: AbstractWoLNavalTrooper -> 3860 (bit 225 of 226), added
+unit types: AbstractWoLRangedInfantry -> 3861 (bit 226 of 227), added
+unit types: AbstractWoLCrop -> 3862 (bit 227 of 228), added
+unit types: AbstractWoLIrregular -> 3863 (bit 228 of 229), added
+unit types: AFRICANmaturing -> 3864 (bit 229 of 230), added
+unit types: AbstractBayonet -> 3865 (bit 230 of 231), added
+unit types: AbstractWoLZwawa -> 3866 (bit 231 of 232), added
+unit types: AbstractTank -> 3867 (bit 232 of 233), added
+unit types: AbstractMechanized -> 3868 (bit 233 of 234), added
+unit types: AbstractAircraft -> 3869 (bit 234 of 235), added
+unit types: AbstractGWUnit -> 3870 (bit 235 of 236), added
+unit types: AbstractGWMilitary -> 3871 (bit 236 of 237), added
+unit types: AbstractGWInfantry -> 3872 (bit 237 of 238), added
+unit types: AbstractGWCavalry -> 3873 (bit 238 of 239), added
+unit types: AbstractGWArtillery -> 3874 (bit 239 of 240), added
+unit types: AbstractGWNavy -> 3875 (bit 240 of 241), added
+unit types: AbstractWoLGrenadier -> 3876 (bit 241 of 242), added
+unit types: AbstractContraGuerrilla -> 3877 (bit 242 of 243), added
+unit types: AbstractWoLForgeUnit -> 3878 (bit 243 of 244), added
+unit types: AbstractWoLGunsmithUnit -> 3879 (bit 244 of 245), added
+unit types: AbstractFavouredUnit -> 3880 (bit 245 of 246), added
+unit types: AbstractWoLSaudCaravan -> 3881 (bit 246 of 247), added
+unit types: WoLConstructPrevent -> 3882 (bit 247 of 248), added
+unit types: WoLForeignUnit -> 3883 (bit 248 of 249), added
+unit types: AbstractWoLHowitzer -> 3884 (bit 249 of 250), added
+unit types: AbstractHealNonIdle -> 3885 (bit 250 of 251), added
+unit types: AbstractDodge -> 3886 (bit 251 of 252), added
+unit types: AbstractDodge -> 3886 (bit 251 of 252), already defined
+unit types: AbstractDodge -> 3886 (bit 251 of 252), already defined
+unit types: ypMonkChinese -> 925 (bit -2710 of 252), already defined
+unit types: AbstractSpreadAnyAccuracy -> 3887 (bit 252 of 253), added
+unit types: Resource -> 3641 (bit 6 of 253), already defined
+unit types: AbstractMine -> 3784 (bit 149 of 253), already defined
+unit types: AbstractCanPillage -> 3888 (bit 253 of 254), added
+unit types: Building -> 3637 (bit 2 of 254), already defined
+unit types: LogicalTypeSettlerBuildLimit -> 3889 (bit 254 of 255), added
+unit types: TeamKillBounty -> 3890 (bit 255 of 256), added
+unit types: AbstractMaintainWaitForPop -> 3891 (bit 256 of 257), added
+unit types: ypTekkousen -> 1254 (bit -2381 of 257), already defined
+unit types: NativeSocket -> 3787 (bit 152 of 257), already defined
+unit types: AbstractLifespanAfterConstruction -> 3892 (bit 257 of 258), added
+unit types: AbstractGaiaOnlySocket -> 3893 (bit 258 of 259), added
+unit types: CantBeSlowed -> 3894 (bit 259 of 260), added
+unit types: ResearchOnTheMove -> 3895 (bit 260 of 261), added
+unit types: Resource -> 3641 (bit 6 of 261), already defined
+unit types: Huntable -> 3714 (bit 79 of 261), already defined
+unit types: AbstractTrainLimitOne -> 3844 (bit 209 of 261), already defined
+unit types: AbstractStartingTC -> 3896 (bit 261 of 262), added
+unit types: AbstractDaimyo -> 3740 (bit 105 of 262), already defined
+unit types: AbstractOverheal -> 3897 (bit 262 of 263), added
+unit types: Tree -> 3653 (bit 18 of 263), already defined
+unit types: AbstractCavalry -> 3655 (bit 20 of 263), already defined
+unit types: AbstractLightInfantry -> 3712 (bit 77 of 263), already defined
+unit types: AbstractHeavyCavalry -> 3713 (bit 78 of 263), already defined
+unit types: AbstractRangedCavalry -> 3755 (bit 120 of 263), already defined
+unit types: AbstractNativeWarrior -> 3753 (bit 118 of 263), already defined
+unit types: MercType2 -> 3791 (bit 156 of 263), already defined
+unit types: AbstractCoyoteMan -> 3831 (bit 196 of 263), already defined
+unit types: AbstractHandCavalry -> 3756 (bit 121 of 263), already defined
+unit types: AbstractRangedInfantry -> 3754 (bit 119 of 263), already defined
+unit types: AbstractWoLAssault -> 3842 (bit 207 of 263), already defined
+unit types: AbstractInfantry -> 3654 (bit 19 of 263), already defined
+unit types: Unit -> 3635 (bit 0 of 263), already defined
+unit types: AbstractMine -> 3784 (bit 149 of 263), already defined
+unit types: Tree -> 3653 (bit 18 of 263), already defined
+unit types: AbstractFarm -> 3658 (bit 23 of 263), already defined
+hook reached: displayedRange: proto flag parser's last compare (0x5F726F)
+hook reached: multiarmor <Armor> tag (0x5F5EB7)
+hook reached: decimalPopulation <PopulationCapAddition> (0x5FD719)
+hook reached: customImpactTypes impact effect entry (0x5FEC74)
+hook reached: customImpactTypes impact effect weights (0x5FEC99)
+hook reached: action tag (0x5FA11E)
+hook reached: dataLint proto tag (0x5F62A2)
+hook reached: decimalPopulation <PopulationCount> (0x5FB92E)
+hook reached: ModifyType names (0x5FE6D7)
+hook reached: dataLint proto action (0x5FA202)
+retargetInAction: Explorer/CrackshotAttack (protoy): RetargetInAction 1
+powerShots: Explorer, action name 96 (protoy): PowerShots 6
+retargetInAction: Explorer/SharpshooterAttack (protoy): RetargetInAction 1
+powerShots: Explorer, action name 95 (protoy): PowerShots 6
+hook reached: dataLint unit type (0x5FCB61)
+hook reached: containedUnitsROF tag (0x5FEE0C)
+garrisonConvert: proto 342 (Blockhouse), tag 1: the units of Settler become Pikeman, one at a time, each after 3000 ms, put out
+garrisonConvert: proto 342 (Blockhouse), tag 2: the units of Settler become Musketeer, one at a time, each after 3000 ms, put out
+nurseryFactor: proto 348 (Bank): NurseryFactorInterval 8
+nurseryFactor: proto 348 (Bank): NurseryFactorGrowth exponential
+nurseryFactor: proto 348 (Bank): NurseryFactorGrowthBase 2
+nurseryFactor: proto 348 (Bank): NurseryFactorName "minks"
+nurseryFactor: proto 348 (Bank): NurseryFactorRolloverCount "{current} out of {max} minks."
+nurseryFactor: proto 348 (Bank): NurseryFactorRolloverRate "The next step brings {step} minks in {seconds} seconds."
+nurseryFactor: proto 348 (Bank): a Herdable that enters adds 3
+nurseryFactor: proto 348 (Bank): a Settler that enters adds 1
+nurseryFactor: proto 348 (Bank): command NurserySellMinks (0): factor -4, 2 x CrateofCoin, cost ""
+nurseryFactor: proto 348 (Bank): command NurseryBuyMinks (1): factor +3, 0 x nothing, cost "Wood 100, Food 50"
+nurseryFactor: proto 348 (Bank): command NurserySettlers (2): factor -1, 3 x Settler, cost ""
+multiarmor: Frigate has 2 armors
+hook reached: dataLint load end (0x61FE4A)
+hook reached: tech tags (0x61FDB8)
+hook reached: tech flags (0x620C2F)
+hook reached: tech subtype lookup (0x61FF5D)
+hook reached: dataLint effect (0x6205E9)
+hook reached: multiarmor damagetype of a tech effect (BDataEffect::setData)
+hook reached: dataLint effect type (0x65BC56)
+nurseryFactor: FreeHomeCityUnitByNurseryFactor CrateofCoin per factor of Bank, consume 2
+nurseryFactor: FreeHomeCityUnitByNurseryFactor CrateofCoin per factor of Bank, consume all
+dataLint: unknown <UnitType> AbstractTypeVictoryPointBuilding: 3 times, first in proto TradingPost
+dataLint: unknown <UnitType> ConSoundsetsvertsHerds: 1 time, first in proto RoyalCaravan
+dataLint: unknown <UnitType> ConvertsHerds.: 1 time, first in proto MancoHorseman
+dataLint: unknown proto tag deadreplacementlifespan: 289 times, first in proto TradingPost
+dataLint: unknown proto tag formationcategory: 1888 times, first in proto IGCFishingBoat
+dataLint: unknown proto tag portrait: 18 times, first in proto WOTTASertanejoAccessory3x3
+dataLint: unknown proto tag protounitcommand: 5 times, first in proto WallStraight1
+dataLint: unknown action tag accuracyreductionfactor: 3257 times, first in proto SPCPropRifleman
+dataLint: unknown action tag aimbonus: 3609 times, first in proto SPCPropRifleman
+dataLint: unknown action tag boredanim: 185 times, first in proto IGCGreatBombard
+dataLint: unknown action tag containedspeedbonus: 2 times, first in proto WOLRam
+dataLint: unknown action tag joganim: 1 time, first in proto WoLAlguacil
+dataLint: unknown action tag numberprojectiles: 302 times, first in proto Explorer
+dataLint: unknown action tag powershots: 2 times, first in proto Explorer
+dataLint: unknown action tag projectileprotounit: 1 time, first in proto gwAAgun
+dataLint: unknown action tag runanim: 1 time, first in proto WoLAlguacil
+dataLint: unknown action tag unintentionaldamagemultiplier: 3241 times, first in proto SPCPropRifleman
+dataLint: unknown action tag walkanim: 1 time, first in proto WoLAlguacil
+dataLint: unknown Data subtype ROF: 56 times, first in tech Rifling
+dataLint: <Effect> the game deletes type=Data subtype=ActionEnable: 28 times, first in tech WOLKruppSpawnFalconet, which names WOLKruppFactory
+dataLint: <Effect> the game deletes type=Data subtype=AddTrain: 5 times, first in tech HCAtonementArgentina, which names ArtilleryDepot
+dataLint: <Effect> the game deletes type=Data subtype=AllowedAge: 1 time, first in tech HCEarlySkirmishersTeam, which names SkirmisherBlock
+dataLint: <Effect> the game deletes type=Data subtype=BuildPoints: 6 times, first in tech YPHCLandGrabIndians, which names BALKANwheat
+dataLint: <Effect> the game deletes type=Data subtype=CopyUnitPortraitAndIcon: 1 time, first in tech Age0Chilean, which names IconPortraitchileanExplorer
+dataLint: <Effect> the game deletes type=Data subtype=Cost: 183 times, first in tech NatBasketweaving, which names ypMarketWheelbarrow3
+dataLint: <Effect> the game deletes type=Data subtype=Damage: 72 times, first in tech HCExplorerDutch, which names Explo
+dataLint: <Effect> the game deletes type=Data subtype=DamageArea: 8 times, first in tech ypFortifiedAgra, which names AbstractAgraFort
+dataLint: <Effect> the game deletes type=Data subtype=DamageBonus: 5 times, first in tech HCKoreanBroadsword, which names HwalArcher
+dataLint: <Effect> the game deletes type=Data subtype=Enable: 89 times, first in tech Age0Dutch, which names HorseArtillery
+dataLint: <Effect> the game deletes type=Data subtype=FreeHomeCityUnit: 87 times, first in tech ypConsulateRelationsSPCDutch
+dataLint: <Effect> the game deletes type=Data subtype=FreeHomeCityUnitIfTechObtainable: 44 times, first in tech HCShipCatapult1
+dataLint: <Effect> the game deletes type=Data subtype=HitPercent: 2 times, first in tech ypMonasteryStompUpgrade, which names AbstractIndianMonk
+dataLint: <Effect> the game deletes type=Data subtype=Hitpoints: 66 times, first in tech HCMusketeerGrenadierHitpointsBritishTeam, which names WOLGrognard
+dataLint: <Effect> the game deletes type=Data subtype=LOS: 3 times, first in tech SPYmagnifyingglass, which names WOLSpyAustralian
+dataLint: <Effect> the game deletes type=Data subtype=MaximumRange: 10 times, first in tech HCDefesadeCurupayty, which names TownCenter
+dataLint: <Effect> the game deletes type=Data subtype=MaximumVelocity: 2 times, first in tech SPYspycoat, which names WOLSpyAustralian
+dataLint: <Effect> the game deletes type=Data subtype=ResearchPoints: 7 times, first in tech HCLandGrant, which names IMMIGRANTasian
+dataLint: <Effect> the game deletes type=Data subtype=TacticEnable: 2 times, first in tech HCsubmarine, which names PaddleSteamer
+dataLint: <Effect> the game deletes type=Data subtype=TrainPoints: 5 times, first in tech WOLNatSerfUprising, which names WOLNatFarmer
+dataLint: <Effect> the game deletes type=Data subtype=UnitRegenRate: 7 times, first in tech Geomancy
+dataLint: <Effect> the game deletes type=Data subtype=UpdateVisual: 2 times, first in tech GuardBersaglieri
+dataLint: <Effect> the game deletes type=Data subtype=WorkRate: 50 times, first in tech NatCalendar, which names AbstractVillager
+dataLint: <Effect> the game deletes type=Data subtype=damage: 1 time, first in tech ChurchZweihander, which names AFRICANaskari
+dataLint: <Effect> the game deletes type=Data2 subtype=WOLcropSTRAWBERRY: 1 time, first in tech YPHCChonindoTeam, which names AbstractVillager
+dataLint: <Effect> the game deletes type=Data2 subtype=WOLcropWHEAT: 1 time, first in tech YPHCChonindoTeam, which names AbstractVillager
+dataLint: <Effect> the game deletes type=Data2 subtype=WorkRateSpecific: 2 times, first in tech WOLNatMulePloughing, which names WOLNatFarmer
+dataLint: <Effect> the game deletes type=FlagOverride: 8 times, first in tech maltaflag
+dataLint: <Effect> the game deletes type=SetName: 57 times, first in tech ImpLegendaryNatives
+dataLint: <Effect> the game deletes type=TechStatus: 518 times, first in tech Age0British, which names WOLEnableRocketsBritish
+dataLint: <Effect> the game deletes type=TextOutput: 50 times, first in tech MapucheVillagers1
+dataLint: <Effect> the game deletes type=TransformUnit: 4 times, first in tech HCGreatSummer
+dataLint: <ModifyType> with no stat GATHER: 88 times, first in proto Settler
+dataLint: <ModifyType> with no stat Hitpoints: 1 time, first in proto WOLPriestSpawn
+dataLint: <ProtoAction> not in the tactics AntiShipAttack: 1 time, first in proto Tambo
+dataLint: <ProtoAction> not in the tactics AutoGather: 19 times, first in proto ypSPCKichiro
+dataLint: <ProtoAction> not in the tactics AutoGatherCoin: 3 times, first in proto WOLPriestSpawn
+dataLint: <ProtoAction> not in the tactics AutoGatherFaithItalian: 1 time, first in proto WoLJuana
+dataLint: <ProtoAction> not in the tactics AutoGatherFazendaFood: 2 times, first in proto AfricanSlave
+dataLint: <ProtoAction> not in the tactics AutoGatherFazendaWood: 2 times, first in proto AfricanSlave
+dataLint: <ProtoAction> not in the tactics AutoGatherFood: 4 times, first in proto Church
+dataLint: <ProtoAction> not in the tactics AutoGatherIncaGold: 23 times, first in proto Coureur
+dataLint: <ProtoAction> not in the tactics AutoGatherMapuche: 24 times, first in proto Coureur
+dataLint: <ProtoAction> not in the tactics AutoGatherTrade: 10 times, first in proto SettlerWagon
+dataLint: <ProtoAction> not in the tactics AutoGatherWood: 3 times, first in proto ypMonkIndian
+dataLint: <ProtoAction> not in the tactics AutoGatherXP: 2 times, first in proto WoLAlguacil
+dataLint: <ProtoAction> not in the tactics Autogather: 2 times, first in proto Coronel
+dataLint: <ProtoAction> not in the tactics Backstab: 2 times, first in proto AFRICANmenelik
+dataLint: <ProtoAction> not in the tactics BlunderbussAttack: 1 time, first in proto NatAboriginalHunter
+dataLint: <ProtoAction> not in the tactics BlunderbussAttackPasion: 1 time, first in proto WoLJuana
+dataLint: <ProtoAction> not in the tactics BroadsideAttack: 1 time, first in proto IMscarletsailsBlock
+dataLint: <ProtoAction> not in the tactics BuildingAttack: 4 times, first in proto POWERstorm
+dataLint: <ProtoAction> not in the tactics ButtAttack: 2 times, first in proto Settler
+dataLint: <ProtoAction> not in the tactics CannonAttack: 6 times, first in proto ypEggHotDogCart
+dataLint: <ProtoAction> not in the tactics ChopAttack: 2 times, first in proto WOLLumberjack
+dataLint: <ProtoAction> not in the tactics CoverBuildingAttack: 6 times, first in proto AfricanIncendiary
+dataLint: <ProtoAction> not in the tactics CoverHandAttack: 5 times, first in proto WoLBugreiro
+dataLint: <ProtoAction> not in the tactics CrackshotAttack: 2 times, first in proto Officer
+dataLint: <ProtoAction> not in the tactics Debate: 4 times, first in proto Miner
+dataLint: <ProtoAction> not in the tactics DefendHandAttack: 1 time, first in proto NatAgha
+dataLint: <ProtoAction> not in the tactics DefendRangedAttack: 1 time, first in proto WOLDecoyLegionPeruana
+dataLint: <ProtoAction> not in the tactics Gather: 6 times, first in proto Priest
+dataLint: <ProtoAction> not in the tactics GatherXPMaypole: 5 times, first in proto MountedSettler
+dataLint: <ProtoAction> not in the tactics GuardianAttack: 5 times, first in proto gwCamelCorps
+dataLint: <ProtoAction> not in the tactics HandAttack: 2 times, first in proto ypMongolScout
+dataLint: <ProtoAction> not in the tactics Heal: 7 times, first in proto ypVillage
+dataLint: <ProtoAction> not in the tactics Hunting: 1 time, first in proto NatAboriginalHunter
+dataLint: <ProtoAction> not in the tactics MeleeHandAttack: 2 times, first in proto NatAgha
+dataLint: <ProtoAction> not in the tactics ModifyGatherCoin: 1 time, first in proto EGYgranaryCARAVAN
+dataLint: <ProtoAction> not in the tactics ModifyGatherFood: 1 time, first in proto EGYgranaryCARAVAN
+dataLint: <ProtoAction> not in the tactics ModifyGatherGold: 1 time, first in proto WoLHermandad
+dataLint: <ProtoAction> not in the tactics Pasture: 6 times, first in proto Cow
+dataLint: <ProtoAction> not in the tactics PianoXPTrickle: 1 time, first in proto africanLibrary
+dataLint: <ProtoAction> not in the tactics RangedAttack: 2 times, first in proto WOLimpaledcorpses
+dataLint: 7 more of <ProtoAction> not in the tactics (`dataLint file` lists them)
+dataLint: the data load ended with 100 names the game drops, 3 unknown <UnitType>, 4 unknown proto tag, 11 unknown action tag, 1 unknown Data subtype, 32 <Effect> the game deletes, 2 <ModifyType> with no stat, 47 <ProtoAction> not in the tactics
+hook reached: syscall group XS (0x6257D9)
+syscalls: group XS: 8 added, 0 refused
+hook reached: syscall group RM (0x60B8BF)
+hook reached: noAILimit (0x603B0B)
+hook reached: data refs registration (0x5D3229)
+data refs: 34 added after the game's 116
+hook reached: removeFameRestriction icon load (0x5C1E1F)
+hook reached: customHotkeyContexts (0x5C1778)
+customHotkeyContexts: registered keymap context PresidioAccel as context 151
+customHotkeyContexts: registered keymap context YPBarracksIndianAccel as context 152
+customHotkeyContexts: registered keymap context WOLBarracksGreekAccel as context 153
+customHotkeyContexts: registered keymap context WOLBarracksKoreanAccel as context 154
+customHotkeyContexts: registered keymap context ypBarracksJapaneseAccel as context 155
+customHotkeyContexts: registered keymap context ypCaravanseraiAccel as context 156
+customHotkeyContexts: registered keymap context WOLStableGreekAccel as context 157
+customHotkeyContexts: registered keymap context ypStableJapaneseAccel as context 158
+customHotkeyContexts: registered keymap context GunsmithAccel as context 159
+customHotkeyContexts: registered keymap context GunsmithCaravanAccel as context 160
+customHotkeyContexts: registered keymap context ForgeAccel as context 161
+customHotkeyContexts: registered keymap context ForgeCaravanAccel as context 162
+hook reached: card tags (0x630017)
+hook reached: deckCardCount (0x7EF026)
+hook reached: syscall group HC (0x5B5E08)
+perfStats: Reset 1920x1080 fmt 21, 1 back buffer(s), swap 1, interval 0x80000000, windowed 1, refresh 0 -> hr 0x00000000
+hook reached: fastVertexFill cloth flag fill (0x40D523)
+perfAutoExec: frame 870: config("DontPauseWhenLosingFocus")
+perfAutoExec: frame 1380: config("DontPauseWhenLosingFocus")
+perfAutoExec: frame 1380: config("flashHitpointBarsOnDamage")
+perfAutoExec: frame 1380: startRandomGame(true)
+hook reached: resourceDebt set (0x6798F4)
+hook reached: resendableCards age (0x8D502F)
+hook reached: tech subtype apply (0x8F978D)
+hook reached: tech subtype on a player (0x8D843E)
+hook reached: workRateByAbstractType apply (0x8F987C)
+hook reached: decimalPopulation effect PopulationCapAddition (0x8FA8CF)
+editorAutosave: the editor is open; the first autosave in 5.0 min
+hook reached: nativeCivs test 9 (0x8D52AF)
+nativeCivs: Tupinamba -> civ 49
+nativeCivs: WallMapu -> civ 48
+nativeCivs: Tawantinsuyu -> civ 46
+hook reached: decimalPopulation data ref pop
+hook reached: decimalPopulation data ref popcap
+hook reached: basePop/extraPop/decimalPopulation (0x4581F3)
+hook reached: decimalPopulation colorizePop argument (0x6F576F)
+hook reached: decimalPopulation printed population (colorizePop)
+hook reached: editorSearch: allowed units entry (0x9991D0)
+hook reached: world update (0x481A57)
+hook reached: autoScout command (0x7C8E49)
+techGadgets: first tech check (player 1)
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelEurMax-preGW shown, hidden: SettlerCountDialog-defaultPanelEurMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelEurMin-preGW shown, hidden: SettlerCountDialog-defaultPanelEurMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelAsiMax-preGW shown, hidden: SettlerCountDialog-defaultPanelAsiMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelAsiMin-preGW shown, hidden: SettlerCountDialog-defaultPanelAsiMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelNatMax-preGW shown, hidden: SettlerCountDialog-defaultPanelNatMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelNatMin-preGW shown, hidden: SettlerCountDialog-defaultPanelNatMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelEurMax-preGW shown, hidden: SettlerCountDialog-advancedPanelEurMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelEurMin-preGW shown, hidden: SettlerCountDialog-advancedPanelEurMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelAsiMax-preGW shown, hidden: SettlerCountDialog-advancedPanelAsiMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelAsiMin-preGW shown, hidden: SettlerCountDialog-advancedPanelAsiMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelNatMax-preGW shown, hidden: SettlerCountDialog-advancedPanelNatMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelNatMin-preGW shown, hidden: SettlerCountDialog-advancedPanelNatMin-postGW
+selectFattened: first count (player 1: 0 fattened)
+hook reached: floating bars: fit (0x45C4B9)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelEurMax-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelEurMax-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelEurMin-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelEurMin-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelAsiMax-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelAsiMax-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelAsiMin-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelAsiMin-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelNatMax-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelNatMax-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelNatMin-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelNatMin-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelEurMax-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelEurMax-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelEurMin-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelEurMin-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelAsiMax-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelAsiMax-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelAsiMin-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelAsiMin-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelNatMax-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelNatMax-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelNatMin-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelNatMin-preGW yet (looked up again every 2 s)
+perfAutoExec: frame 3690: startRandomGame2("uhcj27a", 2, 1234, "", false, 2, 1, 0, false)
+hook reached: customHotkeyContexts tooltip (0x8F9696)
+hook reached: customHotkeyContexts tooltip, building (0x8F90FC)
+editorAutosave: the editor closed
+hook reached: syscall group TR (0x988E03)
+hook reached: syscall group KB (0x885D14)
+syscalls: group KB: 11 added, 0 refused
+hook reached: civFirstTC map placement (0x925F4C)
+hook reached: startingTC (0x49880A)
+hook reached: FirstTC proto check (0x506B3B)
+hook reached: lifespanAfterConstruction fade (0x482A1A)
+hook reached: enableFarmAnim site 4 (0x8CEC9F)
+enableFarmAnim: 5 of 5 protos found in the data
+enableRectFarmAnim: 1 of 1 protos found in the data
+hook reached: stealthTargeting footprint (0x493040)
+hook reached: linkedResource recreate (0x9BFE5A)
+hook reached: can take a move, queue test (0x487E1B)
+nurseryFactor: 1 unit(s) with a factor in this game, 0 in all (game time 0 ms)
+hook reached: inventoryBars corpse (0x452ED4)
+hook reached: inventoryBars no HP bar (0x452F1B)
+editorAutosave: the editor is open; the first autosave in 5.0 min
+hook reached: enableRectFarmAnim site 2 (0x4741F0)
+nurseryFactor: unit 12 (Bank) of player 1 grows by 1 to 1/10 (t 0 -> 1, game time 8001 ms)
+perfAutoExec: frame 12060: saveScenario("uhc-uhcj27a")
+nurseryFactor: unit 12 (Bank) of player 1 grows by 2 to 3/10 (t 1 -> 2, game time 16001 ms)
+perfAutoExec: frame 14130: leaveGame()
+editorAutosave: the editor closed
+perfAutoExec: frame 17010: loadScenario("uhc-uhcj27a")
+hook reached: hcTargetTechs remove (0x94DCB2)
+hook reached: tech subtype unapply (0x8FB051)
+hook reached: workRateByAbstractType unapply (0x8FB11A)
+hook reached: decimalPopulation start cap bonus (0xA0D2D1)
+hook reached: decimalPopulation data ref totalpop
+hook reached: danceBonusCivs fire pit (0x4819EF)
+hook reached: decimalPopulation data ref futurepop
+hook reached: nativeCivs isNativeCiv (0x453D5E)
+hook reached: asianCivs isAsianCiv (0x454F1D)
+asianCivs: Egyptians -> civ 2
+asianCivs: Ethiopians -> civ 1
+asianCivs: Koreans -> civ 10
+asianCivs: Zulu -> civ 3
+asianCivs: Maori -> civ 50
+hook reached: danceBonusCivs XPTrickle (0x4E0DFF)
+danceBonusCivs: Spanish -> civ 22
+danceBonusCivs: British -> civ 13
+danceBonusCivs: Tupinamba -> civ 49
+danceBonusCivs: WallMapu -> civ 48
+danceBonusCivs: Tawantinsuyu -> civ 46
+hook reached: danceBonusCivs Regeneration (0x49048B)
+hook reached: incomeRates add (0x49A98A)
+hook reached: resourceDebt add (0x679A0E)
+hook reached: techPrereqRecheck (0x491A18)
+hook reached: orPrereqsQty (0x5094B4)
+hook reached: fastLastInLine (0x4918A8)
+fastLastInLine: index of 10546 techs: 1371 named in a TechStatus active prerequisite, 5325 (tech, dependent) pairs
+nurseryFactor: 1 unit(s) with a factor in this game, 0 in all (game time 0 ms)
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelEurMax-preGW shown, hidden: SettlerCountDialog-defaultPanelEurMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelEurMin-preGW shown, hidden: SettlerCountDialog-defaultPanelEurMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelAsiMax-preGW shown, hidden: SettlerCountDialog-defaultPanelAsiMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelAsiMin-preGW shown, hidden: SettlerCountDialog-defaultPanelAsiMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelNatMax-preGW shown, hidden: SettlerCountDialog-defaultPanelNatMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelNatMin-preGW shown, hidden: SettlerCountDialog-defaultPanelNatMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelEurMax-preGW shown, hidden: SettlerCountDialog-advancedPanelEurMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelEurMin-preGW shown, hidden: SettlerCountDialog-advancedPanelEurMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelAsiMax-preGW shown, hidden: SettlerCountDialog-advancedPanelAsiMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelAsiMin-preGW shown, hidden: SettlerCountDialog-advancedPanelAsiMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelNatMax-preGW shown, hidden: SettlerCountDialog-advancedPanelNatMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelNatMin-preGW shown, hidden: SettlerCountDialog-advancedPanelNatMin-postGW
+techGadgets: gadget SettlerCountDialog-defaultPanelEurMax-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelEurMax-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelEurMin-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelEurMin-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelAsiMax-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelAsiMax-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelAsiMin-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelAsiMin-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelNatMax-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelNatMax-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelNatMin-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelNatMin-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelEurMax-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelEurMax-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelEurMin-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelEurMin-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelAsiMax-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelAsiMax-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelAsiMin-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelAsiMin-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelNatMax-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelNatMax-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelNatMin-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelNatMin-preGW found
+hook reached: nativeCivs test 7 (0x67B0A5)
+techPrereqRecheck: 9 tech(s) of 10546 have TypeCount prerequisites (12 in all)
+techPrereqRecheck:   tech 4904 (WOL_AI_SpawnTownCenterCaravan2), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 5578 (WOLEnableInfanteDeMarina), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 5750 (WOLMetaShipTheStartingAuraManager), 3 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 6180 (PeruvianGuaneraTrickle), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8153 (FalkusaUruguay), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8715 (LevyLevelsDeactivator), 2 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8716 (LevyLevelsDeactivator2), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8743 (ChieftainSpawner), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8980 (WuOLScoutDisabler), 1 TypeCount prerequisite(s)
+hook reached: stealthTargeting (0x489ECC)
+hook reached: auraStacking filter (0x9D0633)
+hook reached: overhealDecay regeneration (0x490881)
+hook reached: overheal add HP (0x4823A3)
+hook reached: snareOnlyHitUnit (0x4FD3FD)
+hook reached: garrison entries (0x9C26E1)
+perfAutoExec: frame 20670: pause(0)
+nurseryFactor: unit 12 (Bank) of player 1 grows by 1 to 1/10 (t 0 -> 1, game time 8000 ms)
+hook reached: transformInventory (0x9C7625)
+hook reached: transformUpdatesLOS (0x9C763F)
+garrisonConvert: unit 8 (Settler) in Blockhouse 7 became Pikeman (tag 1, proto 294 -> 295, game time 8004 ms)
+garrisonConvert: unit 8 put out of Blockhouse 7 (game time 8004 ms)
+garrisonConvert: unit 9 (Settler) in Blockhouse 7 became Musketeer (tag 2, proto 294 -> 296, game time 11004 ms)
+garrisonConvert: unit 9 put out of Blockhouse 7 (game time 11004 ms)
+garrisonConvert: unit 10 (Settler) in Blockhouse 7 became Pikeman (tag 1, proto 294 -> 295, game time 14004 ms)
+garrisonConvert: unit 10 put out of Blockhouse 7 (game time 14004 ms)
+nurseryFactor: unit 12 (Bank) of player 1 grows by 2 to 3/10 (t 1 -> 2, game time 16000 ms)
+garrisonConvert: unit 11 (Settler) in Blockhouse 7 became Musketeer (tag 2, proto 294 -> 296, game time 17004 ms)
+garrisonConvert: unit 11 put out of Blockhouse 7 (game time 17004 ms)
+hook reached: snareOnlyHitUnit (0x4FA17D)
+hook reached: snareOnlyHitUnit (0x6AA514)
+hook reached: snareOnlyHitUnit (0x6AA56A)
+nurseryFactor: unit 12 (Bank) of player 1 grows by 4 to 7/10 (t 2 -> 3, game time 24001 ms)
+nurseryFactor: unit 12 (Bank) of player 1 grows by 8 to 10/10 (t 3 -> 3, game time 32000 ms)
+perfAutoExec: frame 35700: uiLookAtAndSelectUnit(12)
+hook reached: overhealHitpointBars (0x4C5014)
+hook reached: randomCost cost getter (0x480B5B)
+hook reached: sharedBuildLimit limit (0x4C7B5F)
+hook reached: minUIStats minimized block choice (0x4C8276)
+hook reached: overhealHitpointBars (0x698B35)
+hook reached: unit panel row (0x699456)
+hook reached: unit panel tail (0x4C8281)
+minUIStats: panel 40B7E380: 0 of 7 row gadgets, 0 big panel row gadgets
+hook reached: overhealHitpointBars portrait bar (0x4C83DF)
+hook reached: nativePreview gate (0x46193E)
+hook reached: nativePreview entries (0x461BBD)
+hook reached: bigButtonCivs command panel (0x461BD8)
+bigButtonCivs: Tawantinsuyu -> civ 46
+bigButtonCivs: WallMapu -> civ 48
+bigButtonCivs: Tupinamba -> civ 49
+hook reached: nativePreview collection (0x4C58AD)
+hook reached: command panel button (0x462317)
+hook reached: minUIStats stat fill gate (0x4D725C)
+hook reached: overhealHitpointBars (0x45FAAF)
+hook reached: steadyHitpointBars bar position (0x45FB24)
+hook reached: floating bars: bar queued (0x45FB6C)
+hook reached: floating bars: vertices (0x45CB72)
+hook reached: customHotkeyContexts (0x79F1A5)
+incomeRates: last 60 s of game time: 60 adds through the hook, 60 counted, 6 us inside the count
+nurseryFactor: player 1 sends command nurserysellminks (0) for 1 unit(s)
+hook reached: nurseryFactor command (0x7D64F7)
+nurseryFactor: player 1, command NurserySellMinks on unit 12 (Bank): 10 -> 6/10, t 3 -> 2, 2 unit(s) of proto 426 made
+nurseryFactor: unit 12 (Bank) of player 1 grows by 4 to 10/10 (t 2 -> 3, game time 87214 ms)
+incomeRates: player 1, resource 5, last 60 s: counted 120.0 (gather 0.0, AutoGather 0.0, trickle 120.0, DLL 0.0), stockpile +140.0 (116.0 -> 256.0); rate 2.00/s, 120.0/min
+incomeRates: last 60 s of game time: 61 adds through the hook, 60 counted, 6 us inside the count
+hook reached: noCorpseDopples (0x49534D)
+nurseryFactor: player 1 sends command nurserysellminks (0) for 1 unit(s)
+nurseryFactor: player 1, command NurserySellMinks on unit 12 (Bank): 10 -> 6/10, t 3 -> 2, 2 unit(s) of proto 426 made
+nurseryFactor: unit 12 (Bank) of player 1 grows by 4 to 10/10 (t 2 -> 3, game time 151166 ms)
+perfAutoExec: frame 109620: uiLookAtAndSelectUnit(0)
+perfAutoExec: frame 109620: ability(99, 0, true)
+perfAutoExec: frame 109620: uiLookAtUnit(6)
+multiplierDecimals: rollover string 42229 written with %1.2f
+hook reached: decimalPopulation printed population (unit help, costs)
+hook reached: customHotkeyContexts (0x64A034)
+incomeRates: player 1, resource 5, last 60 s: counted 124.0 (gather 0.0, AutoGather 0.0, trickle 124.0, DLL 0.0), stockpile +124.0 (256.0 -> 380.1); rate 2.00/s, 120.0/min
+incomeRates: last 60 s of game time: 64 adds through the hook, 62 counted, 7 us inside the count
+hook reached: turretArc facing (0x48AA9F)
+hook reached: ROF read: attack start (0x4A1189)
+retargetInAction: 181314 ms, unit 0: an attack cycle begins (action 12F87A00, target 6)
+hook reached: powerShots (0x4B7766)
+hook reached: turretArc launch (0x4995D5)
+hook reached: lifespanAfterConstruction (0x483EEC)
+hook reached: spreadAnyAccuracy instant shot (0x4A9455)
+hook reached: directionalAttack launch (0x4998A7)
+hook reached: ROF read: after a shot (0x48F8B5)
+retargetInAction: 181765 ms, unit 0 shot 1 of action 12F87A00 at 6 (OutlawPistol, alive, 270 HP), state 01h
+hook reached: spreadAnyAccuracy attack applier (0x49BE95)
+hook reached: damageOverTime TakeDamage (0x49B3D9)
+hook reached: noDamageOnUnbuiltFoundations (0x49B3F3)
+hook reached: dodge test (0x49ACE5)
+hook reached: multiarmor armor getter (0x49B32F)
+hook reached: resourceBounty (0x4D4E0C)
+hook reached: pillageGold hit (0x49B73C)
+hook reached: teamKillBounty (0x49BDAB)
+hook reached: killing blows (0x4D4F37)
+hook reached: customImpactTypes impact spawn, projectile hit (0x49D86E)
+hook reached: deadReplacementAtZeroInventory removal (0x495D6B)
+hook reached: unit deaths (0x493D8F)
+hook reached: deadReplacementAtZeroInventory (0x4B4F2F)
+hook reached: retargetInAction (0x487838)
+retargetInAction: 181900 ms, unit 0 (Explorer) lost its target 6 in state 01h after 1 shots: new target 1 (OutlawPistol, 270 HP) at 5.9 m (1 retargets, 0 without a target so far)
+powerShots: 182046 ms, unit 0 (Explorer): the power is recharging; Attack tag after 1 of 6 shots in state 01h at target 1: fires
+retargetInAction: 182046 ms, unit 0 shot 2 of action 12F87A00 at 1 (OutlawPistol, alive, 270 HP), state 01h
+retargetInAction: 182170 ms, unit 0 (Explorer) lost its target 1 in state 01h after 2 shots: new target 4 (OutlawPistol, 270 HP) at 9.1 m (2 retargets, 0 without a target so far)
+powerShots: 182324 ms, unit 0 (Explorer): the power is recharging; Attack tag after 2 of 6 shots in state 01h at target 4: fires
+retargetInAction: 182324 ms, unit 0 shot 3 of action 12F87A00 at 4 (OutlawPistol, alive, 270 HP), state 01h
+retargetInAction: 182502 ms, unit 0 (Explorer) lost its target 4 in state 01h after 3 shots: new target 5 (OutlawPistol, 270 HP) at 9.6 m (3 retargets, 0 without a target so far)
+powerShots: 182604 ms, unit 0 (Explorer): the power is recharging; Attack tag after 3 of 6 shots in state 01h at target 5: fires
+retargetInAction: 182604 ms, unit 0 shot 4 of action 12F87A00 at 5 (OutlawPistol, alive, 270 HP), state 01h
+retargetInAction: 182790 ms, unit 0 (Explorer) lost its target 5 in state 01h after 4 shots: new target 3 (OutlawPistol, 270 HP) at 11.4 m (4 retargets, 0 without a target so far)
+powerShots: 182884 ms, unit 0 (Explorer): the power is recharging; Attack tag after 4 of 6 shots in state 01h at target 3: fires
+retargetInAction: 182884 ms, unit 0 shot 5 of action 12F87A00 at 3 (OutlawPistol, alive, 270 HP), state 01h
+retargetInAction: 183100 ms, unit 0 (Explorer) lost its target 3 in state 01h after 5 shots: new target 2 (OutlawPistol, 270 HP) at 14.4 m (5 retargets, 0 without a target so far)
+powerShots: 183166 ms, unit 0 (Explorer): the power is recharging; Attack tag after 5 of 6 shots in state 01h at target 2: fires
+retargetInAction: 183166 ms, unit 0 shot 6 of action 12F87A00 at 2 (OutlawPistol, alive, 270 HP), state 01h
+retargetInAction: 183432 ms, unit 0 (Explorer) lost its target 2 in state 01h after 6 shots: no other target in range, the stock code (13 units around: 5 dead or inside, 0 not of the auto-attack type, 6 without a rate of this power's attack or not an enemy, 0 out of range 16.0, 0 unseen)
+perfAutoExec: frame 123180: uiLookAtUnit(4)
+fastLastInLine: 3 recomputes (154 dependency tests, 6.8 ms in all), 0 handed to the stock code
+perfStats: exit, peak working set 742 MB, private 91 MB, 124173 frames, 172 over 50 ms, 161 over 100 ms
+UHC.dll 0.5.0
+UHCMain: working directory C:\AoE3-UHC-WoLReal5\
+UHCMain: C:\AoE3-UHC-WoLReal5\Startup\wol.cfg, 165 keys
+menuOptions: displayedRange follows OptionDisplayedRange: on (no choice stored yet: its cfg line); live: a change takes effect at once, also during a match
+menuOptions: applied (1 keys follow the options menu)
+customAbstractTypes: 47 abstract types from C:\AoE3-UHC-WoLReal5\data\uhc\customabstracttypes.xml (20 with a stringId, not used yet); IDs are logged as `unit types:` on each data load
+customAbstractTypes: applied
+removeConversionRestriction: applied
+ignoreRegistryPath: applied
+deckCardCount: limit 40
+deckCardCount: applied
+basePop/extraPop: base 300, extra 100 (stock 250 cap and world clamp removed; shared team population at 0x679641 keeps its 200-per-player cap)
+basePop/extraPop: applied
+decimalPopulation: population in 1/10 steps (<PopulationCount> and <PopulationCapAddition> take decimals; caps (basePop/extraPop limits), effects, 19 XS syscalls and the population texts scaled)
+decimalPopulation: applied
+noAILimit: 1 personalities from C:\AoE3-UHC-WoLReal5\AI4\*.personality
+noAILimit/noAILimitV2: applied
+customRevolutionBanners: applied
+removeFameRestriction: icons need Art\ui\home_city\xp_hc_icon.ddt and Art\ui\home_city\fame_hc_icon.ddt from the mod; without them those resources keep the stock (no) icon
+removeFameRestriction: applied
+hcShipmentPointFallback: 5 extra types after the stock list (multiplayer unverified)
+hcShipmentPointFallback: applied
+healNonIdle: healers of unittype AbstractHealNonIdle heal busy targets (multiplayer unverified)
+healNonIdle: applied
+smartHealTargets: automatic heal searches pick the best candidate: lowest HP ratio, nearest, lowest unit ID (multiplayer unverified)
+smartHealTargets: applied
+damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage over time, with <AttachMaxStacks>, <AttachSnare>, <AttachTickText> and <AttachModel> (multiplayer unverified)
+damageOverTime: applied
+dodgeChance: rule 1: units of AbstractDodge dodge 25.0 % of ranged hits, with tech ypDodge (multiplayer unverified)
+dodgeAnyUnit: units of unittype AbstractDodge can dodge like ypMonkJapanese (tech ypDodge, 15 %) (multiplayer unverified)
+dodgeSoundSet: units of AbstractDodge play sound set PowerEvade when they dodge
+criticalSoundSet: units of ypMonkChinese play sound set PowerCriticalStrike when they land a critical hit
+dodgeAnyUnit/dodgeChance/dodgeSoundSet/criticalSoundSet: applied
+spreadAnyAccuracy: <MaxSpread> and <SpreadFactor> are read per action (stock 5.0 and 0.25) and every miss uses them; units of unittype AbstractSpreadAnyAccuracy scatter every precalculated and InstantBallistics shot, and a stray shot hits what it lands on (multiplayer unverified)
+spreadAnyAccuracy: applied
+liveBuildingWorkRate: train, research and Maintain speed follow the proto's current BuildingWorkRate, and queued, training and Maintain units their current TrainPoints (multiplayer unverified)
+liveBuildingWorkRate: applied
+workRateByAbstractType: WorkRate effects on AbstractMine also change the rates units have for the protos of those types (multiplayer unverified)
+workRateByAbstractType: applied
+autoGatherScaleByContained: AutoGather actions with ScaleByContainedUnits multiply their rate by the units inside (multiplayer unverified)
+autoGatherScaleByContained: applied
+containedUnitsROF: attacks with <ScaleByContainedUnits target="ROF"> fire faster with the units inside (multiplayer unverified)
+containedUnitsROF: applied
+numberOfShots: attacks read <NumberOfShots>, <ShotInterval> (default 0.25 s) and <BurstPose> (default hold: the firing pose between a burst's shots) (multiplayer unverified)
+numberOfShots: applied
+retargetInAction: an attack with <RetargetInAction>1 whose target is lost during its attack animation fires the rest of its shots at a new target in range; tags, shots and retargets logged (multiplayer unverified)
+retargetInAction: applied
+powerShots: an attack launched by a power whose action has <PowerShots>N fires a shot at each Attack tag of its animation, up to N a use; tags and shots logged (multiplayer unverified)
+powerShots: applied
+turretArc: GatlingCamel: C:\AoE3-UHC-WoLReal5\art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_A55.aim (gun bone bone_yaw, turret bone bone_turret, pivot -0.00 2.64 0.27, 9 gunner bones, 3 clips, yaws -90..90, rest 0, 0 step bands, 0 settled clips)
+turretArc: GatlingCamelDeployed: C:\AoE3-UHC-WoLReal5\art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_B55.aim (gun bone bone_yaw, turret bone bone_turret, pivot 0.32 1.58 0.55, 15 gunner bones, 3 clips, yaws 30..150, rest 90, 8 step bands, 2 settled clips)
+turretArc: MEZamburak: C:\AoE3-UHC-WoLReal5\art\WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon.aim (gun bone bone_yaw, turret bone bone_turret, pivot 0.32 1.13 0.79, 4 gunner bones, 2 clips, yaws 30..150, rest 90, 0 step bands, 0 settled clips)
+turretArc: 3 unit type(s): an attack with <Turret tracking="always"> turns the gun, not the unit, toward a target inside its arc; aims and shots logged (multiplayer unverified)
+turretArc: applied
+unitResourceAuras: AutoRangedModify actions with ModifyType UnitResource gather from units in range (multiplayer unverified)
+unitResourceAuras: applied
+displayedRange: rings while Alt is held (<DisplayRange>) or always (<AlwaysDisplayRange>), one per ranged attack or <DisplayedRange>; on the placement ghost of a ranged building; on in the options menu
+displayedRange: applied
+costEscalationTechs: the Data subtype CostEscalation is on
+costEscalationTechs: applied
+randomCost: <RandomCost> is read; the cost getter, the Train payments, entry costs and refunds are hooked
+randomCost: applied
+shipmentCounts: shipments are counted per player and the age of each card (its <age>; none: Age I), and kept in saved games; the Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount and xsGetShipmentCountRange read them (multiplayer unverified)
+shipmentCounts: applied
+ageFiveShipments: cards of the fifth age (<age>4</age>) are in the game's deck, shown at the right of the fourth age's row of the shipment panel and the deck panels (the Age IV cards at the left), and sendable in the fifth age (multiplayer unverified)
+ageFiveShipments: applied
+resendableCards: a card with <resendeveryage>1</resendeveryage> gets its sends back (its maxcount) each time its player reaches a new age (multiplayer unverified)
+resendableCards: applied
+quickArrivalCards: the tech flag QuickArrival adds the line "This is a QUICK-ARRIVAL card." to a card's rollover
+quickArrivalCards: applied
+kothTimer: the King of the Hill time by the number of players: 2=900 3=750 4=600 s (multiplayer unverified)
+kothTimer: applied
+unitTypeTechs: Data effects AddUnitType and RemoveUnitType change one player's copy of a proto
+unitTypeTechs: applied
+trainBatchSize: the proto tags TrainBatchSize, DontTrainInBatches and ForceBatchTrain are on, and the Data subtype TrainBatchSize
+trainBatchSize: applied
+pillageGold: AbstractCanPillage units steal gold with an action's <PillageAmount>
+pillageGold: applied
+veterancyBonus: the proto tag VeterancyBonus is on (tech= rows too), and the Data subtypes VeterancyEnable and VeterancyBonus; rank marks on; no rank text (notext)
+veterancyBonus: no default rows and no rank names (C:\AoE3-UHC-WoLReal5\data\uhc\veterancy.xml)
+veterancyBonus: applied
+killSpawn: the civ tags killSpawn, killSpawnChance, killSpawnVictims and killSpawnKillers and the Data subtype KillSpawnChance are on (multiplayer unverified)
+killSpawn: applied
+hcTargetTechs: the tech flags HCTargetEnemy and HCTargetAll are on
+hcTargetTechs: applied
+accuracyTechs: the Data subtype Accuracy is on
+accuracyTechs: applied
+cratePriority: 1 lines
+cratePriority: applied
+sharedBuildLimit: the proto tags are on, the civ tag SettlerProtoName and the Data subtype EnableSharedBuildLimit
+sharedBuildLimit: applied
+doNotQueue: the proto tag DoNotQueue and the cards with the tech flag DoNotQueue are on
+doNotQueue: applied
+nextResearchFree: the Data subtype NextResearchIsFree is on
+nextResearchFree: applied
+researchGrants: the proto tags ResearchGrant* and the Data subtypes ResearchGrantInterval, ResearchGrantMax and ResearchGrantPoints are on; the tech buttons show the price with a point; a floating text over the building that pays a point (multiplayer unverified)
+researchGrants: applied
+shipTechLimit: the civ tag <ShipTechLimit> is on; the tech rollover shows the count (multiplayer unverified)
+shipTechLimit: applied
+homeCityTechsInUnits: HomeCity techs listed in a proto are researched there; they wait for a land gather point (multiplayer unverified)
+homeCityTechsInUnits: applied
+killBountyTechs: the Data subtypes KillBounty and Bounty are on
+killBountyTechs: applied
+teamKillBounty: the abstract type TeamKillBounty is on
+teamKillBounty: applied
+resourceBounty: <Bounty resourcetype> is on
+resourceBounty: applied
+techPrereqRecheck: techs with TypeCount prerequisites are re-checked every 1 world update(s); a change starts the stock re-check (multiplayer unverified)
+techPrereqRecheck: applied
+orPrereqsQty: <Flag qty="N">OrPrereqs</Flag> needs N of the tech's prerequisites (multiplayer unverified)
+orPrereqsQty: applied
+maintainWaitForPop: buildings of unittype AbstractMaintainWaitForPop keep a finished Maintain unit until there is population room (multiplayer unverified)
+maintainWaitForPop: applied
+transformUpdatesLOS: units transformed in place (TransformUnit, revolution) take their new proto's LOS (multiplayer unverified)
+transformUpdatesLOS: applied
+broadsideMuzzleLimit: ships of unittype ypTekkousen use up to 11 muzzles per side in a broadside (stock 6; SingleUsePlayer attacks keep 1), and <NumberProjectiles> fires that many per side over its muzzles (multiplayer unverified)
+broadsideMuzzleLimit: applied
+broadsideSoundSet: broadside shots play their action's <BroadsideSoundSet> (default ShipCannonShoot)
+broadsideSoundSet: applied
+abilitySlots: the command panel asks for 12 abilities per unit (stock 6)
+abilitySlots: applied
+wonderPanelSkipAuras: the wonder power panel shows a wonder's first available ability that is not a passive aura (AlwaysDisabledInGrid) (UI only)
+wonderPanelSkipAuras: applied
+nativePreview: an empty native socket shows the panel of TradingPost for its native, read-only
+nativePreview: applied
+lifespanAfterConstruction: units of unittype AbstractLifespanAfterConstruction keep their Lifespan and its fade-out until their construction is finished (multiplayer unverified)
+lifespanAfterConstruction: applied
+gaiaSocketsOnly: sockets of unittype AbstractGaiaOnlySocket take a socketed building only while Gaia owns them (multiplayer unverified)
+gaiaSocketsOnly: applied
+customHotkeyContexts: a keymap context named <ProtoName>Accel that the game does not know becomes that proto's hotkey context
+customHotkeyContexts: applied
+snareOnlyHitUnit: a snared unit (TargetSpeedBoost) no longer slows its group; the group neither paces at nor waits for it while the snare lasts (multiplayer unverified)
+snareOnlyHitUnit: applied
+cantBeSlowed: the abstract type CantBeSlowed (on the target) is on
+cantBeSlowed: applied
+snareValues: <SnareFactor>, <SnareDuration> and their Data subtypes are on, and the strongest snare counts (multiplayer unverified)
+snareValues: applied
+stealthTargeting: stealthed units, large ones too, are hidden from enemies and no target for a player that does not see them (multiplayer unverified)
+stealthTargeting: applied
+autoScout: units in tactic 'AutoScout' explore the map on their own (multiplayer unverified)
+autoScout: keeps away from enemy buildings that shoot; backs off when hit
+autoScout: applied
+autoGatherFrom: units with an <AutogatherFrom> action tag gather on their own once idle (multiplayer unverified)
+autoGatherFrom: applied
+buildingGather: a building with a Gather action gathers from a target within the action's range (multiplayer unverified)
+buildingGather: applied
+herdWalkAwayFix: a herdable walked away from its pen or magnet keeps its leash anchor there
+herdWalkAwayFix: applied
+researchOnTheMove: a unit of the abstract type ResearchOnTheMove takes orders while it researches (multiplayer unverified)
+researchOnTheMove: applied
+transformChecks: uiTransformSelectedUnit buttons grey out with the reason, and a transform respects the target's build limit (multiplayer unverified)
+transformChecks: applied
+customWalls: a WallBuild proto with <WallPiece> tags lays its own wall pieces
+customWalls: applied
+directionalAttack: actions with <DirectionalAttack> or <DirectionalFiringRange> fly past their target and hit what they fly over (multiplayer unverified)
+directionalAttack: applied
+techRenameEffect: the tech effect SetTechName (tech, newName, newRolloverTextID, newLongRolloverTextID) renames a tech for the players it reaches (multiplayer unverified)
+techRenameEffect/enableTechRenameEffect: applied
+noCorpseDopples: dead units of unittype Huntable leave no dopple in the fog of war (multiplayer unverified)
+noCorpseDopples: applied
+danceBonusCivs: civs Spanish, British get the fire pit's Training, XPTrickle, Gathering and Regeneration dances like the native civs (multiplayer unverified)
+danceBonusCivs: applied
+asianCivs: 5 civ(s) count as Asian civs; civ IDs are logged when civs.xml is read
+asianCivs: applied
+twoScoutCivs: 1 civ(s) get the two-hero UI; civ IDs are logged when civs.xml is read
+twoScoutCivs: applied
+marketUnits: 6 proto(s) count as a Market for trading; resolved when protoy.xml is read
+marketUnits: applied
+explorerUnits: 39 hero proto(s); resolved when protoy.xml is read
+explorerUnits: applied
+nativeCivs: 3 civ(s) count as native civs (fire pit dances through the shared dance gates)
+nativeCivs: applied
+bigButtonCivs/noBigButtonBlds: 3 civ(s) get the native big button, 12 building proto(s) never show it
+bigButtonCivs/noBigButtonBlds: applied
+ageUpBuildings: 1 proto(s) open the age-up dialog besides the Town Center, with the politicians they list
+ageUpBuildings: applied
+politicianPlacesFix: the European age-up dialog lists only the politicians its layout has places for
+politicianPlacesFix: applied
+politicianEnablesTech: the European age-up dialog shows each politician's <PoliticianEnablesTech> techs (flag 0.7500 x 0.5833)
+politicianEnablesTech: applied
+enableFarmAnim/enableRectFarmAnim: 5 proto(s) work like a Mill, 1 like a Rice Paddy; resolved when protoy.xml is read
+enableFarmAnim/enableRectFarmAnim: applied
+farmingRadius: 2 farm proto(s) get their own gather area (stock 4.5 x 4.5)
+farmingRadius: applied
+wonderCivUnitType: 1 proto(s) may place the age-up wonder of a wonder civ
+wonderCivUnitType: applied
+trainSingleAbstractType: units of unittype AbstractTrainLimitOne are trained one at a time
+trainSingleAbstractType: applied
+kbUnitSyscalls: 5 kb syscalls added
+kbUnitSyscalls: applied
+customProtoUnitCommands: 58 command type(s) from C:\AoE3-UHC-WoLReal5\data\uhc\customprotounitcommands.xml; 188 command records
+customProtoUnitCommands: applied
+multiarmor: protos keep one armor per damage type; Armor effects follow their damagetype
+multiarmor: applied
+betterfreedynamicunit: dynamic free units grow with game time (2-minute steps, unrounded, at most 15)
+betterfreedynamicunit: applied
+nowalkfarm: farm gatherers keep their first spot
+nowalkfarm: applied
+repairWallGlobal: UI syscall repairWallGlobal() added
+repairWallGlobal: applied
+compatMode: 32-bit display modes are also offered at 16 bits
+compatMode: applied
+gatherFix: gatherers collect on a fixed interval, not per animation loop
+gatherFix: applied
+rofFix: giving an order no longer clears the unit's timer
+rofFix: applied
+stunMovingTargetFix: a stun action no longer ends when its target check fails
+stunMovingTargetFix: applied
+noDamageOnUnbuiltFoundations: foundations whose construction has not started take no damage
+noDamageOnUnbuiltFoundations: applied
+truckAttackResourceFix: a TruckAttack no longer empties the buildings it hits (multiplayer unverified)
+truckAttackResourceFix: applied
+fallenHeroTacticsFix: units keep their tactic when knocked out, stunned or building
+fallenHeroTacticsFix: applied
+impactBoneFix: effects attached to impact bones get unit-length axes
+impactBoneFix: applied
+customImpactTypes: ShipMetal (15)
+customImpactTypes: applied
+selectionLimit: a selection holds up to 75 units (stock 50)
+selectionLimit: applied
+modelCacheLimit: models are never unloaded for the cache budget (stock: above 30 MB)
+modelCacheLimit: applied
+dmgPartBoneFix: a damage part whose bone a model lacks no longer reloads the model
+dmgPartBoneFix: applied
+enableAllTeams: Team 3 and Team 4 in the single-player setup (multiplayer lobby unchanged: single player only)
+enableAllTeams: applied
+startingTC: units of unittype AbstractStartingTC can be a player's first town center (FirstTC) like TownCenter, and replace one that is gone, dead or has a pending lifespan (multiplayer unverified)
+startingTC: applied
+civFirstTC: a civ's <firstTC> proto in civs.xml replaces the TownCenter random maps place for its players (not in a Nomad start) and is their first town center (FirstTC) (multiplayer unverified)
+civFirstTC: applied
+scenarioCivs: data\scenariocivs.xml is read after civs.xml, its civs appended and kept out of the skirmish list
+scenarioCivs: applied
+transformInventory: units transformed in place (TransformUnit, revolution) take their new proto's InitialResource when the resource types differ (multiplayer unverified)
+transformInventory: applied
+transformSpan: TransformUnit effects take transformspan
+transformSpan: applied
+noTrainNearEnemyTC: units of unittype AbstractDaimyo do not train within 65.0 m (from the trainer's centre to the edge of the building) of an enemy's first Town Center (FirstTC), with a warning over the local player's held units (multiplayer unverified)
+noTrainNearEnemyTC: applied
+overhealHitpointBars: art\ui\uhc\health_overheal.ddt is not in the game folder: the portrait bar shows the overheal with ui\ingame\ingame_ui_health_yellow
+overhealHitpointBars: HP bars and HP texts of units of unittype AbstractOverheal take InitialHitpoints as 100 %, HP above it shown as a segment and texts coloured FF8C00, the portrait bar's end with ui\ingame\ingame_ui_health_yellow, an overheal stat row labelled 'Overheal', the first unit of each proto logged (display only)
+overhealHitpointBars: applied
+overhealSources: only heal actions with <CanOverheal>1</CanOverheal> (Data subtypes CanOverheal and OverhealCap) heal marked units above their 100 %; every other heal stops there (multiplayer unverified)
+overhealSources: applied
+overhealDecay: marked units above their 100 % lose their <OverhealDecay> (% of it per second, after its delay; Data subtypes OverhealDecay and OverhealDecayDelay), or 2.00 % of it per second of game time 0.0 s after their last gain, down to it (multiplayer unverified)
+overhealDecay: applied
+detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold, DetonationHitpointDecay, DetonationImpactEffect and DetonationOnKnockout are on (multiplayer unverified)
+detonationDeath: applied
+annexFacing: the proto tags AnnexOf and AnnexRange are on (multiplayer unverified)
+annexFacing: applied
+deadReplacementAtZeroInventory: a unit with DoNotDieAtZeroHitpoints and DieAtZeroResources leaves its DeadReplacement when its body is used up, not when it falls (multiplayer unverified)
+deadReplacementAtZeroInventory: applied
+steadyHitpointBars: floating HP bars hold their position (every unit) (display only)
+steadyHitpointBars: applied
+inventoryBars: units with resources show what they hold under their HP bar while Alt is held; units with no HP bar but trees (mines, bushes) too (display only)
+inventoryBars: applied
+showGatherRate: the stat panel shows the gather rate per second of a selected gathering unit, and {currentUnitGatherRateString} returns it (UI only)
+showGatherRate: applied
+multiplierDecimals: bonus multipliers with 2 decimals (format written), their rollover lines too
+multiplierDecimals: applied
+attackTypeIcons: 11 unit types get an icon in the attack rows' bonus multipliers
+attackTypeIcons: applied
+minUIStats: 7 rows and the normal interface's stat rows from (built-in rows; no C:\AoE3-UHC-WoLReal5\data\uhc\minuirows.xml); building armor shown in the minimized panel's resists; 31 data refs {uhc...} (UI only); rows give way to the stack portraits and 2 avoid gadgets; 0 stock labels; attack rows: the original ones written by the key, ROF after the damage, projectiles per reload after it (the tags as the data writes them), ability attacks only when enabled
+minUIStats: multipliers without their trailing zeros; help text lines for ROF on and projectiles on
+minUIStats: applied
+resourceGatherAuras: modifiers can change the gather rate of one kind of target or one resource (multiplayer unverified)
+resourceGatherAuras: applied
+resourceDebt: trickles and unit rates may take Food Wood Gold below 0 (multiplayer unverified)
+resourceDebt: applied
+linkedResource: the proto tags LinkedResourceType and LinkedResourceRange and the action tag GatherLinkedResource are on (multiplayer unverified)
+linkedResource: applied
+incomeRates: {uhcIncome(<resource>)} = income per second over the last 20 s of game time (gathering, AutoGather, trickles), the shown player's logged every 60 s
+incomeRates: applied
+nurseryFactor: the progress pie goes after the panel row's text (art\ui\uhc\pie)
+nurseryFactor: the proto tags NurseryFactor*, the Data subtypes NurseryFactor, NurseryFactorMax, NurseryFactorInterval, NurseryFactorStep, NurseryFactorGrowthBase and FreeHomeCityUnitByNurseryFactor, the AutoGather rate x the factor, the garrison rule, the UI syscall nurseryFactorCommand, the panel rows and {uhcNurseryFactor} are on; logged (multiplayer unverified)
+nurseryFactor: applied
+garrisonConvert: <GarrisonConvertTo> converts the units that enter a building (several tags in turn, eject, from, the population cap, six tech subtypes); the progress pie over the portrait; logged
+garrisonConvert: applied
+auraStacking: auras read <ForbidUnitType> and <ForbidAbstractType> (changes the simulation); <NoStack> is retired, <ModifyExclusive> does it
+auraStacking: applied
+buildingWorkRateAuras: the Train call at 0x009EA410 is already hooked (noTrainNearEnemyTC); Train speed gets the factor only through that hook's call of g_uhcBwrTrainGetter
+buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x40) scale train, research, Maintain, heal and build speed (multiplayer unverified)
+buildingWorkRateAuras: applied
+dataLint: warns of what the data asks and the game drops, 3 of 3 shared sources
+dataLint: applied
+rendererOption: C:\AoE3-UHC-WoLReal5\uhc-options.cfg: no choice stored yet
+rendererOption: DirectX 9
+rendererOption: applied
+perfExecFile: polling C:\AoE3-UHC-WoLReal5\uhc-exec.txt
+perfStats: large-address-aware yes, user address space 4095 MB, 16 logical CPUs, 8 cores
+perfStats/perfAutoExec: applied
+bufferedFileReads: read-only files get a 64 KB read-ahead buffer (multiplayer-safe: same bytes)
+bufferedFileReads/perfFileLog: applied
+fastVertexFill: the cloth flags' vertices are built without reading the locked vertex buffer (display only: same bytes)
+fastVertexFill: applied
+fastLastInLine: "last in line" is recomputed through an index of the TechStatus prerequisites (same bits as stock)
+fastLastInLine: applied
+xsErrorLog: the XS messages go to this log, at most 200 lines
+xsErrorLog: applied
+multipleInstances: this copy may run beside copies in other folders (semaphore suffix -02AD39C5); background: windows stay at the bottom and are never activated
+multipleInstances: applied
+playerIcon: the local player's lobby icon is avatar "my_avatar"
+playerIcon: applied
+editorSearch: the Objects palette, the Forbidden Units/Techs dialog, the trigger editor and its trigger list filter by their search fields (EditorProtoPaletteSearch, ForbiddenUnitsTechs_Search, trEdit-CondEffPanel-search, trEdit-Trigger-search)
+editorSearch: applied
+editorAutosave: every 5.0 min in the editor, to autosave-1 ... autosave-3; log on
+editorAutosave: applied
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelEurMax-postGW shown, before it: SettlerCountDialog-defaultPanelEurMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelEurMin-postGW shown, before it: SettlerCountDialog-defaultPanelEurMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelAsiMax-postGW shown, before it: SettlerCountDialog-defaultPanelAsiMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelAsiMin-postGW shown, before it: SettlerCountDialog-defaultPanelAsiMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelNatMax-postGW shown, before it: SettlerCountDialog-defaultPanelNatMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelNatMin-postGW shown, before it: SettlerCountDialog-defaultPanelNatMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelEurMax-postGW shown, before it: SettlerCountDialog-advancedPanelEurMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelEurMin-postGW shown, before it: SettlerCountDialog-advancedPanelEurMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelAsiMax-postGW shown, before it: SettlerCountDialog-advancedPanelAsiMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelAsiMin-postGW shown, before it: SettlerCountDialog-advancedPanelAsiMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelNatMax-postGW shown, before it: SettlerCountDialog-advancedPanelNatMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelNatMin-postGW shown, before it: SettlerCountDialog-advancedPanelNatMin-preGW
+techGadgets: 12 rule(s), changes logged (interface only)
+techGadgets: applied
+selectFattened: UI syscall uhcSelectFattened() and {uhcFattened} added; gadget(s) uhcFattened shown while the local player has a fattened herdable (interface only)
+selectFattened: applied
+customSyscalls: wolPlugin.upl: 1 syscalls, 33 cheats (UHCPluginMain returned 0)
+customSyscalls: wolai.upl: 16 syscalls, 0 cheats (UHCPluginMain returned 0)
+customSyscalls: 2 of 2 plugin(s) loaded, 27 syscalls queued, 33 cheats for customCheats
+customSyscalls/customCheats: applied
+alpha2coverage: not implemented yet; ignored
+enablerandomtecheffect: not implemented yet; ignored
+flagoverrideeffect: not implemented yet; ignored
+loadingscreencount: not implemented yet; ignored
+map: not implemented yet; ignored
+optionhighpolycliff: not implemented yet; ignored
+UHCMain: 148 applied, 0 failed
+multipleInstances background: window of class OleMainThreadWndClass placed at the bottom, never activated
+multipleInstances background: window of class Age3 placed at the bottom, never activated
+multipleInstances background: window of class CicMarshalWndClass placed at the bottom, never activated
+multipleInstances: single-instance semaphore "Global\Age3" renamed to "Global\Age3-02AD39C5"
+hook reached: customCheats cheat table (0x551FE6)
+customCheats: 33 plugin cheat(s) added to the cheat table (56 entries)
+hook reached: compatMode (0x54D6D1): 640x480 also offered at 16 bits
+perfStats: CreateDevice adapter 0, type 1, behavior flags 0x00000084; after it x87 control word 0x007F, MXCSR 0x00001FA0
+perfStats: CreateDevice 1920x1080 fmt 21, 1 back buffer(s), swap 1, interval 0x00000001, windowed 1, refresh 0 -> hr 0x00000000
+hook reached: customImpactTypes name lookup (0x59F464)
+hook reached: syscall group UI (0x539542)
+syscalls: group UI: 3 added, 0 refused
+hook reached: syscall group UI2 (0x53575E)
+hook reached: techRenameEffect register (0x524CB5)
+techRenameEffect: effect type SetTechName -> 17
+hook reached: customProtoUnitCommands (0x5269FB)
+customProtoUnitCommands: 58 command type(s) added (IDs 129..186), 0 already known, 0 refused
+hook reached: civ tags civs.xml (0x52BB07)
+hook reached: scenarioCivs civs.xml end (0x52B485)
+hook reached: nativeCivs civ flags (0x52B581)
+nativeCivs: 3 of 3 civ(s) marked native in civs.xml
+hook reached: proto tags (0x51DB0F)
+hook reached: abstract unit types (0x51BA31)
+unit types: AbstractWoLCavalry -> 3838 (bit 203 of 204), added
+unit types: AbstractWoLRangedCavalry -> 3839 (bit 204 of 205), added
+unit types: AbstractWoLHandCavalry -> 3840 (bit 205 of 206), added
+unit types: AbstractWoLTent -> 3841 (bit 206 of 207), added
+unit types: AbstractWoLAssault -> 3842 (bit 207 of 208), added
+unit types: AbstractWoLInfantry -> 3843 (bit 208 of 209), added
+unit types: AbstractTrainLimitOne -> 3844 (bit 209 of 210), added
+unit types: AbstractWoLImmigrantMilitary -> 3845 (bit 210 of 211), added
+unit types: AbstractWoLImmigrantMilitaryNotArt -> 3846 (bit 211 of 212), added
+unit types: AbstractWoLImmigrantInfantry -> 3847 (bit 212 of 213), added
+unit types: AbstractWoLImmigrantCavalry -> 3848 (bit 213 of 214), added
+unit types: AbstractWoLImmigrantArtillery -> 3849 (bit 214 of 215), added
+unit types: AbstractWoLImmigrantArtilleryIII -> 3850 (bit 215 of 216), added
+unit types: AbstractWoLImmigrantArtilleryIV -> 3851 (bit 216 of 217), added
+unit types: AbstractWoLImmigrantTC -> 3852 (bit 217 of 218), added
+unit types: AbstractImmigrantHouse -> 3853 (bit 218 of 219), added
+unit types: AbstractWoLUltimateBuildingLA -> 3854 (bit 219 of 220), added
+unit types: AbstractWoLLightShip -> 3855 (bit 220 of 221), added
+unit types: AbstractWoLHeavyShip -> 3856 (bit 221 of 222), added
+unit types: AbstractWoLSiegeShip -> 3857 (bit 222 of 223), added
+unit types: AbstractWoLImmigrantWorker -> 3858 (bit 223 of 224), added
+unit types: AbstractWoLOutlaw -> 3859 (bit 224 of 225), added
+unit types: AbstractWoLNavalTrooper -> 3860 (bit 225 of 226), added
+unit types: AbstractWoLRangedInfantry -> 3861 (bit 226 of 227), added
+unit types: AbstractWoLCrop -> 3862 (bit 227 of 228), added
+unit types: AbstractWoLIrregular -> 3863 (bit 228 of 229), added
+unit types: AFRICANmaturing -> 3864 (bit 229 of 230), added
+unit types: AbstractBayonet -> 3865 (bit 230 of 231), added
+unit types: AbstractWoLZwawa -> 3866 (bit 231 of 232), added
+unit types: AbstractTank -> 3867 (bit 232 of 233), added
+unit types: AbstractMechanized -> 3868 (bit 233 of 234), added
+unit types: AbstractAircraft -> 3869 (bit 234 of 235), added
+unit types: AbstractGWUnit -> 3870 (bit 235 of 236), added
+unit types: AbstractGWMilitary -> 3871 (bit 236 of 237), added
+unit types: AbstractGWInfantry -> 3872 (bit 237 of 238), added
+unit types: AbstractGWCavalry -> 3873 (bit 238 of 239), added
+unit types: AbstractGWArtillery -> 3874 (bit 239 of 240), added
+unit types: AbstractGWNavy -> 3875 (bit 240 of 241), added
+unit types: AbstractWoLGrenadier -> 3876 (bit 241 of 242), added
+unit types: AbstractContraGuerrilla -> 3877 (bit 242 of 243), added
+unit types: AbstractWoLForgeUnit -> 3878 (bit 243 of 244), added
+unit types: AbstractWoLGunsmithUnit -> 3879 (bit 244 of 245), added
+unit types: AbstractFavouredUnit -> 3880 (bit 245 of 246), added
+unit types: AbstractWoLSaudCaravan -> 3881 (bit 246 of 247), added
+unit types: WoLConstructPrevent -> 3882 (bit 247 of 248), added
+unit types: WoLForeignUnit -> 3883 (bit 248 of 249), added
+unit types: AbstractWoLHowitzer -> 3884 (bit 249 of 250), added
+unit types: AbstractHealNonIdle -> 3885 (bit 250 of 251), added
+unit types: AbstractDodge -> 3886 (bit 251 of 252), added
+unit types: AbstractDodge -> 3886 (bit 251 of 252), already defined
+unit types: AbstractDodge -> 3886 (bit 251 of 252), already defined
+unit types: ypMonkChinese -> 925 (bit -2710 of 252), already defined
+unit types: AbstractSpreadAnyAccuracy -> 3887 (bit 252 of 253), added
+unit types: Resource -> 3641 (bit 6 of 253), already defined
+unit types: AbstractMine -> 3784 (bit 149 of 253), already defined
+unit types: AbstractCanPillage -> 3888 (bit 253 of 254), added
+unit types: Building -> 3637 (bit 2 of 254), already defined
+unit types: LogicalTypeSettlerBuildLimit -> 3889 (bit 254 of 255), added
+unit types: TeamKillBounty -> 3890 (bit 255 of 256), added
+unit types: AbstractMaintainWaitForPop -> 3891 (bit 256 of 257), added
+unit types: ypTekkousen -> 1254 (bit -2381 of 257), already defined
+unit types: NativeSocket -> 3787 (bit 152 of 257), already defined
+unit types: AbstractLifespanAfterConstruction -> 3892 (bit 257 of 258), added
+unit types: AbstractGaiaOnlySocket -> 3893 (bit 258 of 259), added
+unit types: CantBeSlowed -> 3894 (bit 259 of 260), added
+unit types: ResearchOnTheMove -> 3895 (bit 260 of 261), added
+unit types: Resource -> 3641 (bit 6 of 261), already defined
+unit types: Huntable -> 3714 (bit 79 of 261), already defined
+unit types: AbstractTrainLimitOne -> 3844 (bit 209 of 261), already defined
+unit types: AbstractStartingTC -> 3896 (bit 261 of 262), added
+unit types: AbstractDaimyo -> 3740 (bit 105 of 262), already defined
+unit types: AbstractOverheal -> 3897 (bit 262 of 263), added
+unit types: Tree -> 3653 (bit 18 of 263), already defined
+unit types: AbstractCavalry -> 3655 (bit 20 of 263), already defined
+unit types: AbstractLightInfantry -> 3712 (bit 77 of 263), already defined
+unit types: AbstractHeavyCavalry -> 3713 (bit 78 of 263), already defined
+unit types: AbstractRangedCavalry -> 3755 (bit 120 of 263), already defined
+unit types: AbstractNativeWarrior -> 3753 (bit 118 of 263), already defined
+unit types: MercType2 -> 3791 (bit 156 of 263), already defined
+unit types: AbstractCoyoteMan -> 3831 (bit 196 of 263), already defined
+unit types: AbstractHandCavalry -> 3756 (bit 121 of 263), already defined
+unit types: AbstractRangedInfantry -> 3754 (bit 119 of 263), already defined
+unit types: AbstractWoLAssault -> 3842 (bit 207 of 263), already defined
+unit types: AbstractInfantry -> 3654 (bit 19 of 263), already defined
+unit types: Unit -> 3635 (bit 0 of 263), already defined
+unit types: AbstractMine -> 3784 (bit 149 of 263), already defined
+unit types: Tree -> 3653 (bit 18 of 263), already defined
+unit types: AbstractFarm -> 3658 (bit 23 of 263), already defined
+hook reached: displayedRange: proto flag parser's last compare (0x5F726F)
+hook reached: multiarmor <Armor> tag (0x5F5EB7)
+hook reached: decimalPopulation <PopulationCapAddition> (0x5FD719)
+hook reached: customImpactTypes impact effect entry (0x5FEC74)
+hook reached: customImpactTypes impact effect weights (0x5FEC99)
+hook reached: action tag (0x5FA11E)
+hook reached: dataLint proto tag (0x5F62A2)
+hook reached: decimalPopulation <PopulationCount> (0x5FB92E)
+hook reached: ModifyType names (0x5FE6D7)
+hook reached: dataLint proto action (0x5FA202)
+retargetInAction: Explorer/CrackshotAttack (protoy): RetargetInAction 1
+powerShots: Explorer, action name 96 (protoy): PowerShots 6
+retargetInAction: Explorer/SharpshooterAttack (protoy): RetargetInAction 1
+powerShots: Explorer, action name 95 (protoy): PowerShots 6
+hook reached: dataLint unit type (0x5FCB61)
+hook reached: containedUnitsROF tag (0x5FEE0C)
+garrisonConvert: proto 342 (Blockhouse), tag 1: the units of Settler become Pikeman, one at a time, each after 3000 ms, put out
+garrisonConvert: proto 342 (Blockhouse), tag 2: the units of Settler become Musketeer, one at a time, each after 3000 ms, put out
+nurseryFactor: proto 348 (Bank): NurseryFactorInterval 8
+nurseryFactor: proto 348 (Bank): NurseryFactorGrowth exponential
+nurseryFactor: proto 348 (Bank): NurseryFactorGrowthBase 2
+nurseryFactor: proto 348 (Bank): NurseryFactorName "minks"
+nurseryFactor: proto 348 (Bank): NurseryFactorRolloverCount "{current} out of {max} minks."
+nurseryFactor: proto 348 (Bank): NurseryFactorRolloverRate "The next step brings {step} minks in {seconds} seconds."
+nurseryFactor: proto 348 (Bank): a Herdable that enters adds 3
+nurseryFactor: proto 348 (Bank): a Settler that enters adds 1
+nurseryFactor: proto 348 (Bank): command NurserySellMinks (0): factor -4, 2 x CrateofCoin, cost ""
+nurseryFactor: proto 348 (Bank): command NurseryBuyMinks (1): factor +3, 0 x nothing, cost "Wood 100, Food 50"
+nurseryFactor: proto 348 (Bank): command NurserySettlers (2): factor -1, 3 x Settler, cost ""
+multiarmor: Frigate has 2 armors
+hook reached: dataLint load end (0x61FE4A)
+hook reached: tech tags (0x61FDB8)
+hook reached: tech flags (0x620C2F)
+hook reached: tech subtype lookup (0x61FF5D)
+hook reached: dataLint effect (0x6205E9)
+hook reached: multiarmor damagetype of a tech effect (BDataEffect::setData)
+hook reached: dataLint effect type (0x65BC56)
+nurseryFactor: FreeHomeCityUnitByNurseryFactor CrateofCoin per factor of Bank, consume 2
+nurseryFactor: FreeHomeCityUnitByNurseryFactor CrateofCoin per factor of Bank, consume all
+dataLint: unknown <UnitType> AbstractTypeVictoryPointBuilding: 3 times, first in proto TradingPost
+dataLint: unknown <UnitType> ConSoundsetsvertsHerds: 1 time, first in proto RoyalCaravan
+dataLint: unknown <UnitType> ConvertsHerds.: 1 time, first in proto MancoHorseman
+dataLint: unknown proto tag deadreplacementlifespan: 289 times, first in proto TradingPost
+dataLint: unknown proto tag formationcategory: 1888 times, first in proto IGCFishingBoat
+dataLint: unknown proto tag portrait: 18 times, first in proto WOTTASertanejoAccessory3x3
+dataLint: unknown proto tag protounitcommand: 5 times, first in proto WallStraight1
+dataLint: unknown action tag accuracyreductionfactor: 3257 times, first in proto SPCPropRifleman
+dataLint: unknown action tag aimbonus: 3609 times, first in proto SPCPropRifleman
+dataLint: unknown action tag boredanim: 185 times, first in proto IGCGreatBombard
+dataLint: unknown action tag containedspeedbonus: 2 times, first in proto WOLRam
+dataLint: unknown action tag joganim: 1 time, first in proto WoLAlguacil
+dataLint: unknown action tag numberprojectiles: 302 times, first in proto Explorer
+dataLint: unknown action tag powershots: 2 times, first in proto Explorer
+dataLint: unknown action tag projectileprotounit: 1 time, first in proto gwAAgun
+dataLint: unknown action tag runanim: 1 time, first in proto WoLAlguacil
+dataLint: unknown action tag unintentionaldamagemultiplier: 3241 times, first in proto SPCPropRifleman
+dataLint: unknown action tag walkanim: 1 time, first in proto WoLAlguacil
+dataLint: unknown Data subtype ROF: 56 times, first in tech Rifling
+dataLint: <Effect> the game deletes type=Data subtype=ActionEnable: 28 times, first in tech WOLKruppSpawnFalconet, which names WOLKruppFactory
+dataLint: <Effect> the game deletes type=Data subtype=AddTrain: 5 times, first in tech HCAtonementArgentina, which names ArtilleryDepot
+dataLint: <Effect> the game deletes type=Data subtype=AllowedAge: 1 time, first in tech HCEarlySkirmishersTeam, which names SkirmisherBlock
+dataLint: <Effect> the game deletes type=Data subtype=BuildPoints: 6 times, first in tech YPHCLandGrabIndians, which names BALKANwheat
+dataLint: <Effect> the game deletes type=Data subtype=CopyUnitPortraitAndIcon: 1 time, first in tech Age0Chilean, which names IconPortraitchileanExplorer
+dataLint: <Effect> the game deletes type=Data subtype=Cost: 183 times, first in tech NatBasketweaving, which names ypMarketWheelbarrow3
+dataLint: <Effect> the game deletes type=Data subtype=Damage: 72 times, first in tech HCExplorerDutch, which names Explo
+dataLint: <Effect> the game deletes type=Data subtype=DamageArea: 8 times, first in tech ypFortifiedAgra, which names AbstractAgraFort
+dataLint: <Effect> the game deletes type=Data subtype=DamageBonus: 5 times, first in tech HCKoreanBroadsword, which names HwalArcher
+dataLint: <Effect> the game deletes type=Data subtype=Enable: 89 times, first in tech Age0Dutch, which names HorseArtillery
+dataLint: <Effect> the game deletes type=Data subtype=FreeHomeCityUnit: 87 times, first in tech ypConsulateRelationsSPCDutch
+dataLint: <Effect> the game deletes type=Data subtype=FreeHomeCityUnitIfTechObtainable: 44 times, first in tech HCShipCatapult1
+dataLint: <Effect> the game deletes type=Data subtype=HitPercent: 2 times, first in tech ypMonasteryStompUpgrade, which names AbstractIndianMonk
+dataLint: <Effect> the game deletes type=Data subtype=Hitpoints: 66 times, first in tech HCMusketeerGrenadierHitpointsBritishTeam, which names WOLGrognard
+dataLint: <Effect> the game deletes type=Data subtype=LOS: 3 times, first in tech SPYmagnifyingglass, which names WOLSpyAustralian
+dataLint: <Effect> the game deletes type=Data subtype=MaximumRange: 10 times, first in tech HCDefesadeCurupayty, which names TownCenter
+dataLint: <Effect> the game deletes type=Data subtype=MaximumVelocity: 2 times, first in tech SPYspycoat, which names WOLSpyAustralian
+dataLint: <Effect> the game deletes type=Data subtype=ResearchPoints: 7 times, first in tech HCLandGrant, which names IMMIGRANTasian
+dataLint: <Effect> the game deletes type=Data subtype=TacticEnable: 2 times, first in tech HCsubmarine, which names PaddleSteamer
+dataLint: <Effect> the game deletes type=Data subtype=TrainPoints: 5 times, first in tech WOLNatSerfUprising, which names WOLNatFarmer
+dataLint: <Effect> the game deletes type=Data subtype=UnitRegenRate: 7 times, first in tech Geomancy
+dataLint: <Effect> the game deletes type=Data subtype=UpdateVisual: 2 times, first in tech GuardBersaglieri
+dataLint: <Effect> the game deletes type=Data subtype=WorkRate: 50 times, first in tech NatCalendar, which names AbstractVillager
+dataLint: <Effect> the game deletes type=Data subtype=damage: 1 time, first in tech ChurchZweihander, which names AFRICANaskari
+dataLint: <Effect> the game deletes type=Data2 subtype=WOLcropSTRAWBERRY: 1 time, first in tech YPHCChonindoTeam, which names AbstractVillager
+dataLint: <Effect> the game deletes type=Data2 subtype=WOLcropWHEAT: 1 time, first in tech YPHCChonindoTeam, which names AbstractVillager
+dataLint: <Effect> the game deletes type=Data2 subtype=WorkRateSpecific: 2 times, first in tech WOLNatMulePloughing, which names WOLNatFarmer
+dataLint: <Effect> the game deletes type=FlagOverride: 8 times, first in tech maltaflag
+dataLint: <Effect> the game deletes type=SetName: 57 times, first in tech ImpLegendaryNatives
+dataLint: <Effect> the game deletes type=TechStatus: 518 times, first in tech Age0British, which names WOLEnableRocketsBritish
+dataLint: <Effect> the game deletes type=TextOutput: 50 times, first in tech MapucheVillagers1
+dataLint: <Effect> the game deletes type=TransformUnit: 4 times, first in tech HCGreatSummer
+dataLint: <ModifyType> with no stat GATHER: 88 times, first in proto Settler
+dataLint: <ModifyType> with no stat Hitpoints: 1 time, first in proto WOLPriestSpawn
+dataLint: <ProtoAction> not in the tactics AntiShipAttack: 1 time, first in proto Tambo
+dataLint: <ProtoAction> not in the tactics AutoGather: 19 times, first in proto ypSPCKichiro
+dataLint: <ProtoAction> not in the tactics AutoGatherCoin: 3 times, first in proto WOLPriestSpawn
+dataLint: <ProtoAction> not in the tactics AutoGatherFaithItalian: 1 time, first in proto WoLJuana
+dataLint: <ProtoAction> not in the tactics AutoGatherFazendaFood: 2 times, first in proto AfricanSlave
+dataLint: <ProtoAction> not in the tactics AutoGatherFazendaWood: 2 times, first in proto AfricanSlave
+dataLint: <ProtoAction> not in the tactics AutoGatherFood: 4 times, first in proto Church
+dataLint: <ProtoAction> not in the tactics AutoGatherIncaGold: 23 times, first in proto Coureur
+dataLint: <ProtoAction> not in the tactics AutoGatherMapuche: 24 times, first in proto Coureur
+dataLint: <ProtoAction> not in the tactics AutoGatherTrade: 10 times, first in proto SettlerWagon
+dataLint: <ProtoAction> not in the tactics AutoGatherWood: 3 times, first in proto ypMonkIndian
+dataLint: <ProtoAction> not in the tactics AutoGatherXP: 2 times, first in proto WoLAlguacil
+dataLint: <ProtoAction> not in the tactics Autogather: 2 times, first in proto Coronel
+dataLint: <ProtoAction> not in the tactics Backstab: 2 times, first in proto AFRICANmenelik
+dataLint: <ProtoAction> not in the tactics BlunderbussAttack: 1 time, first in proto NatAboriginalHunter
+dataLint: <ProtoAction> not in the tactics BlunderbussAttackPasion: 1 time, first in proto WoLJuana
+dataLint: <ProtoAction> not in the tactics BroadsideAttack: 1 time, first in proto IMscarletsailsBlock
+dataLint: <ProtoAction> not in the tactics BuildingAttack: 4 times, first in proto POWERstorm
+dataLint: <ProtoAction> not in the tactics ButtAttack: 2 times, first in proto Settler
+dataLint: <ProtoAction> not in the tactics CannonAttack: 6 times, first in proto ypEggHotDogCart
+dataLint: <ProtoAction> not in the tactics ChopAttack: 2 times, first in proto WOLLumberjack
+dataLint: <ProtoAction> not in the tactics CoverBuildingAttack: 6 times, first in proto AfricanIncendiary
+dataLint: <ProtoAction> not in the tactics CoverHandAttack: 5 times, first in proto WoLBugreiro
+dataLint: <ProtoAction> not in the tactics CrackshotAttack: 2 times, first in proto Officer
+dataLint: <ProtoAction> not in the tactics Debate: 4 times, first in proto Miner
+dataLint: <ProtoAction> not in the tactics DefendHandAttack: 1 time, first in proto NatAgha
+dataLint: <ProtoAction> not in the tactics DefendRangedAttack: 1 time, first in proto WOLDecoyLegionPeruana
+dataLint: <ProtoAction> not in the tactics Gather: 6 times, first in proto Priest
+dataLint: <ProtoAction> not in the tactics GatherXPMaypole: 5 times, first in proto MountedSettler
+dataLint: <ProtoAction> not in the tactics GuardianAttack: 5 times, first in proto gwCamelCorps
+dataLint: <ProtoAction> not in the tactics HandAttack: 2 times, first in proto ypMongolScout
+dataLint: <ProtoAction> not in the tactics Heal: 7 times, first in proto ypVillage
+dataLint: <ProtoAction> not in the tactics Hunting: 1 time, first in proto NatAboriginalHunter
+dataLint: <ProtoAction> not in the tactics MeleeHandAttack: 2 times, first in proto NatAgha
+dataLint: <ProtoAction> not in the tactics ModifyGatherCoin: 1 time, first in proto EGYgranaryCARAVAN
+dataLint: <ProtoAction> not in the tactics ModifyGatherFood: 1 time, first in proto EGYgranaryCARAVAN
+dataLint: <ProtoAction> not in the tactics ModifyGatherGold: 1 time, first in proto WoLHermandad
+dataLint: <ProtoAction> not in the tactics Pasture: 6 times, first in proto Cow
+dataLint: <ProtoAction> not in the tactics PianoXPTrickle: 1 time, first in proto africanLibrary
+dataLint: <ProtoAction> not in the tactics RangedAttack: 2 times, first in proto WOLimpaledcorpses
+dataLint: 7 more of <ProtoAction> not in the tactics (`dataLint file` lists them)
+dataLint: the data load ended with 100 names the game drops, 3 unknown <UnitType>, 4 unknown proto tag, 11 unknown action tag, 1 unknown Data subtype, 32 <Effect> the game deletes, 2 <ModifyType> with no stat, 47 <ProtoAction> not in the tactics
+hook reached: syscall group XS (0x6257D9)
+syscalls: group XS: 8 added, 0 refused
+hook reached: syscall group RM (0x60B8BF)
+hook reached: noAILimit (0x603B0B)
+hook reached: data refs registration (0x5D3229)
+data refs: 34 added after the game's 116
+hook reached: removeFameRestriction icon load (0x5C1E1F)
+hook reached: customHotkeyContexts (0x5C1778)
+customHotkeyContexts: registered keymap context PresidioAccel as context 151
+customHotkeyContexts: registered keymap context YPBarracksIndianAccel as context 152
+customHotkeyContexts: registered keymap context WOLBarracksGreekAccel as context 153
+customHotkeyContexts: registered keymap context WOLBarracksKoreanAccel as context 154
+customHotkeyContexts: registered keymap context ypBarracksJapaneseAccel as context 155
+customHotkeyContexts: registered keymap context ypCaravanseraiAccel as context 156
+customHotkeyContexts: registered keymap context WOLStableGreekAccel as context 157
+customHotkeyContexts: registered keymap context ypStableJapaneseAccel as context 158
+customHotkeyContexts: registered keymap context GunsmithAccel as context 159
+customHotkeyContexts: registered keymap context GunsmithCaravanAccel as context 160
+customHotkeyContexts: registered keymap context ForgeAccel as context 161
+customHotkeyContexts: registered keymap context ForgeCaravanAccel as context 162
+hook reached: card tags (0x630017)
+hook reached: deckCardCount (0x7EF026)
+hook reached: syscall group HC (0x5B5E08)
+perfStats: Reset 1920x1080 fmt 21, 1 back buffer(s), swap 1, interval 0x80000000, windowed 1, refresh 0 -> hr 0x00000000
+hook reached: fastVertexFill cloth flag fill (0x40D523)
+perfAutoExec: frame 120: config("DontPauseWhenLosingFocus")
+perfAutoExec: frame 690: config("DontPauseWhenLosingFocus")
+perfAutoExec: frame 690: config("flashHitpointBarsOnDamage")
+perfAutoExec: frame 690: startRandomGame(true)
+hook reached: resourceDebt set (0x6798F4)
+hook reached: resendableCards age (0x8D502F)
+hook reached: tech subtype apply (0x8F978D)
+hook reached: tech subtype on a player (0x8D843E)
+hook reached: workRateByAbstractType apply (0x8F987C)
+hook reached: decimalPopulation effect PopulationCapAddition (0x8FA8CF)
+editorAutosave: the editor is open; the first autosave in 5.0 min
+hook reached: nativeCivs test 9 (0x8D52AF)
+nativeCivs: Tupinamba -> civ 49
+nativeCivs: WallMapu -> civ 48
+nativeCivs: Tawantinsuyu -> civ 46
+hook reached: decimalPopulation data ref pop
+hook reached: decimalPopulation data ref popcap
+hook reached: basePop/extraPop/decimalPopulation (0x4581F3)
+hook reached: decimalPopulation colorizePop argument (0x6F576F)
+hook reached: decimalPopulation printed population (colorizePop)
+hook reached: editorSearch: allowed units entry (0x9991D0)
+hook reached: world update (0x481A57)
+hook reached: autoScout command (0x7C8E49)
+techGadgets: first tech check (player 1)
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelEurMax-preGW shown, hidden: SettlerCountDialog-defaultPanelEurMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelEurMin-preGW shown, hidden: SettlerCountDialog-defaultPanelEurMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelAsiMax-preGW shown, hidden: SettlerCountDialog-defaultPanelAsiMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelAsiMin-preGW shown, hidden: SettlerCountDialog-defaultPanelAsiMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelNatMax-preGW shown, hidden: SettlerCountDialog-defaultPanelNatMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelNatMin-preGW shown, hidden: SettlerCountDialog-defaultPanelNatMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelEurMax-preGW shown, hidden: SettlerCountDialog-advancedPanelEurMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelEurMin-preGW shown, hidden: SettlerCountDialog-advancedPanelEurMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelAsiMax-preGW shown, hidden: SettlerCountDialog-advancedPanelAsiMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelAsiMin-preGW shown, hidden: SettlerCountDialog-advancedPanelAsiMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelNatMax-preGW shown, hidden: SettlerCountDialog-advancedPanelNatMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelNatMin-preGW shown, hidden: SettlerCountDialog-advancedPanelNatMin-postGW
+selectFattened: first count (player 1: 0 fattened)
+hook reached: floating bars: fit (0x45C4B9)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelEurMax-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelEurMax-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelEurMin-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelEurMin-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelAsiMax-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelAsiMax-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelAsiMin-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelAsiMin-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelNatMax-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelNatMax-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelNatMin-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-defaultPanelNatMin-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelEurMax-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelEurMax-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelEurMin-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelEurMin-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelAsiMax-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelAsiMax-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelAsiMin-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelAsiMin-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelNatMax-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelNatMax-preGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelNatMin-postGW yet (looked up again every 2 s)
+techGadgets: no gadget named SettlerCountDialog-advancedPanelNatMin-preGW yet (looked up again every 2 s)
+perfAutoExec: frame 3150: startRandomGame2("uhcj27b", 2, 1234, "", false, 2, 1, 0, false)
+hook reached: customHotkeyContexts tooltip (0x8F9696)
+hook reached: customHotkeyContexts tooltip, building (0x8F90FC)
+editorAutosave: the editor closed
+hook reached: syscall group TR (0x988E03)
+hook reached: syscall group KB (0x885D14)
+syscalls: group KB: 11 added, 0 refused
+hook reached: civFirstTC map placement (0x925F4C)
+hook reached: enableFarmAnim site 4 (0x8CEC9F)
+enableFarmAnim: 5 of 5 protos found in the data
+enableRectFarmAnim: 1 of 1 protos found in the data
+hook reached: startingTC (0x49880A)
+hook reached: FirstTC proto check (0x506B3B)
+hook reached: lifespanAfterConstruction fade (0x482A1A)
+hook reached: stealthTargeting footprint (0x493040)
+hook reached: linkedResource recreate (0x9BFE5A)
+hook reached: can take a move, queue test (0x487E1B)
+hook reached: inventoryBars corpse (0x452ED4)
+hook reached: inventoryBars no HP bar (0x452F1B)
+editorAutosave: the editor is open; the first autosave in 5.0 min
+hook reached: enableRectFarmAnim site 2 (0x4741F0)
+perfAutoExec: frame 12960: saveScenario("uhc-uhcj27b")
+perfAutoExec: frame 15360: leaveGame()
+editorAutosave: the editor closed
+perfAutoExec: frame 18360: loadScenario("uhc-uhcj27b")
+hook reached: hcTargetTechs remove (0x94DCB2)
+hook reached: tech subtype unapply (0x8FB051)
+hook reached: workRateByAbstractType unapply (0x8FB11A)
+hook reached: decimalPopulation start cap bonus (0xA0D2D1)
+hook reached: decimalPopulation data ref totalpop
+hook reached: danceBonusCivs fire pit (0x4819EF)
+hook reached: decimalPopulation data ref futurepop
+hook reached: nativeCivs isNativeCiv (0x453D5E)
+hook reached: asianCivs isAsianCiv (0x454F1D)
+asianCivs: Egyptians -> civ 2
+asianCivs: Ethiopians -> civ 1
+asianCivs: Koreans -> civ 10
+asianCivs: Zulu -> civ 3
+asianCivs: Maori -> civ 50
+hook reached: danceBonusCivs XPTrickle (0x4E0DFF)
+danceBonusCivs: Spanish -> civ 22
+danceBonusCivs: British -> civ 13
+danceBonusCivs: Tupinamba -> civ 49
+danceBonusCivs: WallMapu -> civ 48
+danceBonusCivs: Tawantinsuyu -> civ 46
+hook reached: danceBonusCivs Regeneration (0x49048B)
+hook reached: incomeRates add (0x49A98A)
+hook reached: resourceDebt add (0x679A0E)
+hook reached: techPrereqRecheck (0x491A18)
+hook reached: orPrereqsQty (0x5094B4)
+hook reached: fastLastInLine (0x4918A8)
+fastLastInLine: index of 10546 techs: 1371 named in a TechStatus active prerequisite, 5325 (tech, dependent) pairs
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelEurMax-preGW shown, hidden: SettlerCountDialog-defaultPanelEurMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelEurMin-preGW shown, hidden: SettlerCountDialog-defaultPanelEurMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelAsiMax-preGW shown, hidden: SettlerCountDialog-defaultPanelAsiMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelAsiMin-preGW shown, hidden: SettlerCountDialog-defaultPanelAsiMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelNatMax-preGW shown, hidden: SettlerCountDialog-defaultPanelNatMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelNatMin-preGW shown, hidden: SettlerCountDialog-defaultPanelNatMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelEurMax-preGW shown, hidden: SettlerCountDialog-advancedPanelEurMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelEurMin-preGW shown, hidden: SettlerCountDialog-advancedPanelEurMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelAsiMax-preGW shown, hidden: SettlerCountDialog-advancedPanelAsiMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelAsiMin-preGW shown, hidden: SettlerCountDialog-advancedPanelAsiMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelNatMax-preGW shown, hidden: SettlerCountDialog-advancedPanelNatMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelNatMin-preGW shown, hidden: SettlerCountDialog-advancedPanelNatMin-postGW
+techGadgets: gadget SettlerCountDialog-defaultPanelEurMax-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelEurMax-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelEurMin-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelEurMin-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelAsiMax-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelAsiMax-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelAsiMin-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelAsiMin-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelNatMax-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelNatMax-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelNatMin-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelNatMin-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelEurMax-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelEurMax-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelEurMin-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelEurMin-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelAsiMax-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelAsiMax-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelAsiMin-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelAsiMin-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelNatMax-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelNatMax-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelNatMin-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelNatMin-preGW found
+hook reached: nativeCivs test 7 (0x67B0A5)
+techPrereqRecheck: 9 tech(s) of 10546 have TypeCount prerequisites (12 in all)
+techPrereqRecheck:   tech 4904 (WOL_AI_SpawnTownCenterCaravan2), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 5578 (WOLEnableInfanteDeMarina), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 5750 (WOLMetaShipTheStartingAuraManager), 3 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 6180 (PeruvianGuaneraTrickle), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8153 (FalkusaUruguay), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8715 (LevyLevelsDeactivator), 2 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8716 (LevyLevelsDeactivator2), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8743 (ChieftainSpawner), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8980 (WuOLScoutDisabler), 1 TypeCount prerequisite(s)
+hook reached: auraStacking filter (0x9D0633)
+perfAutoExec: frame 22440: pause(0)
+hook reached: stealthTargeting (0x489ECC)
+hook reached: snareOnlyHitUnit (0x4FD3FD)
+hook reached: garrison entries (0x9C26E1)
+perfAutoExec: frame 32400: uiLookAtAndSelectUnit(0)
+hook reached: overhealHitpointBars (0x4C5014)
+hook reached: randomCost cost getter (0x480B5B)
+hook reached: sharedBuildLimit limit (0x4C7B5F)
+hook reached: minUIStats minimized block choice (0x4C8276)
+hook reached: overhealHitpointBars (0x698B35)
+hook reached: unit panel row (0x699456)
+multiplierDecimals: rollover string 42229 written with %1.2f
+hook reached: attackTypeIcons minimized panel (0x699D31)
+attackTypeIcons: first multiplier against AbstractRangedCavalry shown
+hook reached: unit panel tail (0x4C8281)
+minUIStats: panel 13C2A700: 0 of 7 row gadgets, 0 big panel row gadgets
+hook reached: overhealHitpointBars portrait bar (0x4C83DF)
+hook reached: decimalPopulation printed population (unit help, costs)
+hook reached: nativePreview gate (0x46193E)
+hook reached: nativePreview entries (0x461BBD)
+hook reached: bigButtonCivs command panel (0x461BD8)
+bigButtonCivs: Tawantinsuyu -> civ 46
+bigButtonCivs: WallMapu -> civ 48
+bigButtonCivs: Tupinamba -> civ 49
+hook reached: nativePreview collection (0x4C58AD)
+hook reached: command panel button (0x462317)
+hook reached: minUIStats stat fill gate (0x4D725C)
+hook reached: overhealHitpointBars (0x45FAAF)
+hook reached: steadyHitpointBars bar position (0x45FB24)
+hook reached: floating bars: bar queued (0x45FB6C)
+hook reached: floating bars: vertices (0x45CB72)
+hook reached: customHotkeyContexts (0x79F1A5)
+hook reached: customHotkeyContexts (0x79F897)
+hook reached: transformInventory (0x9C7625)
+hook reached: transformUpdatesLOS (0x9C763F)
+garrisonConvert: unit 1 (Settler) in Blockhouse 0 became Pikeman (tag 1, proto 294 -> 295, game time 23001 ms)
+garrisonConvert: unit 1 put out of Blockhouse 0 (game time 23001 ms)
+garrisonConvert: unit 2 (Settler) in Blockhouse 0 became Musketeer (tag 2, proto 294 -> 296, game time 26001 ms)
+garrisonConvert: unit 2 put out of Blockhouse 0 (game time 26001 ms)
+garrisonConvert: unit 3 (Settler) in Blockhouse 0 became Pikeman (tag 1, proto 294 -> 295, game time 29001 ms)
+garrisonConvert: unit 3 put out of Blockhouse 0 (game time 29001 ms)
+garrisonConvert: unit 4 (Settler) in Blockhouse 0 became Musketeer (tag 2, proto 294 -> 296, game time 32001 ms)
+garrisonConvert: unit 4 put out of Blockhouse 0 (game time 32001 ms)
+hook reached: snareOnlyHitUnit (0x4FA17D)
+hook reached: snareOnlyHitUnit (0x6AA514)
+hook reached: snareOnlyHitUnit (0x6AA56A)
+incomeRates: last 60 s of game time: 60 adds through the hook, 60 counted, 7 us inside the count
+fastLastInLine: 3 recomputes (154 dependency tests, 6.2 ms in all), 0 handed to the stock code
+perfStats: exit, peak working set 730 MB, private 89 MB, 76471 frames, 98 over 50 ms, 94 over 100 ms
+UHC.dll 0.5.0
+UHCMain: working directory C:\AoE3-UHC-WoLReal5\
+UHCMain: C:\AoE3-UHC-WoLReal5\Startup\wol.cfg, 165 keys
+menuOptions: displayedRange follows OptionDisplayedRange: on (no choice stored yet: its cfg line); live: a change takes effect at once, also during a match
+menuOptions: applied (1 keys follow the options menu)
+customAbstractTypes: 47 abstract types from C:\AoE3-UHC-WoLReal5\data\uhc\customabstracttypes.xml (20 with a stringId, not used yet); IDs are logged as `unit types:` on each data load
+customAbstractTypes: applied
+removeConversionRestriction: applied
+ignoreRegistryPath: applied
+deckCardCount: limit 40
+deckCardCount: applied
+basePop/extraPop: base 300, extra 100 (stock 250 cap and world clamp removed; shared team population at 0x679641 keeps its 200-per-player cap)
+basePop/extraPop: applied
+decimalPopulation: population in 1/10 steps (<PopulationCount> and <PopulationCapAddition> take decimals; caps (basePop/extraPop limits), effects, 19 XS syscalls and the population texts scaled)
+decimalPopulation: applied
+noAILimit: 1 personalities from C:\AoE3-UHC-WoLReal5\AI4\*.personality
+noAILimit/noAILimitV2: applied
+customRevolutionBanners: applied
+removeFameRestriction: icons need Art\ui\home_city\xp_hc_icon.ddt and Art\ui\home_city\fame_hc_icon.ddt from the mod; without them those resources keep the stock (no) icon
+removeFameRestriction: applied
+hcShipmentPointFallback: 5 extra types after the stock list (multiplayer unverified)
+hcShipmentPointFallback: applied
+healNonIdle: healers of unittype AbstractHealNonIdle heal busy targets (multiplayer unverified)
+healNonIdle: applied
+smartHealTargets: automatic heal searches pick the best candidate: lowest HP ratio, nearest, lowest unit ID (multiplayer unverified)
+smartHealTargets: applied
+damageOverTime: <AttachProtoUnit> in protoy.xml ProtoActions attaches damage over time, with <AttachMaxStacks>, <AttachSnare>, <AttachTickText> and <AttachModel> (multiplayer unverified)
+damageOverTime: applied
+dodgeChance: rule 1: units of AbstractDodge dodge 25.0 % of ranged hits, with tech ypDodge (multiplayer unverified)
+dodgeAnyUnit: units of unittype AbstractDodge can dodge like ypMonkJapanese (tech ypDodge, 15 %) (multiplayer unverified)
+dodgeSoundSet: units of AbstractDodge play sound set PowerEvade when they dodge
+criticalSoundSet: units of ypMonkChinese play sound set PowerCriticalStrike when they land a critical hit
+dodgeAnyUnit/dodgeChance/dodgeSoundSet/criticalSoundSet: applied
+spreadAnyAccuracy: <MaxSpread> and <SpreadFactor> are read per action (stock 5.0 and 0.25) and every miss uses them; units of unittype AbstractSpreadAnyAccuracy scatter every precalculated and InstantBallistics shot, and a stray shot hits what it lands on (multiplayer unverified)
+spreadAnyAccuracy: applied
+liveBuildingWorkRate: train, research and Maintain speed follow the proto's current BuildingWorkRate, and queued, training and Maintain units their current TrainPoints (multiplayer unverified)
+liveBuildingWorkRate: applied
+workRateByAbstractType: WorkRate effects on AbstractMine also change the rates units have for the protos of those types (multiplayer unverified)
+workRateByAbstractType: applied
+autoGatherScaleByContained: AutoGather actions with ScaleByContainedUnits multiply their rate by the units inside (multiplayer unverified)
+autoGatherScaleByContained: applied
+containedUnitsROF: attacks with <ScaleByContainedUnits target="ROF"> fire faster with the units inside (multiplayer unverified)
+containedUnitsROF: applied
+numberOfShots: attacks read <NumberOfShots>, <ShotInterval> (default 0.25 s) and <BurstPose> (default hold: the firing pose between a burst's shots) (multiplayer unverified)
+numberOfShots: applied
+retargetInAction: an attack with <RetargetInAction>1 whose target is lost during its attack animation fires the rest of its shots at a new target in range; tags, shots and retargets logged (multiplayer unverified)
+retargetInAction: applied
+powerShots: an attack launched by a power whose action has <PowerShots>N fires a shot at each Attack tag of its animation, up to N a use; tags and shots logged (multiplayer unverified)
+powerShots: applied
+turretArc: GatlingCamel: C:\AoE3-UHC-WoLReal5\art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_A55.aim (gun bone bone_yaw, turret bone bone_turret, pivot -0.00 2.64 0.27, 9 gunner bones, 3 clips, yaws -90..90, rest 0, 0 step bands, 0 settled clips)
+turretArc: GatlingCamelDeployed: C:\AoE3-UHC-WoLReal5\art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_B55.aim (gun bone bone_yaw, turret bone bone_turret, pivot 0.32 1.58 0.55, 15 gunner bones, 3 clips, yaws 30..150, rest 90, 8 step bands, 2 settled clips)
+turretArc: MEZamburak: C:\AoE3-UHC-WoLReal5\art\WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon.aim (gun bone bone_yaw, turret bone bone_turret, pivot 0.32 1.13 0.79, 4 gunner bones, 2 clips, yaws 30..150, rest 90, 0 step bands, 0 settled clips)
+turretArc: 3 unit type(s): an attack with <Turret tracking="always"> turns the gun, not the unit, toward a target inside its arc; aims and shots logged (multiplayer unverified)
+turretArc: applied
+unitResourceAuras: AutoRangedModify actions with ModifyType UnitResource gather from units in range (multiplayer unverified)
+unitResourceAuras: applied
+displayedRange: rings while Alt is held (<DisplayRange>) or always (<AlwaysDisplayRange>), one per ranged attack or <DisplayedRange>; on the placement ghost of a ranged building; on in the options menu
+displayedRange: applied
+costEscalationTechs: the Data subtype CostEscalation is on
+costEscalationTechs: applied
+randomCost: <RandomCost> is read; the cost getter, the Train payments, entry costs and refunds are hooked
+randomCost: applied
+shipmentCounts: shipments are counted per player and the age of each card (its <age>; none: Age I), and kept in saved games; the Data subtype FreeHomeCityUnitByShipmentCount and the XS syscalls xsGetShipmentCount and xsGetShipmentCountRange read them (multiplayer unverified)
+shipmentCounts: applied
+ageFiveShipments: cards of the fifth age (<age>4</age>) are in the game's deck, shown at the right of the fourth age's row of the shipment panel and the deck panels (the Age IV cards at the left), and sendable in the fifth age (multiplayer unverified)
+ageFiveShipments: applied
+resendableCards: a card with <resendeveryage>1</resendeveryage> gets its sends back (its maxcount) each time its player reaches a new age (multiplayer unverified)
+resendableCards: applied
+quickArrivalCards: the tech flag QuickArrival adds the line "This is a QUICK-ARRIVAL card." to a card's rollover
+quickArrivalCards: applied
+kothTimer: the King of the Hill time by the number of players: 2=900 3=750 4=600 s (multiplayer unverified)
+kothTimer: applied
+unitTypeTechs: Data effects AddUnitType and RemoveUnitType change one player's copy of a proto
+unitTypeTechs: applied
+trainBatchSize: the proto tags TrainBatchSize, DontTrainInBatches and ForceBatchTrain are on, and the Data subtype TrainBatchSize
+trainBatchSize: applied
+pillageGold: AbstractCanPillage units steal gold with an action's <PillageAmount>
+pillageGold: applied
+veterancyBonus: the proto tag VeterancyBonus is on (tech= rows too), and the Data subtypes VeterancyEnable and VeterancyBonus; rank marks on; no rank text (notext)
+veterancyBonus: no default rows and no rank names (C:\AoE3-UHC-WoLReal5\data\uhc\veterancy.xml)
+veterancyBonus: applied
+killSpawn: the civ tags killSpawn, killSpawnChance, killSpawnVictims and killSpawnKillers and the Data subtype KillSpawnChance are on (multiplayer unverified)
+killSpawn: applied
+hcTargetTechs: the tech flags HCTargetEnemy and HCTargetAll are on
+hcTargetTechs: applied
+accuracyTechs: the Data subtype Accuracy is on
+accuracyTechs: applied
+cratePriority: 1 lines
+cratePriority: applied
+sharedBuildLimit: the proto tags are on, the civ tag SettlerProtoName and the Data subtype EnableSharedBuildLimit
+sharedBuildLimit: applied
+doNotQueue: the proto tag DoNotQueue and the cards with the tech flag DoNotQueue are on
+doNotQueue: applied
+nextResearchFree: the Data subtype NextResearchIsFree is on
+nextResearchFree: applied
+researchGrants: the proto tags ResearchGrant* and the Data subtypes ResearchGrantInterval, ResearchGrantMax and ResearchGrantPoints are on; the tech buttons show the price with a point; a floating text over the building that pays a point (multiplayer unverified)
+researchGrants: applied
+shipTechLimit: the civ tag <ShipTechLimit> is on; the tech rollover shows the count (multiplayer unverified)
+shipTechLimit: applied
+homeCityTechsInUnits: HomeCity techs listed in a proto are researched there; they wait for a land gather point (multiplayer unverified)
+homeCityTechsInUnits: applied
+killBountyTechs: the Data subtypes KillBounty and Bounty are on
+killBountyTechs: applied
+teamKillBounty: the abstract type TeamKillBounty is on
+teamKillBounty: applied
+resourceBounty: <Bounty resourcetype> is on
+resourceBounty: applied
+techPrereqRecheck: techs with TypeCount prerequisites are re-checked every 1 world update(s); a change starts the stock re-check (multiplayer unverified)
+techPrereqRecheck: applied
+orPrereqsQty: <Flag qty="N">OrPrereqs</Flag> needs N of the tech's prerequisites (multiplayer unverified)
+orPrereqsQty: applied
+maintainWaitForPop: buildings of unittype AbstractMaintainWaitForPop keep a finished Maintain unit until there is population room (multiplayer unverified)
+maintainWaitForPop: applied
+transformUpdatesLOS: units transformed in place (TransformUnit, revolution) take their new proto's LOS (multiplayer unverified)
+transformUpdatesLOS: applied
+broadsideMuzzleLimit: ships of unittype ypTekkousen use up to 11 muzzles per side in a broadside (stock 6; SingleUsePlayer attacks keep 1), and <NumberProjectiles> fires that many per side over its muzzles (multiplayer unverified)
+broadsideMuzzleLimit: applied
+broadsideSoundSet: broadside shots play their action's <BroadsideSoundSet> (default ShipCannonShoot)
+broadsideSoundSet: applied
+abilitySlots: the command panel asks for 12 abilities per unit (stock 6)
+abilitySlots: applied
+wonderPanelSkipAuras: the wonder power panel shows a wonder's first available ability that is not a passive aura (AlwaysDisabledInGrid) (UI only)
+wonderPanelSkipAuras: applied
+nativePreview: an empty native socket shows the panel of TradingPost for its native, read-only
+nativePreview: applied
+lifespanAfterConstruction: units of unittype AbstractLifespanAfterConstruction keep their Lifespan and its fade-out until their construction is finished (multiplayer unverified)
+lifespanAfterConstruction: applied
+gaiaSocketsOnly: sockets of unittype AbstractGaiaOnlySocket take a socketed building only while Gaia owns them (multiplayer unverified)
+gaiaSocketsOnly: applied
+customHotkeyContexts: a keymap context named <ProtoName>Accel that the game does not know becomes that proto's hotkey context
+customHotkeyContexts: applied
+snareOnlyHitUnit: a snared unit (TargetSpeedBoost) no longer slows its group; the group neither paces at nor waits for it while the snare lasts (multiplayer unverified)
+snareOnlyHitUnit: applied
+cantBeSlowed: the abstract type CantBeSlowed (on the target) is on
+cantBeSlowed: applied
+snareValues: <SnareFactor>, <SnareDuration> and their Data subtypes are on, and the strongest snare counts (multiplayer unverified)
+snareValues: applied
+stealthTargeting: stealthed units, large ones too, are hidden from enemies and no target for a player that does not see them (multiplayer unverified)
+stealthTargeting: applied
+autoScout: units in tactic 'AutoScout' explore the map on their own (multiplayer unverified)
+autoScout: keeps away from enemy buildings that shoot; backs off when hit
+autoScout: applied
+autoGatherFrom: units with an <AutogatherFrom> action tag gather on their own once idle (multiplayer unverified)
+autoGatherFrom: applied
+buildingGather: a building with a Gather action gathers from a target within the action's range (multiplayer unverified)
+buildingGather: applied
+herdWalkAwayFix: a herdable walked away from its pen or magnet keeps its leash anchor there
+herdWalkAwayFix: applied
+researchOnTheMove: a unit of the abstract type ResearchOnTheMove takes orders while it researches (multiplayer unverified)
+researchOnTheMove: applied
+transformChecks: uiTransformSelectedUnit buttons grey out with the reason, and a transform respects the target's build limit (multiplayer unverified)
+transformChecks: applied
+customWalls: a WallBuild proto with <WallPiece> tags lays its own wall pieces
+customWalls: applied
+directionalAttack: actions with <DirectionalAttack> or <DirectionalFiringRange> fly past their target and hit what they fly over (multiplayer unverified)
+directionalAttack: applied
+techRenameEffect: the tech effect SetTechName (tech, newName, newRolloverTextID, newLongRolloverTextID) renames a tech for the players it reaches (multiplayer unverified)
+techRenameEffect/enableTechRenameEffect: applied
+noCorpseDopples: dead units of unittype Huntable leave no dopple in the fog of war (multiplayer unverified)
+noCorpseDopples: applied
+danceBonusCivs: civs Spanish, British get the fire pit's Training, XPTrickle, Gathering and Regeneration dances like the native civs (multiplayer unverified)
+danceBonusCivs: applied
+asianCivs: 5 civ(s) count as Asian civs; civ IDs are logged when civs.xml is read
+asianCivs: applied
+twoScoutCivs: 1 civ(s) get the two-hero UI; civ IDs are logged when civs.xml is read
+twoScoutCivs: applied
+marketUnits: 6 proto(s) count as a Market for trading; resolved when protoy.xml is read
+marketUnits: applied
+explorerUnits: 39 hero proto(s); resolved when protoy.xml is read
+explorerUnits: applied
+nativeCivs: 3 civ(s) count as native civs (fire pit dances through the shared dance gates)
+nativeCivs: applied
+bigButtonCivs/noBigButtonBlds: 3 civ(s) get the native big button, 12 building proto(s) never show it
+bigButtonCivs/noBigButtonBlds: applied
+ageUpBuildings: 1 proto(s) open the age-up dialog besides the Town Center, with the politicians they list
+ageUpBuildings: applied
+politicianPlacesFix: the European age-up dialog lists only the politicians its layout has places for
+politicianPlacesFix: applied
+politicianEnablesTech: the European age-up dialog shows each politician's <PoliticianEnablesTech> techs (flag 0.7500 x 0.5833)
+politicianEnablesTech: applied
+enableFarmAnim/enableRectFarmAnim: 5 proto(s) work like a Mill, 1 like a Rice Paddy; resolved when protoy.xml is read
+enableFarmAnim/enableRectFarmAnim: applied
+farmingRadius: 2 farm proto(s) get their own gather area (stock 4.5 x 4.5)
+farmingRadius: applied
+wonderCivUnitType: 1 proto(s) may place the age-up wonder of a wonder civ
+wonderCivUnitType: applied
+trainSingleAbstractType: units of unittype AbstractTrainLimitOne are trained one at a time
+trainSingleAbstractType: applied
+kbUnitSyscalls: 5 kb syscalls added
+kbUnitSyscalls: applied
+customProtoUnitCommands: 58 command type(s) from C:\AoE3-UHC-WoLReal5\data\uhc\customprotounitcommands.xml; 188 command records
+customProtoUnitCommands: applied
+multiarmor: protos keep one armor per damage type; Armor effects follow their damagetype
+multiarmor: applied
+betterfreedynamicunit: dynamic free units grow with game time (2-minute steps, unrounded, at most 15)
+betterfreedynamicunit: applied
+nowalkfarm: farm gatherers keep their first spot
+nowalkfarm: applied
+repairWallGlobal: UI syscall repairWallGlobal() added
+repairWallGlobal: applied
+compatMode: 32-bit display modes are also offered at 16 bits
+compatMode: applied
+gatherFix: gatherers collect on a fixed interval, not per animation loop
+gatherFix: applied
+rofFix: giving an order no longer clears the unit's timer
+rofFix: applied
+stunMovingTargetFix: a stun action no longer ends when its target check fails
+stunMovingTargetFix: applied
+noDamageOnUnbuiltFoundations: foundations whose construction has not started take no damage
+noDamageOnUnbuiltFoundations: applied
+truckAttackResourceFix: a TruckAttack no longer empties the buildings it hits (multiplayer unverified)
+truckAttackResourceFix: applied
+fallenHeroTacticsFix: units keep their tactic when knocked out, stunned or building
+fallenHeroTacticsFix: applied
+impactBoneFix: effects attached to impact bones get unit-length axes
+impactBoneFix: applied
+customImpactTypes: ShipMetal (15)
+customImpactTypes: applied
+selectionLimit: a selection holds up to 75 units (stock 50)
+selectionLimit: applied
+modelCacheLimit: models are never unloaded for the cache budget (stock: above 30 MB)
+modelCacheLimit: applied
+dmgPartBoneFix: a damage part whose bone a model lacks no longer reloads the model
+dmgPartBoneFix: applied
+enableAllTeams: Team 3 and Team 4 in the single-player setup (multiplayer lobby unchanged: single player only)
+enableAllTeams: applied
+startingTC: units of unittype AbstractStartingTC can be a player's first town center (FirstTC) like TownCenter, and replace one that is gone, dead or has a pending lifespan (multiplayer unverified)
+startingTC: applied
+civFirstTC: a civ's <firstTC> proto in civs.xml replaces the TownCenter random maps place for its players (not in a Nomad start) and is their first town center (FirstTC) (multiplayer unverified)
+civFirstTC: applied
+scenarioCivs: data\scenariocivs.xml is read after civs.xml, its civs appended and kept out of the skirmish list
+scenarioCivs: applied
+transformInventory: units transformed in place (TransformUnit, revolution) take their new proto's InitialResource when the resource types differ (multiplayer unverified)
+transformInventory: applied
+transformSpan: TransformUnit effects take transformspan
+transformSpan: applied
+noTrainNearEnemyTC: units of unittype AbstractDaimyo do not train within 65.0 m (from the trainer's centre to the edge of the building) of an enemy's first Town Center (FirstTC), with a warning over the local player's held units (multiplayer unverified)
+noTrainNearEnemyTC: applied
+overhealHitpointBars: art\ui\uhc\health_overheal.ddt is not in the game folder: the portrait bar shows the overheal with ui\ingame\ingame_ui_health_yellow
+overhealHitpointBars: HP bars and HP texts of units of unittype AbstractOverheal take InitialHitpoints as 100 %, HP above it shown as a segment and texts coloured FF8C00, the portrait bar's end with ui\ingame\ingame_ui_health_yellow, an overheal stat row labelled 'Overheal', the first unit of each proto logged (display only)
+overhealHitpointBars: applied
+overhealSources: only heal actions with <CanOverheal>1</CanOverheal> (Data subtypes CanOverheal and OverhealCap) heal marked units above their 100 %; every other heal stops there (multiplayer unverified)
+overhealSources: applied
+overhealDecay: marked units above their 100 % lose their <OverhealDecay> (% of it per second, after its delay; Data subtypes OverhealDecay and OverhealDecayDelay), or 2.00 % of it per second of game time 0.0 s after their last gain, down to it (multiplayer unverified)
+overhealDecay: applied
+detonationDeath: the proto tags DetonationProtoAction, DetonationCommand, DetonationHitpointThreshold, DetonationHitpointDecay, DetonationImpactEffect and DetonationOnKnockout are on (multiplayer unverified)
+detonationDeath: applied
+annexFacing: the proto tags AnnexOf and AnnexRange are on (multiplayer unverified)
+annexFacing: applied
+deadReplacementAtZeroInventory: a unit with DoNotDieAtZeroHitpoints and DieAtZeroResources leaves its DeadReplacement when its body is used up, not when it falls (multiplayer unverified)
+deadReplacementAtZeroInventory: applied
+steadyHitpointBars: floating HP bars hold their position (every unit) (display only)
+steadyHitpointBars: applied
+inventoryBars: units with resources show what they hold under their HP bar while Alt is held; units with no HP bar but trees (mines, bushes) too (display only)
+inventoryBars: applied
+showGatherRate: the stat panel shows the gather rate per second of a selected gathering unit, and {currentUnitGatherRateString} returns it (UI only)
+showGatherRate: applied
+multiplierDecimals: bonus multipliers with 2 decimals (format written), their rollover lines too
+multiplierDecimals: applied
+attackTypeIcons: 11 unit types get an icon in the attack rows' bonus multipliers
+attackTypeIcons: applied
+minUIStats: 7 rows and the normal interface's stat rows from (built-in rows; no C:\AoE3-UHC-WoLReal5\data\uhc\minuirows.xml); building armor shown in the minimized panel's resists; 31 data refs {uhc...} (UI only); rows give way to the stack portraits and 2 avoid gadgets; 0 stock labels; attack rows: the original ones written by the key, ROF after the damage, projectiles per reload after it (the tags as the data writes them), ability attacks only when enabled
+minUIStats: multipliers without their trailing zeros; help text lines for ROF on and projectiles on
+minUIStats: applied
+resourceGatherAuras: modifiers can change the gather rate of one kind of target or one resource (multiplayer unverified)
+resourceGatherAuras: applied
+resourceDebt: trickles and unit rates may take Food Wood Gold below 0 (multiplayer unverified)
+resourceDebt: applied
+linkedResource: the proto tags LinkedResourceType and LinkedResourceRange and the action tag GatherLinkedResource are on (multiplayer unverified)
+linkedResource: applied
+incomeRates: {uhcIncome(<resource>)} = income per second over the last 20 s of game time (gathering, AutoGather, trickles), the shown player's logged every 60 s
+incomeRates: applied
+nurseryFactor: the progress pie goes after the panel row's text (art\ui\uhc\pie)
+nurseryFactor: the proto tags NurseryFactor*, the Data subtypes NurseryFactor, NurseryFactorMax, NurseryFactorInterval, NurseryFactorStep, NurseryFactorGrowthBase and FreeHomeCityUnitByNurseryFactor, the AutoGather rate x the factor, the garrison rule, the UI syscall nurseryFactorCommand, the panel rows and {uhcNurseryFactor} are on; logged (multiplayer unverified)
+nurseryFactor: applied
+garrisonConvert: <GarrisonConvertTo> converts the units that enter a building (several tags in turn, eject, from, the population cap, six tech subtypes); the progress pie over the portrait; logged
+garrisonConvert: applied
+auraStacking: auras read <ForbidUnitType> and <ForbidAbstractType> (changes the simulation); <NoStack> is retired, <ModifyExclusive> does it
+auraStacking: applied
+buildingWorkRateAuras: the Train call at 0x009EA410 is already hooked (noTrainNearEnemyTC); Train speed gets the factor only through that hook's call of g_uhcBwrTrainGetter
+buildingWorkRateAuras: modifiers with ModifyType BuildingWorkRate (stat 0x40) scale train, research, Maintain, heal and build speed (multiplayer unverified)
+buildingWorkRateAuras: applied
+dataLint: warns of what the data asks and the game drops, 3 of 3 shared sources
+dataLint: applied
+rendererOption: C:\AoE3-UHC-WoLReal5\uhc-options.cfg: no choice stored yet
+rendererOption: DirectX 9
+rendererOption: applied
+perfExecFile: polling C:\AoE3-UHC-WoLReal5\uhc-exec.txt
+perfStats: large-address-aware yes, user address space 4095 MB, 16 logical CPUs, 8 cores
+perfStats/perfAutoExec: applied
+bufferedFileReads: read-only files get a 64 KB read-ahead buffer (multiplayer-safe: same bytes)
+bufferedFileReads/perfFileLog: applied
+fastVertexFill: the cloth flags' vertices are built without reading the locked vertex buffer (display only: same bytes)
+fastVertexFill: applied
+fastLastInLine: "last in line" is recomputed through an index of the TechStatus prerequisites (same bits as stock)
+fastLastInLine: applied
+xsErrorLog: the XS messages go to this log, at most 200 lines
+xsErrorLog: applied
+multipleInstances: this copy may run beside copies in other folders (semaphore suffix -02AD39C5); background: windows stay at the bottom and are never activated
+multipleInstances: applied
+playerIcon: the local player's lobby icon is avatar "my_avatar"
+playerIcon: applied
+editorSearch: the Objects palette, the Forbidden Units/Techs dialog, the trigger editor and its trigger list filter by their search fields (EditorProtoPaletteSearch, ForbiddenUnitsTechs_Search, trEdit-CondEffPanel-search, trEdit-Trigger-search)
+editorSearch: applied
+editorAutosave: every 5.0 min in the editor, to autosave-1 ... autosave-3; log on
+editorAutosave: applied
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelEurMax-postGW shown, before it: SettlerCountDialog-defaultPanelEurMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelEurMin-postGW shown, before it: SettlerCountDialog-defaultPanelEurMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelAsiMax-postGW shown, before it: SettlerCountDialog-defaultPanelAsiMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelAsiMin-postGW shown, before it: SettlerCountDialog-defaultPanelAsiMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelNatMax-postGW shown, before it: SettlerCountDialog-defaultPanelNatMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-defaultPanelNatMin-postGW shown, before it: SettlerCountDialog-defaultPanelNatMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelEurMax-postGW shown, before it: SettlerCountDialog-advancedPanelEurMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelEurMin-postGW shown, before it: SettlerCountDialog-advancedPanelEurMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelAsiMax-postGW shown, before it: SettlerCountDialog-advancedPanelAsiMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelAsiMin-postGW shown, before it: SettlerCountDialog-advancedPanelAsiMin-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelNatMax-postGW shown, before it: SettlerCountDialog-advancedPanelNatMax-preGW
+techGadgets: with GreatWarizeALL active for the shown player: SettlerCountDialog-advancedPanelNatMin-postGW shown, before it: SettlerCountDialog-advancedPanelNatMin-preGW
+techGadgets: 12 rule(s), changes logged (interface only)
+techGadgets: applied
+selectFattened: UI syscall uhcSelectFattened() and {uhcFattened} added; gadget(s) uhcFattened shown while the local player has a fattened herdable (interface only)
+selectFattened: applied
+customSyscalls: wolPlugin.upl: 1 syscalls, 33 cheats (UHCPluginMain returned 0)
+customSyscalls: wolai.upl: 16 syscalls, 0 cheats (UHCPluginMain returned 0)
+customSyscalls: 2 of 2 plugin(s) loaded, 27 syscalls queued, 33 cheats for customCheats
+customSyscalls/customCheats: applied
+alpha2coverage: not implemented yet; ignored
+enablerandomtecheffect: not implemented yet; ignored
+flagoverrideeffect: not implemented yet; ignored
+loadingscreencount: not implemented yet; ignored
+map: not implemented yet; ignored
+optionhighpolycliff: not implemented yet; ignored
+UHCMain: 148 applied, 0 failed
+multipleInstances background: window of class OleMainThreadWndClass placed at the bottom, never activated
+multipleInstances background: window of class Age3 placed at the bottom, never activated
+multipleInstances background: window of class CicMarshalWndClass placed at the bottom, never activated
+multipleInstances: single-instance semaphore "Global\Age3" renamed to "Global\Age3-02AD39C5"
+hook reached: customCheats cheat table (0x551FE6)
+customCheats: 33 plugin cheat(s) added to the cheat table (56 entries)
+hook reached: compatMode (0x54D6D1): 640x480 also offered at 16 bits
+perfStats: CreateDevice adapter 0, type 1, behavior flags 0x00000084; after it x87 control word 0x007F, MXCSR 0x00001FA0
+perfStats: CreateDevice 1920x1080 fmt 21, 1 back buffer(s), swap 1, interval 0x00000001, windowed 1, refresh 0 -> hr 0x00000000
+hook reached: customImpactTypes name lookup (0x59F464)
+hook reached: syscall group UI (0x539542)
+syscalls: group UI: 3 added, 0 refused
+hook reached: syscall group UI2 (0x53575E)
+hook reached: techRenameEffect register (0x524CB5)
+techRenameEffect: effect type SetTechName -> 17
+hook reached: customProtoUnitCommands (0x5269FB)
+customProtoUnitCommands: 58 command type(s) added (IDs 129..186), 0 already known, 0 refused
+hook reached: civ tags civs.xml (0x52BB07)
+hook reached: scenarioCivs civs.xml end (0x52B485)
+hook reached: nativeCivs civ flags (0x52B581)
+nativeCivs: 3 of 3 civ(s) marked native in civs.xml
+hook reached: proto tags (0x51DB0F)
+hook reached: abstract unit types (0x51BA31)
+unit types: AbstractWoLCavalry -> 3838 (bit 203 of 204), added
+unit types: AbstractWoLRangedCavalry -> 3839 (bit 204 of 205), added
+unit types: AbstractWoLHandCavalry -> 3840 (bit 205 of 206), added
+unit types: AbstractWoLTent -> 3841 (bit 206 of 207), added
+unit types: AbstractWoLAssault -> 3842 (bit 207 of 208), added
+unit types: AbstractWoLInfantry -> 3843 (bit 208 of 209), added
+unit types: AbstractTrainLimitOne -> 3844 (bit 209 of 210), added
+unit types: AbstractWoLImmigrantMilitary -> 3845 (bit 210 of 211), added
+unit types: AbstractWoLImmigrantMilitaryNotArt -> 3846 (bit 211 of 212), added
+unit types: AbstractWoLImmigrantInfantry -> 3847 (bit 212 of 213), added
+unit types: AbstractWoLImmigrantCavalry -> 3848 (bit 213 of 214), added
+unit types: AbstractWoLImmigrantArtillery -> 3849 (bit 214 of 215), added
+unit types: AbstractWoLImmigrantArtilleryIII -> 3850 (bit 215 of 216), added
+unit types: AbstractWoLImmigrantArtilleryIV -> 3851 (bit 216 of 217), added
+unit types: AbstractWoLImmigrantTC -> 3852 (bit 217 of 218), added
+unit types: AbstractImmigrantHouse -> 3853 (bit 218 of 219), added
+unit types: AbstractWoLUltimateBuildingLA -> 3854 (bit 219 of 220), added
+unit types: AbstractWoLLightShip -> 3855 (bit 220 of 221), added
+unit types: AbstractWoLHeavyShip -> 3856 (bit 221 of 222), added
+unit types: AbstractWoLSiegeShip -> 3857 (bit 222 of 223), added
+unit types: AbstractWoLImmigrantWorker -> 3858 (bit 223 of 224), added
+unit types: AbstractWoLOutlaw -> 3859 (bit 224 of 225), added
+unit types: AbstractWoLNavalTrooper -> 3860 (bit 225 of 226), added
+unit types: AbstractWoLRangedInfantry -> 3861 (bit 226 of 227), added
+unit types: AbstractWoLCrop -> 3862 (bit 227 of 228), added
+unit types: AbstractWoLIrregular -> 3863 (bit 228 of 229), added
+unit types: AFRICANmaturing -> 3864 (bit 229 of 230), added
+unit types: AbstractBayonet -> 3865 (bit 230 of 231), added
+unit types: AbstractWoLZwawa -> 3866 (bit 231 of 232), added
+unit types: AbstractTank -> 3867 (bit 232 of 233), added
+unit types: AbstractMechanized -> 3868 (bit 233 of 234), added
+unit types: AbstractAircraft -> 3869 (bit 234 of 235), added
+unit types: AbstractGWUnit -> 3870 (bit 235 of 236), added
+unit types: AbstractGWMilitary -> 3871 (bit 236 of 237), added
+unit types: AbstractGWInfantry -> 3872 (bit 237 of 238), added
+unit types: AbstractGWCavalry -> 3873 (bit 238 of 239), added
+unit types: AbstractGWArtillery -> 3874 (bit 239 of 240), added
+unit types: AbstractGWNavy -> 3875 (bit 240 of 241), added
+unit types: AbstractWoLGrenadier -> 3876 (bit 241 of 242), added
+unit types: AbstractContraGuerrilla -> 3877 (bit 242 of 243), added
+unit types: AbstractWoLForgeUnit -> 3878 (bit 243 of 244), added
+unit types: AbstractWoLGunsmithUnit -> 3879 (bit 244 of 245), added
+unit types: AbstractFavouredUnit -> 3880 (bit 245 of 246), added
+unit types: AbstractWoLSaudCaravan -> 3881 (bit 246 of 247), added
+unit types: WoLConstructPrevent -> 3882 (bit 247 of 248), added
+unit types: WoLForeignUnit -> 3883 (bit 248 of 249), added
+unit types: AbstractWoLHowitzer -> 3884 (bit 249 of 250), added
+unit types: AbstractHealNonIdle -> 3885 (bit 250 of 251), added
+unit types: AbstractDodge -> 3886 (bit 251 of 252), added
+unit types: AbstractDodge -> 3886 (bit 251 of 252), already defined
+unit types: AbstractDodge -> 3886 (bit 251 of 252), already defined
+unit types: ypMonkChinese -> 925 (bit -2710 of 252), already defined
+unit types: AbstractSpreadAnyAccuracy -> 3887 (bit 252 of 253), added
+unit types: Resource -> 3641 (bit 6 of 253), already defined
+unit types: AbstractMine -> 3784 (bit 149 of 253), already defined
+unit types: AbstractCanPillage -> 3888 (bit 253 of 254), added
+unit types: Building -> 3637 (bit 2 of 254), already defined
+unit types: LogicalTypeSettlerBuildLimit -> 3889 (bit 254 of 255), added
+unit types: TeamKillBounty -> 3890 (bit 255 of 256), added
+unit types: AbstractMaintainWaitForPop -> 3891 (bit 256 of 257), added
+unit types: ypTekkousen -> 1254 (bit -2381 of 257), already defined
+unit types: NativeSocket -> 3787 (bit 152 of 257), already defined
+unit types: AbstractLifespanAfterConstruction -> 3892 (bit 257 of 258), added
+unit types: AbstractGaiaOnlySocket -> 3893 (bit 258 of 259), added
+unit types: CantBeSlowed -> 3894 (bit 259 of 260), added
+unit types: ResearchOnTheMove -> 3895 (bit 260 of 261), added
+unit types: Resource -> 3641 (bit 6 of 261), already defined
+unit types: Huntable -> 3714 (bit 79 of 261), already defined
+unit types: AbstractTrainLimitOne -> 3844 (bit 209 of 261), already defined
+unit types: AbstractStartingTC -> 3896 (bit 261 of 262), added
+unit types: AbstractDaimyo -> 3740 (bit 105 of 262), already defined
+unit types: AbstractOverheal -> 3897 (bit 262 of 263), added
+unit types: Tree -> 3653 (bit 18 of 263), already defined
+unit types: AbstractCavalry -> 3655 (bit 20 of 263), already defined
+unit types: AbstractLightInfantry -> 3712 (bit 77 of 263), already defined
+unit types: AbstractHeavyCavalry -> 3713 (bit 78 of 263), already defined
+unit types: AbstractRangedCavalry -> 3755 (bit 120 of 263), already defined
+unit types: AbstractNativeWarrior -> 3753 (bit 118 of 263), already defined
+unit types: MercType2 -> 3791 (bit 156 of 263), already defined
+unit types: AbstractCoyoteMan -> 3831 (bit 196 of 263), already defined
+unit types: AbstractHandCavalry -> 3756 (bit 121 of 263), already defined
+unit types: AbstractRangedInfantry -> 3754 (bit 119 of 263), already defined
+unit types: AbstractWoLAssault -> 3842 (bit 207 of 263), already defined
+unit types: AbstractInfantry -> 3654 (bit 19 of 263), already defined
+unit types: Unit -> 3635 (bit 0 of 263), already defined
+unit types: AbstractMine -> 3784 (bit 149 of 263), already defined
+unit types: Tree -> 3653 (bit 18 of 263), already defined
+unit types: AbstractFarm -> 3658 (bit 23 of 263), already defined
+hook reached: displayedRange: proto flag parser's last compare (0x5F726F)
+hook reached: multiarmor <Armor> tag (0x5F5EB7)
+hook reached: decimalPopulation <PopulationCapAddition> (0x5FD719)
+hook reached: customImpactTypes impact effect entry (0x5FEC74)
+hook reached: customImpactTypes impact effect weights (0x5FEC99)
+hook reached: action tag (0x5FA11E)
+hook reached: dataLint proto tag (0x5F62A2)
+hook reached: decimalPopulation <PopulationCount> (0x5FB92E)
+hook reached: ModifyType names (0x5FE6D7)
+hook reached: dataLint proto action (0x5FA202)
+retargetInAction: Explorer/CrackshotAttack (protoy): RetargetInAction 1
+powerShots: Explorer, action name 96 (protoy): PowerShots 6
+retargetInAction: Explorer/SharpshooterAttack (protoy): RetargetInAction 1
+powerShots: Explorer, action name 95 (protoy): PowerShots 6
+hook reached: dataLint unit type (0x5FCB61)
+hook reached: containedUnitsROF tag (0x5FEE0C)
+garrisonConvert: proto 342 (Blockhouse), tag 1: the units of Settler become Pikeman, one at a time, each after 3000 ms, put out
+garrisonConvert: proto 342 (Blockhouse), tag 2: the units of Settler become Musketeer, one at a time, each after 3000 ms, put out
+nurseryFactor: proto 348 (Bank): NurseryFactorInterval 8
+nurseryFactor: proto 348 (Bank): NurseryFactorGrowth exponential
+nurseryFactor: proto 348 (Bank): NurseryFactorGrowthBase 2
+nurseryFactor: proto 348 (Bank): NurseryFactorName "minks"
+nurseryFactor: proto 348 (Bank): NurseryFactorRolloverCount "{current} out of {max} minks."
+nurseryFactor: proto 348 (Bank): NurseryFactorRolloverRate "The next step brings {step} minks in {seconds} seconds."
+nurseryFactor: proto 348 (Bank): a Herdable that enters adds 3
+nurseryFactor: proto 348 (Bank): a Settler that enters adds 1
+nurseryFactor: proto 348 (Bank): command NurserySellMinks (0): factor -4, 2 x CrateofCoin, cost ""
+nurseryFactor: proto 348 (Bank): command NurseryBuyMinks (1): factor +3, 0 x nothing, cost "Wood 100, Food 50"
+nurseryFactor: proto 348 (Bank): command NurserySettlers (2): factor -1, 3 x Settler, cost ""
+multiarmor: Frigate has 2 armors
+hook reached: dataLint load end (0x61FE4A)
+hook reached: tech tags (0x61FDB8)
+hook reached: tech flags (0x620C2F)
+hook reached: tech subtype lookup (0x61FF5D)
+hook reached: dataLint effect (0x6205E9)
+hook reached: multiarmor damagetype of a tech effect (BDataEffect::setData)
+hook reached: dataLint effect type (0x65BC56)
+nurseryFactor: FreeHomeCityUnitByNurseryFactor CrateofCoin per factor of Bank, consume 2
+nurseryFactor: FreeHomeCityUnitByNurseryFactor CrateofCoin per factor of Bank, consume all
+dataLint: unknown <UnitType> AbstractTypeVictoryPointBuilding: 3 times, first in proto TradingPost
+dataLint: unknown <UnitType> ConSoundsetsvertsHerds: 1 time, first in proto RoyalCaravan
+dataLint: unknown <UnitType> ConvertsHerds.: 1 time, first in proto MancoHorseman
+dataLint: unknown proto tag deadreplacementlifespan: 289 times, first in proto TradingPost
+dataLint: unknown proto tag formationcategory: 1888 times, first in proto IGCFishingBoat
+dataLint: unknown proto tag portrait: 18 times, first in proto WOTTASertanejoAccessory3x3
+dataLint: unknown proto tag protounitcommand: 5 times, first in proto WallStraight1
+dataLint: unknown action tag accuracyreductionfactor: 3257 times, first in proto SPCPropRifleman
+dataLint: unknown action tag aimbonus: 3609 times, first in proto SPCPropRifleman
+dataLint: unknown action tag boredanim: 185 times, first in proto IGCGreatBombard
+dataLint: unknown action tag containedspeedbonus: 2 times, first in proto WOLRam
+dataLint: unknown action tag joganim: 1 time, first in proto WoLAlguacil
+dataLint: unknown action tag numberprojectiles: 302 times, first in proto Explorer
+dataLint: unknown action tag powershots: 2 times, first in proto Explorer
+dataLint: unknown action tag projectileprotounit: 1 time, first in proto gwAAgun
+dataLint: unknown action tag runanim: 1 time, first in proto WoLAlguacil
+dataLint: unknown action tag unintentionaldamagemultiplier: 3241 times, first in proto SPCPropRifleman
+dataLint: unknown action tag walkanim: 1 time, first in proto WoLAlguacil
+dataLint: unknown Data subtype ROF: 56 times, first in tech Rifling
+dataLint: <Effect> the game deletes type=Data subtype=ActionEnable: 28 times, first in tech WOLKruppSpawnFalconet, which names WOLKruppFactory
+dataLint: <Effect> the game deletes type=Data subtype=AddTrain: 5 times, first in tech HCAtonementArgentina, which names ArtilleryDepot
+dataLint: <Effect> the game deletes type=Data subtype=AllowedAge: 1 time, first in tech HCEarlySkirmishersTeam, which names SkirmisherBlock
+dataLint: <Effect> the game deletes type=Data subtype=BuildPoints: 6 times, first in tech YPHCLandGrabIndians, which names BALKANwheat
+dataLint: <Effect> the game deletes type=Data subtype=CopyUnitPortraitAndIcon: 1 time, first in tech Age0Chilean, which names IconPortraitchileanExplorer
+dataLint: <Effect> the game deletes type=Data subtype=Cost: 183 times, first in tech NatBasketweaving, which names ypMarketWheelbarrow3
+dataLint: <Effect> the game deletes type=Data subtype=Damage: 72 times, first in tech HCExplorerDutch, which names Explo
+dataLint: <Effect> the game deletes type=Data subtype=DamageArea: 8 times, first in tech ypFortifiedAgra, which names AbstractAgraFort
+dataLint: <Effect> the game deletes type=Data subtype=DamageBonus: 5 times, first in tech HCKoreanBroadsword, which names HwalArcher
+dataLint: <Effect> the game deletes type=Data subtype=Enable: 89 times, first in tech Age0Dutch, which names HorseArtillery
+dataLint: <Effect> the game deletes type=Data subtype=FreeHomeCityUnit: 87 times, first in tech ypConsulateRelationsSPCDutch
+dataLint: <Effect> the game deletes type=Data subtype=FreeHomeCityUnitIfTechObtainable: 44 times, first in tech HCShipCatapult1
+dataLint: <Effect> the game deletes type=Data subtype=HitPercent: 2 times, first in tech ypMonasteryStompUpgrade, which names AbstractIndianMonk
+dataLint: <Effect> the game deletes type=Data subtype=Hitpoints: 66 times, first in tech HCMusketeerGrenadierHitpointsBritishTeam, which names WOLGrognard
+dataLint: <Effect> the game deletes type=Data subtype=LOS: 3 times, first in tech SPYmagnifyingglass, which names WOLSpyAustralian
+dataLint: <Effect> the game deletes type=Data subtype=MaximumRange: 10 times, first in tech HCDefesadeCurupayty, which names TownCenter
+dataLint: <Effect> the game deletes type=Data subtype=MaximumVelocity: 2 times, first in tech SPYspycoat, which names WOLSpyAustralian
+dataLint: <Effect> the game deletes type=Data subtype=ResearchPoints: 7 times, first in tech HCLandGrant, which names IMMIGRANTasian
+dataLint: <Effect> the game deletes type=Data subtype=TacticEnable: 2 times, first in tech HCsubmarine, which names PaddleSteamer
+dataLint: <Effect> the game deletes type=Data subtype=TrainPoints: 5 times, first in tech WOLNatSerfUprising, which names WOLNatFarmer
+dataLint: <Effect> the game deletes type=Data subtype=UnitRegenRate: 7 times, first in tech Geomancy
+dataLint: <Effect> the game deletes type=Data subtype=UpdateVisual: 2 times, first in tech GuardBersaglieri
+dataLint: <Effect> the game deletes type=Data subtype=WorkRate: 50 times, first in tech NatCalendar, which names AbstractVillager
+dataLint: <Effect> the game deletes type=Data subtype=damage: 1 time, first in tech ChurchZweihander, which names AFRICANaskari
+dataLint: <Effect> the game deletes type=Data2 subtype=WOLcropSTRAWBERRY: 1 time, first in tech YPHCChonindoTeam, which names AbstractVillager
+dataLint: <Effect> the game deletes type=Data2 subtype=WOLcropWHEAT: 1 time, first in tech YPHCChonindoTeam, which names AbstractVillager
+dataLint: <Effect> the game deletes type=Data2 subtype=WorkRateSpecific: 2 times, first in tech WOLNatMulePloughing, which names WOLNatFarmer
+dataLint: <Effect> the game deletes type=FlagOverride: 8 times, first in tech maltaflag
+dataLint: <Effect> the game deletes type=SetName: 57 times, first in tech ImpLegendaryNatives
+dataLint: <Effect> the game deletes type=TechStatus: 518 times, first in tech Age0British, which names WOLEnableRocketsBritish
+dataLint: <Effect> the game deletes type=TextOutput: 50 times, first in tech MapucheVillagers1
+dataLint: <Effect> the game deletes type=TransformUnit: 4 times, first in tech HCGreatSummer
+dataLint: <ModifyType> with no stat GATHER: 88 times, first in proto Settler
+dataLint: <ModifyType> with no stat Hitpoints: 1 time, first in proto WOLPriestSpawn
+dataLint: <ProtoAction> not in the tactics AntiShipAttack: 1 time, first in proto Tambo
+dataLint: <ProtoAction> not in the tactics AutoGather: 19 times, first in proto ypSPCKichiro
+dataLint: <ProtoAction> not in the tactics AutoGatherCoin: 3 times, first in proto WOLPriestSpawn
+dataLint: <ProtoAction> not in the tactics AutoGatherFaithItalian: 1 time, first in proto WoLJuana
+dataLint: <ProtoAction> not in the tactics AutoGatherFazendaFood: 2 times, first in proto AfricanSlave
+dataLint: <ProtoAction> not in the tactics AutoGatherFazendaWood: 2 times, first in proto AfricanSlave
+dataLint: <ProtoAction> not in the tactics AutoGatherFood: 4 times, first in proto Church
+dataLint: <ProtoAction> not in the tactics AutoGatherIncaGold: 23 times, first in proto Coureur
+dataLint: <ProtoAction> not in the tactics AutoGatherMapuche: 24 times, first in proto Coureur
+dataLint: <ProtoAction> not in the tactics AutoGatherTrade: 10 times, first in proto SettlerWagon
+dataLint: <ProtoAction> not in the tactics AutoGatherWood: 3 times, first in proto ypMonkIndian
+dataLint: <ProtoAction> not in the tactics AutoGatherXP: 2 times, first in proto WoLAlguacil
+dataLint: <ProtoAction> not in the tactics Autogather: 2 times, first in proto Coronel
+dataLint: <ProtoAction> not in the tactics Backstab: 2 times, first in proto AFRICANmenelik
+dataLint: <ProtoAction> not in the tactics BlunderbussAttack: 1 time, first in proto NatAboriginalHunter
+dataLint: <ProtoAction> not in the tactics BlunderbussAttackPasion: 1 time, first in proto WoLJuana
+dataLint: <ProtoAction> not in the tactics BroadsideAttack: 1 time, first in proto IMscarletsailsBlock
+dataLint: <ProtoAction> not in the tactics BuildingAttack: 4 times, first in proto POWERstorm
+dataLint: <ProtoAction> not in the tactics ButtAttack: 2 times, first in proto Settler
+dataLint: <ProtoAction> not in the tactics CannonAttack: 6 times, first in proto ypEggHotDogCart
+dataLint: <ProtoAction> not in the tactics ChopAttack: 2 times, first in proto WOLLumberjack
+dataLint: <ProtoAction> not in the tactics CoverBuildingAttack: 6 times, first in proto AfricanIncendiary
+dataLint: <ProtoAction> not in the tactics CoverHandAttack: 5 times, first in proto WoLBugreiro
+dataLint: <ProtoAction> not in the tactics CrackshotAttack: 2 times, first in proto Officer
+dataLint: <ProtoAction> not in the tactics Debate: 4 times, first in proto Miner
+dataLint: <ProtoAction> not in the tactics DefendHandAttack: 1 time, first in proto NatAgha
+dataLint: <ProtoAction> not in the tactics DefendRangedAttack: 1 time, first in proto WOLDecoyLegionPeruana
+dataLint: <ProtoAction> not in the tactics Gather: 6 times, first in proto Priest
+dataLint: <ProtoAction> not in the tactics GatherXPMaypole: 5 times, first in proto MountedSettler
+dataLint: <ProtoAction> not in the tactics GuardianAttack: 5 times, first in proto gwCamelCorps
+dataLint: <ProtoAction> not in the tactics HandAttack: 2 times, first in proto ypMongolScout
+dataLint: <ProtoAction> not in the tactics Heal: 7 times, first in proto ypVillage
+dataLint: <ProtoAction> not in the tactics Hunting: 1 time, first in proto NatAboriginalHunter
+dataLint: <ProtoAction> not in the tactics MeleeHandAttack: 2 times, first in proto NatAgha
+dataLint: <ProtoAction> not in the tactics ModifyGatherCoin: 1 time, first in proto EGYgranaryCARAVAN
+dataLint: <ProtoAction> not in the tactics ModifyGatherFood: 1 time, first in proto EGYgranaryCARAVAN
+dataLint: <ProtoAction> not in the tactics ModifyGatherGold: 1 time, first in proto WoLHermandad
+dataLint: <ProtoAction> not in the tactics Pasture: 6 times, first in proto Cow
+dataLint: <ProtoAction> not in the tactics PianoXPTrickle: 1 time, first in proto africanLibrary
+dataLint: <ProtoAction> not in the tactics RangedAttack: 2 times, first in proto WOLimpaledcorpses
+dataLint: 7 more of <ProtoAction> not in the tactics (`dataLint file` lists them)
+dataLint: the data load ended with 100 names the game drops, 3 unknown <UnitType>, 4 unknown proto tag, 11 unknown action tag, 1 unknown Data subtype, 32 <Effect> the game deletes, 2 <ModifyType> with no stat, 47 <ProtoAction> not in the tactics
+hook reached: syscall group XS (0x6257D9)
+syscalls: group XS: 8 added, 0 refused
+hook reached: syscall group RM (0x60B8BF)
+hook reached: noAILimit (0x603B0B)
+hook reached: data refs registration (0x5D3229)
+data refs: 34 added after the game's 116
+hook reached: removeFameRestriction icon load (0x5C1E1F)
+hook reached: customHotkeyContexts (0x5C1778)
+customHotkeyContexts: registered keymap context PresidioAccel as context 151
+customHotkeyContexts: registered keymap context YPBarracksIndianAccel as context 152
+customHotkeyContexts: registered keymap context WOLBarracksGreekAccel as context 153
+customHotkeyContexts: registered keymap context WOLBarracksKoreanAccel as context 154
+customHotkeyContexts: registered keymap context ypBarracksJapaneseAccel as context 155
+customHotkeyContexts: registered keymap context ypCaravanseraiAccel as context 156
+customHotkeyContexts: registered keymap context WOLStableGreekAccel as context 157
+customHotkeyContexts: registered keymap context ypStableJapaneseAccel as context 158
+customHotkeyContexts: registered keymap context GunsmithAccel as context 159
+customHotkeyContexts: registered keymap context GunsmithCaravanAccel as context 160
+customHotkeyContexts: registered keymap context ForgeAccel as context 161
+customHotkeyContexts: registered keymap context ForgeCaravanAccel as context 162
+hook reached: card tags (0x630017)
+hook reached: deckCardCount (0x7EF026)
+hook reached: syscall group HC (0x5B5E08)
+perfStats: Reset 1920x1080 fmt 21, 1 back buffer(s), swap 1, interval 0x80000000, windowed 1, refresh 0 -> hr 0x00000000
+hook reached: fastVertexFill cloth flag fill (0x40D523)
+perfAutoExec: frame 930: config("DontPauseWhenLosingFocus")
+hook reached: nativeCivs test 2 (0x51271F)
+nativeCivs: Tupinamba -> civ 49
+nativeCivs: WallMapu -> civ 48
+nativeCivs: Tawantinsuyu -> civ 46
+hook reached: enableAllTeams setup list (0x7A0709)
+hook reached: resourceDebt set (0x6798F4)
+hook reached: resendableCards age (0x8D502F)
+hook reached: tech subtype apply (0x8F978D)
+hook reached: tech subtype on a player (0x8D843E)
+hook reached: syscall group AI (0x7294F4)
+syscalls: group AI: 5 added, 0 refused
+hook reached: syscall group KB (0x885D14)
+syscalls: group KB: 11 added, 0 refused
+hook reached: customHotkeyContexts tooltip (0x8F9696)
+hook reached: customHotkeyContexts tooltip, building (0x8F90FC)
+hook reached: syscall group TR (0x988E03)
+hook reached: startingTC (0x49880A)
+hook reached: FirstTC proto check (0x506B3B)
+hook reached: lifespanAfterConstruction fade (0x482A1A)
+hook reached: stealthTargeting footprint (0x493040)
+hook reached: can take a move, queue test (0x487E1B)
+hook reached: civFirstTC map placement (0x925F4C)
+hook reached: enableFarmAnim site 4 (0x8CEC9F)
+enableFarmAnim: 5 of 5 protos found in the data
+enableRectFarmAnim: 1 of 1 protos found in the data
+hook reached: linkedResource recreate (0x9BFE5A)
+hook reached: transformInventory (0x9C7625)
+hook reached: transformUpdatesLOS (0x9C763F)
+hook reached: randomCost cost getter (0x480B5B)
+hook reached: nativeCivs test 9 (0x8D52AF)
+hook reached: decimalPopulation data ref totalpop
+hook reached: decimalPopulation data ref popcap
+hook reached: basePop/extraPop/decimalPopulation (0x4581F3)
+hook reached: danceBonusCivs fire pit (0x4819EF)
+hook reached: decimalPopulation data ref futurepop
+hook reached: nativeCivs isNativeCiv (0x453D5E)
+hook reached: asianCivs isAsianCiv (0x454F1D)
+asianCivs: Egyptians -> civ 2
+asianCivs: Ethiopians -> civ 1
+asianCivs: Koreans -> civ 10
+asianCivs: Zulu -> civ 3
+asianCivs: Maori -> civ 50
+hook reached: world update (0x481A57)
+hook reached: autoScout command (0x7C8E49)
+hook reached: danceBonusCivs XPTrickle (0x4E0DFF)
+danceBonusCivs: Spanish -> civ 22
+danceBonusCivs: British -> civ 13
+danceBonusCivs: Tupinamba -> civ 49
+danceBonusCivs: WallMapu -> civ 48
+danceBonusCivs: Tawantinsuyu -> civ 46
+hook reached: danceBonusCivs Regeneration (0x49048B)
+hook reached: civFirstTC town units (0x679AC8)
+hook reached: incomeRates add (0x49A98A)
+hook reached: resourceDebt add (0x679A0E)
+hook reached: decimalPopulation XS aiSetEconomyPop
+hook reached: decimalPopulation XS aiGetEconomyPop
+hook reached: decimalPopulation XS aiSetMilitaryPop
+hook reached: decimalPopulation XS aiGetMilitaryPop
+hook reached: techPrereqRecheck (0x491A18)
+hook reached: orPrereqsQty (0x5094B4)
+hook reached: fastLastInLine (0x4918A8)
+fastLastInLine: index of 10546 techs: 1371 named in a TechStatus active prerequisite, 5325 (tech, dependent) pairs
+hook reached: deadReplacementAtZeroInventory removal (0x495D6B)
+techGadgets: first tech check (player 1)
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelEurMax-preGW shown, hidden: SettlerCountDialog-defaultPanelEurMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelEurMin-preGW shown, hidden: SettlerCountDialog-defaultPanelEurMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelAsiMax-preGW shown, hidden: SettlerCountDialog-defaultPanelAsiMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelAsiMin-preGW shown, hidden: SettlerCountDialog-defaultPanelAsiMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelNatMax-preGW shown, hidden: SettlerCountDialog-defaultPanelNatMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-defaultPanelNatMin-preGW shown, hidden: SettlerCountDialog-defaultPanelNatMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelEurMax-preGW shown, hidden: SettlerCountDialog-advancedPanelEurMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelEurMin-preGW shown, hidden: SettlerCountDialog-advancedPanelEurMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelAsiMax-preGW shown, hidden: SettlerCountDialog-advancedPanelAsiMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelAsiMin-preGW shown, hidden: SettlerCountDialog-advancedPanelAsiMin-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelNatMax-preGW shown, hidden: SettlerCountDialog-advancedPanelNatMax-postGW
+techGadgets: player 1, GreatWarizeALL not active: SettlerCountDialog-advancedPanelNatMin-preGW shown, hidden: SettlerCountDialog-advancedPanelNatMin-postGW
+selectFattened: first count (player 1: 0 fattened)
+hook reached: inventoryBars corpse (0x452ED4)
+hook reached: inventoryBars no HP bar (0x452F1B)
+hook reached: floating bars: fit (0x45C4B9)
+techGadgets: gadget SettlerCountDialog-defaultPanelEurMax-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelEurMax-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelEurMin-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelEurMin-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelAsiMax-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelAsiMax-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelAsiMin-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelAsiMin-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelNatMax-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelNatMax-preGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelNatMin-postGW found
+techGadgets: gadget SettlerCountDialog-defaultPanelNatMin-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelEurMax-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelEurMax-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelEurMin-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelEurMin-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelAsiMax-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelAsiMax-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelAsiMin-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelAsiMin-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelNatMax-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelNatMax-preGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelNatMin-postGW found
+techGadgets: gadget SettlerCountDialog-advancedPanelNatMin-preGW found
+hook reached: nativeCivs test 7 (0x67B0A5)
+techPrereqRecheck: 9 tech(s) of 10546 have TypeCount prerequisites (12 in all)
+techPrereqRecheck:   tech 4904 (WOL_AI_SpawnTownCenterCaravan2), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 5578 (WOLEnableInfanteDeMarina), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 5750 (WOLMetaShipTheStartingAuraManager), 3 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 6180 (PeruvianGuaneraTrickle), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8153 (FalkusaUruguay), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8715 (LevyLevelsDeactivator), 2 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8716 (LevyLevelsDeactivator2), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8743 (ChieftainSpawner), 1 TypeCount prerequisite(s)
+techPrereqRecheck:   tech 8980 (WuOLScoutDisabler), 1 TypeCount prerequisite(s)
+hook reached: lifespanAfterConstruction (0x483EEC)
+hook reached: snareOnlyHitUnit (0x4FD3FD)
+hook reached: stealthTargeting (0x489ECC)
+hook reached: can-research test (0x4C6968)
+hook reached: homeCityTechsInUnits research start (0x9E67CE)
+hook reached: research payment (0x9E67E1)
+hook reached: homeCityTechsInUnits gather point check (0x9E6553)
+hook reached: buildingWorkRateAuras (calls of 0x9BFE33)
+hook reached: liveBuildingWorkRate (0x9BFE33)
+hook reached: researchGrants research step (0x9E6622)
+hook reached: enableFarmAnim site 2 (0x50DE33)
+hook reached: enableRectFarmAnim site 3 (0x4EEDB4)
+hook reached: enableRectFarmAnim site 4 (0x4EEE9E)
+hook reached: buildingGather (0x4EC76B)
+hook reached: enableFarmAnim site 1 (0x4EDA85)
+hook reached: turretArc facing (0x48AA9F)
+hook reached: gatherFix gather tick (0x4EC8DE)
+hook reached: workRateByAbstractType apply (0x8F987C)
+hook reached: sharedBuildLimit limit (0x4C7B5F)
+hook reached: auraStacking filter (0x9D0633)
+hook reached: overhealDecay regeneration (0x490881)
+hook reached: overheal add HP (0x4823A3)
+gatherFix: first collection: interval 2.500 s (protoAction+78h 2.500), collectStuff_2
+hook reached: resourceGatherAuras (0x4ED02A)
+hook reached: danceBonusCivs Gathering (0x4ECD53)
+hook reached: showGatherRate record (0x4ED044)
+hook reached: decimalPopulation XS kbGetPopCap
+hook reached: decimalPopulation XS kbGetPop
+hook reached: annexFacing AI spot scan (0x87DB9F)
+hook reached: enableFarmAnim site 3 (0x73D41A)
+hook reached: enableFarmAnim site 6 (0x4EE07F)
+hook reached: enableFarmAnim site 7 (0x4EE2FE)
+hook reached: unit deaths (0x493D8F)
+hook reached: deadReplacementAtZeroInventory (0x4B4F2F)
+hook reached: trainBatchSize limit (0x9CE645)
+hook reached: randomCost payment (0x9EB053)
+hook reached: randomCost entry cost (0x9EB291)
+hook reached: noTrainNearEnemyTC (0x9EA410)
+hook reached: danceBonusCivs Training (0x8D47AB)
+hook reached: liveBuildingWorkRate TrainPoints (0x9EA1FA)
+hook reached: annexFacing AI placement (0x73D7D2)
+hook reached: annexFacing build command (0x7D7CF1)
+hook reached: ROF read: attack start (0x4A1189)
+hook reached: turretArc launch (0x4995D5)
+hook reached: spreadAnyAccuracy instant shot (0x4A9455)
+hook reached: directionalAttack launch (0x4998A7)
+hook reached: ROF read: after a shot (0x48F8B5)
+hook reached: spreadAnyAccuracy attack applier (0x49BE95)
+hook reached: damageOverTime TakeDamage (0x49B3D9)
+hook reached: noDamageOnUnbuiltFoundations (0x49B3F3)
+hook reached: dodge test (0x49ACE5)
+hook reached: multiarmor armor getter (0x49B32F)
+hook reached: pillageGold hit (0x49B73C)
+hook reached: teamKillBounty (0x49BDAB)
+hook reached: customImpactTypes impact spawn, projectile hit (0x49D86E)
+hook reached: buildingWorkRateAuras (calls of 0x487C45)
+hook reached: noCorpseDopples (0x49534D)
+hook reached: resourceBounty (0x4D4E0C)
+hook reached: killing blows (0x4D4F37)
+hook reached: retargetInAction (0x487838)
+hook reached: snareOnlyHitUnit (0x6AA514)
+hook reached: numberOfShots reload (0x4976CB)
+incomeRates: last 60 s of game time: 466 adds through the hook, 459 counted, 58 us inside the count
+hook reached: spreadAnyAccuracy hit roll (0x499890)
+incomeRates: player 1, resource 5, last 60 s: counted 124.0 (gather 0.0, AutoGather 0.0, trickle 124.0, DLL 0.0), stockpile +124.0 (116.0 -> 240.1); rate 2.00/s, 120.1/min
+incomeRates: last 60 s of game time: 942 adds through the hook, 916 counted, 117 us inside the count
+incomeRates: player 1, resource 5, last 60 s: counted 120.0 (gather 0.0, AutoGather 0.0, trickle 120.0, DLL 0.0), stockpile +120.0 (240.1 -> 360.1); rate 2.00/s, 120.1/min
+incomeRates: last 60 s of game time: 1103 adds through the hook, 1091 counted, 124 us inside the count
+hook reached: shipmentCounts (0x8584FF)
+incomeRates: player 1, resource 5, last 60 s: counted 120.0 (gather 0.0, AutoGather 0.0, trickle 120.0, DLL 0.0), stockpile +120.0 (360.1 -> 480.2); rate 2.00/s, 120.0/min
+incomeRates: last 60 s of game time: 1356 adds through the hook, 1352 counted, 166 us inside the count
+incomeRates: player 1, resource 5, last 60 s: counted 120.1 (gather 0.0, AutoGather 0.0, trickle 120.1, DLL 0.0), stockpile +120.1 (480.2 -> 600.2); rate 2.00/s, 120.0/min
+incomeRates: last 60 s of game time: 1624 adds through the hook, 1617 counted, 189 us inside the count
+hook reached: snareOnlyHitUnit (0x6AA56A)
+hook reached: snareOnlyHitUnit (0x4FA17D)
+incomeRates: player 1, resource 5, last 60 s: counted 120.1 (gather 0.0, AutoGather 0.0, trickle 120.1, DLL 0.0), stockpile +120.1 (600.2 -> 720.3); rate 2.00/s, 120.1/min
+incomeRates: last 60 s of game time: 1832 adds through the hook, 1821 counted, 189 us inside the count
+incomeRates: player 1, resource 5, last 60 s: counted 120.0 (gather 0.0, AutoGather 0.0, trickle 120.0, DLL 0.0), stockpile +120.0 (720.3 -> 840.3); rate 2.00/s, 120.0/min
+incomeRates: last 60 s of game time: 1550 adds through the hook, 1544 counted, 181 us inside the count
+fastLastInLine: 7 recomputes (9909 dependency tests, 8.3 ms in all), 0 handed to the stock code
+perfStats: exit, peak working set 881 MB, private 108 MB, 199038 frames, 84 over 50 ms, 78 over 100 ms
