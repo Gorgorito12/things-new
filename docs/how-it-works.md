@@ -4392,6 +4392,10 @@ game; `docs/engine-symbols.md`, "Turrets, facing and the Granny pose", REA evide
   plants his linstock. The pack names its unlimber and limber clips `…_deploy` and `…_undeploy`, so they are home
   clips too. No DLL change was needed. Its aim table holds the artillerist's arm and head for the idle and the shot
   at every 2 degrees, standing at his rest station; there is no `BAND` and no `SETL`, because he does not step.
+- **The camels' round 7 (2026-11-26: the kush, the gatling post centred, the hump).** Art only: the key reads the
+  pivot and the muzzle from the aim files, which the tools write again from the moved post and the lowered, levelled
+  lying body, so the gun turns about the new post and the shots leave its turned muzzle with no DLL change. The humped
+  camel's mesh is in the plain skinned vertex layout: the game drew nothing of the packed stream edited in place.
 <!-- private:end -->
 
 ### unitResourceAuras

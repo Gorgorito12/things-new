@@ -381,7 +381,7 @@ faithResource-ottomans-wol 4 24 2
 faithResource-wol-control 3 24 2
 gatlingCamel-wol 0 12 1
 gatlingCamel-wol-control 0 22 2
-gatlingCamel-move-wol 1 24 2
+gatlingCamel-move-wol 1 24 2 960:640:860:40
 gatlingCamelDeployed-wol 1 30 3
 techGadgets-wol 0 12 1
 techGadgets-wol-control 0 12 1
@@ -396,6 +396,6 @@ progressPie-wol 1 12 1 800:330:0:0
 progressPie-wol-control 1 12 1 800:330:0:0
 garrisonConvert-wol 2 24 2
 garrisonConvert-wol-control 2 24 2
-zamburakCannon-wol 4 48 4
-zamburakCannon-wol-control 4 48 4
-zamburakCannon-wol-limbered 92 12 1
+zamburakCannon-wol 6 40 4
+zamburakCannon-wol-control 6 40 4
+zamburakCannon-wol-limbered 36 24 2
