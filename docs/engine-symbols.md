@@ -692,6 +692,22 @@ REA (Ghidra) with evidence `rea/evidence/age3y-b1a1dab7/researchgrants-price-202
 | BString append | 0x443960, `thiscall(BString*, const wchar_t*, int len, int start)`, `ret 0Ch` | confirmed (bytes, in game) | `len` -1: to the end; `start` below 0: 0. The builder appends `</color>` this way. |
 | ResList fill | 0x4E2617, `thiscall(ResList*, float)`, `ret 4` | confirmed (bytes) | Every entry set to the value, encoded. |
 
+### Who builds a tech's or a card's rollover (UI coverage review, 2026-11-28)
+
+REA (Ghidra) with evidence `rea/evidence/age3y-b1a1dab7/coverage-review-20261128.json`, capstone over the stock exe,
+and the game. For the keys that write into the tech rollover (`researchGrants`, `shipTechLimit`).
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Calls of the tech rollover builder 0x4C737C | 0x4622C5, 0x703FAF, 0x9AD7F1, 0x9B7637 | confirmed (REA xrefs `ev_3080e11c…`, callers `ev_6965b6ed…`) | The same four as on 2026-11-12. Only 0x4622C5 goes through the shared hook of `techrollover.*`. |
+| Command panel | FUN_0046188E, call 0x4622C5 | confirmed (in game) | Serves the normal and the minimised UI (both seen on 2026-11-28), and a trading post that sits on no socket. |
+| Native command panel | FUN_009ACAF4, call 0x9AD7F1; callers 0x9AE196, 0x9AE1D7 (`ev_942cb4ce…`) | confirmed (strings), not seen in game | Its strings: `uinativecommandpanel2.xml`, `uinativecommandpanel2min.xml`, `nativecommandpanel2-button%d%d`, `researchByID(%d, %d, %d)`. The panel of a trading post on a native socket. |
+| Trade route panel | FUN_009B687E, call 0x9B7637; callers 0x9B7FA9, 0x9B7FEA (`ev_2656c67f…`) | confirmed (strings), not seen in game | Its strings: `uitraderoutepanel2.xml`, `uitraderoutepanel2min.xml`, `traderoutepanel2-button%d%d`, `tradeRouteTrain(%d, %d, %d)`. The panel of a trading post on a trade route. |
+| Game object's tech rollover | 0x703F99 (no function in Ghidra, `ev_59c504f7…`), `thiscall(text, techEntry)`, `ret 8` | confirmed (bytes) | Calls 0x4C737C(text, entry, 0, 0, 0, 0, 1, 1): no player, no unit. Slot 0x144 (index 81) of the vtable 0xB88628 (xref 0xB8876C, `ev_37093722…`), set by the constructor FUN_0055AF45 (`ev_6768c3c4…`) of the object made at 0x5AB396 and kept in 0xC67310 and 0xC66234 (the class of `.\agame.cpp`). **Unknown:** its callers. A capstone scan of `.text` found no `call [reg+144h]` with its shape (two pushes and the object in ECX). |
+| Cost to text | 0x470446; callers 0x4765F4, 0x4C8748, 0x70F25D, 0x70FCB8, 0x7103CE, 0x710991, 0x75FCC1, 0x99D39A, and 2 unresolved (`ev_3bd3e6da…`) | confirmed (callers), roles partly inferred | Not called by 0x4C737C, whose cost line is 0x4C8EE5 (called at 0x4C7477 and from 0x4C891C, `ev_b24910de…`). 0x70FCB8 is the game object's slot 80 (0x703F69). 0x99D39A is the home city's purchase dialog (`uihcconfirmdlg.xml`, `homeCityResearchByID`). |
+| Card rollover builders | FUN_007103CE (shipment panel 0x9A61B7, deck builder 0x9A0714, deck dialog 0x9A7A1E) and FUN_00710991 (card tree, "View All Cards") | confirmed (earlier rows) | They do not call 0x4C737C. A card is sent, not researched: neither the research payment nor the can-research test sees it. |
+| Tech tree screen | `.\gadtechtree.cpp`: the info text `%S:\n%s\nCost: %s` (0xC0F308, used at 0x8209F5) with the cost from 0x470446 (0x8209DE); `uitechtree.xml` loaded at 0x5C379B (FUN_005C3777) | confirmed (bytes) | Its own text, not 0x4C737C. The only `TechTreeButton` in the game's UI data is in `uigodpicker` (checked at 0x561A38). **Inference:** a leftover screen that the game's UI never opens. |
+
 ### Player powers and the ceasefire (WoL #14, 2026-10-30)
 
 A power is cast per player, not per unit: the button of any unit only spends the player's charge of
