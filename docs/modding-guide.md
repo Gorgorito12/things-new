@@ -7861,16 +7861,30 @@ researchGrants [notext | text=<text>] [noprice] [free=<text>] [log]
   - a building found at the start of a game, or created by a trigger, starts its timer when the key first sees it,
     within a world update;
   - the button's price is the price at the last refresh of the panel: resources that change between that refresh and
-    the click (another research paid in the same frame) can change the answer, and the click is what counts;
-  - only the command panel's buttons get the word on the button and the green line; two other research panels of the
-    game that build the same rollover (0x9AD7F1, 0x9B7637) get only the cost after the share.
+    the click (another research paid in the same frame) can change the answer, and the click is what counts.
+- **Screens** (where the price shows; 2026-11-28, both keys on, British against a German AI):
+  - the game, normal and minimised UI: the command panel (a Market, a council member, a trading post on no socket),
+    the native panel of a trading post on a native socket, and the trade route panel of a trading post on a trade
+    route: `Free` on the button and the green line in all three
+    ([native, normal UI](media/techRollover-native-panel.png), [trade route, normal UI](media/techRollover-traderoute-panel.png),
+    [command panel, minimised UI](media/techRollover-command-panel-minimised.png)). Until 2026-11-28 the native and the
+    trade route panels showed only the cost after the share;
+  - the home city, the deck builder and "View All Cards": does not apply, a card is sent, not researched;
+  - the tech tree: does not apply, the game's UI has no button that opens it;
+  - the observer: does not apply, the price is shown only to the building's owner.
+- **Sites checked** (REA, `docs/engine-symbols.md`, "Who builds a tech's or a card's rollover"): every call of the tech
+  rollover builder 0x4C737C (the command panel 0x4622C5, the native panel 0x9AD7F1, the trade route panel 0x9B7637, and
+  0x703F99, which has no player); the card rollover builders 0x7103CE and 0x710991; the tech tree's own text
+  (`gadtechtree.cpp`). The hook sits at the builder's only exit, 0x4C78F3, so every one of its callers gets the line.
 - **Multiplayer:** it changes the simulation: every player needs the same setting. It uses only game state and game
   time; not tested in multiplayer.
 - **Simulation:** yes.
 - **Log:** `researchGrants: the proto tags ResearchGrant* and the Data subtypes ResearchGrantInterval, ResearchGrantMax
   and ResearchGrantPoints are on; the tech buttons show the price with a point; a floating text over the building that
   pays a point`, `hook reached: research payment (0x9E67E1)`, `hook reached: researchGrants research step (0x9E6622)`,
-  `hook reached: tech rollover (0x4622C5)` (the shared hook, since 2026-11-20), `hook reached: researchGrants tech rollover cost (0x4C73FD)`;
+  `hook reached: tech rollover (0x4C78F3)` (the shared hook; 0x4622C5 from 2026-11-20 to 2026-11-28), and once per
+  panel `tech rollover: first rollover built for the native command panel (0x9AD7F1)` (or the command panel 0x4622C5,
+  the trade route panel 0x9B7637), `hook reached: researchGrants tech rollover cost (0x4C73FD)`;
   with `log` also `the button of tech 10542 shows Free (cost x0.00)` and `"Free research" shown over unit 0`; a bad
   value: `researchGrants: proto 311 (Church): <ResearchGrantCost> needs a number from 0 to 1, not
   "2"; ignored`. With `log`: `unit 0 (Market) has 2/3 point(s) (game time 40000 ms)`, `unit 2 spends a point on tech
@@ -7982,6 +7996,20 @@ shipTechLimit [notext] [log]
   any machine and nothing is paid. The button stays, marked `n/N`, and its rollover ends with the red line `Shipment
   techs: n/N, the limit is reached` (below the limit, a green `Shipment techs: n/N`). In WoL's interface a refused tech
   button is drawn as bright as the others, like a tech of a later age: the mark and the line say why.
+- **Screens** (where the count shows; 2026-11-28, British with a limit of 3 against a German AI, test data giving a
+  Cree tech and Stagecoach a cost of 1 Ship):
+  - the game, normal and minimised UI: the command panel, the native panel of a trading post on a native socket and the
+    trade route panel of a trading post on a trade route all end the rollover with the `Shipment techs` line
+    ([native, normal UI](media/techRollover-native-panel.png), [trade route, normal UI](media/techRollover-traderoute-panel.png),
+    [command panel, minimised UI](media/techRollover-command-panel-minimised.png)); the `n/N` mark at the limit uses
+    the same button text as `researchGrants`' `Free`, seen on all three panels (the mark itself only on the command
+    panel, picture above). Until 2026-11-28 the native and the trade route panels had neither;
+  - the home city, the deck builder and "View All Cards": does not apply, cards from the deck never count;
+  - the tech tree: does not apply, the game's UI has no button that opens it;
+  - the observer: does not apply, the count is the player's own.
+  The refusal does not depend on the screen: it is the head of the can-research test 0x4C6968.
+- **Sites checked:** as for [`researchGrants`](#researchgrants): every call of the tech rollover builder 0x4C737C, the
+  card rollover builders and the tech tree's own text; the hook sits at the builder's only exit, 0x4C78F3.
 - **Saved games:** the counts are saved (on one unit of each player) and come back on load. A game saved without the
   key starts from the shipment techs the player has researched. A game saved by a build before 2026-11-21 (whose count
   held the repeatable techs) loads with them taken out, logged as `player 1's count from an older build (5) held
@@ -7989,7 +8017,7 @@ shipTechLimit [notext] [log]
 - **Log:** `shipTechLimit: civ 48 (WallMapu): at most 12 shipment techs per game`, `shipTechLimit: player 1 paid shipment
   tech 3934: 1 of 3 (game time 15246 ms)`, `... cancelled shipment tech 3946: 2 of 3`, `game start or load: player 1
   has 3 of 3 shipment techs`, after loading an older build's save `player 1's count from an older build (2) held
-  repeatable techs: now 1`; `hook reached: can-research test (0x4C6968)`, `hook reached: tech rollover (0x4622C5)`.
+  repeatable techs: now 1`; `hook reached: can-research test (0x4C6968)`, `hook reached: tech rollover (0x4C78F3)` (0x4622C5 before 2026-11-28).
 - **The AI:** it is refused the same way; an AI plan that keeps asking for a refused tech gets nothing.
 - **Tested in WoL (2026-11-20, single player, scenario route, `C:\AoE3-UHC-WoLReal7`):** limit 3 with four requests
   (the fourth refused, Ships 20 to 17); a refused click on the button; a cancel (Ships back, count 2, the button usable

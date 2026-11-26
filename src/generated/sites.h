@@ -1442,6 +1442,27 @@ inline constexpr Site kButtonOverlayReset{"ButtonOverlayReset", 0x00461DBC, kBut
 inline constexpr std::uint8_t kButtonOverlayReadBytes[] = {0x8D, 0x84, 0x24, 0xC0, 0x02, 0x00, 0x00};
 inline constexpr Site kButtonOverlayRead{"ButtonOverlayRead", 0x004625E2, kButtonOverlayReadBytes, sizeof(kButtonOverlayReadBytes)};
 
+inline constexpr std::uint8_t kTechRolloverExitBytes[] = {0x5D, 0x5B, 0x83, 0xC4, 0x40, 0xC3};
+inline constexpr Site kTechRolloverExit{"TechRolloverExit", 0x004C78F3, kTechRolloverExitBytes, sizeof(kTechRolloverExitBytes)};
+
+inline constexpr std::uint8_t kNativeTechRolloverBytes[] = {0x6A, 0x01, 0x6A, 0x01, 0x6A, 0x00, 0x6A, 0x01, 0x57, 0x53, 0x8D, 0x4C, 0x24, 0x58, 0x56, 0x51, 0xE8, 0x86, 0x9B, 0xB1, 0xFF};
+inline constexpr Site kNativeTechRollover{"NativeTechRollover", 0x009AD7E1, kNativeTechRolloverBytes, sizeof(kNativeTechRolloverBytes)};
+
+inline constexpr std::uint8_t kNativeOverlayResetBytes[] = {0xC6, 0x84, 0x24, 0x48, 0x02, 0x00, 0x00, 0x00};
+inline constexpr Site kNativeOverlayReset{"NativeOverlayReset", 0x009AD2D1, kNativeOverlayResetBytes, sizeof(kNativeOverlayResetBytes)};
+
+inline constexpr std::uint8_t kNativeOverlayReadBytes[] = {0x8D, 0x84, 0x24, 0x48, 0x02, 0x00, 0x00};
+inline constexpr Site kNativeOverlayRead{"NativeOverlayRead", 0x009AE08C, kNativeOverlayReadBytes, sizeof(kNativeOverlayReadBytes)};
+
+inline constexpr std::uint8_t kTradeRouteTechRolloverBytes[] = {0x6A, 0x01, 0x6A, 0x01, 0x6A, 0x00, 0x6A, 0x01, 0x57, 0x53, 0x8D, 0x4C, 0x24, 0x68, 0x56, 0x51, 0xE8, 0x40, 0xFD, 0xB0, 0xFF};
+inline constexpr Site kTradeRouteTechRollover{"TradeRouteTechRollover", 0x009B7627, kTradeRouteTechRolloverBytes, sizeof(kTradeRouteTechRolloverBytes)};
+
+inline constexpr std::uint8_t kTradeRouteOverlayResetBytes[] = {0xC6, 0x84, 0x24, 0x30, 0x02, 0x00, 0x00, 0x00};
+inline constexpr Site kTradeRouteOverlayReset{"TradeRouteOverlayReset", 0x009B719C, kTradeRouteOverlayResetBytes, sizeof(kTradeRouteOverlayResetBytes)};
+
+inline constexpr std::uint8_t kTradeRouteOverlayReadBytes[] = {0x8D, 0x84, 0x24, 0x30, 0x02, 0x00, 0x00};
+inline constexpr Site kTradeRouteOverlayRead{"TradeRouteOverlayRead", 0x009B7ECE, kTradeRouteOverlayReadBytes, sizeof(kTradeRouteOverlayReadBytes)};
+
 inline constexpr std::uint8_t kTechRolloverHeadBytes[] = {0x83, 0xEC, 0x40, 0x53, 0x8B, 0x5C, 0x24, 0x48, 0x55, 0x8B, 0xCB, 0xE8, 0x84, 0xC5, 0xF7, 0xFF};
 inline constexpr Site kTechRolloverHead{"TechRolloverHead", 0x004C737C, kTechRolloverHeadBytes, sizeof(kTechRolloverHeadBytes)};
 

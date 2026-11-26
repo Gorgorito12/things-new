@@ -1172,6 +1172,18 @@ SITES = [
     ("TechButtonRollover", 0x4622B5, 0x15),
     ("ButtonOverlayReset", 0x461DBC, 8),
     ("ButtonOverlayRead", 0x4625E2, 7),
+    # the shared tech rollover (techrollover.*, 2026-11-28): the builder's only exit, pop ebp / pop ebx /
+    # add esp,40h / ret at 0x4C78F3 (its early exits jump to 0x4C78F3 itself; nothing lands at 0x4C78F4..F8);
+    # the native command panel FUN_009ACAF4 and the trade route panel FUN_009B687E call it as the command panel
+    # does (the same 8 pushes, lea ecx,[esp+58h] / [esp+68h] the rollover), with their button overlay text
+    # [esp+248h] / [esp+230h] reset per button and read before the overlay gadget's text is set
+    ("TechRolloverExit", 0x4C78F3, 6),
+    ("NativeTechRollover", 0x9AD7E1, 0x15),
+    ("NativeOverlayReset", 0x9AD2D1, 8),
+    ("NativeOverlayRead", 0x9AE08C, 7),
+    ("TradeRouteTechRollover", 0x9B7627, 0x15),
+    ("TradeRouteOverlayReset", 0x9B719C, 8),
+    ("TradeRouteOverlayRead", 0x9B7ECE, 7),
     ("TechRolloverHead", 0x4C737C, 0x10),
     ("TechTipCostCopy", 0x4C73F9, 9),
     ("BStringAppend", 0x443960, 0x10),

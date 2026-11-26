@@ -2106,7 +2106,10 @@ It comes after `researchGrants`.
   `[action+68h]` the tech ID in both.
 - **Can-research head:** a 5-byte `jmp` at `0x4C6968` (`55 8B 6C 24 08`: `push ebp / mov ebp,[esp+8]`), continue at
   `0x4C696D`; `bool thiscall(status, unit)`, `ret 4`. A refused tech returns 0 there.
-- **Tech rollover:** the `call` at `0x4622C5` of the builder `0x4C737C` (shared with `researchGrants`' price).
+- **Tech rollover:** a 5-byte `jmp` at `0x4C78F3` (`5D 5B 83 C4 40`: `pop ebp / pop ebx / add esp,40h`), the only exit
+  of the builder `0x4C737C`; replay the three instructions and leave through its `ret` at `0x4C78F8` (shared with
+  `researchGrants`' price). The return address tells the panel and its button overlay buffer: `0x4622CA` (command
+  panel, ESP + 2E4h), `0x9AD7F6` (native panel, + 284h), `0x9B763C` (trade route panel, + 26Ch).
 - **Read only:** `0x44EFFF` (a cost entry: Ships is 6), `0x94ADAA` (a player's status of a tech), the alive slot of the
   unit vtable, and the status's bit 29 (`YPInfiniteTech`: the bitset `[status+4]`, its bit count `[status+8]`): a
   repeatable tech is outside the rule everywhere (count, refusal, rollover).
