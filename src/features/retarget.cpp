@@ -24,10 +24,18 @@
 // types), in range (the unit's vtable +CCh with [ua+24h], as 0x48A5C8) and seen by the unit's player (0x48A9EF, as
 // 0x48A605), and of the tactic's <autoattacktype> [tactic+174h] when it has one (0x44D7FA, as the automatic search's
 // test 0x4A1A0E). The nearest wins (the unit's vtable +BCh, as 0x48A59B), then the lowest ID.
+//
+// An attack launched by a power (its power use [ua+6Ch] not 0, as an explorer's sharpshooter ability) is not the
+// attack the tactic would pick for its targets (a guardian gets the normal ranged attack), and the update does not ask
+// the tactic for it (0x48A4C2 -> 0x4F6F61 -> 0x48A58D). For such an attack a candidate is taken by the action's own
+// rates instead of 0x489ECC and the <autoattacktype>: a rate above 0 for it (the lookup 0x487C45, its <rate type>s),
+// not an ally of the unit's player (0x484E01) and, unless the action's flag 0Dh is set, an enemy (the diplomacy
+// [player+1D4h+4*ID] = 2), as 0x489ECC tests the relation; then in range and seen as above.
 #include <windows.h>
 
 #include <compare>
 #include <cstdint>
+#include <cstdio>
 #include <cwchar>
 #include <map>
 
@@ -66,6 +74,8 @@ using AttackForFn = std::int32_t(__thiscall*)(const char* tactic, const char* at
                                               std::int32_t a3, std::int32_t a4, std::int32_t a5, std::int32_t a6,
                                               float range);
 using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using RateForFn = float(__thiscall*)(const char* action, const char* target);
+using IsAllyFn = bool(__thiscall*)(const char* player, std::int32_t otherPlayer);
 using SeeableFn = bool(__thiscall*)(const char* unit, std::int32_t player);
 using AliveFn = bool(__thiscall*)(const char* unit);
 using InRangeFn = bool(__thiscall*)(const char* unit, const char* target, float range);
@@ -75,6 +85,8 @@ const auto kUnitsNear = reinterpret_cast<UnitsNearFn>(0x004A1C55);
 const auto kAttackFor = reinterpret_cast<AttackForFn>(0x00489ECC);
 const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 const auto kIsSeeable = reinterpret_cast<SeeableFn>(0x0048A9EF);
+const auto kRateFor = reinterpret_cast<RateForFn>(0x00487C45);
+const auto kIsAlly = reinterpret_cast<IsAllyFn>(0x00484E01);
 
 template <typename T>
 T Field(const void* base, std::uint32_t offset) {
@@ -243,8 +255,25 @@ struct Why {
   std::int32_t range = 0;
   std::int32_t unseen = 0;
   std::int32_t lastFit = 0;
+  bool power = false;
   float range0 = 0.0f;
 } g_why;
+
+// A power-launched attack's test of a candidate: the action's own rates and the relation (see the head comment).
+bool PowerFits(const char* action, const char* player, const char* other, std::int32_t relation) {
+  const char* otherPlayer = Field<const char*>(other, 0x44);
+  if (otherPlayer == nullptr) {
+    return false;
+  }
+  const std::int32_t otherId = Field<std::int32_t>(otherPlayer, 0x00);
+  if (kIsAlly(player, otherId)) {
+    return false;
+  }
+  if (relation == 1 && (otherId < 0 || otherId >= 16 || Field<std::int32_t>(player, 0x1D4 + 4 * otherId) != 2)) {
+    return false;
+  }
+  return kRateFor(action, other) > 0.0f;
+}
 
 // The new target, or -1.
 std::int32_t Search(const char* world, const char* unitAction, const char* unit, std::int32_t lostId, float* distanceOut) {
@@ -261,9 +290,11 @@ std::int32_t Search(const char* world, const char* unitAction, const char* unit,
   const auto inRange = Virtual<InRangeFn>(unit, 0xCC);
   const auto distanceTo = Virtual<DistanceFn>(unit, 0xBC);
   const std::int32_t selfId = Field<std::int32_t>(unit, 0x10);
-  const std::int32_t autoType = Field<std::int32_t>(tactic, 0x174);  // <autoattacktype>, -1 none
+  const bool power = Field<const char*>(unitAction, 0x6C) != nullptr;  // launched by a power
+  const std::int32_t autoType = power ? -1 : Field<std::int32_t>(tactic, 0x174);  // <autoattacktype>, -1 none
   g_why = Why{};
   g_why.range0 = range;
+  g_why.power = power;
   g_found.count = 0;
   kUnitsNear(world, reinterpret_cast<const float*>(unit + 0x14), (range > 0.0f ? range : 0.0f) + kSearchSlack, 1,
              &g_found);
@@ -284,11 +315,18 @@ std::int32_t Search(const char* world, const char* unitAction, const char* unit,
       ++g_why.type;
       continue;
     }
-    const std::int32_t fits = kAttackFor(tactic, unit, other, 1, relation, 0, 0, range);
-    if (fits != actionId) {
-      ++g_why.action;
-      g_why.lastFit = fits;
-      continue;
+    if (power) {
+      if (!PowerFits(action, player, other, relation)) {
+        ++g_why.action;
+        continue;
+      }
+    } else {
+      const std::int32_t fits = kAttackFor(tactic, unit, other, 1, relation, 0, 0, range);
+      if (fits != actionId) {
+        ++g_why.action;
+        g_why.lastFit = fits;
+        continue;
+      }
     }
     if (!inRange(unit, other, range)) {
       ++g_why.range;
@@ -347,11 +385,17 @@ std::int32_t __stdcall UhcRetargetAction(const char* unitAction) {
     ++g_misses;
     if (g_log && g_logLines < kMaxLogLines) {
       ++g_logLines;
+      wchar_t why[96];
+      if (g_why.power) {
+        std::swprintf(why, 96, L"without a rate of this power's attack or not an enemy");
+      } else {
+        std::swprintf(why, 96, L"for another attack (%d)", g_why.lastFit);
+      }
       uhc::Log(L"retargetInAction: %d ms, unit %d (%hs) lost its target %d in state %02Xh after %d shots: no other "
                L"target in range, the stock code (%d units around: %d dead or inside, %d not of the auto-attack type, %d "
-               L"for another attack (%d), %d out of range %.1f, %d unseen)", now, unitId,
+               L"%ls, %d out of range %.1f, %d unseen)", now, unitId,
                ProtoName(Field<const char*>(unit, 0x5C)), lostId, state, Field<std::int32_t>(unitAction, 0x68),
-               g_found.count, g_why.dead, g_why.type, g_why.action, g_why.lastFit, g_why.range,
+               g_found.count, g_why.dead, g_why.type, g_why.action, why, g_why.range,
                static_cast<double>(g_why.range0), g_why.unseen);
     }
     return 0;
@@ -440,7 +484,8 @@ Outcome ApplyRetargetInAction(const Config& config) {
     }
   }
   if (!VerifyAll("retargetInAction", {&sites::kRetargetNoTarget, &sites::kRetargetUpdateTarget,
-                                        &sites::kUnitsNearPoint, &sites::kUnitIsSeeable}) ||
+                                        &sites::kUnitsNearPoint, &sites::kUnitIsSeeable, &sites::kRateLookupHead,
+                                        &sites::kPlayerIsAlly}) ||
       !OnDatabaseLoad(&ResetForDataLoad) || !AddActionTagHandler(&ActionTagRead) ||
       (g_log && !AddRofFilter(&RetargetShotLog, "retargetInAction"))) {
     return Outcome::kFailed;

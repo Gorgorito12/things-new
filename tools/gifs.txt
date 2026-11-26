@@ -120,8 +120,8 @@ wonderPanelSkipAuras-wol-control 2 16 2
 overhealHitpointBars-damage-wol 2 20 2
 autoGatherScaleByContained-wol 2 36 3
 autoGatherScaleByContained-wol-control 2 36 3
-nurseryFactor-wol 12 14 1.17 800:70:0:0+800:540:430:70+800:180:430:720
-nurseryFactor-commands-wol 36 16 1.34 800:70:0:0+800:540:430:70+800:180:690:720
+nurseryFactor-wol 0 31 2.6 800:90:0:60+800:340:560:240+800:200:900:870
+nurseryFactor-commands-wol 35 31 2.6 800:90:0:60+800:340:560:240+800:200:900:870
 nurseryFactor-wol-control 12 40 3.34 800:70:0:0+800:540:430:70+800:180:690:720
 nurseryFactor-ship-wol 0 24 2 800:110:0:75+800:560:640:220+800:80:0:1040
 resourceDebt-autogather-wol 2 24 2
@@ -289,6 +289,8 @@ numberOfShots-idle-wol 4 12 1
 numberOfShots-sarbaz-wol 0 12 1
 numberOfShots-projectiles-wol 9 12 1
 numberOfShots-projectiles-wol-control 9 12 1
+powerShots-wol 1 10 1
+powerShots-wol-control 1 10 1
 retargetInAction-wol 14 12 1
 retargetInAction-wol-control 12 12 1
 ageUpBuildings-wol 1 12 2
@@ -397,8 +399,8 @@ selectFattened-wol 5 36 3
 selectFattened-wol-control 5 36 3
 progressPie-wol 1 12 1 800:330:0:0
 progressPie-wol-control 1 12 1 800:330:0:0
-garrisonConvert-wol 2 24 2
-garrisonConvert-wol-control 2 24 2
+garrisonConvert-wol 0 14 1.5
+garrisonConvert-wol-control 0 14 1.5
 zamburakCannon-wol 6 40 4
 zamburakCannon-wol-control 6 40 4
 zamburakCannon-wol-limbered 36 24 2

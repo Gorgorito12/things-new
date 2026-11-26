@@ -19,6 +19,7 @@ The zip holds one folder, UHC-<version>/, with:
   beside-another-dll/engine-ext/engine-ext.cfg  the same template, for that DLL
   art/effects/uhc_rings/  the aura rings of tools/rings, for a game's art folder
   art/ui/uhc/health_overheal.ddt  the orange end of the portrait HP bar (tools/bars, overhealHitpointBars)
+  art/ui/uhc/pie/pie_00.ddt ... pie_31.ddt  the small progress pie after a panel row (tools/pie, nurseryFactor)
   dxvk/d3d9.dll, dxvk/LICENSE.txt   DXVK 3.1.1 (32-bit) and its zlib license, for rendererOption
   LICENSE.txt
   README.txt         the quick start for modders
@@ -214,6 +215,9 @@ veterancyBonus shows rank_1.xml to rank_5.xml over a unit with a rank when the f
 art\\ui\\uhc\\health_overheal.ddt is the orange end of the HP bar under the portrait, which
 overhealHitpointBars segment shows for units above their 100 %: copy it to the game's art\\ui\\uhc
 (every player who wants it). Without it that end uses the game's yellow bar texture.
+art\\ui\\uhc\\pie holds the 32 frames of the small progress pie nurseryFactor puts after its
+"3/10 minks" row while a nursery grows: copy the folder to the game's art\\ui\\uhc (every player).
+Without it the pie is drawn over the unit's portrait instead.
 
 A uhc.cfg written by the patcher is read as it is (basePop=500 and // comments are
 accepted). Keys that this DLL does not implement are logged in UHC.log and ignored.
@@ -384,6 +388,8 @@ numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart
                               projectiles: <NumberProjectiles> per shot
 retargetInAction [log]        an attack with <RetargetInAction>1 whose target dies during its
                               attack animation fires the rest of its shots at a new target
+powerShots [log]              an ability's attack with <PowerShots>N fires at each Attack tag of
+                              its animation, up to N shots a use, instead of one
 turretArc <Proto> <aim> ... [log]   an attack with <Turret> turns its gun on the mount, not the
                               unit, toward a target inside the turret's arc
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range
@@ -432,8 +438,10 @@ herdWalkAwayFix [log]         a fattened herdable that walks away from its pen o
 faithResource [log]           optional: resource 4 (SkillPoints) a plain resource, cut from the home city;
                               a Gather of it plays the action's own <anim>
 transformChecks [log]         transform buttons grey out with the reason; a transform respects BuildLimit
-garrisonConvert [log]         <GarrisonConvertTo delay="S">Unit</GarrisonConvertTo>: the units that
-                              enter a building become that unit, at once or one every S seconds
+garrisonConvert [log]         <GarrisonConvertTo delay="S" eject="true" from="Type">Unit</GarrisonConvertTo>:
+                              the units that enter a building become that unit, at once or one every S
+                              seconds; several tags take turns; waits at the population cap; techs
+                              change the tags (Data subtypes GarrisonConvert*)
 lanAutoStart [host [rules=N] | join <address>]   from the main menu straight to hosting or joining
                               a LAN game; +uhcLanHost / uhcLanJoin="<address>" on the command line
 editorSearch [log]            search fields in the editor's Objects palette, Forbidden Units/Techs
@@ -536,6 +544,8 @@ def main_dinput8(argv, force):
             z.write(ring, f"{top}/art/effects/uhc_rings/{ring.name}")
         for bar in sorted((ROOT / "tools" / "bars").glob("*.ddt")):
             z.write(bar, f"{top}/art/ui/uhc/{bar.name}")
+        for frame in sorted((ROOT / "tools" / "pie").glob("*.ddt")):
+            z.write(frame, f"{top}/art/ui/uhc/pie/{frame.name}")
         z.writestr(f"{top}/dxvk/d3d9.dll", dxvk_dll)
         z.writestr(f"{top}/dxvk/LICENSE.txt", dxvk_license)
         z.writestr(f"{top}/LICENSE.txt", license_text)
@@ -573,6 +583,8 @@ def main(argv):
             z.write(ring, f"{top}/art/effects/uhc_rings/{ring.name}")
         for bar in sorted((ROOT / "tools" / "bars").glob("*.ddt")):
             z.write(bar, f"{top}/art/ui/uhc/{bar.name}")
+        for frame in sorted((ROOT / "tools" / "pie").glob("*.ddt")):
+            z.write(frame, f"{top}/art/ui/uhc/pie/{frame.name}")
         z.writestr(f"{top}/dxvk/d3d9.dll", dxvk_dll)
         z.writestr(f"{top}/dxvk/LICENSE.txt", dxvk_license)
         z.writestr(f"{top}/LICENSE.txt", license_text)

@@ -3992,13 +3992,18 @@ it are in [nursery-design.md](nursery-design.md). <!-- private -->
   world, the time going back or the step count jumping) or before a `NurseryFactor` effect. A unit found with no marker
   gets `NurseryFactorInitial` (at most the cap). After each world update (`AddWorldTick`), a built unit (0x44DDB4)
   under its player's cap adds the game time `[world+108h]` since the last tick to its timer and grows a step per
-  interval, up to the cap: linear, the step; exponential, `b^t` with `t` the steps taken since the factor was last
-  emptied, the fraction carried to the next step (b 1.5 adds 1, 1, 2, 4, 5...). At or above the cap, or with no interval, the
-  timer is 0. Nothing cuts a unit above its cap: growth and the additions stop there, so a lowered cap leaves the
-  extra until the unit spends it. Factor, timer, `t` and the fraction are words 1 to 3 of a saved marker
-  (`savedmarkers.h`, stat 6Bh, word 0 `NRSF`; word 3 `t | fraction x 65536 << 16`), written each tick, so a transform in
-  place, which ends the unit's modifiers, has it written again at the next tick. A unit gone, dead or of a proto
-  without a factor leaves the table. A factor emptied (a shipment, a command) sets `t` back to 0.
+  interval, up to the cap: linear, the step; exponential, the step of `t`, where **`t` follows the factor** (third
+  version, 2026-11-26): with `S(t) = b^0 + ... + b^(t-1)`, `t` is the largest t with `floor(S(t)) <= factor` and the step
+  adds `floor(S(t+1)) - floor(S(t))` (b^t for a whole b). `ExpGrowth(b, factor)` works it out each time it is needed
+  (a step, the log, the panel's `{step}`): a loop over t in doubles, about log_b(factor) turns, with b 1 (t = factor)
+  and b at most 0 or below 1 (every t once the factor reaches the whole part of `1 / (1 - b)`: t 65535, +0) handled
+  first, so it ends. Nothing about `t` is stored: a sale, a shipment, a garrisoned unit, a tech, a capture or a new b
+  moves it with the factor. At or above the cap, or with no interval, the timer is 0. Nothing cuts a unit above its
+  cap: growth and the additions stop there, so a lowered cap leaves the extra until the unit spends it. Factor and
+  timer are words 1 and 2 of a saved marker (`savedmarkers.h`, stat 6Bh, word 0 `NRSF`; word 3, `t` and a fraction
+  in the second version, is written 0 and not read), written each tick, so a transform in place, which ends the
+  unit's modifiers, has it written again at the next tick. A unit gone, dead or of a proto without a factor leaves
+  the table.
 - **The trickle:** the filter of the shared AutoGather rate getter multiplies a marked proto's rate by the unit's factor
   (the initial value while the unit is not in the table yet). The AutoGather update FUN_0048D13E then pays as stock: to
   the player through the add 0x49A98A (return 0x4C379D, which `incomeRates` counts), or, with the tactics flag
@@ -4017,7 +4022,11 @@ it are in [nursery-design.md](nursery-design.md). <!-- private -->
   at the first tick of a loaded game (game time above 0) is dropped and logged. This is not the pass after a load
   0x94DDEA, which runs only flag-20h effects (see `unitTypeTechs`).
 - **The shipment** (`AddTechPlayerSubtype`, as `shipmentCounts`): the techtree read stores `{unittype, nursery,
-  consume}` in a list and the list index in the effect's field `+10h`. When it applies, it takes (or counts) the factors
+  consume}` in a list and the list index in the effect's field `+10h`. The list is never cleared: a loaded game reads
+  the protos again (the data-load callback empties the other tables) but not the techtree, whose effects keep their
+  indices (as `garrisonConvert`'s effect list). Until 2026-11-27 the data-load callback emptied it too, so a
+  shipment researched after a load found no entry and shipped nothing (checked in game before and after the fix).
+  When it applies, it takes (or counts) the factors
   of the player's living, built units whose proto is `nursery` or of that abstract type (0x44D7FA), in ID order, and
   returns the stock `FreeHomeCityUnit` (37h) with the proto and `amount x total`; nothing under 1 unit. A taken factor
   restarts its timer.
@@ -4040,22 +4049,38 @@ it are in [nursery-design.md](nursery-design.md). <!-- private -->
   execute itself refuses an ID out of the player's proto range (0x45311B, `cmp edx,[ecx+0E4h]`). The run, for a built
   unit of the command's player with that command: a negative factor needs that many, a positive one room under the
   cap; the units need room (PLACE, world vtable +14h, flags 2, on rings of 16 points from the building's edge, the
-  units found before counting, as `killSpawn` places its animals); then the cost: a ResList of the game's size
+  units found before counting, as `killSpawn` places its animals) and under the population cap, with the stock
+  maintain spawn's test (0x9E2F79) for all of them: the player's copy of the proto (0x45311B), its `PopulationCount`
+  `[proto+0D8h]`; none (0 or less) or the flag `AlwaysAllowOverPopCap` (A3h, 0x45EE02) never stops them; with
+  `AllowOverPopCap` (9Fh) the cap 0x4581A1 needs one free slot over the population `[player+78h] + 0x45805C`; else
+  the cap must hold the population plus count x PopulationCount (sites `PlayerPopulation`, `PlayerPopCap`; this runs
+  on every machine, from simulation state); then the cost: a ResList of the game's size
   `[0C6DF38h]`, filled with 0 (0x4E2617) and set per resource (0x58EF83), paid with the stock payment 0x8D946A (which
   tests the player's or the team's stock first). Any refusal changes nothing. Then the factor (as an addition, up to
   the cap), the marker, and the units, created by 0x498ACC at the spots found.
 - **The buttons** (`AddPanelButtonFilter`): a button whose click is `nurseryFactorCommand("...")` asks, for the local
-  selection's units with that command, the same tests (the factor, the cap, the cost through 0x8D6BAE, or 0x8D6C1B with
-  `[world+6912h]` set); with none that passes it is greyed (state 1), its click and shift-click emptied, and its rollover
-  gets the last reason in red (0x443960): `2/10 minks: 4 needed`, `10/10 minks: full`, or string 41543 "Not enough
-  resources". Interface only.
+  selection's units with that command, the same tests (the factor, the cap, the population cap above, the cost through
+  0x8D6BAE, or 0x8D6C1B with `[world+6912h]` set); with none that passes it is greyed (state 1: the panel darkens its
+  icon; the hover highlight shows it bright while the cursor is on it), its click and shift-click emptied, and its
+  rollover gets the last reason in red (0x443960): `2/10 minks: 4 needed`, `10/10 minks: full`, `Population cap
+  reached`, or string 41543 "Not enough resources". The filter runs at every refresh, so the button is normal again
+  as soon as a unit passes (seen when a House came). Interface only.
 - **Panels:** `AddUnitPanelRow` (the minimized interface's AutoGather row, `[panel+33Ch]` / `+340h`) writes
   `3/10 minks` as the label (`(once built)` on a foundation), and `SetUnitPanelRowTip` puts the two rollover lines in
   the help text `[gadget+68h]` of both gadgets; the shared hook clears it before the next refresh's rows, so the stock
   row and the other keys' rows never show it. In the normal interface, the shared stat panel row hook
   (`statpanelrows.*`, 0x4D76DB, after the HP row; `overhealHitpointBars`' row moved there) writes the same text in the
-  value gadget of the next free row, with the same help text; the stock AutoGather row comes after it. The portrait's
-  progress pie (`AddProgressPieSource`) shows the share of the interval done while the unit grows. `{uhcNurseryFactor}`
+  value gadget of the next free row, with the same help text; the stock AutoGather row comes after it. While the unit
+  grows (built, under its cap, with an interval), both rows end with a small progress pie: an inline icon
+  ` <icon="(N)(ui\uhc\pie\pie_KK)">`, frame KK = 32 x the share of the interval done (rounded down), one of the 32
+  pictures of `art\ui\uhc\pie\` (aoe3-blender-tools' `make_pie.py`: 32 x 32 BGRA, the train overlay's blue at half
+  alpha over grey, a gold frame, a clockwise wedge from 12 o'clock). The text layout puts an inline icon after the
+  text on the same line, N + 1 px wide and as tall as the line, so N is the line minus 1, measured in game: the
+  minimized row 17 px at a screen 960 px tall or more and 14 px below (N 16 / 13, as `minUIStats`), the stat panel 22
+  and 17 px (N 21 / 16); the screen height is `[[0C66044h]+608h]`. No gadget is added and nothing can overlap: the
+  icon moves with the text. The frames are looked for once, at startup (`GetFileAttributesW` of `pie_00.ddt` and
+  `pie_31.ddt` relative to the game folder); without them the key gives the portrait's progress pie
+  (`AddProgressPieSource`) instead, as the second version did. `{uhcNurseryFactor}`
   (`AddDataRef`, string) gives the first selected unit's `3/10 minks`. Text IDs resolve through 0x58EA52.
 
 **Why it is safe.** Markers are made (0x4DD22D) only by the world tick and the commands, which run in the world update.
@@ -4071,7 +4096,8 @@ command, three compares.
 ### garrisonConvert
 
 `src/features/garrisonconvert.cpp`; the shared `garrisonobservers.*` (new with this key), `transformcalls.*`,
-`prototags.*`, `worldtick.*` and `savedmarkers.h`.
+`prototags.*`, `techsubtypes.*` (`AddTechProtoSubtype`, new with version 2), `worldtick.*`, `progresspie.*` and
+`savedmarkers.h`.
 
 - **Where a unit enters another:** FUN_009C24B5, `bool __thiscall(container, int unitId, int flag)`, `ret 8`, the load
   every way in goes through (eleven direct callers: the garrison and load actions, the triggers, the random map
@@ -4081,29 +4107,71 @@ command, three compares.
   returns 1 at 0x9C2701. The shared hook replaces the 7 bytes at 0x9C26E1 (`mov edi,[edi+58h]` / `test` / `je`), after
   the append, with EDI = the container and ESI = the unit; it calls each observer, replays the three instructions and
   jumps to 0x9C26E8 or 0x9C26FF. The function's head is verified too, so a detour of it fails the key instead of
-  leaving the hook unreached. Unload: 0x9C68C3.
-- **Tag** (`AddProtoTagHandler`): `<GarrisonConvertTo delay="S">Name</GarrisonConvertTo>`, by proto ID: the name, kept
-  as text and resolved (0x5A2346) against each database once, and the delay in ms (0 to 3600 s; a bad one is 0). A
-  second tag on the same proto replaces the first, with a log line.
+  leaving the hook unreached.
+- **Tags** (`AddProtoTagHandler`): every `<GarrisonConvertTo delay="S" eject="B" from="Name">Name</GarrisonConvertTo>`,
+  by proto ID, in order (32 at most): the names kept as text and resolved against each database once (the target with
+  0x5A2346; `from` in the unit type name table `[db+190h]` through 0x58E685 / 0x40295B, the lookup `unittype=` uses,
+  so a proto or an abstract type), the delay in seconds (0 to 3600; a bad one is 0), eject from `true`, `1` or an empty
+  value. The XML attribute getter 0x598F37 returns true for `eject=""`.
 - **The entries** (`AddGarrisonObserver`): the observer runs inside the load, so it only adds the container's ID to a
-  set (in ID order) when its proto has the tag. The conversions run after the world update (`AddWorldTick`).
-- **The queue is the container's own list** `[c+70h]`, which is in entry order: the units of it that are still inside
-  (`[unit+6Ch]` = the container), alive, of the container's owner and not already of the target proto. Nothing else
-  is kept, so a unit that leaves drops out by itself, and a captured building converts its new owner's units.
-- **No delay:** each unit of the queue goes through `TransformUnit` (0x9C754C with the transform observers around it),
-  the container leaves the set.
-- **With a delay:** the game time `[world+108h]` since the last tick is added to the container's timer; each full delay
-  converts the first unit of the queue, and the rest carries over to the next one. When the unit in progress leaves
-  before its turn, the next starts from 0. An empty queue clears the timer and the container leaves the set. The timer,
-  the unit in progress and the game time of the write are words 1 to 3 of a saved marker on the container
-  (`savedmarkers.h`, stat 6Ch, word 0 `GCNV`), written each tick.
-- **A game that starts or loads** (another world, the time going back or the step count jumping, as `nurseryFactor`):
-  one walk of the world's unit table puts back every container of a tagged proto with units inside, with the timer of
-  its marker plus the game time since the marker's write (the update the save was made in).
-- **The transform in place** keeps the unit's ID, owner, container and share of hit points, and changes its
-  population to the new proto's (the stock `TransformUnit` effect does the same).
-- **Panels:** `GarrisonConvertProgress(building, &fraction, &waiting)` (`features.h`) gives the progress of the unit in
-  progress and the number of units that qualify.
+  set (in ID order) when its proto has tags. The conversions run after the world update (`AddWorldTick`).
+- **The queue is the container's own list** `[c+70h]`, in entry order: the units still inside (`[unit+6Ch]` = the
+  container), alive, of the container's owner, not of a proto that is a target of the building's tags (the player's
+  copy's or the data's), and matched by at least one tag (no `from`, the same proto ID, or 0x44D7FA is-a). Nothing else
+  is kept per unit, so a unit that leaves drops out by itself, and a captured building converts its new owner's units.
+  The head is found again on each step (no allocation per tick).
+- **The tag for the head:** the first tag from the building's cursor (wrapping) whose `from` matches it; the cursor then
+  moves past that tag. The head's delay is that tag's.
+- **The timer:** the game time `[world+108h]` since the last tick is added once per tick; when it reaches the delay the
+  head converts and the rest carries over to the next one; when the head leaves before its turn, the next starts from 0.
+- **The population** (before each conversion, the Maintain spawn's test 0x9E2F79 on the difference): `delta` = the
+  player's copy of the target's `[proto+D8h]` minus the unit's; `delta ≤ 0` or flag A3h (`AlwaysAllowOverPopCap`)
+  passes; flag 9Fh (`AllowOverPopCap`) needs `cap − used > 0`; else `cap ≥ used + delta`, with `used = [player+78h] +
+  0x45805C(player)` and `cap = 0x4581A1(player)` (which includes `basePop` / `extraPop`). A failed test holds the timer
+  at the delay and sets the building's pause; the first time it is set, the owner's screen gets the train's message.
+- **The message** is the train action's own (0x9EB0D6, after a population test fails): only when `[game+3C0h]` is the
+  owner's ID; the format is string 17996 (`cStringNoPopcapRoom`, through the BString 0x58EA52 / 0x4010CA), the name the
+  target's `[proto+140h]` string, shown by the game's vtable `+68h` (`cdecl(game, 2000, 0xC6657C, format, name)`), then
+  the sound 0x50547A(game, 4, 0). The train's third call, `[[game+920h]] +B4h`, is not made (its meaning is not
+  known). Interface only: nothing reaches the simulation.
+- **The transform in place** (`TransformUnit`: 0x9C754C with the transform observers around it) keeps the unit's ID,
+  owner, container and share of hit points, and changes its population to the new proto's. A unit whose proto did not
+  change (the transform refused it) stays the head, logged (20 lines at most), and the building stops for the tick.
+- **Eject:** the unload of one unit, FUN_009C68C3, `bool __thiscall(container, unitId, pos*, usePos, keepOrders, force,
+  a6, goTo*, a8, a9)`, `ret 24h` (REA `ev_6ba459b1…`, 2026-11-26), with pos (−1, −1, −1) at 0xC665E4 and `usePos` 0
+  (the place is found around the container by 0x9C65D8), as the unit command handler FUN_009CBEA1 calls it for one unit
+  (`ev_4d4c00e4…`), and `force` 1 as the death eject FUN_009C6C79 does (`ev_ef4a8702…`: without it the unload needs
+  `[world+6920h]`), `goTo` (0, 0, 0) at 0xC66550 (no point to walk to), `a6` −1. It runs in the world tick, after the
+  load has returned, like the trigger `Ungarrison`. A failed unload (no room) leaves the unit inside, logged.
+- **Saved state** (`savedmarkers.h`, stat 6Ch, on the building): word 0 `GCNV`: the timer, the head and the game time of
+  the write (written each tick, cleared when nobody qualifies); word 0 `GCRR`: the cursor and the pause (written when
+  they change). A game that starts or loads (another world, the time going back or the step count jumping) walks the
+  world's unit table once and puts back every container with tags and units inside, with its timer plus the game time
+  since the write (the update the save was made in), its cursor and its pause.
+- **Techs** (`AddTechProtoSubtype`, six subtypes): the lookup hook of `techsubtypes.*` calls the key's parse with the
+  effect and its XML node while the techs are read: `unittype` (in the unit type table; a proto where the subtype needs
+  one) and `tag` go into the key's table, and the effect's field `+10h` becomes the index (the applyData switch passes
+  it to the handler as its "action ID"). The handler gets the player's copy of the proto, the base proto, that index,
+  the amount and the relativity, and works on the copy's tags: a map by the copy's pointer (with its proto ID, so a
+  reused pointer starts again), made from the data's tags at the first change, cleared on a data load. Delay and eject
+  go through the stock value function 0x7F892A (every relativity, and the removal), with the tag's own data value as
+  the base; target and from are set; Add appends a tag (its removal takes it back); Remove drops tags. A change marks the
+  world for one walk at the next tick, so units already inside a building that now has tags start converting.
+  **A load:** the game reads the protos again (the data-load callback, so the tags) but not the techtree, then runs every
+  ProtoUnit `Data` effect of the active techs again before the first tick (seen in game: the six effects of the test
+  tech came through the handlers after `loadGame`), so the key's table of effects is never cleared: the effects keep the
+  indices they were given when the techtree was read.
+- **Panels:** `GarrisonConvertProgress(building, &fraction, &waiting)` (`features.h`) gives the progress of the head
+  (full during a pause) and the number of units that qualify; the pie source (`AddProgressPieSource`) shows it for a
+  head whose tag has a delay.
+
+**Why it is safe:** the hook is the shared one (above). Every engine function called is verified first: the unload's
+head 0x9C68C3, the population getters' heads, the train's message call and its sound (0x9EB0D6, 0x9EB137), the is-a
+test, the value function, the player's proto 0x45311B, the flag test, the BString pair. The unload, the transform and
+the message run in the world tick, the same place the trigger effects run, after every load has returned. The
+simulation only uses game time, the step count, the unit table in ID order and maps by building ID; the tech table is
+keyed by pointer but only looked up. The message depends on the local player but changes nothing. Cost: per tick, for
+each active building, one walk of its contained list per conversion; nothing for a building with no units inside.
 
 ### containedUnitsROF
 
@@ -4289,6 +4357,16 @@ the hook redoes the compare and goes on at 0x48783D (`je 48A40Fh`), the stock pa
 in the same game time returns 0, so a target the update refuses cannot loop. The shot count, the cycle start `[ua+78h]`,
 the wait and the animation are the action's own and stay: the next Attack tag fires at the new target.
 
+**An attack launched by a power (2026-11-26).** An ability whose `<unitaction>` is an attack (the explorers'
+sharpshooter abilities) runs the same attack unit action with its power use at `[ua+6Ch]` (0 otherwise). The update does
+not ask the tactic for it (0x48A4C2 → 0x4F6F61 → 0x48A58D), and the tactic would not give it: [O] a guardian gets the
+explorer's normal ranged attack (0x489ECC answered 4), so the search above refused every guardian. For such an attack the
+search replaces 0x489ECC and the `<autoattacktype>` by the action's own data: the rate lookup 0x487C45(`[ua+4]`,
+candidate) above 0 (its `<rate type>`s: `Guardian`, `LogicalTypeValidSharpshoot`), not an ally (0x484E01 on the unit's
+player, as 0x489ECC at 0x489F33) and, unless flag 0Dh, an enemy (the diplomacy `[player+1D4h+4×ID]` = 2, as 0x489F86);
+range, visibility and the choice are unchanged. Without `powerShots` it changes nothing visible: the next tags of a power's
+attack fire no shot.
+
 **numberOfShots.** A burst's quick shots wait the interval in state 1 with `<BurstPose>` hold (the attack animation's
 tail is stretched to the wait), so a kill by a quick shot is seen in state 1 and the burst goes on. [O] A target swapped in
 state 19h (an earlier version did it while a burst had shots left) did not keep the burst: the action was reset at the
@@ -4309,6 +4387,41 @@ wait's end as above and the count started again, so the key leaves state 19h alo
 - Cost: with no tag in the data the hook compares one global. A tagged action pays one map lookup when its target is lost,
   and one spatial query over its range when that happens in its animation: once per kill, not per frame (the state is 19h
   right after a search that found nothing).
+
+### powerShots
+
+**What a power's attack does (2026-11-26, capstone on the stock exe, hardware breakpoints and the key's log in game).** An ability whose `<unitaction>` is an attack starts the attack
+unit action with its power use at `[ua+6Ch]` (its `[+1Ch]` the ability record). Each `Attack` tag of its animation
+(event 5 → 0x48F739, state 1) reaches 0x48F7E4 with ESI = the use, not 0, and goes to 0x48EA3D: when bit 2 of the use's
+bitset is set (0x48BB7E), `[use+1Ch]` ≥ 0 and the world has its power manager `[world+56Ch]`, it calls
+0x6EDB7E(unit ID, record, &a, &b), "is this ability ready" (its recharge entry, 0x6ED7F6: none → 1), and jumps to
+0x4B7766: `test al,al / jne 48F7F1h` (the shot block) / `jmp 48CF7Bh` (the handler's exit, no shot). [O] A mod's Explorer
+(`RangedAttackSharpshoot`, three tags at 0.35, 0.50 and 0.65 of a 0.90 s clip, played at (0.90 + 2.0) / 4.5 = 0.644):
+the first tag came 489 ms into the cycle, the next ones 208 to 212 ms apart, and 0x6EDB7E answered 1, 0, 0, so one shot a use: the first shot starts
+the recharge. After it the action gets flag 6 (0x48F12B) and ends with its animation.
+
+**The hook.** `hooks/powershots_hooks.asm` replaces those 8 bytes (only 0x48EA9D jumps there; no branch lands in
+0x4B7767..0x4B776D, capstone scan of the stock exe) with a jmp. AL = the answer, EBP = the unit action, EBX = 0. Ready:
+`jmp 48F7F1h`, as stock. Not ready, while some action has `<PowerShots>` above 1: `UhcPowerShotsAllow(ebp)` (EAX, ECX
+and EDX saved) answers 1 for an action of the unit's proto with the tag (`{proto ID, action name index}`), a power use,
+state 1, and a shot count `[ua+68h]` of at least 1 (the use's first shot was the stock, ready one) and below N; then the
+shot block, else the stock exit. [O] `[ua+68h]` is 0 at each use's first tag (three uses traced). The shot is the stock
+one: the launch, the after-shot ROF read (so `numberOfShots`' filters and `retargetInAction`'s shot log see it), the
+wait 0x48FA69 and the flag 6 path again, which change nothing for a power's attack (it has no next cycle).
+
+**Tags.** Read through the shared action tag hook (`actiontags.h`) from a `<ProtoAction>` or a tactics `<action>` (the
+later one wins): `PowerShots` 1..50; cleared on every data load.
+
+**Why it is safe.**
+- The site and both continuations are verified (`PowerShotsReady`, `PowerShotsFire`, `PowerShotsNoShot`, and the path
+  that reaches it, `PowerShotsGate`); the hook relocates nothing: it re-does the test and leaves through the stock
+  branches' own targets, with the handler's frame and registers as the stock jumps leave them (ESI, the record, is
+  dead at both: 0x48F7F1 reloads ECX and EAX, the shot block clears ESI at 0x48F8A4).
+- Deterministic: the decision reads simulation state (the action, its shot count and state, the data's tag) and runs in
+  the event handler on every machine. The power manager is still asked first, so a use still needs the ability ready
+  and starts its recharge as before. Every player needs the same line and data.
+- Cost: one compare of a global at each Attack tag of a power's attack after its first shot; a map lookup when some
+  action has the tag. Nothing for ordinary attacks (they never reach 0x4B7766).
 
 ### turretArc
 

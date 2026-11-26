@@ -1,0 +1,244 @@
+﻿UHC.dll 0.5.0
+UHCMain: working directory C:\AoE3-UHC-WoLReal6\
+UHCMain: C:\AoE3-UHC-WoLReal6\Startup\wol.cfg, 46 keys
+customAbstractTypes: 47 abstract types from C:\AoE3-UHC-WoLReal6\data\uhc\customabstracttypes.xml (20 with a stringId, not used yet); IDs are logged as `unit types:` on each data load
+customAbstractTypes: applied
+removeConversionRestriction: applied
+ignoreRegistryPath: applied
+noAILimitV2: 52 personalities from C:\AoE3-UHC-WoLReal6\AI4\*.personality
+noAILimit/noAILimitV2: applied
+customRevolutionBanners: applied
+removeFameRestriction: icons need Art\ui\home_city\xp_hc_icon.ddt and Art\ui\home_city\fame_hc_icon.ddt from the mod; without them those resources keep the stock (no) icon
+removeFameRestriction: applied
+enableTechRenameEffect: the tech effect SetTechName (tech, newName, newRolloverTextID, newLongRolloverTextID) renames a tech for the players it reaches (multiplayer unverified)
+techRenameEffect/enableTechRenameEffect: applied
+asianCivs: 5 civ(s) count as Asian civs; civ IDs are logged when civs.xml is read
+asianCivs: applied
+twoScoutCivs: 1 civ(s) get the two-hero UI; civ IDs are logged when civs.xml is read
+twoScoutCivs: applied
+marketUnits: 6 proto(s) count as a Market for trading; resolved when protoy.xml is read
+marketUnits: applied
+explorerUnits: 39 hero proto(s); resolved when protoy.xml is read
+explorerUnits: applied
+nativeCivs: 3 civ(s) count as native civs (fire pit dances through the shared dance gates)
+nativeCivs: applied
+bigButtonCivs/noBigButtonBlds: 3 civ(s) get the native big button, 12 building proto(s) never show it
+bigButtonCivs/noBigButtonBlds: applied
+enableFarmAnim/enableRectFarmAnim: 5 proto(s) work like a Mill, 1 like a Rice Paddy; resolved when protoy.xml is read
+enableFarmAnim/enableRectFarmAnim: applied
+farmingRadius: 2 farm proto(s) get their own gather area (stock 4.5 x 4.5)
+farmingRadius: applied
+wonderCivUnitType: 1 proto(s) may place the age-up wonder of a wonder civ
+wonderCivUnitType: applied
+trainSingleAbstractType: units of unittype AbstractTrainLimitOne are trained one at a time
+trainSingleAbstractType: applied
+kbUnitSyscalls: 5 kb syscalls added
+kbUnitSyscalls: applied
+customProtoUnitCommands: 55 command type(s) from C:\AoE3-UHC-WoLReal6\data\uhc\customprotounitcommands.xml; 185 command records
+customProtoUnitCommands: applied
+multiarmor: protos keep one armor per damage type; Armor effects follow their damagetype
+multiarmor: applied
+betterfreedynamicunit: dynamic free units grow with game time (2-minute steps, unrounded, at most 15)
+betterfreedynamicunit: applied
+nowalkfarm: farm gatherers keep their first spot
+nowalkfarm: applied
+repairWallGlobal: UI syscall repairWallGlobal() added
+repairWallGlobal: applied
+compatMode: 32-bit display modes are also offered at 16 bits
+compatMode: applied
+gatherFix: gatherers collect on a fixed interval, not per animation loop
+gatherFix: applied
+rofFix: giving an order no longer clears the unit's timer
+rofFix: applied
+stunMovingTargetFix: a stun action no longer ends when its target check fails
+stunMovingTargetFix: applied
+noDamageOnUnbuiltFoundations: foundations whose construction has not started take no damage
+noDamageOnUnbuiltFoundations: applied
+fallenHeroTacticsFix: units keep their tactic when knocked out, stunned or building
+fallenHeroTacticsFix: applied
+selectionLimit: a selection holds up to 75 units (stock 50)
+selectionLimit: applied
+enableAllTeams: Team 3 and Team 4 in the single-player setup (multiplayer lobby unchanged: single player only)
+enableAllTeams: applied
+attackTypeIcons: 11 unit types get an icon in the attack rows' bonus multipliers
+attackTypeIcons: applied
+nurseryFactor: art\ui\uhc\pie\pie_00.ddt to pie_31.ddt are not in the game folder: the progress pie goes over the portrait
+nurseryFactor: the proto tags NurseryFactor*, the Data subtypes NurseryFactor, NurseryFactorMax, NurseryFactorInterval, NurseryFactorStep, NurseryFactorGrowthBase and FreeHomeCityUnitByNurseryFactor, the AutoGather rate x the factor, the garrison rule, the UI syscall nurseryFactorCommand, the panel rows and {uhcNurseryFactor} are on; logged (multiplayer unverified)
+nurseryFactor: applied
+perfExecFile: polling C:\AoE3-UHC-WoLReal6\uhc-exec.txt
+perfStats: large-address-aware yes, user address space 4095 MB, 16 logical CPUs, 8 cores
+perfStats/perfAutoExec: applied
+multipleInstances: this copy may run beside copies in other folders (semaphore suffix -40AFD9F6); background: windows stay at the bottom and are never activated
+multipleInstances: applied
+customSyscalls: wolPlugin.upl: 1 syscalls, 33 cheats (UHCPluginMain returned 0)
+customSyscalls: wolai.upl: 16 syscalls, 0 cheats (UHCPluginMain returned 0)
+customSyscalls: 2 of 2 plugin(s) loaded, 24 syscalls queued, 33 cheats for customCheats
+customSyscalls/customCheats: applied
+alpha2coverage: not implemented yet; ignored
+enablerandomtecheffect: not implemented yet; ignored
+flagoverrideeffect: not implemented yet; ignored
+loadingscreencount: not implemented yet; ignored
+map: not implemented yet; ignored
+optionhighpolycliff: not implemented yet; ignored
+UHCMain: 36 applied, 0 failed
+multipleInstances background: window of class OleMainThreadWndClass placed at the bottom, never activated
+multipleInstances background: window of class Age3 placed at the bottom, never activated
+multipleInstances background: window of class CicMarshalWndClass placed at the bottom, never activated
+multipleInstances: single-instance semaphore "Global\Age3" renamed to "Global\Age3-40AFD9F6"
+hook reached: customCheats cheat table (0x551FE6)
+customCheats: 33 plugin cheat(s) added to the cheat table (56 entries)
+hook reached: compatMode (0x54D6D1): 640x480 also offered at 16 bits
+perfStats: CreateDevice adapter 0, type 1, behavior flags 0x00000084; after it x87 control word 0x007F, MXCSR 0x00001FA0
+perfStats: CreateDevice 1920x1080 fmt 21, 1 back buffer(s), swap 1, interval 0x00000001, windowed 1, refresh 0 -> hr 0x00000000
+hook reached: syscall group UI (0x539542)
+syscalls: group UI: 2 added, 0 refused
+hook reached: syscall group UI2 (0x53575E)
+hook reached: techRenameEffect register (0x524CB5)
+techRenameEffect: effect type SetTechName -> 17
+hook reached: customProtoUnitCommands (0x5269FB)
+customProtoUnitCommands: 55 command type(s) added (IDs 129..183), 0 already known, 0 refused
+hook reached: nativeCivs civ flags (0x52B581)
+nativeCivs: 3 of 3 civ(s) marked native in civs.xml
+hook reached: proto tags (0x51DB0F)
+hook reached: abstract unit types (0x51BA31)
+unit types: AbstractWoLCavalry -> 3837 (bit 203 of 204), added
+unit types: AbstractWoLRangedCavalry -> 3838 (bit 204 of 205), added
+unit types: AbstractWoLHandCavalry -> 3839 (bit 205 of 206), added
+unit types: AbstractWoLTent -> 3840 (bit 206 of 207), added
+unit types: AbstractWoLAssault -> 3841 (bit 207 of 208), added
+unit types: AbstractWoLInfantry -> 3842 (bit 208 of 209), added
+unit types: AbstractTrainLimitOne -> 3843 (bit 209 of 210), added
+unit types: AbstractWoLImmigrantMilitary -> 3844 (bit 210 of 211), added
+unit types: AbstractWoLImmigrantMilitaryNotArt -> 3845 (bit 211 of 212), added
+unit types: AbstractWoLImmigrantInfantry -> 3846 (bit 212 of 213), added
+unit types: AbstractWoLImmigrantCavalry -> 3847 (bit 213 of 214), added
+unit types: AbstractWoLImmigrantArtillery -> 3848 (bit 214 of 215), added
+unit types: AbstractWoLImmigrantArtilleryIII -> 3849 (bit 215 of 216), added
+unit types: AbstractWoLImmigrantArtilleryIV -> 3850 (bit 216 of 217), added
+unit types: AbstractWoLImmigrantTC -> 3851 (bit 217 of 218), added
+unit types: AbstractImmigrantHouse -> 3852 (bit 218 of 219), added
+unit types: AbstractWoLUltimateBuildingLA -> 3853 (bit 219 of 220), added
+unit types: AbstractWoLLightShip -> 3854 (bit 220 of 221), added
+unit types: AbstractWoLHeavyShip -> 3855 (bit 221 of 222), added
+unit types: AbstractWoLSiegeShip -> 3856 (bit 222 of 223), added
+unit types: AbstractWoLImmigrantWorker -> 3857 (bit 223 of 224), added
+unit types: AbstractWoLOutlaw -> 3858 (bit 224 of 225), added
+unit types: AbstractWoLNavalTrooper -> 3859 (bit 225 of 226), added
+unit types: AbstractWoLRangedInfantry -> 3860 (bit 226 of 227), added
+unit types: AbstractWoLCrop -> 3861 (bit 227 of 228), added
+unit types: AbstractWoLIrregular -> 3862 (bit 228 of 229), added
+unit types: AFRICANmaturing -> 3863 (bit 229 of 230), added
+unit types: AbstractBayonet -> 3864 (bit 230 of 231), added
+unit types: AbstractWoLZwawa -> 3865 (bit 231 of 232), added
+unit types: AbstractTank -> 3866 (bit 232 of 233), added
+unit types: AbstractMechanized -> 3867 (bit 233 of 234), added
+unit types: AbstractAircraft -> 3868 (bit 234 of 235), added
+unit types: AbstractGWUnit -> 3869 (bit 235 of 236), added
+unit types: AbstractGWMilitary -> 3870 (bit 236 of 237), added
+unit types: AbstractGWInfantry -> 3871 (bit 237 of 238), added
+unit types: AbstractGWCavalry -> 3872 (bit 238 of 239), added
+unit types: AbstractGWArtillery -> 3873 (bit 239 of 240), added
+unit types: AbstractGWNavy -> 3874 (bit 240 of 241), added
+unit types: AbstractWoLGrenadier -> 3875 (bit 241 of 242), added
+unit types: AbstractContraGuerrilla -> 3876 (bit 242 of 243), added
+unit types: AbstractWoLForgeUnit -> 3877 (bit 243 of 244), added
+unit types: AbstractWoLGunsmithUnit -> 3878 (bit 244 of 245), added
+unit types: AbstractFavouredUnit -> 3879 (bit 245 of 246), added
+unit types: AbstractWoLSaudCaravan -> 3880 (bit 246 of 247), added
+unit types: WoLConstructPrevent -> 3881 (bit 247 of 248), added
+unit types: WoLForeignUnit -> 3882 (bit 248 of 249), added
+unit types: AbstractWoLHowitzer -> 3883 (bit 249 of 250), added
+unit types: AbstractTrainLimitOne -> 3843 (bit 209 of 250), already defined
+unit types: AbstractCavalry -> 3654 (bit 20 of 250), already defined
+unit types: AbstractLightInfantry -> 3711 (bit 77 of 250), already defined
+unit types: AbstractHeavyCavalry -> 3712 (bit 78 of 250), already defined
+unit types: AbstractRangedCavalry -> 3754 (bit 120 of 250), already defined
+unit types: AbstractNativeWarrior -> 3752 (bit 118 of 250), already defined
+unit types: MercType2 -> 3790 (bit 156 of 250), already defined
+unit types: AbstractCoyoteMan -> 3830 (bit 196 of 250), already defined
+unit types: AbstractHandCavalry -> 3755 (bit 121 of 250), already defined
+unit types: AbstractRangedInfantry -> 3753 (bit 119 of 250), already defined
+unit types: AbstractWoLAssault -> 3841 (bit 207 of 250), already defined
+unit types: AbstractInfantry -> 3653 (bit 19 of 250), already defined
+hook reached: multiarmor <Armor> tag (0x5F5EB7)
+nurseryFactor: proto 348 (Bank): NurseryFactorInterval 20
+nurseryFactor: proto 348 (Bank): NurseryFactorGrowth exponential
+nurseryFactor: proto 348 (Bank): NurseryFactorGrowthBase 2
+nurseryFactor: proto 348 (Bank): NurseryFactorName "minks"
+nurseryFactor: proto 348 (Bank): NurseryFactorRolloverCount "{current} out of {max} minks."
+nurseryFactor: proto 348 (Bank): NurseryFactorRolloverRate "The next step brings {step} minks in {seconds} seconds."
+nurseryFactor: proto 348 (Bank): a Herdable that enters adds 3
+nurseryFactor: proto 348 (Bank): a Settler that enters adds 1
+multiarmor: Frigate has 2 armors
+hook reached: tech subtype lookup (0x61FF5D)
+hook reached: multiarmor damagetype of a tech effect (BDataEffect::setData)
+nurseryFactor: FreeHomeCityUnitByNurseryFactor CrateofCoin per factor of Bank, consume 2
+nurseryFactor: FreeHomeCityUnitByNurseryFactor CrateofCoin per factor of Bank, consume all
+hook reached: syscall group XS (0x6257D9)
+syscalls: group XS: 6 added, 0 refused
+hook reached: syscall group RM (0x60B8BF)
+hook reached: noAILimitV2 (0x603C34)
+hook reached: data refs registration (0x5D3229)
+data refs: 1 added after the game's 116
+hook reached: removeFameRestriction icon load (0x5C1E1F)
+hook reached: syscall group HC (0x5B5E08)
+perfStats: Reset 1920x1080 fmt 21, 1 back buffer(s), swap 1, interval 0x80000000, windowed 1, refresh 0 -> hr 0x00000000
+perfAutoExec: frame 270: config("DontPauseWhenLosingFocus")
+perfAutoExec: frame 840: config("DontPauseWhenLosingFocus")
+perfAutoExec: frame 840: config("flashHitpointBarsOnDamage")
+perfAutoExec: frame 840: startRandomGame(true)
+hook reached: tech subtype apply (0x8F978D)
+hook reached: tech subtype on a player (0x8D843E)
+hook reached: nativeCivs test 9 (0x8D52AF)
+nativeCivs: Tupinamba -> civ 49
+nativeCivs: WallMapu -> civ 48
+nativeCivs: Tawantinsuyu -> civ 46
+hook reached: world update (0x481A57)
+perfAutoExec: frame 3240: startRandomGame2("uhcj27n", 2, 1234, "", false, 2, 1, 0, false)
+hook reached: syscall group TR (0x988E03)
+hook reached: syscall group KB (0x885D14)
+syscalls: group KB: 11 added, 0 refused
+hook reached: enableFarmAnim site 4 (0x8CEC9F)
+enableFarmAnim: 5 of 5 protos found in the data
+enableRectFarmAnim: 1 of 1 protos found in the data
+nurseryFactor: 1 unit(s) with a factor in this game, 0 in all (game time 0 ms)
+hook reached: enableRectFarmAnim site 2 (0x4741F0)
+perfAutoExec: frame 11010: saveScenario("uhc-uhcj27n")
+nurseryFactor: unit 0 (Bank) of player 1 grows by 1 to 1/10 (t 0 -> 1, game time 20001 ms)
+perfAutoExec: frame 12960: leaveGame()
+perfAutoExec: frame 15450: loadScenario("uhc-uhcj27n")
+hook reached: tech subtype unapply (0x8FB051)
+hook reached: danceBonusCivs fire pit (0x4819EF)
+hook reached: nativeCivs isNativeCiv (0x453D5E)
+hook reached: asianCivs isAsianCiv (0x454F1D)
+asianCivs: Egyptians -> civ 2
+asianCivs: Ethiopians -> civ 1
+asianCivs: Koreans -> civ 10
+asianCivs: Zulu -> civ 3
+asianCivs: Maori -> civ 50
+nurseryFactor: proto 348 (Bank), player's copy 43A06E00, tech subtype NurseryFactorGrowthBase, relativity 3, amount 3: 2 -> 3
+nurseryFactor: proto 348 (Bank), player's copy 43A06E00, tech subtype NurseryFactorMax, relativity 1, amount 10: 10 -> 20
+hook reached: danceBonusCivs XPTrickle (0x4E0DFF)
+danceBonusCivs: Tupinamba -> civ 49
+danceBonusCivs: WallMapu -> civ 48
+danceBonusCivs: Tawantinsuyu -> civ 46
+hook reached: danceBonusCivs Regeneration (0x49048B)
+nurseryFactor: 1 unit(s) with a factor in this game, 0 in all (game time 0 ms)
+hook reached: nativeCivs test 7 (0x67B0A5)
+hook reached: enableFarmAnim site 2 (0x50DE33)
+hook reached: enableRectFarmAnim site 3 (0x4EEDB4)
+hook reached: enableRectFarmAnim site 4 (0x4EEE9E)
+perfAutoExec: frame 18360: pause(0)
+hook reached: enableFarmAnim site 1 (0x4EDA85)
+hook reached: gatherFix gather tick (0x4EC8DE)
+gatherFix: first collection: interval 2.500 s (protoAction+78h 2.500), collectStuff_2
+hook reached: danceBonusCivs Gathering (0x4ECD53)
+hook reached: enableFarmAnim site 6 (0x4EE07F)
+hook reached: enableFarmAnim site 7 (0x4EE2FE)
+nurseryFactor: unit 0 (Bank) of player 1 grows by 1 to 1/20 (t 0 -> 1, game time 20001 ms)
+nurseryFactor: unit 0 (Bank) of player 1 grows by 3 to 4/20 (t 1 -> 2, game time 40000 ms)
+nurseryFactor: unit 0 (Bank) of player 1 grows by 9 to 13/20 (t 2 -> 3, game time 60000 ms)
+nurseryFactor: unit 0 (Bank) of player 1 grows by 27 to 20/20 (t 3 -> 3, game time 80000 ms)
+nurseryFactor: player 1, FreeHomeCityUnitByNurseryFactor takes 2 from unit 0 (Bank): 20 -> 18, t 3 -> 3
+nurseryFactor: player 1, FreeHomeCityUnitByNurseryFactor proto 426: 2 factor(s) from 1 unit(s), taken x 1.00 = 2.00 unit(s)
+nurseryFactor: unit 0 (Bank) of player 1 grows by 27 to 20/20 (t 3 -> 3, game time 139998 ms)
