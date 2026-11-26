@@ -10,6 +10,11 @@
 // FUN_0071006D. Each line goes through FUN_004C5076(list, line, 1, 0), which appends "<ttf><ttb>" and the line: the
 // bullet. The key's hook sits at the join before the advanced info (0x710909) and appends its line the same way.
 //
+// The home city's card tree ("View All Cards", FUN_009A21A0 in uihcskilltree.cpp) has its own builder,
+// FUN_00710991(out, hc, tech, a4, a5, list), with the same lines in its own order (the name, the level and age
+// lines, the cost, the rollover text, then the send limit) and the same advanced info at the end; a second hook at its
+// join before the advanced info (0x710F24) adds the same line there.
+//
 // The flag is read through the shared flag reader hook (techflags.h); the techs are kept by ID.
 #include <cstdint>
 #include <cstdlib>
@@ -24,10 +29,12 @@
 #include "../techflags.h"
 
 extern "C" void UhcQuickArrivalHook();
+extern "C" void UhcQuickArrivalTreeHook();
 
 namespace {
 
-constexpr std::uint32_t kAdvancedJoin = 0x00710909;  // mov ecx,[0D6F6F0h]
+constexpr std::uint32_t kAdvancedJoin = 0x00710909;      // mov ecx,[0D6F6F0h]
+constexpr std::uint32_t kTreeAdvancedJoin = 0x00710F24;  // the same, in the card tree's builder
 constexpr std::int32_t kMaxTech = 1 << 20;
 constexpr const wchar_t* kDefaultText = L"This is a QUICK-ARRIVAL card.";
 constexpr const wchar_t* kBullet = L"<ttf><ttb>";  // what FUN_004C5076(list, line, 1, 0) puts before a line
@@ -72,7 +79,7 @@ bool ReadFlag(char* record, const char* name) {
 }  // namespace
 
 // From the hook, once the card's send-limit line is in: `list` is the rollover being built, `tech` the card's tech
-// ID, `listMode` the builder's sixth argument (1 in the three callers: one bulleted line per entry).
+// ID, `listMode` the builder's sixth argument (1 in all the callers of both builders: one bulleted line per entry).
 extern "C" void __stdcall UhcQuickArrivalLine(void* list, std::int32_t tech, std::uint32_t listMode) {
   if (list == nullptr || tech < 0 || static_cast<std::size_t>(tech) >= g_quick.size() ||
       !g_quick[static_cast<std::size_t>(tech)]) {
@@ -130,13 +137,15 @@ Outcome ApplyQuickArrivalCards(const Config& config) {
     }
   }
   if (!VerifyAll("quickArrivalCards", {&sites::kCardRolloverHead, &sites::kCardRolloverAdvanced,
-                                       &sites::kCardBulletLine, &sites::kBStringAppend})) {
+                                       &sites::kCardBulletLine, &sites::kBStringAppend,
+                                       &sites::kCardTreeRolloverHead, &sites::kCardTreeRolloverAdvanced})) {
     return Outcome::kFailed;
   }
   g_log = log;
   g_stringId = stringId;
   if (!AddTechFlagHandler("quickArrivalCards", &ReadFlag) ||
-      !WriteJmp(kAdvancedJoin, reinterpret_cast<const void*>(&UhcQuickArrivalHook), 6)) {
+      !WriteJmp(kAdvancedJoin, reinterpret_cast<const void*>(&UhcQuickArrivalHook), 6) ||
+      !WriteJmp(kTreeAdvancedJoin, reinterpret_cast<const void*>(&UhcQuickArrivalTreeHook), 6)) {
     return Outcome::kFailed;
   }
   if (stringId >= 0) {
