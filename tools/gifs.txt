@@ -390,6 +390,9 @@ techGadgets-wol-control 0 12 1
 incomeRates-wol 0 24 2
 incomeRates-wol-control 0 24 2
 turretArc-wol-control 0 12 1
+turretArc-turn-gatling-wol 10 6 1 800:560:80:40
+turretArc-turn-zamburak-wol 8.5 6 1 800:560:80:40
+turretArc-turn-wol-control 16 6 1 800:560:80:40
 editorAutosave-wol 18 36 3 800:640:0:0
 editorAutosave-wol-control 18 36 3 800:640:0:0
 selectFattened-wol 5 36 3

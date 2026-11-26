@@ -1527,6 +1527,12 @@ SITES = [
     # from the launch data 0x4CEB32 -> 0x4AB5CC, the launch points 0x4AB5D4, none 0x4AB5B1): fld [esp+28h] / push
     # 40A00000h (9 B, replaced) / fsub [esp+20h] (the continuation 0x4995DE).
     ("TurretLaunchStart", 0x4995D5, 0x0D),
+    # turretArc: the attack update FUN_0048A330's state switch: movzx eax,byte [esi+61h] / cmp eax,16h (7 B, replaced;
+    # the one branch to it, 0x48A62B, lands on its head) / ja 48A728h (the continuation 0x48A661, on the cmp's flags).
+    # A turn shown beyond the arc holds the attack there, as the stock update holds a slow turner (0x4B3382 ->
+    # 0x48BFC7, the same frame: vtable+34h(0), pop edi / pop esi / pop ebx / add esp,8 / ret; verified, not written).
+    ("TurretAttackState", 0x48A65A, 0x0D),
+    ("TurretAttackWait", 0x48BFC7, 0x15),
     # broadsideSoundSet: in FUN_004CEB37 (the broadside fire step's effect of one shot), push 0BA1D5Ch (replaced, 5 B)
     # / add edx,14h (the continuation; no branch lands inside), and the name it pushes, "ShipCannonShoot" with its NUL
     ("BroadsideSound", 0x4CECBD, 8),

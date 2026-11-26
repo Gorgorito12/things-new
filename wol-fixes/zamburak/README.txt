@@ -29,6 +29,11 @@ What it is
 - With the turretArc key, the gun turns on its swivel from +30 to +150 to a target inside that arc; he stays at his
   station and reaches the turned vent. A target outside the arc turns the camel until it sits at +90. Without the
   key the camel turns its right side to the target.
+- That turn (2026-11-27, the DLL of that day or later): the camel rises with its rump high (15 degrees), turns on the
+  spot in big unhurried steps (both diagonal pairs once every 60 degrees, each hoof lifted 22 cm, the planted hooves
+  never sliding) and kneels again; the artillerist turns to face his way, walks round beside it, hands on his hips,
+  and takes his station again. 0.45 s up, 90 degrees a second, 0.45 s down: 1.9 s for 90 degrees, 2.9 s for 180.
+  It does not fire until it has knelt again. An older DLL turns it at once, lying.
 - Made with aoe3-blender-tools tools/make_zamburak.py (models, clips, every file checked by the game's
   granny2.dll). Every clip passed its check_anim.py:
   - the new clips: 0 failures of 1222 checks;
@@ -52,7 +57,8 @@ Files it adds
       zamburak_cannon_camel_*.gr2, _gun_*.gr2, _rider_*.gr2   the clips of the camel, the cannon and the rider
       zamburak_cannon_camel_*.gr2.precomp   the tag files of the camel's clips (ATTACHPOINT, HEAD, ...)
       zamburak_cannon.aim              the turretArc key's aim table (version 2: rest +90, +30..+150 every 2
-                                       degrees; the artillerist's arm and head for the idle and the shot)
+                                       degrees; the artillerist's arm and head for the idle and the shot; the
+                                       turn beyond the arc, TURN and RISE)
       zamburak_cannon.xml (+ _gun, _rider)   the anim files
   data\tactics\zamburakCannon.tactics  the two modes; the attack carries
                                        <turret tracking="always" maxTurnAnglePerSecond="100">60</turret>, read by
@@ -101,5 +107,10 @@ TESTED (2026-11-26, a test copy of Wars of Liberty, single player, the DLL of 20
   - the rider was missing (his anim file was cut inside an attachment);
   - the cannon stood in the air while an unlimbered corpse faded (now a dead model of its own);
   - apply_fix.py writes the tactics with CRLF whatever the checkout gave (with LF the AI would stop compiling).
+- The turn beyond the arc (2026-11-27, approved by the user as a script, a stop-0 sketch and three previews;
+  check_anim.py 0 failures for turns of 60, 75, 90 and 180 degrees each way; in game, WoLReal4, the new DLL, single
+  player): Houses created and destroyed round it every 20 s, 12 turns of 90 and 180 degrees: the rise, the steps, his
+  walk and the settling seen frame by frame, no shot during a turn (logged), and killed mid-turn. Only the aim file
+  changed (TURN and RISE appended; every byte before them as before).
 - Not tested: an attack order (right click) unlimbering it. The bed could not aim a real click; the tactics are the
   stock pattern (GatlingCamel, falconet). Also not tested: multiplayer, and the AI with the pack.

@@ -18,6 +18,11 @@ What it is
   at the gun's rest (GatlingCamel: ahead, as today; GatlingCamelDeployed: +90, its right side to the target).
   Each shot leaves from the turned muzzle. Without the key GatlingCamel plays as before, the gun facing ahead;
   GatlingCamelDeployed needs the key (without it the camel faces its target with the gun to its side).
+- GatlingCamelDeployed's turn beyond the arc (2026-11-27, the DLL of that day or later): the camel rises with its
+  rump high (15 degrees), turns on the spot in big unhurried steps (both diagonal pairs once every 60 degrees, each
+  hoof lifted 22 cm, the planted hooves never sliding), and kneels again; the gunner lets go of the handles, turns to
+  face his way, walks round beside it and takes the handles again. 0.45 s up, 90 degrees a second, 0.45 s down: 1.9 s
+  for 90 degrees, 2.9 s for 180. It does not fire until it has knelt again. An older DLL turns it at once, lying.
 - Two units:
   - GatlingCamel (the existing unit): fires from the saddle and moves like the zamburak, no deploying. Its
     stats, cost, cards (HCVickersPurchase, HCGatlingCamels1, SaloonGatlingCamel), name and description do not
@@ -46,7 +51,8 @@ Files it adds
       gatling_camel_A55.aim, _B55.aim       the turretArc key's aim tables: the gunner's pose for every 15
                                             degrees of the gun's turn (A, -90..+90) or every 2 (B, -30..+90,
                                             with his steps and his feet settled at rest), the post's top and
-                                            the muzzle
+                                            the muzzle; B also the turn beyond the arc (TURN and RISE: the
+                                            camel's and the gunner's poses, step and pace)
       gatling_camel_camel_*.gr2, _gun_*.gr2, _rider_*.gr2    the clips of the camel, the gun and the rider
       gatling_camel_camel_*.gr2.precomp    the tag files of the camel's clips (ATTACHPOINT, HEAD, ...)
       gatling_camel.xml (+ _gun, _rider)    the anim files of GatlingCamel
@@ -120,6 +126,12 @@ Tested (2026-11-23, test copy of Wars of Liberty 1.0.15c, single player)
   higher). check_anim.py: A 0 failures of 368 checks, B 0 of 595, its death 0 of 37. In game (test copy, single
   player): both units drawn, idle, walk, firing (A from the saddle with the centred gun, B on foot), the deploy
   and the undeploy, both deaths, from the game's camera and from a side camera.
+- The turn beyond the arc (2026-11-27, approved by the user as a script, a stop-0 sketch and three previews;
+  check_anim.py 0 failures for turns of 60, 75, 90 and 180 degrees each way; in game, WoLReal4, the new DLL, single
+  player): Houses created and destroyed round it every 20 s, 12 turns of 90 and 180 degrees: the rise, the steps, his
+  walk and the settling seen frame by frame, no shot during a turn (logged), and killed mid-turn (the deployed death
+  plays, nothing left in the air). Only the aim file B55 changed (the TURN and RISE sections appended; every byte
+  before them as in round 7).
 - Not seen in game: multiplayer.
 - Fixed on 2026-11-23 after the first films: the camel's left legs were drawn lifted (the stock clips' leg
   mirrors were copied in the clips' own axes); on death the gun stayed in the air, then turned on itself
@@ -144,6 +156,12 @@ Qué es
   objetivo queda en el reposo del arma (GatlingCamel: al frente, como hoy; GatlingCamelDeployed: en +90, su costado
   derecho hacia el objetivo). Cada disparo sale de la boca girada. Sin la clave GatlingCamel juega como antes, el
   arma al frente; GatlingCamelDeployed necesita la clave (sin ella el camello encara al objetivo con el arma de lado).
+- El giro de GatlingCamelDeployed fuera del arco (2026-11-27, con la DLL de ese día o posterior): el camello se alza
+  con la grupa alta (15 grados), gira sobre sí mismo con pasos grandes y pausados (los dos pares en diagonal una vez
+  cada 60 grados, cada pezuña alzada 22 cm, sin que resbalen las apoyadas) y vuelve a echarse; el artillero suelta
+  los mangos, se gira hacia donde va, camina alrededor y los retoma. 0,45 s para alzarse, 90 grados por segundo,
+  0,45 s para echarse: 1,9 s para 90 grados, 2,9 s para 180. No dispara hasta haberse echado. Una DLL anterior lo
+  gira de golpe, echado.
 - Dos unidades:
   - GatlingCamel (la unidad existente): dispara desde la silla y se mueve como el zamburak, sin desplegarse. Sus
     estadísticas, coste, cartas (HCVickersPurchase, HCGatlingCamels1, SaloonGatlingCamel), nombre y descripción
@@ -218,6 +236,12 @@ Probado (2026-11-23, copia de prueba de Wars of Liberty 1.0.15c, un jugador)
   (registrado), el arma girando hacia objetivos dentro de su arco mientras él rodea el poste, la recarga, el repliegue
   con el giro de vuelta, la muerte desplegado (el camello se desploma con el arma encima, él cae hacia atrás) y la
   muerte montado; GatlingCamel dispara y muere como antes con la misma DLL.
+- El giro fuera del arco (2026-11-27, aprobado por el usuario como guion, boceto y tres vistas previas;
+  check_anim.py 0 fallos en giros de 60, 75, 90 y 180 grados a cada lado; en el juego, WoLReal4, la DLL nueva, un
+  jugador): casas creadas y destruidas a su alrededor cada 20 s, 12 giros de 90 y 180 grados: el alzarse, los pasos,
+  su caminar y el asentarse revisados fotograma a fotograma, ningún disparo durante un giro (registrado), y muerto a
+  mitad de giro (su muerte desplegado se ve, nada queda en el aire). Solo cambia el archivo de puntería B55 (las
+  secciones TURN y RISE añadidas; todos los bytes anteriores como en la ronda 7).
 - No visto en el juego: multijugador.
 - Corregido el 2026-11-23 tras las primeras grabaciones: las patas izquierdas del camello se veían levantadas
   (las simetrías de las patas de los clips del juego se copiaban en los ejes del propio clip); al morir el arma

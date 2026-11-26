@@ -8,13 +8,17 @@ include common.inc
 
 UhcTurretFace PROTO STDCALL :DWORD, :DWORD
 UhcTurretLaunch PROTO STDCALL :DWORD, :DWORD, :DWORD, :DWORD
+UhcTurretHold PROTO STDCALL :DWORD
 
 EXTERNDEF g_uhcTurretOn:DWORD    ; above 0 while the key has a unit to serve
+EXTERNDEF g_uhcTurnCount:DWORD   ; turns beyond the arc under way
 EXTERNDEF g_uhcTurretPoint:DWORD ; the point the stock turn gets instead when UhcTurretFace returns 2
 
 .data
 faceContinue    dd 0048AAA5h    ; mov eax,[esi]: the stock body after the three instructions re-executed here
 launchContinue  dd 004995DEh    ; fsub dword ptr [esp+20h]: the shot's direction, after the two re-executed here
+stateContinue   dd 0048A661h    ; ja 48A728h: the state switch, on the flags of the cmp re-executed here
+stateWait       dd 0048BFC7h    ; the stock wait of a slow turner: vtable+34h(0), then the update's epilogue
 
 .code
 
@@ -74,5 +78,32 @@ stock:
     push 40A00000h
     jmp launchContinue
 UhcTurretLaunchHook ENDP
+
+; Replaces movzx eax,byte ptr [esi+61h] / cmp eax,16h (7 bytes) at 0x48A65A, the state switch of the attack update
+; FUN_0048A330 (ESI = the attack unit action, [esi+61h] its state, [esi+10h] its unit). In state 1 (firing), while the
+; unit's body turns beyond its turret's arc on screen, UhcTurretHold returns 1 and the update leaves through the stock
+; wait 0x48BFC7, which a slow turner takes in the same frame (0x4B3382): the action goes back to state 0 and the attack
+; starts again once the turn has settled. Otherwise the two instructions run as they were (the ja at 0x48A661 reads
+; the cmp's flags). ECX and EDX are kept for the switch's cases.
+UhcTurretStateHook PROC
+    TRACE_ONCE "turretArc attack state (0x48A65A)"
+    cmp g_uhcTurnCount, 0
+    je stock
+    cmp byte ptr [esi+61h], 1
+    jne stock
+    push ecx
+    push edx
+    push esi
+    call UhcTurretHold
+    pop edx
+    pop ecx
+    test eax, eax
+    je stock
+    jmp stateWait
+stock:
+    movzx eax, byte ptr [esi+61h]
+    cmp eax, 16h
+    jmp stateContinue
+UhcTurretStateHook ENDP
 
 END

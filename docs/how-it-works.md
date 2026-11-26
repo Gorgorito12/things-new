@@ -4469,6 +4469,29 @@ game; `docs/engine-symbols.md`, "Turrets, facing and the Granny pose", REA evide
   then keeps the facing), so the unit ends with the target at the rest yaw. Seen in game: a House at 180 degrees,
   `the unit turns until it sits at the rest yaw` from 180 down to 151, then `the gun turns` while the camel turned on to
   bring it to +90.
+- **That turn, shown at a walking pace** (2026-11-27). The simulation turns the body at the proto's `TurnRate`, in
+  radians a second and with no easing (measured: 18 turns a camel 90 degrees in about 95 ms, so a deployed camel slid
+  round in a blink). When a turn beyond the arc begins, `UhcTurretFace` notes it per unit (`g_turns`: the game time,
+  the heading it starts from, the signed turn, its length): a rise, the turn at the aim file's rate, a settling (its
+  `TURN` section, else 0.3 s, 90 degrees a second, 0.3 s); the point in a step is the angle turned so far over the
+  step's angle, so a planted foot stays put whatever the turn (one that ends mid-step sets the lifted feet down as it
+  settles). The same
+  call during that turn changes nothing; a new target during it turns on from the shown heading. On screen, the body's
+  model turns its root bone (the first with no parent) about the model's up by the shown heading less the
+  simulation's `[unit+20h]`, so the model and its attachments (the gun, the gunner) turn at the shown pace about the
+  unit's origin; the `TURN` poses (below) lift the body and step its feet and the gunner's, blended in and out over the
+  rise and the settling; the gun rests. A death clip on the body or the gunner keeps its own pose.
+- **No shot while it turns.** No stock check does this: a tracer saw the slow turner's wait 0x48BFC7 (taken at 0x4B3382
+  when the turning byte `[[unit+4Ch]+24h]` is set and `[proto+94h]` is under 5.0) run at most once per attack cycle,
+  while the shots come from the attack's animation (the launch at 0x48F88D); camels set to `TurnRate` 1.75 and 3.0 fired
+  mid-turn. **State hook** (`UhcTurretStateHook`, 0x48A65A, 7 bytes `movzx eax,byte [esi+61h] / cmp eax,16h`
+  re-executed; continues at the `ja` 0x48A661 on the cmp's flags; the one branch to it lands on its head): the attack
+  update's state switch, passed on every update. In state 1 (firing), while the unit's turn runs, `UhcTurretHold`
+  returns 1 and the update leaves through 0x48BFC7 (`[ua]` vtable +34h with 0, back to state 0, then the same epilogue
+  as the switch's frame, verified as a site), as the stock update does for a slow turner. The turn is game state (the
+  unit ID, game time and the facing's numbers, cleared by the world tick when it ends or the unit is gone), the same on
+  every machine; a saved game does not keep a turn under way. In game (two camels, Houses created and destroyed round
+  them every 20 s): 0 shots in 12 turns of 90 and 180 degrees, the first shot 0.4 to 1.3 s after each.
 - **Launch hook** (`UhcTurretLaunchHook`, 0x4995D5, 9 bytes `fld [esp+28h] / push 40A00000h` re-executed; continues at
   0x4995DE): for a listed unit whose current attack is the tagged one, the start becomes the aim file's pivot plus its
   muzzle (given at the rest yaw) turned by the angle to the aim point clamped to the arc, less the rest yaw, in the
@@ -4495,7 +4518,17 @@ game; `docs/engine-symbols.md`, "Turrets, facing and the Granny pose", REA evide
   rider animation's name, length and frames, `[frame][yaw][bone]` position and rotation. Optional sections follow, each
   a 4-byte tag and a count: `BAND`, the (from, to) yaw bands in which a gunner's foot is in the air (logged), and
   `SETL`, per clip its name, length and frames and two tables like the clip's (the step finished toward a growing yaw,
-  then toward a shrinking one). A reader without them stops after the clips.
+  then toward a shrinking one); and `TURN` (a version, 1, instead of a count): the step in degrees, the rise and the
+  settling in seconds, the rate in degrees a second, the points per step, then two parts, the body's model and the
+  gunner's, each its bone names and `[way][point][bone]` local position and rotation, the way 0 for a turn toward a
+  growing heading (the unit's right), 1 the other. A point's pose is the risen body (or the gunner) at that share of
+  one step, its planted feet turned back by that share of the step's angle in the model's space, so they stay put on
+  the ground while the root turns on; the last point runs into the first. `RISE` may follow `TURN` (version 2, then
+  the count K): per part, `[way][k][bone]` poses at lift (k+1)/K, the last being the step's first point, in `TURN`'s
+  bones and order. With it the rise and the settling run through those poses (from the clip's pose to the first, and
+  so on), each taking the lift's share of the step point's offset from the step's first, so folded legs unfold as
+  the body rises instead of through the ground; without it they blend straight. A reader without them stops after the
+  clips, and a DLL older than the `TURN` section stops there too, so it shows the turn as before.
 <!-- private:begin -->
 - **A gun its own clips swing (the zamburak cannon, 2026-11-26).** Its reload turns the gun from
   +90 round through its back to 270 and back, inside the clip (the gun's `bone_yaw` and the camel's `bone_turret`
