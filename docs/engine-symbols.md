@@ -692,6 +692,23 @@ REA (Ghidra) with evidence `rea/evidence/age3y-b1a1dab7/researchgrants-price-202
 | BString append | 0x443960, `thiscall(BString*, const wchar_t*, int len, int start)`, `ret 0Ch` | confirmed (bytes, in game) | `len` -1: to the end; `start` below 0: 0. The builder appends `</color>` this way. |
 | ResList fill | 0x4E2617, `thiscall(ResList*, float)`, `ret 4` | confirmed (bytes) | Every entry set to the value, encoded. |
 
+### Who builds a tech's or a card's rollover (UI coverage review, 2026-11-28)
+
+REA (Ghidra) with evidence `rea/evidence/age3y-b1a1dab7/coverage-review-20261128.json`, capstone over the stock exe,
+and the game. For the keys that write into the tech rollover (`researchGrants`, `shipTechLimit`).
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Calls of the tech rollover builder 0x4C737C | 0x4622C5, 0x703FAF, 0x9AD7F1, 0x9B7637 | confirmed (REA xrefs `ev_3080e11c…`, callers `ev_6965b6ed…`) | The same four as on 2026-11-12. Until 2026-11-28 only 0x4622C5 went through the shared hook of `techrollover.*`; it is now at the builder's exit (next row). |
+| Builder's exit | 0x4C78F3 `pop ebp / pop ebx / add esp,40h`, `ret` 0x4C78F8 | confirmed (capstone, REA body `ev_d4726e8c…`, in game) | The only `ret` of FUN_004C737C. Its early exits (0x4C7392, 0x4C739C, 0x4C73B2) jump to 0x4C78F3; its chunks 0x63FCE3..0x63FF91, 0x679513, 0x68F902 and 0x4C78F9..0x4C791E (and 0x4C791F, which Ghidra splits off) only jump back into the body; no branch in `.text` lands at 0x4C78F4..0x4C78F7. The shared tech rollover hooks it. |
+| Command panel | FUN_0046188E, call 0x4622C5 | confirmed (in game) | Serves the normal and the minimised UI (both seen on 2026-11-28), and a trading post that sits on no socket. |
+| Native command panel | FUN_009ACAF4, call 0x9AD7F1; callers 0x9AE196, 0x9AE1D7 (`ev_942cb4ce…`) | confirmed (strings, in game 2026-11-28) | Its strings: `uinativecommandpanel2.xml`, `uinativecommandpanel2min.xml`, `nativecommandpanel2-button%d%d`, `researchByID(%d, %d, %d)`. The panel of a trading post on a native socket. The call: the same 8 pushes as the command panel, `lea ecx,[esp+58h]` the rollover, at depth 38h below the panel's frame. Button overlay text `[esp+248h]` (256 chars), emptied at 0x9AD2D1 with the click and shift-click commands `[esp+148h]` / `[esp+348h]`, read at 0x9AE08C and set on the overlay gadget by 0x593DA0 when not empty: ESP + 284h at the builder's return. |
+| Trade route panel | FUN_009B687E, call 0x9B7637; callers 0x9B7FA9, 0x9B7FEA (`ev_2656c67f…`) | confirmed (strings, in game 2026-11-28) | Its strings: `uitraderoutepanel2.xml`, `uitraderoutepanel2min.xml`, `traderoutepanel2-button%d%d`, `tradeRouteTrain(%d, %d, %d)`. The panel of a trading post on a trade route. The call: the same 8 pushes, `lea ecx,[esp+68h]`, depth 38h. Button overlay text `[esp+230h]`, emptied at 0x9B719C (with `[esp+130h]` / `[esp+330h]`), read at 0x9B7ECE: ESP + 26Ch at the builder's return. |
+| Game object's tech rollover | 0x703F99 (no function in Ghidra, `ev_59c504f7…`), `thiscall(text, techEntry)`, `ret 8` | confirmed (bytes) | Calls 0x4C737C(text, entry, 0, 0, 0, 0, 1, 1): no player, no unit. Slot 0x144 (index 81) of the vtable 0xB88628 (xref 0xB8876C, `ev_37093722…`), set by the constructor FUN_0055AF45 (`ev_6768c3c4…`) of the object made at 0x5AB396 and kept in 0xC67310 and 0xC66234 (the class of `.\agame.cpp`). **Unknown:** its callers. A capstone scan of `.text` found no `call [reg+144h]` with its shape (two pushes and the object in ECX). |
+| Cost to text | 0x470446; callers 0x4765F4, 0x4C8748, 0x70F25D, 0x70FCB8, 0x7103CE, 0x710991, 0x75FCC1, 0x99D39A, and 2 unresolved (`ev_3bd3e6da…`) | confirmed (callers), roles partly inferred | Not called by 0x4C737C, whose cost line is 0x4C8EE5 (called at 0x4C7477 and from 0x4C891C, `ev_b24910de…`). 0x70FCB8 is the game object's slot 80 (0x703F69). 0x99D39A is the home city's purchase dialog (`uihcconfirmdlg.xml`, `homeCityResearchByID`). |
+| Card rollover builders | FUN_007103CE (shipment panel 0x9A61B7, deck builder 0x9A0714, deck dialog 0x9A7A1E) and FUN_00710991 (card tree, "View All Cards") | confirmed (earlier rows) | They do not call 0x4C737C. A card is sent, not researched: neither the research payment nor the can-research test sees it. |
+| Tech tree screen | `.\gadtechtree.cpp`: the info text `%S:\n%s\nCost: %s` (0xC0F308, used at 0x8209F5) with the cost from 0x470446 (0x8209DE); `uitechtree.xml` loaded at 0x5C379B (FUN_005C3777) | confirmed (bytes) | Its own text, not 0x4C737C. The only `TechTreeButton` in the game's UI data is in `uigodpicker` (checked at 0x561A38). **Inference:** a leftover screen that the game's UI never opens. |
+
 ### Player powers and the ceasefire (WoL #14, 2026-10-30)
 
 A power is cast per player, not per unit: the button of any unit only spends the player's charge of
@@ -1631,6 +1648,53 @@ Where a key would redirect (design for B1, nothing written):
   (layout `background`, `stateEntry`s, 0x638823 from code). It misses anything that loads by name elsewhere.
 - [I] Not recommended: 0x638823 on each HUD gadget after the build: it loses `textureCoords` (above), and the HUD has
   about 900 gadgets per interface.
+
+### Culture UI: the style switch during a game (K0, 2026-11-26)
+
+For the `cultureUI` key: how to switch the HUD's textures at the Great War, mid-game.<!-- private -->
+REA (Ghidra 12.1.4, snapshot `rea/snapshots/age3y-b1a1dab7.json`), Evidence bundle
+`rea/evidence/age3y-b1a1dab7-culture-ui-k0-20261126.json` (IDs shortened to 8 hex digits), capstone (`cs`) of the
+exe's bytes, and a throw-away experiment build in `C:\AoE3-UHC-WoLReal6` (WoL 1.0.15c data, minimised UI, scenario
+route; log, captures and the experiment's source in `rea/evidence/culture-ui-k0-20261126/`, not in git; picture
+`_share\maston-20261128\K\K0_midgame_switch_test.png`). [O] observed, [I] inferred, [U] unknown.
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| UI drawable: texture by handle | 0x445060 = vtable 0xB988B0 `+78h`, `thiscall(drawable, handle, arg2)`, `ret 8` | confirmed (`cs`), in game | [O] Writes `[d+0A8h]` = handle, `[d+0ACh]` = arg2, then `+94h` (0x445039), which derives default coordinates only when `[d+8]` bit 2 is clear. The layout's `textureCoords` live in a 16-byte block `[d+0C0h]` that `+B0h` (0x44A203) fills, setting `[d+8]` bit 2. **So `+78h` (and `+7Ch`, which ends in it) on an existing drawable keeps its coordinates**; only 0x638823, which makes a new drawable, loses them. At the call 0x6388FE ESI is the drawable. |
+| UI drawable: draw | 0x41E0E5 = vtable 0xB988B0 `+18h` | confirmed (`cs`) | [O] Each draw binds `[d+0A8h]` through 0x407D27 (texture manager, stage 0) at 0x41E1D8, then reads the coordinates `[d+0C0h]`. The handle is resolved again at every draw. |
+| Texture bind | 0x407D27, `bool thiscall(texMgr, stage, handle)`, `ret 8`; head `55 8B 6C 24 08 56 8B F1` (8 B) | confirmed (`ev_ff26ae03`, `cs`), in game | [O] Entry `[mgr+4][handle]`; its vtable `+4` loads it if needed; vtable `+10h` (0x409984, `[entry+1Ch]`) gives the handle actually bound, and when that differs the other entry is loaded instead (an alias, used by `.amt` material entries [I]). Stage cache `[mgr+30A0h+4*stage]`; `SetTexture` through the device's vtable `+104h`. Above 80,000,000 bytes of texture memory (`[mgr+30E4h]`) the LRU `[mgr+3104h]` unloads (0x6C509C). 56 call sites: every textured draw of the game (terrain, models, UI). The only reference to the `+10h` thunk 0x409982 is this bind (`ev_ce5f0041`). |
+| Texture entry | 30h bytes, vtable 0xB8566C, ctor 0x46942B | confirmed (`cs`) | [O] `+4` the name, `+1Ch` its own index, `+2Ch` loaded. `[entry+1Ch]` is also read by the destructor 0x588EC8 and the unload 0x6022FC (both 0x6022A5 by index) and after a load (0x598653 → 0x59839C by index: memory count and LRU). [I] So writing another index into `+1Ch` would make the bind follow it but would corrupt the memory count and the LRU: not usable. Swapping two pointers of `[mgr+4]` has the same LRU problem. |
+| Missing texture file | 0x58E3EB → 0x469479 | confirmed (`cs`), in game | [O] 0x469479 tests only `<name>.amt` and `<name>.amt.xmb` (0x46930E); otherwise it **always** makes a new entry, without looking for the `.ddt`. In game, `ui\ingame\uhc_probe_missing_texture` got handle 11170 (entries 11170 → 11171), the same handle again on the second lookup. So 0x58E3EB returns −1 only for a null path or a failed allocation, not for a missing file. A key that renames must test the file itself. **Correction:** the comment at `src/features/fame.cpp` line 11 ("-1 ... when the art file is missing") is wrong on that point: a missing icon file still gets a handle (of an entry whose file is never found; what it draws was not checked); the key's behaviour is unchanged. |
+| File exists | 0x46930E, `bool thiscall(fileMgr 0xD6F3D8, dirId, BString* name, 0, bool archives)`, `ret 10h` | confirmed (`cs`) | [O] Builds the path (0x467991), tests the loose file (0x467F17), then, with the last argument, the archives (0x4681C5). [I] Needed only for a variant shipped inside a `.bar`; WoL ships its art loose (`art\ui\ingame\`, 172 files in the copy). |
+| HUD lookups inside the build | FUN_0076166A (from 0x7637ED, the game screen's vtable 0xB92C98 `+48h` = 0x76375C) | in game | [O] 79 distinct `ui\ingame` lookups ran inside the build (callers: 0x638903, the drawable's texture-by-path, 67; 0x5C2E57 3; 0x62C3FA, 0x62C437; 0x80BDDB, 0x80BEBB the clock's hands; 0x9AC977..0x9AC9FF 5). **Not all of them**: after the build, with nothing selected, `ingame_minimap_small_all_{normal,depressed,active}_ypack` (the minimap filter button, through 0x638903) and `tooltip_bullet` (0x512359) were looked up outside it. [I] Other HUD parts set by code at run time (selection, age-up) may add more; a gate around the build alone would leave them unstyled. |
+| Minimised-UI switch in a game | 0x760547, `thiscall(screen, bool)`, `ret 4`; one caller 0x661E1C in FUN_005558F0 (options applied in game: reads option 5Ch, then 49h) | confirmed (`ev_7e427000`, `cs`) | [O] Only on the game screens (screen types 1Bh, 27h, 1Dh) and when the value differs from `[screen+40Fh]`: deletes and reloads `uiminimappanelnew[min]`, `uicommandpanelnew[min]`, the native and trade route panels (strings 0xC0477C..0xC04370), then writes `[screen+40Fh]` (0x761481). **`uimainnew.xml` is not reloaded** (resource panel, age box, clock keep their gadgets). So an engine rebuild of the whole HUD mid-game does not exist; toggling the option would also flash the other interface. |
+| Minimised-UI state | `[screen+40Fh]`, screen = the `this` of 0x76166A | confirmed (`cs`), in game | [O] Written by the build from option 49h `OptionMinimizedUI` (0x402CE9 at 0x761BEB, store 0x761BF6) and by 0x760547. In game: 0 before the build, 1 after it, option 49h = 1. Option table 0xD91778: 49h has flags 0x6005 (bool, in-match bit 40h set). |
+| Observer setting | GameSettings bool 37h | confirmed (`cs`), in game | [O] The settings object is 0x402C76(0xC66688, `[0xD6F520]` = L"GameSettings"), read with 0x402CE9(obj, 37h, &b), as the KOTH test 0x726750 reads 27h. 37h is `gamecampaignshownhcnote`, the box WoL's lobby uses for observer mode ([observer-mode.md](observer-mode.md)). In the test scenario: 0, local player 1 of 3 (gaia counted). **Re-read 2026-11-26 (REA on WoL's `uhc.dll` c070d138, bundle `rea/evidence/wol-uhc-c070d138-culture-ui-observer-20261126.json`, `ev_e97cf26f`, `ev_9aee89b3`):** [O] WoL's DLL does not read 37h for its observer interface: in FUN_10040C50 a local observer is "a trigger named `StartInsertion` exists" (0x1005BA00 → the exe's trigger lookup 0x90DFB0, cdecl(name), −1 if none) and (local player (0x96DB85, `[game+3C0h]`) ≥ the first observer (0x1005B9D0), or a state of its own == 2 (0x1005B9E0, [U] not identified)). The first observer (0x1005B710): with no such trigger, the player count `[world+5Ch]`; else 3 if team(2) ≠ team(1), 5 if team(3) ≠ team(2), 7 if team(4) ≠ team(3), else the player count; team(p) is the exe's 0x88396E, cdecl(player), `[player+10h]`, −2 without a world or player. `cultureUI` uses this rule (without the unidentified state). |
+| Button state drawables | `[g+1A0h]` array, `[g+198h]` count, on gadgets whose vtable `+1D4h` is 0x62AC80 (the `stateEntry` parser): vtables 0xB90A30, 0xB90C80, 0xB91098, 0xB912B0, 0xB92128 | confirmed (`ev_bda6edf6`, `ev_be4fe5fe`, `cs`) | [O] Filled by 0x62A6DC → 0x62A7F9. Gadget table `[[0xC66244]+44h]` `+68h` array, `+6Ch` count; a live slot `i` holds a gadget with `[g+0Ch] & 3FFFFh == i`. |
+
+**The experiment** (two atlases, test copies recoloured with aoe3-blender-tools' `recolor_textures.py`; renamed at
+the build and switched by a world tick at fixed game times):
+
+- [O] **Rename at the build** (the head of 0x58E3EB, gated around the call 0x7637ED): the age box showed the red copy
+  (`ingame_ui_02x_ypack` → `_k1`).
+- [O] **Method B, remap at the bind** (the head of 0x407D27: when a table is active, the handle argument `[esp+8]` is
+  replaced by `table[handle]`): at 15 s the minimap and command frames (stock name) turned red and the renamed age box
+  turned blue (`_k1` → `_k2`), at once and in every gadget; at 30 s, table off, everything went back. No other change.
+- [O] **Method A, `+78h` on every drawable** (walk of the gadget table, `[g+58h]` and the button state drawables):
+  the same pixels as method B in this scene (4 and 7 drawables changed). But 60 of 2,685 live gadgets faulted when
+  read this way (caught by SEH in the experiment), and it reaches only those two drawable fields: [I] foregrounds,
+  progress bars and drawables set later by code would be missed, and a texture set by path after the switch gets the
+  old name.
+- [O] Method C (an engine rebuild): none exists for the whole HUD (row above).
+
+[I] **Chosen for the key: method B for the whole job**, start and stage switch alike: one table handle → handle,
+filled at the HUD build with every texture of the style that has a variant (the file test of row "Missing texture
+file"), refilled when a stage's tech becomes active, emptied for a game without a style (observer, normal interface,
+civ not in the table) and when the game ends. No lookup hook and no rename: a texture a gadget sets later by path
+(the minimap filter button above) is remapped too, and a switch to the normal interface mid-game (0x760547) can empty
+the table. Cost: one compare per texture bind while no table is active, a bounds test and a load while it is; to be
+measured with `perfprobe.py`. Effect: a texture with a variant is replaced wherever it is drawn during the game,
+in-game dialogs included (only shared textures such as `button` would show that).
 
 ### WoL requests #70–#73 (research for batch 2, 2026-11-20)
 

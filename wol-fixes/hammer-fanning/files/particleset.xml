@@ -1,0 +1,6 @@
+	<particleset name="fanningshot">
+		<particle filename="effects\weapon_fire\musket_fire_A.particle" bone="Prop2"/>
+		<particle filename="effects\weapon_fire\musket_spark_A.particle" bone="Prop2"/>
+		<particle filename="effects\weapon_fire\musket_flair_A.particle" bone="Prop2"/>
+		<particle filename="effects\weapon_fire\musket_smoke_A.particle" bone="Prop2"/>
+	</particleset>

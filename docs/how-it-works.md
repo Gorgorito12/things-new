@@ -176,7 +176,8 @@ The hooks are MASM files in `src/hooks/`.
   - `researchpay.*`, `AddResearchPayer` and `AddResearchRefundObserver`: the payment of a research (0x9E67E1,
     0x9D54CF), the copies of its cost for a refund (0x9E68A0, 0x9D5548) and the refund of a cancel (0x9E6167, 0x9D56B5);
   - `canresearch.*`, `AddCanResearchFilter`: the can-research test's head (0x4C6968);
-  - `techrollover.*`, `AddTechRolloverLine`: the command panel's call of the tech rollover builder (0x4622C5);
+  - `techrollover.*`, `AddTechRolloverLine`: the only exit of the tech rollover builder 0x4C737C (0x4C78F3), for the
+    command, native and trade route panels;
   - `panelbuttons.*`, `AddPanelButtonFilter`: each button the command panel lays out (0x462317);
   - `rofreads.*`, `AddRofFilter`: the five reads of an attack's tactics ROF (0x48A821, 0x48A99A, 0x48EA0C, 0x48F8B5,
     0x4A1189);
@@ -5551,16 +5552,25 @@ can reuse the address of a proto. It is not saved, and a load applies the effect
     0x4C73FD (`ev_06317089…`; 0x4C78FA joins there with the override pushed) and writes the cost line from that list,
     none when its total is at most 1e-6. A `WriteCall` there (`UhcGrantTipCostHook`) copies as stock, then, for the
     entry's own cost, fills the list with 0 (0x4E2617) or scales it (0x480B94) by the previewed share. Its callers
-    (`ev_913c6a4f…`): the command panel 0x4622C5, two other research panels 0x9AD7F1 and 0x9B7637, and 0x703FAF (no
-    player, no unit: nothing changes).
+    (`ev_913c6a4f…`): the command panel 0x4622C5, the native command panel 0x9AD7F1 and the trade route panel 0x9B7637
+    (identified 2026-11-28), and 0x703FAF (no player, no unit: nothing changes).
   - The command panel FUN_0046188E calls the builder for a tech button at 0x4622C5 (`ev_afcebe91…`) with ESI the entry,
     EBX the player, EDI the unit and `[esp+30h]` the rollover; the button's overlay text, the narrow buffer
     `[esp+2C0h]` (256 chars) that the Buy buttons use for their price, is emptied for each button at 0x461DBC and set on
-    the button at 0x4625E2 (`ev_9abdeb84…`) when not empty. The `WriteCall` at 0x4622C5 is the shared tech rollover
-    (`techrollover.*`, since 2026-11-20; it was `UhcGrantTechButtonHook`): it calls the builder with the same eight
-    arguments, then each key's line, here `GrantTechButton`: with a preview below the full price it writes the
-    word or price into the empty buffer, which it finds at the panel's `[esp+2C0h]` (ESP + 2E4h in the hook), and appends
-    the green line to the rollover with the BString append 0x443960 (`thiscall(text, wchar*, -1, -1)`, `ret 0Ch`).
+    the button at 0x4625E2 (`ev_9abdeb84…`) when not empty. The native command panel FUN_009ACAF4 and the trade route
+    panel FUN_009B687E (a trading post on a native or a trade route socket) build their tech buttons the same way:
+    the same eight pushes at 0x9AD7F1 / 0x9B7637, and their own overlay buffer, `[esp+248h]` / `[esp+230h]`, emptied
+    per button (0x9AD2D1 / 0x9B719C) and set on the button when not empty (0x9AE08C / 0x9B7ECE).
+  - The shared tech rollover (`techrollover.*`; a `WriteCall` at 0x4622C5 from 2026-11-20, which missed the native and
+    trade route panels; since 2026-11-28 a 5-byte `jmp` over `pop ebp / pop ebx / add esp,40h` at 0x4C78F3, the
+    builder's only exit, whose early exits jump to 0x4C78F3 itself): the hook replays the three instructions, so
+    `[esp]` is the return address and `[esp+4]`.. the arguments, calls each key's line, and jumps to the stock `ret`
+    0x4C78F8. The return address tells the panel: 0x4622CA, 0x9AD7F6 and 0x9B763C give the overlay buffer at ESP +
+    2E4h, + 284h and + 26Ch (each panel's buffer offset plus its call depth, 24h or 3Ch); any other game caller gets
+    the lines with no overlay, and a call from DLL code (`politicianEnablesTech`'s dialog) gets none. Here the line is
+    `GrantTechButton`: with a preview below the full price it writes the word or price into the empty buffer and
+    appends the green line to the rollover with the BString append 0x443960 (`thiscall(text, wchar*, -1, -1)`,
+    `ret 0Ch`).
   - The floating text: `started` with `claimed` shows the label over the paying unit through `floatingtext.h` when its
     owner is the local player and it is visible to them, with both stock times three times as long.
 
@@ -5577,8 +5587,11 @@ can reuse the address of a proto. It is not saved, and a load applies the effect
   created in the few updates before the save starts its timer at the load instead of a few updates after its creation.
 - Cost: per update, one modifier walk per unit of the set and 256 slot reads; the step hooks are one compare while no
   research has a Time factor.
-- The display hooks: the panel cleans the builder's arguments itself (`add esp,20h`) and reloads EAX, ECX and EDX
-  before it reads them; EBX, ESI, EDI and EBP survive both calls (stdcall / cdecl). The cost hook returns the list in
+- The display hooks: the exit hook replays `pop ebp / pop ebx / add esp,40h`, keeps every register (`pushad` /
+  `popad`, EAX too, which 0x703F99 returns) and leaves through the stock `ret` 0x4C78F8; nothing jumps into
+  0x4C78F4..0x4C78F8 (capstone over `.text`; the builder's chunks 0x63FCE3, 0x679513, 0x68F902 only jump back into
+  its body, REA `ev_d4726e8c…`). An overlay buffer is written only for a known return address whose call, reset and
+  read are the stock bytes. The cost hook returns the list in
   EAX with `ret 4`, as 0x480A73, and the builder keeps nothing in EAX, ECX or EDX across that call. Both are display
   only: the preview reads the units' markers and the player's resources, the overlay buffer and the rollover belong to
   the UI, and the floating text is the UI's text manager; none of it reaches the simulation, so machines that show
@@ -5597,6 +5610,23 @@ can reuse the address of a proto. It is not saved, and a load applies the effect
 
 The fps differ by 7 % at about 1.4 ms per frame with the GPU busy by the other games; the main thread did the same work.
 That run's second research was paid by the Market (a tie), so it had no Time factor.
+
+**A/B of the shared tech rollover at the builder's exit (2026-11-28),** a British skirmish on a test map against a German
+AI, normal UI, a trading post on a Cree socket selected with the pointer resting on a tech button (so the native
+panel rebuilds its rollover), 60 s of `tools/perfprobe.py` each (first sample dropped); key on = `researchGrants log`
+and `shipTechLimit log`, so the hook is written; key off = neither key, so the builder is stock. Another test game ran
+on the machine during the key-off take.
+
+| | key off | key on |
+|---|---|---|
+| frames over 50 ms | 0 | 0 |
+| main-thread CPU, mean | 89.0 % | 92.1 % |
+| longest frame, median of the seconds | 3.5 ms | 2.6 ms |
+| fps, median (uncapped) | 495 | 549 |
+| update / render per frame, mean | 0.64 / 1.42 ms | 0.54 / 1.28 ms |
+
+No rise: the key-on take drew more frames (the main thread's share follows the uncapped fps) at a lower per-frame cost.
+The same take in the minimised UI: 535 fps, 2.6 ms, 0 frames over 50 ms.
 
 ### shipTechLimit
 
@@ -5626,7 +5656,8 @@ That run's second research was paid by the Market (a tie), so it had no Time fac
   refused. The research start 0x9E667A asks it at 0x9E670B before the payment, inside the execution of the research
   command, so a refused research fails on every machine (0x9E6718: nothing is paid). The command panel asks it at
   0x4620C0: false takes the button down the stock path that marks it disabled (`[esp+24h]` = 1 at 0x46216A).
-- **The display:** the shared tech rollover (the `call` of the builder 0x4C737C at 0x4622C5): a green or red line
+- **The display:** the shared tech rollover (the exit of the builder 0x4C737C, for the command, native and trade
+  route panels): a green or red line
   `Shipment techs: n/N` appended with 0x443960, and, at the limit, `n/N` in the button's empty overlay text (the panel's
   256-char buffer `[esp+2C0h]`).
 - **Saved games:** a saved marker per limited player (`savedmarkers.h`, stat 69h, word 0 `'ST' << 16 | player << 8 | 2`,
@@ -7222,6 +7253,53 @@ registered at 0x530D50):
 - Cost: per 100 ms of game time, a walk of the player's units (a lookup, a byte test, a bit test and the full test
   each). Measured over 249 units: 18 to 19 µs per count on average, 257 µs at most: about 0.2 ms per second of game
   time.
+
+### cultureUI
+
+**Why it exists.** The stock game has one in-game interface for every civ, but for the resource panel, which has
+three hardcoded looks chosen by the native and Asian civ tests. A mod that wants a look per group of civs, and
+another look once a tech is researched, would need a copy of every layout per look.
+JTMaston's "Culture UI" request (2026-11-25/26): nine families, a second look from the Great War. <!-- private -->
+
+**What it does.** A data file (`cultureui.xml`) lists styles: a suffix, civ names and optional stages (a tech and
+another suffix). At startup the key lists the loose textures under `art\ui\ingame` (subfolders too) and, per style
+and stage, pairs each texture `ui\ingame\X` with its variant `X_<suffix>` (a stage falls back to an earlier stage's
+variant, then to the style's). Two hooks:
+- The head of the in-game interface build FUN_0076166A (`mov eax,[0C672C0h]`, 5 bytes; it runs at each game start and
+  each load, with the world and the local player already there): it chooses the style before any gadget of the
+  interface exists.
+- The head of the texture bind 0x407D27 (`bool thiscall(texMgr, stage, handle)`, 8 bytes), which every textured draw
+  calls with the texture's handle (the UI drawable's draw at 0x41E1D8, and the terrain, model and effect draws): when
+  a table is active and the game's world is the one it was made for, the handle argument is replaced by
+  `table[handle]`. With no table it is one compare; a game that ended (another world, or none) switches the table off
+  in the hook itself.
+
+The table maps each texture's handle to its variant's, both from the texture manager's lookup by name 0x58E3EB, which
+makes an entry for a new name without reading its file: a variant is read at its first draw. The style is chosen at
+the interface build and checked again every 100 ms of game time in the world update (`worldtick.*`): the local
+player `[game+3C0h]`, its first civ (`namelists.*`), the stage techs through 0x94AF27 (IDs by name 0x600BE1, again
+after each data load), the minimised-interface option 49h (0x402C76 on `[0xC672BC]`, then 0x402CE9) and an observer
+rule: a trigger named `StartInsertion` exists (0x90DFB0) and the local player is at or above the first observer, the
+slot (3, 5 or 7) where a player's team differs from the previous one (0x88396E), else past the last player.
+That is WoL's DLL's rule (0x1005B710, 0x1005BA00; it also counts a state of its own that the key does not see). <!-- private -->
+No style for an observer, the normal interface, a civ in no style, or a style with no variant.
+
+**Why a remap at the bind.** The names are fixed when the interface is built and the texture data is kept by name for
+the whole launch, so a style per game could rename at the lookup; but the Great War comes during the game. Read with
+REA and tried in game (docs/engine-symbols.md, "Culture UI: the style switch during a game"):
+- a rename at the lookup during the build misses textures the game sets later by name (the minimap filter button);
+- the UI drawable's own setter (vtable 0xB988B0 `+78h`) keeps the layout's texture coordinates, but walking the
+  gadgets reaches only `[gadget+58h]` and the button states, not foregrounds or progress bars;
+- the texture manager's entry `+1Ch` is an alias the bind follows, but the same index is the memory bookkeeping's;
+- the minimised-interface switch 0x760547 rebuilds four panels, not the main layout.
+
+**Why it is safe.**
+- Display only: it changes which texture a draw binds, nothing the simulation reads. Players may differ.
+- The bind's argument is replaced, never the texture manager: the entries, their memory count and the LRU unload stay
+  the game's own. A handle out of the table, or negative, is left alone.
+- Cost: one compare per textured draw with no style; with one, a world check and a table load. `perfprobe.py` with a
+  style active against the key off, the same skirmish: no change beyond the run-to-run spread (795 / 748 fps; UHC.dll
+  0.2 % / 0.1 % of the main thread's samples).
 
 ### impactBoneFix
 

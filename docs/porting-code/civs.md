@@ -2545,7 +2545,8 @@ void FillTech(std::int32_t iconHandle, std::int32_t nameHandle, std::int32_t tec
   } else {
     kBStringFromWide(&name, L"?");
   }
-  // The tooltip: the tech button's own rollover (the command panel's call 0x4622C5 passes 1, 0, 1, 1).
+  // The tooltip: the tech button's own rollover (the command panel's call 0x4622C5 passes 1, 0, 1, 1). The shared
+  // tech rollover (techrollover.h) adds no key line here: it skips a builder called from DLL code.
   BString tip{nullptr};
   kBStringFromWide(&tip, L"");
   if (status != nullptr) {

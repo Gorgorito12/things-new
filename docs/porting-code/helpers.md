@@ -1513,6 +1513,27 @@ inline constexpr Site kButtonOverlayReset{"ButtonOverlayReset", 0x00461DBC, kBut
 inline constexpr std::uint8_t kButtonOverlayReadBytes[] = {0x8D, 0x84, 0x24, 0xC0, 0x02, 0x00, 0x00};
 inline constexpr Site kButtonOverlayRead{"ButtonOverlayRead", 0x004625E2, kButtonOverlayReadBytes, sizeof(kButtonOverlayReadBytes)};
 
+inline constexpr std::uint8_t kTechRolloverExitBytes[] = {0x5D, 0x5B, 0x83, 0xC4, 0x40, 0xC3};
+inline constexpr Site kTechRolloverExit{"TechRolloverExit", 0x004C78F3, kTechRolloverExitBytes, sizeof(kTechRolloverExitBytes)};
+
+inline constexpr std::uint8_t kNativeTechRolloverBytes[] = {0x6A, 0x01, 0x6A, 0x01, 0x6A, 0x00, 0x6A, 0x01, 0x57, 0x53, 0x8D, 0x4C, 0x24, 0x58, 0x56, 0x51, 0xE8, 0x86, 0x9B, 0xB1, 0xFF};
+inline constexpr Site kNativeTechRollover{"NativeTechRollover", 0x009AD7E1, kNativeTechRolloverBytes, sizeof(kNativeTechRolloverBytes)};
+
+inline constexpr std::uint8_t kNativeOverlayResetBytes[] = {0xC6, 0x84, 0x24, 0x48, 0x02, 0x00, 0x00, 0x00};
+inline constexpr Site kNativeOverlayReset{"NativeOverlayReset", 0x009AD2D1, kNativeOverlayResetBytes, sizeof(kNativeOverlayResetBytes)};
+
+inline constexpr std::uint8_t kNativeOverlayReadBytes[] = {0x8D, 0x84, 0x24, 0x48, 0x02, 0x00, 0x00};
+inline constexpr Site kNativeOverlayRead{"NativeOverlayRead", 0x009AE08C, kNativeOverlayReadBytes, sizeof(kNativeOverlayReadBytes)};
+
+inline constexpr std::uint8_t kTradeRouteTechRolloverBytes[] = {0x6A, 0x01, 0x6A, 0x01, 0x6A, 0x00, 0x6A, 0x01, 0x57, 0x53, 0x8D, 0x4C, 0x24, 0x68, 0x56, 0x51, 0xE8, 0x40, 0xFD, 0xB0, 0xFF};
+inline constexpr Site kTradeRouteTechRollover{"TradeRouteTechRollover", 0x009B7627, kTradeRouteTechRolloverBytes, sizeof(kTradeRouteTechRolloverBytes)};
+
+inline constexpr std::uint8_t kTradeRouteOverlayResetBytes[] = {0xC6, 0x84, 0x24, 0x30, 0x02, 0x00, 0x00, 0x00};
+inline constexpr Site kTradeRouteOverlayReset{"TradeRouteOverlayReset", 0x009B719C, kTradeRouteOverlayResetBytes, sizeof(kTradeRouteOverlayResetBytes)};
+
+inline constexpr std::uint8_t kTradeRouteOverlayReadBytes[] = {0x8D, 0x84, 0x24, 0x30, 0x02, 0x00, 0x00};
+inline constexpr Site kTradeRouteOverlayRead{"TradeRouteOverlayRead", 0x009B7ECE, kTradeRouteOverlayReadBytes, sizeof(kTradeRouteOverlayReadBytes)};
+
 inline constexpr std::uint8_t kTechRolloverHeadBytes[] = {0x83, 0xEC, 0x40, 0x53, 0x8B, 0x5C, 0x24, 0x48, 0x55, 0x8B, 0xCB, 0xE8, 0x84, 0xC5, 0xF7, 0xFF};
 inline constexpr Site kTechRolloverHead{"TechRolloverHead", 0x004C737C, kTechRolloverHeadBytes, sizeof(kTechRolloverHeadBytes)};
 
@@ -2992,6 +3013,24 @@ inline constexpr Site kCardTreeRolloverHead{"CardTreeRolloverHead", 0x00710991, 
 inline constexpr std::uint8_t kCardTreeRolloverAdvancedBytes[] = {0x8B, 0x0D, 0xF0, 0xF6, 0xD6, 0x00};
 inline constexpr Site kCardTreeRolloverAdvanced{"CardTreeRolloverAdvanced", 0x00710F24, kCardTreeRolloverAdvancedBytes, sizeof(kCardTreeRolloverAdvancedBytes)};
 
+inline constexpr std::uint8_t kTextureBindHeadBytes[] = {0x55, 0x8B, 0x6C, 0x24, 0x08, 0x56, 0x8B, 0xF1, 0x3B, 0xAE, 0xE0, 0x30, 0x00, 0x00};
+inline constexpr Site kTextureBindHead{"TextureBindHead", 0x00407D27, kTextureBindHeadBytes, sizeof(kTextureBindHeadBytes)};
+
+inline constexpr std::uint8_t kHudBuildHeadBytes[] = {0xA1, 0xC0, 0x72, 0xC6, 0x00, 0x83, 0xEC, 0x60};
+inline constexpr Site kHudBuildHead{"HudBuildHead", 0x0076166A, kHudBuildHeadBytes, sizeof(kHudBuildHeadBytes)};
+
+inline constexpr std::uint8_t kTextureByNameBytes[] = {0x51, 0x56, 0x8B, 0x74, 0x24, 0x0C, 0x85, 0xF6, 0x57, 0x8B, 0xF9};
+inline constexpr Site kTextureByName{"TextureByName", 0x0058E3EB, kTextureByNameBytes, sizeof(kTextureByNameBytes)};
+
+inline constexpr std::uint8_t kSettingsByNameBytes[] = {0x51, 0x56, 0x57, 0x8B, 0x7C, 0x24, 0x10, 0x85, 0xFF, 0x8B, 0xF1, 0xC7, 0x44, 0x24, 0x08, 0x00, 0x00, 0x00, 0x00};
+inline constexpr Site kSettingsByName{"SettingsByName", 0x00402C76, kSettingsByNameBytes, sizeof(kSettingsByNameBytes)};
+
+inline constexpr std::uint8_t kTriggerByNameBytes[] = {0x51, 0x8B, 0x4C, 0x24, 0x08, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x56, 0x8B, 0xB0, 0x7C, 0x09, 0x00, 0x00, 0x51, 0x8D, 0x4C, 0x24, 0x08, 0xE8, 0xFF, 0x3E, 0xAF, 0xFF, 0x8D, 0x54, 0x24, 0x04, 0x52, 0x8B, 0xCE, 0xE8, 0xC3, 0xD2, 0x06, 0x00, 0x83, 0xF8, 0xFF, 0x75};
+inline constexpr Site kTriggerByName{"TriggerByName", 0x0090DFB0, kTriggerByNameBytes, sizeof(kTriggerByNameBytes)};
+
+inline constexpr std::uint8_t kPlayerTeamBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x74, 0x16, 0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x7C, 0x0E, 0x50, 0xE8, 0x96, 0x91, 0xBC, 0xFF, 0x85, 0xC0, 0x74, 0x04, 0x8B, 0x40, 0x10, 0xC3, 0xB8, 0xFE, 0xFF, 0xFF, 0xFF, 0xC3};
+inline constexpr Site kPlayerTeam{"PlayerTeam", 0x0088396E, kPlayerTeamBytes, sizeof(kPlayerTeamBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -3556,6 +3595,7 @@ Outcome ApplyDmgPartBoneFix(const Config& config);
 Outcome ApplyFaithResource(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 Outcome ApplyTechGadgets(const Config& config);
+Outcome ApplyCultureUi(const Config& config);
 Outcome ApplyIncomeRates(const Config& config);
 Outcome ApplySelectFattened(const Config& config);
 Outcome ApplyProgressPieDemo(const Config& config);
@@ -3770,6 +3810,8 @@ inline constexpr Feature kFeatures[] = {
     {"editorAutosave", ApplyEditorAutosave},
     // After rendererOption: it sets its gadgets from the Present of whichever Direct3DCreate9 the game gets.
     {"techGadgets", ApplyTechGadgets},
+    // Its own hooks: the head of the texture bind 0x407D27 and of the HUD build 0x76166A.
+    {"cultureUI", ApplyCultureUi},
     // After rendererOption: it shows its button from the Present of whichever Direct3DCreate9 the game gets.
     {"selectFattened", ApplySelectFattened},
     // Dev key: the test bed of the shared progress pie (progresspie.h), an observer of the shared panel tail.
@@ -3797,7 +3839,7 @@ inline constexpr const char* kHandledKeys[] = {
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
     "techgadgets", "incomerates", "editorautosave", "selectfattened", "nurseryfactor", "progresspiedemo",
-    "garrisonconvert",
+    "garrisonconvert", "cultureui",
 };
 
 }  // namespace uhc
@@ -7832,21 +7874,23 @@ END
 ### src/techrollover.h
 
 ```cpp
-// The rollover of a tech button in the command panel, shared by every key that adds to it (researchGrants' price,
-// shipTechLimit's count): one replaced call, 0x4622C5, the panel's call of the rollover builder 0x4C737C in the
-// command panel refresh FUN_0046188E. Display only: nothing here reaches the simulation.
+// The rollover of a tech, shared by every key that adds to it (researchGrants' price, shipTechLimit's count): one
+// hook at the only exit of the rollover builder 0x4C737C (0x4C78F3), so every screen that builds a tech's rollover
+// gets the lines: the command panel FUN_0046188E (normal and minimised UI), the native command panel FUN_009ACAF4 and
+// the trade route panel FUN_009B687E. Display only: nothing here reaches the simulation.
 #pragma once
 
 namespace uhc {
 
 // Called once the stock rollover is built, in the order the keys added them. `entry` is the player's status entry
-// of the tech, `player` the local player, `unit` the selected unit, `rollover` the rollover text (a BString:
-// AppendTechRollover adds to it) and `overlay` the button's overlay text (the panel's buffer, 256 chars, empty for a
-// tech; researchGrants writes its price there).
+// of the tech, `player` the player, `unit` the selected unit (either may be null: 0x703F99 builds a rollover with
+// neither), `rollover` the rollover text (a BString: AppendTechRollover adds to it) and `overlay` the button's
+// overlay text (the panel's buffer, 256 chars, empty for a tech; researchGrants writes its price there), or null
+// for a caller that has none.
 using TechRolloverLine = void (*)(const char* entry, const char* player, const char* unit, void* rollover,
                                   char* overlay);
 
-// Writes the hook the first time, after checking the stock bytes of the call and of the buffers it relies on.
+// Writes the hook the first time, after checking the stock bytes of the builder's exit and head.
 bool AddTechRolloverLine(const char* feature, TechRolloverLine line);
 
 // Appends text (game markup such as <color=1, 0.4, 0.4> allowed) to a rollover handed to a TechRolloverLine.
@@ -7858,9 +7902,16 @@ void AppendTechRollover(void* rollover, const wchar_t* text);
 ### src/techrollover.cpp
 
 ```cpp
-// The panel's call of the tech rollover builder at 0x4622C5 goes to UhcTechRolloverHook
-// (hooks/techrollover_hooks.asm): it calls the builder with the same arguments, then UhcTechRolloverLines, which
-// calls each key's line in order.
+// The only exit of the tech rollover builder 0x4C737C (pop ebp / pop ebx / add esp,40h at 0x4C78F3) goes to
+// UhcTechRolloverExitHook (hooks/techrollover_hooks.asm): it finishes the stock epilogue, then UhcTechRolloverExit
+// calls each key's line in order, and the stock ret follows. Every caller of the builder gets the lines; a caller
+// whose frame is known also gets its button's overlay text:
+//   - 0x4622C5, the command panel FUN_0046188E (normal and minimised UI): overlay [esp+2C0h] there;
+//   - 0x9AD7F1, the native command panel FUN_009ACAF4 (a trading post on a native socket): overlay [esp+248h];
+//   - 0x9B7637, the trade route panel FUN_009B687E (a trading post on a trade route): overlay [esp+230h].
+// Each of the three pushes the 8 arguments and calls (0x20 bytes) right where its overlay is at [esp+X], so at the
+// return address the overlay is X plus that depth. The other callers: 0x703F99 (no player, no unit: the keys add
+// nothing) and DLL code (politicianEnablesTech's age-up dialog), which is skipped, as before the hook moved here.
 #include "techrollover.h"
 
 #include <cstddef>
@@ -7870,15 +7921,38 @@ void AppendTechRollover(void* rollover, const wchar_t* text);
 #include "log.h"
 #include "patch.h"
 
-extern "C" void UhcTechRolloverHook();
+extern "C" void UhcTechRolloverExitHook();
 
 namespace {
 
 constexpr std::size_t kMaxLines = 4;
-constexpr std::uint32_t kRolloverCall = 0x004622C5;  // kTechButtonRollover + 10h
+constexpr std::uint32_t kExit = 0x004C78F3;
+constexpr std::uint32_t kTextEnd = 0x00B836BE;  // the end of the exe's .text: a return address beyond is DLL code
 
 using AppendFn = void(__thiscall*)(void* text, const wchar_t* more, std::int32_t length, std::int32_t start);
 const auto kAppend = reinterpret_cast<AppendFn>(0x00443960);  // BString append; -1, -1: all of it, at the end
+
+// A caller whose overlay buffer is known: its return address, the overlay's offset from the return address's slot,
+// the sites that tie the frame to that buffer (its call, the reset per button, the read before the gadget's text).
+struct Caller {
+  std::uint32_t returnTo;
+  std::uint32_t overlay;
+  const wchar_t* name;
+  const uhc::Site* call;
+  const uhc::Site* reset;
+  const uhc::Site* read;
+  bool ok;
+  bool seen;
+};
+
+Caller g_callers[] = {
+    {0x004622CA, 0x24 + 0x2C0, L"the command panel (0x4622C5)", &uhc::sites::kTechButtonRollover,
+     &uhc::sites::kButtonOverlayReset, &uhc::sites::kButtonOverlayRead, false, false},
+    {0x009AD7F6, 0x3C + 0x248, L"the native command panel (0x9AD7F1)", &uhc::sites::kNativeTechRollover,
+     &uhc::sites::kNativeOverlayReset, &uhc::sites::kNativeOverlayRead, false, false},
+    {0x009B763C, 0x3C + 0x230, L"the trade route panel (0x9B7637)", &uhc::sites::kTradeRouteTechRollover,
+     &uhc::sites::kTradeRouteOverlayReset, &uhc::sites::kTradeRouteOverlayRead, false, false},
+};
 
 uhc::TechRolloverLine g_lines[kMaxLines] = {};
 std::size_t g_count = 0;
@@ -7886,11 +7960,28 @@ bool g_installed = false;
 
 }  // namespace
 
-extern "C" void __stdcall UhcTechRolloverLines(const char* entry, const char* player, const char* unit, void* rollover,
-                                               char* overlay) {
-  if (entry == nullptr) {
-    return;
+// frame[0] the return address, frame[1..4] the rollover, the tech entry, the player, the unit.
+extern "C" void __stdcall UhcTechRolloverExit(std::uint32_t* frame) {
+  const char* entry = reinterpret_cast<const char*>(frame[2]);
+  if (entry == nullptr || frame[0] >= kTextEnd) {
+    return;  // a rollover built by DLL code (politicianEnablesTech's age-up dialog) is no research button
   }
+  char* overlay = nullptr;
+  for (Caller& caller : g_callers) {
+    if (caller.returnTo == frame[0]) {
+      if (caller.ok) {
+        overlay = reinterpret_cast<char*>(frame) + caller.overlay;
+      }
+      if (!caller.seen) {
+        caller.seen = true;
+        uhc::Log(L"tech rollover: first rollover built for %ls", caller.name);
+      }
+      break;
+    }
+  }
+  const auto* player = reinterpret_cast<const char*>(frame[3]);
+  const auto* unit = reinterpret_cast<const char*>(frame[4]);
+  auto* rollover = reinterpret_cast<void*>(frame[1]);
   for (std::size_t i = 0; i < g_count; ++i) {
     g_lines[i](entry, player, unit, rollover, overlay);
   }
@@ -7904,9 +7995,18 @@ bool AddTechRolloverLine(const char* feature, TechRolloverLine line) {
     return false;
   }
   if (!g_installed) {
-    if (!VerifyAll(feature, {&sites::kTechButtonRollover, &sites::kButtonOverlayReset, &sites::kButtonOverlayRead,
-                             &sites::kTechRolloverHead, &sites::kBStringAppend}) ||
-        !WriteCall(kRolloverCall, reinterpret_cast<const void*>(&UhcTechRolloverHook))) {
+    if (!VerifyAll(feature, {&sites::kTechRolloverExit, &sites::kTechRolloverHead, &sites::kBStringAppend})) {
+      return false;
+    }
+    // A panel whose frame is not the stock one (another DLL changed it) still gets the lines, without the word on
+    // its buttons.
+    for (Caller& caller : g_callers) {
+      caller.ok = Matches(*caller.call) && Matches(*caller.reset) && Matches(*caller.read);
+      if (!caller.ok) {
+        Log(L"tech rollover: %ls is not the stock code; its buttons get no overlay text", caller.name);
+      }
+    }
+    if (!WriteJmp(kExit, reinterpret_cast<const void*>(&UhcTechRolloverExitHook), 5)) {
       return false;
     }
     g_installed = true;
@@ -7927,46 +8027,38 @@ void AppendTechRollover(void* rollover, const wchar_t* text) {
 ### src/hooks/techrollover_hooks.asm
 
 ```asm
-; The tech button's rollover (src/techrollover.cpp), shared by researchGrants and shipTechLimit. Display only.
+; The tech rollover (src/techrollover.cpp), shared by researchGrants and shipTechLimit. Display only.
 .686
 .model flat, c
 option casemap :none
 
 include common.inc
 
-UhcTechRolloverLines PROTO STDCALL entry:DWORD, player:DWORD, unit:DWORD, rollover:DWORD, overlay:DWORD
+UhcTechRolloverExit PROTO STDCALL frame:DWORD
 
 .data
-kTechRollover dd 004C737Ch      ; the tech rollover builder, cdecl with 8 arguments
+kRolloverRet dd 004C78F8h       ; the builder's stock ret
 
 .code
 
-; Replaces the call of the tech rollover builder 0x4C737C at 0x4622C5 in the command panel refresh FUN_0046188E.
-; Entry: the 8 cdecl arguments at [esp+4]..[esp+20h] (the rollover, the tech entry, the player, the unit, 1, 0, 1,
-; 1); the panel's ESP before it pushed them is ESP+24h here, so the button's overlay text [esp+2C0h] there is
-; [esp+2E4h]. Calls the builder with the same arguments, then the keys' lines. The panel cleans the arguments
-; (add esp,20h) and reloads EAX, ECX and EDX before use; EBX, ESI, EDI and EBP are kept by both calls.
-UhcTechRolloverHook PROC
-    TRACE_ONCE "tech rollover (0x4622C5)"
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    push dword ptr [esp+20h]
-    call dword ptr [kTechRollover]
-    add esp, 20h
-    lea eax, [esp+2E4h]
-    push eax                    ; the overlay text
-    push dword ptr [esp+8]      ; the rollover
-    push dword ptr [esp+18h]    ; the unit
-    push dword ptr [esp+18h]    ; the player
-    push dword ptr [esp+18h]    ; the tech entry
-    call UhcTechRolloverLines
-    ret
-UhcTechRolloverHook ENDP
+; Replaces pop ebp / pop ebx / add esp,40h at 0x4C78F3, the only exit of the tech rollover builder 0x4C737C (cdecl
+; with 8 arguments; its early exits jump to 0x4C78F3 too). After those three instructions [esp] is the return
+; address and [esp+4]..[esp+20h] the arguments: the rollover, the tech entry, the player, the unit, then four flags.
+; UhcTechRolloverExit gets that frame, tells the caller by its return address (the command panel, the native or the
+; trade route panel) and calls the keys' lines. Every register is kept (EAX too: one caller, 0x703F99, returns it);
+; then the stock ret.
+UhcTechRolloverExitHook PROC
+    TRACE_ONCE "tech rollover (0x4C78F3)"
+    pop ebp
+    pop ebx
+    add esp, 40h
+    pushad
+    lea eax, [esp+20h]          ; the frame: the return address, then the arguments
+    push eax
+    call UhcTechRolloverExit
+    popad
+    jmp dword ptr [kRolloverRet]
+UhcTechRolloverExitHook ENDP
 
 END
 ```

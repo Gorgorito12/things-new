@@ -1,0 +1,35 @@
+Hi JTMaston,
+
+Hammer fanning: thanks for the answers. Balance is yours, the same animation for both abilities, and retarget on
+both: that is what the pack already does, so nothing changes there.
+
+The muzzle flash at the hand: fixed.
+
+What was wrong: the six flash tags of the new animation still named the game's "musketshot" particle set, and that
+set draws its flash on the right hand. With the outlaw's old clip it looked fine. With the new clip, the pistol is
+held by its grip at the hip, so the flash showed at the hand, beside the grip, not at the barrel.
+
+The fix (in the same pack, wol-fixes/hammer-fanning):
+- a new particle set, "fanningshot", added to art\effects\particlesets_wol.xml: the same four musket particles as
+  musketshot (same look), drawn on the bone Prop2;
+- the two clips now keep Bip01 Prop2 on the pistol's muzzle. All the explorer models have that bone, and nothing
+  else uses it in these animations;
+- the six flash tags of RangedAttackSharpshoot name fanningshot.
+apply_fix.py --check shows the new set, and --restore puts particlesets_wol.xml back as it was, like the other files.
+
+Tested in a copy of WoL (single player):
+- British Explorer, Hammer Fanning on six outlaw guardians: six shots 0.28 s apart, six dead. Every flash leaves the
+  tip of the barrel along the shot's line, never at the hand.
+- Danish Explorer (the older model): Slip Hammering on ten guardians, six shots and six dead; then Hammer Fanning on
+  the four left, four shots and four dead. The flashes are placed the same way.
+- The animation itself is unchanged. The AI still plays.
+- SharpshootIdle is never seen in game: after an ability's attack the explorer goes back to his normal idle. We left
+  it in. It is harmless.
+
+Pictures: c1-ingame-flash.jpg in the pack (British above, Danish below, the flashes at the muzzle), and the updated
+video in the guide, powerShots-wol.gif.
+
+A side finding, not part of this fix: explorer.xml points the Swiss explorer at
+WoL\units\explorers\europeans\swiss\siwss_explorer, and that model is not in WoL's files (neither loose nor in the
+archives of our copy). The Swiss explorer may show nothing, or the wrong model. You may want to point it at an
+existing model or add the file.
