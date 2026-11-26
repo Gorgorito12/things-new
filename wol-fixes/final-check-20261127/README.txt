@@ -83,8 +83,13 @@ Restore
   its My Games folder (Age3Log.txt, RecentFilesy.xml, Trigger3\trigtemp.xs; Age3RMuhcj27n.dmp.txt removed) put back.
   A SHA-256 listing of every file of the bed and its My Games folder (65,751 files), taken before the first change,
   is identical after.
-- WoLReal5: test data back, packs restored in the reverse order, AI personalities back (51), uhc.dll and the rest
-  put back; SHA-256 listing before and after: see the line at the end.
+- WoLReal5: test data back (*.j27bak, art\ui\uhc removed), packs restored in the reverse order, AI personalities
+  back (51), the test maps removed, uhc.dll and ReShade.log put back, UHC.log removed (the bed had none), and the
+  game's own files in its My Games folder (Age3Log.txt, RecentFilesy.xml, Trigger3\trigtemp.xs,
+  RM4\Age3RMacre.dmp.txt, the profile NewProfile3.xml with its home city choice, LastHomeCityY.xml,
+  sp_Lisbon_homecity.xml; the two new .dmp.txt removed) put back. A SHA-256 listing of every file of the bed and its
+  My Games folder (65,741 files, profile and video settings included), taken before the first change, is identical
+  after.
 
 Files
 -----
