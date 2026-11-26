@@ -566,6 +566,24 @@ where it is explained; the rules written nowhere else are spelled out here.
 - [ ] **The AI still plays** after data or combat changes ([CLAUDE.md](../CLAUDE.md#commands),
   "Check the AI after data or combat changes").
 
+**Interface**, for every key that shows text, an icon or a datum in the UI:
+- [ ] **Sibling functions:** search with REA every function that reads the same datum or builds the
+  same text, and hook them all or their common callee. The key's docs list the sites checked, not
+  only the one hooked. `quickArrivalCards` first missed "View All Cards": the card tree has its
+  own rollover builder (FUN_00710991, hooked at 0x710F24 later).
+- [ ] **Screens:** the key's docs list each screen where the player sees the datum, with a
+  screenshot of each, or why it does not apply:
+  - the game, in the normal and the minimised UI;
+  - the home city;
+  - the deck builder and "View All Cards";
+  - the tech tree;
+  - the observer.
+
+  Check `hook reached` in the log per screen as well. It tells screens apart only when each has
+  its own hook, as `TRACE_ONCE` logs once per hook: the proof is the screenshot.
+- [ ] **A coverage fault is searched in the other keys:** when a key is reported not to work on one
+  screen, check whether other keys use the same kind of site, and fix or list them too.
+
 **Multiplayer**, for every key that changes the simulation (details in
 [how-it-works.md, section 5](how-it-works.md#5-rules-that-keep-multiplayer-deterministic)):
 - [ ] no decision depends on the local player;
