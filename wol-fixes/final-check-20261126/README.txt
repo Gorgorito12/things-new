@@ -156,3 +156,51 @@ UHC-autogather-on.log, -off.log, gold-key-on.txt, gold-key-off.txt   WoLReal6
 UHC-trigger-names-es.log, trigger-names-es.csv                       WoLReal7 (log of the last run, Arabia)
 engine-ext-observer.log, observer-shot.csv                           WoLReal8
 s01-s10 *.jpg                                pictures named in the table
+
+Recheck after round 7 (agent J3, 2026-11-26)
+============================================
+
+Since the check above only the camels' art changed (round 7, 075e1fc6: the kushed lying camel, the gatling post
+centred, the dromedary hump in the plain skinned vertex layout) in wol-fixes/gatling-camel and wol-fixes/zamburak; no
+change in src/, tools/ (but gifs.txt) or examples/. Branch claude/r1126-recheck = claude/round-20261126 (1f383ade).
+Build: Release Win32, 0 errors, the same old warnings (minuistats.cpp C4456 x2, C4244 from <xutility>).
+guide_dates "nothing to change", porting_code unchanged (line endings only), export_public --check OK (364 files).
+UHC.dll sha256 43c99678621c6a594d92a4a84a0d5b13bf8761e1f41ec968b1d86a8f51035978.
+Bed: C:\AoE3-UHC-WoLReal5 only, every pack applied in the same order as above, cfg = wol.cfg of this folder
+(byte for byte), multipleInstances background, no other game running.
+
+Check                                   Result
+--------------------------------------  ----------------------------------------------------------------------------
+1. Keys, every pack applied             PASS. "UHCMain: 147 applied, 0 failed" (164 keys) in both launches.
+2. AI alive (skirmish)                  PASS. Human Uzbeks (sp_Bukhara, the MEZamburak civ: the zamburak pack's
+                                        tactics file and anims loaded), AI wolNapoleon (French, the only personality
+                                        left), the profile's map, 617 s of game time. Player 2 units: 13 at 1 min,
+                                        16 at 2, 17 at 3, 18 at 4, 19 at 5, 22 at 6, 34 at about 10; villagers 6 ->
+                                        13 in the first 6 min. UHC.log with xsErrorLog: no XS message, no
+                                        "Error 0003"; trace_xs.py attached for the last 3 min: "0 line(s) logged".
+                                        No crash; Age3Log.txt has only its startup lines (no model or anim error).
+                                                                                                         s13
+3. Camels drawn, deploy and fire        PASS. Scenario (uhcj3camels): one GatlingCamel, one GatlingCamelDeployed, one
+   (scenario, trigger work orders)      MEZamburak (both spawned limbered), each given an enemy House by a trigger's
+                                        Unit Work at 12 s. All three drawn (none invisible); GatlingCamelDeployed
+                                        lay down and deployed, MEZamburak unlimbered, the GatlingCamel fired from the
+                                        saddle. turretArc logged shots from each: unit 0 GatlingCamel 49 (yaw -5 to
+                                        +7), unit 1 GatlingCamelDeployed 28 (yaw 86-95), unit 2 MEZamburak 3 (yaw
+                                        87.5, after "the unit turns until it sits at the rest yaw"). The three
+                                        Houses had 300 / 660 / 1060 HP left at 39 s of game time (1200 full) and were all
+                                        destroyed by 200 s. The three aim files loaded (A55, B55 version 2,
+                                        zamburak_cannon.aim). No error in UHC.log or Age3Log.txt.   s11, s12
+                                        Hump: the pictures are from the game camera (top-down, normalZoom by console
+                                        did not bring it closer than s11); the raised saddle cloth shows on both lying
+                                        camels, but from this angle the hump's profile cannot be judged. The side
+                                        camera check of 075e1fc6 stays the evidence for its shape.
+
+Restore: packs reverted in the reverse order, AI personalities back (51), the profile's home city and the bed's
+Startup, uhc.dll (0f6acd0a) and My Games folder put back from a copy taken before the first change, the test map and
+UHC.log removed. A SHA-256 listing of every file of the bed and its My Games folder (65,742 files), taken before
+the first change, is identical after: byte for byte, uhc.dll included.
+
+Files: UHC-recheck.log (both launches: the camel scenario, then the skirmish); s11-r7-camels-gatling-deployed-
+zamburak.jpg (native crops: GatlingCamel mounted, GatlingCamelDeployed deployed, MEZamburak unlimbered);
+s12-r7-camels-firing.jpg (GatlingCamelDeployed's muzzle flash, the zamburak's smoke); s13-r7-skirmish-uzbeks-vs-
+french-ai-617s.jpg.
