@@ -10919,6 +10919,77 @@ gun and its gunner on foot.* [Full video (MP4)](media/gatlingCamel-wol-control.m
 - **Previews** (approved by the user before the game): `_share\maston-20261124\` (model sheet, the two variants, the
   move, where the rider looks).
 
+### The zamburak cannon
+
+*WoL's MEZamburak with a new model: a bronze cannon on a swivel on the camel's withers. Its rider limbers it to move
+and unlimbers it to fire. The camel lies down, and he stands at the breech and touches the vent with the hot tip of
+a short stick.*
+
+Request (JTMaston, 2026-11-26): a new model for the zamburak, the midfa's cannon on a swivel, limbered and
+unlimbered. The pack `wol-fixes/zamburak` (`apply_fix.py <WoL folder>`, `--check`, `--restore` byte for byte;
+README) delivers it for `MEZamburak` only:
+
+- **The model.** aoe3-blender-tools' `tools/make_zamburak.py` (branch `claude/r1126-Z`) builds it:
+  - the zamburak's camel without its lateral swivel gun;
+  - the midfa's barrel cut to 2/3 of its length, at 0.6 of its size, on a fork and socket on the withers;
+  - the rider is today's, with his model and hat by rank;
+  - the linstock is a plain wooden stick, 0.85 long, with a red hot tip (`bone_match`; no fire on it).
+- **One unit, two modes** (`zamburakCannon.tactics`):
+  - **Limber, as trained:** it walks and runs, the gun angled down beside the camel's neck, and cannot fire.
+  - **Unlimber (6.67 s):** an attack order, or the new unlimber button, makes the camel lie down. He swings the
+    gun out to +90 and stands at his station behind the breech.
+  - **Bombard:** the shot takes 2.0 s; he touches the vent. The reload takes 3.0 s: he pushes the gun round
+    through its back to 270, loads the charge and the ball by hand, and pushes it back.
+  - **Limber again (5.5 s):** the limber button, or a move order.
+  - **Deaths:** unlimbered, the camel slumps and he falls back. Limbered, three of today's camel deaths play; the
+    other five drove the cannon into the ground.
+- **The turning gun** (`turretArc`): the line below turns it on its swivel from +30 to +150. A target outside the
+  arc turns the camel until it sits at +90.
+  ```
+  turretArc MEZamburak art\WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon.aim
+  ```
+- **What changes in `protoy.xml`:** `MEZamburak`'s anim file and tactics; `RotateInPlace`, so it turns in place
+  when unlimbered; the unlimber and limber buttons, as the falconet has them.
+- **ROF: a proposal.** The CannonAttack ROF goes from 4.0 to 5.0, the fire (2.0 s) plus the reload (3.0 s) as
+  animated, for WoL's team to confirm.
+- **Checks:** every clip passed `check_anim.py`: 1197 checks, plus 75 for the unlimbered death and 179 for the
+  limbered deaths. They include the new checks: palms not behind the shoulders, the camel's head clear of the
+  barrel, crossed feet, the weapon not into the ground at death, and prop sizes.
+
+![The zamburak cannon in WoL](media/zamburakCannon-wol.gif)
+
+*In WoL (`C:\AoE3-UHC-WoLReal8`, the pack and the key, filmed on 2026-11-26): the unlimber button pressed, the camel
+lies down, and he swings the gun out and takes his station. He fires at Houses at 60 to 140 degrees, the gun turning
+on its swivel; he plants his stick, swings the gun round to load it and back, and dies unlimbered (the camel
+slumps, he falls back, the stick lies beside him, and all three fade together).*
+[Full video (MP4)](media/zamburakCannon-wol.mp4).
+
+![The zamburak cannon, key off](media/zamburakCannon-wol-control.gif)
+
+*The same scene with the key off (filmed on 2026-11-26): the camel turns its whole body to each House and the gun
+stays at +90.* [Full video (MP4)](media/zamburakCannon-wol-control.mp4).
+
+![The zamburak cannon, limbered](media/zamburakCannon-wol-limbered.gif)
+
+*Two zamburaks: the limber button pressed, and the limbered death on the dead model, the cannon on the fallen
+camel's back.* [Full video (MP4)](media/zamburakCannon-wol-limbered.mp4).
+
+- **Tested in WoL** (2026-11-26, single player, `C:\AoE3-UHC-WoLReal8`, the round branch's DLL), checked frame by
+  frame in close films:
+  - limbered idle and walk;
+  - the unlimber from the button (an attack order needs a real right click, which the bed could not aim);
+  - shots logged at yaws 71 to 140, the gun turning; targets at 14 to 29 degrees turned the camel
+    (`the unit turns until it sits at the rest yaw`);
+  - the reload's swing;
+  - the limber from the button;
+  - both deaths;
+  - the control with the key off.
+  - Fixed on the way:
+    - the rider was missing (his anim file was cut inside an attachment);
+    - the cannon stood in the air while an unlimbered corpse faded (now a dead model of its own);
+    - the tactics file needs CRLF, which `apply_fix.py` now writes whatever the checkout gave.
+  - Not seen: multiplayer; the AI with the pack.
+
 ### Aura rings
 
 A ring on the ground tells the player which units an aura is working on, as the one Karni Mata puts around the Indian

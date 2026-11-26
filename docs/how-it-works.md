@@ -4383,6 +4383,16 @@ game; `docs/engine-symbols.md`, "Turrets, facing and the Granny pose", REA evide
   a 4-byte tag and a count: `BAND`, the (from, to) yaw bands in which a gunner's foot is in the air (logged), and
   `SETL`, per clip its name, length and frames and two tables like the clip's (the step finished toward a growing yaw,
   then toward a shrinking one). A reader without them stops after the clips.
+<!-- private:begin -->
+- **A gun its own clips swing (the zamburak cannon, 2026-11-26).** Its reload turns the gun from
+  +90 round through its back to 270 and back, inside the clip (the gun's `bone_yaw` and the camel's `bone_turret`
+  keyed in the clip). The key adds only `aim − rest`, and `IsHomeClip` returns the shown yaw to the rest at the turn
+  rate while a clip whose animation name holds `reload`, `death` or `deploy` plays. So the reload's swing shows as
+  animated, with no offset once the gun is home: from an aim of 140 that takes 0.5 s at 100 degrees a second, while he
+  plants his linstock. The pack names its unlimber and limber clips `…_deploy` and `…_undeploy`, so they are home
+  clips too. No DLL change was needed. Its aim table holds the artillerist's arm and head for the idle and the shot
+  at every 2 degrees, standing at his rest station; there is no `BAND` and no `SETL`, because he does not step.
+<!-- private:end -->
 
 ### unitResourceAuras
 

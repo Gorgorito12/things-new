@@ -1,0 +1,54 @@
+Hi JTMaston,
+
+The new zamburak (your request of 2026-11-26): the midfa's cannon on a swivel on the camel's back, limbered and
+unlimbered, the artillerist firing it on foot, as in your reference image.
+
+1. What it is (MEZamburak only, for now)
+- The camel is the zamburak's, without its lateral swivel gun. On its withers sits the midfa's bronze barrel, cut
+  to 2/3 of its length and at 0.6 of its size, on a fork that turns in a socket. The rider is today's, with his
+  model and hat by rank.
+- One unit with two modes, like the stock field guns:
+  - Limber (as trained): it walks, trots and runs with the gun angled down beside the camel's neck. It cannot
+    fire.
+  - Unlimber (6.67 s): an attack order, or the new unlimber button, does it. The camel lies down and turns its
+    neck aside. He swings the gun out over the camel's right side (+90, square to its spine), gets off and stands
+    at his station behind the breech.
+  - Firing (2.0 s): he touches the vent with the hot red tip of his linstock, a short plain stick.
+  - Reloading (3.0 s): he sticks the linstock in the ground and pushes the gun round through its back until the
+    muzzle points at him. He loads the charge and the ball by hand, pushes the gun back to its rest, and takes the
+    linstock up.
+  - Limber (5.5 s): the limber button, or a move order. He swings the gun back, gets on, and the camel rises.
+  - Killed unlimbered: the camel slumps and he falls back. Killed limbered: three of today's camel deaths play, on
+    a model with the cannon built in.
+- Five of today's limbered deaths (death02, and the havoc deaths front, behind, left and run) rolled the camel
+  onto the cannon and drove it into the ground, so the limbered unit no longer plays them.
+- With the DLL key turretArc (below), the gun turns on its swivel from +30 to +150 toward its target, and he
+  reaches the turned vent from his station. A target outside that arc turns the camel until the target sits at +90.
+
+2. A proposal: the ROF
+- The pack sets MEZamburak's CannonAttack ROF from 4.0 to 5.0. That is the shot (2.0 s) plus the reload (3.0 s)
+  as they are animated.
+- If you want to keep 4.0, or want another number, tell me and I'll fit the reload to it.
+
+3. Questions
+- Should ypZamburak and ypZamburakMansabdar get the same model and modes? Today only MEZamburak changes.
+- The camel's rank skins (Veteran, Guard, Imperial) are not carried over: every rank shows the basic camel, while
+  the rider keeps his rank models and hats. Do you want the rank skins on the new camel too?
+- Today's rider carried a carbine on his back in some anims. The new anims don't show it. Should it come back?
+
+4. The DLL key, one line in Startup\wol.cfg (the pack does not edit the cfg):
+    turretArc MEZamburak art\WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon.aim
+- If you already use it for the gatling camel, add MEZamburak and its file to the same line.
+- The aim file is version 2: it needs the DLL of 2026-11-26 or later.
+- Without the key the unit still works; the camel turns to face each target and the gun stays at +90.
+
+Tested in a copy of WoL, single player, checked frame by frame in close films:
+- the unlimber and limber from the buttons;
+- shots with the gun turned from 60 to 140 degrees;
+- targets outside the arc turning the camel;
+- the reload's swing;
+- both deaths (nothing stays in the air while the corpse fades);
+- the control with the key off.
+Not tested: multiplayer, and the AI playing it.
+
+Everything is in wol-fixes/zamburak (apply_fix.py with --check and --restore; README).

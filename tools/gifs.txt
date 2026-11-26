@@ -396,3 +396,6 @@ progressPie-wol 1 12 1 800:330:0:0
 progressPie-wol-control 1 12 1 800:330:0:0
 garrisonConvert-wol 2 24 2
 garrisonConvert-wol-control 2 24 2
+zamburakCannon-wol 4 48 4
+zamburakCannon-wol-control 4 48 4
+zamburakCannon-wol-limbered 92 12 1
