@@ -1,0 +1,29 @@
+Hammer fanning, step A1: the DLL change in game (2026-11-26, C:\AoE3-UHC-WoLReal4, single player)
+
+Build: claude/r1127-H with the new key powerShots and retargetInAction's power-launched candidates.
+Test data in the bed (originals *.h-orig): on the Explorer's SharpshooterAttack ProtoAction
+<RetargetInAction>1</RetargetInAction> and <PowerShots>3</PowerShots> (today's clip has 3 Attack tags);
+wol.cfg: "retargetInAction log", "powerShots log".
+
+Scene: an Explorer (made invulnerable by a trigger) and five OutlawPistol guardians (270 HP, Gaia).
+Use 1 (a1-cast1.mp4): three shots 210 ms apart, three guardians killed, each shot at the next one:
+  23411 ms  an attack cycle begins (target 3)
+  23900 ms  shot 1 at 3                                   (the stock, ready shot)
+  24007 ms  lost its target 3 after 1 shots: new target 5 at 5.2 m
+  24110 ms  powerShots: Attack tag after 1 of 3 shots ... at target 5: fires
+  24110 ms  shot 2 at 5
+  24219 ms  lost its target 5 after 2 shots: new target 2 at 9.2 m
+  24320 ms  powerShots: Attack tag after 2 of 3 shots ... at target 2: fires
+  24320 ms  shot 3 at 2
+  24498 ms  lost its target 2 after 3 shots: new target 1 at 9.5 m  (no tag left: no shot)
+Use 2, 60 s later (a1-cast2.mp4): shot 1 killed 1, retarget to 4, shot 2 killed 4, the third tag found
+nobody in range ("2 without a rate of this power's attack or not an enemy": the Explorer's own side).
+Control (A0, the same scene without the keys): one guardian per use (a0-stock-cast.mp4, a0-uhc-log.txt).
+
+Performance (perfprobe.py, 60 s each, scenario uhcperf: the scene above plus 15 WOLRegular and 15
+WOLLandwehr, the ability cast once a run; on / off / on; agent C's game running on the machine):
+  fps 1394 / 1323 / 1369, update 0.1 ms, render 0.6 ms, main thread 82.5 / 84.0 / 82.8 %,
+  frames over 50 ms 1 / 1 / 2 (the scenario's first frame, 3.5 s, in every run).
+
+AI: a 90 s skirmish with the tagged data and both keys: no XS error, the AI (player 2) built a house and
+trained WOLPioneers.
