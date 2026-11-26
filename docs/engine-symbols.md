@@ -1593,7 +1593,41 @@ all civs (the full or minimized one, by the game option).
 |---|---|---|---|
 | In-game UI build | FUN_0076166A (the xref of the name string 0xC04C94 at 0x7626A0) | confirmed (Evidence `ev_b4a4f8c0…`) | Loads `uimainnew.xml` and the panel files (`uiminimappanelnew[min].xml`, `uicommandpanelnew[min].xml`, ..., by the minimized-UI option `[ui+40Fh]`), then looks up the 12 hardcoded names `SettlerCountDialog-{default,advanced}Panel{Eur,Asi,Nat}{Max,Min}` (strings 0xC04C94–0xC04E4C) into `[ui+0E4h]`..`[ui+110h]`, and calls the chooser below. |
 | Resource panel chooser | FUN_00454F2F | confirmed (Evidence `ev_1acac662…`) | Hides all 12 (0x448F13), then shows one (0x447F7B): default or advanced by game option 0x28, Max or Min by option 0x49; within that, FUN_00453D37 (the native test, through 0x453D5E, which `nativeCivs` extends) picks Nat, else FUN_00454ED7 (the Asian test, which `asianCivs` extends) picks Asi, else Eur. Three cultures only: there is no slot for a fourth. |
-| Textures of the hidden variants | - | measured, not traced | All 12 variants are gadgets of `uimainnew.xml`, created when the UI is built, hidden or not; whether a hidden gadget's background is loaded then or at its first draw was measured, not read in code. |
+| Textures of the hidden variants | - | measured, not traced | All 12 variants are gadgets of `uimainnew.xml`, created when the UI is built, hidden or not; whether a hidden gadget's background is loaded then or at its first draw was measured, not read in code. **2026-11-27:** the names are resolved when the UI is built (below); the texture data is read later, at first use (inferred from 0x469479, which only records the name). |
+
+### UI textures by name: where a texture swap per culture can go (2026-11-27)
+
+For the paused "Culture UI" request: can one HUD take other textures per culture? REA (Ghidra 12.1.4, snapshot
+`rea/snapshots/age3y-b1a1dab7.json`), Evidence bundle `rea/evidence/age3y-b1a1dab7-culture-ui-20261127.json`
+(IDs shortened to 8 hex digits), capstone (`cs`) of the exe's bytes, and a hardware-breakpoint trace of the running game
+in `C:\AoE3-UHC-WoLReal6` (WoL 1.0.15c data, our DLL, two scenario games in one launch; log, tracer and captures in
+`rea/evidence/culture-ui-20261127/`). [O] observed, [I] inferred, [U] unknown. Report and verdict:
+[wol-fixes/culture-ui/feasibility-20261127.md](../wol-fixes/culture-ui/feasibility-20261127.md).<!-- private -->
+
+| What | Where | Status | Notes |
+|---|---|---|---|
+| Layout `background` | FUN_00629466, one of the two readers of the string 0xBA6AA8 (the other is 0x62AD29) | confirmed (`ev_dd7d33a0`, `ev_fd5c6f52`) | [O] `background` → 0x638823(gadget, &path); else `backgroundColor` → a colour drawable (0x5C1CAF). Then `useColorTransform`, `clampBackground`, `clickThruFile`. |
+| `stateEntry` background | FUN_0062AC80 → 0x62A6DC | confirmed (`ev_fd5c6f52`, `cs`) | [O] Each `stateEntry`'s `background` → 0x62A6DC: a new drawable (`[[0xC66244]+44h]` vtable `+14h`(1)) and its vtable `+7Ch`(path, −1), the same call as 0x638823. |
+| UI drawable: texture by path | 0x638883 = vtable 0xB988B0 `+7Ch`, `thiscall(drawable, BString* path, int)`, `ret 8` | confirmed (`cs`) | [O] Copies the path (0x443AA0), then **`call 58E3EBh` at 0x6388FE** with the texture manager `[0xC66044]+6A8h` and `(path, 0, 0, −1)`, then `+78h`(handle, arg2) (0x445060, the texture by handle). [I] The drawable 0x638823 and 0x62A6DC make is this class (vtable 0xB988B0 is the only one holding 0x638883). |
+| Texture handle by name | 0x58E3EB, `thiscall(texMgr, const wchar_t* path, bool, int, int)`, `ret 10h` | confirmed (`ev_498b5b56`, `cs`) | [O] Head `51 56 8B 74 24 0C 85 F6 57 8B F9` (`push ecx / push esi / mov esi,[esp+0Ch] / test esi,esi / push edi / mov edi,ecx`). Looks the path up in the manager's name table `[mgr+10h]` (0x467E4C hash, 0x467D12 find): found → its handle. Else 0x469479(mgr, path, arg3, 0) (block 0x59AD18). Key = the path as given (a BString copy, 0x467DFC): no case folding or extension seen. 110 resolved callers plus 30 unresolved (`ev_2ec2d581`): every texture of the game, not only the UI. |
+| New texture entry | 0x469479, `thiscall(texMgr, const wchar_t* name, int, int)` | confirmed (`cs`) | [O] Tries `<name>.amt` and `<name>.amt.xmb` (strings 0xB9EFC0, 0xB9EFA8) in two folders through the file manager 0xD6F3D8 (0x46930E, the "file exists" test [I]); none → a 30h-byte entry (0x46942B), the name at `+4`, appended to `[mgr+4]` and added to the name table (0x469388). **No texture file is read here**: [I] the data loads at first use, as the 2026-11-25 memory test measured. |
+| When the HUD resolves its names | FUN_0076166A (HUD build), from FUN_0076375C (the game screen's start, its only caller, `ev_4dbaf654`, `ev_65327cb1`) | confirmed in game (trace) | [O] Game 1: the HUD build ran 32.8 s into the launch, after the world existed, with the local player (1) and its civ (Ethiopians) readable; the 0x638823 calls for every HUD gadget and the first 0x469479 of `ui\ingame\nat_ui_max`, `asi_ui_max`, `eur_max_ui`, `ingame_ui_small_01_ypack`, ... followed in the same 0.3 s. The resource panel chooser 0x454F2F ran right after (and again from 0x4559AE at each refresh). The scenario editor before it did not run the HUD build. |
+| A second game in the same launch | the same | confirmed in game (trace, captures) | [O] Game 2: the HUD build ran again and every HUD gadget called 0x638823 again (**the HUD is rebuilt each game**), but no `ui\ingame` name reached 0x469479: the manager kept the entries by name. [O] `ingame_ui_small_01_ypack.ddt` replaced on disk (loose, recoloured) during game 1: game 1 and game 2 still showed the old art; after a restart the new art showed. So **texture data is cached by name for the whole launch**: replacing or redirecting the file itself between games does nothing; giving the gadget **another name** (`x_<suffix>`) makes a new entry, loaded from its own file. [I] Each culture played in one launch keeps its textures until exit (at most the 7.8 MB of the HUD's `ui\ingame` set, only what was drawn). |
+| Texture coordinates | `textureCoords` (string 0xBA3778) in FUN_00629A7A → gadget vtable `+D8h` = 0x44A1E9 for a plain gadget (`button` 0xAB7F71 calls it too) | confirmed (`ev_18d1be98`, `cs`) | [O] 0x44A1E9 forwards the four floats to the drawable `[gadget+58h]` vtable `+B0h`; the gadget keeps no copy. [O] 0x638823 makes a new drawable and 0x593B58 frees the old one. So **a texture set after the build (0x638823) loses the layout's `textureCoords`** unless the caller sets them again (vtable `+D8h`), as `politicianEnablesTech` does. 0x593B58 re-derives the drawable's flags (tiling, clamping) from the gadget's own bits `[+0A5h]`, `[+0AAh]`: [I] those survive. |
+| Observer, player view | — | partly [U] | [O] The stock exe has no observer mode (no string; `ev_1d0c6b0f`). [O] WoL's observers are real players in the last slots with a civ of their own, and WoL's DLL loads `uimainnewobserver<res>.xml`, whose atlases are others (`ingame_ui_01x_ypack`, `ingame_ui_01x_asian`, `ingame_ui_05`, `ingame_ui_06`; [observer-mode.md](observer-mode.md)). [U] Whether the replay panel's player switch (0x75E9A7) changes `[game+3C0h]` or rebuilds the HUD: not read. [I] The HUD's names are fixed at its build, so a style would not follow a view switch inside a game. |
+
+Where a key would redirect (design for B1, nothing written):
+
+- [I] **The head of 0x58E3EB** (6 bytes `push ecx / push esi / mov esi,[esp+0Ch]`, re-executed by the hook): when a
+  game world exists and the path starts with `ui\ingame\`, swap the argument `[esp+4]` for `<path>_<suffix>` if that
+  texture exists (the game's own test of a file, as 0x469479 does, or a list read at startup). It covers every UI
+  path at once (layout backgrounds, `stateEntry`s, `foreground`s, the pie chart's `texture`, code that loads by name)
+  and both interfaces, every resolution, the observer files. Risk: it is on every texture lookup of the game, so the
+  filter must be cheap (a prefix test, then a cache of decisions) and the key A/B-tested with `perfprobe.py`.
+- [I] Narrower: **the call 0x6388FE** inside the UI drawable's texture-by-path: only gadget textures set by path
+  (layout `background`, `stateEntry`s, 0x638823 from code). It misses anything that loads by name elsewhere.
+- [I] Not recommended: 0x638823 on each HUD gadget after the build: it loses `textureCoords` (above), and the HUD has
+  about 900 gadgets per interface.
 
 ### WoL requests #70–#73 (research for batch 2, 2026-11-20)
 
