@@ -8,11 +8,13 @@ What it is
 - Wars of Liberty's MEZamburak gets a new model and animations.
 - The model: the zamburak's camel without its lateral swivel gun. On its withers sits a bronze cannon on a swivel:
   the midfa's barrel cut to 2/3 of its length, at 0.6 of its size. The rider is today's zamburak rider (his model
-  and hat by rank, as today).
+  and hat by rank, as today). The camel has a dromedary hump under its saddle cloth (the stock camel's back was
+  flat), and the rider sits on it.
 - One unit with two modes, as the stock field guns (data\tactics\zamburakCannon.tactics):
   - Limber (as trained): it walks, trots and runs with the gun angled down beside the camel's neck, the rider's
     left hand on its cascabel. It cannot fire. An attack order unlimbers it first.
-  - Unlimber (6.67 s): the camel lies down and turns its neck aside. The artillerist draws his linstock from its
+  - Unlimber (6.67 s): the camel lies down, kneeling with its belly on the ground and its legs folded under it,
+    and turns its neck aside. The artillerist draws his linstock from its
     holster, swings the gun out over the camel's right side (+90, square to its spine), gets off on the left and
     stands at his station behind the breech.
   - Bombard: it cannot move. To fire (2.0 s) he touches the vent with the hot red tip of his linstock, a short
@@ -29,11 +31,11 @@ What it is
   key the camel turns its right side to the target.
 - Made with aoe3-blender-tools tools/make_zamburak.py (models, clips, every file checked by the game's
   granny2.dll). Every clip passed its check_anim.py:
-  - the new clips: 0 failures of 1197 checks;
-  - the unlimbered death: 0 of 75;
+  - the new clips: 0 failures of 1222 checks;
+  - the unlimbered death: 0 of 80;
   - the limbered deaths: 0 of 179.
   Those checks include palms not behind the shoulders, the camel's head and neck clear of the barrel, crossed
-  feet, the weapon not into the ground at death, and prop sizes against the man.
+  feet, the weapon not into the ground at death, prop sizes against the man, and the camel lying in the kush.
 
 A PROPOSAL FOR WARS OF LIBERTY'S TEAM: the ROF
 - The pack sets MEZamburak's CannonAttack ROF from 4.0 to 5.0. That is the fire (2.0 s) and the reload (3.0 s) as
@@ -91,7 +93,11 @@ TESTED (2026-11-26, a test copy of Wars of Liberty, single player, the DLL of 20
   - both deaths: the corpse with the cannon on it fades with no part left in the air, and the stick lies beside
     him when he dies unlimbered.
   - The same scene filmed with the key off as the control.
+  - Again with the hump and the kneeling camel: drawn and shaded as the stock camel beside it; from a side camera
+    the limbered barrel points 20 degrees down beside the neck and the unlimbered one is level.
 - Fixed in the course of the test:
+  - the humped camel edited in the game's packed vertex format was not drawn at all; it is written in the plain
+    skinned format of the game's other unit meshes;
   - the rider was missing (his anim file was cut inside an attachment);
   - the cannon stood in the air while an unlimbered corpse faded (now a dead model of its own);
   - apply_fix.py writes the tactics with CRLF whatever the checkout gave (with LF the AI would stop compiling).

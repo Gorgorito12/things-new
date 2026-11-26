@@ -33,12 +33,15 @@ What it is
     enable it.
 - Made with aoe3-blender-tools' tools/make_gun_camel.py (models, clips, every file checked by the game's
   granny2.dll). The camel lying down plays the game's own lying-down clips of its skeleton (the ones the
-  current unit uses), turned upright and laid on the ground.
+  current unit uses), turned upright, and ends kneeling in the kush: its belly on the ground, its legs folded
+  under it, its body level. The camel has a dromedary hump under the saddle cloth (round 7), and the gun's
+  post rises from the front of the saddle over the withers, on the camel's spine.
 
 Files it adds
   art\WoL\units\cavalry_ranged\gatling_camel\
-      gatling_camel_camel_nogun.gr2         the zamburak's camel without its swivel gun (its forked post stays as
-                                            the gun's mount), with the launch point at the gun's muzzle
+      gatling_camel_camel_nogun.gr2         the zamburak's camel without its swivel gun and its forked post (the
+                                            gun's own iron post is part of the gun model), with a hump, the launch
+                                            point at the gun's muzzle
       gatling_camel_gun_A55.gr2, _B55.gr2   the gun of each unit (bone_yaw on the post's top turns it)
       gatling_camel_A55.aim, _B55.aim       the turretArc key's aim tables: the gunner's pose for every 15
                                             degrees of the gun's turn (A, -90..+90) or every 2 (B, -30..+90,
@@ -111,6 +114,12 @@ Tested (2026-11-23, test copy of Wars of Liberty 1.0.15c, single player)
   steps round the post, the reload walk, the undeploy with the swing back, the deployed death (the camel slumps,
   the gun across it, he falls backward away from it) and the mounted death; GatlingCamel firing and dying as
   before with the same DLL.
+- Round 7 (2026-11-26, the user; every art file of both units replaced): the lying camel kneels in the kush (it
+  was propped 0.32 m up on its folded legs), the gun's post is centred over the spine at the front of the saddle
+  (the zamburak camel's own post stood 0.24 m to the left), and the camel has a hump (the rider sits 0.19 m
+  higher). check_anim.py: A 0 failures of 368 checks, B 0 of 595, its death 0 of 37. In game (test copy, single
+  player): both units drawn, idle, walk, firing (A from the saddle with the centred gun, B on foot), the deploy
+  and the undeploy, both deaths, from the game's camera and from a side camera.
 - Not seen in game: multiplayer.
 - Fixed on 2026-11-23 after the first films: the camel's left legs were drawn lifted (the stock clips' leg
   mirrors were copied in the clips' own axes); on death the gun stayed in the air, then turned on itself
@@ -150,7 +159,9 @@ Qué es
     carta, un edificio o una tecnología debe habilitarla.
 - Hecho con tools/make_gun_camel.py de aoe3-blender-tools (modelos, clips, cada archivo comprobado con el
   granny2.dll del juego). El camello tumbado usa las animaciones de tumbarse del propio juego para su esqueleto
-  (las que usa la unidad actual), enderezadas y apoyadas en el suelo.
+  (las que usa la unidad actual), enderezadas, y termina arrodillado: el vientre en el suelo, las patas plegadas
+  debajo y el cuerpo nivelado. El camello tiene una joroba bajo la manta de la silla (ronda 7) y el poste del arma
+  sale del frente de la silla sobre la cruz, sobre el lomo.
 
 Archivos que añade y cambia: ver la parte en inglés (los mismos). Los archivos actuales
 (art\KingsReturn\Units\Persian\GatlingCamel\, GatlingCamel.tactics) no se tocan.

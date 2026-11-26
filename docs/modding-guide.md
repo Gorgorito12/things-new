@@ -31,9 +31,9 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Wednesday 2026-11-25 23:00 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
 | Wednesday 2026-11-25 14:30 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries. |
 | Wednesday 2026-11-25 14:03 | [`garrisonConvert`](#garrisonconvert) | Filmed in WoL, with a control. `<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, with the train button's pie over the building's portrait. | The tag on the buildings that want it. |
-| Wednesday 2026-11-25 08:53 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
 | Wednesday 2026-11-25 08:42 | [`selectFattened`](#selectfattened) | Filmed in WoL, with a control. A button and a hotkey select the player's livestock that has reached its maximum food, on the whole map; the button shows how many there are and hides at none. | The button and the hotkey: `wol-fixes/select-fattened`. |
 | Wednesday 2026-11-25 08:22 | [`editorAutosave`](#editorautosave) | Added. The scenario editor saves the open scenario every few minutes to `autosave-1` ... | Nothing. |
 | Wednesday 2026-11-25 08:11 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
@@ -4373,12 +4373,12 @@ retargetInAction [log]
 
 *A gun on a mount turns toward its target by itself, inside its arc, instead of the whole unit turning.*
 
-**Added:** Tuesday 2026-11-24 10:05 · **Filmed in WoL:** Wednesday 2026-11-25 08:53
+**Added:** Tuesday 2026-11-24 10:05 · **Filmed in WoL:** Wednesday 2026-11-25 23:00
 
 ![turretArc in WoL](media/gatlingCamel-wol.gif)
 
-*In WoL, with the gatling camel pack (rounds 4 and 5) and `turretArc GatlingCamel ... log` (one `GatlingCamel`,
-selected, eight Houses all round brought to 50 HP; filmed on 2026-11-25):* the camel keeps still while its gun turns
+*In WoL, with the gatling camel pack (round 7: the post centred, the hump) and `turretArc GatlingCamel ... log` (one
+`GatlingCamel`, selected, eight Houses all round brought to 50 HP; filmed on 2026-11-26):* the camel keeps still while its gun turns
 on its post to each House within 90 degrees of either side, the gunner's hands on the crank and the breech, the
 tracers leaving the turned muzzle; a House behind turns the camel round until it is inside the arc, then the gun
 takes over. [Full video (MP4)](media/gatlingCamel-wol.mp4).
@@ -4386,7 +4386,8 @@ takes over. [Full video (MP4)](media/gatlingCamel-wol.mp4).
 ![turretArc in WoL, the gunner on foot](media/gatlingCamelDeployed-wol.gif)
 
 *The same Houses with a `GatlingCamelDeployed` (round 6: its gun rests at +90, square to the camel's spine, and
-turns from +30 to +150; 100 degrees a second; filmed on 2026-11-26):* it deploys (the camel lies down and turns its
+turns from +30 to +150; 100 degrees a second; round 7: the camel kneels in the kush; filmed on 2026-11-26):* it
+deploys (the camel lies down and turns its
 neck aside, the gunner gets off, takes the two handles and swings the gun out over the camel's right side), a
 House behind turns the camel until the House sits at +90, the gun turns to the Houses inside its arc while he steps
 round the post, and he walks in to the breech to reload and back. In the full video he then gets back on (the gun
@@ -10852,23 +10853,37 @@ English and Spanish) delivers it:
   head down, and he falls backward, away from it (the game's `defend_death`). The deployed camel needs the key: without
   it the camel faces its target with the gun to the side. Firing from the saddle is to be locked behind a card in
   WoL's data (JTMaston); `GatlingCamel` is unchanged.
+- **Round 7** (the user, 2026-11-26, with the zamburak cannon's camel, in the same shared code of
+  `make_gun_camel.py`):
+  - **the kush:** the borrowed lying-down clips left the camel propped 0.32 up on its folded legs; now it lies with its
+    belly on the ground and its legs folded under it, its body level (check_anim's new `lying` check: belly 2.7 cm,
+    hump 57% of its standing height, knees 21 cm, legs inside its outline; round 6's camel fails it);
+  - **the post centred:** the zamburak camel's own forked post stood at the saddle's front-left edge, 0.24 off the
+    spine; it is cut out, and a round iron post rises from the front of the saddle over the withers, on the spine, as in
+    the user's references. The gun is straight in front of the rider (A); B's stations follow it, 27 cm nearer the camel;
+    A's right elbow points out and back, level (with the old pole it turned over for a frame of the fire);
+  - **the hump:** the stock camel's back was flat; it is lifted 0.28 into a dromedary hump under the saddle cloth
+    (the same vertices, triangles, bones and texture; written in the plain skinned layout, as the game did not draw the
+    packed stream edited in place); the rider sits 0.19 higher, on it, and the post's top rises with him;
+  - every clip passed `check_anim.py` again (A 368 checks, B 595, B's death 37).
 
 ![The new gatling camel, from the saddle](media/gatlingCamel-wol.gif)
 
-*One `GatlingCamel` (selected, with `turretArc`; filmed on 2026-11-25 with the round-5 art) fires at eight Houses
+*One `GatlingCamel` (selected, with `turretArc`; filmed on 2026-11-26 with the round-7 art: the hump, the post centred)
+fires at eight Houses
 all round: the gun turns on its post toward each one while the camel keeps still, and for a House behind it the
 camel turns round.* [Full video (MP4)](media/gatlingCamel-wol.mp4). With the key off: [`turretArc`](#turretarc).
 
 ![The two gatling camels walking](media/gatlingCamel-move-wol.gif)
 
-*A `GatlingCamel` and a `GatlingCamelDeployed` (both mounted) walk out and back, the camera following (filmed on
-2026-11-25 with the round-5 art): the legs on the ground, the gun on its post, the rider's hands at the reins and the
+*A `GatlingCamel` and a `GatlingCamelDeployed` (both mounted) walk out and back, the camera still (filmed on
+2026-11-26 with the round-7 art): the legs on the ground, the gun on its post, the rider's hands at the reins and the
 gun.* [Full video (MP4)](media/gatlingCamel-move-wol.mp4).
 
 ![The new gatling camel, deployed](media/gatlingCamelDeployed-wol.gif)
 
-*One `GatlingCamelDeployed` (selected, with `turretArc`; filmed on 2026-11-26 with the round-6 art) deployed by its
-tactic button among eight Houses: the camel lies down, the gunner gets off and swings the gun out over the camel's
+*One `GatlingCamelDeployed` (selected, with `turretArc`; filmed on 2026-11-26 with the round-7 art) deployed by its
+tactic button among eight Houses: the camel kneels with its belly on the ground, the gunner gets off and swings the gun out over the camel's
 right side, a House behind turns the camel until it sits at +90, the gun turns to the Houses inside +30..+150 while he
 steps round the post (100 degrees a second); on reload he walks in to the breech and back. In the full video he then
 gets back on and the camel rises.* [Full video (MP4)](media/gatlingCamelDeployed-wol.mp4).
@@ -10933,7 +10948,13 @@ README) delivers it for `MEZamburak` only:
   - the zamburak's camel without its lateral swivel gun;
   - the midfa's barrel cut to 2/3 of its length, at 0.6 of its size, on a fork and socket on the withers;
   - the rider is today's, with his model and hat by rank;
-  - the linstock is a plain wooden stick, 0.85 long, with a red hot tip (`bone_match`; no fire on it).
+  - the linstock is a plain wooden stick, 0.85 long, with a red hot tip (`bone_match`; no fire on it);
+  - the camel has a dromedary hump (2026-11-26, the user: the stock camel's back was flat): its back lifted 0.28 into one
+    hump under the saddle cloth, the same vertices, triangles, bones and texture (the mesh is written in the plain
+    skinned layout: the game did not draw the packed one edited in place). The rider sits 0.19 higher, on it;
+  - lying down it kneels in the kush (2026-11-26, the user: "the camel isn't properly lying on the ground"): its belly
+    on the ground, its legs folded under it, its body level, so the cannon is level at every yaw. The borrowed lying-down
+    clips of the game left it propped 0.32 up on its legs.
 - **One unit, two modes** (`zamburakCannon.tactics`):
   - **Limber, as trained:** it walks and runs, the gun angled down beside the camel's neck, and cannot fire.
   - **Unlimber (6.67 s):** an attack order, or the new unlimber button, makes the camel lie down. He swings the
@@ -10952,16 +10973,17 @@ README) delivers it for `MEZamburak` only:
   when unlimbered; the unlimber and limber buttons, as the falconet has them.
 - **ROF: a proposal.** The CannonAttack ROF goes from 4.0 to 5.0, the fire (2.0 s) plus the reload (3.0 s) as
   animated, for WoL's team to confirm.
-- **Checks:** every clip passed `check_anim.py`: 1197 checks, plus 75 for the unlimbered death and 179 for the
+- **Checks:** every clip passed `check_anim.py`: 1222 checks, plus 80 for the unlimbered death and 179 for the
   limbered deaths. They include the new checks: palms not behind the shoulders, the camel's head clear of the
-  barrel, crossed feet, the weapon not into the ground at death, and prop sizes.
+  barrel, crossed feet, the weapon not into the ground at death, prop sizes, and an animal lying in the kush
+  (`lying`: belly 2.7 cm up, hump 57% of its standing height, knees 21 cm, legs inside its outline).
 
 ![The zamburak cannon in WoL](media/zamburakCannon-wol.gif)
 
-*In WoL (`C:\AoE3-UHC-WoLReal8`, the pack and the key, filmed on 2026-11-26): the unlimber button pressed, the camel
-lies down, and he swings the gun out and takes his station. He fires at Houses at 60 to 140 degrees, the gun turning
-on its swivel; he plants his stick, swings the gun round to load it and back, and dies unlimbered (the camel
-slumps, he falls back, the stick lies beside him, and all three fade together).*
+*In WoL (`C:\AoE3-UHC-WoLReal8`, the pack and the key, filmed on 2026-11-26 with the hump and the kush): the unlimber
+button pressed, the camel kneels with its belly on the ground, and he swings the gun out and takes his station. He
+fires at three Houses, the gun turning on its swivel; he plants his stick, swings the gun round to load it and back,
+and dies unlimbered (the camel slumps, he falls back, the stick lies beside him, and all three fade together).*
 [Full video (MP4)](media/zamburakCannon-wol.mp4).
 
 ![The zamburak cannon, key off](media/zamburakCannon-wol-control.gif)
@@ -10971,8 +10993,9 @@ stays at +90.* [Full video (MP4)](media/zamburakCannon-wol-control.mp4).
 
 ![The zamburak cannon, limbered](media/zamburakCannon-wol-limbered.gif)
 
-*Two zamburaks: the limber button pressed, and the limbered death on the dead model, the cannon on the fallen
-camel's back.* [Full video (MP4)](media/zamburakCannon-wol-limbered.mp4).
+*Two zamburaks (filmed on 2026-11-26 with the hump): the limber button pressed, the camels rise from the kush with the
+cannon angled down beside the neck, and the limbered death on the dead model, the cannon on the fallen camel's back.*
+[Full video (MP4)](media/zamburakCannon-wol-limbered.mp4).
 
 - **Tested in WoL** (2026-11-26, single player, `C:\AoE3-UHC-WoLReal8`, the round branch's DLL), checked frame by
   frame in close films:
@@ -10984,7 +11007,13 @@ camel's back.* [Full video (MP4)](media/zamburakCannon-wol-limbered.mp4).
   - the limber from the button;
   - both deaths;
   - the control with the key off.
+  - Again on 2026-11-26 with the hump and the kush: the humped camel draws, shaded like the stock one beside it;
+    from a side camera (a scenario `Camera Cut`) the limbered barrel points 20 degrees down beside the neck and the
+    unlimbered one is level, the lying camel's belly on the ground and its legs folded under it, in the lie-down, the
+    idle, the fire, the reload, the get-up and the death.
   - Fixed on the way:
+    - the camel edited in the game's packed vertex stream was not drawn at all (its header's unknown word must
+      check the data): the humped mesh is written in the plain skinned layout;
     - the rider was missing (his anim file was cut inside an attachment);
     - the cannon stood in the air while an unlimbered corpse faded (now a dead model of its own);
     - the tactics file needs CRLF, which `apply_fix.py` now writes whatever the checkout gave.

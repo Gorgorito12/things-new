@@ -6,12 +6,13 @@ unlimbered, the artillerist firing it on foot, as in your reference image.
 1. What it is (MEZamburak only, for now)
 - The camel is the zamburak's, without its lateral swivel gun. On its withers sits the midfa's bronze barrel, cut
   to 2/3 of its length and at 0.6 of its size, on a fork that turns in a socket. The rider is today's, with his
-  model and hat by rank.
+  model and hat by rank. The camel now has a dromedary hump under its saddle cloth (the stock camel's back was
+  flat); the rider sits on it.
 - One unit with two modes, like the stock field guns:
   - Limber (as trained): it walks, trots and runs with the gun angled down beside the camel's neck. It cannot
     fire.
-  - Unlimber (6.67 s): an attack order, or the new unlimber button, does it. The camel lies down and turns its
-    neck aside. He swings the gun out over the camel's right side (+90, square to its spine), gets off and stands
+  - Unlimber (6.67 s): an attack order, or the new unlimber button, does it. The camel kneels with its belly on the
+    ground and its legs folded under it, as in your reference, and turns its neck aside. He swings the gun out over the camel's right side (+90, square to its spine), gets off and stands
     at his station behind the breech.
   - Firing (2.0 s): he touches the vent with the hot red tip of his linstock, a short plain stick.
   - Reloading (3.0 s): he sticks the linstock in the ground and pushes the gun round through its back until the
@@ -48,7 +49,17 @@ Tested in a copy of WoL, single player, checked frame by frame in close films:
 - targets outside the arc turning the camel;
 - the reload's swing;
 - both deaths (nothing stays in the air while the corpse fades);
-- the control with the key off.
+- the control with the key off;
+- from a side camera: the limbered barrel points 20 degrees down beside the neck, the unlimbered one is level.
 Not tested: multiplayer, and the AI playing it.
 
 Everything is in wol-fixes/zamburak (apply_fix.py with --check and --restore; README).
+
+5. The gatling camel gets the same camel changes (wol-fixes/gatling-camel)
+- When it deploys, the camel kneels with its belly on the ground and its legs folded under it. Before, it was
+  propped about 30 cm up on its folded legs.
+- The gun's post now rises from the front of the saddle over the withers, on the camel's spine. Before, it stood
+  at the saddle's front-left edge (it was the zamburak's own swivel post).
+- The camel has the same hump, and the rider sits on it.
+- Both units were tested again in a copy of WoL: firing from the saddle, the deploy and the undeploy, firing on
+  foot, both deaths.
