@@ -1,0 +1,36 @@
+# trace1
+07:19:22 attached to pid 37032 (13 threads)
+07:19:32 194628 ms attack-tag-event ua=0x3ff4f6e0 eax=0x0 state=0x1 shots=0 target=1 uaflags(30)=31042804
+07:19:32 194628 ms tag-state-test ua=0x3ff4f6e0 eax=0x0 state=0x1 shots=0 target=1 uaflags(30)=31040804
+07:19:32 194628 ms after-shot-flag17 ua=0x3ff4f6e0 eax=0x0 state=0x1 shots=1 target=1 uaflags(30)=31040804
+07:19:32 194628 ms done-after-shot ua=0x3ff4f6e0 eax=0x1 state=0x1 shots=1 target=1 uaflags(30)=31040804
+07:19:33 194840 ms attack-tag-event ua=0x3ff4f6e0 eax=0x0 state=0x1 shots=1 target=1 uaflags(30)=71040804
+07:19:33 194840 ms tag-state-test ua=0x3ff4f6e0 eax=0x0 state=0x1 shots=1 target=1 uaflags(30)=71040804
+07:19:33 195048 ms attack-tag-event ua=0x3ff4f6e0 eax=0x0 state=0x1 shots=1 target=1 uaflags(30)=71040804
+07:19:33 195048 ms tag-state-test ua=0x3ff4f6e0 eax=0x0 state=0x1 shots=1 target=1 uaflags(30)=71040804
+07:21:22 detached; the game keeps running
+07:21:22 detached
+# trace2
+07:21:28 attached to pid 37032 (12 threads)
+07:21:35 375464 ms state-ok ua=0x3ff4f6e0 eax=0x0 esi=0x40dec630 6c=319488004 state=0x1 shots=0 target=1 uaflags(30)=31040804
+07:21:35 375464 ms no-6c ua=0x3ff4f6e0 eax=0xffffff01 esi=0x63 6c=319488004 state=0x1 shots=0 target=1 uaflags(30)=31040804
+07:21:35 375464 ms projectile-path ua=0x3ff4f6e0 eax=0x0 esi=0x63 6c=319488004 state=0x1 shots=0 target=1 uaflags(30)=31040804
+07:21:35 375464 ms launch ua=0x3ff4f6e0 eax=0x40dec630 esi=0x63 6c=319488004 state=0x1 shots=0 target=1 uaflags(30)=31040804
+07:21:35 375674 ms state-ok ua=0x3ff4f6e0 eax=0x0 esi=0x40dec630 6c=319488004 state=0x1 shots=1 target=1 uaflags(30)=71040804
+07:21:36 375884 ms state-ok ua=0x3ff4f6e0 eax=0x0 esi=0x40dec660 6c=319488004 state=0x1 shots=1 target=1 uaflags(30)=71040804
+07:22:28 detached; the game keeps running
+07:22:28 detached
+# trace3
+07:22:47 attached to pid 37032 (13 threads)
+07:22:55 480702 ms power-bit2-set ua=0x3ff4f6e0 eax=0x1 esi=0x130b0004 6c=0x130b0004 p1c=99 args=['0x3a83126f', '0x40dec630', '0xfee0004', '0xfee0034'] state=0x1 shots=0 target=1 uaflags(30)=31040804
+07:22:55 480702 ms power-ready-call ua=0x3ff4f6e0 eax=0x0 esi=0x63 6c=0x130b0004 p1c=99 args=['0x0', '0x63', '0x1afa14', '0x1afa0c'] state=0x1 shots=0 target=1 uaflags(30)=31040804
+07:22:55 480702 ms power-ready-result ua=0x3ff4f6e0 eax=0xffffff01 esi=0x63 6c=0x130b0004 p1c=99 args=['0x3a83126f', '0x40dec630', '0xfee0004', '0xfee0034'] state=0x1 shots=0 target=1 uaflags(30)=31040804
+07:22:55 480702 ms fire-path ua=0x3ff4f6e0 eax=0xffffff01 esi=0x63 6c=0x130b0004 p1c=99 args=['0x3a83126f', '0x40dec630', '0xfee0004', '0xfee0034'] state=0x1 shots=0 target=1 uaflags(30)=31040804
+07:22:55 480913 ms power-bit2-set ua=0x3ff4f6e0 eax=0x1 esi=0x130b0004 6c=0x130b0004 p1c=99 args=['0x3a83126f', '0x40dec660', '0xfee0004', '0xfee0034'] state=0x1 shots=1 target=1 uaflags(30)=71040804
+07:22:55 480913 ms power-ready-call ua=0x3ff4f6e0 eax=0x0 esi=0x63 6c=0x130b0004 p1c=99 args=['0x0', '0x63', '0x1afa14', '0x1afa0c'] state=0x1 shots=1 target=1 uaflags(30)=71040804
+07:22:55 480913 ms power-ready-result ua=0x3ff4f6e0 eax=0x84000 esi=0x63 6c=0x130b0004 p1c=99 args=['0x3a83126f', '0x40dec660', '0xfee0004', '0xfee0034'] state=0x1 shots=1 target=1 uaflags(30)=71040804
+07:22:55 481122 ms power-bit2-set ua=0x3ff4f6e0 eax=0x1 esi=0x130b0004 6c=0x130b0004 p1c=99 args=['0x3a83126f', '0x40dec660', '0xfee0004', '0xfee0034'] state=0x1 shots=1 target=1 uaflags(30)=71040804
+07:22:55 481122 ms power-ready-call ua=0x3ff4f6e0 eax=0x0 esi=0x63 6c=0x130b0004 p1c=99 args=['0x0', '0x63', '0x1afa14', '0x1afa0c'] state=0x1 shots=1 target=1 uaflags(30)=71040804
+07:22:55 481122 ms power-ready-result ua=0x3ff4f6e0 eax=0x84000 esi=0x63 6c=0x130b0004 p1c=99 args=['0x3a83126f', '0x40dec660', '0xfee0004', '0xfee0034'] state=0x1 shots=1 target=1 uaflags(30)=71040804
+07:23:17 detached; the game keeps running
+07:23:17 detached
