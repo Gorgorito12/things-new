@@ -1,0 +1,34 @@
+	<anim>
+		RangedAttackSharpshoot
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\explorers\europeans\fanning\explorer_fanning_attack</file>
+			<tag type="Attack">0.191</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="PistolShot">0.191</tag>
+			<tag type="Particles" particlename="musketshot">0.201</tag>
+			<tag type="Attack">0.310</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="PistolShot">0.310</tag>
+			<tag type="Particles" particlename="musketshot">0.320</tag>
+			<tag type="Attack">0.428</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="PistolShot">0.428</tag>
+			<tag type="Particles" particlename="musketshot">0.438</tag>
+			<tag type="Attack">0.547</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="PistolShot">0.547</tag>
+			<tag type="Particles" particlename="musketshot">0.557</tag>
+			<tag type="Attack">0.666</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="PistolShot">0.666</tag>
+			<tag type="Particles" particlename="musketshot">0.676</tag>
+			<tag type="Attack">0.785</tag>
+			<tag type="SpecificSoundSet" checkvisible="1" set="PistolShot">0.785</tag>
+			<tag type="Particles" particlename="musketshot">0.795</tag>
+		</assetreference>
+		<component>ModelComp</component>
+		<attach a="pistol" frombone="Bip01_AttachRt" tobone="bip01 Prop1" syncanims="0"/>
+	</anim>
+	<anim>
+		SharpshootIdle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\explorers\europeans\fanning\explorer_fanning_idle</file>
+		</assetreference>
+		<component>ModelComp</component>
+		<attach a="pistol" frombone="Bip01_AttachRt" tobone="bip01 Prop1" syncanims="0"/>
+	</anim>

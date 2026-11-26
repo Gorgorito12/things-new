@@ -31,7 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Thursday 2026-11-26 07:49 | [`powerShots`](#powershots) | Added. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
+| Thursday 2026-11-26 09:00 | [`powerShots`](#powershots) | Filmed in WoL, with a control. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
 | Wednesday 2026-11-25 23:00 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
 | Wednesday 2026-11-25 14:30 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries. |
 | Wednesday 2026-11-25 14:03 | [`garrisonConvert`](#garrisonconvert) | Filmed in WoL, with a control. `<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, with the train button's pie over the building's portrait. | The tag on the buildings that want it. |
@@ -4338,7 +4338,8 @@ retargetInAction [log]
   attack the new target is instead any unit in range that the action has a `<rate type>` for (`Guardian` for "Hammer
   Fanning", `LogicalTypeValidSharpshoot` for "Slip Hammering"), not an ally and, as the game's test does, an enemy;
   the tactic's `<autoattacktype>` is not asked. It gains shots only with [`powerShots`](#powershots): without it an
-  ability's attack fires once a use.
+  ability's attack fires once a use. Filmed with it: the [`powerShots` video](#powershots) (six guardians, six
+  shots, each at the next guardian), and four Gaia `WOLRegular`s killed by one "Slip Hammering".
 - **With [`numberOfShots`](#numberofshots):** a burst's quick shots keep the unit in its attack animation until the next
   shot (`<BurstPose>` hold), so a target that dies after a quick shot is replaced and the burst goes on: 3 shots, the
   last on the new target, then the reload. A target lost during the reload wait (between bursts, or after a burst's last
@@ -4382,7 +4383,22 @@ retargetInAction [log]
 
 *An explorer's "Hammer Fanning" empties the whole revolver: every shot of its animation hits, not only the first.*
 
-**Added:** Thursday 2026-11-26 07:49
+**Added:** Thursday 2026-11-26 07:49 · **Filmed in WoL:** Thursday 2026-11-26 09:00
+
+![powerShots in WoL](media/powerShots-wol.gif)
+
+*In WoL, with the `wol-fixes/hammer-fanning` pack (`powerShots log`, `retargetInAction log`, `<PowerShots>6` and
+`<RetargetInAction>1` on the Explorer's two ability attacks, the new animation), a British Explorer, selected, uses
+"Hammer Fanning" on six `OutlawPistol` guardians (270 HP) around him; filmed on 2026-11-26:* the pistol at the hip,
+the left palm sweeping over the hammer, six shots 0.28 s apart (the log lines at the bottom: `Attack tag after 1 of 6
+shots ... fires`, `lost its target 4 ... new target 7`), and the six guardians fall. [Full video
+(MP4)](media/powerShots-wol.mp4).
+
+![powerShots in WoL, keys off](media/powerShots-wol-control.gif)
+
+*The same scene without the pack and the keys (WoL's own data and animation):* the borrowed outlaw clip shows three
+muzzle flashes, but only the first shot hits: one guardian falls, the other five stay at 270 HP. [Full video
+(MP4)](media/powerShots-wol-control.mp4).
 
 ```
 powerShots [log]
@@ -4433,7 +4449,14 @@ powerShots [log]
     off / on, other sessions' games running): 1394 / 1323 / 1369 fps, update 0.1 ms a frame in all three, main thread 83 /
     84 / 83 %, one or two frames over 50 ms in each (the scenario's first frame). The hook runs only at the tags of an
     ability's attack after its first shot.
-  - Not tested: multiplayer, beside WoL's DLL, "Slip Hammering" (the same path).
+  - The pack (2026-11-26, skirmishes on a test map against a European AI, `wolOtto`): a British Explorer, "Hammer
+    Fanning" on six `OutlawPistol` guardians: six shots 278 to 282 ms apart, six new targets, six guardians dead (the
+    video above); "Slip Hammering" (`Industrialize` set by a trigger) on four Gaia `WOLRegular`s (200 HP): four shots,
+    four dead, the last two tags with nobody in range (stock). A Danish Explorer (another model, the same clips): the
+    clip plays, the pistol at the hip in the right hand, the flash at the pistol at each shot, the feet still. The
+    control (no pack, no keys): one guardian a use. In game a power's attack ends with its animation: no reload and
+    no `SharpshootIdle` were seen after it, the unit goes back to its idle.
+  - Not tested: multiplayer, beside WoL's DLL.
 
 #### turretArc
 
