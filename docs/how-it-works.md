@@ -4071,7 +4071,8 @@ command, three compares.
 ### garrisonConvert
 
 `src/features/garrisonconvert.cpp`; the shared `garrisonobservers.*` (new with this key), `transformcalls.*`,
-`prototags.*`, `worldtick.*` and `savedmarkers.h`.
+`prototags.*`, `techsubtypes.*` (`AddTechProtoSubtype`, new with version 2), `worldtick.*`, `progresspie.*` and
+`savedmarkers.h`.
 
 - **Where a unit enters another:** FUN_009C24B5, `bool __thiscall(container, int unitId, int flag)`, `ret 8`, the load
   every way in goes through (eleven direct callers: the garrison and load actions, the triggers, the random map
@@ -4081,29 +4082,71 @@ command, three compares.
   returns 1 at 0x9C2701. The shared hook replaces the 7 bytes at 0x9C26E1 (`mov edi,[edi+58h]` / `test` / `je`), after
   the append, with EDI = the container and ESI = the unit; it calls each observer, replays the three instructions and
   jumps to 0x9C26E8 or 0x9C26FF. The function's head is verified too, so a detour of it fails the key instead of
-  leaving the hook unreached. Unload: 0x9C68C3.
-- **Tag** (`AddProtoTagHandler`): `<GarrisonConvertTo delay="S">Name</GarrisonConvertTo>`, by proto ID: the name, kept
-  as text and resolved (0x5A2346) against each database once, and the delay in ms (0 to 3600 s; a bad one is 0). A
-  second tag on the same proto replaces the first, with a log line.
+  leaving the hook unreached.
+- **Tags** (`AddProtoTagHandler`): every `<GarrisonConvertTo delay="S" eject="B" from="Name">Name</GarrisonConvertTo>`,
+  by proto ID, in order (32 at most): the names kept as text and resolved against each database once (the target with
+  0x5A2346; `from` in the unit type name table `[db+190h]` through 0x58E685 / 0x40295B, the lookup `unittype=` uses,
+  so a proto or an abstract type), the delay in seconds (0 to 3600; a bad one is 0), eject from `true`, `1` or an empty
+  value. The XML attribute getter 0x598F37 returns true for `eject=""`.
 - **The entries** (`AddGarrisonObserver`): the observer runs inside the load, so it only adds the container's ID to a
-  set (in ID order) when its proto has the tag. The conversions run after the world update (`AddWorldTick`).
-- **The queue is the container's own list** `[c+70h]`, which is in entry order: the units of it that are still inside
-  (`[unit+6Ch]` = the container), alive, of the container's owner and not already of the target proto. Nothing else
-  is kept, so a unit that leaves drops out by itself, and a captured building converts its new owner's units.
-- **No delay:** each unit of the queue goes through `TransformUnit` (0x9C754C with the transform observers around it),
-  the container leaves the set.
-- **With a delay:** the game time `[world+108h]` since the last tick is added to the container's timer; each full delay
-  converts the first unit of the queue, and the rest carries over to the next one. When the unit in progress leaves
-  before its turn, the next starts from 0. An empty queue clears the timer and the container leaves the set. The timer,
-  the unit in progress and the game time of the write are words 1 to 3 of a saved marker on the container
-  (`savedmarkers.h`, stat 6Ch, word 0 `GCNV`), written each tick.
-- **A game that starts or loads** (another world, the time going back or the step count jumping, as `nurseryFactor`):
-  one walk of the world's unit table puts back every container of a tagged proto with units inside, with the timer of
-  its marker plus the game time since the marker's write (the update the save was made in).
-- **The transform in place** keeps the unit's ID, owner, container and share of hit points, and changes its
-  population to the new proto's (the stock `TransformUnit` effect does the same).
-- **Panels:** `GarrisonConvertProgress(building, &fraction, &waiting)` (`features.h`) gives the progress of the unit in
-  progress and the number of units that qualify.
+  set (in ID order) when its proto has tags. The conversions run after the world update (`AddWorldTick`).
+- **The queue is the container's own list** `[c+70h]`, in entry order: the units still inside (`[unit+6Ch]` = the
+  container), alive, of the container's owner, not of a proto that is a target of the building's tags (the player's
+  copy's or the data's), and matched by at least one tag (no `from`, the same proto ID, or 0x44D7FA is-a). Nothing else
+  is kept per unit, so a unit that leaves drops out by itself, and a captured building converts its new owner's units.
+  The head is found again on each step (no allocation per tick).
+- **The tag for the head:** the first tag from the building's cursor (wrapping) whose `from` matches it; the cursor then
+  moves past that tag. The head's delay is that tag's.
+- **The timer:** the game time `[world+108h]` since the last tick is added once per tick; when it reaches the delay the
+  head converts and the rest carries over to the next one; when the head leaves before its turn, the next starts from 0.
+- **The population** (before each conversion, the Maintain spawn's test 0x9E2F79 on the difference): `delta` = the
+  player's copy of the target's `[proto+D8h]` minus the unit's; `delta ≤ 0` or flag A3h (`AlwaysAllowOverPopCap`)
+  passes; flag 9Fh (`AllowOverPopCap`) needs `cap − used > 0`; else `cap ≥ used + delta`, with `used = [player+78h] +
+  0x45805C(player)` and `cap = 0x4581A1(player)` (which includes `basePop` / `extraPop`). A failed test holds the timer
+  at the delay and sets the building's pause; the first time it is set, the owner's screen gets the train's message.
+- **The message** is the train action's own (0x9EB0D6, after a population test fails): only when `[game+3C0h]` is the
+  owner's ID; the format is string 17996 (`cStringNoPopcapRoom`, through the BString 0x58EA52 / 0x4010CA), the name the
+  target's `[proto+140h]` string, shown by the game's vtable `+68h` (`cdecl(game, 2000, 0xC6657C, format, name)`), then
+  the sound 0x50547A(game, 4, 0). The train's third call, `[[game+920h]] +B4h`, is not made (its meaning is not
+  known). Interface only: nothing reaches the simulation.
+- **The transform in place** (`TransformUnit`: 0x9C754C with the transform observers around it) keeps the unit's ID,
+  owner, container and share of hit points, and changes its population to the new proto's. A unit whose proto did not
+  change (the transform refused it) stays the head, logged (20 lines at most), and the building stops for the tick.
+- **Eject:** the unload of one unit, FUN_009C68C3, `bool __thiscall(container, unitId, pos*, usePos, keepOrders, force,
+  a6, goTo*, a8, a9)`, `ret 24h` (REA `ev_6ba459b1…`, 2026-11-26), with pos (−1, −1, −1) at 0xC665E4 and `usePos` 0
+  (the place is found around the container by 0x9C65D8), as the unit command handler FUN_009CBEA1 calls it for one unit
+  (`ev_4d4c00e4…`), and `force` 1 as the death eject FUN_009C6C79 does (`ev_ef4a8702…`: without it the unload needs
+  `[world+6920h]`), `goTo` (0, 0, 0) at 0xC66550 (no point to walk to), `a6` −1. It runs in the world tick, after the
+  load has returned, like the trigger `Ungarrison`. A failed unload (no room) leaves the unit inside, logged.
+- **Saved state** (`savedmarkers.h`, stat 6Ch, on the building): word 0 `GCNV`: the timer, the head and the game time of
+  the write (written each tick, cleared when nobody qualifies); word 0 `GCRR`: the cursor and the pause (written when
+  they change). A game that starts or loads (another world, the time going back or the step count jumping) walks the
+  world's unit table once and puts back every container with tags and units inside, with its timer plus the game time
+  since the write (the update the save was made in), its cursor and its pause.
+- **Techs** (`AddTechProtoSubtype`, six subtypes): the lookup hook of `techsubtypes.*` calls the key's parse with the
+  effect and its XML node while the techs are read: `unittype` (in the unit type table; a proto where the subtype needs
+  one) and `tag` go into the key's table, and the effect's field `+10h` becomes the index (the applyData switch passes
+  it to the handler as its "action ID"). The handler gets the player's copy of the proto, the base proto, that index,
+  the amount and the relativity, and works on the copy's tags: a map by the copy's pointer (with its proto ID, so a
+  reused pointer starts again), made from the data's tags at the first change, cleared on a data load. Delay and eject
+  go through the stock value function 0x7F892A (every relativity, and the removal), with the tag's own data value as
+  the base; target and from are set; Add appends a tag (its removal takes it back); Remove drops tags. A change marks the
+  world for one walk at the next tick, so units already inside a building that now has tags start converting.
+  **A load:** the game reads the protos again (the data-load callback, so the tags) but not the techtree, then runs every
+  ProtoUnit `Data` effect of the active techs again before the first tick (seen in game: the six effects of the test
+  tech came through the handlers after `loadGame`), so the key's table of effects is never cleared: the effects keep the
+  indices they were given when the techtree was read.
+- **Panels:** `GarrisonConvertProgress(building, &fraction, &waiting)` (`features.h`) gives the progress of the head
+  (full during a pause) and the number of units that qualify; the pie source (`AddProgressPieSource`) shows it for a
+  head whose tag has a delay.
+
+**Why it is safe:** the hook is the shared one (above). Every engine function called is verified first: the unload's
+head 0x9C68C3, the population getters' heads, the train's message call and its sound (0x9EB0D6, 0x9EB137), the is-a
+test, the value function, the player's proto 0x45311B, the flag test, the BString pair. The unload, the transform and
+the message run in the world tick, the same place the trigger effects run, after every load has returned. The
+simulation only uses game time, the step count, the unit table in ID order and maps by building ID; the tech table is
+keyed by pointer but only looked up. The message depends on the local player but changes nothing. Cost: per tick, for
+each active building, one walk of its contained list per conversion; nothing for a building with no units inside.
 
 ### containedUnitsROF
 

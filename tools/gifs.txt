@@ -394,8 +394,8 @@ selectFattened-wol 5 36 3
 selectFattened-wol-control 5 36 3
 progressPie-wol 1 12 1 800:330:0:0
 progressPie-wol-control 1 12 1 800:330:0:0
-garrisonConvert-wol 2 24 2
-garrisonConvert-wol-control 2 24 2
+garrisonConvert-wol 0 14 1.5
+garrisonConvert-wol-control 0 14 1.5
 zamburakCannon-wol 6 40 4
 zamburakCannon-wol-control 6 40 4
 zamburakCannon-wol-limbered 36 24 2
