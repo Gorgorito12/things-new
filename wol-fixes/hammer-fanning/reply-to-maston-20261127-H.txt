@@ -1,0 +1,44 @@
+Hammer fanning (your request of 2026-11-25): what we built, and three questions
+
+What we found first
+- Today each of the two explorer abilities fires ONE shot per use. The borrowed outlaw clip shows three muzzle
+  flashes, but in an ability's attack every Attack tag asks the game whether the ability is ready, and the first shot
+  starts its recharge, so the second and third tags fire nothing. We traced it on a 5000 HP guardian: 750 damage per
+  use, not 2250. <numberprojectiles>3 in explorer.tactics is not read by the game.
+- The machine guns' retarget did not work for abilities either: the game would not let an ability's attack take a
+  guardian as its next target, because the tactic would give a guardian the explorer's normal shot.
+
+What we built (pack wol-fixes/hammer-fanning, apply_fix.py with --check and --restore)
+- A new animation for RangedAttackSharpshoot, for the Explorer only: the pistol at the hip, held by its grip, and the
+  left palm sweeping back over the hammer at each of six shots, then back over the top for the next one. The shots are
+  0.28 s apart (the borrowed clip's flashes were 0.21 s apart). The model has no hammer and the hand no fingers, so
+  the sweep is read in the wrist and forearm, close over the pistol.
+- A SharpshootIdle animation (explorer.tactics names it, but it was never defined): the pistol at the hip, the left
+  hand ready.
+- The outlaw clip is no longer used by the Explorer's RangedAttackSharpshoot; the file stays in the game for anything
+  else that uses it. The reload animation is unchanged.
+- A new DLL key, powerShots, and the tag <PowerShots>N</PowerShots> on an attack: an ability's attack fires at each
+  Attack tag of its animation, up to N shots per use. The ability still has to be ready for the first shot, and its
+  recharge still starts with it.
+- retargetInAction now works for abilities: when the target dies, the next shot goes to the nearest unit in range that
+  the attack has a <rate type> for (Guardian for Hammer Fanning, LogicalTypeValidSharpshoot for Slip Hammering).
+- The pack puts <RetargetInAction>1 and <PowerShots>6 on both of the Explorer's ProtoActions (SharpshooterAttack and
+  CrackshotAttack), not in explorer.tactics, which ten other units share. It adds the two keys to wol.cfg:
+      retargetInAction
+      powerShots
+
+Tested in game (single player)
+- British Explorer, Hammer Fanning on six outlaw guardians (270 HP): six shots, six guardians dead in one use.
+- Slip Hammering on four regulars (200 HP): four shots, four dead; the last two shots found nobody in range.
+- Danish Explorer (a different model with the same clips): the animation plays the same way.
+- Without the pack: one guardian per use, as today.
+- The AI still compiles and plays; no WoL AI script casts these abilities.
+- Not tested: multiplayer.
+
+Questions
+1. Balance. Every shot now does the full damage: 6 x 750 = 4500 per use of Hammer Fanning, and 6 x 1000 = 6000 for
+   Slip Hammering, spread over up to six targets. Should we lower the damage per shot (for example 750 / 6 = 125 to
+   keep today's total), or raise the cooldowns (60 s and 90 s today)?
+2. The same animation for both abilities? Slip Hammering could get a different gesture (for example one-handed
+   rapid fire) if you want them to look different.
+3. Retarget on Slip Hammering too, or only on Hammer Fanning against guardians? Today the pack turns it on for both.

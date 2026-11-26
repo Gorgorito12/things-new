@@ -13,6 +13,7 @@ Contents:
 - [containedUnitsROF](#containedunitsrof)
 - [numberOfShots](#numberofshots)
 - [retargetInAction](#retargetinaction)
+- [powerShots](#powershots)
 - [turretArc](#turretarc)
 - [accuracyTechs](#accuracytechs)
 - [broadsideMuzzleLimit](#broadsidemuzzlelimit)
@@ -3706,7 +3707,7 @@ Contract: [retargetInAction](../porting-to-another-dll.md#retargetinaction).
 
 Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`rofreads.h`](helpers.md#rof-reads), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `RetargetNoTarget` `0x487838` (27 B), `RetargetUpdateTarget` `0x48A359` (31 B), `UnitIsSeeable` `0x48A9EF` (59 B), `UnitsNearPoint` `0x4A1C55` (248 B).
+Sites: `PlayerIsAlly` `0x484E01` (19 B), `RetargetNoTarget` `0x487838` (27 B), `RateLookupHead` `0x487C45` (16 B), `RetargetUpdateTarget` `0x48A359` (31 B), `UnitIsSeeable` `0x48A9EF` (59 B), `UnitsNearPoint` `0x4A1C55` (248 B).
 
 ### src/features/retarget.cpp
 
@@ -3737,10 +3738,18 @@ Sites: `RetargetNoTarget` `0x487838` (27 B), `RetargetUpdateTarget` `0x48A359` (
 // types), in range (the unit's vtable +CCh with [ua+24h], as 0x48A5C8) and seen by the unit's player (0x48A9EF, as
 // 0x48A605), and of the tactic's <autoattacktype> [tactic+174h] when it has one (0x44D7FA, as the automatic search's
 // test 0x4A1A0E). The nearest wins (the unit's vtable +BCh, as 0x48A59B), then the lowest ID.
+//
+// An attack launched by a power (its power use [ua+6Ch] not 0, as an explorer's sharpshooter ability) is not the
+// attack the tactic would pick for its targets (a guardian gets the normal ranged attack), and the update does not ask
+// the tactic for it (0x48A4C2 -> 0x4F6F61 -> 0x48A58D). For such an attack a candidate is taken by the action's own
+// rates instead of 0x489ECC and the <autoattacktype>: a rate above 0 for it (the lookup 0x487C45, its <rate type>s),
+// not an ally of the unit's player (0x484E01) and, unless the action's flag 0Dh is set, an enemy (the diplomacy
+// [player+1D4h+4*ID] = 2), as 0x489ECC tests the relation; then in range and seen as above.
 #include <windows.h>
 
 #include <compare>
 #include <cstdint>
+#include <cstdio>
 #include <cwchar>
 #include <map>
 
@@ -3779,6 +3788,8 @@ using AttackForFn = std::int32_t(__thiscall*)(const char* tactic, const char* at
                                               std::int32_t a3, std::int32_t a4, std::int32_t a5, std::int32_t a6,
                                               float range);
 using ProtoIsTypeFn = bool(__thiscall*)(const char* proto, std::int32_t typeId);
+using RateForFn = float(__thiscall*)(const char* action, const char* target);
+using IsAllyFn = bool(__thiscall*)(const char* player, std::int32_t otherPlayer);
 using SeeableFn = bool(__thiscall*)(const char* unit, std::int32_t player);
 using AliveFn = bool(__thiscall*)(const char* unit);
 using InRangeFn = bool(__thiscall*)(const char* unit, const char* target, float range);
@@ -3788,6 +3799,8 @@ const auto kUnitsNear = reinterpret_cast<UnitsNearFn>(0x004A1C55);
 const auto kAttackFor = reinterpret_cast<AttackForFn>(0x00489ECC);
 const auto kProtoIsType = reinterpret_cast<ProtoIsTypeFn>(0x0044D7FA);
 const auto kIsSeeable = reinterpret_cast<SeeableFn>(0x0048A9EF);
+const auto kRateFor = reinterpret_cast<RateForFn>(0x00487C45);
+const auto kIsAlly = reinterpret_cast<IsAllyFn>(0x00484E01);
 
 template <typename T>
 T Field(const void* base, std::uint32_t offset) {
@@ -3956,8 +3969,25 @@ struct Why {
   std::int32_t range = 0;
   std::int32_t unseen = 0;
   std::int32_t lastFit = 0;
+  bool power = false;
   float range0 = 0.0f;
 } g_why;
+
+// A power-launched attack's test of a candidate: the action's own rates and the relation (see the head comment).
+bool PowerFits(const char* action, const char* player, const char* other, std::int32_t relation) {
+  const char* otherPlayer = Field<const char*>(other, 0x44);
+  if (otherPlayer == nullptr) {
+    return false;
+  }
+  const std::int32_t otherId = Field<std::int32_t>(otherPlayer, 0x00);
+  if (kIsAlly(player, otherId)) {
+    return false;
+  }
+  if (relation == 1 && (otherId < 0 || otherId >= 16 || Field<std::int32_t>(player, 0x1D4 + 4 * otherId) != 2)) {
+    return false;
+  }
+  return kRateFor(action, other) > 0.0f;
+}
 
 // The new target, or -1.
 std::int32_t Search(const char* world, const char* unitAction, const char* unit, std::int32_t lostId, float* distanceOut) {
@@ -3974,9 +4004,11 @@ std::int32_t Search(const char* world, const char* unitAction, const char* unit,
   const auto inRange = Virtual<InRangeFn>(unit, 0xCC);
   const auto distanceTo = Virtual<DistanceFn>(unit, 0xBC);
   const std::int32_t selfId = Field<std::int32_t>(unit, 0x10);
-  const std::int32_t autoType = Field<std::int32_t>(tactic, 0x174);  // <autoattacktype>, -1 none
+  const bool power = Field<const char*>(unitAction, 0x6C) != nullptr;  // launched by a power
+  const std::int32_t autoType = power ? -1 : Field<std::int32_t>(tactic, 0x174);  // <autoattacktype>, -1 none
   g_why = Why{};
   g_why.range0 = range;
+  g_why.power = power;
   g_found.count = 0;
   kUnitsNear(world, reinterpret_cast<const float*>(unit + 0x14), (range > 0.0f ? range : 0.0f) + kSearchSlack, 1,
              &g_found);
@@ -3997,11 +4029,18 @@ std::int32_t Search(const char* world, const char* unitAction, const char* unit,
       ++g_why.type;
       continue;
     }
-    const std::int32_t fits = kAttackFor(tactic, unit, other, 1, relation, 0, 0, range);
-    if (fits != actionId) {
-      ++g_why.action;
-      g_why.lastFit = fits;
-      continue;
+    if (power) {
+      if (!PowerFits(action, player, other, relation)) {
+        ++g_why.action;
+        continue;
+      }
+    } else {
+      const std::int32_t fits = kAttackFor(tactic, unit, other, 1, relation, 0, 0, range);
+      if (fits != actionId) {
+        ++g_why.action;
+        g_why.lastFit = fits;
+        continue;
+      }
     }
     if (!inRange(unit, other, range)) {
       ++g_why.range;
@@ -4060,11 +4099,17 @@ std::int32_t __stdcall UhcRetargetAction(const char* unitAction) {
     ++g_misses;
     if (g_log && g_logLines < kMaxLogLines) {
       ++g_logLines;
+      wchar_t why[96];
+      if (g_why.power) {
+        std::swprintf(why, 96, L"without a rate of this power's attack or not an enemy");
+      } else {
+        std::swprintf(why, 96, L"for another attack (%d)", g_why.lastFit);
+      }
       uhc::Log(L"retargetInAction: %d ms, unit %d (%hs) lost its target %d in state %02Xh after %d shots: no other "
                L"target in range, the stock code (%d units around: %d dead or inside, %d not of the auto-attack type, %d "
-               L"for another attack (%d), %d out of range %.1f, %d unseen)", now, unitId,
+               L"%ls, %d out of range %.1f, %d unseen)", now, unitId,
                ProtoName(Field<const char*>(unit, 0x5C)), lostId, state, Field<std::int32_t>(unitAction, 0x68),
-               g_found.count, g_why.dead, g_why.type, g_why.action, g_why.lastFit, g_why.range,
+               g_found.count, g_why.dead, g_why.type, g_why.action, why, g_why.range,
                static_cast<double>(g_why.range0), g_why.unseen);
     }
     return 0;
@@ -4153,7 +4198,8 @@ Outcome ApplyRetargetInAction(const Config& config) {
     }
   }
   if (!VerifyAll("retargetInAction", {&sites::kRetargetNoTarget, &sites::kRetargetUpdateTarget,
-                                        &sites::kUnitsNearPoint, &sites::kUnitIsSeeable}) ||
+                                        &sites::kUnitsNearPoint, &sites::kUnitIsSeeable, &sites::kRateLookupHead,
+                                        &sites::kPlayerIsAlly}) ||
       !OnDatabaseLoad(&ResetForDataLoad) || !AddActionTagHandler(&ActionTagRead) ||
       (g_log && !AddRofFilter(&RetargetShotLog, "retargetInAction"))) {
     return Outcome::kFailed;
@@ -4223,6 +4269,268 @@ swapped:
     pop edi                             ; as at 0x48A359, before the update's push edi
     jmp updateTarget
 UhcRetargetHook ENDP
+
+END
+```
+
+## powerShots
+
+Contract: [powerShots](../porting-to-another-dll.md#powershots).
+
+Besides the core helpers, it needs: [`actiontags.h`](helpers.md#action-tags), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+
+Sites: `PowerShotsNoShot` `0x48CF7B` (13 B), `PowerShotsGate` `0x48EA3D` (101 B), `PowerShotsFire` `0x48F7F1` (8 B), `PowerShotsReady` `0x4B7766` (13 B).
+
+### src/features/powershots.cpp
+
+```cpp
+// powerShots [log]: an attack launched by a power (an ability such as an explorer's sharpshooter shot) whose action
+// carries <PowerShots>N</PowerShots> fires a shot at each Attack tag of its animation, up to N shots a use, instead of
+// one.
+//
+// Stock: a power-launched attack keeps its power use at [ua+6Ch] (the ability record at [use+1Ch]). At each Attack
+// tag of its animation (the event handler 0x48CED0, event 5 -> 0x48F739, state 1), the shot path 0x48F7E4 sends it to
+// 0x48EA3D, which asks the power manager [world+56Ch] whether the power is ready (0x6EDB7E(unit ID, record, ...)) and
+// goes on at 0x4B7766: ready, the shot (0x48F7F1); not ready, no shot (0x48CF7B). The first shot starts the power's
+// recharge, so every later tag of the same use gets "not ready": [O, hardware breakpoints in game] the three Attack
+// tags of an explorer's power animation, 210 ms apart, fired one shot; 0x6EDB7E answered 1, 0, 0.
+//
+// The hook (hooks/powershots_hooks.asm, at 0x4B7766) keeps the stock answer when the power is ready. When it is not,
+// UhcPowerShotsAllow lets the tag fire for an action with the tag, in state 1, that has fired at least one shot of
+// this use (so the first shot of a use is always the stock, ready one) and fewer than N ([ua+68h], the unit action's
+// shot count, 0 at each use). The shot then goes through the stock path, so retargetInAction, numberOfShots' ROF
+// filters and the projectile launch see it as any other shot.
+#include <windows.h>
+
+#include <compare>
+#include <cstdint>
+#include <cwchar>
+#include <map>
+
+#include "../actiontags.h"
+#include "../features.h"
+#include "../generated/sites.h"
+#include "../log.h"
+#include "../patch.h"
+#include "../unittypes.h"
+
+extern "C" {
+void UhcPowerShotsHook();  // hooks/powershots_hooks.asm
+// Above 0 while some action carries <PowerShots> above 1: the hook asks UhcPowerShotsAllow only then.
+std::int32_t g_uhcPowerShotsOn = 0;
+}
+
+namespace {
+
+constexpr std::uint32_t kGameGlobal = 0x00C66234;  // game; +13Ch world, +140h database
+constexpr std::uint8_t kStateFiring = 0x01;        // the attack animation: its Attack tags fire
+constexpr std::int32_t kMaxShots = 50;
+constexpr unsigned kMaxLogLines = 300;
+
+template <typename T>
+T Field(const void* base, std::uint32_t offset) {
+  return *reinterpret_cast<const T*>(static_cast<const char*>(base) + offset);
+}
+
+const char* Game() { return *reinterpret_cast<const char* const*>(kGameGlobal); }
+
+std::int32_t Now() {
+  const char* game = Game();
+  const char* world = game == nullptr ? nullptr : Field<const char*>(game, 0x13C);
+  return world == nullptr ? 0 : Field<std::int32_t>(world, 0x108);
+}
+
+const char* ProtoName(const char* proto) {
+  const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name != nullptr ? name : "?";
+}
+
+struct ActionKey {
+  std::int32_t proto;
+  std::int32_t name;
+  auto operator<=>(const ActionKey&) const = default;
+};
+
+std::map<ActionKey, std::int32_t> g_shots;  // filled while the data loads; a later tag of the same action wins
+bool g_log = false;
+unsigned g_logLines = 0;
+unsigned g_tagLines = 0;
+unsigned g_invalidLines = 0;
+
+void SyncGate() {
+  bool on = false;
+  for (const auto& [key, shots] : g_shots) {
+    on = on || shots > 1;
+  }
+  g_uhcPowerShotsOn = on ? 1 : 0;
+}
+
+void ResetForDataLoad(char*) {
+  g_shots.clear();
+  g_logLines = 0;
+  g_tagLines = 0;
+  g_invalidLines = 0;
+  SyncGate();
+}
+
+bool ParseShots(const wchar_t* text, std::int32_t* out) {
+  if (text == nullptr) {
+    return false;
+  }
+  while (*text == L' ' || *text == L'\t' || *text == L'\r' || *text == L'\n') {
+    ++text;
+  }
+  wchar_t* end = nullptr;
+  const long value = std::wcstol(text, &end, 10);
+  while (end != nullptr && (*end == L' ' || *end == L'\t' || *end == L'\r' || *end == L'\n')) {
+    ++end;
+  }
+  if (end == text || end == nullptr || *end != L'\0' || value < 1 || value > kMaxShots) {
+    return false;
+  }
+  *out = static_cast<std::int32_t>(value);
+  return true;
+}
+
+void ActionTagRead(const uhc::ActionTag& tag) {
+  if (_wcsicmp(tag.name, L"PowerShots") != 0) {
+    return;
+  }
+  const wchar_t* source = tag.source == uhc::ActionSource::kTactics ? L"tactics" : L"protoy";
+  const wchar_t* text = tag.text == nullptr ? L"" : tag.text;
+  const ActionKey key{Field<std::int32_t>(tag.proto, 0x04), Field<std::int32_t>(tag.action, 0x04)};
+  std::int32_t shots = 0;
+  if (key.name < 0 || !ParseShots(text, &shots)) {
+    if (g_invalidLines < 50) {
+      ++g_invalidLines;
+      uhc::Log(key.name < 0 ? L"powerShots: %hs (%ls): <PowerShots> before the action's <name>; ignored"
+                            : L"powerShots: %hs (%ls): <PowerShots>%ls</PowerShots> is not a whole number from 1 to 50; "
+                              L"ignored",
+               ProtoName(tag.proto), source, text);
+    }
+    return;
+  }
+  g_shots[key] = shots;
+  SyncGate();
+  if (g_log && g_tagLines < 200) {
+    ++g_tagLines;
+    uhc::Log(L"powerShots: %hs, action name %d (%ls): PowerShots %d", ProtoName(tag.proto), key.name, source, shots);
+  }
+}
+
+}  // namespace
+
+extern "C" {
+
+// From the hook at 0x4B7766, when the power manager answered "not ready" for an Attack tag of a power-launched attack
+// (EBP = the unit action): 1 to fire the shot anyway.
+std::int32_t __stdcall UhcPowerShotsAllow(const char* unitAction) {
+  const char* unit = unitAction == nullptr ? nullptr : Field<const char*>(unitAction, 0x10);
+  const char* action = unitAction == nullptr ? nullptr : Field<const char*>(unitAction, 0x04);
+  const char* proto = unit == nullptr ? nullptr : Field<const char*>(unit, 0x5C);
+  if (proto == nullptr || action == nullptr || Field<const char*>(unitAction, 0x6C) == nullptr) {
+    return 0;
+  }
+  const auto found = g_shots.find(ActionKey{Field<std::int32_t>(proto, 0x04), Field<std::int32_t>(action, 0x04)});
+  if (found == g_shots.end()) {
+    return 0;
+  }
+  const std::int32_t fired = Field<std::int32_t>(unitAction, 0x68);
+  const std::uint8_t state = Field<std::uint8_t>(unitAction, 0x61);
+  const bool allow = state == kStateFiring && fired >= 1 && fired < found->second;
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"powerShots: %d ms, unit %d (%hs): the power is recharging; Attack tag after %d of %d shots in state "
+             L"%02Xh at target %d: %ls",
+             Now(), Field<std::int32_t>(unit, 0x10), ProtoName(proto), fired, found->second, state,
+             Field<std::int32_t>(unitAction, 0x14), allow ? L"fires" : L"no shot (stock)");
+  }
+  return allow ? 1 : 0;
+}
+
+}  // extern "C"
+
+namespace uhc {
+
+Outcome ApplyPowerShots(const Config& config) {
+  const Config::Args* args = config.First("powerShots");
+  if (args == nullptr) {
+    return Outcome::kNotConfigured;
+  }
+  for (const std::string& arg : *args) {
+    if (_stricmp(arg.c_str(), "log") == 0) {
+      g_log = true;
+    } else {
+      Log(L"powerShots: unexpected argument %hs (expected: [log]); feature not applied", arg.c_str());
+      return Outcome::kFailed;
+    }
+  }
+  if (!VerifyAll("powerShots", {&sites::kPowerShotsGate, &sites::kPowerShotsReady, &sites::kPowerShotsNoShot,
+                                &sites::kPowerShotsFire}) ||
+      !OnDatabaseLoad(&ResetForDataLoad) || !AddActionTagHandler(&ActionTagRead)) {
+    return Outcome::kFailed;
+  }
+  // test al,al / jne 48F7F1h (8 B) at 0x4B7766, where an Attack tag of a power-launched attack goes on with the power
+  // manager's answer.
+  if (!WriteJmp(sites::kPowerShotsReady.va, reinterpret_cast<const void*>(&UhcPowerShotsHook), 8)) {
+    return Outcome::kFailed;
+  }
+  Log(L"powerShots: an attack launched by a power whose action has <PowerShots>N fires a shot at each Attack tag of "
+      L"its animation, up to N a use%ls (multiplayer unverified)",
+      g_log ? L"; tags and shots logged" : L"");
+  return Outcome::kApplied;
+}
+
+}  // namespace uhc
+```
+
+### src/hooks/powershots_hooks.asm
+
+```asm
+; powerShots (features/powershots.cpp): the power check of an Attack tag of a power-launched attack. Entered through a
+; jmp written over the stock code, left through an explicit jmp to a verified continuation.
+.686
+.model flat, c
+option casemap :none
+
+include common.inc
+
+UhcPowerShotsAllow PROTO STDCALL :DWORD
+
+EXTERNDEF g_uhcPowerShotsOn:DWORD   ; above 0 while some action carries <PowerShots> above 1
+
+.data
+fireShot        dd 0048F7F1h    ; mov ecx,[ebp+4]: the shot's path (the stock jne target)
+noShot          dd 0048CF7Bh    ; pop edi ... ret 4: the event handler's exit without a shot (the stock jmp target)
+
+.code
+
+; Replaces test al,al / jne 48F7F1h (8 bytes) at 0x4B7766, reached only by the jmp at 0x48EA9D after the power
+; manager's 0x6EDB7E answered whether the power of this attack ([ebp+6Ch], its record [+1Ch]) is ready. AL = that
+; answer, EBP = the attack unit action, EBX = 0, ESI = the record; the event handler FUN_0048CED0's frame is intact.
+; Ready: the shot, as stock. Not ready: UhcPowerShotsAllow decides (EAX, ECX and EDX saved); 1 = the shot, else the
+; stock exit without one. Both continuations are the stock targets of the two replaced branches.
+UhcPowerShotsHook PROC
+    TRACE_ONCE "powerShots (0x4B7766)"
+    test al, al
+    jne fire
+    cmp g_uhcPowerShotsOn, 0
+    je stock
+    push eax
+    push ecx
+    push edx
+    push ebp
+    call UhcPowerShotsAllow             ; EAX = 1: fire this tag
+    test eax, eax
+    pop edx
+    pop ecx
+    pop eax
+    jne fire
+stock:
+    jmp noShot
+fire:
+    jmp fireShot
+UhcPowerShotsHook ENDP
 
 END
 ```

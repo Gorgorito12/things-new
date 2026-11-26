@@ -1,0 +1,50 @@
+Hammer fanning, step A0: the in-game check before any animation (2026-11-26)
+
+Bed: C:\AoE3-UHC-WoLReal4 (own profile, multipleInstances background), our UHC.dll built from
+claude/r1127-H (origin/main 8b851208). Data: <RetargetInAction>1</RetargetInAction> added to the
+Explorer's SharpshooterAttack ProtoAction in data\protoy.xml; "retargetInAction log" in Startup\wol.cfg.
+Both are test edits; the originals are kept as *.h-orig in the bed.
+
+Scenario route (testbed.py map + scenario): player 1 = one Explorer; the scenario gave player 1 the
+Ethiopians (Menelik II). The mechanics below are the proto's and the engine's, not the civ's; the
+in-game test of the new clip (A4) uses a European civ.
+Cast from the console: uiLookAtAndSelectUnit(0), ability(99, 0, true) (record 99 = the Explorer's
+PowerRevolverSharpshooter, counting the <ability> entries outside comments), uiLookAtUnit(<guardian>),
+then a posted click at the view's centre (958, 511 on a 1920x1080 client).
+
+1. Five OutlawPistol guardians (270 HP, Gaia), "Hammer Fanning" on one of them.
+   [O] UHC.log (a0-uhc-log.txt):
+     98933 ms  an attack cycle begins (target 2)
+     99422 ms  shot 1 at 2 (OutlawPistol, 270 HP), state 01h          -> it died
+     99541 ms  lost its target 2 in state 01h after 1 shots: no other target in range
+               (7 units around: 1 not of the auto-attack type, 4 for another attack (4))
+   The four live guardians in range were all refused because the tactic gives them another
+   attack (action 4, the normal ranged attack), not SharpshooterAttack. As the plan inferred.
+
+2. One DLClegendarybeast1 (5000 HP guardian), the same power, three casts with hardware
+   breakpoint traces (a0-traces.txt; a0-trace-tool.py, pinned to the bed's own pid).
+   [O] Each cast: one attack cycle; the first Attack tag 489 ms after the cycle starts (test 1),
+   the three tags 208-212 ms apart (traces), all in state 1; only the first fires. The beast lost
+   750 HP per cast, not 2250. Video: a0-stock-cast.mp4, sheet a0-stock-cast-sheet.jpg (three
+   muzzle flashes and shot sounds, one hit).
+   [O] Why: a power-launched attack keeps its power use at [ua+6Ch] (here 0x130B0004), whose
+   [+1Ch] is the ability record (99). Every Attack tag of such an attack goes 0x48F7E4 ->
+   0x48EA3D -> 0x6EDB7E(unit, record, ...) -> 0x4B7766 (test al,al / jne 48F7F1h, else 0x48CF7B,
+   no shot). 0x6EDB7E answered 1 at the first tag and 0 at the second and third (the power's
+   recharge starts with the first shot). After the first shot the unit action also gets its
+   flag 6 (0x48F12B, SetFlag 0x470F76).
+   So today "Hammer Fanning" and "Slip Hammering" fire ONE shot per use; the other two tags are
+   only a flash and a sound. <numberprojectiles>3</numberprojectiles> is not read by the exe.
+
+Timing [O]: the attack animation plays at rate (0.90 + 2.0) / 4.5 = 0.644 (attack clip 0.90 s,
+reload clip 2.0 s, ROF 4.5), i.e. 1.552 s real per clip second; the Attack tag values are fractions
+of the clip (0.35 x 0.90 s x 1.552 = 0.489 s, measured 489 ms; 0.15 apart = 210 ms, measured
+208-212 ms). Game time; the test game ran near 1x.
+
+What a DLL change needs [I, from the above]:
+  a) more than one shot per use: for a tagged power attack, the Attack tags after the first one of
+     the same cycle must pass the power check at 0x4B7766 (only 0x48EA9D jumps there; no branch
+     lands in 0x4B7767..0x4B776D; capstone scan of the stock exe). A new hook, 8 bytes, there.
+  b) retargeting: retargetInAction must accept a candidate by the running action's own <rate>
+     types when the attack is power-launched ([ua+6Ch] != 0), instead of 0x489ECC's answer.
+Without (a), (b) alone changes nothing: the next tags fire no shot anyway.

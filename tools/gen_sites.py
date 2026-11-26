@@ -1096,6 +1096,17 @@ SITES = [
     # head of the function, verify only, so a detour of the head fails the key instead of skipping the hook
     ("GarrisonEnterTail", 0x9C26E1, 0x1F),
     ("GarrisonLoadHead", 0x9C24B5, 0x10),
+    # garrisonConvert, verify only: the unload of one unit from a container FUN_009C68C3, bool thiscall(container,
+    # unitId, pos*, usePos, keepOrders, force, a6, goTo*, a8, a9), ret 24h (the eject of the command handler
+    # FUN_009CBEA1 calls it with pos (-1,-1,-1) 0xC665E4, the death eject FUN_009C6C79 with force 1); the population
+    # getters 0x45805C (used) and 0x4581A1 (cap), int thiscall(player); and the train's pop-capped message, 0x9EB0D6:
+    # push 464Ch (string 17996 cStringNoPopcapRoom) / BString / the game's vtable +68h (game, 2000 ms, 0xC6657C, text,
+    # name), and its sound, 0x50547A thiscall(game, 4, 0) at 0x9EB137
+    ("GarrisonUnloadHead", 0x9C68C3, 0x1E),
+    ("PlayerPopHead", 0x45805C, 0x0D),
+    ("PlayerPopCapHead", 0x4581A1, 0x12),
+    ("PopCapToast", 0x9EB0D6, 0x33),
+    ("PopCapToastSound", 0x9EB137, 0x0F),
     # nurseryFactor's commands: the network command uiTransformSelectedUnit sends (0x7E7193), verify only: the
     # factory 0x5695FC (cdecl(player, type, 0, -1)), the players 0x5683B9 (thiscall(cmd, 1, &player)), the units
     # 0x5696E1 (thiscall(cmd, count, ids)), the queue 0x568A1A (thiscall([world+8], cmd, 0, 0)); and the head of the
@@ -1126,6 +1137,10 @@ SITES = [
     ("BuildCountTooltip1", 0x4C8B81, 5),
     ("BuildCountTooltip2", 0x70F5EF, 5),
     ("PlayerProtoEntry", 0x45311B, 8),
+    # nurseryFactor: the population getters a command's units are tested with, as the maintain spawn
+    # 0x9E2F79 tests one (thiscall(player), int): the population and the cap (basePop's PopLimit is inside it)
+    ("PlayerPopulation", 0x45805C, 6),
+    ("PlayerPopCap", 0x4581A1, 6),
     ("TrainBatchProtoArg", 0x9CE6DE, 4),
     # pillageGold: TakeDamage's call of 0x49BD52, on every hit with an attacking player, and the
     # instructions that load its arguments: EBX the player [esp+20h], and the frame it relies on
@@ -1492,6 +1507,19 @@ SITES = [
     # eax,3FFFFh.
     ("RetargetNoTarget", 0x487838, 0x1B),
     ("RetargetUpdateTarget", 0x48A359, 0x1F),
+    # retargetInAction, power-launched attacks: the alliance test 0x484E01 (bool thiscall(player, other player ID),
+    # ret 4), called by the key as 0x489ECC calls it (with the rate lookup 0x487C45, RateLookupHead).
+    ("PlayerIsAlly", 0x484E01, 0x13),
+    # powerShots: an Attack tag of a power-launched attack (the attack's power use [ebp+6Ch] not 0) asks the power
+    # manager whether the power is ready: push 2 / mov ecx,esi / call 48BB7Eh / cmp al,1 / jne 48F7F1h / cmp
+    # [esi+1Ch],ebx / jl / ... / call 6EDB7Eh (unit ID, the ability record [use+1Ch]) / jmp 4B7766h (0x48EA3D..
+    # 0x48EAA1). There: test al,al / jne 48F7F1h (replaced, 8 B; only 0x48EA9D jumps there, no branch lands inside)
+    # / jmp 48CF7Bh (no shot: pop edi / pop esi / pop ebp / pop ebx / add esp,2B0h / ret 4). 0x48F7F1, the shot's
+    # path (mov ecx,[ebp+4] / push 9 / sub esp,4), is where the hook goes on for a shot.
+    ("PowerShotsGate", 0x48EA3D, 0x65),
+    ("PowerShotsReady", 0x4B7766, 0x0D),
+    ("PowerShotsNoShot", 0x48CF7B, 0x0D),
+    ("PowerShotsFire", 0x48F7F1, 8),
     # turretArc: the head of FUN_0048AA9F (the unit turns to face a point): sub esp,18h / push esi / mov esi,ecx (6 B,
     # replaced; no branch lands inside) / mov eax,[esi] / mov eax,[eax+8Ch] (the continuation 0x48AAA5).
     ("TurretFaceHead", 0x48AA9F, 0x0E),

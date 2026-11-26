@@ -15,7 +15,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Data and scripting | `dataLint`, `customHotkeyContexts`, `techRenameEffect` | [data](porting-code/data.md) |
 | Civs | `danceBonusCivs`, `startingTC`, `civFirstTC`, `scenarioCivs`, `ageUpBuildings`, `politicianPlacesFix`, `politicianEnablesTech` | [civs](porting-code/civs.md) |
 | Healing and hit points | `healNonIdle`, `smartHealTargets`, `overhealHitpointBars`, `overhealSources`, `overhealDecay` | [healing](porting-code/healing.md) |
-| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots`, `retargetInAction`, `turretArc` | [combat](porting-code/combat.md) |
+| Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots`, `retargetInAction`, `powerShots`, `turretArc` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `buildingGather`, `herdWalkAwayFix`, `faithResource` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
 | Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs`, `resendableCards`, `quickArrivalCards` | [techs](porting-code/techs.md) |
@@ -789,6 +789,26 @@ Code: [combat](porting-code/combat.md#retargetinaction). It needs `AddActionTagH
 - **No range of WoL's DLL overlaps** 0x487838..0x48783C or 0x48A359 (its 287 patched ranges, `wol-memdiff.txt`).
 - **Test:** WoL's Maxim gun with the tag against a line of infantry: after a kill the next Attack tag of the same burst
   hits another soldier (the log: `lost its target ... new target`); with the tag at 0 the burst stops at the kill.
+- **An attack launched by a power** (`[esi+6Ch]` not 0, 2026-11-26): instead of 0x489ECC and the `<autoattacktype>`,
+  a candidate needs a rate above 0 in the action, `0x487C45([esi+4], target)` (`float thiscall`, `ret 4`), not an ally,
+  `0x484E01(the unit's player, target's player ID)` (`bool thiscall`, `ret 4`), and unless flag 0Dh an enemy
+  (`[player+1D4h+4*ID]` = 2). The update itself skips the tactic test for such an attack (0x48A4C2 -> 0x4F6F61).
+
+### powerShots
+
+Code: [combat](porting-code/combat.md#powershots). It needs `AddActionTagHandler` for `<PowerShots>`.
+
+- **Hook** at `0x4B7766`, 8 bytes (`84 C0 0F 85 83 80 FD FF`: `test al,al / jne 48F7F1h`), followed by `jmp 48CF7Bh`;
+  reached only by the jmp at 0x48EA9D, after an Attack tag of a power-launched attack asked the power manager
+  `0x6EDB7E(unit ID, ability record, &a, &b)` whether the ability is ready (AL). Entry: EBP = the attack unit action,
+  EBX = 0, the event handler's frame intact.
+- **Decision:** AL ≠ 0, `jmp 48F7F1h` (the shot). Else, for an action of the unit's proto with `<PowerShots>N`, a power
+  use `[ebp+6Ch]` ≠ 0, state `[ebp+61h]` 1 and a shot count `[ebp+68h]` from 1 to N − 1: `jmp 48F7F1h`; otherwise
+  `jmp 48CF7Bh` (no shot).
+- **Must preserve:** EAX, ECX and EDX around the call (the hook saves them); nothing else is live but the frame.
+- **No range of WoL's DLL overlaps** 0x4B7766..0x4B7772, 0x48EA3D..0x48EAA1, 0x48F7F1 or 0x48CF7B (`wol-memdiff.txt`).
+- **Test:** the explorer's "Hammer Fanning" (`SharpshooterAttack`, three Attack tags) on a 5000 HP guardian: 2250 damage
+  a use with `<PowerShots>3`, 750 without; with `retargetInAction` three 270 HP guardians fall in one use.
 
 ### turretArc
 

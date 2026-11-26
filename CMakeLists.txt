@@ -183,6 +183,7 @@ set(UHC_SOURCES
   src/features/shots.cpp
   src/features/inventorybars.cpp
   src/features/retarget.cpp
+  src/features/powershots.cpp
   src/features/turretarc.cpp
   src/features/unitresource.cpp
   src/features/gatherauras.cpp
@@ -263,6 +264,7 @@ set(UHC_SOURCES
   src/hooks/floatingbars_hooks.asm
   src/hooks/inventorybars_hooks.asm
   src/hooks/retarget_hooks.asm
+  src/hooks/powershots_hooks.asm
   src/hooks/turretarc_hooks.asm
   src/hooks/shots_hooks.asm
   src/hooks/unitresource_hooks.asm

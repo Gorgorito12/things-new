@@ -99,6 +99,7 @@ PAGES = {
         "containedUnitsROF": ["src/features/containedrof.cpp", "src/hooks/containedrof_hooks.asm"],
         "numberOfShots": ["src/features/shots.cpp", "src/hooks/shots_hooks.asm"],
         "retargetInAction": ["src/features/retarget.cpp", "src/hooks/retarget_hooks.asm"],
+        "powerShots": ["src/features/powershots.cpp", "src/hooks/powershots_hooks.asm"],
         "turretArc": ["src/grannyhooks.h", "src/grannyhooks.cpp", "src/features/turretarc.cpp",
                       "src/hooks/turretarc_hooks.asm"],
         "accuracyTechs": ["src/features/accuracy.cpp"],

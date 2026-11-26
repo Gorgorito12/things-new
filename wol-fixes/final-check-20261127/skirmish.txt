@@ -1,0 +1,31 @@
+launch 11:04:20
+testbed: another copy is running; this one starts beside it (multipleInstances)
+testbed: main menu ready (pid 14980) on \\.\DISPLAY2
+pid 14980
+testbed: skirmish running, game time 3017 ms
+skirmish started 11:04:54 exit 0
+testbed: game time 3215 -> 63726 ms
+minute 1  wait exit 0  units p1 12  p2 14  (p2 settlers 7)  11:05:47
+testbed: game time 64478 -> 124585 ms
+minute 2  wait exit 0  units p1 12  p2 15  (p2 settlers 9)  11:06:38
+testbed: game time 125145 -> 185194 ms
+minute 3  wait exit 0  units p1 12  p2 19  (p2 settlers 12)  11:07:29
+C:/Users/Jeison/AppData/Local/Temp/claude/6074b42c9148e322/956e6d04-809d-4b96-bc7d-9b21e82348a8/scratchpad/j27/skirmish-min3.png: window 1926x1126, PrintWindow ok, saved at 1/2
+testbed: game time 186124 -> 246723 ms
+minute 4  wait exit 0  units p1 12  p2 21  (p2 settlers 14)  11:08:22
+testbed: game time 247398 -> 307443 ms
+minute 5  wait exit 0  units p1 12  p2 24  (p2 settlers 16)  11:09:12
+testbed: game time 308184 -> 368891 ms
+minute 6  wait exit 0  units p1 12  p2 27  (p2 settlers 19)  11:10:03
+testbed: game time 369723 -> 430118 ms
+minute 7  wait exit 0  units p1 12  p2 29  (p2 settlers 21)  11:10:52
+C:/Users/Jeison/AppData/Local/Temp/claude/6074b42c9148e322/956e6d04-809d-4b96-bc7d-9b21e82348a8/scratchpad/j27/skirmish-min7.png: window 1926x1126, PrintWindow ok, saved at 1/2
+     21 Settler
+      3 HouseEast
+      1 WOL_RT_Bone_Universal
+      1 TownCenter
+      1 RT_Bone_swedish
+      1 HomeCityWaterSpawnFlag
+      1 Explorer
+pid 14980, window 1920x1080, world 0x12370000, game time 431223 ms
+done 11:10:52

@@ -9,7 +9,8 @@
 // researchGrants (two kinds, told apart by word 0), 67h shipmentCounts (per-player state on one carrier unit), 68h
 // randomCost (the game seed and the purchase counts, on one carrier unit), 69h shipTechLimit (a player's count, on
 // one of his units), 6Ah veterancyBonus (the rows a unit was given, when its rows name techs), 6Bh nurseryFactor (a
-// unit's factor and its growth timer).
+// unit's factor and its growth timer), 6Ch garrisonConvert (on a building: its progress, word 0 'GCNV', and its round
+// robin cursor and population pause, word 0 'GCRR').
 #pragma once
 
 #include <cstdint>

@@ -1396,6 +1396,21 @@ inline constexpr Site kGarrisonEnterTail{"GarrisonEnterTail", 0x009C26E1, kGarri
 inline constexpr std::uint8_t kGarrisonLoadHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x24, 0x83, 0xB8, 0x3C, 0x01, 0x00, 0x00, 0x00, 0x57};
 inline constexpr Site kGarrisonLoadHead{"GarrisonLoadHead", 0x009C24B5, kGarrisonLoadHeadBytes, sizeof(kGarrisonLoadHeadBytes)};
 
+inline constexpr std::uint8_t kGarrisonUnloadHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x83, 0xEC, 0x14, 0x56, 0x8B, 0xF1, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x75, 0x09, 0x32, 0xC0, 0x5E, 0x83, 0xC4, 0x14, 0xC2, 0x24, 0x00};
+inline constexpr Site kGarrisonUnloadHead{"GarrisonUnloadHead", 0x009C68C3, kGarrisonUnloadHeadBytes, sizeof(kGarrisonUnloadHeadBytes)};
+
+inline constexpr std::uint8_t kPlayerPopHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0xD1, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00};
+inline constexpr Site kPlayerPopHead{"PlayerPopHead", 0x0045805C, kPlayerPopHeadBytes, sizeof(kPlayerPopHeadBytes)};
+
+inline constexpr std::uint8_t kPlayerPopCapHeadBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0xD1, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x83, 0xEC, 0x08, 0x85, 0xC9};
+inline constexpr Site kPlayerPopCapHead{"PlayerPopCapHead", 0x004581A1, kPlayerPopCapHeadBytes, sizeof(kPlayerPopCapHeadBytes)};
+
+inline constexpr std::uint8_t kPopCapToastBytes[] = {0x68, 0x4C, 0x46, 0x00, 0x00, 0x8D, 0x4C, 0x24, 0x38, 0xE8, 0x6E, 0x39, 0xBA, 0xFF, 0x8D, 0x4C, 0x24, 0x34, 0xE8, 0x5B, 0x62, 0xA1, 0xFF, 0x8B, 0x74, 0x24, 0x30, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x11, 0x56, 0x50, 0x68, 0x7C, 0x65, 0xC6, 0x00, 0x68, 0xD0, 0x07, 0x00, 0x00, 0x51, 0xFF, 0x52, 0x68};
+inline constexpr Site kPopCapToast{"PopCapToast", 0x009EB0D6, kPopCapToastBytes, sizeof(kPopCapToastBytes)};
+
+inline constexpr std::uint8_t kPopCapToastSoundBytes[] = {0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x6A, 0x00, 0x6A, 0x04, 0xE8, 0x34, 0xA3, 0xB1, 0xFF};
+inline constexpr Site kPopCapToastSound{"PopCapToastSound", 0x009EB137, kPopCapToastSoundBytes, sizeof(kPopCapToastSoundBytes)};
+
 inline constexpr std::uint8_t kNurseryCmdExecuteBytes[] = {0x83, 0xEC, 0x1C, 0x53, 0x55, 0x8B, 0x6C, 0x24, 0x28, 0x85, 0xED, 0x56, 0x57, 0x8B, 0xF1, 0x0F, 0x84, 0x5F, 0x02, 0x00, 0x00, 0x83};
 inline constexpr Site kNurseryCmdExecute{"NurseryCmdExecute", 0x007D64F7, kNurseryCmdExecuteBytes, sizeof(kNurseryCmdExecuteBytes)};
 
@@ -1452,6 +1467,12 @@ inline constexpr Site kBuildCountTooltip2{"BuildCountTooltip2", 0x0070F5EF, kBui
 
 inline constexpr std::uint8_t kPlayerProtoEntryBytes[] = {0x8B, 0x54, 0x24, 0x04, 0x85, 0xD2, 0x0F, 0x8C};
 inline constexpr Site kPlayerProtoEntry{"PlayerProtoEntry", 0x0045311B, kPlayerProtoEntryBytes, sizeof(kPlayerProtoEntryBytes)};
+
+inline constexpr std::uint8_t kPlayerPopulationBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B};
+inline constexpr Site kPlayerPopulation{"PlayerPopulation", 0x0045805C, kPlayerPopulationBytes, sizeof(kPlayerPopulationBytes)};
+
+inline constexpr std::uint8_t kPlayerPopCapBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B};
+inline constexpr Site kPlayerPopCap{"PlayerPopCap", 0x004581A1, kPlayerPopCapBytes, sizeof(kPlayerPopCapBytes)};
 
 inline constexpr std::uint8_t kTrainBatchProtoArgBytes[] = {0x8B, 0x4C, 0x24, 0x30};
 inline constexpr Site kTrainBatchProtoArg{"TrainBatchProtoArg", 0x009CE6DE, kTrainBatchProtoArgBytes, sizeof(kTrainBatchProtoArgBytes)};
@@ -1941,6 +1962,21 @@ inline constexpr Site kRetargetNoTarget{"RetargetNoTarget", 0x00487838, kRetarge
 
 inline constexpr std::uint8_t kRetargetUpdateTargetBytes[] = {0x8B, 0x4E, 0x14, 0x3B, 0xCB, 0x8B, 0x15, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x92, 0x3C, 0x01, 0x00, 0x00, 0x57, 0x0F, 0x8C, 0xCF, 0x03, 0x00, 0x00, 0x8B, 0xC1, 0x25, 0xFF, 0xFF, 0x03, 0x00};
 inline constexpr Site kRetargetUpdateTarget{"RetargetUpdateTarget", 0x0048A359, kRetargetUpdateTargetBytes, sizeof(kRetargetUpdateTargetBytes)};
+
+inline constexpr std::uint8_t kPlayerIsAllyBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x80, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0x9E, 0x43, 0x1F, 0x00};
+inline constexpr Site kPlayerIsAlly{"PlayerIsAlly", 0x00484E01, kPlayerIsAllyBytes, sizeof(kPlayerIsAllyBytes)};
+
+inline constexpr std::uint8_t kPowerShotsGateBytes[] = {0x6A, 0x02, 0x8B, 0xCE, 0xE8, 0x38, 0xD1, 0xFF, 0xFF, 0x3C, 0x01, 0x0F, 0x85, 0xA3, 0x0D, 0x00, 0x00, 0x39, 0x5E, 0x1C, 0x0F, 0x8C, 0x9A, 0x0D, 0x00, 0x00, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x81, 0x3C, 0x01, 0x00, 0x00, 0x39, 0x98, 0x6C, 0x05, 0x00, 0x00, 0x0F, 0x84, 0x82, 0x0D, 0x00, 0x00, 0x8B, 0x55, 0x10, 0x89, 0x5C, 0x24, 0x1C, 0x89, 0x5C, 0x24, 0x14, 0x8B, 0x42, 0x10, 0x8B, 0x76, 0x1C, 0x8B, 0x89, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x89, 0x6C, 0x05, 0x00, 0x00, 0x8D, 0x54, 0x24, 0x14, 0x52, 0x8D, 0x54, 0x24, 0x20, 0x52, 0x56, 0x50, 0xE8, 0xE1, 0xF0, 0x25, 0x00, 0xE9, 0xC4, 0x8C, 0x02, 0x00};
+inline constexpr Site kPowerShotsGate{"PowerShotsGate", 0x0048EA3D, kPowerShotsGateBytes, sizeof(kPowerShotsGateBytes)};
+
+inline constexpr std::uint8_t kPowerShotsReadyBytes[] = {0x84, 0xC0, 0x0F, 0x85, 0x83, 0x80, 0xFD, 0xFF, 0xE9, 0x08, 0x58, 0xFD, 0xFF};
+inline constexpr Site kPowerShotsReady{"PowerShotsReady", 0x004B7766, kPowerShotsReadyBytes, sizeof(kPowerShotsReadyBytes)};
+
+inline constexpr std::uint8_t kPowerShotsNoShotBytes[] = {0x5F, 0x5E, 0x5D, 0x5B, 0x81, 0xC4, 0xB0, 0x02, 0x00, 0x00, 0xC2, 0x04, 0x00};
+inline constexpr Site kPowerShotsNoShot{"PowerShotsNoShot", 0x0048CF7B, kPowerShotsNoShotBytes, sizeof(kPowerShotsNoShotBytes)};
+
+inline constexpr std::uint8_t kPowerShotsFireBytes[] = {0x8B, 0x4D, 0x04, 0x6A, 0x09, 0x83, 0xEC, 0x04};
+inline constexpr Site kPowerShotsFire{"PowerShotsFire", 0x0048F7F1, kPowerShotsFireBytes, sizeof(kPowerShotsFireBytes)};
 
 inline constexpr std::uint8_t kTurretFaceHeadBytes[] = {0x83, 0xEC, 0x18, 0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x8B, 0x80, 0x8C, 0x00, 0x00, 0x00};
 inline constexpr Site kTurretFaceHead{"TurretFaceHead", 0x0048AA9F, kTurretFaceHeadBytes, sizeof(kTurretFaceHeadBytes)};
@@ -3368,6 +3404,7 @@ Outcome ApplyAutoGatherScaleByContained(const Config& config);
 Outcome ApplyContainedUnitsROF(const Config& config);
 Outcome ApplyNumberOfShots(const Config& config);
 Outcome ApplyRetargetInAction(const Config& config);
+Outcome ApplyPowerShots(const Config& config);
 Outcome ApplyTurretArc(const Config& config);
 Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
@@ -3545,6 +3582,8 @@ inline constexpr Feature kFeatures[] = {
     {"numberOfShots", ApplyNumberOfShots},
     // After numberOfShots: it asks that key whether a burst has shots left, and its "log" ROF filter runs after it.
     {"retargetInAction", ApplyRetargetInAction},
+    // No order constraint: the only key that writes 0x4B7766; it reads its tag through the shared action tag hook.
+    {"powerShots", ApplyPowerShots},
     // No order constraint: the only key that writes 0x48AA9F and 0x4995D5; it adds an observer to the shared Granny
     // sample slot (grannyhooks.h) and a world tick.
     {"turretArc", ApplyTurretArc},
@@ -3736,7 +3775,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "retargetinaction",
+    "retargetinaction", "powershots",
     "turretarc",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "broadsidesoundset", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
@@ -4985,6 +5024,15 @@ bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler);
 using TechTypeSubtypeHandler = void (*)(char* proto, const char* base, std::int32_t type, bool unapply);
 bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler);
 
+// The same for a subtype on a ProtoUnit target whose key reads the effect's XML itself: `parse` runs while the techs
+// are read, with the effect and its XML node, may store what it reads in the effect's field +10h (an index into the
+// key's own table, say), and returns false to drop the effect. `handler` runs on each apply and unapply with that
+// field. Not flagged for the pass after a load: the load runs every ProtoUnit Data effect again by itself.
+using TechProtoSubtypeParse = bool (*)(void* db, char* effect, const char* node);
+using TechProtoSubtypeHandler = void (*)(char* proto, const char* base, std::int32_t field, float amount,
+                                         std::uint8_t relativity, bool unapply);
+bool AddTechProtoSubtype(const char* name, TechProtoSubtypeParse parse, TechProtoSubtypeHandler handler);
+
 // The same for a subtype on a Player target (<Target type="Player"/>), as stock's FreeHomeCityUnit. `parse` runs
 // while the techs are read, with the effect and its XML node: it may store what it reads in the effect's field
 // +10h (the action's ID for other subtypes), and returns false to drop the effect. `run` runs when the effect
@@ -5069,6 +5117,8 @@ struct Subtype {
   uhc::TechTypeSubtypeHandler typeHandler;      // or with a unit type
   uhc::TechPlayerSubtypeParse playerParse;      // or on a player
   uhc::TechPlayerSubtypeHandler playerHandler;
+  uhc::TechProtoSubtypeParse protoParse;        // or on a proto, with the key's own parse
+  uhc::TechProtoSubtypeHandler protoHandler;
 };
 
 Subtype g_subtypes[kMaxSubtypes] = {};
@@ -5209,6 +5259,10 @@ extern "C" std::int32_t __stdcall UhcTechSubtypeLookup(void* db, const char* nam
         !g_subtypes[i].playerParse(db, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
       return -1;
     }
+    if (g_subtypes[i].protoParse != nullptr &&
+        !g_subtypes[i].protoParse(db, g_uhcSubtypeEffect, g_uhcSubtypeNode)) {
+      return -1;
+    }
     return kFirstId + static_cast<std::int32_t>(i);
   }
   if (g_unknown != nullptr) {
@@ -5226,6 +5280,10 @@ extern "C" bool __stdcall UhcTechSubtypeRun(std::int32_t id, char* proto, const 
     return false;
   }
   const Subtype& subtype = g_subtypes[index];
+  if (subtype.protoHandler != nullptr) {
+    subtype.protoHandler(proto, base, actionId, amount, static_cast<std::uint8_t>(relativity), unapply != 0);
+    return true;
+  }
   if (subtype.typeHandler != nullptr) {
     subtype.typeHandler(proto, base, actionId, unapply != 0);
     return true;
@@ -5255,22 +5313,26 @@ extern "C" std::int32_t __stdcall UhcTechPlayerSubtypeRun(std::int32_t id, char*
 namespace uhc {
 
 bool AddTechSubtype(const char* name, TechSubtypeHandler handler) {
-  return Add({name, handler, nullptr, nullptr, nullptr, nullptr});
+  return Add({name, handler, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr});
 }
 
 bool AddTechActionSubtype(const char* name, TechActionSubtypeHandler handler) {
-  return Add({name, nullptr, handler, nullptr, nullptr, nullptr});
+  return Add({name, nullptr, handler, nullptr, nullptr, nullptr, nullptr, nullptr});
 }
 
 bool AddTechTypeSubtype(const char* name, TechTypeSubtypeHandler handler) {
-  return Add({name, nullptr, nullptr, handler, nullptr, nullptr});
+  return Add({name, nullptr, nullptr, handler, nullptr, nullptr, nullptr, nullptr});
+}
+
+bool AddTechProtoSubtype(const char* name, TechProtoSubtypeParse parse, TechProtoSubtypeHandler handler) {
+  return Add({name, nullptr, nullptr, nullptr, nullptr, nullptr, parse, handler});
 }
 
 bool AddTechPlayerSubtype(const char* name, TechPlayerSubtypeParse parse, TechPlayerSubtypeHandler run) {
   if (!InstallPlayer()) {
     return false;
   }
-  return Add({name, nullptr, nullptr, nullptr, parse, run});
+  return Add({name, nullptr, nullptr, nullptr, parse, run, nullptr, nullptr});
 }
 
 bool OnUnknownTechSubtype(UnknownTechSubtype callback) {
@@ -7052,7 +7114,8 @@ void RemoveVisualModel(char* visual, std::int32_t model) {
 // researchGrants (two kinds, told apart by word 0), 67h shipmentCounts (per-player state on one carrier unit), 68h
 // randomCost (the game seed and the purchase counts, on one carrier unit), 69h shipTechLimit (a player's count, on
 // one of his units), 6Ah veterancyBonus (the rows a unit was given, when its rows name techs), 6Bh nurseryFactor (a
-// unit's factor and its growth timer).
+// unit's factor and its growth timer), 6Ch garrisonConvert (on a building: its progress, word 0 'GCNV', and its round
+// robin cursor and population pause, word 0 'GCRR').
 #pragma once
 
 #include <cstdint>
