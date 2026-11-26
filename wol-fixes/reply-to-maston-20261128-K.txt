@@ -1,0 +1,57 @@
+Hi JTMaston,
+
+Culture UI (your answers of 2026-11-26): the DLL part is done and tested. The art is yours to make; until then
+nothing changes in the game.
+
+How it works:
+- A new DLL key, cultureUI. data\uhc\cultureui.xml lists the nine families of your Great War techs (EU, AN, LA, NS,
+  AF, AS, ME, NA, PO) and their civs.
+- For a family, the artist ships a copy of an interface texture with the family's suffix next to the original, as a
+  loose file. For example, art\ui\ingame\ingame_ui_small_01_ypack_as.ddt is the Asian family's version of
+  ingame_ui_small_01_ypack.ddt.
+- From the Great War on, the game uses the _gw copy (ingame_ui_small_01_ypack_as_gw.ddt). If there is no _gw copy,
+  it keeps the family's copy; if there is no family copy, today's texture.
+- Only textures change; the layouts stay as they are. So a copy must keep the original's size and layout. The
+  Photoshop templates do that: one PSD per texture, with every piece outlined and named.
+- A family with no files keeps today's interface. You can start with one texture and add the rest later.
+- The switch at the Great War is instant, with no reload. A saved game loaded after the Great War opens with the
+  Great War look.
+- No style for observers (the default look, as you asked), for the normal (big) interface, or for civs in no family.
+- The look changes during a game only. The main menu, the home city and the post-game screens keep theirs.
+- If an artist makes a copy of a texture that menus share with the HUD (the menu buttons, for example), the in-game
+  menus show it too. A HUD-only texture changes only the HUD.
+- Display only: nothing in the simulation changes, and it costs nothing measurable (the same frame rate with the key
+  on and off).
+
+Tested in a copy of WoL, single player. The two test styles in the pictures are deliberately loud recolours, made by
+a script only to show the switch; they are not proposals:
+- Chinese: the Asian test look from the start, then its Great War look when the Great War is researched;
+- saved after the Great War and loaded: the Great War look at once;
+- the next game, Ethiopians (no test art for the Africans): today's look;
+- Afghans: the Middle Eastern test look, then its Great War look;
+- the normal interface: today's look;
+- the key off: today's look before and after the Great War;
+- next to your own DLL (our dinput8.dll build): works the same;
+- the AI keeps playing.
+
+Pictures: cultureUI-wol.gif (Chinese, the switch at the Great War), cultureUI-wol-control.gif (key off),
+cultureUI-screens.jpg (every case above), A3_test_styles_preview.png (the two test styles before and after the Great
+War, drawn without the game).
+
+Observers: the DLL uses the same rule as your DLL: the map's observer mode creates a trigger named StartInsertion,
+and the observers are the players from where the team changes (slot 3, 5 or 7). I could not test it in single
+player, since an observer needs a second player.
+
+Questions:
+1. All nine families (EU, AN, LA, NS, AF, AS, ME, NA, PO), or fewer? With a Great War version each, that is up to 18
+   sets of textures. Families without art keep today's look, so you can start with some.
+2. The resource panel has three looks in the engine: European, Asian and Native. Today the Africans and the Maori see
+   the Asian one (they are in asianCivs), and the Middle Eastern, Latin American, Anglo and Nation State civs see the
+   European one. Should it stay like that, with each family restyling the panel its civs see?
+3. Ottomans with the Europeans and Egyptians with the Africans, as in your data (GreatWarEU and GreatWarAF)?
+4. The Swedish: in your data their starting tech activates none of the nine Great War techs. I put them with the
+   Europeans. Is that right?
+5. Can you open the Photoshop templates without problems? (Agent T's package; tell us if a layer or a guide looks
+   wrong.)
+
+Thanks!
