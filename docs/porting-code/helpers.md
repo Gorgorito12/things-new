@@ -1942,6 +1942,21 @@ inline constexpr Site kRetargetNoTarget{"RetargetNoTarget", 0x00487838, kRetarge
 inline constexpr std::uint8_t kRetargetUpdateTargetBytes[] = {0x8B, 0x4E, 0x14, 0x3B, 0xCB, 0x8B, 0x15, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x92, 0x3C, 0x01, 0x00, 0x00, 0x57, 0x0F, 0x8C, 0xCF, 0x03, 0x00, 0x00, 0x8B, 0xC1, 0x25, 0xFF, 0xFF, 0x03, 0x00};
 inline constexpr Site kRetargetUpdateTarget{"RetargetUpdateTarget", 0x0048A359, kRetargetUpdateTargetBytes, sizeof(kRetargetUpdateTargetBytes)};
 
+inline constexpr std::uint8_t kPlayerIsAllyBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x80, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC0, 0x0F, 0x84, 0x9E, 0x43, 0x1F, 0x00};
+inline constexpr Site kPlayerIsAlly{"PlayerIsAlly", 0x00484E01, kPlayerIsAllyBytes, sizeof(kPlayerIsAllyBytes)};
+
+inline constexpr std::uint8_t kPowerShotsGateBytes[] = {0x6A, 0x02, 0x8B, 0xCE, 0xE8, 0x38, 0xD1, 0xFF, 0xFF, 0x3C, 0x01, 0x0F, 0x85, 0xA3, 0x0D, 0x00, 0x00, 0x39, 0x5E, 0x1C, 0x0F, 0x8C, 0x9A, 0x0D, 0x00, 0x00, 0x8B, 0x0D, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x81, 0x3C, 0x01, 0x00, 0x00, 0x39, 0x98, 0x6C, 0x05, 0x00, 0x00, 0x0F, 0x84, 0x82, 0x0D, 0x00, 0x00, 0x8B, 0x55, 0x10, 0x89, 0x5C, 0x24, 0x1C, 0x89, 0x5C, 0x24, 0x14, 0x8B, 0x42, 0x10, 0x8B, 0x76, 0x1C, 0x8B, 0x89, 0x3C, 0x01, 0x00, 0x00, 0x8B, 0x89, 0x6C, 0x05, 0x00, 0x00, 0x8D, 0x54, 0x24, 0x14, 0x52, 0x8D, 0x54, 0x24, 0x20, 0x52, 0x56, 0x50, 0xE8, 0xE1, 0xF0, 0x25, 0x00, 0xE9, 0xC4, 0x8C, 0x02, 0x00};
+inline constexpr Site kPowerShotsGate{"PowerShotsGate", 0x0048EA3D, kPowerShotsGateBytes, sizeof(kPowerShotsGateBytes)};
+
+inline constexpr std::uint8_t kPowerShotsReadyBytes[] = {0x84, 0xC0, 0x0F, 0x85, 0x83, 0x80, 0xFD, 0xFF, 0xE9, 0x08, 0x58, 0xFD, 0xFF};
+inline constexpr Site kPowerShotsReady{"PowerShotsReady", 0x004B7766, kPowerShotsReadyBytes, sizeof(kPowerShotsReadyBytes)};
+
+inline constexpr std::uint8_t kPowerShotsNoShotBytes[] = {0x5F, 0x5E, 0x5D, 0x5B, 0x81, 0xC4, 0xB0, 0x02, 0x00, 0x00, 0xC2, 0x04, 0x00};
+inline constexpr Site kPowerShotsNoShot{"PowerShotsNoShot", 0x0048CF7B, kPowerShotsNoShotBytes, sizeof(kPowerShotsNoShotBytes)};
+
+inline constexpr std::uint8_t kPowerShotsFireBytes[] = {0x8B, 0x4D, 0x04, 0x6A, 0x09, 0x83, 0xEC, 0x04};
+inline constexpr Site kPowerShotsFire{"PowerShotsFire", 0x0048F7F1, kPowerShotsFireBytes, sizeof(kPowerShotsFireBytes)};
+
 inline constexpr std::uint8_t kTurretFaceHeadBytes[] = {0x83, 0xEC, 0x18, 0x56, 0x8B, 0xF1, 0x8B, 0x06, 0x8B, 0x80, 0x8C, 0x00, 0x00, 0x00};
 inline constexpr Site kTurretFaceHead{"TurretFaceHead", 0x0048AA9F, kTurretFaceHeadBytes, sizeof(kTurretFaceHeadBytes)};
 
@@ -3368,6 +3383,7 @@ Outcome ApplyAutoGatherScaleByContained(const Config& config);
 Outcome ApplyContainedUnitsROF(const Config& config);
 Outcome ApplyNumberOfShots(const Config& config);
 Outcome ApplyRetargetInAction(const Config& config);
+Outcome ApplyPowerShots(const Config& config);
 Outcome ApplyTurretArc(const Config& config);
 Outcome ApplyUnitResourceAuras(const Config& config);
 Outcome ApplyResourceGatherAuras(const Config& config);
@@ -3545,6 +3561,8 @@ inline constexpr Feature kFeatures[] = {
     {"numberOfShots", ApplyNumberOfShots},
     // After numberOfShots: it asks that key whether a burst has shots left, and its "log" ROF filter runs after it.
     {"retargetInAction", ApplyRetargetInAction},
+    // No order constraint: the only key that writes 0x4B7766; it reads its tag through the shared action tag hook.
+    {"powerShots", ApplyPowerShots},
     // No order constraint: the only key that writes 0x48AA9F and 0x4995D5; it adds an observer to the shared Granny
     // sample slot (grannyhooks.h) and a world tick.
     {"turretArc", ApplyTurretArc},
@@ -3736,7 +3754,7 @@ inline constexpr const char* kHandledKeys[] = {
     "noailimit", "noailimitv2", "customrevolutionbanners", "removefamerestriction", "hcshipmentpointfallback",
     "healnonidle", "smarthealtargets", "damageovertime", "dodgeanyunit", "dodgechance",
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
-    "retargetinaction",
+    "retargetinaction", "powershots",
     "turretarc",
     "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "broadsidesoundset", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",

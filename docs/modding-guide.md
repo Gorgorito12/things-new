@@ -3102,6 +3102,7 @@ Attacks, armor, and what a hit does.
 | [`containedUnitsROF`](#containedunitsrof) | An attack with `<ScaleByContainedUnits target="ROF">` fires faster with the units inside: its ROF is divided by their number, at most `<DamageFactorCap>`. | **new** | The attribute on the attacks that want it (none has it today). | confirmed |
 | [`numberOfShots`](#numberofshots) | An attack with `<NumberOfShots>` fires that many shots, `<ShotInterval>` seconds apart, keeping its firing pose between them (`<BurstPose>`), before its reload; with `projectiles`, `<NumberProjectiles>` launches that many projectiles per shot. | **new** | The tags on the attacks that want them; `projectiles` reads the `numberprojectiles` WoL's tactics already have. | confirmed (single player) |
 | [`retargetInAction`](#retargetinaction) | An attack with `<RetargetInAction>1</RetargetInAction>` whose target dies before the last shot of its attack animation (a machine gun's Attack tags, a burst's quick shot) fires the rest at a new target in range, instead of losing them. | **new** | The tag on the attacks that want it (the machine guns' `CannonAttack` in `organGun.tactics`). | confirmed (single player) |
+| [`powerShots`](#powershots) | An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | **new** | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. | confirmed (single player) |
 | [`turretArc`](#turretarc) | An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | **new** | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). | confirmed (single player) |
 | [`broadsideMuzzleLimit`](#broadsidemuzzlelimit) | Lets a ship's broadside fire from up to N muzzles per side instead of 6. | **new** | A ship model with more than 6 muzzles per side: `ypTekkousen` has 10. | confirmed (single player) |
 | [`broadsideSoundSet`](#broadsidesoundset) | A `BroadsideAttack` action plays the sound set of its `<BroadsideSoundSet>` at each shot instead of `ShipCannonShoot`. | **new** | The tag on the rocket ships' actions in `frigate.tactics` (`RangedAttackRocket`, `BroadsideAttackRocket`). | confirmed (single player) |
@@ -4330,6 +4331,13 @@ retargetInAction [log]
   target types), of the tactic's `<autoattacktype>` when the tactic has one (what the unit attacks on its own), alive,
   not inside a building or a ship, and seen by the unit's player. Ties go to the lowest unit ID. With none, the stock
   behaviour: the wait, then the unit's own search.
+- **An attack launched by an ability** (a power whose `<unitaction>` is an attack, such as the explorers' "Hammer
+  Fanning", `SharpshooterAttack`) is not the attack the tactic would pick: a guardian gets the explorer's normal ranged
+  attack, so the test above refused every guardian (`4 for another attack (4)` in the log, 2026-11-26). For such an
+  attack the new target is instead any unit in range that the action has a `<rate type>` for (`Guardian` for "Hammer
+  Fanning", `LogicalTypeValidSharpshoot` for "Slip Hammering"), not an ally and, as the game's test does, an enemy;
+  the tactic's `<autoattacktype>` is not asked. It gains shots only with [`powerShots`](#powershots): without it an
+  ability's attack fires once a use.
 - **With [`numberOfShots`](#numberofshots):** a burst's quick shots keep the unit in its attack animation until the next
   shot (`<BurstPose>` hold), so a target that dies after a quick shot is replaced and the burst goes on: 3 shots, the
   last on the new target, then the reload. A target lost during the reload wait (between bursts, or after a burst's last
@@ -4368,6 +4376,60 @@ retargetInAction [log]
     with the other games; the simulation's update time is the same. The search runs only when a tagged attack loses its
     target in its animation.
   - Not tested: multiplayer, beside WoL's DLL.
+
+#### powerShots
+
+*An explorer's "Hammer Fanning" empties the whole revolver: every shot of its animation hits, not only the first.*
+
+```
+powerShots [log]
+```
+
+- **In WoL today (WoL #111):** the explorers' two abilities "Hammer Fanning" (`PowerRevolverSharpshooter`, 60 s) and
+  "Slip Hammering" (`PowerRevolverCrackshot`, 90 s) give the Explorer the attacks `SharpshooterAttack` (750 damage) and
+  `CrackshotAttack` (1000), whose animation `RangedAttackSharpshoot` has three `Attack` tags (and
+  `<numberprojectiles>3</numberprojectiles>` in `explorer.tactics`, which the exe does not read). Only the first tag
+  fires: in an ability's attack each `Attack` tag asks whether the ability is ready, and the first shot starts its
+  recharge, so the second and third tags fire nothing (a muzzle flash and a shot sound, no hit). Seen in game
+  (2026-11-26): a 5000 HP guardian lost 750 HP a use, and the game's answer at the three tags, traced, was "ready", "not
+  ready", "not ready".
+- **The tag:** `<PowerShots>N</PowerShots>` (1 to 50) in the attack's `<ProtoAction>` or its tactics `<action>` (the last
+  one read wins): each `Attack` tag of the ability's animation fires a shot, up to N a use. The first shot is still the
+  game's own (the ability must be ready), and the recharge starts with it as before. A shot is a normal shot: the
+  action's damage, its projectile and accuracy, [`retargetInAction`](#retargetinaction) when its target dies. An
+  animation with fewer tags than N fires one shot per tag; a target that dies with no other one in range (or without
+  `retargetInAction`) ends the shots as before.
+
+  ```xml
+  <ProtoAction>
+      <Name>SharpshooterAttack</Name>
+      <PowerShots>6</PowerShots>
+      <RetargetInAction>1</RetargetInAction>
+      <Damage>750.000000</Damage>
+      ...
+  </ProtoAction>
+  ```
+
+  Put it in the Explorer's `<ProtoAction>` rather than in `explorer.tactics`, which ten other protos share.
+- **Balance:** every tag now hits with the action's full damage: with 6 tags, "Hammer Fanning" deals up to 4500 a use
+  (6 × 750) and "Slip Hammering" 6000, and with `retargetInAction` the shots go to the next guardian when one falls.
+  Lower the damage or raise the recharge to keep the old totals.
+- **Log:** `powerShots: applied`, `hook reached: powerShots (0x4B7766)` at the first ability attack. With `log`: each tag
+  read (at most 200) and each `Attack` tag after the first one of a tagged ability's attack (at most 300):
+  `the power is recharging; Attack tag after 1 of 3 shots in state 01h at target 5: fires`.
+- **Simulation:** changes combat: every player needs the same line and data.
+- **Saved games:** nothing to keep: the tags are read with the data, and the count is the attack's own.
+- **Tested in WoL (2026-11-26, single player, `C:\AoE3-UHC-WoLReal4`, today's three-tag animation, test data:
+  `<PowerShots>3</PowerShots>` and `<RetargetInAction>1</RetargetInAction>` on the Explorer's `SharpshooterAttack`):**
+  - An Explorer and five `OutlawPistol` guardians (270 HP): the first use fired three shots 210 ms apart and killed three
+    guardians, each shot at the next one (`lost its target 3 ... new target 5`); the second use, 60 s later, killed the
+    last two, and its third tag found nobody in range (stock). Without the keys the same use killed one.
+  - Untagged attacks (the guardians', the Explorer's normal attacks) log nothing.
+  - Performance (`perfprobe.py`, 60 s each, the same scenario with 30 infantry besides, the ability cast once a run, on /
+    off / on, other sessions' games running): 1394 / 1323 / 1369 fps, update 0.1 ms a frame in all three, main thread 83 /
+    84 / 83 %, one or two frames over 50 ms in each (the scenario's first frame). The hook runs only at the tags of an
+    ability's attack after its first shot.
+  - Not tested: multiplayer, beside WoL's DLL, "Slip Hammering" (the same path).
 
 #### turretArc
 

@@ -384,6 +384,8 @@ numberOfShots [projectiles] [log]   <NumberOfShots> shots <ShotInterval> s apart
                               projectiles: <NumberProjectiles> per shot
 retargetInAction [log]        an attack with <RetargetInAction>1 whose target dies during its
                               attack animation fires the rest of its shots at a new target
+powerShots [log]              an ability's attack with <PowerShots>N fires at each Attack tag of
+                              its animation, up to N shots a use, instead of one
 turretArc <Proto> <aim> ... [log]   an attack with <Turret> turns its gun on the mount, not the
                               unit, toward a target inside the turret's arc
 unitResourceAuras [log]       auras with ModifyType UnitResource gather from units in range

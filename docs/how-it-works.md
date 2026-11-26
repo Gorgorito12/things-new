@@ -4289,6 +4289,16 @@ the hook redoes the compare and goes on at 0x48783D (`je 48A40Fh`), the stock pa
 in the same game time returns 0, so a target the update refuses cannot loop. The shot count, the cycle start `[ua+78h]`,
 the wait and the animation are the action's own and stay: the next Attack tag fires at the new target.
 
+**An attack launched by a power (2026-11-26).** An ability whose `<unitaction>` is an attack (the explorers'
+sharpshooter abilities) runs the same attack unit action with its power use at `[ua+6Ch]` (0 otherwise). The update does
+not ask the tactic for it (0x48A4C2 → 0x4F6F61 → 0x48A58D), and the tactic would not give it: [O] a guardian gets the
+explorer's normal ranged attack (0x489ECC answered 4), so the search above refused every guardian. For such an attack the
+search replaces 0x489ECC and the `<autoattacktype>` by the action's own data: the rate lookup 0x487C45(`[ua+4]`,
+candidate) above 0 (its `<rate type>`s: `Guardian`, `LogicalTypeValidSharpshoot`), not an ally (0x484E01 on the unit's
+player, as 0x489ECC at 0x489F33) and, unless flag 0Dh, an enemy (the diplomacy `[player+1D4h+4×ID]` = 2, as 0x489F86);
+range, visibility and the choice are unchanged. Without `powerShots` it changes nothing visible: the next tags of a power's
+attack fire no shot.
+
 **numberOfShots.** A burst's quick shots wait the interval in state 1 with `<BurstPose>` hold (the attack animation's
 tail is stretched to the wait), so a kill by a quick shot is seen in state 1 and the burst goes on. [O] A target swapped in
 state 19h (an earlier version did it while a burst had shots left) did not keep the burst: the action was reset at the
@@ -4309,6 +4319,41 @@ wait's end as above and the count started again, so the key leaves state 19h alo
 - Cost: with no tag in the data the hook compares one global. A tagged action pays one map lookup when its target is lost,
   and one spatial query over its range when that happens in its animation: once per kill, not per frame (the state is 19h
   right after a search that found nothing).
+
+### powerShots
+
+**What a power's attack does (2026-11-26, capstone on the stock exe, hardware breakpoints and the key's log in game).** An ability whose `<unitaction>` is an attack starts the attack
+unit action with its power use at `[ua+6Ch]` (its `[+1Ch]` the ability record). Each `Attack` tag of its animation
+(event 5 → 0x48F739, state 1) reaches 0x48F7E4 with ESI = the use, not 0, and goes to 0x48EA3D: when bit 2 of the use's
+bitset is set (0x48BB7E), `[use+1Ch]` ≥ 0 and the world has its power manager `[world+56Ch]`, it calls
+0x6EDB7E(unit ID, record, &a, &b), "is this ability ready" (its recharge entry, 0x6ED7F6: none → 1), and jumps to
+0x4B7766: `test al,al / jne 48F7F1h` (the shot block) / `jmp 48CF7Bh` (the handler's exit, no shot). [O] A mod's Explorer
+(`RangedAttackSharpshoot`, three tags at 0.35, 0.50 and 0.65 of a 0.90 s clip, played at (0.90 + 2.0) / 4.5 = 0.644):
+the first tag came 489 ms into the cycle, the next ones 208 to 212 ms apart, and 0x6EDB7E answered 1, 0, 0, so one shot a use: the first shot starts
+the recharge. After it the action gets flag 6 (0x48F12B) and ends with its animation.
+
+**The hook.** `hooks/powershots_hooks.asm` replaces those 8 bytes (only 0x48EA9D jumps there; no branch lands in
+0x4B7767..0x4B776D, capstone scan of the stock exe) with a jmp. AL = the answer, EBP = the unit action, EBX = 0. Ready:
+`jmp 48F7F1h`, as stock. Not ready, while some action has `<PowerShots>` above 1: `UhcPowerShotsAllow(ebp)` (EAX, ECX
+and EDX saved) answers 1 for an action of the unit's proto with the tag (`{proto ID, action name index}`), a power use,
+state 1, and a shot count `[ua+68h]` of at least 1 (the use's first shot was the stock, ready one) and below N; then the
+shot block, else the stock exit. [O] `[ua+68h]` is 0 at each use's first tag (three uses traced). The shot is the stock
+one: the launch, the after-shot ROF read (so `numberOfShots`' filters and `retargetInAction`'s shot log see it), the
+wait 0x48FA69 and the flag 6 path again, which change nothing for a power's attack (it has no next cycle).
+
+**Tags.** Read through the shared action tag hook (`actiontags.h`) from a `<ProtoAction>` or a tactics `<action>` (the
+later one wins): `PowerShots` 1..50; cleared on every data load.
+
+**Why it is safe.**
+- The site and both continuations are verified (`PowerShotsReady`, `PowerShotsFire`, `PowerShotsNoShot`, and the path
+  that reaches it, `PowerShotsGate`); the hook relocates nothing: it re-does the test and leaves through the stock
+  branches' own targets, with the handler's frame and registers as the stock jumps leave them (ESI, the record, is
+  dead at both: 0x48F7F1 reloads ECX and EAX, the shot block clears ESI at 0x48F8A4).
+- Deterministic: the decision reads simulation state (the action, its shot count and state, the data's tag) and runs in
+  the event handler on every machine. The power manager is still asked first, so a use still needs the ability ready
+  and starts its recharge as before. Every player needs the same line and data.
+- Cost: one compare of a global at each Attack tag of a power's attack after its first shot; a map lookup when some
+  action has the tag. Nothing for ordinary attacks (they never reach 0x4B7766).
 
 ### turretArc
 
