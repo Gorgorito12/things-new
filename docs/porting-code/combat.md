@@ -4233,7 +4233,7 @@ Contract: [turretArc](../porting-to-another-dll.md#turretarc).
 
 Besides the core helpers, it needs: [`unittypes.h`](helpers.md#extra-abstract-unit-types), [`worldtick.h`](helpers.md#world-tick).
 
-Sites: `TurretFaceHead` `0x48AA9F` (14 B), `TurretLaunchStart` `0x4995D5` (13 B).
+Sites: `TurretAttackState` `0x48A65A` (13 B), `TurretFaceHead` `0x48AA9F` (14 B), `TurretAttackWait` `0x48BFC7` (21 B), `TurretLaunchStart` `0x4995D5` (13 B).
 
 ### src/grannyhooks.h
 
@@ -4364,6 +4364,15 @@ bool AddGrannySampleObserver(GrannySampleObserver observer, const char* who) {
 // named for a reload, a death or a deploy (the gunner's new magazine comes to where the hopper is at rest, a corpse
 // shows the gun at rest, and the gunner holds the reins while the camel lies down or rises); the gunner's bones take
 // the aim table's pose for the clip and time the model plays, between the two nearest yaws.
+//
+// A turn beyond the arc (an arc about a rest yaw that is not ahead): the simulation turns the unit at its TurnRate (at
+// once for a camel), but the model shows the turn at the aim file's pace (its TURN section, else 0.3 s to rise, 90
+// degrees a second, 0.3 s to settle): the model's root bone is turned back by the difference, and the TURN section's
+// poses lift the body and step its feet round (the planted feet turned back by the angle turned in the step, in the
+// model's space), the gunner stepping with it; the gun rests meanwhile. The attack is held until the turn has settled:
+// at the attack update's state switch 0x48A65A, in state 1, the update leaves through the stock wait of a slow turner
+// (0x48BFC7: back to state 0). The turn is simulation state (unit ID, game time, the facing's numbers), the same on every
+// machine; a saved game does not keep a turn under way.
 #include <windows.h>
 
 #include <cctype>
@@ -4388,7 +4397,9 @@ bool AddGrannySampleObserver(GrannySampleObserver observer, const char* who) {
 extern "C" {
 void UhcTurretFaceHook();    // hooks/turretarc_hooks.asm
 void UhcTurretLaunchHook();  // hooks/turretarc_hooks.asm
+void UhcTurretStateHook();   // hooks/turretarc_hooks.asm
 std::int32_t g_uhcTurretOn = 0;
+std::int32_t g_uhcTurnCount = 0;  // turns beyond the arc under way: the attack state hook calls in only above 0
 }
 
 namespace {
@@ -4444,6 +4455,23 @@ struct AimFile {
   // or a shrinking one [1]: shown when the gun comes to rest, so no foot is left in the air
   std::vector<std::pair<float, float>> bands;
   std::map<std::string, std::pair<Clip, Clip>> settled;
+  // optional, "TURN": the body's turn beyond the arc on the spot (the deployed camel rises, steps round and settles):
+  // its pace, and per part (the body's model, the gunner's) the bones' local poses risen and stepping, for a turn
+  // toward a growing heading [0] or a shrinking one [1], at `phases` points of one step (the planted feet turned
+  // back in the model's space by the step's angle, so they stay put while the model turns on)
+  struct TurnPart {
+    std::vector<std::string> bones;
+    std::vector<float> data;  // [dir 2][phase][bone][7]
+    std::vector<float> rise;  // optional "RISE" after TURN: [dir 2][k][bone][7], the pose at lift (k + 1) / riseSteps
+  };
+  int riseSteps = 0;          // 0: the rise and the settling blend the clip's pose straight to the step's
+  bool hasTurn = false;
+  float turnStep = 30.0f;     // degrees of turn per step (a step: both diagonal pairs once)
+  float turnRise = 0.3f;      // seconds
+  float turnSettle = 0.3f;    // seconds
+  float turnRate = 90.0f;     // degrees a second
+  int turnPhases = 0;
+  TurnPart turnBody, turnGunner;
   // the yaws the aim file covers (degrees): the gun turns no farther than its table goes
   float lowest() const { return yaws.empty() ? 0.0f : yaws.front(); }
   float highest() const { return yaws.empty() ? 0.0f : yaws.back(); }
@@ -4555,6 +4583,64 @@ bool ReadAim(AimFile& aim) {
   }
   // the optional sections
   while (need(8)) {
+    if (std::memcmp(&b[at], "TURN", 4) == 0) {
+      at += 4;
+      if (!need(24) || u32() != 1) {
+        return false;
+      }
+      aim.turnStep = f32();
+      aim.turnRise = f32();
+      aim.turnSettle = f32();
+      aim.turnRate = f32();
+      const std::uint32_t phases = u32();
+      if (phases < 2 || phases > 256 || !(aim.turnStep > 0.0f) || !(aim.turnRate > 0.0f) || aim.turnRise < 0.0f ||
+          aim.turnSettle < 0.0f || aim.turnRise > 5.0f || aim.turnSettle > 5.0f) {
+        return false;
+      }
+      aim.turnPhases = static_cast<int>(phases);
+      for (AimFile::TurnPart* part : {&aim.turnBody, &aim.turnGunner}) {
+        if (!need(4)) {
+          return false;
+        }
+        const std::uint32_t nb = u32();
+        if (nb > 256 || !need(32 * nb)) {
+          return false;
+        }
+        for (std::uint32_t i = 0; i < nb; ++i) {
+          part->bones.push_back(str(32));
+        }
+        const std::size_t floats = 2u * phases * nb * 7u;
+        if (!need(floats * 4)) {
+          return false;
+        }
+        part->data.resize(floats);
+        std::memcpy(part->data.data(), &b[at], floats * 4);
+        at += floats * 4;
+      }
+      aim.hasTurn = true;
+      continue;
+    }
+    if (std::memcmp(&b[at], "RISE", 4) == 0) {
+      at += 4;
+      if (!aim.hasTurn || !need(8) || u32() != 2) {  // version 2: a table per way (the gunner faces his path)
+        return false;
+      }
+      const std::uint32_t k = u32();
+      if (k < 1 || k > 256) {
+        return false;
+      }
+      for (AimFile::TurnPart* part : {&aim.turnBody, &aim.turnGunner}) {
+        const std::size_t floats = 2u * static_cast<std::size_t>(k) * part->bones.size() * 7u;
+        if (!need(floats * 4)) {
+          return false;
+        }
+        part->rise.resize(floats);
+        std::memcpy(part->rise.data(), &b[at], floats * 4);
+        at += floats * 4;
+      }
+      aim.riseSteps = static_cast<int>(k);
+      continue;
+    }
     const bool band = std::memcmp(&b[at], "BAND", 4) == 0, setl = std::memcmp(&b[at], "SETL", 4) == 0;
     if (!band && !setl) {
       break;
@@ -4750,6 +4836,81 @@ struct Shown {
   bool settleLogged = false;   // for the log: this rest's settling already told
 };
 
+// A turn of the body beyond the arc, shown at its own pace in game time (the simulation turns at the proto's
+// TurnRate, at once for a camel): the model is turned back by the difference, so it rises, turns and settles, and the
+// attack is held meanwhile. Simulation state: written by the facing and read by the attack update, both of which run
+// the same on every machine; the screen only reads it. Not kept in a saved game (a turn under way then shows none).
+struct Turn {
+  std::int32_t start = -1;     // game ms, -1 none
+  std::int32_t ms = 0;         // its length: the rise, the turn and the settling
+  std::int32_t rise = 0;       // ms
+  std::int32_t settle = 0;     // ms
+  float from = 0.0f;           // the heading it starts from (degrees, atan2 of the forward's x and z)
+  float by = 0.0f;             // the turn, signed (positive toward the unit's right)
+  float step = 30.0f;          // degrees of turn per step: the planted feet are baked for exactly this
+  int steps = 1;               // for the log: about how many steps (it may end mid-step; the settling puts it down)
+};
+std::map<std::int32_t, Turn> g_turns;  // unit ID -> its turn
+
+// The pace of a turn: the aim file's TURN section, else a rise and a settling of 0.3 s and 90 degrees a second.
+Turn TurnFor(int aim, float from, float by, std::int32_t now) {
+  const bool own = aim >= 0 && aim < static_cast<int>(g_aims.size()) && g_aims[aim].hasTurn;
+  const float rise = own ? g_aims[aim].turnRise : 0.3f, settle = own ? g_aims[aim].turnSettle : 0.3f;
+  const float rate = own ? g_aims[aim].turnRate : 90.0f, step = own ? g_aims[aim].turnStep : 30.0f;
+  Turn t;
+  t.start = now;
+  t.from = from;
+  t.by = by;
+  t.rise = static_cast<std::int32_t>(rise * 1000.0f + 0.5f);
+  t.settle = static_cast<std::int32_t>(settle * 1000.0f + 0.5f);
+  t.ms = t.rise + t.settle + static_cast<std::int32_t>(std::fabs(by) * 1000.0f / rate + 0.5f);
+  t.step = step;
+  t.steps = static_cast<int>(std::fabs(by) / step + 0.5f);
+  if (t.steps < 1) {
+    t.steps = 1;
+  }
+  return t;
+}
+
+bool Turning(const Turn& sh, std::int32_t now) {
+  return sh.start >= 0 && now >= sh.start && now < sh.start + sh.ms;
+}
+
+const Turn* TurnOf(std::int32_t id) {
+  const auto it = g_turns.find(id);
+  return it == g_turns.end() ? nullptr : &it->second;
+}
+
+float Smooth(float x) { return x <= 0.0f ? 0.0f : x >= 1.0f ? 1.0f : x * x * (3.0f - 2.0f * x); }
+
+// The heading the model shows at game time `now`; how far it is risen (0 lying, 1 risen, eased) and where it is in
+// its step (0..1, 0 with every foot down): the angle turned so far over the step's, so a planted foot stays put
+// whatever the turn (a turn that ends mid-step puts the lifted feet down as it settles).
+float ShownHeading(const Turn& sh, std::int32_t now, float* lift, float* phase = nullptr) {
+  const std::int32_t t = now - sh.start;
+  const std::int32_t middle = sh.ms - sh.rise - sh.settle;
+  float l = 0.0f, k = 0.0f;
+  if (sh.start < 0 || t >= sh.ms || t < 0) {
+    k = sh.start < 0 ? 0.0f : 1.0f;
+  } else if (t < sh.rise) {
+    l = Smooth(static_cast<float>(t) / static_cast<float>(sh.rise));
+  } else if (t < sh.rise + middle) {
+    l = 1.0f;
+    k = middle > 0 ? static_cast<float>(t - sh.rise) / static_cast<float>(middle) : 1.0f;
+  } else {
+    l = sh.settle > 0 ? 1.0f - Smooth(static_cast<float>(t - sh.rise - middle) / static_cast<float>(sh.settle)) : 0.0f;
+    k = 1.0f;
+  }
+  if (lift != nullptr) {
+    *lift = l;
+  }
+  if (phase != nullptr) {
+    const float s = std::fabs(sh.by) * k / sh.step;
+    *phase = s - std::floor(s);
+  }
+  return sh.from + sh.by * k;
+}
+
 std::unordered_map<std::int32_t, Shown> g_shown;  // unit ID -> its state
 
 enum class Role { kBody, kGun, kGunner };
@@ -4835,7 +4996,10 @@ int BoneIndex(const void* skeleton, const std::string& name) {
 struct BoneMap {
   int gun = -1;
   int turret = -1;
+  int root = -1;  // the skeleton's first bone with no parent (a Granny bone: +4 its parent index)
   std::vector<int> gunner;
+  std::vector<int> turnBody, turnGunner;  // the aim file's TURN bones in this skeleton (-1 where it lacks one)
+  bool anyTurnBody = false, anyTurnGunner = false;
 };
 std::map<std::pair<int, const void*>, BoneMap> g_boneMaps;
 
@@ -4849,6 +5013,16 @@ const BoneMap& BonesFor(int aim, const void* skeleton) {
   const AimFile& a = g_aims[aim];
   m.gun = BoneIndex(skeleton, a.gunBone);
   m.turret = BoneIndex(skeleton, a.turretBone);
+  if (skeleton != nullptr) {
+    const std::int32_t count = Field<std::int32_t>(skeleton, 4);
+    const char* bones = Field<const char*>(skeleton, 8);
+    for (std::int32_t i = 0; bones != nullptr && i < count && i < 512; ++i) {
+      if (Field<std::int32_t>(bones, static_cast<std::uint32_t>(i) * kGrannyBoneSize + 4) == -1) {
+        m.root = i;
+        break;
+      }
+    }
+  }
   bool all = !a.bones.empty();
   for (const std::string& b : a.bones) {
     m.gunner.push_back(BoneIndex(skeleton, b));
@@ -4856,6 +5030,14 @@ const BoneMap& BonesFor(int aim, const void* skeleton) {
   }
   if (!all) {
     m.gunner.clear();
+  }
+  for (const std::string& b : a.turnBody.bones) {
+    m.turnBody.push_back(BoneIndex(skeleton, b));
+    m.anyTurnBody = m.anyTurnBody || m.turnBody.back() >= 0;
+  }
+  for (const std::string& b : a.turnGunner.bones) {
+    m.turnGunner.push_back(BoneIndex(skeleton, b));
+    m.anyTurnGunner = m.anyTurnGunner || m.turnGunner.back() >= 0;
   }
   return g_boneMaps.emplace(key, std::move(m)).first->second;
 }
@@ -4910,7 +5092,7 @@ void MapNode(const char* node, std::int32_t id, int aim, int k) {
     }
     const BoneMap& m = BonesFor(aim, skeleton);
     const Role role = m.gun >= 0 ? Role::kGun : m.turret >= 0 ? Role::kBody : Role::kGunner;
-    if (m.gun < 0 && m.turret < 0 && m.gunner.empty()) {
+    if (m.gun < 0 && m.turret < 0 && m.gunner.empty() && !m.anyTurnGunner) {
       return;
     }
     if (g_log && g_mapLines < 24 && g_instances.find(instance) == g_instances.end()) {
@@ -4955,6 +5137,31 @@ void TurnBone(void* pose, int bone, float degrees) {
   t->flags |= 2;
 }
 
+// A root bone turned about the model's up (y) by `degrees` (+ toward the unit's right), about the model's origin: the
+// rotation comes first in the parent's (the model's) frame, and the bone's position turns with it.
+void TurnRoot(void* pose, int bone, float degrees) {
+  GrannyTransform* t = g_localTransform(pose, bone);
+  if (t == nullptr) {
+    return;
+  }
+  const float h = degrees * kPi / 360.0f;
+  const float q[4] = {0.0f, std::sin(h), 0.0f, std::cos(h)};
+  if ((t->flags & 2) == 0) {
+    t->orientation[0] = t->orientation[1] = t->orientation[2] = 0.0f;
+    t->orientation[3] = 1.0f;
+  }
+  float o[4];
+  QuatMul(q, t->orientation, o);
+  std::memcpy(t->orientation, o, sizeof o);
+  if ((t->flags & 1) != 0) {
+    const float a = degrees * kPi / 180.0f;
+    const float x = t->position[0], z = t->position[2];
+    t->position[0] = x * std::cos(a) + z * std::sin(a);
+    t->position[2] = -x * std::sin(a) + z * std::cos(a);
+  }
+  t->flags |= 2;
+}
+
 // The clip the instance shows most and its time in it.
 const char* PlayingClip(const void* instance, float* clock) {
   void* end = g_controlsEnd(instance);
@@ -4990,6 +5197,17 @@ bool IsHomeClip(const char* name) {
   }
   return s.find("reload") != std::string::npos || s.find("death") != std::string::npos ||
          s.find("deploy") != std::string::npos;
+}
+
+bool IsDeathClip(const char* name) {
+  if (name == nullptr) {
+    return false;
+  }
+  std::string s(name);
+  for (char& ch : s) {
+    ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+  }
+  return s.find("death") != std::string::npos;
 }
 
 void PoseGunner(void* pose, int count, const AimFile& aim, const BoneMap& m, const char* clipName, float clock,
@@ -5066,6 +5284,111 @@ void PoseGunner(void* pose, int count, const AimFile& aim, const BoneMap& m, con
   }
 }
 
+// The aim file's TURN pose of one part at `phase` of a step, toward a growing heading (dir 0) or a shrinking one (1),
+// shown `lift` of the way from the pose sampled so far (the clip's, 0) to the step's (1): the rise and the settling.
+// With a RISE table the way runs through its poses (so the folded legs unfold as the body rises, not through the
+// ground), each taking `lift` of the step point's offset from the step's first (a turn may settle mid-step); without
+// one it is a straight blend.
+void Nlerp(const float* a, const float* b, float w, float* out) {
+  const float s = (a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]) < 0 ? -1.0f : 1.0f;
+  float len = 0.0f;
+  for (int i = 0; i < 4; ++i) {
+    out[i] = a[i] + w * (s * b[i] - a[i]);
+    len += out[i] * out[i];
+  }
+  len = std::sqrt(len);
+  for (int i = 0; i < 4; ++i) {
+    out[i] = len > 1e-6f ? out[i] / len : (i == 3 ? 1.0f : 0.0f);
+  }
+}
+
+void PoseTurnPart(void* pose, int first, int end, const AimFile& aim, const AimFile::TurnPart& part,
+                  const std::vector<int>& bones, int dir, float phase, float lift) {
+  const int np = aim.turnPhases;
+  const std::size_t nb = part.bones.size();
+  if (np < 2 || nb == 0 || bones.size() != nb || lift <= 0.0f) {
+    return;
+  }
+  const float fp = phase * static_cast<float>(np);
+  int p0 = static_cast<int>(fp);
+  const float w = fp - static_cast<float>(p0);
+  p0 %= np;
+  const int p1 = (p0 + 1) % np;  // a step's last point runs into its first
+  auto at = [&](int ph, std::size_t b) { return &part.data[((static_cast<std::size_t>(dir) * np + ph) * nb + b) * 7]; };
+  const int K = aim.riseSteps;
+  const bool table = K > 0 && part.rise.size() == 2u * static_cast<std::size_t>(K) * nb * 7 && lift < 1.0f;
+  auto riseAt = [&](int kk, std::size_t b) {
+    return &part.rise[((static_cast<std::size_t>(dir) * K + kk) * nb + b) * 7];
+  };
+  const float x = lift * static_cast<float>(K);
+  int k = table ? static_cast<int>(x) : 0;
+  if (k > K - 1) {
+    k = K - 1;
+  }
+  const float wk = table ? x - static_cast<float>(k) : 0.0f;
+  for (std::size_t b = 0; b < nb; ++b) {
+    const int bone = bones[b];
+    if (bone < first || bone >= end) {
+      continue;
+    }
+    GrannyTransform* tr = g_localTransform(pose, bone);
+    if (tr == nullptr) {
+      continue;
+    }
+    // the step's pose at the phase, between its two nearest points
+    const float* a = at(p0, b);
+    const float* c = at(p1, b);
+    float sp[3], sq[4];
+    for (int i = 0; i < 3; ++i) {
+      sp[i] = a[i] + w * (c[i] - a[i]);
+    }
+    Nlerp(a + 3, c + 3, w, sq);
+    // what the clip has
+    float cur[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+    if ((tr->flags & 2) != 0) {
+      std::memcpy(cur, tr->orientation, sizeof cur);
+    }
+    float curp[3] = {0.0f, 0.0f, 0.0f};
+    if ((tr->flags & 1) != 0) {
+      std::memcpy(curp, tr->position, sizeof curp);
+    }
+    float op[3], oq[4];
+    if (!table) {
+      for (int i = 0; i < 3; ++i) {
+        op[i] = curp[i] + lift * (sp[i] - curp[i]);
+      }
+      Nlerp(cur, sq, lift, oq);
+    } else {
+      const float* from = k == 0 ? nullptr : riseAt(k - 1, b);
+      const float* to = riseAt(k, b);
+      const float* fp3 = from == nullptr ? curp : from;
+      const float* fq = from == nullptr ? cur : from + 3;
+      float bp[3], bq[4];
+      for (int i = 0; i < 3; ++i) {
+        bp[i] = fp3[i] + wk * (to[i] - fp3[i]);
+      }
+      Nlerp(fq, to + 3, wk, bq);
+      // and `lift` of the step point's offset from the step's first
+      const float* z = at(0, b);
+      for (int i = 0; i < 3; ++i) {
+        op[i] = bp[i] + lift * (sp[i] - z[i]);
+      }
+      const float zc[4] = {-z[3], -z[4], -z[5], z[6]};
+      float d[4], id[4] = {0.0f, 0.0f, 0.0f, 1.0f}, dl[4];
+      QuatMul(sq, zc, d);
+      Nlerp(id, d, lift, dl);
+      QuatMul(dl, bq, oq);
+      const float len = std::sqrt(oq[0] * oq[0] + oq[1] * oq[1] + oq[2] * oq[2] + oq[3] * oq[3]);
+      for (int i = 0; i < 4 && len > 1e-6f; ++i) {
+        oq[i] /= len;
+      }
+    }
+    std::memcpy(tr->position, op, sizeof op);
+    std::memcpy(tr->orientation, oq, sizeof oq);
+    tr->flags |= 3;
+  }
+}
+
 double Seconds(const LARGE_INTEGER& from, const LARGE_INTEGER& to) {
   static LARGE_INTEGER freq{};
   if (freq.QuadPart == 0) {
@@ -5075,6 +5398,9 @@ double Seconds(const LARGE_INTEGER& from, const LARGE_INTEGER& to) {
 }
 
 unsigned g_poseLines = 0;
+
+// A forward's heading: degrees about the vertical, 0 along +z, growing toward +x (the unit's right).
+float HeadingOf(const float* v) { return std::atan2(v[0], v[2]) * 180.0f / kPi; }
 
 void AfterSample(void* instance, int first, int count, void* pose) {
   if (g_instances.empty()) {
@@ -5098,8 +5424,11 @@ void AfterSample(void* instance, int first, int count, void* pose) {
     sh.home = IsHomeClip(PlayingClip(instance, &c));
   }
   const float rest = HomeOf(sh.aim);
+  const std::int32_t gameNow = Now(world);
+  const Turn* bodyTurn = TurnOf(sh.unitId);
+  const bool turning = bodyTurn != nullptr && Turning(*bodyTurn, gameNow);  // the body turns on screen: the gun rests
   const float target =
-      (!sh.home && sh.aimedAt >= 0 && Now(world) - sh.aimedAt <= kAimHoldMs) ? sh.gameYaw : rest;
+      (!turning && !sh.home && sh.aimedAt >= 0 && gameNow - sh.aimedAt <= kAimHoldMs) ? sh.gameYaw : rest;
   LARGE_INTEGER now;
   QueryPerformanceCounter(&now);
   const double dt = sh.lastReal.QuadPart == 0 ? 0.0 : Seconds(sh.lastReal, now);
@@ -5144,11 +5473,31 @@ void AfterSample(void* instance, int first, int count, void* pose) {
         TurnBone(pose, m.gun, turn);
       }
       break;
-    case Role::kBody:
+    case Role::kBody: {
+      // the turn beyond the arc: the model shows the heading of the shown turn, the simulation's being ahead of it
+      const char* unit = turning ? UnitById(world, sh.unitId) : nullptr;
+      if (unit != nullptr) {
+        float lift = 0.0f, phase = 0.0f;
+        const float shown = ShownHeading(*bodyTurn, gameNow, &lift, &phase);
+        float bodyClock = 0.0f;
+        if (IsDeathClip(PlayingClip(instance, &bodyClock))) {
+          lift = 0.0f;  // killed while it turns: its death plays as it is, only the heading still eases round
+        }
+        PoseTurnPart(pose, first, end, g_aims[sh.aim], g_aims[sh.aim].turnBody, m.turnBody, bodyTurn->by < 0.0f,
+                     phase, lift);
+        if (m.root >= first && m.root < end) {
+          const float sim = HeadingOf(reinterpret_cast<const float*>(unit + 0x20));
+          const float fix = Wrap(shown - sim);
+          if (fix != 0.0f) {
+            TurnRoot(pose, m.root, kModelSense * fix);
+          }
+        }
+      }
       if (m.turret >= first && m.turret < end && turn != 0.0f) {
         TurnBone(pose, m.turret, turn);
       }
       break;
+    }
     case Role::kGunner: {
       float clock = 0.0f;
       const char* clip = PlayingClip(instance, &clock);
@@ -5159,8 +5508,37 @@ void AfterSample(void* instance, int first, int count, void* pose) {
         }
         PoseGunner(pose, end, g_aims[sh.aim], m, clip, clock, modelYaw, sh.dir, sh.settle);
       }
+      if (turning && !IsDeathClip(clip)) {  // he steps round with the body
+        float lift = 0.0f, phase = 0.0f;
+        ShownHeading(*bodyTurn, gameNow, &lift, &phase);
+        PoseTurnPart(pose, first, end, g_aims[sh.aim], g_aims[sh.aim].turnGunner, m.turnGunner, bodyTurn->by < 0.0f,
+                     phase, lift);
+      }
       break;
     }
+  }
+}
+
+// A turn beyond the arc begins (from the facing, in the simulation: the same on every machine): the body is shown
+// rising, turning at its pace and settling, and the attack is held meanwhile (UhcTurretHold). A call during the same
+// turn (the same heading wanted) changes nothing; a new target during the shown turn turns on from the shown heading.
+void StartTurn(const char* unit, std::int32_t id, int aim, float by) {
+  const std::int32_t now = Now(World());
+  const float heading = HeadingOf(reinterpret_cast<const float*>(unit + 0x20));
+  const float to = heading + by;
+  Turn& sh = g_turns[id];
+  const bool under = Turning(sh, now);
+  if (under && std::fabs(Wrap(to - (sh.from + sh.by))) < 3.0f) {
+    return;
+  }
+  const float from = under ? ShownHeading(sh, now, nullptr) : heading;
+  sh = TurnFor(aim, from, Wrap(to - from), now);
+  g_uhcTurnCount = static_cast<std::int32_t>(g_turns.size());
+  if (g_log && g_logLines < kMaxLogLines) {
+    ++g_logLines;
+    uhc::Log(L"turretArc: %d ms, unit %d turns its body %+.1f degrees (from %.1f, %d steps): shown in %d ms, its "
+             L"attack held until %d ms", now, id, static_cast<double>(sh.by), static_cast<double>(from), sh.steps,
+             sh.ms, now + sh.ms);
   }
 }
 
@@ -5172,13 +5550,22 @@ void Tick(char* world, std::int32_t) {
   for (auto it = g_shown.begin(); it != g_shown.end();) {
     const char* unit = UnitById(world, it->first);
     const bool idle = it->second.aimedAt < 0 || now - it->second.aimedAt > 4 * kAimHoldMs;
-    if (unit == nullptr || (idle && it->second.shownYaw == HomeOf(it->second.aim))) {
+    const Turn* turn = TurnOf(it->first);
+    if (unit == nullptr || (idle && it->second.shownYaw == HomeOf(it->second.aim) && (turn == nullptr ||
+                                                                                     !Turning(*turn, now)))) {
       it = g_shown.erase(it);
       continue;
     }
     MapInstances(unit, it->second.aim);
     ++it;
   }
+  for (auto it = g_turns.begin(); it != g_turns.end();) {  // simulation state: by game time and unit only
+    // ended, the unit gone, or from another game (a game time before its start)
+    it = (now >= it->second.start + it->second.ms || now < it->second.start || UnitById(world, it->first) == nullptr)
+             ? g_turns.erase(it)
+             : std::next(it);
+  }
+  g_uhcTurnCount = static_cast<std::int32_t>(g_turns.size());
   g_uhcTurretOn = g_aims.empty() ? 0 : 1;
 }
 
@@ -5246,6 +5633,7 @@ std::int32_t __stdcall UhcTurretFace(const char* unit, const float* point) {
       for (int i = 0; i < 3; ++i) {
         g_uhcTurretPoint[i] = pos[i] + nf * fwd[i] + nr * right[i] + u * up[i];
       }
+      StartTurn(unit, id, aim, Wrap(angle - home));
     }
   }
   const bool logIt = g_log && g_logLines < kMaxLogLines &&
@@ -5265,6 +5653,29 @@ std::int32_t __stdcall UhcTurretFace(const char* unit, const float* point) {
                                               : L"the unit turns");
   }
   return inside ? 1 : (redirect ? 2 : 0);
+}
+
+// From the attack update's state switch 0x48A65A, in state 1 (firing): 1 holds the attack (the stock wait of a slow
+// turner, back to state 0) while the unit's body turns beyond its turret's arc on screen.
+std::int32_t __stdcall UhcTurretHold(const char* unitAction) {
+  const char* unit = unitAction == nullptr ? nullptr : Field<const char*>(unitAction, 0x10);
+  if (unit == nullptr) {
+    return 0;
+  }
+  const std::int32_t id = Field<std::int32_t>(unit, 0x10);
+  const Turn* turn = TurnOf(id);
+  const std::int32_t now = Now(World());
+  if (turn == nullptr || !Turning(*turn, now)) {
+    return 0;
+  }
+  static std::int32_t loggedStart = -1;
+  if (g_log && g_logLines < kMaxLogLines && loggedStart != turn->start) {
+    ++g_logLines;
+    loggedStart = turn->start;
+    uhc::Log(L"turretArc: %d ms, unit %d: its attack waits for its turn (until %d ms)", now, id,
+             turn->start + turn->ms);
+  }
+  return 1;
 }
 
 // From 0x4995D5 in the projectile launch: the shot's start (world) turned about the turret's pivot by the gun's yaw.
@@ -5300,11 +5711,11 @@ void __stdcall UhcTurretLaunch(const char* unitAction, const char* unit, float* 
   const float nf = mf * std::cos(a) - mr * std::sin(a);
   const float nr = mf * std::sin(a) + mr * std::cos(a);
   static unsigned launchLines = 0;
-  if (g_log && launchLines < 80) {
+  if (g_log && launchLines < 400) {
     ++launchLines;
     const float d[3] = {start[0] - pivot[0], start[1] - pivot[1], start[2] - pivot[2]};
-    uhc::Log(L"turretArc: unit %d shot, yaw %.1f: the game's start (forward %.2f, right %.2f, up %.2f) from the "
-             L"pivot, the turned muzzle's (%.2f, %.2f, %.2f)", Field<std::int32_t>(unit, 0x10),
+    uhc::Log(L"turretArc: %d ms, unit %d shot, yaw %.1f: the game's start (forward %.2f, right %.2f, up %.2f) from "
+             L"the pivot, the turned muzzle's (%.2f, %.2f, %.2f)", Now(World()), Field<std::int32_t>(unit, 0x10),
              static_cast<double>(yaw), static_cast<double>(d[0] * fwd[0] + d[1] * fwd[1] + d[2] * fwd[2]),
              static_cast<double>(d[0] * right[0] + d[1] * right[1] + d[2] * right[2]),
              static_cast<double>(d[0] * up[0] + d[1] * up[1] + d[2] * up[2]), static_cast<double>(nf),
@@ -5360,18 +5771,30 @@ Outcome ApplyTurretArc(const Config& config) {
         static_cast<unsigned>(aim.bones.size()), static_cast<unsigned>(aim.clips.size()),
         static_cast<double>(aim.yaws.front()), static_cast<double>(aim.yaws.back()), static_cast<double>(aim.home),
         static_cast<unsigned>(aim.bands.size()), static_cast<unsigned>(aim.settled.size()));
+    if (aim.hasTurn) {
+      Log(L"turretArc: %hs: a turn beyond the arc rises in %.2f s, turns %.0f degrees a second in steps of %.0f "
+          L"degrees (%d points a step; %u body bones, %u gunner bones) and settles in %.2f s",
+          aim.proto.c_str(), static_cast<double>(aim.turnRise), static_cast<double>(aim.turnRate),
+          static_cast<double>(aim.turnStep), aim.turnPhases, static_cast<unsigned>(aim.turnBody.bones.size()),
+          static_cast<unsigned>(aim.turnGunner.bones.size()), static_cast<double>(aim.turnSettle));
+      if (aim.riseSteps > 0) {
+        Log(L"turretArc: %hs: it rises and settles through %d poses", aim.proto.c_str(), aim.riseSteps);
+      }
+    }
     g_aims.push_back(std::move(aim));
   }
   if (!LoadGranny()) {
     return Outcome::kFailed;
   }
-  if (!VerifyAll("turretArc", {&sites::kTurretFaceHead, &sites::kTurretLaunchStart}) ||
+  if (!VerifyAll("turretArc", {&sites::kTurretFaceHead, &sites::kTurretLaunchStart, &sites::kTurretAttackState,
+                               &sites::kTurretAttackWait}) ||
       !OnDatabaseLoad(&ResetForDataLoad) || !AddWorldTick(&Tick) ||
       !AddGrannySampleObserver(&AfterSample, "turretArc")) {
     return Outcome::kFailed;
   }
   if (!WriteJmp(sites::kTurretFaceHead.va, reinterpret_cast<const void*>(&UhcTurretFaceHook), 6) ||
-      !WriteJmp(sites::kTurretLaunchStart.va, reinterpret_cast<const void*>(&UhcTurretLaunchHook), 9)) {
+      !WriteJmp(sites::kTurretLaunchStart.va, reinterpret_cast<const void*>(&UhcTurretLaunchHook), 9) ||
+      !WriteJmp(sites::kTurretAttackState.va, reinterpret_cast<const void*>(&UhcTurretStateHook), 7)) {
     return Outcome::kFailed;
   }
   g_uhcTurretOn = 1;
@@ -5397,13 +5820,17 @@ include common.inc
 
 UhcTurretFace PROTO STDCALL :DWORD, :DWORD
 UhcTurretLaunch PROTO STDCALL :DWORD, :DWORD, :DWORD, :DWORD
+UhcTurretHold PROTO STDCALL :DWORD
 
 EXTERNDEF g_uhcTurretOn:DWORD    ; above 0 while the key has a unit to serve
+EXTERNDEF g_uhcTurnCount:DWORD   ; turns beyond the arc under way
 EXTERNDEF g_uhcTurretPoint:DWORD ; the point the stock turn gets instead when UhcTurretFace returns 2
 
 .data
 faceContinue    dd 0048AAA5h    ; mov eax,[esi]: the stock body after the three instructions re-executed here
 launchContinue  dd 004995DEh    ; fsub dword ptr [esp+20h]: the shot's direction, after the two re-executed here
+stateContinue   dd 0048A661h    ; ja 48A728h: the state switch, on the flags of the cmp re-executed here
+stateWait       dd 0048BFC7h    ; the stock wait of a slow turner: vtable+34h(0), then the update's epilogue
 
 .code
 
@@ -5463,6 +5890,33 @@ stock:
     push 40A00000h
     jmp launchContinue
 UhcTurretLaunchHook ENDP
+
+; Replaces movzx eax,byte ptr [esi+61h] / cmp eax,16h (7 bytes) at 0x48A65A, the state switch of the attack update
+; FUN_0048A330 (ESI = the attack unit action, [esi+61h] its state, [esi+10h] its unit). In state 1 (firing), while the
+; unit's body turns beyond its turret's arc on screen, UhcTurretHold returns 1 and the update leaves through the stock
+; wait 0x48BFC7, which a slow turner takes in the same frame (0x4B3382): the action goes back to state 0 and the attack
+; starts again once the turn has settled. Otherwise the two instructions run as they were (the ja at 0x48A661 reads
+; the cmp's flags). ECX and EDX are kept for the switch's cases.
+UhcTurretStateHook PROC
+    TRACE_ONCE "turretArc attack state (0x48A65A)"
+    cmp g_uhcTurnCount, 0
+    je stock
+    cmp byte ptr [esi+61h], 1
+    jne stock
+    push ecx
+    push edx
+    push esi
+    call UhcTurretHold
+    pop edx
+    pop ecx
+    test eax, eax
+    je stock
+    jmp stateWait
+stock:
+    movzx eax, byte ptr [esi+61h]
+    cmp eax, 16h
+    jmp stateContinue
+UhcTurretStateHook ENDP
 
 END
 ```

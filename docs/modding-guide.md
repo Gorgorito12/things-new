@@ -31,7 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Wednesday 2026-11-25 23:00 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
+| Thursday 2026-11-26 11:04 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
 | Wednesday 2026-11-25 14:30 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries. |
 | Wednesday 2026-11-25 14:03 | [`garrisonConvert`](#garrisonconvert) | Filmed in WoL, with a control. `<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, with the train button's pie over the building's portrait. | The tag on the buildings that want it. |
 | Wednesday 2026-11-25 08:42 | [`selectFattened`](#selectfattened) | Filmed in WoL, with a control. A button and a hotkey select the player's livestock that has reached its maximum food, on the whole map; the button shows how many there are and hides at none. | The button and the hotkey: `wol-fixes/select-fattened`. |
@@ -4373,7 +4373,7 @@ retargetInAction [log]
 
 *A gun on a mount turns toward its target by itself, inside its arc, instead of the whole unit turning.*
 
-**Added:** Tuesday 2026-11-24 10:05 · **Filmed in WoL:** Wednesday 2026-11-25 23:00
+**Added:** Tuesday 2026-11-24 10:05 · **Filmed in WoL:** Thursday 2026-11-26 11:04
 
 ![turretArc in WoL](media/gatlingCamel-wol.gif)
 
@@ -4435,20 +4435,55 @@ turretArc <Proto> <aim file> [<Proto> <aim file> ...] [log]
     left in the air.
   - A target beyond the arc: the unit turns until the target sits at the gun's rest (ahead: it faces it, as before;
     the deployed gatling camel turns its right side to it), and the gun turns the rest of the way.
+  - When the gun rests off ahead (an aim file of version 2), that turn is shown at a walking pace, not at the proto's
+    `TurnRate` (18 for the camels: 90 degrees in a tenth of a second, the lying camel slid round): a rise, the turn,
+    and a settling (by default 0.3 s, 90 degrees a second, 0.3 s: 1.6 s for 90 degrees, 2.6 s for 180). The unit does
+    not fire until it has settled, and the gun rests meanwhile. An aim file with a `TURN` section gives its own pace
+    and the poses that lift the body and step its feet and the gunner's; without one the model turns at that pace in
+    its lying pose. `TurnRate` itself is not changed, so a limbered unit still steers as before.
   - Each shot leaves from the turned muzzle, so the tracers and the projectiles start where the gun points.
   - The gun goes back to its rest half a second after the unit last aimed, and at once while the unit plays a
     clip whose name holds `reload`, `death` or `deploy` (the gunner's new magazine is drawn to where the hopper is at
     rest, the corpse shows the gun at rest, and a deploy clip swings the gun itself between ahead and its rest).
   - A gun that rests off ahead needs the key: without it the game turns the unit to face its target, the gun pointing
     to the side.
-- **Simulation:** changes where shots start: every player needs the same line and data. What a unit faces and where
-  its shots start come from game state only (the unit, its target, its tactics); the turning on screen is display
-  only.
-- **Saved games:** nothing to keep: after a load, the next aim turns the gun again.
+- **Simulation:** changes where shots start, and holds the attack of a unit while it turns beyond its arc: every
+  player needs the same line and data. What a unit faces, where its shots start and how long a turn holds its attack
+  come from game state only (the unit, its target, its tactics, the aim file's pace, game time); the turning on
+  screen is display only.
+- **Saved games:** nothing to keep: after a load, the next aim turns the gun again. A turn under way when the game
+  was saved is not resumed: the unit fires at once after the load.
 - **Log:** `turretArc: applied`, one line per aim file (its bones, pivot, clips, yaws and rest), `hook reached:
-  turretArc facing (0x48AA9F)` and `turretArc launch (0x4995D5)`. With `log`: each new aim, at most 400 (`unit 0 aims
-  at 131.8 degrees (arc +30..+150, rest +90): the gun turns`, `the unit turns until it sits at the rest yaw`, or `the
-  unit turns`), the first 80 shots (the game's start and the turned muzzle's), and the models found for each unit.
+  turretArc facing (0x48AA9F)`, `turretArc launch (0x4995D5)` and `turretArc attack state (0x48A65A)`. With `log`:
+  each new aim, at most 400 (`unit 0 aims at 131.8 degrees (arc +30..+150, rest +90): the gun turns`, `the unit turns
+  until it sits at the rest yaw`, or `the unit turns`), each turn beyond the arc (`unit 1 turns its body -180.0
+  degrees (from 180.0, 6 steps): shown in 2600 ms, its attack held until 22719 ms` and `its attack waits for its
+  turn`), the first 400 shots with their game time, and the models found for each unit.
+- **Tested in WoL (2026-11-27, single player, `C:\AoE3-UHC-WoLReal4`, both camel packs):** the shown turn and the held
+  attack: Houses created and destroyed round a deployed `MEZamburak` and a `GatlingCamelDeployed` every 20 s, 12 turns
+  of 90 and 180 degrees each way: no shot between a turn's start and its end (logged with game time), the first shot
+  0.4 to 1.3 s after it; the model turned at the shown pace, the gun and the gunner with it. With the packs' `TURN`
+  and `RISE` sections (aoe3-blender-tools' `tools/camel_turn.py`, approved by the user as a script, a sketch and three
+  previews; `check_anim.py` 0 failures for turns of 60, 75, 90 and 180 degrees each way): 24 more turns, no shot
+  during any; the rise, the big steps, the gunner's walk and the settling checked frame by frame; both camels killed
+  mid-turn (the deployed death plays, nothing left in the air). The AI played a 4-minute skirmish against the
+  Germans with the new hook (22 units, a Manor, no XS message). Not tested: a game saved during a turn.
+
+![turretArc: the deployed gatling camel turns beyond its arc](media/turretArc-turn-gatling-wol.gif)
+
+*In WoL (filmed on 2026-11-27, `GatlingCamelDeployed`, the pack's new aim file): a House is destroyed and another
+appears behind it; the camel rises with its rump high, turns 180 degrees in big steps while the gunner lets go of the
+handles and walks round, kneels again, and only then fires.* [Full video (MP4)](media/turretArc-turn-gatling-wol.mp4).
+
+![turretArc: the zamburak cannon turns beyond its arc](media/turretArc-turn-zamburak-wol.gif)
+
+*The same with the zamburak cannon (`MEZamburak`): the artillerist walks round with his hands on his hips.*
+[Full video (MP4)](media/turretArc-turn-zamburak-wol.mp4).
+
+![turretArc: the turn as it was](media/turretArc-turn-wol-control.gif)
+
+*The control, the same scene with the DLL of 2026-11-26: the lying camel snaps round in a tenth of a second and fires
+at once.* [Full video (MP4)](media/turretArc-turn-wol-control.mp4).
 - **Tested in WoL (2026-11-24, single player, `C:\AoE3-UHC-WoLReal7`, the gatling camel pack):**
   - `GatlingCamel` and `GatlingCamelDeployed` against Houses and covered wagons placed all round them: aims logged
     from -90 to +90 degrees with the body still, the gun, the muzzle flash and the gunner's hands following; targets

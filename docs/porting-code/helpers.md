@@ -1948,6 +1948,12 @@ inline constexpr Site kTurretFaceHead{"TurretFaceHead", 0x0048AA9F, kTurretFaceH
 inline constexpr std::uint8_t kTurretLaunchStartBytes[] = {0xD9, 0x44, 0x24, 0x28, 0x68, 0x00, 0x00, 0xA0, 0x40, 0xD8, 0x64, 0x24, 0x20};
 inline constexpr Site kTurretLaunchStart{"TurretLaunchStart", 0x004995D5, kTurretLaunchStartBytes, sizeof(kTurretLaunchStartBytes)};
 
+inline constexpr std::uint8_t kTurretAttackStateBytes[] = {0x0F, 0xB6, 0x46, 0x61, 0x83, 0xF8, 0x16, 0x0F, 0x87, 0xC1, 0x00, 0x00, 0x00};
+inline constexpr Site kTurretAttackState{"TurretAttackState", 0x0048A65A, kTurretAttackStateBytes, sizeof(kTurretAttackStateBytes)};
+
+inline constexpr std::uint8_t kTurretAttackWaitBytes[] = {0x8B, 0x16, 0x6A, 0x00, 0x8B, 0xCE, 0x8B, 0x42, 0x34, 0xE8, 0x82, 0xCF, 0x02, 0x00, 0x5F, 0x5E, 0x5B, 0x83, 0xC4, 0x08, 0xC3};
+inline constexpr Site kTurretAttackWait{"TurretAttackWait", 0x0048BFC7, kTurretAttackWaitBytes, sizeof(kTurretAttackWaitBytes)};
+
 inline constexpr std::uint8_t kBroadsideSoundBytes[] = {0x68, 0x5C, 0x1D, 0xBA, 0x00, 0x83, 0xC2, 0x14};
 inline constexpr Site kBroadsideSound{"BroadsideSound", 0x004CECBD, kBroadsideSoundBytes, sizeof(kBroadsideSoundBytes)};
 
