@@ -1,0 +1,5536 @@
+{
+ "variant": "min",
+ "screen": [
+  1920,
+  1080
+ ],
+ "missing": [
+  "ui\\ingame\\button_disable"
+ ],
+ "atlases": [
+  {
+   "atlas": "ui\\ingame\\asi_ui_max",
+   "size": [
+    1024,
+    1024
+   ],
+   "unused_fraction": 0.9327,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 1,
+     "name": "Resource panel advanced, Asian",
+     "atlas": "ui\\ingame\\asi_ui_max",
+     "uv": [
+      0.4296875,
+      0.72,
+      0.669921875,
+      1.0
+     ],
+     "rect": [
+      440,
+      737,
+      686,
+      1024
+     ],
+     "rect_exact": [
+      440.0,
+      737.28,
+      686.0,
+      1024.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.945,
+       0.945
+      ],
+      [
+       0.696,
+       0.696
+      ]
+     ],
+     "when": "when the game shows it; Asian resource panel skin",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "SettlerCountDialog-advancedPanelAsiMin",
+       "role": "background",
+       "name": "Resource panel advanced, Asian",
+       "rect1024": [
+        220.0,
+        628.0,
+        344.0,
+        770.0
+       ],
+       "screen": [
+        232.5,
+        199.7
+       ],
+       "stretch": [
+        0.945,
+        0.696
+       ],
+       "tile": "",
+       "when": "when the game shows it; Asian resource panel skin"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\button",
+   "size": [
+    128,
+    32
+   ],
+   "unused_fraction": 0.3992,
+   "overlaps": [
+    [
+     2,
+     3
+    ]
+   ],
+   "pieces": [
+    {
+     "number": 2,
+     "name": "Menu button, normal",
+     "atlas": "ui\\ingame\\button",
+     "uv": [
+      0.0,
+      0.0,
+      0.826771653543307,
+      0.67741935483871
+     ],
+     "rect": [
+      0,
+      0,
+      106,
+      22
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      105.827,
+      21.677
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": true,
+     "stretch": [
+      [
+       2.534,
+       2.551
+      ],
+      [
+       1.557,
+       1.687
+      ]
+     ],
+     "when": "when the game shows it",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-ReturntoGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-DiplomacyGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-SaveGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-LoadSavedGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        78.0,
+        1022.0,
+        104.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-RestartGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-PlayerOptions",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        130.0,
+        1022.0,
+        156.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-Icons",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        156.0,
+        1022.0,
+        182.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-ResignGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        234.0,
+        1022.0,
+        258.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-LeaveGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        208.0,
+        1022.0,
+        234.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-ReturntoGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-DiplomacyGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-PlayerOptions",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-ResignGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        78.0,
+        1022.0,
+        104.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuRecGame-ReturntoGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        -1.0,
+        1022.0,
+        25.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuRecGame-PlayerOptions",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        25.0,
+        1022.0,
+        51.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuRecGame-Quit",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        51.0,
+        1022.0,
+        77.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-PlayerOptions",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-SaveGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-ResignGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-DiplomacyGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        78.0,
+        1021.0,
+        104.0
+       ],
+       "screen": [
+        268.1,
+        36.6
+       ],
+       "stretch": [
+        2.534,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-QuitGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        130.0,
+        1022.0,
+        156.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-ReturntoGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-ReturntoGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-PlayerOptions",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-Load",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        78.0,
+        1022.0,
+        104.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-QuickSave",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-Icons",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-Quit",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        130.0,
+        1022.0,
+        156.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-PlayerOptions",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        50.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-SaveGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        101.0,
+        1022.0,
+        125.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-ResignGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        51.0,
+        1022.0,
+        75.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-DiplomacyGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        76.0,
+        1022.0,
+        100.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-QuitGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        126.0,
+        1022.0,
+        150.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-ReturntoGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        1.0,
+        1022.0,
+        25.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-ReturntoGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-ViewPostgame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-DiplomacyGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-PlayerOptions",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        78.0,
+        1022.0,
+        104.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-QuitGame",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      }
+     ]
+    },
+    {
+     "number": 3,
+     "name": "Menu button, normal",
+     "atlas": "ui\\ingame\\button",
+     "uv": [
+      0.0,
+      0.0,
+      0.83,
+      0.69
+     ],
+     "rect": [
+      0,
+      0,
+      107,
+      23
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      106.24,
+      22.08
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": true,
+     "stretch": [
+      [
+       2.541,
+       2.577
+      ],
+      [
+       1.529,
+       1.656
+      ]
+     ],
+     "when": "always",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "objectivesDialogButton",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        732.0,
+        0.0,
+        876.0,
+        24.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.541,
+        1.529
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "minimapPanel-menubutton",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.541,
+        1.656
+       ],
+       "tile": "",
+       "when": "always"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "PlayerStatusButton",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        182.0,
+        1022.0,
+        208.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.541,
+        1.656
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-PlayerStatusButton",
+       "role": "state 0",
+       "name": "Menu button, normal",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.541,
+        1.656
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "uimain-CoveredWagon",
+       "role": "state 0",
+       "name": "Covered wagon button, normal",
+       "rect1024": [
+        0.0,
+        46.0,
+        146.0,
+        70.0
+       ],
+       "screen": [
+        273.8,
+        33.8
+       ],
+       "stretch": [
+        2.577,
+        1.529
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\button_clicked",
+   "size": [
+    128,
+    32
+   ],
+   "unused_fraction": 0.3992,
+   "overlaps": [
+    [
+     4,
+     5
+    ]
+   ],
+   "pieces": [
+    {
+     "number": 4,
+     "name": "Menu button, pressed",
+     "atlas": "ui\\ingame\\button_clicked",
+     "uv": [
+      0.0,
+      0.0,
+      0.826771653543307,
+      0.67741935483871
+     ],
+     "rect": [
+      0,
+      0,
+      106,
+      22
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      105.827,
+      21.677
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": true,
+     "stretch": [
+      [
+       2.534,
+       2.551
+      ],
+      [
+       1.557,
+       1.687
+      ]
+     ],
+     "when": "when the game shows it",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-ReturntoGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-DiplomacyGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-SaveGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-LoadSavedGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        78.0,
+        1022.0,
+        104.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-RestartGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-PlayerOptions",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        130.0,
+        1022.0,
+        156.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-Icons",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        156.0,
+        1022.0,
+        182.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-ResignGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        234.0,
+        1022.0,
+        258.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-LeaveGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        208.0,
+        1022.0,
+        234.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-ReturntoGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-DiplomacyGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-PlayerOptions",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-ResignGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        78.0,
+        1022.0,
+        104.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuRecGame-ReturntoGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        -1.0,
+        1022.0,
+        25.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuRecGame-PlayerOptions",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        25.0,
+        1022.0,
+        51.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuRecGame-Quit",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        51.0,
+        1022.0,
+        77.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-PlayerOptions",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-SaveGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-ResignGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-DiplomacyGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        78.0,
+        1021.0,
+        104.0
+       ],
+       "screen": [
+        268.1,
+        36.6
+       ],
+       "stretch": [
+        2.534,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-QuitGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        130.0,
+        1022.0,
+        156.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-ReturntoGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-ReturntoGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-PlayerOptions",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-Load",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        78.0,
+        1022.0,
+        104.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-QuickSave",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-Icons",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-Quit",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        130.0,
+        1022.0,
+        156.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-PlayerOptions",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        50.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-SaveGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        101.0,
+        1022.0,
+        125.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-ResignGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        51.0,
+        1022.0,
+        75.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-DiplomacyGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        76.0,
+        1022.0,
+        100.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-QuitGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        126.0,
+        1022.0,
+        150.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-ReturntoGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        1.0,
+        1022.0,
+        25.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-ReturntoGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-ViewPostgame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-DiplomacyGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-PlayerOptions",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        78.0,
+        1022.0,
+        104.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-QuitGame",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      }
+     ]
+    },
+    {
+     "number": 5,
+     "name": "Menu button, pressed",
+     "atlas": "ui\\ingame\\button_clicked",
+     "uv": [
+      0.0,
+      0.0,
+      0.83,
+      0.69
+     ],
+     "rect": [
+      0,
+      0,
+      107,
+      23
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      106.24,
+      22.08
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": true,
+     "stretch": [
+      [
+       2.541,
+       2.577
+      ],
+      [
+       1.529,
+       1.656
+      ]
+     ],
+     "when": "always",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "objectivesDialogButton",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        732.0,
+        0.0,
+        876.0,
+        24.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.541,
+        1.529
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "minimapPanel-menubutton",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.541,
+        1.656
+       ],
+       "tile": "",
+       "when": "always"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "PlayerStatusButton",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        182.0,
+        1022.0,
+        208.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.541,
+        1.656
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-PlayerStatusButton",
+       "role": "state 1",
+       "name": "Menu button, pressed",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.541,
+        1.656
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "uimain-CoveredWagon",
+       "role": "state 1",
+       "name": "Covered wagon button, pressed",
+       "rect1024": [
+        0.0,
+        46.0,
+        146.0,
+        70.0
+       ],
+       "screen": [
+        273.8,
+        33.8
+       ],
+       "stretch": [
+        2.577,
+        1.529
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\button_disabled",
+   "size": [
+    128,
+    32
+   ],
+   "unused_fraction": 0.3992,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 6,
+     "name": "Menu button, disabled",
+     "atlas": "ui\\ingame\\button_disabled",
+     "uv": [
+      0.0,
+      0.0,
+      0.83,
+      0.69
+     ],
+     "rect": [
+      0,
+      0,
+      107,
+      23
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      106.24,
+      22.08
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": true,
+     "stretch": [
+      [
+       2.541,
+       2.577
+      ],
+      [
+       1.529,
+       1.656
+      ]
+     ],
+     "when": "always",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "objectivesDialogButton",
+       "role": "state 3",
+       "name": "Menu button, disabled",
+       "rect1024": [
+        732.0,
+        0.0,
+        876.0,
+        24.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.541,
+        1.529
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "minimapPanel-menubutton",
+       "role": "state 3",
+       "name": "Menu button, disabled",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.541,
+        1.656
+       ],
+       "tile": "",
+       "when": "always"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "PlayerStatusButton",
+       "role": "state 3",
+       "name": "Menu button, disabled",
+       "rect1024": [
+        878.0,
+        182.0,
+        1022.0,
+        208.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.541,
+        1.656
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-PlayerStatusButton",
+       "role": "state 3",
+       "name": "Menu button, disabled",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.541,
+        1.656
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "uimain-CoveredWagon",
+       "role": "state 3",
+       "name": "Covered wagon button, disabled",
+       "rect1024": [
+        0.0,
+        46.0,
+        146.0,
+        70.0
+       ],
+       "screen": [
+        273.8,
+        33.8
+       ],
+       "stretch": [
+        2.577,
+        1.529
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\button_rollover",
+   "size": [
+    128,
+    32
+   ],
+   "unused_fraction": 0.3992,
+   "overlaps": [
+    [
+     7,
+     8
+    ]
+   ],
+   "pieces": [
+    {
+     "number": 7,
+     "name": "Menu button, mouse over",
+     "atlas": "ui\\ingame\\button_rollover",
+     "uv": [
+      0.0,
+      0.0,
+      0.826771653543307,
+      0.67741935483871
+     ],
+     "rect": [
+      0,
+      0,
+      106,
+      22
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      105.827,
+      21.677
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": true,
+     "stretch": [
+      [
+       2.534,
+       2.551
+      ],
+      [
+       1.557,
+       1.687
+      ]
+     ],
+     "when": "when the game shows it",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-ReturntoGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-DiplomacyGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-SaveGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-LoadSavedGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        78.0,
+        1022.0,
+        104.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-RestartGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-PlayerOptions",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        130.0,
+        1022.0,
+        156.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-Icons",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        156.0,
+        1022.0,
+        182.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-ResignGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        234.0,
+        1022.0,
+        258.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "InGameMenu-LeaveGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        208.0,
+        1022.0,
+        234.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-ReturntoGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-DiplomacyGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-PlayerOptions",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-ResignGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        78.0,
+        1022.0,
+        104.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuRecGame-ReturntoGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        -1.0,
+        1022.0,
+        25.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuRecGame-PlayerOptions",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        25.0,
+        1022.0,
+        51.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuRecGame-Quit",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        51.0,
+        1022.0,
+        77.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-PlayerOptions",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-SaveGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-ResignGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-DiplomacyGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        78.0,
+        1021.0,
+        104.0
+       ],
+       "screen": [
+        268.1,
+        36.6
+       ],
+       "stretch": [
+        2.534,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-QuitGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        130.0,
+        1022.0,
+        156.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "CampaignMenu-ReturntoGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-ReturntoGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-PlayerOptions",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-Load",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        78.0,
+        1022.0,
+        104.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-QuickSave",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-Icons",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "editorTestGameMenu-Quit",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        130.0,
+        1022.0,
+        156.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-PlayerOptions",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        50.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-SaveGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        101.0,
+        1022.0,
+        125.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-ResignGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        51.0,
+        1022.0,
+        75.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-DiplomacyGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        76.0,
+        1022.0,
+        100.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-QuitGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        126.0,
+        1022.0,
+        150.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "GrandConquestMenu-ReturntoGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        1.0,
+        1022.0,
+        25.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.551,
+        1.557
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-ReturntoGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-ViewPostgame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        26.0,
+        1022.0,
+        52.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-DiplomacyGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        52.0,
+        1022.0,
+        78.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-PlayerOptions",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        78.0,
+        1022.0,
+        104.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "postGameMenu-QuitGame",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.551,
+        1.687
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      }
+     ]
+    },
+    {
+     "number": 8,
+     "name": "Menu button, mouse over",
+     "atlas": "ui\\ingame\\button_rollover",
+     "uv": [
+      0.0,
+      0.0,
+      0.83,
+      0.69
+     ],
+     "rect": [
+      0,
+      0,
+      107,
+      23
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      106.24,
+      22.08
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": true,
+     "stretch": [
+      [
+       2.541,
+       2.577
+      ],
+      [
+       1.529,
+       1.656
+      ]
+     ],
+     "when": "always",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "objectivesDialogButton",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        732.0,
+        0.0,
+        876.0,
+        24.0
+       ],
+       "screen": [
+        270.0,
+        33.8
+       ],
+       "stretch": [
+        2.541,
+        1.529
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "minimapPanel-menubutton",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        0.0,
+        1022.0,
+        26.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.541,
+        1.656
+       ],
+       "tile": "",
+       "when": "always"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "PlayerStatusButton",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        182.0,
+        1022.0,
+        208.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.541,
+        1.656
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "mainGameMenuMP-PlayerStatusButton",
+       "role": "state 2",
+       "name": "Menu button, mouse over",
+       "rect1024": [
+        878.0,
+        104.0,
+        1022.0,
+        130.0
+       ],
+       "screen": [
+        270.0,
+        36.6
+       ],
+       "stretch": [
+        2.541,
+        1.656
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "uimain-CoveredWagon",
+       "role": "state 2",
+       "name": "Covered wagon button, mouse over",
+       "rect1024": [
+        0.0,
+        46.0,
+        146.0,
+        70.0
+       ],
+       "screen": [
+        273.8,
+        33.8
+       ],
+       "stretch": [
+        2.577,
+        1.529
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\eur_max_ui",
+   "size": [
+    1024,
+    1024
+   ],
+   "unused_fraction": 0.9375,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 9,
+     "name": "Resource panel advanced, European",
+     "atlas": "ui\\ingame\\eur_max_ui",
+     "uv": [
+      0.435,
+      0.735,
+      0.669921875,
+      1.0
+     ],
+     "rect": [
+      445,
+      752,
+      686,
+      1024
+     ],
+     "rect_exact": [
+      445.44,
+      752.64,
+      686.0,
+      1024.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.943,
+       0.943
+      ],
+      [
+       0.705,
+       0.705
+      ]
+     ],
+     "when": "when the game shows it; European resource panel skin",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "SettlerCountDialog-advancedPanelEurMin",
+       "role": "background",
+       "name": "Resource panel advanced, European",
+       "rect1024": [
+        222.0,
+        632.0,
+        343.0,
+        768.0
+       ],
+       "screen": [
+        226.9,
+        191.2
+       ],
+       "stretch": [
+        0.943,
+        0.705
+       ],
+       "tile": "",
+       "when": "when the game shows it; European resource panel skin"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\ingame_ui_01",
+   "size": [
+    512,
+    512
+   ],
+   "unused_fraction": 0.9888,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 10,
+     "name": "Shipment timer bar, full",
+     "atlas": "ui\\ingame\\ingame_ui_01",
+     "uv": [
+      0.693359375,
+      0.615234375,
+      0.888671875,
+      0.63671875
+     ],
+     "rect": [
+      355,
+      315,
+      455,
+      326
+     ],
+     "rect_exact": [
+      355.0,
+      315.0,
+      455.0,
+      326.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.975,
+       0.975
+      ],
+      [
+       0.639,
+       0.639
+      ]
+     ],
+     "when": "usually shown: the shipment counter (a player with a home city)",
+     "uses": [
+      {
+       "file": "uiminimappanelnewmin",
+       "gadget": "shipsTimerFG",
+       "role": "background",
+       "name": "Shipment timer bar, full",
+       "rect1024": [
+        194.0,
+        645.0,
+        246.0,
+        650.0
+       ],
+       "screen": [
+        97.5,
+        7.0
+       ],
+       "stretch": [
+        0.975,
+        0.639
+       ],
+       "tile": "",
+       "when": "usually shown: the shipment counter (a player with a home city)"
+      }
+     ]
+    },
+    {
+     "number": 11,
+     "name": "Shipment counter",
+     "atlas": "ui\\ingame\\ingame_ui_01",
+     "uv": [
+      0.689453125,
+      0.6484375,
+      0.74609375,
+      0.697265625
+     ],
+     "rect": [
+      353,
+      332,
+      382,
+      357
+     ],
+     "rect_exact": [
+      353.0,
+      332.0,
+      382.0,
+      357.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": true,
+     "stretch": [
+      [
+       1.099,
+       1.099
+      ],
+      [
+       1.125,
+       1.125
+      ]
+     ],
+     "when": "usually shown: the shipment counter (a player with a home city)",
+     "uses": [
+      {
+       "file": "uiminimappanelnewmin",
+       "gadget": "shipsDisplayBG",
+       "role": "background",
+       "name": "Shipment counter",
+       "rect1024": [
+        229.0,
+        625.0,
+        246.0,
+        645.0
+       ],
+       "screen": [
+        31.9,
+        28.1
+       ],
+       "stretch": [
+        1.099,
+        1.125
+       ],
+       "tile": "",
+       "when": "usually shown: the shipment counter (a player with a home city)"
+      }
+     ]
+    },
+    {
+     "number": 12,
+     "name": "Shipment timer bar, empty",
+     "atlas": "ui\\ingame\\ingame_ui_01",
+     "uv": [
+      0.693359375,
+      0.71484375,
+      0.888671875,
+      0.736328125
+     ],
+     "rect": [
+      355,
+      366,
+      455,
+      377
+     ],
+     "rect_exact": [
+      355.0,
+      366.0,
+      455.0,
+      377.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.975,
+       0.975
+      ],
+      [
+       0.639,
+       0.639
+      ]
+     ],
+     "when": "usually shown: the shipment counter (a player with a home city)",
+     "uses": [
+      {
+       "file": "uiminimappanelnewmin",
+       "gadget": "shipsTimerBG",
+       "role": "background",
+       "name": "Shipment timer bar, empty",
+       "rect1024": [
+        194.0,
+        645.0,
+        246.0,
+        650.0
+       ],
+       "screen": [
+        97.5,
+        7.0
+       ],
+       "stretch": [
+        0.975,
+        0.639
+       ],
+       "tile": "",
+       "when": "usually shown: the shipment counter (a player with a home city)"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\ingame_ui_02x_ypack",
+   "size": [
+    1024,
+    1024
+   ],
+   "unused_fraction": 0.9556,
+   "overlaps": [
+    [
+     14,
+     15
+    ]
+   ],
+   "pieces": [
+    {
+     "number": 13,
+     "name": "Age-up bar, full",
+     "atlas": "ui\\ingame\\ingame_ui_02x_ypack",
+     "uv": [
+      0.609375,
+      0.302734375,
+      0.939453125,
+      0.33984375
+     ],
+     "rect": [
+      624,
+      310,
+      962,
+      348
+     ],
+     "rect_exact": [
+      624.0,
+      310.0,
+      962.0,
+      348.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.954,
+       0.954
+      ],
+      [
+       0.74,
+       0.74
+      ]
+     ],
+     "when": "advancing to the next age (its progress)",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "uimain-AgeAdvFG",
+       "role": "background",
+       "name": "Age-up bar, full",
+       "rect1024": [
+        403.0,
+        9.0,
+        575.0,
+        29.0
+       ],
+       "screen": [
+        322.5,
+        28.1
+       ],
+       "stretch": [
+        0.954,
+        0.74
+       ],
+       "tile": "",
+       "when": "advancing to the next age (its progress)"
+      }
+     ]
+    },
+    {
+     "number": 14,
+     "name": "Age box",
+     "atlas": "ui\\ingame\\ingame_ui_02x_ypack",
+     "uv": [
+      0.552734375,
+      0.384765625,
+      0.998046875,
+      0.45703125
+     ],
+     "rect": [
+      566,
+      394,
+      1022,
+      468
+     ],
+     "rect_exact": [
+      566.0,
+      394.0,
+      1022.0,
+      468.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.929,
+       0.929
+      ],
+      [
+       0.76,
+       0.76
+      ]
+     ],
+     "when": "always",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "uimain-Score",
+       "role": "background",
+       "name": "Age box",
+       "rect1024": [
+        374.0,
+        0.0,
+        600.0,
+        40.0
+       ],
+       "screen": [
+        423.8,
+        56.2
+       ],
+       "stretch": [
+        0.929,
+        0.76
+       ],
+       "tile": "",
+       "when": "always"
+      }
+     ]
+    },
+    {
+     "number": 15,
+     "name": "Age-up bar, empty",
+     "atlas": "ui\\ingame\\ingame_ui_02x_ypack",
+     "uv": [
+      0.609375,
+      0.400390625,
+      0.939453125,
+      0.4375
+     ],
+     "rect": [
+      624,
+      410,
+      962,
+      448
+     ],
+     "rect_exact": [
+      624.0,
+      410.0,
+      962.0,
+      448.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.943,
+       0.943
+      ],
+      [
+       0.74,
+       0.74
+      ]
+     ],
+     "when": "always",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "uimain-AgeAdvBG",
+       "role": "background",
+       "name": "Age-up bar, empty",
+       "rect1024": [
+        403.0,
+        9.0,
+        573.0,
+        29.0
+       ],
+       "screen": [
+        318.8,
+        28.1
+       ],
+       "stretch": [
+        0.943,
+        0.74
+       ],
+       "tile": "",
+       "when": "always"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\ingame_ui_small_01_asian",
+   "size": [
+    1024,
+    1024
+   ],
+   "unused_fraction": 0.9331,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 16,
+     "name": "Resource panel, Asian",
+     "atlas": "ui\\ingame\\ingame_ui_small_01_asian",
+     "uv": [
+      0.4296875,
+      0.443,
+      0.669921875,
+      0.72
+     ],
+     "rect": [
+      440,
+      453,
+      686,
+      738
+     ],
+     "rect_exact": [
+      440.0,
+      453.632,
+      686.0,
+      737.28
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.945,
+       0.945
+      ],
+      [
+       0.704,
+       0.704
+      ]
+     ],
+     "when": "Asian resource panel skin",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "SettlerCountDialog-defaultPanelAsiMin",
+       "role": "background",
+       "name": "Resource panel, Asian",
+       "rect1024": [
+        220.0,
+        628.0,
+        344.0,
+        770.0
+       ],
+       "screen": [
+        232.5,
+        199.7
+       ],
+       "stretch": [
+        0.945,
+        0.704
+       ],
+       "tile": "",
+       "when": "Asian resource panel skin"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\ingame_ui_small_01_ypack",
+   "size": [
+    1024,
+    1024
+   ],
+   "unused_fraction": 0.5853,
+   "overlaps": [
+    [
+     17,
+     18
+    ]
+   ],
+   "pieces": [
+    {
+     "number": 17,
+     "name": "Train and hold row",
+     "atlas": "ui\\ingame\\ingame_ui_small_01_ypack",
+     "uv": [
+      0.0,
+      0.0,
+      0.64,
+      0.076
+     ],
+     "rect": [
+      0,
+      0,
+      656,
+      78
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      655.36,
+      77.824
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.927,
+       0.927
+      ],
+      [
+       0.687,
+       0.687
+      ]
+     ],
+     "when": "what a building trains and holds",
+     "uses": [
+      {
+       "file": "uitrainsandcontainsmin",
+       "gadget": "trainsandcontains-row0",
+       "role": "background",
+       "name": "Train and hold row",
+       "rect1024": [
+        700.0,
+        509.0,
+        1024.0,
+        547.0
+       ],
+       "screen": [
+        607.5,
+        53.4
+       ],
+       "stretch": [
+        0.927,
+        0.687
+       ],
+       "tile": "",
+       "when": "what a building trains and holds"
+      },
+      {
+       "file": "uitrainsandcontainsmin",
+       "gadget": "trainsandcontains-row1",
+       "role": "background",
+       "name": "Train and hold row",
+       "rect1024": [
+        700.0,
+        509.0,
+        1024.0,
+        547.0
+       ],
+       "screen": [
+        607.5,
+        53.4
+       ],
+       "stretch": [
+        0.927,
+        0.687
+       ],
+       "tile": "",
+       "when": "what a building trains and holds"
+      },
+      {
+       "file": "uitrainsandcontainsmin",
+       "gadget": "trainsandcontains-row2",
+       "role": "background",
+       "name": "Train and hold row",
+       "rect1024": [
+        700.0,
+        509.0,
+        1024.0,
+        547.0
+       ],
+       "screen": [
+        607.5,
+        53.4
+       ],
+       "stretch": [
+        0.927,
+        0.687
+       ],
+       "tile": "",
+       "when": "what a building trains and holds"
+      }
+     ]
+    },
+    {
+     "number": 18,
+     "name": "Command panel",
+     "atlas": "ui\\ingame\\ingame_ui_small_01_ypack",
+     "uv": [
+      0.0,
+      0.0,
+      0.640625,
+      0.22265625
+     ],
+     "rect": [
+      0,
+      0,
+      656,
+      228
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      656.0,
+      228.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.926,
+       0.926
+      ],
+      [
+       0.722,
+       0.722
+      ]
+     ],
+     "when": "always",
+     "uses": [
+      {
+       "file": "uicommandpanelnewmin",
+       "gadget": "commandpanel2-main",
+       "role": "background",
+       "name": "Command panel",
+       "rect1024": [
+        700.0,
+        627.0,
+        1024.0,
+        744.0
+       ],
+       "screen": [
+        607.5,
+        164.5
+       ],
+       "stretch": [
+        0.926,
+        0.722
+       ],
+       "tile": "",
+       "when": "always"
+      }
+     ]
+    },
+    {
+     "number": 19,
+     "name": "Command panel bottom strip",
+     "atlas": "ui\\ingame\\ingame_ui_small_01_ypack",
+     "uv": [
+      0.0,
+      0.33984375,
+      0.640625,
+      0.3828125
+     ],
+     "rect": [
+      0,
+      348,
+      656,
+      392
+     ],
+     "rect_exact": [
+      0.0,
+      348.0,
+      656.0,
+      392.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.926,
+       0.926
+      ],
+      [
+       0.767,
+       0.767
+      ]
+     ],
+     "when": "always",
+     "uses": [
+      {
+       "file": "uicommandpanelnewmin",
+       "gadget": "commandpanel2commands",
+       "role": "background",
+       "name": "Command panel bottom strip",
+       "rect1024": [
+        700.0,
+        744.0,
+        1024.0,
+        768.0
+       ],
+       "screen": [
+        607.5,
+        33.8
+       ],
+       "stretch": [
+        0.926,
+        0.767
+       ],
+       "tile": "",
+       "when": "always"
+      }
+     ]
+    },
+    {
+     "number": 20,
+     "name": "Minimap frame",
+     "atlas": "ui\\ingame\\ingame_ui_small_01_ypack",
+     "uv": [
+      0.0,
+      0.728515625,
+      0.66796875,
+      0.998046875
+     ],
+     "rect": [
+      0,
+      746,
+      684,
+      1022
+     ],
+     "rect_exact": [
+      0.0,
+      746.0,
+      684.0,
+      1022.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.938,
+       0.938
+      ],
+      [
+       0.713,
+       0.713
+      ]
+     ],
+     "when": "always",
+     "uses": [
+      {
+       "file": "uiminimappanelnewmin",
+       "gadget": "minimapPanel",
+       "role": "background",
+       "name": "Minimap frame",
+       "rect1024": [
+        0.0,
+        628.0,
+        342.0,
+        768.0
+       ],
+       "screen": [
+        641.2,
+        196.9
+       ],
+       "stretch": [
+        0.938,
+        0.713
+       ],
+       "tile": "",
+       "when": "always"
+      }
+     ]
+    },
+    {
+     "number": 21,
+     "name": "Resource panel, European",
+     "atlas": "ui\\ingame\\ingame_ui_small_01_ypack",
+     "uv": [
+      0.675,
+      0.73,
+      0.913,
+      1.0
+     ],
+     "rect": [
+      691,
+      747,
+      935,
+      1024
+     ],
+     "rect_exact": [
+      691.2,
+      747.52,
+      934.912,
+      1024.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.962,
+       0.962
+      ],
+      [
+       0.707,
+       0.707
+      ]
+     ],
+     "when": "European resource panel skin",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "SettlerCountDialog-defaultPanelEurMin",
+       "role": "background",
+       "name": "Resource panel, European",
+       "rect1024": [
+        222.0,
+        629.0,
+        347.0,
+        768.0
+       ],
+       "screen": [
+        234.4,
+        195.5
+       ],
+       "stretch": [
+        0.962,
+        0.707
+       ],
+       "tile": "",
+       "when": "European resource panel skin"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\ingame_ui_small_02_ypack",
+   "size": [
+    512,
+    512
+   ],
+   "unused_fraction": 0.6632,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 22,
+     "name": "Selection panel",
+     "atlas": "ui\\ingame\\ingame_ui_small_02_ypack",
+     "uv": [
+      0.0,
+      0.0,
+      0.6875,
+      0.26953125
+     ],
+     "rect": [
+      0,
+      0,
+      352,
+      138
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      352.0,
+      138.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": false,
+     "stretch": [
+      [
+       1.907,
+       1.907
+      ],
+      [
+       1.427,
+       1.427
+      ]
+     ],
+     "when": "usually shown: a unit selected",
+     "uses": [
+      {
+       "file": "uiunitselectionmin",
+       "gadget": "unitselectionpanel-unit",
+       "role": "background",
+       "name": "Selection panel",
+       "rect1024": [
+        342.0,
+        628.0,
+        700.0,
+        768.0
+       ],
+       "screen": [
+        671.2,
+        196.9
+       ],
+       "stretch": [
+        1.907,
+        1.427
+       ],
+       "tile": "",
+       "when": "usually shown: a unit selected"
+      }
+     ]
+    },
+    {
+     "number": 23,
+     "name": "Unit stats panel",
+     "atlas": "ui\\ingame\\ingame_ui_small_02_ypack",
+     "uv": [
+      0.0,
+      0.5546875,
+      0.640625,
+      0.77734375
+     ],
+     "rect": [
+      0,
+      284,
+      328,
+      398
+     ],
+     "rect_exact": [
+      0.0,
+      284.0,
+      328.0,
+      398.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": false,
+     "stretch": [
+      [
+       1.852,
+       1.852
+      ],
+      [
+       1.443,
+       1.443
+      ]
+     ],
+     "when": "the unit information tab",
+     "uses": [
+      {
+       "file": "uiunitstatpanel3min",
+       "gadget": "unitstatpanel3-back",
+       "role": "background",
+       "name": "Unit stats panel",
+       "rect1024": [
+        700.0,
+        628.0,
+        1024.0,
+        745.0
+       ],
+       "screen": [
+        607.5,
+        164.5
+       ],
+       "stretch": [
+        1.852,
+        1.443
+       ],
+       "tile": "",
+       "when": "the unit information tab"
+      }
+     ]
+    },
+    {
+     "number": 24,
+     "name": "Unit count badge",
+     "atlas": "ui\\ingame\\ingame_ui_small_02_ypack",
+     "uv": [
+      0.861328125,
+      0.62890625,
+      0.923828125,
+      0.69140625
+     ],
+     "rect": [
+      441,
+      322,
+      473,
+      354
+     ],
+     "rect_exact": [
+      441.0,
+      322.0,
+      473.0,
+      354.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": false,
+     "stretch": [
+      [
+       1.875,
+       1.875
+      ],
+      [
+       1.406,
+       1.406
+      ]
+     ],
+     "when": "usually shown: a unit selected",
+     "uses": [
+      {
+       "file": "uiunitselectionmin",
+       "gadget": "unitselectionpanel-unitPortraitCountBackground",
+       "role": "background",
+       "name": "Unit count badge",
+       "rect1024": [
+        429.0,
+        727.0,
+        461.0,
+        759.0
+       ],
+       "screen": [
+        60.0,
+        45.0
+       ],
+       "stretch": [
+        1.875,
+        1.406
+       ],
+       "tile": "",
+       "when": "usually shown: a unit selected"
+      }
+     ]
+    },
+    {
+     "number": 25,
+     "name": "Unit stack button",
+     "atlas": "ui\\ingame\\ingame_ui_small_02_ypack",
+     "uv": [
+      0.857421875,
+      0.72265625,
+      0.927734375,
+      0.79296875
+     ],
+     "rect": [
+      439,
+      370,
+      475,
+      406
+     ],
+     "rect_exact": [
+      439.0,
+      370.0,
+      475.0,
+      406.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": false,
+     "stretch": [
+      [
+       1.875,
+       1.875
+      ],
+      [
+       1.406,
+       1.406
+      ]
+     ],
+     "when": "usually shown: a unit selected",
+     "uses": [
+      {
+       "file": "uiunitselectionmin",
+       "gadget": "unitselectionpanel-unitStackButtonBigBackground",
+       "role": "background",
+       "name": "Unit stack button",
+       "rect1024": [
+        369.0,
+        631.0,
+        405.0,
+        667.0
+       ],
+       "screen": [
+        67.5,
+        50.6
+       ],
+       "stretch": [
+        1.875,
+        1.406
+       ],
+       "tile": "",
+       "when": "usually shown: a unit selected"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\ingame_ui_small_03x_ypack",
+   "size": [
+    512,
+    256
+   ],
+   "unused_fraction": 0.7072,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 26,
+     "name": "Trade route panel",
+     "atlas": "ui\\ingame\\ingame_ui_small_03x_ypack",
+     "uv": [
+      0.0,
+      0.0,
+      0.64,
+      0.455
+     ],
+     "rect": [
+      0,
+      0,
+      328,
+      117
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      327.68,
+      116.48
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": false,
+     "stretch": [
+      [
+       1.854,
+       1.854
+      ],
+      [
+       1.425,
+       1.425
+      ]
+     ],
+     "when": "a trade route selected | a native settlement selected",
+     "uses": [
+      {
+       "file": "uitraderoutepanel2min",
+       "gadget": "traderoutepanel2",
+       "role": "background",
+       "name": "Trade route panel",
+       "rect1024": [
+        700.0,
+        628.0,
+        1024.0,
+        746.0
+       ],
+       "screen": [
+        607.5,
+        165.9
+       ],
+       "stretch": [
+        1.854,
+        1.425
+       ],
+       "tile": "",
+       "when": "a trade route selected"
+      },
+      {
+       "file": "uinativecommandpanel2min",
+       "gadget": "nativecommandpanel2",
+       "role": "background",
+       "name": "Native settlement panel",
+       "rect1024": [
+        700.0,
+        628.0,
+        1024.0,
+        746.0
+       ],
+       "screen": [
+        607.5,
+        165.9
+       ],
+       "stretch": [
+        1.854,
+        1.425
+       ],
+       "tile": "",
+       "when": "a native settlement selected"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\ingame_ui_small_04x_ypack",
+   "size": [
+    512,
+    256
+   ],
+   "unused_fraction": 0.6586,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 27,
+     "name": "Building site panel",
+     "atlas": "ui\\ingame\\ingame_ui_small_04x_ypack",
+     "uv": [
+      0.0,
+      0.0,
+      0.642578125,
+      0.53
+     ],
+     "rect": [
+      0,
+      0,
+      329,
+      136
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      329.0,
+      135.68
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": false,
+     "stretch": [
+      [
+       1.847,
+       1.847
+      ],
+      [
+       1.451,
+       1.451
+      ]
+     ],
+     "when": "when the game shows it",
+     "uses": [
+      {
+       "file": "uicommandpanelnewmin",
+       "gadget": "SocketPanel2",
+       "role": "background",
+       "name": "Building site panel",
+       "rect1024": [
+        700.0,
+        628.0,
+        1024.0,
+        768.0
+       ],
+       "screen": [
+        607.5,
+        196.9
+       ],
+       "stretch": [
+        1.847,
+        1.451
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      },
+      {
+       "file": "uicommandpanelnewmin",
+       "gadget": "TreasurePanel",
+       "role": "background",
+       "name": "Treasure panel",
+       "rect1024": [
+        700.0,
+        628.0,
+        1024.0,
+        768.0
+       ],
+       "screen": [
+        607.5,
+        196.9
+       ],
+       "stretch": [
+        1.847,
+        1.451
+       ],
+       "tile": "",
+       "when": "when the game shows it"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\ingame_ui_tab_command_ypack",
+   "size": [
+    128,
+    1024
+   ],
+   "unused_fraction": 0.7852,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 28,
+     "name": "Commands tab, front",
+     "atlas": "ui\\ingame\\ingame_ui_tab_command_ypack",
+     "uv": [
+      0.0,
+      0.0,
+      1.0,
+      0.21484375
+     ],
+     "rect": [
+      0,
+      0,
+      128,
+      220
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      128.0,
+      220.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": false,
+     "uneven": true,
+     "stretch": [
+      [
+       0.396,
+       0.396
+      ],
+      [
+       0.352,
+       0.352
+      ]
+     ],
+     "when": "usually shown: a unit selected",
+     "uses": [
+      {
+       "file": "uiunitselectionmin",
+       "gadget": "unitselectionpanel-showCommands",
+       "role": "foreground",
+       "name": "Commands tab, front",
+       "rect1024": [
+        674.0,
+        641.0,
+        701.0,
+        696.0
+       ],
+       "screen": [
+        50.6,
+        77.3
+       ],
+       "stretch": [
+        0.396,
+        0.352
+       ],
+       "tile": "",
+       "when": "usually shown: a unit selected"
+      },
+      {
+       "file": "uiunitselectionmin",
+       "gadget": "unitselectionpanel-showStats",
+       "role": "foreground",
+       "name": "Stats tab, front",
+       "rect1024": [
+        674.0,
+        702.0,
+        701.0,
+        757.0
+       ],
+       "screen": [
+        50.6,
+        77.3
+       ],
+       "stretch": [
+        0.396,
+        0.352
+       ],
+       "tile": "",
+       "when": "usually shown: a unit selected"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\mission_objectives",
+   "size": [
+    512,
+    64
+   ],
+   "unused_fraction": 0.0,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 29,
+     "name": "Message window",
+     "atlas": "ui\\ingame\\mission_objectives",
+     "uv": [
+      0.0,
+      0.0,
+      1.0,
+      1.0
+     ],
+     "rect": [
+      0,
+      0,
+      512,
+      64
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      512.0,
+      64.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": true,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": null,
+     "when": "when the game shows it",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "messageWindow",
+       "role": "background",
+       "name": "Message window",
+       "rect1024": [
+        256.0,
+        80.0,
+        768.0,
+        144.0
+       ],
+       "screen": [
+        960.0,
+        90.0
+       ],
+       "stretch": null,
+       "tile": "xy",
+       "when": "when the game shows it"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\nat_ui_max",
+   "size": [
+    1024,
+    1024
+   ],
+   "unused_fraction": 0.8649,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 30,
+     "name": "Resource panel, Native",
+     "atlas": "ui\\ingame\\nat_ui_max",
+     "uv": [
+      0.435,
+      0.29,
+      0.68,
+      0.5664
+     ],
+     "rect": [
+      445,
+      296,
+      697,
+      580
+     ],
+     "rect_exact": [
+      445.44,
+      296.96,
+      696.32,
+      579.994
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.942,
+       0.942
+      ],
+      [
+       0.73,
+       0.73
+      ]
+     ],
+     "when": "Native resource panel skin",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "SettlerCountDialog-defaultPanelNatMin",
+       "role": "background",
+       "name": "Resource panel, Native",
+       "rect1024": [
+        221.0,
+        625.0,
+        347.0,
+        772.0
+       ],
+       "screen": [
+        236.2,
+        206.7
+       ],
+       "stretch": [
+        0.942,
+        0.73
+       ],
+       "tile": "",
+       "when": "Native resource panel skin"
+      }
+     ]
+    },
+    {
+     "number": 31,
+     "name": "Resource panel advanced, Native",
+     "atlas": "ui\\ingame\\nat_ui_max",
+     "uv": [
+      0.4296875,
+      0.7217,
+      0.669921875,
+      1.0
+     ],
+     "rect": [
+      440,
+      739,
+      686,
+      1024
+     ],
+     "rect_exact": [
+      440.0,
+      739.021,
+      686.0,
+      1024.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": false,
+     "enlarged": false,
+     "uneven": false,
+     "stretch": [
+      [
+       0.945,
+       0.945
+      ],
+      [
+       0.701,
+       0.701
+      ]
+     ],
+     "when": "when the game shows it; Native resource panel skin",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "SettlerCountDialog-advancedPanelNatMin",
+       "role": "background",
+       "name": "Resource panel advanced, Native",
+       "rect1024": [
+        220.0,
+        628.0,
+        344.0,
+        770.0
+       ],
+       "screen": [
+        232.5,
+        199.7
+       ],
+       "stretch": [
+        0.945,
+        0.701
+       ],
+       "tile": "",
+       "when": "when the game shows it; Native resource panel skin"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\objective_counter",
+   "size": [
+    512,
+    32
+   ],
+   "unused_fraction": 0.3359,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 32,
+     "name": "Victory timer",
+     "atlas": "ui\\ingame\\objective_counter",
+     "uv": [
+      0.336594911937378,
+      0.0,
+      1.0,
+      1.0
+     ],
+     "rect": [
+      172,
+      0,
+      512,
+      32
+     ],
+     "rect_exact": [
+      172.337,
+      0.0,
+      512.0,
+      32.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": false,
+     "stretch": [
+      [
+       1.877,
+       1.877
+      ],
+      [
+       1.406,
+       1.406
+      ]
+     ],
+     "when": "victory display and timers",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "victoryTimerDisplay0",
+       "role": "background",
+       "name": "Victory timer",
+       "rect1024": [
+        682.0,
+        52.0,
+        1022.0,
+        84.0
+       ],
+       "screen": [
+        637.5,
+        45.0
+       ],
+       "stretch": [
+        1.877,
+        1.406
+       ],
+       "tile": "",
+       "when": "victory display and timers"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "victoryTimerDisplay1",
+       "role": "background",
+       "name": "Victory timer",
+       "rect1024": [
+        682.0,
+        52.0,
+        1022.0,
+        84.0
+       ],
+       "screen": [
+        637.5,
+        45.0
+       ],
+       "stretch": [
+        1.877,
+        1.406
+       ],
+       "tile": "",
+       "when": "victory display and timers"
+      },
+      {
+       "file": "uimainnew",
+       "gadget": "victoryTimerDisplay2",
+       "role": "background",
+       "name": "Victory timer",
+       "rect1024": [
+        682.0,
+        52.0,
+        1022.0,
+        84.0
+       ],
+       "screen": [
+        637.5,
+        45.0
+       ],
+       "stretch": [
+        1.877,
+        1.406
+       ],
+       "tile": "",
+       "when": "victory display and timers"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\ui_health_bar",
+   "size": [
+    128,
+    16
+   ],
+   "unused_fraction": 0.0,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 33,
+     "name": "Health bar, frame",
+     "atlas": "ui\\ingame\\ui_health_bar",
+     "uv": [
+      0.0,
+      0.0,
+      1.0,
+      1.0
+     ],
+     "rect": [
+      0,
+      0,
+      128,
+      16
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      128.0,
+      16.0
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": false,
+     "uneven": true,
+     "stretch": [
+      [
+       1.025,
+       1.025
+      ],
+      [
+       0.615,
+       0.615
+      ]
+     ],
+     "when": "usually shown: a unit selected; green only | usually shown: a unit selected; yellow only | usually shown: a unit selected; red only",
+     "uses": [
+      {
+       "file": "uiunitselectionmin",
+       "gadget": "unitselectionpanel-unitHealthBarGreen",
+       "role": "bar background",
+       "name": "Health bar, frame",
+       "rect1024": [
+        342.0,
+        759.0,
+        412.0,
+        766.0
+       ],
+       "screen": [
+        131.2,
+        9.8
+       ],
+       "stretch": [
+        1.025,
+        0.615
+       ],
+       "tile": "",
+       "when": "usually shown: a unit selected; green only"
+      },
+      {
+       "file": "uiunitselectionmin",
+       "gadget": "unitselectionpanel-unitHealthBarYellow",
+       "role": "bar background",
+       "name": "Health bar, frame",
+       "rect1024": [
+        342.0,
+        759.0,
+        412.0,
+        766.0
+       ],
+       "screen": [
+        131.2,
+        9.8
+       ],
+       "stretch": [
+        1.025,
+        0.615
+       ],
+       "tile": "",
+       "when": "usually shown: a unit selected; yellow only"
+      },
+      {
+       "file": "uiunitselectionmin",
+       "gadget": "unitselectionpanel-unitHealthBarRed",
+       "role": "bar background",
+       "name": "Health bar, frame",
+       "rect1024": [
+        342.0,
+        759.0,
+        412.0,
+        766.0
+       ],
+       "screen": [
+        131.2,
+        9.8
+       ],
+       "stretch": [
+        1.025,
+        0.615
+       ],
+       "tile": "",
+       "when": "usually shown: a unit selected; red only"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "atlas": "ui\\ingame\\warwick_timer_panel",
+   "size": [
+    512,
+    128
+   ],
+   "unused_fraction": 0.5608,
+   "overlaps": [],
+   "pieces": [
+    {
+     "number": 34,
+     "name": "Game clock",
+     "atlas": "ui\\ingame\\warwick_timer_panel",
+     "uv": [
+      0.0,
+      0.0,
+      0.759295499021526,
+      0.574803149606299
+     ],
+     "rect": [
+      0,
+      0,
+      389,
+      74
+     ],
+     "rect_exact": [
+      0.0,
+      0.0,
+      388.759,
+      73.575
+     ],
+     "flip": [
+      false,
+      false
+     ],
+     "tiled": false,
+     "stretched": true,
+     "enlarged": true,
+     "uneven": false,
+     "stretch": [
+      [
+       1.871,
+       1.871
+      ],
+      [
+       1.395,
+       1.395
+      ]
+     ],
+     "when": "a game clock (a timer of the map)",
+     "uses": [
+      {
+       "file": "uimainnew",
+       "gadget": "clockTimer",
+       "role": "background",
+       "name": "Game clock",
+       "rect1024": [
+        290.0,
+        -1.0,
+        678.0,
+        72.0
+       ],
+       "screen": [
+        727.5,
+        102.7
+       ],
+       "stretch": [
+        1.871,
+        1.395
+       ],
+       "tile": "",
+       "when": "a game clock (a timer of the map)"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}
