@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Thursday 2026-11-26 07:49 | [`powerShots`](#powershots) | Added. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
 | Wednesday 2026-11-25 23:00 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
 | Wednesday 2026-11-25 14:30 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries. |
 | Wednesday 2026-11-25 14:03 | [`garrisonConvert`](#garrisonconvert) | Filmed in WoL, with a control. `<GarrisonConvertTo delay="5">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, with the train button's pie over the building's portrait. | The tag on the buildings that want it. |
@@ -4380,6 +4381,8 @@ retargetInAction [log]
 #### powerShots
 
 *An explorer's "Hammer Fanning" empties the whole revolver: every shot of its animation hits, not only the first.*
+
+**Added:** Thursday 2026-11-26 07:49
 
 ```
 powerShots [log]
