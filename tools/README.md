@@ -86,7 +86,7 @@ Makes the release zip in one command, the same way every time:
 5. the worktree removed (`--keep` keeps it).
 
 The version is the one of `REF`'s `CMakeLists.txt`: commit the bump first, and pass its branch as `--ref` until it is
-merged. DXVK comes from `reaendor\dxvk-3.1.1\` (or `--dxvk`); cmake from `--cmake`, `UHC_CMAKE`, Visual Studio
+merged. DXVK comes from `rea\vendor\dxvk-3.1.1\` (or `--dxvk`); cmake from `--cmake`, `UHC_CMAKE`, Visual Studio
 2026 (vswhere) or `PATH`. An existing zip is kept unless `--force`. Two builds of the same commit give the same files
 except the two DLLs: their time stamp and the order of their global data differ (MSVC builds are not bit-for-bit
 reproducible), not their code.
