@@ -24,3 +24,6 @@ Performance (perfprobe.py, 60 s each, scenario uhcperf: the scene above plus 15 
 WOLLandwehr, the ability cast once a run; on / off / on; agent C's game running on the machine):
   fps 1394 / 1323 / 1369, update 0.1 ms, render 0.6 ms, main thread 82.5 / 84.0 / 82.8 %,
   frames over 50 ms 1 / 1 / 2 (the scenario's first frame, 3.5 s, in every run).
+
+AI: a 90 s skirmish with the tagged data and both keys: no XS error, the AI (player 2) built a house and
+trained WOLPioneers.

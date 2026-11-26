@@ -4428,6 +4428,7 @@ powerShots [log]
     guardians, each shot at the next one (`lost its target 3 ... new target 5`); the second use, 60 s later, killed the
     last two, and its third tag found nobody in range (stock). Without the keys the same use killed one.
   - Untagged attacks (the guardians', the Explorer's normal attacks) log nothing.
+  - A 90 s skirmish with the tagged data and both keys: no XS error; the AI built a house and trained settlers.
   - Performance (`perfprobe.py`, 60 s each, the same scenario with 30 infantry besides, the ability cast once a run, on /
     off / on, other sessions' games running): 1394 / 1323 / 1369 fps, update 0.1 ms a frame in all three, main thread 83 /
     84 / 83 %, one or two frames over 50 ms in each (the scenario's first frame). The hook runs only at the tags of an
