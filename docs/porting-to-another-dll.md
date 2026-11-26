@@ -1224,8 +1224,12 @@ Code: [techs](porting-code/techs.md#quickarrivalcards). It needs `AddTechFlagHan
   FUN_007103CE, before the advanced info: the rollover is `[esp+44h]`, the tech `[esp+4Ch]`, the list mode `[esp+58h]`.
   For a flagged tech append `<ttf><ttb>` and the text with the BString append `0x443960` (`thiscall(str, text, -1,
   -1)`), then re-execute the load and `jmp 0x71090F`.
-- **Test:** the rollover of an infinite and a once card with the flag, in the shipment panel and in "Build a Deck": the
-  line after the send-limit line; a card without the flag unchanged.
+- **The card tree ("View All Cards"):** its rollovers come from a second builder, FUN_00710991; the same 6-byte `jmp`
+  at `0x710F24` (`8B 0D F0 F6 D6 00`), with the rollover `[esp+3Ch]`, the tech `[esp+44h]`, the list mode `[esp+50h]`,
+  then the load and `jmp 0x710F2A`.
+- **Test:** the rollover of an infinite and a once card with the flag, in the shipment panel, in "Build a Deck" (the
+  deck and the inventory) and in "View All Cards": the line after the send-limit line; a card without the flag
+  unchanged.
 
 ### orPrereqsQty
 

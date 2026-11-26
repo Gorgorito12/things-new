@@ -1,0 +1,17 @@
+Hi JTMaston,
+
+QUICK-ARRIVAL line missing on the "View All Cards" screen (your report of 2026-11-26): fixed.
+
+What was wrong: the game builds a card's rollover with two different functions. The shipment panel, the deck in
+"Build a Deck" and the deck chooser use the first one, which quickArrivalCards already covered. "View All Cards" (and
+the inventory list under the deck in "Build a Deck") use a second one, with its own copy of the same lines, and the
+key did not cover it. It now adds the line there too, at the same place: right after "This Card may be sent INFINITE
+times" / "ONE time", as its own bullet, in the same style. The "stringid N" option works there as well.
+
+Tested in a copy of WoL (single player, Germans, the QuickArrival flag on HCShipFoodCrates1 and HCShipCoinCrates3):
+- View All Cards: the line on "Crates of 300 food" (infinite) and "Chests of 700 coin" (once); none on "Cords of 700
+  wood", which has no flag. With the old DLL the line was missing there, as you saw.
+- The other screens are unchanged: the in-game shipment panel and the deck in "Build a Deck" still show the line once.
+- Nothing else changes; you only need the new DLL. Your cfg line stays the same.
+
+Picture: quickArrivalCards-view-all-cards-infinite.jpg (View All Cards, the infinite food card, the line at the end).

@@ -31,7 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Thursday 2026-11-26 11:04 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
+| Thursday 2026-11-26 11:34 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
 | Thursday 2026-11-26 10:26 | [`garrisonConvert`](#garrisonconvert) | Filmed in WoL, with a control. `<GarrisonConvertTo delay="5" eject="true" from="Settler">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, kept inside or put out, with the train button's pie over the building's portrait; several tags take turns, a conversion waits at the population cap, and techs change the tags. | The tag on the buildings that want it. |
 | Thursday 2026-11-26 10:14 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries; `art\ui\uhc\pie\` for the pie after the row. |
 | Thursday 2026-11-26 09:01 | [`powerShots`](#powershots) | Filmed in WoL, with a control. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
@@ -995,6 +995,15 @@ be sent until Age 2*, its rollover text and its send limit. More: the infinite c
 the control card in "Build a Deck", and the line taken from the string table (`stringid`), in
 `docs/media/quickArrivalCards-*.jpg`. The control pictures and the `stringid` one show no default line, so they stayed.
 
+![quickArrivalCards in View All Cards](media/quickArrivalCards-view-all-cards-infinite.jpg)
+
+*"View All Cards" on the home city screen (2026-11-26, after JTMaston's report that the line was missing there; Germans,
+the same two flagged techs):* the infinite card "Crates of 300 food" ends with *This Card may be sent INFINITE times*
+and then *This is a QUICK-ARRIVAL card.* That screen builds its card rollovers with a second function of the game, which
+the key now covers too. More: the once card ("Chests of 700 coin", the line after *This Card may be sent ONE time*),
+the control ("Cords of 700 wood", no line) and the line from the string table (`stringid 35898`, *Single Player
+Skirmish*) in `docs/media/quickArrivalCards-view-all-cards-*.jpg`.
+
 ```
 quickArrivalCards [stringid N] [log]
 ```
@@ -1003,9 +1012,9 @@ quickArrivalCards [stringid N] [log]
 - **What the key does:** for a card whose tech has `<Flag>QuickArrival</Flag>`, the card's rollover gets one more bullet,
   *This is a QUICK-ARRIVAL card.*, right after the line *This Card may be sent INFINITE times* (or *ONE time*, or the
   *N times* line), so it sits between the card's own rollover text and the advanced information (the detailed help, when
-  that option is on). The line looks like the game's other lines of the card. The same rollover is used by the in-game
-  shipment panel, "Build a Deck" and the deck chooser. Nothing else about the card changes: the flag does not change
-  how fast a card arrives.
+  that option is on). The line looks like the game's other lines of the card. It shows wherever a card's rollover
+  shows: the in-game shipment panel, "Build a Deck" (the deck and the inventory below it), the deck chooser and "View
+  All Cards". Nothing else about the card changes: the flag does not change how fast a card arrives.
 - **`stringid N`:** the line is string N of the string table (`data\stringtabley.xml`), so it can be translated; an
   empty or missing string falls back to the English text. Without it, the English text, with *QUICK-ARRIVAL* in
   capitals since 2026-11-25 (JTMaston's request; it read *quick-arrival* before). A string set with `stringid` is
@@ -1022,7 +1031,8 @@ quickArrivalCards [stringid N] [log]
 - **Log:** `quickArrivalCards: the tech flag QuickArrival adds the line "This is a QUICK-ARRIVAL card." to a card's
   rollover` (or `the line of string N`); with `log`, `tech 935 has the QuickArrival flag` per flagged tech and, once,
   `the line was added to the rollover of tech 935`; `hook reached: tech flags (0x620C2F)`, `... quickArrivalCards
-  (0x710909)`.
+  (0x710909)` (the shipment panel, the deck), `... quickArrivalCards card tree (0x710F24)` ("View All Cards", the
+  inventory of "Build a Deck").
 - **Tested in WoL (2026-11-23, single player, `C:\AoE3-UHC-WoLReal2`, Dutch, the flag on `HCShipFoodCrates1` (infinite)
   and `HCShipCoinCrates3` (once), `HCShipWoodCrates3` as the control):** the line after the send-limit line on both
   flagged cards, in the in-game panel (in Ages I to III, greyed or not) and in "Build a Deck"; none on the control card;
@@ -1032,6 +1042,15 @@ quickArrivalCards [stringid N] [log]
 - **Tested again (2026-11-25, `C:\AoE3-UHC-WoLReal3`, the same flags; the copy's own profile with `HCShipFoodCrates1`
   in the Dutch deck):** the log reads `adds the line "This is a QUICK-ARRIVAL card."`, and the line shows in capitals
   in the in-game panel and in "Build a Deck" (the four pictures above).
+- **Fixed (2026-11-26, JTMaston: "the string doesn't show up on the view all cards screen"):** "View All Cards" and the
+  inventory pane of "Build a Deck" show the home city's card tree, whose rollovers come from a second builder of the
+  game that the key did not cover; it now adds the line there too, at the same place. Tested in `C:\AoE3-UHC-WoLReal4`
+  (single player, its own profile, Germans, the flag on `HCShipFoodCrates1` and `HCShipCoinCrates3`): with the DLL of
+  2026-11-25 "View All Cards" showed no line (reproduced); with the fix the line after the send-limit line on the
+  infinite and the once card there and in the inventory of "Build a Deck", none on `HCShipWoodCrates3`, the text of
+  string 35898 with `stringid 35898`; the deck of "Build a Deck" and the in-game shipment panel (a skirmish) still show
+  the line once; the AI played (no XS error, 18 units at 3 min 28 s). Not tested: the deck chooser (the first
+  builder, unchanged), another language.
 
 #### selectionLimit
 
@@ -4462,7 +4481,7 @@ powerShots [log]
 
 *A gun on a mount turns toward its target by itself, inside its arc, instead of the whole unit turning.*
 
-**Added:** Tuesday 2026-11-24 10:05 · **Filmed in WoL:** Thursday 2026-11-26 11:04
+**Added:** Tuesday 2026-11-24 10:05 · **Filmed in WoL:** Thursday 2026-11-26 11:34
 
 ![turretArc in WoL](media/gatlingCamel-wol.gif)
 

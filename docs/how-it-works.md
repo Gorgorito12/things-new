@@ -2101,6 +2101,15 @@ tech, …, list, pop) for the in-game shipment panel (0x9A61B7), "Build a Deck" 
 with the detailed help option on, the advanced info FUN_0071006D. Each line is added by FUN_004C5076(out, line, 1, 0),
 which appends `<ttf><ttb>` (a bullet) and the line.
 
+**The card tree (2026-11-26; REA `ev_e6e27ab5…`, `ev_ce27eca8…`, `ev_6d9b0cca…`, `ev_4fdc4c46…`, `ev_c32aac08…`).** The
+home city's card tree ("View All Cards", and the inventory pane under the deck in "Build a Deck") does not call that
+builder: its button setup FUN_009A21A0 (`uihcskilltree.cpp`) calls a second one, FUN_00710991(out, hc, tech, 1, 0,
+list = 1), its only caller. The push of 9001h / 9003h appears only in these two functions. Its lines: the name, *This
+Card can be sent in Age N* (901Eh, cyan) and the level and age lines 901Bh / B7CFh / 901Ch where they apply, then the
+cost, the tech's rollover text and the send limit (9001h / 9002h / 9003h), each through FUN_004C5076 in list mode, then
+the same advanced info FUN_0071006D at the join 0x710F24. The report of 2026-11-26 (no line in "View All Cards")
+came from this second builder, which the first version of the key did not hook.
+
 **The flag.** `<Flag>QuickArrival</Flag>` reaches the key through `AddTechFlagHandler` (below, "Tech flags"): it keeps
 the tech's ID (`[[record]+0]`) in a table and takes the flag, which stock would ignore.
 
@@ -2113,9 +2122,17 @@ with `stringid N` (read at each rollover, so a language change follows; an empty
 So the line comes right after the send-limit line: after *This Card may be sent INFINITE times* for an infinite card,
 and between the card's rollover text (and its send limit) and the advanced info for the others.
 
+The card tree gets the same line from a second 6-byte `jmp` over `mov ecx,[0D6F6F0h]` at 0x710F24 in FUN_00710991
+(frame: `sub esp,28h` and four pushes; reached from 0x710EDE, 0x710EF6 and the fall-through after the send-limit line,
+no push outstanding): `UhcQuickArrivalTreeHook` calls the same `UhcQuickArrivalLine(out = [esp+3Ch], tech = [esp+44h],
+list = [esp+50h])`, then the replaced load and `jmp 0x710F2A`. The builder overwrites its `hc` slot `[esp+40h]` with
+the card entry at 0x7109D6 but never the tech slot.
+
 **Why it is safe.** Display only. The stdcall keeps EBX, ESI, EDI and EBP; ECX is reloaded by the replaced instruction,
-EDX at 0x71090F and EAX by the call at 0x710917. `CardRolloverHead` verifies the builder's frame (the offsets of its
-arguments), `CardBulletLine` the bullet helper the key copies.
+EDX at 0x71090F and EAX by the call at 0x710917 (in the card tree: EDX at 0x710F2A, EAX by the call at 0x710F32; ESI,
+the card entry, and EBP, the output, are arguments of the advanced info at 0x710F3C and are kept).
+`CardRolloverHead` and `CardTreeRolloverHead` verify the builders' frames (the offsets of their arguments, and in the
+second the write of 0x7109D6), `CardBulletLine` the bullet helper the key copies. No other key patches FUN_00710991.
 
 ### maintainWaitForPop
 

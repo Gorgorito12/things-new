@@ -2327,6 +2327,13 @@ SITES = [
     # quickArrivalCards: the bullet line helper FUN_004C5076(list, BString*, 1, 0) the builder uses for its lines
     # (it appends <ttf><ttb> then the line, through 0x443960 and 0x4439E3); verify only, the key appends the same.
     ("CardBulletLine", 0x4C5076, 0x2A),
+    # quickArrivalCards: the second card rollover builder FUN_00710991(out, hc, tech, a4, a5, list), used only by the
+    # home city's card tree ("View All Cards", FUN_009A21A0 in uihcskilltree.cpp, list mode 1). Its head (sub esp,28h
+    # and four pushes, so out is [esp+3Ch], the tech [esp+44h], list [esp+50h] in the body; the hc slot [esp+40h] is
+    # overwritten with the card entry at 0x7109D6, the tech slot never), and its join before the advanced info,
+    # mov ecx,[0D6F6F0h] at 0x710F24 (6 bytes), reached after the send-limit line (0x710EDE, 0x710EF6, fall-through).
+    ("CardTreeRolloverHead", 0x710991, 0x49),
+    ("CardTreeRolloverAdvanced", 0x710F24, 6),
 ]
 
 
