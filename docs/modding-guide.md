@@ -32,10 +32,10 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
 | Thursday 2026-11-26 16:24 | [`cultureUI`](#cultureui) | Filmed in WoL, with a control. The minimised in-game interface takes its own textures per family of civs, and others again from the Great War: `X_as.ddt` beside `X.ddt` restyles texture X for the Asian family. | The art, one `.ddt` per texture and family (`<texture>_<family>[_gw].ddt`, from aoe3-blender-tools' templates), and `data\uhc\cultureui.xml` with the nine families: `wol-fixes/culture-ui/`. |
+| Thursday 2026-11-26 15:42 | [`powerShots`](#powershots) | Filmed in WoL, with a control. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
 | Thursday 2026-11-26 11:34 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
 | Thursday 2026-11-26 10:26 | [`garrisonConvert`](#garrisonconvert) | Filmed in WoL, with a control. `<GarrisonConvertTo delay="5" eject="true" from="Settler">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, kept inside or put out, with the train button's pie over the building's portrait; several tags take turns, a conversion waits at the population cap, and techs change the tags. | The tag on the buildings that want it. |
 | Thursday 2026-11-26 10:14 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries; `art\ui\uhc\pie\` for the pie after the row. |
-| Thursday 2026-11-26 09:01 | [`powerShots`](#powershots) | Filmed in WoL, with a control. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
 | Wednesday 2026-11-25 08:42 | [`selectFattened`](#selectfattened) | Filmed in WoL, with a control. A button and a hotkey select the player's livestock that has reached its maximum food, on the whole map; the button shows how many there are and hides at none. | The button and the hotkey: `wol-fixes/select-fattened`. |
 | Wednesday 2026-11-25 08:22 | [`editorAutosave`](#editorautosave) | Added. The scenario editor saves the open scenario every few minutes to `autosave-1` ... | Nothing. |
 | Wednesday 2026-11-25 08:11 | [`editorSearch`](#editorsearch) | Filmed in WoL, with a control. The scenario editor's Objects palette, its Forbidden Units/Techs dialog and its trigger editor (the Type list and the unit, unit type and tech lists, and the list of triggers) get a search field: typing part of a name keeps only the entries that match. | The search fields in `uieditorpalettes.xml`, `uiforbiddenunitstechs.xml` and `uitriggereditor.xml`: `wol-fixes/editor` has the three. |
@@ -4403,15 +4403,16 @@ retargetInAction [log]
 
 *An explorer's "Hammer Fanning" empties the whole revolver: every shot of its animation hits, not only the first.*
 
-**Added:** Thursday 2026-11-26 07:49 · **Filmed in WoL:** Thursday 2026-11-26 09:01
+**Added:** Thursday 2026-11-26 07:49 · **Filmed in WoL:** Thursday 2026-11-26 15:42
 
 ![powerShots in WoL](media/powerShots-wol.gif)
 
 *In WoL, with the `wol-fixes/hammer-fanning` pack (`powerShots log`, `retargetInAction log`, `<PowerShots>6` and
-`<RetargetInAction>1` on the Explorer's two ability attacks, the new animation), a British Explorer, selected, uses
-"Hammer Fanning" on six `OutlawPistol` guardians (270 HP) around him; filmed on 2026-11-26:* the pistol at the hip,
-the left palm sweeping over the hammer, six shots 0.28 s apart (the log lines at the bottom: `Attack tag after 1 of 6
-shots ... fires`, `lost its target 4 ... new target 7`), and the six guardians fall. [Full video
+`<RetargetInAction>1` on the Explorer's two ability attacks, the new animation and its muzzle flash), a British
+Explorer, selected, uses "Hammer Fanning" on six `OutlawPistol` guardians (270 HP) around him; filmed again on
+2026-11-26 with the flash moved to the barrel's tip:* the pistol at the hip, the left palm sweeping over the hammer, six
+shots 0.28 s apart, each flash leaving the muzzle along the shot's tracer (the log lines at the bottom: `Attack tag after
+1 of 6 shots ... fires`, `lost its target 3 ... new target 2`), and the six guardians fall. [Full video
 (MP4)](media/powerShots-wol.mp4).
 
 ![powerShots in WoL, keys off](media/powerShots-wol-control.gif)
@@ -4473,9 +4474,20 @@ powerShots [log]
     Fanning" on six `OutlawPistol` guardians: six shots 278 to 282 ms apart, six new targets, six guardians dead (the
     video above); "Slip Hammering" (`Industrialize` set by a trigger) on four Gaia `WOLRegular`s (200 HP): four shots,
     four dead, the last two tags with nobody in range (stock). A Danish Explorer (another model, the same clips): the
-    clip plays, the pistol at the hip in the right hand, the flash at the pistol at each shot, the feet still. The
-    control (no pack, no keys): one guardian a use. In game a power's attack ends with its animation: no reload and
-    no `SharpshootIdle` were seen after it, the unit goes back to its idle.
+    clip plays, the pistol at the hip in the right hand, the feet still. The control (no pack, no keys): one guardian a
+    use. In game a power's attack ends with its animation: no reload and no `SharpshootIdle` were seen after it, the
+    unit goes back to its idle.
+  - **The muzzle flash** (JTMaston's review, 2026-11-26: the flash showed at the hand). The tags named the stock
+    particle set `musketshot`, whose particles are drawn on the bone `R Hand`. The pack now adds the set `fanningshot`
+    to `art\effects\particlesets_wol.xml` (the same four musket particles, drawn on `Prop2`), and the clips key
+    `Bip01 Prop2` on the pistol's muzzle (aoe3-blender-tools' `make_fanning.py`; `check_anim`'s new `flash` check: 0.0
+    cm from the muzzle at the six tags, on the 11 WoL explorer models; the Danish and Swedish ones have the same
+    bone chains). In game (2026-11-26, WoLReal4, `OutlawPistol` guardians): a British Explorer's "Hammer Fanning",
+    six shots, six dead; a Danish Explorer's "Slip Hammering", six shots, six dead, then his "Hammer Fanning" on the
+    four left, four shots, four dead. Every flash starts ahead of the barrel's tip on the line of the shot, never at
+    the hand (`wol-fixes/hammer-fanning/c1-ingame-flash.jpg`). In its first drawn frame
+    a flash is already about half a pistol's length ahead of the muzzle, the particles' own speed (8 m/s,
+    `musket_fire_A.particle`; inferred).
   - Not tested: multiplayer, beside WoL's DLL.
 
 #### turretArc
