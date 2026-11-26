@@ -176,6 +176,7 @@ Outcome ApplyDmgPartBoneFix(const Config& config);
 Outcome ApplyFaithResource(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 Outcome ApplyTechGadgets(const Config& config);
+Outcome ApplyCultureUi(const Config& config);
 Outcome ApplyIncomeRates(const Config& config);
 Outcome ApplySelectFattened(const Config& config);
 Outcome ApplyProgressPieDemo(const Config& config);
@@ -390,6 +391,8 @@ inline constexpr Feature kFeatures[] = {
     {"editorAutosave", ApplyEditorAutosave},
     // After rendererOption: it sets its gadgets from the Present of whichever Direct3DCreate9 the game gets.
     {"techGadgets", ApplyTechGadgets},
+    // Its own hooks: the head of the texture bind 0x407D27 and of the HUD build 0x76166A.
+    {"cultureUI", ApplyCultureUi},
     // After rendererOption: it shows its button from the Present of whichever Direct3DCreate9 the game gets.
     {"selectFattened", ApplySelectFattened},
     // Dev key: the test bed of the shared progress pie (progresspie.h), an observer of the shared panel tail.
@@ -417,7 +420,7 @@ inline constexpr const char* kHandledKeys[] = {
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
     "techgadgets", "incomerates", "editorautosave", "selectfattened", "nurseryfactor", "progresspiedemo",
-    "garrisonconvert",
+    "garrisonconvert", "cultureui",
 };
 
 }  // namespace uhc

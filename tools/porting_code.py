@@ -196,6 +196,7 @@ PAGES = {
         "techGadgets": ["src/features/techgadgets.cpp"],
         "incomeRates": ["src/features/incomerates.cpp", "src/hooks/incomerates_hooks.asm", "src/income.h"],
         "selectFattened": ["src/features/selectfattened.cpp"],
+        "cultureUI": ["src/features/cultureui.cpp", "src/hooks/cultureui_hooks.asm"],
     }),
 }
 

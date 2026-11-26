@@ -2992,6 +2992,24 @@ inline constexpr Site kCardTreeRolloverHead{"CardTreeRolloverHead", 0x00710991, 
 inline constexpr std::uint8_t kCardTreeRolloverAdvancedBytes[] = {0x8B, 0x0D, 0xF0, 0xF6, 0xD6, 0x00};
 inline constexpr Site kCardTreeRolloverAdvanced{"CardTreeRolloverAdvanced", 0x00710F24, kCardTreeRolloverAdvancedBytes, sizeof(kCardTreeRolloverAdvancedBytes)};
 
+inline constexpr std::uint8_t kTextureBindHeadBytes[] = {0x55, 0x8B, 0x6C, 0x24, 0x08, 0x56, 0x8B, 0xF1, 0x3B, 0xAE, 0xE0, 0x30, 0x00, 0x00};
+inline constexpr Site kTextureBindHead{"TextureBindHead", 0x00407D27, kTextureBindHeadBytes, sizeof(kTextureBindHeadBytes)};
+
+inline constexpr std::uint8_t kHudBuildHeadBytes[] = {0xA1, 0xC0, 0x72, 0xC6, 0x00, 0x83, 0xEC, 0x60};
+inline constexpr Site kHudBuildHead{"HudBuildHead", 0x0076166A, kHudBuildHeadBytes, sizeof(kHudBuildHeadBytes)};
+
+inline constexpr std::uint8_t kTextureByNameBytes[] = {0x51, 0x56, 0x8B, 0x74, 0x24, 0x0C, 0x85, 0xF6, 0x57, 0x8B, 0xF9};
+inline constexpr Site kTextureByName{"TextureByName", 0x0058E3EB, kTextureByNameBytes, sizeof(kTextureByNameBytes)};
+
+inline constexpr std::uint8_t kSettingsByNameBytes[] = {0x51, 0x56, 0x57, 0x8B, 0x7C, 0x24, 0x10, 0x85, 0xFF, 0x8B, 0xF1, 0xC7, 0x44, 0x24, 0x08, 0x00, 0x00, 0x00, 0x00};
+inline constexpr Site kSettingsByName{"SettingsByName", 0x00402C76, kSettingsByNameBytes, sizeof(kSettingsByNameBytes)};
+
+inline constexpr std::uint8_t kTriggerByNameBytes[] = {0x51, 0x8B, 0x4C, 0x24, 0x08, 0xA1, 0x34, 0x62, 0xC6, 0x00, 0x56, 0x8B, 0xB0, 0x7C, 0x09, 0x00, 0x00, 0x51, 0x8D, 0x4C, 0x24, 0x08, 0xE8, 0xFF, 0x3E, 0xAF, 0xFF, 0x8D, 0x54, 0x24, 0x04, 0x52, 0x8B, 0xCE, 0xE8, 0xC3, 0xD2, 0x06, 0x00, 0x83, 0xF8, 0xFF, 0x75};
+inline constexpr Site kTriggerByName{"TriggerByName", 0x0090DFB0, kTriggerByNameBytes, sizeof(kTriggerByNameBytes)};
+
+inline constexpr std::uint8_t kPlayerTeamBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x74, 0x16, 0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x7C, 0x0E, 0x50, 0xE8, 0x96, 0x91, 0xBC, 0xFF, 0x85, 0xC0, 0x74, 0x04, 0x8B, 0x40, 0x10, 0xC3, 0xB8, 0xFE, 0xFF, 0xFF, 0xFF, 0xC3};
+inline constexpr Site kPlayerTeam{"PlayerTeam", 0x0088396E, kPlayerTeamBytes, sizeof(kPlayerTeamBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -3556,6 +3574,7 @@ Outcome ApplyDmgPartBoneFix(const Config& config);
 Outcome ApplyFaithResource(const Config& config);
 Outcome ApplyEnableAllTeams(const Config& config);
 Outcome ApplyTechGadgets(const Config& config);
+Outcome ApplyCultureUi(const Config& config);
 Outcome ApplyIncomeRates(const Config& config);
 Outcome ApplySelectFattened(const Config& config);
 Outcome ApplyProgressPieDemo(const Config& config);
@@ -3770,6 +3789,8 @@ inline constexpr Feature kFeatures[] = {
     {"editorAutosave", ApplyEditorAutosave},
     // After rendererOption: it sets its gadgets from the Present of whichever Direct3DCreate9 the game gets.
     {"techGadgets", ApplyTechGadgets},
+    // Its own hooks: the head of the texture bind 0x407D27 and of the HUD build 0x76166A.
+    {"cultureUI", ApplyCultureUi},
     // After rendererOption: it shows its button from the Present of whichever Direct3DCreate9 the game gets.
     {"selectFattened", ApplySelectFattened},
     // Dev key: the test bed of the shared progress pie (progresspie.h), an observer of the shared panel tail.
@@ -3797,7 +3818,7 @@ inline constexpr const char* kHandledKeys[] = {
     "buildingworkrateauras", "xserrorlog", "datalint", "menuoptions", "rendereroption", "perfstats", "perfautoexec", "perfexecfile", "bufferedfilereads", "fastvertexfill", "fastlastinline",
     "perffilelog", "multipleinstances", "lanautostart", "playericon", "editorsearch", "preloaddll", "customsyscalls", "customcheats", "asiancivs", "twoscoutcivs", "marketunits", "explorerunits", "nativecivs", "bigbuttoncivs", "nobigbuttonblds", "ageupbuildings", "politicianplacesfix", "politicianenablestech", "enablefarmanim", "enablerectfarmanim", "farmingradius", "wondercivunittype", "trainsingleabstracttype", "selectionlimit", "enableallteams", "kbunitsyscalls", "customprotounitcommands", "multiarmor", "betterfreedynamicunit", "nowalkfarm", "repairwallglobal", "compatmode", "gatherfix", "roffix", "stunmovingtargetfix", "nodamageonunbuiltfoundations", "truckattackresourcefix", "fallenherotacticsfix", "impactbonefix", "customimpacttypes", "deadreplacementatzeroinventory", "modelcachelimit", "dmgpartbonefix", "faithresource",
     "techgadgets", "incomerates", "editorautosave", "selectfattened", "nurseryfactor", "progresspiedemo",
-    "garrisonconvert",
+    "garrisonconvert", "cultureui",
 };
 
 }  // namespace uhc

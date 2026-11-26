@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- cultureUI: the in-game interface (minimised) per family of civs.
+     A texture art\ui\ingame\X.ddt is drawn as art\ui\ingame\X_<suffix>.ddt where that file exists (loose files only),
+     and from the Great War on (the tech GreatWarizeALL, which every route activates) as X_<suffix>_gw.ddt, else as
+     X_<suffix>.ddt, else as X.ddt. A family with no files keeps today's interface.
+     The families are those of the nine Great War techs (GreatWarEU ... GreatWarPO): the civs that activate each. -->
+<CultureUI>
+  <Style suffix="eu" civs="Austrohungarians Belgians British Danish Dutch French Germans Italians Ottomans Portuguese Russians Spanish Swedish">
+    <Stage tech="GreatWarizeALL" suffix="eu_gw"/>
+  </Style>
+  <Style suffix="an" civs="UnitedStates Australians Canadians">
+    <Stage tech="GreatWarizeALL" suffix="an_gw"/>
+  </Style>
+  <Style suffix="la" civs="Argentineans Bolivians Brazilians Centralamericans Chileans Colombians Haitians Mexicans Paraguayans Peruvians Uruguayans">
+    <Stage tech="GreatWarizeALL" suffix="la_gw"/>
+  </Style>
+  <Style suffix="ns" civs="Bulgarians Greeks Romanians Serbians">
+    <Stage tech="GreatWarizeALL" suffix="ns_gw"/>
+  </Style>
+  <Style suffix="af" civs="Ethiopians Egyptians Zulu">
+    <Stage tech="GreatWarizeALL" suffix="af_gw"/>
+  </Style>
+  <Style suffix="as" civs="Chinese Indians Japanese Koreans">
+    <Stage tech="GreatWarizeALL" suffix="as_gw"/>
+  </Style>
+  <Style suffix="me" civs="Afghans Persians Saudis Uzbeks">
+    <Stage tech="GreatWarizeALL" suffix="me_gw"/>
+  </Style>
+  <Style suffix="na" civs="XPIroquois XPSioux WallMapu Tawantinsuyu Tupinamba">
+    <Stage tech="GreatWarizeALL" suffix="na_gw"/>
+  </Style>
+  <Style suffix="po" civs="Maori">
+    <Stage tech="GreatWarizeALL" suffix="po_gw"/>
+  </Style>
+</CultureUI>
