@@ -4022,7 +4022,11 @@ it are in [nursery-design.md](nursery-design.md). <!-- private -->
   at the first tick of a loaded game (game time above 0) is dropped and logged. This is not the pass after a load
   0x94DDEA, which runs only flag-20h effects (see `unitTypeTechs`).
 - **The shipment** (`AddTechPlayerSubtype`, as `shipmentCounts`): the techtree read stores `{unittype, nursery,
-  consume}` in a list and the list index in the effect's field `+10h`. When it applies, it takes (or counts) the factors
+  consume}` in a list and the list index in the effect's field `+10h`. The list is never cleared: a loaded game reads
+  the protos again (the data-load callback empties the other tables) but not the techtree, whose effects keep their
+  indices (as `garrisonConvert`'s effect list). Until 2026-11-27 the data-load callback emptied it too, so a
+  shipment researched after a load found no entry and shipped nothing (checked in game before and after the fix).
+  When it applies, it takes (or counts) the factors
   of the player's living, built units whose proto is `nursery` or of that abstract type (0x44D7FA), in ID order, and
   returns the stock `FreeHomeCityUnit` (37h) with the proto and `amount x total`; nothing under 1 unit. A taken factor
   restarts its timer.

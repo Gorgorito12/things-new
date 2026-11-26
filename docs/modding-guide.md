@@ -6031,13 +6031,21 @@ nurseryFactor [log]
 - **Saved games:** each unit's factor and timer are kept on the unit (`t` comes from the factor). The load applies the tech effects
   again, in the order the techs have in the techtree, not the order they were researched: a cap set by `Assign` and
   changed by `Absolute` in another tech can come back different (the stock Data effects are applied again the same
-  way). A `NurseryFactor` effect is not applied again.
+  way). A `NurseryFactor` effect is not applied again. A `FreeHomeCityUnitByNurseryFactor` effect researched after
+  a load works as before it (fixed on 2026-11-27: until then the load forgot what the techtree had read for it, and
+  such a shipment after a load shipped nothing and took no factor).
 - **Performance:** the third version, 16 Banks growing (exponential, b 2), a scenario, 60 s of `tools/perfprobe.py`
   each (other test games running on the machine): update 0.2 ms per frame with the key and without, render 1.6 /
   1.7 ms, main thread 85.3 / 85.2 %, fps 558 / 529 (uncapped), no frame over 50 ms in either. `t` is worked out only
   on a growth step, a change of the factor and the panel refresh of one selected nursery (a loop of about log_b(cap)
   turns). The second version: 0.15 ms both; the first: 40 Banks, 0.1 ms both.
 - **Not covered:** the train button's rollover; XS calls.
+- **Saved games, checked 2026-11-27** (WoL, a scenario: a Bank every 20 s, the techs `NurseryFactorGrowthBase` = 3
+  and `NurseryFactorMax` +10 at the start, a `FreeHomeCityUnitByNurseryFactor` with `consume='2'` at 120 s): saved
+  at 4/20, loaded; the load applied both techs again (`2 -> 3`, `10 -> 20`) and the Bank grew by 9 to 13/20 and by
+  27 to 20/20 (b 3, cap 20, as before the save); the shipment took 2 (`20 -> 18`, 2 units shipped, the same lines
+  as a run without a load) and the Bank grew back to 20/20. Before the fix the same shipment after a load logged
+  nothing and took nothing.
 - **Status:** third version (single player, WoL, 2026-11-26; a skirmish, British against a German AI): `t` followed the
   factor in the log after a sale (`10 -> 6/10, t 3 -> 2`, then +4), a shipment with `consume='2'` (`10 -> 8, t 3 -> 3`,
   then +8 cut at 10), a garrisoned goat and the Settlers button (`10 -> 9/10, t 3 -> 3`); the Settlers button greyed

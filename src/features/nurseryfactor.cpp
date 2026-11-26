@@ -297,7 +297,9 @@ struct Shipment {
   std::int32_t nursery;  // a proto or abstract type ID
   std::int32_t consume;  // -1 all, 0 none, N: at most N per unit
 };
-std::vector<Shipment> g_shipments;  // the effects' field +10h is an index; the techtree read fills it
+std::vector<Shipment> g_shipments;  // the effects' field +10h is an index; each techtree read appends to it
+// It is never cleared: a loaded game reads the protos again (ForgetOnDataLoad) but not the techtree, whose effects
+// keep their indices (as garrisonConvert's g_effects).
 
 const char* g_world = nullptr;
 std::uint32_t g_lastTime = 0;
@@ -755,6 +757,8 @@ bool __cdecl ReadCommand(void*, const char* node, char* proto) {
   return true;
 }
 
+// g_shipments stays (see its declaration). g_tech is filled again by the load, which runs every ProtoUnit Data
+// effect of the researched techs after the protos are read.
 void ForgetOnDataLoad(char*) {
   g_tags.clear();
   g_marked.clear();
@@ -765,7 +769,6 @@ void ForgetOnDataLoad(char*) {
   g_pending.clear();
   g_entries.clear();
   g_units.clear();
-  g_shipments.clear();
   g_world = nullptr;
   g_cursor = 0;
 }
