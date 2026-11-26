@@ -34,8 +34,9 @@
 // What the player sees (display only): the rule is one function, Choose, which the claim runs for a payment and,
 // through PreviewResearchPay (researchpay.h, every key in the payment's order), for the command panel. A tech button
 // whose research would get a share below 1 shows the free word or the price after it (its overlay text, the buffer the
-// Buy buttons use), and its rollover the cost after the share and a green label; the hook of the panel's call of the
-// rollover builder at 0x4622C5 (shared, techrollover.h) and of the builder's copy of the cost at 0x4C73FD. A spent point shows the label as a
+// Buy buttons use), and its rollover the cost after the share and a green label; the shared hook at the exit of the
+// rollover builder 0x4C737C (techrollover.h: the command, native and trade route panels) and the hook of the
+// builder's copy of the cost at 0x4C73FD. A spent point shows the label as a
 // floating text over the paying building, to its owner (floatingtext.h). Options: notext, text=, noprice, free=, log.
 #include <windows.h>
 
@@ -921,8 +922,9 @@ extern "C" void* __stdcall UhcGrantTipCost(void* list, const void* from, const c
 
 namespace {
 
-// The shared tech rollover (techrollover.h, the panel's call of that builder at 0x4622C5), once the rollover is
-// built: the button's overlay text (the panel's buffer, 256 chars, empty for a tech) and a line in the rollover.
+// The shared tech rollover (techrollover.h, the exit of that builder), once the rollover is built: the button's
+// overlay text (the panel's buffer, 256 chars, empty for a tech; null for a caller without one) and a line in the
+// rollover.
 void GrantTechButton(const char* entry, const char* player, const char* unit, void* rollover, char* overlay) {
   const Preview preview = PreviewOf(entry, player, unit);
   if (preview.key == nullptr || (preview.share >= 1.0f && preview.grant.tags == nullptr)) {

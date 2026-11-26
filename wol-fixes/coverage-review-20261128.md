@@ -1,10 +1,10 @@
 # UI coverage review of `researchGrants` and `shipTechLimit` (agent R, 2026-11-28 round)
 
-Review only: nothing was changed in `src/`. Static facts are in `docs/engine-symbols.md`, "Who builds a tech's or a
+First a review (nothing changed), then the fix the user approved on 2026-11-26 (section "The fix, done"). Static facts are in `docs/engine-symbols.md`, "Who builds a tech's or a
 card's rollover"; the evidence is `rea/evidence/age3y-b1a1dab7/coverage-review-20261128.json` (main checkout).
 Screenshots: `C:\Users\Jeison\Documents\GitHub\_share\maston-20261128\R\`.
 
-## Short answer
+## Short answer (the review, before the fix)
 
 - Both keys show their text through one site: the command panel's call 0x4622C5 of the tech rollover builder 0x4C737C
   (`AddTechRolloverLine`). That call serves the normal and the minimised UI: both work (screenshots below).
@@ -16,7 +16,7 @@ Screenshots: `C:\Users\Jeison\Documents\GitHub\_share\maston-20261128\R\`.
   land on its socket (two tries), so these two panels never opened.
 - Home city, deck builder, "View All Cards", tech tree, observer: do not apply (reasons below).
 
-## Per key and per screen
+## Per key and per screen (before the fix)
 
 Test (2026-11-26, `C:\AoE3-UHC-WoLReal5`, single player, a skirmish on a test map against a German AI, `wolOtto`):
 player 1 Spanish with `<ShipTechLimit>3</ShipTechLimit>`, a Market with `tools/grant_testdata.py`'s tags (scope
@@ -74,7 +74,48 @@ What a missing line costs the player:
 - The deck builder and "View All Cards" outside the game were not opened (no research there).
 - Whether the native and the trade route panels ask the can-research test 0x4C6968 was not checked.
 
-## The fix, if the user asks for one (STOP 6: not done)
+## The fix, done (2026-11-28, approved by the user on 2026-11-26)
+
+**What changed.** `AddTechRolloverLine` (`src/techrollover.*`, `hooks/techrollover_hooks.asm`) moved from the command
+panel's call 0x4622C5 to the builder's only exit, 0x4C78F3 (a 5-byte `jmp` over `pop ebp / pop ebx / add esp,40h`;
+the hook replays them and leaves through the stock `ret` 0x4C78F8). Every game caller of the builder gets the keys'
+lines. The return address picks the button's overlay buffer: 0x4622CA (command panel, `[esp+2E4h]`), 0x9AD7F6 (native
+panel, `[esp+284h]`), 0x9B763C (trade route panel, `[esp+26Ch]`); each panel's call, reset and read are checked
+against the stock bytes first (sites `TechButtonRollover`, `NativeTechRollover`, `TradeRouteTechRollover` and their
+`*OverlayReset` / `*OverlayRead`), and a panel that does not match gets the lines without the word. A call from DLL
+code (`politicianEnablesTech`'s age-up dialog) gets nothing, as before. REA for the exit: body ranges `ev_d4726e8c…`
+(`rea/evidence/age3y-b1a1dab7/techrollover-builder-exit-20261128.json`), plus a capstone branch scan of `.text`.
+
+**In game** (`C:\AoE3-UHC-WoLReal5`, `multipleInstances background`, no real mouse: the trading posts were placed with
+posted messages only, `tis("TradingPost")` then a posted hover and click on the socket; a test map with a Cree village
+(`rmSetSubCiv`, grouping `native cree village 1`) and a trade route with one socket; British with
+`<ShipTechLimit>3</ShipTechLimit>`, the grant Market with scope `all`, test data giving Cree Warrior Societies,
+Champion Cree and Stagecoach a cost of 1 Ship; a German AI). Log: `UHCMain: 37 applied, 0 failed`, `hook reached:
+tech rollover (0x4C78F3)`, and `tech rollover: first rollover built for` the native panel (0x9AD7F1), the trade route
+panel (0x9B7637) and the command panel (0x4622C5).
+
+| Screen | `researchGrants` | `shipTechLimit` | Screenshot (`_share\maston-20261128\R\`) |
+|---|---|---|---|
+| Native panel, minimised UI | **shown**: `Free` on the buttons, `Free research` | **shown**: `Shipment techs: 0/3` | `fixed-native-panel-minimised.png` |
+| Native panel, normal UI | **shown** | **shown** | `fixed-native-panel-normal.png` |
+| Trade route panel, minimised UI | **shown**: Stagecoach `Free`, `Free research` | **shown** | `fixed-traderoute-panel-minimised.png` |
+| Trade route panel, normal UI | **shown** | **shown** | `fixed-traderoute-panel-normal.png` |
+| Command panel (control), minimised and normal UI | **shown**, as before | **shown**, as before | `fixed-command-panel-minimised.png`, `fixed-command-panel-normal.png` |
+| Native panel, both keys off (control) | stock: the cost `200 wood, 150 gold, 1 Ship`, no word, no line | stock | `control-keys-off-native-panel-normal.png` |
+
+Not seen: the `n/N` mark at the limit on the two new panels (no shipment tech of those panels could be researched in
+Age I to reach the limit). It is written into the same button buffer as `researchGrants`' `Free`, which shows there.
+
+**A/B** (`perfprobe.py`, 60 s each, normal UI, the native trading post selected with the pointer on a tech button;
+another test game ran during the key-off take): key off 495 fps median, longest frame 3.5 ms (median of the seconds),
+main thread 89.0 %, 0 frames over 50 ms; key on 549 fps, 2.6 ms, 92.1 %, 0 frames over 50 ms. Minimised UI, key on:
+535 fps, 2.6 ms, 0 frames over 50 ms. No rise.
+
+**Docs:** CLAUDE.md / AGENTS.md (shared hooks line), the guide's two sections (screens list, sites checked, log line;
+the old limit removed), how-it-works, porting-to-another-dll, uhc-address-map, engine-symbols, porting-code.
+
+## The fix, as proposed before the approval
+
 
 Move `AddTechRolloverLine` from the call 0x4622C5 to the builder 0x4C737C itself (its head or its exit), or redirect
 the calls 0x9AD7F1 and 0x9B7637 too. The overlay word needs each panel's own button buffer: the native and the trade
