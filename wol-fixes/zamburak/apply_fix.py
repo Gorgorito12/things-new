@@ -19,7 +19,8 @@ stock field guns (data\\tactics\\zamburakCannon.tactics):
     (a folder under steamapps is refused unless --force is given)
 
 Files it adds: art\\WoL\\units\\cavalry_ranged\\zamburak_cannon\\ (the models, the animations, their tag files,
-the aim file and the anim files), data\\tactics\\zamburakCannon.tactics. File it changes: data\\protoy.xml
+the aim file, the anim files and the fuse's particle files),
+data\\tactics\\zamburakCannon.tactics. File it changes: data\\protoy.xml
 (MEZamburak's <AnimFile>, <Tactics> and its CannonAttack's <ROF>, 4.0 -> 5.0: a proposal, see the README).
 The current files (art\\WoL\\units\\cavalry_ranged\\zamburak\\, zamburakME.tactics) are not touched.
 
