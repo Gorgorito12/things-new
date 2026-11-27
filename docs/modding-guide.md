@@ -5236,8 +5236,8 @@ count="3">Rodelero</CivPartisan>` on `Barracks`, and `<CivPartisan civ="Spanish"
 Rodeleros come out of it, though the Spanish have no `<Partisans>` in `civs.xml`. The Serbian Barracks falls next (off the
 top) and gives its 2 `SerbianInferno` as before (the log line at the bottom). Then the Spanish Stable falls (bottom right),
 and its 4 Rodeleros come out beside the owner's three buildings within 30 m: the House in the middle, the Outpost and the
-other House (both off the right edge). Afterwards they walk over to the other Rodeleros: the key gives them no order (see
-"Seen in game"). The Rodeleros stay selected, so their bars show. [Full video (MP4)](media/partisans-wol.mp4).
+other House (both off the right edge). Afterwards they walk over to the other Rodeleros, as the game makes idle units of the same
+kind do (see "Seen in game"). The Rodeleros stay selected, so their bars show. [Full video (MP4)](media/partisans-wol.mp4).
 
 ![partisans in WoL, key off](media/partisans-wol-control.gif)
 
@@ -5322,9 +5322,10 @@ partisans [log]
   - The AI: no XS error; the Serbian AI trained a Peasant, with the key and without it.
   - Key off, the same data: nothing from the Spanish buildings, the Serbian ones as before (control video).
 - **Seen in game:** after they appear beside the buildings, the units of one death walk over to the nearest group of the
-  same unit (in the video, to the Barracks' Rodeleros) and stand in a line. The key gives them no order: it creates them
-  with the stock spawn's arguments, and they walked the same way when they were made one per game update. The cause was
-  not traced.
+  same unit (in the video, to the Barracks' Rodeleros) and stand in a line. That is the game's own behaviour, not the
+  key's: with the key off, a Serbian `Barracks` given `PartisanType` `Rodelero` and `PartisanCount` 4 in the test data
+  gave its 4 Rodeleros inside its footprint, and 3 Rodeleros of the same player standing 20 m away walked over to them
+  within 7 s and stayed there (2026-11-27).
 
 #### killBountyTechs, resourceBounty and teamKillBounty
 

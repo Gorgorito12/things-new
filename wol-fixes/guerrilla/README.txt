@@ -56,7 +56,7 @@ Tested in WoL (2026-11-27), skirmishes against the Serbian AI
 - From nearby: a Spanish Stable's 4 Rodeleros came out beside two Houses and an Outpost; with no building in range,
   out of the Stable.
 - A trigger's Kill gives no guerrilla (the game's own rule).
-- Afterwards the new units walk over to the nearest group of the same unit and stand in a line. The key gives them no
-  order; the cause was not found.
+- Afterwards the new units walk over to the nearest group of the same unit and stand in a line. The game does that
+  without the key too: a building's stock guerrilla drew 3 Rodeleros standing 20 m away.
 - Key off: nothing from the Spanish buildings.
 Not tested: a foundation in range (it should not count; the test map's foundations came finished).

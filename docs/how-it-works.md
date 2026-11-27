@@ -5839,7 +5839,8 @@ vtable `+A4h`) and built (0x44DDB4); sorted by distance (vtable `+B8h`), then by
 then 0x498ACC(world, ID, player, point, the building's forward, 1, -1, 1, -1), the stock spawn's arguments, inside the
 kill handler as the stock spawn. No building in range: the stock spawn. **[O]** In game the units of one death, once made
 beside their buildings, walk over to the nearest group of the same unit and stand in a line; the same with 0, -1, 0, -1,
-and when a world tick made them one per update. **[U]** What orders that walk was not traced.
+and when a world tick made them one per update. **[O]** It is stock: with the key off, 3 Rodeleros walked 20 m to the 4 a
+Barracks' stock guerrilla had just made. **[U]** Which code orders that walk was not traced.
 
 **Why it is safe.**
 - The hook reads the kill handler's argument before any push, keeps EBX, ESI, EDI and EBP (stdcall), and clobbers EAX,

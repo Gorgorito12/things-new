@@ -59,9 +59,10 @@ Questions, so we can finish it the way you want (until you answer, the build doe
    Now: split, the same total, closest building first.
 2. Which buildings count as "nearby": any of the owner's buildings, or only the ones that have a guerrilla themselves?
    Now: any finished building of the owner.
-3. After they appear, the new units walk over to the nearest group of the same unit and stand in a line. Is that fine,
-   or should they stay where they appear?
-   Now: they walk. We did not find what makes them walk, so we left it as it is.
+3. After they appear, the new units walk over to the nearest group of the same unit and stand in a line. That is the
+   game's own behaviour, not the key's: without the key, a building's normal guerrilla made 3 Rodeleros standing 20 m
+   away walk over to it. Should the key keep the units where they appear instead?
+   Now: they walk, as the game makes them.
 4. The Town Center, Artillery Depot and Market give SerbianInferno to the Tupinamba today (see above). Should the
    Tupinamba get UybassyArcher there, as a <CivPartisan civ="Tupinamba"> line?
    Now: unchanged.
