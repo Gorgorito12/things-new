@@ -1,0 +1,21 @@
+testbed: game time 109728 -> 170199 ms
+wait exit 0
+step 1  p2 units 18  settlers 12  16:40:39
+testbed: game time 170695 -> 230868 ms
+wait exit 0
+step 2  p2 units 23  settlers 17  16:41:29
+testbed: game time 231292 -> 291628 ms
+wait exit 0
+step 3  p2 units 25  settlers 18  16:42:19
+testbed: game time 291998 -> 352179 ms
+wait exit 0
+step 4  p2 units 26  settlers 18  16:43:09
+testbed: game time 352653 -> 412701 ms
+wait exit 0
+step 5  p2 units 27  settlers 19  16:43:58
+testbed: game time 413143 -> 473253 ms
+wait exit 0
+step 6  p2 units 28  settlers 19  16:44:48
+C:/Users/Jeison/AppData/Local/Temp/claude/6074b42c9148e322/956e6d04-809d-4b96-bc7d-9b21e82348a8/scratchpad/j28/skirmish-end.png: window 1926x1126, PrintWindow ok, saved at 1/2
+pid 47792, window 1920x1080, world 0xffb0000, game time 474448 ms
+DONE

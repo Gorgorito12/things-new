@@ -1,0 +1,74 @@
+Reply to JTMaston, round of 2026-11-24: displayedRange (#92), the Fort's ring and the Grenzer's extra ring
+==========================================================================================================
+
+Tested in single player in a copy of WoL and filmed. The guide section "displayedRange" has the numbers and the
+videos.
+
+
+"The fort has 26 range; the normal range ring is too close to the building; same for outposts"
+------------------------------------------------------------------------------------------------
+You were right, and there were two causes.
+
+1. The ring files were drawn too small. Our ring models were written in the scale the game's own model files declare
+   (0.615 units per metre), but the game ignores that number and reads the vertices as metres. So every range ring
+   since the coloured version (2026-11-22) showed only 0.615 of its size: the Fort's "26 m" ring lay about 16 m from
+   its centre, and its "40 m" anti-ship ring about 25 m out, close to where the cannon really reaches. That is what
+   you saw. We measured it with Settlers placed at known distances, fixed the ring files, and checked again: a 31 m
+   ring now passes between markers at 30 and 32 m, a 35 m ring between 34 and 36 m. Please copy the new rings folder
+   (art\effects\uhc_rings) over the old one.
+
+2. The range itself is not measured from the centre:
+
+- From a building, MaxRange starts at its walls (its obstruction square). The Fort is 12 x 12 m, so its 26 starts
+  6 m from the centre.
+- The target's size counts too: the game takes off the target's radius x 1.41. For an infantry unit (radius 0.49)
+  that is 0.69 m more.
+- A unit that shoots adds its own radius the same way (another 0.69 m for infantry).
+
+We checked it in the exe and then in game: Settlers placed at exact distances from the Fort's walls were shot at
+26.08, 26.31 and 26.68 m, and not at 26.83, 26.9 and 27.2 m. So the edge is 26 + 0.69. Their centres were up to
+34.4 m from the Fort's centre. The Outpost and the Blockhouse behave the same.
+
+The ring now shows where an infantry unit's centre comes into range:
+- Fort: 33 m from the centre (6 + 26 + 0.69), and its anti-ship attack 47 m, dashed.
+- Outpost: 27 m (2 + 24 + 0.69), and 43 m dashed.
+- Blockhouse and War Hut: 29 m. Town Center: 37 m.
+- Grenzer and Skirmisher: 21 m. Crossbowman: 17 m.
+The ring sizes now go every metre from 4 to 50 m, so a ring is at most half a metre off.
+
+Two things a round ring cannot show:
+- Past the corners of a building the reach goes a little further, because the real zone is the building's square
+  grown by the range: 2.5 m more at the Fort's corners, 0.8 m at an Outpost's. Inside the ring is always in range.
+- Cavalry are hit 0.4 m further out and cannons 0.7 m, ships more.
+
+One thing about the Fort's data, in case it matters to you: a building only shoots at what you see, and line of
+sight is measured from the centre. The Fort's <LOS> is 26, shorter than its 33 m reach. Your age-up techs
+Colonialize and Fortressize add 7 + 4 to every building, so a Fort normally sees 37 m and can shoot at its ring
+(the videos use those two techs). But a Fort with only its base 26 LOS (no age tech, in our test scenario) shot only
+at units about 26 m from its centre, even when they were well in range. If you want a Fort to use its full range on
+its own in every case, its LOS would need to be about 33.
+
+
+"What is the extra ring showing on the grenzer?"
+------------------------------------------------
+It was the Grenzer's torch: BuildingAttack, 6 m, on LogicalTypeShipsAndBuildings. Crossbowmen, Skirmishers and most
+infantry have the same one. It is no longer drawn: an attack that can only hit buildings (and ships) is left out
+when the unit also has an attack on units. A unit whose only ranged attack is on buildings (a mortar) still gets
+its ring, dashed. A dashed ring now means "this attack cannot hit your army": only ships (the Fort's and the
+Outpost's anti-ship attack) or only buildings. If you would rather see the torch ring on infantry too, tell us and
+it becomes an option.
+
+
+"Try to make tests with buildings attacking units while the ring is shown"
+---------------------------------------------------------------------------
+Filmed: a Fort, an Outpost and a Blockhouse, each selected with its rings, with enemy Settlers placed just inside and
+just outside the ring (5 HP each in the test data, so one shot kills). Each building shoots the ones inside and
+leaves the ones outside. On a diagonal the Fort also hits one 33.9 m out, just past its 33 m ring: that is the corner
+effect above.
+
+With units walking in, the first shot comes a little after they cross the ring: in our test, Pikemen walking at a
+Fort were about 2 s (and 7 to 10 m) inside the ring when the first cannonball left. Units standing still are shot
+exactly by the ring, so we think the attack starts at the ring and the cannonball leaves later in it; we did not
+trace that delay.
+
+The earlier displayedRange videos (Alt, placement ghost, enemy and ally) are refilmed with the new rings.

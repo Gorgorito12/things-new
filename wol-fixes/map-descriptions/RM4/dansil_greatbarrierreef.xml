@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "rms\small\NEW\greatreefsmall"
+displayName = "Great Barrier Reef"
+cannotReplace = ""
+ 
+loadBackground="ui\random_map\borneo\borneo_map"
+details="6170318"
+loadDetails="6170319">
+  <loadss>ui\random_map\borneo\borneo_ss_1</loadss>
+  <loadss>ui\random_map\borneo\borneo_ss_2</loadss>
+  <loadss>ui\random_map\borneo\borneo_ss_3</loadss>
+ 
+</mapinfo>

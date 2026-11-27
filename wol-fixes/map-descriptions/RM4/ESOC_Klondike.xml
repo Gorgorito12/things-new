@@ -1,0 +1,13 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "ui\esoc_map\klondike"
+displayName = "ESOC Klondike"
+cannotReplace = ""
+loadBackground="ui\esoc_map\klondike_map"
+details="6170080"
+loadDetails="6170081">
+
+  <loadss>ui\random_map\yukon\yukon_ss_02</loadss>
+  
+</mapinfo>

@@ -1,0 +1,40 @@
+﻿dinput8.dll 0.5.0
+UHCMain: working directory C:\AoE3-UHC-WoLReal8\
+UHCMain: C:\AoE3-UHC-WoLReal8\engine-ext\engine-ext.cfg, 4 keys
+perfExecFile: polling C:\AoE3-UHC-WoLReal8\uhc-exec.txt
+perfStats: large-address-aware yes, user address space 4095 MB, 16 logical CPUs, 8 cores
+perfStats/perfAutoExec: applied
+xsErrorLog: the XS messages go to this log, at most 200 lines
+xsErrorLog: applied
+multipleInstances: this copy may run beside copies in other folders (semaphore suffix -3CA0C920); background: windows stay at the bottom and are never activated
+multipleInstances: applied
+UHCMain: 3 applied, 0 failed
+multipleInstances background: window of class OleMainThreadWndClass placed at the bottom, never activated
+multipleInstances background: window of class Age3 placed at the bottom, never activated
+multipleInstances background: window of class CicMarshalWndClass placed at the bottom, never activated
+multipleInstances: single-instance semaphore "Global\Age3" renamed to "Global\Age3-3CA0C920"
+perfStats: CreateDevice adapter 0, type 1, behavior flags 0x00000084; after it x87 control word 0x007F, MXCSR 0x00001FA0
+perfStats: CreateDevice 1920x1080 fmt 21, 1 back buffer(s), swap 1, interval 0x00000001, windowed 1, refresh 0 -> hr 0x00000000
+perfStats: Reset 1920x1080 fmt 21, 1 back buffer(s), swap 1, interval 0x80000000, windowed 1, refresh 0 -> hr 0x00000000
+perfAutoExec: frame 480: config("DontPauseWhenLosingFocus")
+perfStats: exit, peak working set 907 MB, private 79 MB, 42891 frames, 161 over 50 ms, 160 over 100 ms
+dinput8.dll 0.5.0
+UHCMain: working directory C:\AoE3-UHC-WoLReal8\
+UHCMain: C:\AoE3-UHC-WoLReal8\engine-ext\engine-ext.cfg, 4 keys
+perfExecFile: polling C:\AoE3-UHC-WoLReal8\uhc-exec.txt
+perfStats: large-address-aware yes, user address space 4095 MB, 16 logical CPUs, 8 cores
+perfStats/perfAutoExec: applied
+xsErrorLog: the XS messages go to this log, at most 200 lines
+xsErrorLog: applied
+multipleInstances: this copy may run beside copies in other folders (semaphore suffix -3CA0C920); background: windows stay at the bottom and are never activated
+multipleInstances: applied
+UHCMain: 3 applied, 0 failed
+multipleInstances background: window of class OleMainThreadWndClass placed at the bottom, never activated
+multipleInstances background: window of class Age3 placed at the bottom, never activated
+multipleInstances background: window of class CicMarshalWndClass placed at the bottom, never activated
+multipleInstances: single-instance semaphore "Global\Age3" renamed to "Global\Age3-3CA0C920"
+perfStats: CreateDevice adapter 0, type 1, behavior flags 0x00000084; after it x87 control word 0x007F, MXCSR 0x00001FA0
+perfStats: CreateDevice 1920x1080 fmt 21, 1 back buffer(s), swap 1, interval 0x00000001, windowed 1, refresh 0 -> hr 0x00000000
+perfStats: Reset 1920x1080 fmt 21, 1 back buffer(s), swap 1, interval 0x80000000, windowed 1, refresh 0 -> hr 0x00000000
+perfAutoExec: frame 510: config("DontPauseWhenLosingFocus")
+perfStats: exit, peak working set 909 MB, private 79 MB, 61386 frames, 81 over 50 ms, 79 over 100 ms

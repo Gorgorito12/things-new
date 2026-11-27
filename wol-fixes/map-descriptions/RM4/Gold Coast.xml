@@ -1,0 +1,14 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+imagepath = "RMs\SMALL\Africa and Middle East\guineacoast"
+displayName = "Gold Coast"
+cannotReplace = ""
+ 
+loadBackground="RMs\BIG\Other\africa"
+details="6170116"
+loadDetails="6170117">
+   <loadss>ui\random_map\unknown\unknown_ss_01</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_02</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_03</loadss>
+ 
+</mapinfo>

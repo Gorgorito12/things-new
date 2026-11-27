@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The gatling camel that fires deployed: GatlingCamel.tactics with the deploy and undeploy lasting as long as their animations (the camel lies down and the gunner gets off and walks to his station behind the gun: 5.33 s; he gets back on and it stands up: 4.17 s); the attack's <turret> (60: the arc each side of the gun's rest, which this unit's aim file puts at +90, square to the camel's spine, so it turns from +30 to +150; the gun turning 100 degrees a second so the gunner's steps keep pace) is read by the turretArc key, which turns the gun on its post instead of the camel, and turns the camel until a target beyond the arc sits at +90. -->
+
+<tactics>
+	<action>
+		<name stringid="38119">CannonAttack</name>
+		<reloadanim>Bombard_reload</reloadanim>
+		<type>Attack</type>
+		<attackaction>1</attackaction>
+		<rangedlogic>1</rangedlogic>
+		<anim>Bombard_ranged_attack</anim>
+		<idleanim>Bombard_ranged_idle</idleanim>
+		<boredanim>Bombard_bored</boredanim>
+		<maxheight>0</maxheight>
+		<accuracy>1.0</accuracy>
+		<accuracyreductionfactor>0.5</accuracyreductionfactor>
+		<aimbonus>0</aimbonus>
+		<maxspread>5</maxspread>
+		<spreadfactor>0.25</spreadfactor>
+		<trackrating>12</trackrating>
+		<unintentionaldamagemultiplier>0.7</unintentionaldamagemultiplier>
+		<projectile>OneThirdCannonball</projectile>
+		<numberprojectiles>1</numberprojectiles>
+		<impacteffect>effects\impacts\gun</impacteffect>
+		<rate type="All">1.0</rate>
+		<instantballistics>1</instantballistics>
+		<basedamagecap>1</basedamagecap>
+		<turret tracking="always" maxTurnAnglePerSecond="100">60</turret>
+	</action>
+	<tactic>
+		Limber
+		<speedmodifier>1.0</speedmodifier>
+		<attacktype>LogicalTypeRangedUnitsAttack</attacktype>
+		<attackresponsetype>LogicalTypeRangedUnitsAttack</attackresponsetype>
+		<transition>
+			<tactic>Bombard</tactic>
+			<action>Limber</action>
+			<anim>Bombard_unlimber</anim>
+			<length>5.33</length>
+			<exit>1</exit>
+			<commandautomatic>1</commandautomatic>
+			<automatic>1</automatic>
+		</transition>
+		<deathanim>Death_by_melee</deathanim>
+	</tactic>
+	<tactic>
+		Bombard
+		<speedmodifier>0.0</speedmodifier>
+		<attacktype>LogicalTypeRangedUnitsAttack</attacktype>
+		<autoattacktype>LogicalTypeRangedUnitsAutoAttack</autoattacktype>
+		<attackresponsetype>LogicalTypeRangedUnitsAttack</attackresponsetype>
+		<exclusive>1</exclusive>
+		<action>CannonAttack</action>
+		<transition>
+			<tactic>Limber</tactic>
+			<action>Limber</action>
+			<anim>Bombard_limber</anim>
+			<length>4.17</length>
+			<exit>1</exit>
+		</transition>
+		<idleanim>Bombard_ranged_idle</idleanim>
+		<boredanim>Bombard_bored</boredanim>
+		<throw>1</throw>
+		<deathanim>Bombard_death</deathanim>
+	</tactic>
+</tactics>

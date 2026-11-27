@@ -1,0 +1,12 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\small\Other\Barrier Ridge TWC" 
+displayName = "Barrier Ridge"
+loadBackground="RMs\small\other\unknown"
+details="6170004"
+loadDetails="6170005">
+   <loadss>ui\random_map\unknown\unknown_ss_01</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_02</loadss>
+   <loadss>ui\random_map\unknown\unknown_ss_03</loadss>
+
+</mapinfo>

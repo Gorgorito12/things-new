@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "&#34;NEW&#34; Kyzylkum"
+imagepath = "rms\small\Africa and Middle East\Kyzylkum" 
+loadBackground="rms\big\other\middleeast"
+details="6170140"
+loadDetails="6170141">
+   <loadss>ui\random_map\NEW\Kyzylkum\Kyzylkum_ss</loadss>
+</mapinfo>

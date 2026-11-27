@@ -1,0 +1,987 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<terraintypes version="1" edgetype="edge_of_world\edge_of_world" edgedensity="8">
+	<type name="PassableLand" uiname="Land" mapcolor="1 56 184" impassablewater="">
+		<uiclass uiname="Default">
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">great_plains\default</subtype>
+		</uiclass>
+		<uiclass uiname="Moon">
+			<subtype mapcolor="145 145 145" impacttype="terraindirt" bump="wotta\moon\moon1_b">wotta\moon\moon1</subtype>
+			<subtype mapcolor="145 145 145" impacttype="terraindirt" bump="wotta\moon\moon2_b">wotta\moon\moon2</subtype>
+			<subtype mapcolor="145 145 145" impacttype="terraindirt" bump="wotta\moon\moon3_b">wotta\moon\moon3</subtype>
+			<subtype mapcolor="065 065 065" impacttype="terraindirt" bump="wotta\moon\moon4_b">wotta\moon\moon4</subtype>
+			<subtype mapcolor="065 065 065" impacttype="terraindirt" bump="wotta\moon\moon5_b">wotta\moon\moon5</subtype>
+			<subtype mapcolor="065 065 065" impacttype="terraindirt" bump="wotta\moon\moon5_b">wotta\moon\moon6</subtype>
+			<subtype mapcolor="005 005 005" impacttype="terraindirt" bump="wotta\moon\space1_b">wotta\moon\space1</subtype>
+			<subtype mapcolor="005 005 005" impacttype="terraindirt" bump="wotta\moon\space2_b">wotta\moon\space2</subtype>
+			<subtype mapcolor="005 005 005" impacttype="terraindirt" bump="wotta\moon\space3_b">wotta\moon\space3</subtype>
+		</uiclass>
+		<uiclass uiname="South America">
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="wotta\nile\llanos1_b">wotta\nile\llanos1</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="wotta\nile\llanos1_b">wotta\nile\llanos2</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="wotta\nile\llanos1_b">wotta\nile\llanos3</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="wotta\nile\llanos1_b">wotta\nile\llanos4</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="wotta\nile\llanos1_b">wotta\nile\llanos5</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="wotta\nile\llanos1_b">wotta\nile\llanosf</subtype>
+
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_a">atacama\atacama1</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_b">atacama\atacama2</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_c">atacama\atacama3</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_d">atacama\atacama4</subtype>
+			<subtype mapcolor="055 045 030" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_e">atacama\atacama5</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_f">atacama\atacama6</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_g">atacama\atacama7</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_h">atacama\atacama8</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_i">atacama\atacama9</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_j">atacama\atacama10</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_k">atacama\atacama11</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_l">atacama\atacama12</subtype>
+
+			<subtype mapcolor="164 144 121" impacttype="terrainsand" bump="california\groundshore1_bump_cal">falkland\falkland1</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terrainsand" bump="california\groundshore1_bump_cal">falkland\falkland2</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terrainsand" bump="california\groundshore1_bump_cal">falkland\falkland3</subtype>
+			<subtype mapcolor="170 120 060" impacttype="terraingrass" bump="california\ground5_bump_cal">falkland\falkland4</subtype>
+			<subtype mapcolor="170 120 060" impacttype="terraingrass" bump="california\ground5_bump_cal">falkland\falkland5</subtype>
+			<subtype mapcolor="170 120 060" impacttype="terraingrass" bump="california\ground5_bump_cal">falkland\falkland6</subtype>
+			<subtype mapcolor="170 120 060" impacttype="terraingrass" bump="california\ground5_bump_cal">falkland\falkland7</subtype>
+			<subtype mapcolor="170 120 060" impacttype="terraingrass" bump="california\ground5_bump_cal">falkland\falkland8</subtype>
+			<subtype mapcolor="170 120 060" impacttype="terraingrass" bump="california\ground5_bump_cal">falkland\falkland9</subtype>
+			<subtype mapcolor="170 120 060" impacttype="terraingrass" bump="california\ground5_bump_cal">falkland\falkland10</subtype>
+			<subtype mapcolor="170 120 060" impacttype="terraingrass" bump="california\ground5_bump_cal">falkland\falkland11</subtype>
+
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andes1</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andes2</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andes3</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andes4</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andes5</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andes6</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andes7</subtype>
+			<subtype mapcolor="164 144 121" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andes8</subtype>
+			<subtype mapcolor="100 085 065" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andes9</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andesd1</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andesd2</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andesd3</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\andesd4</subtype>
+
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\paramo1</subtype>
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="great_plains\ground1bump_gp">andes2\paramo2</subtype>
+
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">cuba\cuba0</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">cuba\cuba1</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">cuba\cuba2</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">cuba\cuba3</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">cuba\cuba4</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">cuba\cuba5</subtype>
+		</uiclass>
+		<uiclass uiname="Taiga">
+			<subtype mapcolor="153 177 181" impacttype="terrainsnow" bump="taiga\ground1_bump_tai">taiga\ground1_tai</subtype>
+			<subtype mapcolor="153 177 181" impacttype="terrainsnow" bump="taiga\ground2_bump_tai">taiga\ground2_tai</subtype>
+			<subtype mapcolor="100 085 065" impacttype="terrainsnow" bump="taiga\ground3_bump_tai">taiga\ground3_tai</subtype>
+			<subtype mapcolor="100 085 065" impacttype="terraingrass" bump="taiga\ground4_bump_tai">taiga\ground4_tai</subtype>
+			<subtype mapcolor="100 085 065" impacttype="terraingrass" bump="taiga\ground5_bump_tai">taiga\ground5_tai</subtype>
+			<subtype mapcolor="100 085 065" impacttype="terraingrass" bump="taiga\ground5_bump_tai">taiga\ground6_tai</subtype>
+			<subtype mapcolor="175 150 115" impacttype="terraingrass" bump="taiga\ground5_bump_tai">taiga\ground_river1_tai</subtype>
+		</uiclass>
+		<uiclass uiname="MexTest">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\test0</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\test1</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\test2</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\test3</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\test4</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\test5</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\test6</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\test7</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\test8</subtype>
+			<subtype mapcolor="190 150 110" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\MexDry0</subtype>
+			<subtype mapcolor="190 150 110" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\MexDry1</subtype>
+			<subtype mapcolor="190 150 110" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\MexDry2</subtype>
+			<subtype mapcolor="190 150 110" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\MexDry3</subtype>
+			<subtype mapcolor="170 150 100" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\MexDry4</subtype>
+			<subtype mapcolor="170 150 100" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\MexDry5</subtype>
+			<subtype mapcolor="170 150 100" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\MexDry6</subtype>
+			<subtype mapcolor="140 150 100" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\MexDry7</subtype>
+			<subtype mapcolor="120 110 080" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">mex\MexDry8</subtype>
+		</uiclass>
+		<uiclass uiname="European Villages">
+			<subtype mapcolor="147 147 054" impacttype="terraindirt" bump="wotta\pavements\1_b">wotta\pavements\1</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraindirt" bump="wotta\pavements\2_b">wotta\pavements\2</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraindirt" bump="wotta\pavements\3_b">wotta\pavements\3</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraindirt" bump="wotta\pavements\4_b">wotta\pavements\4</subtype>			
+			
+			<subtype mapcolor="150 150 150" impacttype="terrainrock" bump="wotta\euroNS\rocks1_b">wotta\euroNS\rocks1</subtype>
+			<subtype mapcolor="150 150 150" impacttype="terrainrock" bump="wotta\euroNS\rocks2_b">wotta\euroNS\rocks2</subtype>
+			<subtype mapcolor="080 060 040" impacttype="terraindirt" bump="wotta\euroNS\logs_b">wotta\euroNS\logs</subtype>
+			<subtype mapcolor="080 060 040" impacttype="terraindirt" bump="wotta\euroNS\wood_b">wotta\euroNS\wood</subtype>
+			<subtype mapcolor="200 180 130" impacttype="terraindirt" bump="wotta\euroNS\wheat1_b">wotta\euroNS\wheat1</subtype>
+			<subtype mapcolor="200 180 130" impacttype="terraindirt" bump="wotta\euroNS\wheat2_b">wotta\euroNS\wheat2</subtype>
+			<subtype mapcolor="200 180 130" impacttype="terraindirt" bump="wotta\euroNS\seeds_b">wotta\euroNS\seeds</subtype>
+			<subtype mapcolor="070 050 030" impacttype="terraindirt" bump="wotta\euroNS\mud1_b">wotta\euroNS\mud1</subtype>
+			<subtype mapcolor="070 050 030" impacttype="terraindirt" bump="wotta\euroNS\mud2_b">wotta\euroNS\mud2</subtype>
+			<subtype mapcolor="070 050 030" impacttype="terraindirt" bump="wotta\euroNS\farmland_bump">wotta\euroNS\tilled_earth</subtype>
+			<subtype mapcolor="070 050 030" impacttype="terraindirt" bump="wotta\euroNS\farmland_bump">wotta\euroNS\farmland</subtype>
+		</uiclass>
+		<uiclass uiname="Verdon Gorge">
+			<subtype mapcolor="100 130 085" impacttype="terrainrock" bump="wotta\verdongorge\grass1_b">wotta\verdongorge\grass1</subtype>
+			<subtype mapcolor="100 130 085" impacttype="terrainrock" bump="wotta\verdongorge\grass2_b">wotta\verdongorge\grass2</subtype>
+			<subtype mapcolor="100 130 085" impacttype="terrainrock" bump="wotta\verdongorge\grass3_b">wotta\verdongorge\grass3</subtype>
+			<subtype mapcolor="100 130 085" impacttype="terrainrock" bump="wotta\verdongorge\grass4_b">wotta\verdongorge\grass4</subtype>
+			<subtype mapcolor="166 180 174" impacttype="terrainrock" bump="wotta\verdongorge\stone1_b">wotta\verdongorge\stone1</subtype>
+			<subtype mapcolor="166 180 174" impacttype="terrainrock" bump="wotta\verdongorge\stone2_b">wotta\verdongorge\stone2</subtype>
+			<subtype mapcolor="166 180 174" impacttype="terrainrock" bump="wotta\verdongorge\cliff_b">wotta\verdongorge\cliff</subtype>
+			<subtype mapcolor="038 053 035" impacttype="terraindirt">carolinas\groundforest_car</subtype>
+		</uiclass>
+		<uiclass uiname="WoL Cavern">
+			<subtype mapcolor="150 110 060" impacttype="terraindirt" bump="wotta\cave\ground1_b">wotta\cave\ground1</subtype>
+			<subtype mapcolor="150 110 060" impacttype="terraindirt" bump="wotta\cave\ground2_b">wotta\cave\ground2</subtype>
+			<subtype mapcolor="150 110 060" impacttype="terraindirt" bump="wotta\cave\ground3_b">wotta\cave\ground3</subtype>
+			<subtype mapcolor="240 210 120" impacttype="terraindirt" bump="wotta\cave\groundlight_b">wotta\cave\groundlight</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="wotta\cave\groundlight_b">wotta\cave\groundlightg</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="wotta\cave\groundlight_b">wotta\cave\groundlight2</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="wotta\cave\groundlight_b">wotta\cave\groundlight3</subtype>
+			<subtype mapcolor="070 050 025" impacttype="terrainrock" bump="wotta\cave\wall_b">wotta\cave\wall</subtype>
+		</uiclass>
+		<uiclass uiname="newgrass">
+			<subtype mapcolor="145 145 145" impacttype="terraindirt" bump="wotta\alpiny\dirt1_bump_alpiny">wotta\alpiny\dirt1_alpiny</subtype>
+			<subtype mapcolor="050 080 035" impacttype="terraingrass" bump="wotta\alpiny\forest_bump_alpiny">wotta\alpiny\forest_alpiny</subtype>
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="wotta\alpiny\ground1_bump_alpiny">wotta\alpiny\ground1_alpiny</subtype>
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="wotta\alpiny\ground2_bump_alpiny">wotta\alpiny\ground2_alpiny</subtype>
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="wotta\alpiny\ground3_bump_alpiny">wotta\alpiny\ground3_alpiny</subtype>
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="wotta\alpiny\ground4_bump_alpiny">wotta\alpiny\ground4_alpiny</subtype>
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="wotta\alpiny\ground5_bump_alpiny">wotta\alpiny\ground5_alpiny</subtype>
+
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\deserty\ground1_bump_deserty">wotta\deserty\ground1_deserty</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\deserty\ground2_bump_deserty">wotta\deserty\ground2_deserty</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\deserty\ground3_bump_deserty">wotta\deserty\ground3_deserty</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\deserty\ground4_bump_deserty">wotta\deserty\ground4_deserty</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\deserty\ground5_bump_deserty">wotta\deserty\ground5_deserty</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\deserty\ground6_bump_deserty">wotta\deserty\ground6_deserty</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\deserty\ground7_bump_deserty">wotta\deserty\ground7_deserty</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\deserty\road_bump_deserty">wotta\deserty\road_deserty</subtype>
+
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\dirty\dirt1_bump_dirty">wotta\dirty\dirt1_dirty</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\dirty\ground1_bump_dirty">wotta\dirty\ground1_dirty</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="wotta\dirty\ground2_bump_dirty">wotta\dirty\ground2_dirty</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="wotta\dirty\ground3_bump_dirty">wotta\dirty\ground3_dirty</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="wotta\dirty\ground4_bump_dirty">wotta\dirty\ground4_dirty</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="wotta\dirty\ground5_bump_dirty">wotta\dirty\ground5_dirty</subtype>
+
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="wotta\grassy\ground1_bump_grassy">wotta\grassy\ground1_grassy</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="wotta\grassy\ground2_bump_grassy">wotta\grassy\ground2_grassy</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="wotta\grassy\ground3_bump_grassy">wotta\grassy\ground3_grassy</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="wotta\grassy\ground4_bump_grassy">wotta\grassy\ground4_grassy</subtype>
+			<subtype mapcolor="050 080 035" impacttype="terraingrass" bump="wotta\grassy\forest_bump_grassy">wotta\grassy\forest_grassy</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\grassy\clifftop_bump_grassy">wotta\grassy\clifftop_grassy</subtype>
+
+			<subtype mapcolor="120 150 065" impacttype="terraindirt" bump="wotta\sandy\forest_bump_sandy">wotta\sandy\forest_sandy</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\sandy\ground1_bump_sandy">wotta\sandy\ground1_sandy</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\sandy\ground2_bump_sandy">wotta\sandy\ground2_sandy</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\sandy\ground3_bump_sandy">wotta\sandy\ground3_sandy</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\sandy\sand1_bump_sandy">wotta\sandy\sand1_sandy</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\sandy\sand2_bump_sandy">wotta\sandy\sand2_sandy</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\sandy\sand3_bump_sandy">wotta\sandy\sand3_sandy</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\sandy\sand4_bump_sandy">wotta\sandy\sand4_sandy</subtype>
+			<subtype mapcolor="090 080 045" impacttype="terraindirt" bump="wotta\sandy\clifftop_bump_sandy">wotta\sandy\clifftop_sandy</subtype>
+
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="wotta\savanny\sand1_bump_savanny">wotta\savanny\sand1_savanny</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraingrass" bump="wotta\savanny\ground1_bump_savanny">wotta\savanny\ground1_savanny</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraingrass" bump="wotta\savanny\ground2_bump_savanny">wotta\savanny\ground2_savanny</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraingrass" bump="wotta\savanny\ground3_bump_savanny">wotta\savanny\ground3_savanny</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraingrass" bump="wotta\savanny\ground4_bump_savanny">wotta\savanny\ground4_savanny</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraingrass" bump="wotta\savanny\ground5_bump_savanny">wotta\savanny\ground5_savanny</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraingrass" bump="wotta\savanny\forest_bump_savanny">wotta\savanny\forest_savanny</subtype>
+
+			<subtype mapcolor="103 127 131" impacttype="terraindirt" bump="wotta\snowy\clifftop_bump_snowy">wotta\snowy\clifftop_snowy</subtype>
+			<subtype mapcolor="153 177 181" impacttype="terrainsnow" bump="wotta\snowy\ground1_bump_snowy">wotta\snowy\ground1_snowy</subtype>
+			<subtype mapcolor="153 177 181" impacttype="terrainsnow" bump="wotta\snowy\ground2_bump_snowy">wotta\snowy\ground2_snowy</subtype>
+			<subtype mapcolor="153 177 181" impacttype="terrainsnow" bump="wotta\snowy\ground3_bump_snowy">wotta\snowy\ground3_snowy</subtype>
+			<subtype mapcolor="153 177 181" impacttype="terrainsnow" bump="wotta\snowy\ground4_bump_snowy">wotta\snowy\ground4_snowy</subtype>
+			<subtype mapcolor="153 177 181" impacttype="terrainsnow" bump="wotta\snowy\ground5_bump_snowy">wotta\snowy\ground5_snowy</subtype>
+			<subtype mapcolor="133 197 161" impacttype="terraingrass" bump="wotta\snowy\forest_bump_snowy">wotta\snowy\forest_snowy</subtype>
+
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="wotta\swampy\ground1_bump_swampy">wotta\swampy\ground1_swampy</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="wotta\swampy\ground1_bump_swampy">wotta\swampy\ground2_swampy</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="wotta\swampy\ground1_bump_swampy">wotta\swampy\ground3_swampy</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="wotta\swampy\ground1_bump_swampy">wotta\swampy\ground4_swampy</subtype>
+
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">wotta\newgrass\grass1</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass2_b">wotta\newgrass\grass2</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass3_b">wotta\newgrass\grass3</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass4_b">wotta\newgrass\grass4</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\grass5</subtype>
+<!--			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Atest1</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Atest2</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Atest3</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Btest1</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Btest2</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Btest3</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Ctest1</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Ctest2</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Ctest3</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Ctest4</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Dtest1</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Dtest2</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Dtest3</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Etest1</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Etest2</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Etest3</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Etest4</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Etest5</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Ftest1</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Ftest2</subtype>
+			<subtype mapcolor="015 120 015" impacttype="terraingrass" bump="wotta\newgrass\grass5_b">wotta\newgrass\Ftest3</subtype>
+			-->
+<!--			<subtype mapcolor="120 120 120" impacttype="terraingrass">wotta\newgrass\groundtibs</subtype> -->
+			<subtype mapcolor="200 200 200" impacttype="terraingrass" bump="saguenay\ground1_bump_sag">wotta\ecruteak\white0</subtype>
+			<subtype mapcolor="200 200 200" impacttype="terraingrass" bump="saguenay\ground1_bump_sag">wotta\ecruteak\white1</subtype>
+			<subtype mapcolor="200 200 200" impacttype="terraingrass" bump="saguenay\ground2_bump_sag">wotta\ecruteak\white2</subtype>
+			<subtype mapcolor="200 200 200" impacttype="terraingrass" bump="saguenay\ground3_bump_sag">wotta\ecruteak\white3</subtype>
+			<subtype mapcolor="200 200 200" impacttype="terraingrass" bump="saguenay\ground4_bump_sag">wotta\ecruteak\white4</subtype>
+			<subtype mapcolor="200 090 090" impacttype="terraingrass" bump="saguenay\ground1_bump_sag">wotta\ecruteak\red0</subtype>
+			<subtype mapcolor="200 090 090" impacttype="terraingrass" bump="saguenay\ground1_bump_sag">wotta\ecruteak\red1</subtype>
+			<subtype mapcolor="200 090 090" impacttype="terraingrass" bump="saguenay\ground2_bump_sag">wotta\ecruteak\red2</subtype>
+			<subtype mapcolor="200 090 090" impacttype="terraingrass" bump="saguenay\ground3_bump_sag">wotta\ecruteak\red3</subtype>
+			<subtype mapcolor="200 090 090" impacttype="terraingrass" bump="saguenay\ground4_bump_sag">wotta\ecruteak\red4</subtype>
+
+			<subtype mapcolor="245 107 058" impacttype="terraindirt" bump="wotta\gansu\gansu_b">wotta\gansu\gansu</subtype>
+		</uiclass>
+		<uiclass uiname="Asia">
+			<subtype mapcolor="132 157 081" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">punjab\punjabground1</subtype>
+			<subtype mapcolor="132 157 081" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">punjab\punjabground2</subtype>
+			<subtype mapcolor="132 157 081" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">punjab\punjabground3</subtype>
+			<subtype mapcolor="132 157 081" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">punjab\punjabground4</subtype>
+			<subtype mapcolor="132 157 081" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">punjab\punjabground5</subtype>
+			<subtype mapcolor="132 157 081" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">punjab\punjabground6</subtype>
+			<subtype mapcolor="132 157 081" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">punjab\punjabground7</subtype>
+			<subtype mapcolor="132 157 081" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">punjab\punjabground8</subtype>
+
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">viet\vietnamgrass0</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">viet\vietnamgrass1</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">viet\vietnamgrass2</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">viet\vietnamgrass3</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">viet\vietnamgrass4</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">viet\vietnamgrass5</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">viet\vietnamgrass6</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">viet\vietnamgrass7</subtype>
+			<subtype mapcolor="179 177 152" impacttype="terrainsand" bump="wotta\newgrass\grass1_b">viet\vietnamshore1</subtype>
+			<subtype mapcolor="179 177 152" impacttype="terrainsand" bump="wotta\newgrass\grass1_b">viet\vietnamshore2</subtype>
+
+			<subtype mapcolor="100 125 135" impacttype="terraindirt" bump="wotta\newgrass\grass1_b">bengal\bengaldirt1</subtype>
+			<subtype mapcolor="100 125 135" impacttype="terraindirt" bump="wotta\newgrass\grass1_b">bengal\bengaldirt2</subtype>
+			<subtype mapcolor="100 090 045" impacttype="terraindirt" bump="wotta\newgrass\grass1_b">bengal\bengaldirt3</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">bengal\bengaldirt4</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">bengal\bengalgrass1</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">bengal\bengalgrass2</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">bengal\bengalgrass3</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">bengal\bengalgrass4</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\newgrass\grass1_b">bengal\bengalgrass5</subtype>
+<!--
+			<subtype mapcolor="135 105 053" impacttype="terraingrass" bump="california\ground5_bump_cal">karakorum\kara_grass1</subtype>
+			<subtype mapcolor="135 105 053" impacttype="terraingrass" bump="california\ground5_bump_cal">karakorum\kara_grass2</subtype>
+			<subtype mapcolor="135 105 053" impacttype="terraingrass" bump="california\ground5_bump_cal">karakorum\kara_grass3</subtype>
+			<subtype mapcolor="135 105 053" impacttype="terraingrass" bump="california\ground5_bump_cal">karakorum\kara_grass4</subtype>
+			<subtype mapcolor="135 105 053" impacttype="terraingrass" bump="california\ground5_bump_cal">karakorum\kara_grass5</subtype>
+			<subtype mapcolor="135 105 053" impacttype="terraingrass" bump="california\ground5_bump_cal">karakorum\kara_grass6</subtype>
+			<subtype mapcolor="135 105 053" impacttype="terraindirt" bump="california\ground5_bump_cal">karakorum\kara_dirt1</subtype>
+			<subtype mapcolor="090 080 070" impacttype="terraindirt" bump="california\ground5_bump_cal">karakorum\kara_dirt2</subtype>
+			<subtype mapcolor="090 080 070" impacttype="terraindirt" bump="himalayas\ground_dirt5_specbump_himal">karakorum\kara_snow1</subtype>
+			<subtype mapcolor="090 080 070" impacttype="terraindirt" bump="himalayas\ground_dirt5_specbump_himal">karakorum\kara_snow2</subtype>
+			<subtype mapcolor="225 238 238" impacttype="terraingrass" bump="himalayas\ground_dirt5_specbump_himal">karakorum\kara_clifftop</subtype>
+			<subtype mapcolor="225 238 238" impacttype="terraingrass" bump="himalayas\ground_dirt5_specbump_himal">karakorum\kara_cliffbottom</subtype>
+			<subtype mapcolor="050 045 023" impacttype="terraindirt" bump="california\ground5_bump_cal">karakorum\kara_clifftop2</subtype>
+-->			
+<!--			<subtype mapcolor="166 151 119" impacttype="terraingrass" bump="himalayas\ground_dirt5_specbump_himal">kashmir\kashmir_ground1</subtype>
+			<subtype mapcolor="120 145 095" impacttype="terraingrass" bump="mongolia\ground_grass2_bumpspec_mongol">kashmir\kashmir_ground2</subtype>
+			<subtype mapcolor="120 145 095" impacttype="terraingrass" bump="mongolia\ground_grass2_bumpspec_mongol">kashmir\kashmir_ground3</subtype>
+			<subtype mapcolor="120 145 095" impacttype="terraingrass" bump="mongolia\ground_grass2_bumpspec_mongol">kashmir\kashmir_ground4</subtype>
+			<subtype mapcolor="120 145 095" impacttype="terraingrass" bump="mongolia\ground_grass2_bumpspec_mongol">kashmir\kashmir_ground5</subtype>-->
+		</uiclass>
+		
+		<uiclass uiname="Tuscany">
+			<subtype mapcolor="200 180 040" impacttype="terraingrass" bump="wotta\tuscany\yellow_b">wotta\tuscany\yellow</subtype>
+			<subtype mapcolor="200 180 040" impacttype="terraingrass" bump="wotta\tuscany\yellow_b">wotta\tuscany\yellow2</subtype>
+			<subtype mapcolor="125 155 000" impacttype="terraingrass" bump="wotta\tuscany\yellow3_b">wotta\tuscany\yellow3</subtype>
+			<subtype mapcolor="125 155 000" impacttype="terraingrass" bump="wotta\tuscany\yellow3_b">wotta\tuscany\yellow4</subtype>
+			<subtype mapcolor="160 130 020" impacttype="terraingrass" bump="wotta\tuscany\yellow_b">wotta\tuscany\brown</subtype>
+			<subtype mapcolor="160 130 020" impacttype="terraingrass" bump="wotta\tuscany\yellow_b">wotta\tuscany\brown2</subtype>
+			<subtype mapcolor="160 130 020" impacttype="terraingrass" bump="wotta\tuscany\yellow_b">wotta\tuscany\brown3</subtype>
+			<subtype mapcolor="125 155 000" impacttype="terraingrass" bump="wotta\tuscany\green_b">wotta\tuscany\green</subtype>
+			<subtype mapcolor="125 155 000" impacttype="terraingrass" bump="wotta\tuscany\green2_b">wotta\tuscany\green2</subtype>
+			<subtype mapcolor="125 155 000" impacttype="terraingrass" bump="wotta\tuscany\green2_b">wotta\tuscany\green3</subtype>
+			<subtype mapcolor="130 090 000" impacttype="terraingrass" bump="wotta\tuscany\olive_b">wotta\tuscany\olive</subtype>
+			<subtype mapcolor="130 090 000" impacttype="terraingrass" bump="wotta\tuscany\olive_b">wotta\tuscany\olive2</subtype>
+			<subtype mapcolor="180 120 000" impacttype="terraingrass" bump="wotta\tuscany\orange_b">wotta\tuscany\orange</subtype>
+		</uiclass>
+		<uiclass uiname="RedBeach">
+			<subtype mapcolor="119 035 087" impacttype="terraingrass" bump="wotta\red beach\grass1_b">wotta\red beach\grass1</subtype>
+			<subtype mapcolor="119 035 087" impacttype="terraingrass" bump="wotta\red beach\grass2_b">wotta\red beach\grass2</subtype>
+			<subtype mapcolor="119 035 087" impacttype="terraingrass" bump="wotta\red beach\grass3_b">wotta\red beach\grass3</subtype>
+			<subtype mapcolor="119 035 087" impacttype="terraingrass" bump="wotta\red beach\grass3b_b">wotta\red beach\grass3b</subtype>
+			<subtype mapcolor="119 035 087" impacttype="terraingrass" bump="wotta\red beach\grass1b_b">wotta\red beach\grass1b</subtype>
+			<subtype mapcolor="119 035 087" impacttype="terraingrass" bump="wotta\red beach\grass1c_b">wotta\red beach\grass1c</subtype>
+			<subtype mapcolor="119 035 087" impacttype="terraingrass" bump="wotta\red beach\grass1d_b">wotta\red beach\grass1d</subtype>
+			<subtype mapcolor="119 035 087" impacttype="terraingrass" bump="wotta\red beach\grass1e_b">wotta\red beach\grass1e</subtype>
+			<subtype mapcolor="073 023 056" impacttype="terraingrass" bump="bayou\ground4_bump_bay">wotta\red beach\dirt</subtype>
+			<subtype mapcolor="119 035 087" impacttype="terraingrass" bump="bayou\cliff_top1_bump_bay">bayou\cliff_top1_bay</subtype>
+		</uiclass>
+		<uiclass uiname="Andes">
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="andes\ground09_bump_and">andes\ground07_and</subtype>
+			<subtype mapcolor="157 157 054" impacttype="terraingrass" bump="andes\ground09_bump_and">andes\ground08_and</subtype>
+			<subtype mapcolor="167 167 054" impacttype="terraingrass" bump="andes\ground09_bump_and">andes\ground09_and</subtype>
+			<subtype mapcolor="167 167 054" impacttype="terraingrass" bump="andes\ground10_bump_and">andes\ground10_and</subtype>
+			<subtype mapcolor="188 118 043" impacttype="terraingrass" bump="andes\ground11_bump_and">andes\ground11_and</subtype>
+			<subtype mapcolor="188 118 043" impacttype="terraingrass" bump="andes\ground12_bump_and">andes\ground12_and</subtype>
+			<subtype mapcolor="188 100 040" impacttype="terraingrass" bump="andes\ground14_bump_and">andes\ground14_and</subtype>
+			<subtype mapcolor="188 100 040" impacttype="terrainrock" bump="andes\ground16_bump_and">andes\ground16_and</subtype>
+			<subtype mapcolor="188 100 040" impacttype="terrainrock" bump="andes\ground17_bump_and">andes\ground17_and</subtype>
+			<subtype mapcolor="188 100 040" impacttype="terrainrock" bump="andes\ground18_bump_and">andes\ground18_and</subtype>
+			<subtype mapcolor="188 100 040" impacttype="terrainrock" bump="andes\ground22_bump_and">andes\ground22_and</subtype>
+			<subtype mapcolor="188 100 040" impacttype="terrainrock" bump="andes\ground25_specbump_and">andes\ground25_and</subtype>
+			<subtype mapcolor="167 167 054" impacttype="terraingrass" bump="andes\wall_normal_01_and">andes\wall_diffuse_01_and</subtype>
+		</uiclass>
+		<uiclass uiname="Amazon">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="Amazon\ground1specbump_ama">Amazon\ground1_ama</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="Amazon\ground1specbump_ama">Amazon\ground2_ama</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="Amazon\ground1specbump_ama">Amazon\ground3_ama</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="Amazon\ground1specbump_ama">Amazon\ground4_ama</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="Amazon\ground1specbump_ama">Amazon\ground5_ama</subtype>
+			<subtype mapcolor="038 053 035" impacttype="terraindirt" bump="Amazon\ground1specbump_ama">Amazon\groundforest_ama</subtype>
+			<subtype mapcolor="060 080 045" impacttype="terraingrass" bump="Amazon\cliff_top1_bump_ama">Amazon\cliff_top1_ama</subtype>
+			<subtype mapcolor="073 095 058" bump="Amazon\ground2specbump_am">Amazon\river3_am</subtype>
+		</uiclass>
+		<uiclass uiname="Rainforest">
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="rainforest\rainforest1_b">rainforest\rainforest1</subtype>
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="rainforest\rainforest2_b">rainforest\rainforest2</subtype>
+			<subtype mapcolor="048 072 038" impacttype="terraingrass" bump="rainforest\rainforest3_b">rainforest\rainforest3</subtype>
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="rainforest\rainforest4_b">rainforest\rainforest4</subtype>
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="rainforest\rainforest5_b">rainforest\rainforest5</subtype>
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="rainforest\rainforest6_b">rainforest\rainforest6</subtype>
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="bayou\ground1_bump_bay">rainforest\congo_river_bottom</subtype>
+			<subtype mapcolor="045 100 075" impacttype="terraingrass" bump="bayou\ground1_bump_bay">rainforest\congo_river_1</subtype>
+			<subtype mapcolor="045 100 075" impacttype="terraingrass" bump="bayou\ground2_bump_bay">rainforest\congo_river_2</subtype>
+			<subtype mapcolor="045 100 075" impacttype="terraingrass" bump="bayou\ground3_bump_bay">rainforest\congo_river_3</subtype>
+			<subtype mapcolor="045 100 075" impacttype="terraingrass" bump="bayou\ground5_bump_bay">rainforest\congo_river_4</subtype>
+			
+			<subtype mapcolor="110 110 030" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\lualabaSV1</subtype>
+			<subtype mapcolor="110 110 030" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\lualabaSV2</subtype>
+			<subtype mapcolor="110 110 030" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\lualabaSV3</subtype>
+			<subtype mapcolor="110 110 030" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\lualabaDF1</subtype>
+			<subtype mapcolor="110 110 030" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\lualabaDF2</subtype>
+			<subtype mapcolor="110 110 030" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\lualabaDF3</subtype>
+			<subtype mapcolor="074 090 061" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\lualabaDF4</subtype>
+			<subtype mapcolor="074 090 061" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\lualabaRF1</subtype>
+			<subtype mapcolor="074 090 061" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\lualabaRF2</subtype>
+			<subtype mapcolor="074 090 061" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\lualabaRF3</subtype>
+			<subtype mapcolor="074 090 061" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\lualabaRF4</subtype>
+
+			<subtype mapcolor="110 110 030" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\biokoGR1</subtype>
+			<subtype mapcolor="110 110 030" impacttype="terraingrass" bump="great_plains\ground1bump_gp">lualaba\biokoGR2</subtype>
+			<subtype mapcolor="078 078 044" impacttype="terraindirt" bump="great_plains\ground1bump_gp">lualaba\biokoSL2</subtype>
+			<subtype mapcolor="068 068 044" impacttype="terraindirt" bump="great_plains\ground1bump_gp">lualaba\biokoCT</subtype>
+			<subtype mapcolor="068 068 044" impacttype="terraindirt" bump="andes\ground17_bump_and">lualaba\biokoCB</subtype>
+		</uiclass>
+		<uiclass uiname="Anatolia">
+			<subtype mapcolor="128 104 054" impacttype="terraindirt">anatolia\ground1_ana</subtype>
+
+			<subtype mapcolor="167 169 121" impacttype="terraindirt">anatolia\anatolia_dirt1</subtype>			
+			<subtype mapcolor="167 169 121" impacttype="terraindirt">anatolia\anatolia_dirt2</subtype>			
+			<subtype mapcolor="167 169 121" impacttype="terraindirt">anatolia\anatolia_dirt3</subtype>			
+			<subtype mapcolor="167 169 121" impacttype="terraingrass">anatolia\anatolia_grass1</subtype>			
+			<subtype mapcolor="167 169 121" impacttype="terraingrass">anatolia\anatolia_grass2</subtype>			
+			<subtype mapcolor="167 169 121" impacttype="terraingrass">anatolia\anatolia_grass3</subtype>			
+			<subtype mapcolor="164 144 121" impacttype="terrainsand">anatolia\anatolia_shore1</subtype>			
+			<subtype mapcolor="164 144 121" impacttype="terrainsand">anatolia\anatolia_shore2</subtype>			
+			<subtype mapcolor="164 144 121" impacttype="terrainsand">anatolia\anatolia_shore3</subtype>			
+			<subtype mapcolor="055 045 030" impacttype="terraindirt">anatolia\anatolia_clifftop</subtype>			
+		</uiclass>
+		<uiclass uiname="Sahara">
+			<subtype mapcolor="244 181 126" impacttype="terrainsand" bump="wotta\sahara_b">wotta\sahara</subtype>
+		</uiclass>
+		<uiclass uiname="African Desert">
+			<subtype mapcolor="215 175 104" impacttype="terrainsand" bump="desert\sanda_b">desert\sanda</subtype>
+			<subtype mapcolor="215 175 104" impacttype="terrainsand" bump="desert\sandb_b">desert\sandb</subtype>
+			<subtype mapcolor="215 175 104" impacttype="terrainsand" bump="desert\sandc_b">desert\sandc</subtype>
+			<subtype mapcolor="215 175 104" impacttype="terrainsand" bump="desert\sandd_b">desert\sandd</subtype>
+			<subtype mapcolor="215 175 104" impacttype="terrainsand" bump="desert\sande_b">desert\sande</subtype>
+			<subtype mapcolor="215 175 104" impacttype="terrainsand" bump="desert\palmfloor_b">desert\palmfloor</subtype>
+			<subtype mapcolor="200 150 70" impacttype="terrainsand" bump="desert\sanddirt50_b">desert\sanddirt50</subtype>
+			<subtype mapcolor="200 150 70" impacttype="terrainsand" bump="desert\sanddirt50b_b">desert\sanddirt50b</subtype>
+		</uiclass>
+		<uiclass uiname="Galapagos">
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\galapagos\galapagos1_b">wotta\galapagos\galapagos1</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\galapagos\galapagos2_b">wotta\galapagos\galapagos2</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\galapagos\galapagos3_b">wotta\galapagos\galapagos3</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\galapagos\galapagos4_b">wotta\galapagos\galapagos4</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\galapagos\galapagos5_b">wotta\galapagos\galapagos5</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\galapagos\galapagos6_b">wotta\galapagos\galapagos6</subtype>
+			<subtype mapcolor="045 065 055" impacttype="terraingrass" bump="wotta\galapagos\galapagos7_b">wotta\galapagos\galapagos7</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\galapagos\galapagos9_b">wotta\galapagos\galapagos9</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\galapagos\galapagos10_b">wotta\galapagos\galapagos10</subtype>
+		</uiclass>
+		<uiclass uiname="Dallol">
+			<subtype mapcolor="157 137 055" impacttype="terraindirt" bump="wotta\dallol\dallol1_b">wotta\dallol\dallol1</subtype>
+			<subtype mapcolor="157 137 055" impacttype="terraindirt" bump="wotta\dallol\dallol2_b">wotta\dallol\dallol2</subtype>
+			<subtype mapcolor="130 160 075" impacttype="terraindirt" bump="wotta\dallol\dallol3_b">wotta\dallol\dallol3</subtype>
+			<subtype mapcolor="157 137 055" impacttype="terraindirt" bump="wotta\dallol\dallol4_b">wotta\dallol\dallol4</subtype>
+			<subtype mapcolor="157 137 055" impacttype="terraindirt" bump="wotta\dallol\dallol5_b">wotta\dallol\dallol5</subtype>
+			<subtype mapcolor="157 137 055" impacttype="terraindirt" bump="wotta\dallol\dallol6_b">wotta\dallol\dallol6</subtype>
+			<subtype mapcolor="157 137 055" impacttype="terraindirt" bump="wotta\dallol\dallol7_b">wotta\dallol\dallol7</subtype>
+			<subtype mapcolor="157 137 055" impacttype="terraindirt" bump="wotta\dallol\dallol8_b">wotta\dallol\dallol8</subtype>
+			<subtype mapcolor="056 050 026" impacttype="terraindirt" bump="california\desert2_bump_cal">wotta\dallol\topdallol</subtype>
+		</uiclass>
+		<uiclass uiname="Savannah">
+			<subtype mapcolor="180 170 100" impacttype="terraingrass" bump="wotta\savannah\savannaha_b">wotta\savannah\savannaha</subtype>
+			<subtype mapcolor="180 170 100" impacttype="terraingrass" bump="wotta\savannah\savannahb_b">wotta\savannah\savannahb</subtype>
+			<subtype mapcolor="180 170 100" impacttype="terraingrass" bump="wotta\savannah\savannahc_b">wotta\savannah\savannahc</subtype>
+			<subtype mapcolor="180 170 100" impacttype="terraingrass" bump="wotta\savannah\savannahd_b">wotta\savannah\savannahd</subtype>
+			<subtype mapcolor="180 170 100" impacttype="terraindirt" bump="wotta\savannah\savannahforest_b">wotta\savannah\savannahforest</subtype>
+			<subtype mapcolor="180 170 100" impacttype="terraingrass" bump="great_plains\ground1bump_gp">wotta\savannah\savannah_grass_1</subtype>
+			<subtype mapcolor="180 170 100" impacttype="terraingrass" bump="great_plains\ground1bump_gp">wotta\savannah\savannah_grass_2</subtype>
+			<subtype mapcolor="180 170 100" impacttype="terraingrass" bump="great_plains\ground1bump_gp">wotta\savannah\savannah_grass_3</subtype>
+			<subtype mapcolor="180 170 100" impacttype="terraingrass" bump="great_plains\ground1bump_gp">wotta\savannah\savannah_grass_4</subtype>
+			<subtype mapcolor="180 170 100" impacttype="terraingrass" bump="great_plains\ground1bump_gp">wotta\savannah\savannah_grass_5</subtype>
+			<subtype mapcolor="180 170 100" impacttype="terrainrock" bump="great_plains\ground1bump_gp">wotta\savannah\cracked_earth</subtype>
+		</uiclass>
+			<uiclass uiname="AfricanMarsh">
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\marsh\marsha_b">wotta\marsh\marsha</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\marsh\marshb_b">wotta\marsh\marshb</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\marsh\marshc_b">wotta\marsh\marshc</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\marsh\marshd_b">wotta\marsh\marshd</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="wotta\marsh\marshe_b">wotta\marsh\marshe</subtype>
+			<subtype mapcolor="045 065 055" impacttype="terraingrass" bump="wotta\marsh\marshf_b">wotta\marsh\marshf</subtype>
+			<subtype mapcolor="030 047 059" impacttype="terraingrass" bump="wotta\marsh\marshg_b">wotta\marsh\marshg</subtype>
+			<subtype mapcolor="030 047 059" impacttype="terraingrass" bump="wotta\marsh\marshh_b">wotta\marsh\marshh</subtype>
+			<subtype mapcolor="030 047 059" impacttype="terraingrass" bump="wotta\marsh\marshi_b">wotta\marsh\marshi</subtype>
+		</uiclass>
+		<uiclass uiname="Cerrado">
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="wotta\cerrado\cerrado1_b">wotta\cerrado\cerrado1</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="wotta\cerrado\cerrado2_b">wotta\cerrado\cerrado2</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="wotta\cerrado\cerrado3_b">wotta\cerrado\cerrado3</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="wotta\cerrado\cerrado4_b">wotta\cerrado\cerrado4</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="wotta\cerrado\cerrado5_b">wotta\cerrado\cerrado5</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="wotta\cerrado\cerrado6_b">wotta\cerrado\cerrado6</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraingrass" bump="wotta\cerrado\cerrado7_b">wotta\cerrado\cerrado7</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraindirt" bump="wotta\cerrado\cerrado8_b">wotta\cerrado\cerrado8</subtype>
+			<subtype mapcolor="147 147 054" impacttype="terraindirt" bump="wotta\cerrado\cliff_b">wotta\cerrado\cliff</subtype>
+		</uiclass>
+		<uiclass uiname="Araucania">
+			<subtype mapcolor="073 095 058" impacttype="terraingrass" bump="araucania\ground11_bump_ara">araucania\ground12_ara</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="araucania\ground09_bump_ara">araucania\ground07_ara</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="araucania\ground09_bump_ara">araucania\ground09_ara</subtype>
+			<subtype mapcolor="050 080 035" impacttype="terraingrass" bump="araucania\ground_grass1_bump_ara">araucania\ground_grass1_ara</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="araucania\ground09_bump_ara">araucania\ground08_ara</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="araucania\ground10_bump_ara">araucania\ground10_ara</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="araucania\ground_grass2_bump_ara">araucania\ground_grass2_ara</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="araucania\ground_grass3_bump_ara">araucania\ground_grass3_ara</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="araucania\ground11_bump_ara">araucania\ground11_ara</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="araucania\ground09_bump_ara">araucania\groundforestcentral</subtype>
+			<subtype mapcolor="188 100 040" impacttype="terraindirt" bump="araucania\ground_dirt1_bump_ara">araucania\ground_dirt1_ara</subtype>
+			<subtype mapcolor="188 100 040" impacttype="terraindirt" bump="araucania\ground_dirt2_bump_ara">araucania\ground_dirt2_ara</subtype>
+			<subtype mapcolor="188 100 040" impacttype="terraindirt" bump="araucania\ground_dirt3_bump_ara">araucania\ground_dirt3_ara</subtype>
+			<subtype mapcolor="050 080 035" impacttype="terraindirt" bump="araucania\cliff_coast2_bump_ara">araucania\cliff_coast2_ara</subtype>
+			<subtype mapcolor="050 080 035" impacttype="terraindirt" bump="araucania\cliff_coast3_bump_ara">araucania\cliff_coast3_ara</subtype>
+			<subtype mapcolor="050 080 035" impacttype="terraindirt" bump="araucania\cliff_dirt_snow_bump_ara">araucania\cliff_dirt_snow_ara</subtype>
+			<subtype mapcolor="050 080 035" impacttype="terraindirt" bump="araucania\cliff_coast_bump_ara">araucania\cliff_coast_ara</subtype>
+			<subtype mapcolor="050 080 035" impacttype="terraindirt" bump="araucania\cliff_dirt_bump_ara">araucania\cliff_dirt2_ara</subtype>
+			<subtype mapcolor="050 080 035" impacttype="terraindirt" bump="araucania\cliff_dirt_bump_ara">araucania\cliff_dirt_ara</subtype>
+			<subtype mapcolor="158 168 183" impacttype="terrainrock" bump="araucania\ground_snow1_bump_ara">araucania\ground_snow1_ara</subtype>
+			<subtype mapcolor="158 168 183" impacttype="terrainrock" bump="araucania\ground_snow2_bump_ara">araucania\ground_snow2_ara</subtype>
+			<subtype mapcolor="158 168 183" impacttype="terrainrock" bump="araucania\ground_snow3_bump_ara">araucania\ground_snow3_ara</subtype>
+			<subtype mapcolor="158 168 183" impacttype="terrainsnow" bump="araucania\ground_snow4_bump_ara">araucania\ground_snow4_ara</subtype>
+			<subtype mapcolor="050 080 035" impacttype="terrainsnow" bump="araucania\ground_snow4_bump_ara">araucania\ground_snow5_ara</subtype>
+		</uiclass>
+		<uiclass uiname="Bayou">
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="bayou\ground1_bump_bay">bayou\ground1_bay</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="bayou\ground2_bump_bay">bayou\ground2_bay</subtype>
+			<subtype mapcolor="065 100 055" impacttype="terraingrass" bump="bayou\ground3_bump_bay">bayou\ground3_bay</subtype>
+			<subtype mapcolor="075 060 045" impacttype="terraingrass" bump="bayou\ground5_bump_bay">bayou\ground5_bay</subtype>
+			<subtype mapcolor="075 060 045" impacttype="terraingrass" bump="bayou\ground3_bump_bay">bayou\ground6_bay</subtype>
+			<subtype mapcolor="045 035 015" impacttype="terraingrass" bump="bayou\cliff_top1_bump_bay">bayou\cliff_top1_bay</subtype>
+			<subtype mapcolor="045 065 055" impacttype="terraingrass" bump="bayou\ground3_bump_bay">bayou\groundforest_bay</subtype>
+		</uiclass>
+		<uiclass uiname="California">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="california\groundforest2_bump_cal">california\groundforest2_cal</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="california\ground5_bump_cal">california\ground5_cal</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="california\ground1_bump_cal">california\ground6_cal</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="california\ground1_bump_cal">california\ground7_cal</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="california\ground1_bump_cal">california\ground8_cal</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="california\ground1_bump_cal">california\ground9_cal</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="california\fakecalifgrassmix_bump_cal">california\fakecalifgrassmix_cal</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="california\ground1_bump_cal">california\fakecalifgrassmix2_cal</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="california\desert2_bump_cal">california\desert2_cal</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="california\desert3_bump_cal">california\desert3_cal</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="california\desert4_bump_cal">california\desert4_cal</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="california\desert5_bump_cal">california\desert5_cal</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="california\desert6_bump_cal">california\desert6_cal</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="california\groundclifftop_bump_cal">california\ground_clifftop_cal</subtype>
+			<subtype mapcolor="038 053 035" impacttype="terraingrass" bump="california\groundforest_bump_cal">california\madrone_forest_cal</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="california\groundforest_bump_cal">california\madroneforest2_cal</subtype>
+			<subtype mapcolor="038 053 035" impacttype="terraingrass" bump="california\groundforest_bump_cal">california\groundforest_cal</subtype>
+
+			<subtype mapcolor="170 120 060" impacttype="terraingrass" bump="california\ground5_bump_cal">california\ground1_cal</subtype>
+			<subtype mapcolor="170 120 060" impacttype="terraingrass" bump="california\ground5_bump_cal">california\ground2_cal</subtype>
+			<subtype mapcolor="170 120 060" impacttype="terraingrass" bump="california\ground5_bump_cal">california\ground3_cal</subtype>
+			<subtype mapcolor="170 120 060" impacttype="terraingrass" bump="california\ground5_bump_cal">california\ground4_cal</subtype>
+		</uiclass>
+		<uiclass uiname="Caribbean">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="caribbean\ground1specbump_crb">caribbean\ground1_crb</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="caribbean\ground2specbump_crb">caribbean\ground2_crb</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terrainsand" bump="caribbean\ground3specbump_crb">caribbean\ground3_crb</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terrainsand" bump="caribbean\ground4specbump_crb">caribbean\ground4_crb</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terrainsand" bump="caribbean\ground4specbump_crb">caribbean\ground6_crb</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terrainsand" bump="caribbean\ground4specbump_crb">caribbean\ground7_crb</subtype>
+			<subtype mapcolor="057 085 038" impacttype="terrainsand" bump="caribbean\cliff_top1_bump_crb">caribbean\cliff_top1_crb</subtype>
+			<subtype mapcolor="038 053 035" impacttype="terraingrass" bump="caribbean\groundforest_bump_crb">caribbean\groundforest_crb</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="caribbean\ground1specbump_crb">caribbean\seafloor_coral0_crb</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="caribbean\ground1specbump_crb">caribbean\seafloor_coral1_crb</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="caribbean\ground1specbump_crb">caribbean\seafloor_coral2_crb</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="caribbean\ground1specbump_crb">caribbean\seafloor_coral3_crb</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="caribbean\ground1specbump_crb">caribbean\seafloor_coral4_crb</subtype>
+		</uiclass>
+		<uiclass uiname="Carolinas">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">carolinas\ground_grass1_car</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">carolinas\ground_grass2_car</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">carolinas\ground_grass3_car</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">carolinas\ground_grass4_car</subtype>
+			<subtype mapcolor="050 080 035" impacttype="terraingrass" bump="carolinas\cliff_top1_bump_car">carolinas\cliff_top1_car</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terrainsand" bump="carolinas\ground_marsh1_bump_car">carolinas\ground_marsh1_car</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terrainsand" bump="carolinas\ground_marsh2_bump_car">carolinas\ground_marsh2_car</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terrainsand" bump="carolinas\ground_marsh2_bump_car">carolinas\ground_marsh3_car</subtype>
+			<subtype mapcolor="038 053 035" impacttype="terraindirt">carolinas\groundforest_car</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terrainstone">Carolinas\cobblestone</subtype>
+			<subtype mapcolor="000 000 000">Carolinas\blackmap</subtype>
+		</uiclass>
+		<uiclass uiname="Cave">
+			<subtype mapcolor="040 035 015" impacttype="terraindirt" bump="cave\cave_ground1_bump">cave\cave_ground1</subtype>
+			<subtype mapcolor="040 035 015" impacttype="terraindirt" bump="cave\cave_ground2_bump">cave\cave_ground2</subtype>
+			<subtype mapcolor="040 035 015" impacttype="terraindirt" bump="cave\cave_ground3_bump">cave\cave_ground3</subtype>
+			<subtype mapcolor="040 035 015" impacttype="terraindirt" bump="cave\cave_ground4_bump">cave\cave_ground4</subtype>
+		</uiclass>
+		<uiclass uiname="Great Lakes">
+			<subtype mapcolor="160 170 185" impacttype="terrainsnow" bump="great_lakes\ground_snow1_bump_gl">great_lakes\ground_snow1_gl</subtype>
+			<subtype mapcolor="158 168 183" impacttype="terrainsnow" bump="great_lakes\ground_snow2_bump_gl">great_lakes\ground_snow2_gl</subtype>
+			<subtype mapcolor="156 166 181" impacttype="terrainsnow" bump="great_lakes\ground_snow3_bump_gl">great_lakes\ground_snow3_gl</subtype>
+			<subtype mapcolor="155 165 180" impacttype="terrainsnow" bump="great_lakes\ground_snow4_bump_gl">great_lakes\ground_snow4_gl</subtype>
+			<subtype mapcolor="153 163 178" impacttype="terrainsnow" bump="great_lakes\ground_snow5_bump_gl">great_lakes\ground_snow5_gl</subtype>
+			<subtype mapcolor="065 120 020" impacttype="terraingrass" bump="great_lakes\ground_grass1_bump_gl">great_lakes\ground_grass1_gl</subtype>
+			<subtype mapcolor="062 117 017" impacttype="terraingrass" bump="great_lakes\ground_grass2_bump_gl">great_lakes\ground_grass2_gl</subtype>
+			<subtype mapcolor="060 115 015" impacttype="terraingrass" bump="great_lakes\ground_grass3_bump_gl">great_lakes\ground_grass3_gl</subtype>
+			<subtype mapcolor="068 123 023" impacttype="terraingrass" bump="great_lakes\ground_grass4_bump_gl">great_lakes\ground_grass4_gl</subtype>
+			<subtype mapcolor="070 125 025" impacttype="terraingrass" bump="great_lakes\ground_grass4_bump_gl">great_lakes\ground_grass5_gl</subtype>
+			<subtype mapcolor="160 170 185" impacttype="terrainsnow" bump="great_lakes\ground_grass1_bump_gl">great_lakes\groundforest_gl</subtype>
+			<subtype mapcolor="160 170 185" impacttype="terrainsnow" bump="great_lakes\ground_grass1_bump_gl">great_lakes\groundforest_snow_gl</subtype>
+		</uiclass>
+		<uiclass uiname="Great Plains">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="great_plains\ground1bump_gp">great_plains\ground1_gp</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="great_plains\ground2bump_gp">great_plains\ground2_gp</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="great_plains\ground3bump_gp">great_plains\ground3_gp</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="great_plains\ground4bump_gp">great_plains\ground4_gp</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="great_plains\ground5bump_gp">great_plains\ground5_gp</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="great_plains\ground6bump_gp">great_plains\ground6_gp</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="great_plains\ground6bump_gp">great_plains\ground7_gp</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="great_plains\ground1bump_gp">great_plains\ground8_gp</subtype>
+			<subtype mapcolor="038 053 035" impacttype="terraingrass" bump="great_plains\groundforest_bump_gp">great_plains\groundforest_gp</subtype>
+		</uiclass>
+		<uiclass uiname="New England">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="new_england\ground1bump_ne">new_england\ground1_ne</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="new_england\ground1bump_ne">new_england\ground2_ne</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="new_england\ground1bump_ne">new_england\ground3_ne</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass">new_england\ground4_ne</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass">new_england\ground5_ne</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="new_england\ground1bump_ne">new_england\cliff_top_ne</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="new_england\ground1bump_ne">new_england\cliff_edge_ne</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="new_england\ground1bump_ne">new_england\cliff_side_ne</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="new_england\ground1bump_ne">new_england\ground2_cliff_ne</subtype>
+			<subtype mapcolor="080 065 025" impacttype="terraingrass" bump="new_england\ground1bump_ne">new_england\cliff_inland_top_ne</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="new_england\ground1bump_ne">new_england\cliff_inland_edge_ne</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="new_england\ground1bump_ne">new_england\cliff_inland_side_ne</subtype>
+			<subtype mapcolor="076 062 072" impacttype="terraindirt">new_england\river1_ne</subtype>
+			<subtype mapcolor="038 053 035" impacttype="terraindirt" bump="new_england\groundforest_bump_ne">new_england\groundforest_ne</subtype>
+		</uiclass>
+		<uiclass uiname="Northwest Territory">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="nwterritory\ground_grass1_bump_nwt">nwterritory\ground_grass1_nwt</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="nwterritory\ground_grass1a_bump_nwt">nwterritory\ground_grass1a_nwt</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="nwterritory\ground_grass2_bump_nwt">nwterritory\ground_grass2_nwt</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="nwterritory\ground_grass3_bump_nwt">nwterritory\ground_grass3_nwt</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="nwterritory\ground_grass5_bump_nwt">nwterritory\ground_grass5_nwt</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="nwterritory\ground_shoreline3_bump_nwt">nwterritory\ground_shoreline3_nwt</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="nwterritory\ground_riverbed_bump_nwt">nwterritory\ground_riverbed_nwt</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terrainrock" bump="nwterritory\ground_riverbed2_bump_nwt">nwterritory\ground_riverbed2_nwt</subtype>
+		</uiclass>
+		<uiclass uiname="Pampas">
+			<subtype mapcolor="190 150 110" impacttype="terraingrass" bump="pampas\ground1_pam_bump">pampas\ground1_pam</subtype>
+			<subtype mapcolor="190 150 110" impacttype="terraingrass" bump="pampas\ground2_pam_bump">pampas\ground2_pam</subtype>
+			<subtype mapcolor="190 150 110" impacttype="terraingrass" bump="pampas\ground3_pam_bump">pampas\ground3_pam</subtype>
+			<subtype mapcolor="190 150 110" impacttype="terraingrass" bump="pampas\ground4_pam_bump">pampas\ground4_pam</subtype>
+			<subtype mapcolor="190 150 110" impacttype="terraingrass" bump="pampas\ground5_pam_bump">pampas\ground5_pam</subtype>
+			<subtype mapcolor="190 150 110" impacttype="terraingrass" bump="Pampas\ground6_pam_bump">pampas\ground6_pam</subtype>
+			<subtype mapcolor="190 150 110" impacttype="terraingrass" bump="pampas\groundforest_bump_pam">pampas\groundforest_pam</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">pampas2\ground1_pam2</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">pampas2\ground2_pam2</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">pampas2\ground3_pam2</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraindirt" bump="carolinas\ground_shoreline2_bump_car">pampas2\ground4_pam2</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraindirt" bump="carolinas\ground_shoreline2_bump_car">pampas2\ground5_pam2</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraindirt" bump="carolinas\ground_shoreline2_bump_car">pampas2\ground6_pam2</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraindirt" bump="carolinas\ground_shoreline2_bump_car">pampas2\ground7_pam2</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">pampas2\groundforest_pam2</subtype>
+
+		</uiclass>
+		<uiclass uiname="Painteddesert">
+			<subtype mapcolor="116 078 060" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_a">Painteddesert\pd_ground_diffuse_a</subtype>
+			<subtype mapcolor="116 078 065" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_b">Painteddesert\pd_ground_diffuse_b</subtype>
+			<subtype mapcolor="116 078 070" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_c">Painteddesert\pd_ground_diffuse_c</subtype>
+			<subtype mapcolor="134 089 070" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_d">Painteddesert\pd_ground_diffuse_d</subtype>
+			<subtype mapcolor="134 089 075" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_e">Painteddesert\pd_ground_diffuse_e</subtype>
+			<subtype mapcolor="134 089 080" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_f">Painteddesert\pd_ground_diffuse_f</subtype>
+			<subtype mapcolor="134 089 080" impacttype="terraingrass" bump="Painteddesert\pd_cliff_normal_a">Painteddesert\pd_cliff_diffuse_a</subtype>
+			<subtype mapcolor="038 053 035" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_g">Painteddesert\pd_ground_diffuse_g</subtype>
+			<subtype mapcolor="038 053 040" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_h">Painteddesert\pd_ground_diffuse_h</subtype>
+			<subtype mapcolor="038 053 045" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_i">Painteddesert\pd_ground_diffuse_i</subtype>
+			<subtype mapcolor="140 095 070" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_j">Painteddesert\pd_ground_diffuse_j</subtype>
+			<subtype mapcolor="140 095 076" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_k">Painteddesert\pd_ground_diffuse_k</subtype>
+			<subtype mapcolor="140 095 080" impacttype="terraingrass" bump="Painteddesert\pd_ground_normal_l">Painteddesert\pd_ground_diffuse_l</subtype>
+		</uiclass>
+		<uiclass uiname="Patagonia">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="patagonia\ground_grass1_bump_pat">patagonia\ground_grass1_pat</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="patagonia\ground_grass2_bump_pat">patagonia\ground_grass2_pat</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="patagonia\ground_grass3_bump_pat">patagonia\ground_grass3_pat</subtype>
+			<subtype mapcolor="100 090 045" impacttype="terraindirt" bump="patagonia\ground_dirt1_bump_pat">patagonia\ground_dirt1_pat</subtype>
+			<subtype mapcolor="110 095 050" impacttype="terraindirt" bump="patagonia\ground_dirt2_bump_pat">patagonia\ground_dirt2_pat</subtype>
+			<subtype mapcolor="115 100 055" impacttype="terraindirt" bump="patagonia\ground_dirt3_bump_pat">patagonia\ground_dirt3_pat</subtype>
+			<subtype mapcolor="125 125 140" impacttype="terrainsnow" bump="patagonia\ground_snow1_bump_pat">patagonia\ground_snow1_pat</subtype>
+			<subtype mapcolor="130 130 145" impacttype="terrainsnow" bump="patagonia\ground_snow2_bump_pat">patagonia\ground_snow2_pat</subtype>
+			<subtype mapcolor="135 135 150" impacttype="terrainsnow" bump="patagonia\ground_snow3_bump_pat">patagonia\ground_snow3_pat</subtype>
+			<subtype mapcolor="110 105 050" impacttype="terraindirt" bump="patagonia\groundforest_bump_pat">patagonia\groundforest_pat</subtype>
+			<subtype mapcolor="125 125 130" impacttype="terrainsnow" bump="patagonia\groundforest_snow_bump_pat">patagonia\groundforest_snow_pat</subtype>
+			<subtype mapcolor="065 060 020" impacttype="terraindirt" bump="patagonia\ground_clifftop_bump_pat">patagonia\ground_clifftop_pat</subtype>
+		</uiclass>
+		<uiclass uiname="Rockies">
+			<subtype mapcolor="100 090 045" impacttype="terraindirt" bump="rockies\ground1_bump_roc">rockies\ground1_roc</subtype>
+			<subtype mapcolor="100 090 045" impacttype="terraindirt" bump="rockies\ground2_bump_roc">rockies\ground2_roc</subtype>
+			<subtype mapcolor="045 100 010" impacttype="terraingrass" bump="rockies\ground3_bump_roc">rockies\ground3_roc</subtype>
+			<subtype mapcolor="045 100 010" impacttype="terraingrass" bump="rockies\ground4_bump_roc">rockies\ground4_roc</subtype>
+			<subtype mapcolor="045 100 010" impacttype="terraingrass" bump="rockies\ground5_bump_roc">rockies\ground5_roc</subtype>
+			<subtype mapcolor="160 160 175" impacttype="terrainsnow" bump="rockies\groundsnow1_bump_roc" sparkle="sparkle">rockies\groundsnow1_roc</subtype>
+			<subtype mapcolor="160 160 175" impacttype="terrainsnow" bump="rockies\groundsnow2_bump_roc">rockies\groundsnow2_roc</subtype>
+			<subtype mapcolor="160 160 175" impacttype="terrainsnow" bump="rockies\groundsnow3_bump_roc">rockies\groundsnow3_roc</subtype>
+			<subtype mapcolor="160 160 175" impacttype="terrainsnow" bump="rockies\groundsnow4_bump_roc">rockies\groundsnow4_roc</subtype>
+			<subtype mapcolor="160 160 175" impacttype="terrainsnow" bump="rockies\groundsnow5_bump_roc">rockies\groundsnow5_roc</subtype>
+			<subtype mapcolor="140 140 150" impacttype="terrainsnow" bump="rockies\groundsnow1_bump_roc">rockies\groundsnow6_roc</subtype>
+			<subtype mapcolor="140 140 150" impacttype="terrainsnow" bump="rockies\groundsnow1_bump_roc">rockies\groundsnow7_roc</subtype>
+			<subtype mapcolor="140 140 150" impacttype="terrainsnow" bump="rockies\groundsnow1_bump_roc">rockies\groundsnow8_roc</subtype>
+			<subtype mapcolor="100 100 110" impacttype="terrainsnow" bump="rockies\groundforestsnow_bump_roc">rockies\groundforestsnow_roc</subtype>
+			<subtype mapcolor="060 055 025" impacttype="terraindirt" bump="rockies\groundforest_bump_roc">rockies\groundforest_roc</subtype>
+		</uiclass>
+		<uiclass uiname="Saguenay">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="saguenay\ground1_bump_sag">Saguenay\ground1_sag</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="saguenay\ground2_bump_sag">Saguenay\ground2_sag</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="saguenay\ground3_bump_sag">Saguenay\ground3_sag</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="saguenay\ground4_bump_sag">Saguenay\ground4_sag</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass">Saguenay\ground5_sag</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass">Saguenay\ground6_sag</subtype>
+			<subtype mapcolor="076 062 072" impacttype="terraindirt">saguenay\river1_sag</subtype>
+			<subtype mapcolor="038 053 035" impacttype="terraindirt" bump="saguenay\groundforest_bump_sag">saguenay\groundforest_sag</subtype>
+		</uiclass>
+		<uiclass uiname="Sonora">
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="sonora\ground1_bump_son">sonora\ground1_son</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="sonora\ground1_bump_son">sonora\ground2_son</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="sonora\ground1_bump_son">sonora\ground3_son</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="sonora\ground1_bump_son">sonora\ground4_son</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="sonora\ground1_bump_son">sonora\ground5_son</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="sonora\ground1_bump_son">sonora\ground6_son</subtype>
+			<subtype mapcolor="120 110 065" impacttype="terraindirt" bump="sonora\ground1_bump_son">sonora\ground7_son</subtype>
+			<subtype mapcolor="055 045 030" impacttype="terraindirt" bump="sonora\ground1_bump_son">sonora\ground1clifftop_son</subtype>
+			<subtype mapcolor="055 045 030" impacttype="terraindirt" bump="sonora\ground1_bump_son">sonora\cliff_edge_son</subtype>
+			<subtype mapcolor="110 130 055" impacttype="terraindirt" bump="sonora\ground1_bump_son">sonora\groundforest_son</subtype>
+		</uiclass>
+		<uiclass uiname="Texas">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="Texas\ground3_tex_bump2">Texas\ground1_tex</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="Texas\ground3_tex_bump2">Texas\ground2_tex</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="Texas\ground3_tex_bump2">Texas\ground3_tex</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraindirt" bump="Texas\ground4_tex_bump">Texas\ground4_tex</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraindirt" bump="Texas\ground5_tex_bump">Texas\ground5_tex</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="Texas\ground3_tex_bump2">Texas\ground6_tex</subtype>
+			<subtype mapcolor="100 100 100" impacttype="terraindirt" bump="Texas\cliff_edge_tex_bump">Texas\cliff_edge_tex</subtype>
+			<subtype mapcolor="070 055 035" impacttype="terraindirt" bump="Texas\cliff_top_tex_bump">Texas\cliff_top_tex</subtype>
+			<subtype mapcolor="055 055 035" impacttype="terraingrass" bump="Texas\cliff_top_grass_bump_tex">Texas\cliff_top_grass_tex</subtype>
+			<subtype mapcolor="076 062 072" impacttype="terraindirt" bump="Texas\cliff_edge_tex_bump">texas\river1_tex</subtype>
+			<subtype mapcolor="100 100 100" impacttype="terraingrass" bump="Texas\ground3_tex_bump2">Texas\river2_tex</subtype>
+			<subtype mapcolor="087 125 068" impacttype="terraingrass" bump="texas\groundforest_bump_tex">texas\groundforest_tex</subtype>
+			<subtype mapcolor="118 104 044" impacttype="terraindirt" bump="texas\groundforestdirt_bump_tex">texas\groundforestdirt_tex</subtype>
+		</uiclass>
+		<uiclass uiname="Yukon">
+			<subtype mapcolor="153 177 181" impacttype="terrainsnow" bump="yukon\ground1specbump_yuk" sparkle="sparkle">yukon\ground1_yuk</subtype>
+			<subtype mapcolor="153 177 181" impacttype="terrainsnow" bump="yukon\ground2specbump_yuk" sparkle="sparkle">yukon\ground2_yuk</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terrainsnow" bump="yukon\ground1specbump_yuk" sparkle="sparkle">yukon\ground4_yuk</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terrainsnow" bump="yukon\ground1specbump_yuk" sparkle="sparkle">yukon\ground5_yuk</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terrainsnow" bump="yukon\ground1specbump_yuk" sparkle="sparkle">yukon\ground6_yuk</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="yukon\ground1specbump_yuk" sparkle="sparkle">yukon\ground7_yuk</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="yukon\ground1specbump_yuk" sparkle="sparkle">yukon\ground8_yuk</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terrainsnow" bump="yukon\ground9specbump_yuk" sparkle="sparkle">yukon\ground9_yuk</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terrainsnow" bump="yukon\ground4specbump_yuk" sparkle="sparkle">yukon\ground11_yuk</subtype>
+			<subtype mapcolor="128 104 054" impacttype="terraindirt" bump="yukon\ground7specbump_yuk" sparkle="sparkle">yukon\ground10_yuk</subtype>
+			<subtype mapcolor="038 053 035" impacttype="terraindirt" bump="yukon\groundforest_bump_yuk" sparkle="sparkle">yukon\groundforest_yuk</subtype>
+			<subtype mapcolor="038 053 035" impacttype="terrainsnow" bump="yukon\ground9specbump_yuk" sparkle="sparkle">yukon\groundforestsnow_yuk</subtype>
+			<subtype mapcolor="153 177 181" impacttype="terrainsnow" bump="yukon\ground2specbump_yuk" sparkle="sparkle">yukon\ground3_yuk</subtype>
+			<subtype mapcolor="153 177 181" impacttype="terrainsnow" bump="yukon\ground2specbump_yuk" sparkle="sparkle">yukon\ground3x_yuk</subtype>
+		</uiclass>
+		<uiclass uiname="City">
+			<subtype mapcolor="040 035 015" impacttype="terraindirt" bump="city\ground1_bump_cob">city\ground1_cob</subtype>
+			<subtype mapcolor="040 035 015" impacttype="terraingrass" bump="city\ground1_bump_cob">Amazon\ground_road_spc_ama</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="wotta\greekroada_b">wotta\greekroada</subtype>
+		</uiclass>
+		<uiclass uiname="Misc">
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="spc\scorched01_bump">spc\scorched01</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="spc\scorched02_bump">spc\scorched02</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="spc\scorched01_bump">spc\scorched03</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="spc\scorched01_bump">spc\scorched04</subtype>
+			<subtype mapcolor="076 062 072" impacttype="terraindirt" bump="props\east_colony_bump">props\east_colony</subtype>
+			<subtype mapcolor="076 062 072" impacttype="terraindirt" bump="props\east_colony_bump">props\east_colony_ground</subtype>
+			<subtype mapcolor="076 062 072" impacttype="terraindirt" bump="props\east_colony1_bump">props\east_colony1</subtype>
+			<subtype mapcolor="076 062 072" impacttype="terraindirt" bump="props\east_colony_bump">props\east_colony2</subtype>
+		</uiclass>
+		<uiclass uiname="WoL Lava">
+			<subtype mapcolor="200 80 30" impacttype="terrainrock" bump="wotta\lava\hades3_b">wotta\lava\hades3</subtype>
+			<subtype mapcolor="200 80 30" impacttype="terrainrock" bump="wotta\lava\hades4_b">wotta\lava\hades4</subtype>
+			<subtype mapcolor="200 80 30" impacttype="terrainrock" bump="wotta\lava\hades5_b">wotta\lava\hades5</subtype>
+			<subtype mapcolor="200 80 30" impacttype="terrainrock" bump="wotta\lava\hades7_b">wotta\lava\hades7</subtype>
+		</uiclass>
+		<uiclass uiname="WoL Volcano">
+			<subtype mapcolor="040 035 015" impacttype="terrainrock" bump="wotta\volcano\volcano1_b">wotta\volcano\volcano1</subtype>
+			<subtype mapcolor="040 035 015" impacttype="terrainrock" bump="wotta\volcano\volcano2_b">wotta\volcano\volcano2</subtype>
+			<subtype mapcolor="040 035 015" impacttype="terrainrock" bump="wotta\volcano\volcano3_b">wotta\volcano\volcano3</subtype>
+			<subtype mapcolor="040 035 015" impacttype="terrainrock" bump="wotta\volcano\volcano4_b">wotta\volcano\volcano4</subtype>
+			<subtype mapcolor="040 035 015" impacttype="terrainrock" bump="wotta\volcano\volcano5_b">wotta\volcano\volcano5</subtype>
+			<subtype mapcolor="040 035 015" impacttype="terrainrock" bump="wotta\volcano\volcano6_b">wotta\volcano\volcano6</subtype>
+		</uiclass>
+		<uiclass uiname="Australia">
+			<subtype mapcolor="255 145 075" impacttype="terrainsand" bump="wotta\sahara_b">australia\outbacksand</subtype>
+			<subtype mapcolor="112 124 077" impacttype="terrainsand" bump="new_england\groundforest_bump_ne">australia\ausleaflitter</subtype>
+			<subtype mapcolor="112 124 077" impacttype="terrainsand" bump="new_england\groundforest_bump_ne">australia\ausleaflitter2</subtype>
+			<subtype mapcolor="112 124 077" impacttype="terrainsand" bump="new_england\groundforest_bump_ne">australia\ausleaflitter3</subtype>
+			<subtype mapcolor="112 124 077" impacttype="terrainsand" bump="new_england\groundforest_bump_ne">australia\ausleaflitter4</subtype>
+		</uiclass>
+
+	<!-- Make sure Hawaii and Polynesia are both pasted in. New Guinea's not important yet. Sahel should already be there*** -->
+
+		<uiclass uiname="Hawaii">
+			<subtype mapcolor="065 065 065" impacttype="terrainsand" bump="carolinas\ground_shoreline2_bump_car">hawaii\beach_sand_hawaii</subtype>
+			<subtype mapcolor="025 095 025" impacttype="terrainsand" bump="carolinas\ground_marsh1_bump_car">hawaii\shore_veg_1_hawaii</subtype>
+			<subtype mapcolor="025 105 025" impacttype="terrainsand" bump="carolinas\ground_marsh2_bump_car">hawaii\shore_veg_2_hawaii</subtype>
+			<subtype mapcolor="025 115 025" impacttype="terrainsand" bump="carolinas\ground_marsh2_bump_car">hawaii\shore_veg_3_hawaii</subtype>
+			<subtype mapcolor="127 023 000" impacttype="terrainsand" bump="wotta\sahara_b">hawaii\lavaflow</subtype>
+		</uiclass>
+		<uiclass uiname="Polynesia">
+			<subtype mapcolor="255 246 204" impacttype="terrainsand" bump="carolinas\ground_shoreline2_bump_car">polynesia\polynesian_forest_1</subtype>
+			<subtype mapcolor="220 246 204" impacttype="terrainsand" bump="carolinas\ground_marsh1_bump_car">polynesia\polynesian_forest_2</subtype>
+			<subtype mapcolor="189 229 162" impacttype="terrainsand" bump="carolinas\ground_marsh2_bump_car">polynesia\polynesian_forest_3</subtype>
+			<subtype mapcolor="189 229 105" impacttype="terrainsand" bump="carolinas\ground_marsh2_bump_car">polynesia\polynesian_forest_4</subtype>
+			<subtype mapcolor="189 229 105" impacttype="terrainsand" bump="carolinas\ground_marsh2_bump_car">polynesia\polynesian_forest_4</subtype>
+
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">tahiti\ground1_tah</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">tahiti\ground2_tah</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">tahiti\ground3_tah</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="carolinas\ground_shoreline2_bump_car">tahiti\ground4_tah</subtype>
+		</uiclass>
+		<uiclass uiname="New Guinea">
+			<subtype mapcolor="045 065 055" impacttype="terraingrass" bump="bayou\cliff_top1_bump_bay">new_guinea\new_guinea_forest_1</subtype>
+			<subtype mapcolor="045 065 055" impacttype="terraingrass" bump="bayou\cliff_top1_bump_bay">new_guinea\new_guinea_forest_2</subtype>
+			<subtype mapcolor="045 065 055" impacttype="terraingrass" bump="bayou\cliff_top1_bump_bay">new_guinea\new_guinea_forest_3</subtype>
+			<subtype mapcolor="045 065 055" impacttype="terraingrass" bump="bayou\cliff_top1_bump_bay">new_guinea\new_guinea_forest_4</subtype>
+		</uiclass>
+		<uiclass uiname="Sahel">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="Texas\ground3_tex_bump2">sahel\ground1_sahel</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="Texas\ground3_tex_bump2">sahel\ground2_sahel</subtype>
+			<subtype mapcolor="110 125 078" impacttype="terraingrass" bump="Texas\ground3_tex_bump2">sahel\ground3_sahel</subtype>
+			<subtype mapcolor="150 125 078" impacttype="terraingrass" bump="Texas\ground3_tex_bump2">sahel\ground_transition_sahel</subtype>
+		</uiclass>
+		<uiclass uiname="Borneo">
+			<subtype mapcolor="139 153 102" impacttype="terraingrass" bump="caribbean\ground4specbump_crb">borneo\ground_sand1_borneo</subtype>
+			<subtype mapcolor="125 142 077" impacttype="terraingrass" bump="caribbean\ground4specbump_crb">borneo\ground_sand2_borneo</subtype>
+			<subtype mapcolor="110 130 055" impacttype="terraingrass" bump="caribbean\ground4specbump_crb">borneo\ground_sand3_borneo</subtype>
+		</uiclass>
+	</type>
+	<type name="Water" uiname="Water" mapcolor="76 96 145" impassableland="" water="">
+		<uiclass uiname="Water">
+			<subtype animate="3" impacttype="terrainwater" bumpmap="water\waterbump????">water????</subtype>
+		</uiclass>
+	</type>
+	<type name="NonPassableLand" uiname="Rock" mapcolor="76 62 72" impassablewater="" impassableland="">
+		<uiclass uiname="Amazon"/>
+		<uiclass uiname="Carolinas"/>
+		<uiclass uiname="Cave">
+			<subtype mapcolor="000 000 000">cave\cave_top</subtype>
+		</uiclass>
+		<uiclass uiname="Great Plains"/>
+		<uiclass uiname="New England"/>
+		<uiclass uiname="Pampas"/>
+		<uiclass uiname="Patagonia">
+			<subtype mapcolor="140 150 175" impacttype="terrainsnow" bump="patagonia\ground_glacier_bump_pat">patagonia\ground_glacier_pat</subtype>
+		</uiclass>
+		<uiclass uiname="Rockies">
+			<subtype mapcolor="040 040 055" impacttype="terrainsnow" bump="rockies\groundsnow1_bump_roc">rockies\clifftop_roc</subtype>
+		</uiclass>
+		<uiclass uiname="Saguenay"/>
+		<uiclass uiname="Sonora"/>
+		<uiclass uiname="Texas">
+			<subtype mapcolor="097 125 078" impacttype="terraindirt">texas\nonpassable_temp</subtype>
+		</uiclass>
+
+***Don't forget hawaiian lava
+
+		<uiclass uiname="Hawaii">
+			<subtype mapcolor="127 023 000" impacttype="terrainsand" bump="wotta\sahara_b">hawaii\lavaflow_impassable</subtype>
+		</uiclass>
+	</type>
+	<type name="Underwater" uiname="Shore/Underwater" mapcolor="233 228 143">
+		<uiclass uiname="Carolinas">
+			<subtype>Carolinas\Underwater1</subtype>
+			<subtype>Carolinas\Underwater2</subtype>
+			<subtype>Carolinas\Underwater3</subtype>
+		</uiclass>
+		<uiclass uiname="New England">
+			<subtype>new_england\Underwater1_ne</subtype>
+			<subtype>new_england\Underwater2_ne</subtype>
+		</uiclass>
+		<uiclass uiname="Saguenay">
+			<subtype>saguenay\underwater1_sag</subtype>
+			<subtype>saguenay\underwater2_sag</subtype>
+			<subtype>saguenay\underwater3_sag</subtype>
+		</uiclass>
+	</type>
+	<type name="Shoreline" uiname="Shoreline/Passable All" mapcolor="179 177 152">
+		<uiclass uiname="Andes">
+			<subtype bump="Andes\ground14_bump_and">andes\ground14_and</subtype>
+		</uiclass>
+		<uiclass uiname="Amazon">
+			<subtype bump="Amazon\ground2specbump_ama">Amazon\river1_am</subtype>
+			<subtype bump="Amazon\ground2specbump_ama">Amazon\river2_am</subtype>
+		</uiclass>
+		<uiclass uiname="Asia">
+			<subtype impacttype="terraingrass" bump="california\groundshore1_bump_cal">bengal/gujaratshore</subtype>
+		</uiclass>
+		<uiclass uiname="Rainforest">
+			<subtype mapcolor="098 068 034" impacttype="terraindirt" bump="great_plains\ground1bump_gp">lualaba\lualabaRV1</subtype>
+			<subtype mapcolor="098 068 034" impacttype="terraindirt" bump="great_plains\ground1bump_gp">lualaba\lualabaRV2</subtype>
+
+			<subtype mapcolor="078 078 044" impacttype="terrainsand" bump="great_plains\ground1bump_gp">lualaba\biokoSL1</subtype>
+		</uiclass>
+		<uiclass uiname="Araucania">
+			<subtype impacttype="terraingrass" bump="california\groundshore1_bump_cal">araucania\groundshore1_ara</subtype>
+			<subtype impacttype="terraingrass" bump="araucania\groundshore5_bump_ara">araucania\groundshore5_ara</subtype>
+			<subtype impacttype="terraingrass" bump="araucania\groundshore1_bump_ara">araucania\groundshore8_ara</subtype>
+		</uiclass>
+		<uiclass uiname="African Desert">
+			<subtype mapcolor="215 175 104" impacttype="terrainsand" bump="nile\shorelinemediterraneanb_b">nile\shorelinemediterraneanb</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terrainsand" bump="wotta\nile\shorelineaegeanc_b">wotta\nile\shorelineaegeanc</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terrainsand" bump="wotta\nile\shorelinemediterraneand_b">wotta\nile\shorelinemediterraneand</subtype>
+			<subtype mapcolor="215 175 104" impacttype="terrainsand" bump="wotta\nile\shorelinemediterraneanc_b">wotta\nile\shorelinemediterraneanc</subtype>
+		</uiclass>
+		<uiclass uiname="California">
+			<subtype mapcolor="158 168 183" impacttype="terrainsand" bump="california\groundshore1_bump_cal">california\groundshore1_cal</subtype>
+			<subtype mapcolor="158 168 183" impacttype="terraingrass" bump="california\groundshore2_bump_cal">california\groundshore2_cal</subtype>
+			<subtype mapcolor="158 168 183" impacttype="terraingrass" bump="california\groundshore3b_bump_cal">california\groundshore3b_cal</subtype>
+			<subtype mapcolor="158 168 183" impacttype="terraingrass" bump="california\groundshore3c_bump_cal">california\groundshore3c_cal</subtype>
+			<subtype mapcolor="158 168 183" impacttype="terraingrass" bump="california\groundshore3d_bump_cal">california\groundshore3d_cal</subtype>
+			<subtype mapcolor="158 168 183" impacttype="terraingrass" bump="california\ground1_bump_cal">california\groundshore4_cal</subtype>
+		</uiclass>
+		<uiclass uiname="Caribbean">
+			<subtype impacttype="terrainsand" bump="carolinas\ground_shoreline2_bump_car">caribbean\ground_shoreline1_crb</subtype>
+			<subtype impacttype="terrainsand" bump="carolinas\ground_shoreline2_bump_car">caribbean\ground_shoreline2_crb</subtype>
+			<subtype impacttype="terrainsand" bump="carolinas\ground_shoreline2_bump_car">caribbean\ground_shoreline3_crb</subtype>
+		</uiclass>
+		<uiclass uiname="Carolinas">
+			<subtype impacttype="terraindirt" bump="carolinas\ground_shoreline2_bump_car">carolinas\ground_shoreline1_car</subtype>
+			<subtype impacttype="terraindirt" bump="carolinas\ground_shoreline2_bump_car">carolinas\ground_shoreline2_car</subtype>
+			<subtype impacttype="terraindirt" bump="carolinas\ground_shoreline3_bump_car">carolinas\ground_shoreline3_car</subtype>
+		</uiclass>
+		<uiclass uiname="Galapagos">
+			<subtype impacttype="terrainsand" bump="wotta\galapagos\galapagos8_b">wotta\galapagos\galapagos8</subtype>
+		</uiclass>
+		<uiclass uiname="Great Lakes">
+			<subtype bump="great_lakes\ground_ice1_bump_gl">great_lakes\ground_shoreline1_gl</subtype>
+			<subtype bump="great_lakes\ground_ice1_bump_gl">great_lakes\ground_shoreline2_gl</subtype>
+			<subtype bump="great_lakes\ground_ice1_bump_gl">great_lakes\ground_shoreline3_gl</subtype>
+		</uiclass>
+		<uiclass uiname="New England">
+			<subtype impacttype="terraindirt" bump="new_england\shoreline1bump_ne">new_england\shoreline1_ne</subtype>
+			<subtype impacttype="terraindirt" bump="new_england\shoreline1bump_ne">new_england\shoreline2_ne</subtype>
+			<subtype impacttype="terraindirt" bump="new_england\shoreline1bump_ne">new_england\shoreline3_ne</subtype>
+			<subtype impacttype="terraindirt" bump="new_england\ground1bump_ne">new_england\shoreline4_ne</subtype>
+			<subtype impacttype="terraindirt" bump="new_england\ground1bump_ne">new_england\shoreline5_ne</subtype>
+			<subtype impacttype="terrainrock" bump="wotta\causeway\causeway_b">wotta\causeway\causeway</subtype>
+		</uiclass>
+		<uiclass uiname="Great Plains">
+			<subtype mapcolor="128 104 054" impacttype="terraingrass">great_plains\pondbank_gp</subtype>
+		</uiclass>
+		<uiclass uiname="Northwest Territory">
+			<subtype impacttype="terraindirt" bump="nwterritory\ground_shoreline4_bump_nwt">nwterritory\ground_shoreline4_nwt</subtype>
+		</uiclass>
+		<uiclass uiname="Pampas">
+			<subtype bump="pampas\river_shoreline1_pam_bump">pampas\river_shoreline1_pam</subtype>
+			<subtype bump="pampas\river_shoreline2_pam_bump">pampas\river_shoreline2_pam</subtype>
+			<subtype bump="pampas\river_shoreline3_pam_bump">pampas\river_shoreline3_pam</subtype>
+		</uiclass>
+		<uiclass uiname="Patagonia">
+			<subtype mapcolor="110 095 050" impacttype="terraindirt" bump="patagonia\ground_shoreline1_bump_pat">patagonia\ground_shoreline1_pat</subtype>
+			<subtype mapcolor="105 090 045" impacttype="terraindirt" bump="patagonia\ground_shoreline2_bump_pat">patagonia\ground_shoreline2_pat</subtype>
+			<subtype mapcolor="100 085 040" impacttype="terraindirt" bump="patagonia\ground_shoreline3_bump_pat">patagonia\ground_shoreline3_pat</subtype>
+		</uiclass>
+		<uiclass uiname="Saguenay">
+			<subtype bump="saguenay\ground1_bump_sag">saguenay\shoreline1_sag</subtype>
+			<subtype bump="saguenay\ground1_bump_sag">saguenay\shoreline2_sag</subtype>
+			<subtype bump="saguenay\ground1_bump_sag">saguenay\shoreline3_sag</subtype>
+		</uiclass>
+		<uiclass uiname="Sertao">
+			<subtype bump="sonora\ground1_bump_son">sertao\shoreline_ser</subtype>
+		</uiclass>
+		<uiclass uiname="Yucatan">
+			<subtype impacttype="terrainsand" bump="Amazon\ground1specbump_ama">yucatan\ground_shoreline1_yuc</subtype>
+			<subtype impacttype="terrainsand" bump="Amazon\ground3specbump_ama">yucatan\ground_shoreline2_yuc</subtype>
+			<subtype impacttype="terrainsand" bump="Amazon\ground3specbump_ama">yucatan\ground_shoreline3_yuc</subtype>
+		</uiclass>
+		<uiclass uiname="Hawaii">
+			<subtype mapcolor="025 025 025" impacttype="terrainsand" bump="carolinas\ground_shoreline2_bump_car">hawaii\shoreline_hawaii</subtype>
+		</uiclass>
+		<uiclass uiname="Polynesia">
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="caribbean\ground1specbump_crb">tahiti\seafloor_coral2_tah</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="caribbean\ground1specbump_crb">tahiti\seafloor_coral3_tah</subtype>
+			<subtype mapcolor="097 125 078" impacttype="terraingrass" bump="caribbean\ground1specbump_crb">tahiti\seafloor_coral4_tah</subtype>
+			<subtype mapcolor="065 065 065" impacttype="terrainsand" bump="carolinas\ground_shoreline2_bump_car">tahiti\groundshore1_tah</subtype>
+			<subtype mapcolor="065 065 065" impacttype="terrainsand" bump="carolinas\ground_shoreline2_bump_car">tahiti\groundshore2_tah</subtype>
+			<subtype mapcolor="065 065 065" impacttype="terrainsand" bump="carolinas\ground_shoreline2_bump_car">tahiti\groundshore3_tah</subtype>
+		</uiclass>
+	</type>
+	<type name="Ice" uiname="Ice/Passable All Nonbuildable" impassablewater="" nonsolid="">
+		<uiclass uiname="Amazon"/>
+		<uiclass uiname="Bayou">
+			<subtype mapcolor="075 060 045" impacttype="terraindirt" bump="bayou\ground4_bump_bay">bayou\ground4_bay</subtype>
+			<subtype mapcolor="075 060 045" impacttype="terraingrass" bump="bayou\ground7_bump_bay">bayou\ground7_bay</subtype>
+		</uiclass>
+		<uiclass uiname="Caribbean">
+			<subtype mapcolor="097 125 078" impacttype="terraindirt" bump="caribbean\ground5_bump_crb">caribbean\ground5_crb</subtype>
+		</uiclass>
+		<uiclass uiname="NewZealand">
+			<subtype mapcolor="139 132 123" impacttype="terrainsnow" bump="caribbean\ground5_bump_crb">mud_springs</subtype>
+		</uiclass>
+
+		<uiclass uiname="Carolinas">
+			<subtype mapcolor="030 050 044" impacttype="terraingrass">carolinas\groundforestmarsh_car</subtype>
+		</uiclass>
+		<uiclass uiname="Great Lakes">
+			<subtype mapcolor="140 170 180" impacttype="terrainsnow" bump="great_lakes\ground_ice1_bump_gl">great_lakes\ground_ice1_gl</subtype>
+			<subtype mapcolor="140 170 180" impacttype="terrainsnow" bump="great_lakes\ground_ice1_bump_gl">great_lakes\ground_ice2_gl</subtype>
+			<subtype mapcolor="140 170 180" impacttype="terrainsnow" bump="great_lakes\ground_ice1_bump_gl">great_lakes\ground_ice3_gl</subtype>
+		</uiclass>
+		<uiclass uiname="Salt">
+			<subtype mapcolor="140 170 180" impacttype="terrainsnow" bump="wotta\salt_b">wotta\salt</subtype>
+		</uiclass>
+		<uiclass uiname="Great Plains">
+			<subtype mapcolor="128 104 054" impacttype="terraingrass" bump="great_plains\ground6bump_gp">great_plains\groundSPC_nonpass_gp</subtype>
+			<subtype mapcolor="072 059 031" impacttype="terraingrass" bump="great_plains\ground6bump_gp">wotta\darfur0</subtype>
+		</uiclass>
+		<uiclass uiname="Pampas"/>
+		<uiclass uiname="Yukon">
+			<subtype mapcolor="153 177 181" impacttype="terrainsnow" bump="yukon\ground2specbump_yuk" sparkle="sparkle">yukon\ground3_SPCnonbuild_yuk</subtype>
+		</uiclass>
+	</type>
+</terraintypes>

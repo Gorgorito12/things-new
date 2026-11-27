@@ -1,6 +1,6 @@
 # Binaries
 
-Identity of every `age3y.exe` and UHC binary found under
+Identity of every `age3y.exe` and loader binary found under
 `C:\Program Files (x86)\Steam\steamapps\common\Age Of Empires 3` (surveyed 2026-10-27).
 All findings here come from byte diffs against the stock exe, not from REA.
 
@@ -9,8 +9,8 @@ All findings here come from byte diffs against the stock exe, not from REA.
 | Build | Size (B) | SHA-256 | Notes |
 |---|---|---|---|
 | **Stock Steam** (`bin\`) | 11,598,648 | `b1a1dab7264d2db72e8f8ae1df1e419eecc223b40db00c9d1013a3bc77611d9d` | Analysis target. Also shipped unchanged by Improvement Mod, Hundred Days, Age of Dynasties (Remake). |
-| Wars of Liberty | 11,591,680 | `0a277f14e08df516fe1abd3fd9f8175b40664f3371793afff507f652d5067726` | UHC loader + extra patches (below). |
-| Knights and Barbarians | 11,591,680 | `d21d0173c3028c190055ae1f14f9a4c282e8e58318975fc5d4cefdeb61a15df9` | UHC loader only. Its stored PE checksum (0xB11FCF) is stale; the contents give 0xB18410. |
+| Wars of Liberty | 11,591,680 | `0a277f14e08df516fe1abd3fd9f8175b40664f3371793afff507f652d5067726` | Loader + extra patches (below). |
+| Knights and Barbarians | 11,591,680 | `d21d0173c3028c190055ae1f14f9a4c282e8e58318975fc5d4cefdeb61a15df9` | Loader only. Its stored PE checksum (0xB11FCF) is stale; the contents give 0xB18410. |
 | Test bed LAA copy (`C:\AoE3-UHC-Test\age3y-laa.exe`) | 11,591,680 | `8970565c2d3bd01ad5d96280271a2ca1cc6926b19d653fb7e541a2c146b1f611` | K&B exe + Large-Address-Aware (Characteristics 0x10F → 0x12F) + correct checksum 0xB18430. Made by `tools/set_laa.py` (2026-10-28). |
 | Struggle of Indonesia | 11,598,648 | `25ec02bef535c8e6aabf5cc1706b8cd5a289e7e6ff79d223d037a3419a29d072` | Registry key rename only. |
 | The Ottoman Empire | 11,598,648 | `962c716b33576223d1a5681d0df7285c27a02a69d1d2dc423d83b6509c21937f` | Registry key rename only. |
@@ -25,9 +25,9 @@ Authenticode certificate sits at file `0xB0E000`, size `0x1B38` (6,968 B).
 |---|---|---|---|
 | `AoE3DE\AoE3DE_s.exe`, Steam build 25969874, game 100.19.18658.0 | 59,276,600 | `31fad98fc4fd82b4b7b3049b131b37be6918022e4637a4075c7ec7a119bd8cab` | PE32+ x64, studied read-only in [de-architecture.md](de-architecture.md). About 42 % of its functions are encrypted on disk by a protection layer. |
 
-## UHC loader patch (Patch.uhc, upstream v1.6+)
+## Loader patch (Patch.uhc, upstream v1.6+)
 
-A UHC exe is the stock exe with the certificate removed (`ImageRemoveCertificate`, hence −6,968 B)
+A loader exe is the stock exe with the certificate removed (`ImageRemoveCertificate`, hence −6,968 B)
 plus three byte records. **The import table is not touched.**
 
 | File offset | VA | Change |
@@ -77,7 +77,7 @@ wide at VA `0xBA3900` and `0xC3A1E0`, ANSI at `0xBE3890`. SoI and Ottoman overwr
 place (same length or shorter) and change nothing else; their certificate is left in place but no
 longer valid.
 
-## UHC DLLs and tools
+## Loader DLLs and tools
 
 | File | Size (B) | SHA-256 |
 |---|---|---|

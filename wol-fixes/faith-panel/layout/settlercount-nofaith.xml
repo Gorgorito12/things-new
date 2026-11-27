@@ -1,0 +1,673 @@
+<gadget name="SettlerCountDialog" type="gadget" size1024="220 639 343 768" transparent="" z="10"/>
+	<gadget name="SettlerCountDialog-defaultPanelNatMin" type="gadget" transparent="" size1024="220 628 344 770" donthighlight="" z="11" background="ui\ingame\ingame_ui_small_01_ypack" texturecoords="0.4296875 0.443 0.669921875 0.72">
+		<gadget name="minimapPanel-tributebutton1" type="button" z="13" size1024="281 674 333 742" foreground="" donthighlight="" activateondown="">
+			<command>uiShowPlayerSummaryDialog uiEnterGameMenuModeIfNotResigned</command>
+		</gadget><!--done-->
+		<gadget name="SettlerCountDialog-danceLabel" type="stateButton" z="9" size1024="227 670 277 687" mouseovertext="$$45791$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindDancers</command>
+			<stateentry background=""/>
+		</gadget>
+		<gadget name="SettlerCountDialog-totalPopLeft" type="formatText" size1024="271 632 344 647" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$32714$$" anchortooltiptopright="" textfont="NumbersFont" textcenterhoriz="" textcentervert="" textfontsize="12" background="">{totalPop} / {popcap}</gadget>
+
+		<gadget name="minimapPanel-dance" type="formatText" mouseovertext="{danceDescription}" anchortooltiptopright="" size1024="283 669 335 685" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{danceQuickValue}</gadget>
+	
+	<gadget name="minimapPanel-fame" type="formatText" anchortooltiptopright="" size1024="283 650 335 665" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
+
+		<gadget name="minimapPanel-firepit" type="button" z="15" size1024="281 666 333 685" foreground="" donthighlight="" activateondown="" mouseovertext="{danceDescription}">
+			<command>uiSelectFirepit</command>
+		</gadget>
+	<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="283 638 344 668" anchortooltiptopright="" mouseovertext="Oil Gatherers: {numGatherers(fame)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("fame")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-foodLabel" type="stateButton" z="9" size1024="227 686 277 703" mouseovertext="$$18397$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("food")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-food" type="formatText" transparent="" textcenterhoriz="" size1024="227 689 247 704" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(food)}</gadget>
+
+		<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$18397$$Food Gatherers: {numGatherers(food)}" anchortooltiptopright="" size1024="283 689 335 704" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+
+		<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="227 704 277 722" mouseovertext="$$18419$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("wood")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-wood" type="formatText" transparent="" textcenterhoriz="" size1024="227 708 247 724" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(wood)}</gadget>
+
+		<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$18419$$Wood Gatherers: {numGatherers(wood)}" anchortooltiptopright="" size1024="283 708 335 724" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+
+		<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="227 723 277 741" mouseovertext="$$18420$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("gold")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-gold" type="formatText" transparent="" textcenterhoriz="" size1024="227 728 247 744" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(gold)}</gadget>
+
+		<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$18420$$Gold Gatherers: {numGatherers(gold)}" anchortooltiptopright="" size1024="283 728 335 744" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+
+		<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 748 332 763" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idleLabel" type="formatText" transparent="" size1024="227 748 247 763" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idle" type="stateButton" mouseovertext="$$41608$$Idle Villagers: {numIdle(AbstractVillager)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" size1024="227 740 277 757" textcolor="255 255 255" textfont="SmallButtonFont" textfontsize="10" z="12" background="">
+			<command>uiFindIdleType("ValidIdleVillager")</command>
+			<stateentry background=""/>
+		</gadget>
+	</gadget>
+	
+<gadget name="SettlerCountDialog-defaultPanelAsiMin" type="gadget" transparent="" size1024="220 628 344 770" donthighlight="" z="11" background="ui\ingame\ingame_ui_small_01_asian" texturecoords="0.4296875 0.443 0.669921875 0.72">
+		<gadget name="minimapPanel-tributebutton1" type="button" z="13" size1024="281 687 333 745" foreground="" donthighlight="" activateondown="">
+			<command>uiShowPlayerSummaryDialog uiEnterGameMenuModeIfNotResigned</command>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-totalPopLeft" type="formatText" size1024="271 632 344 647" datarefreshrate=".5" textcolor="255 255 255" textcentervert="" z="9" mouseovertext="$$32714$$" anchortooltiptopright="" textfont="NumbersFont" textcenterhoriz="" textfontsize="12" background="">{totalPop} / {popcap}</gadget>
+
+		<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="227 650 277 665" anchortooltiptopright="" mouseovertext="Oil Gatherers: {numGatherers(fame)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("fame")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-fame" type="formatText" transparent="" textcenterhoriz="" size1024="227 650 247 665" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(fame)}</gadget>
+
+		<gadget name="minimapPanel-fame" type="formatText" mouseovertext="Oil Gatherers: {numGatherers(fame)}" anchortooltiptopright="" size1024="283 650 335 665" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
+
+		<gadget name="SettlerCountDialog-tradeLabel" type="stateButton" z="9" size1024="227 673 277 684" mouseovertext="$$61365$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-trade" type="formatText" transparent="" textcenterhoriz="" size1024="227 669 247 684" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background=""/>
+		<gadget name="minimapPanel-trade" type="formatText" mouseovertext="$$61365$$Trade Gatherers: {numGatherers(trade)}" anchortooltiptopright="" size1024="283 669 335 684" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(trade)}</gadget>
+
+		<gadget name="SettlerCountDialog-foodLabel" type="stateButton" z="9" size1024="227 688 277 706" mouseovertext="$$18397$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("food")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-food" type="formatText" transparent="" textcenterhoriz="" size1024="227 688 247 704" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(food)}</gadget>
+
+		<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$18397$$Food Gatherers: {numGatherers(food)}" anchortooltiptopright="" size1024="283 688 335 704" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+
+		<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="227 707 277 725" mouseovertext="$$18419$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("wood")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-wood" type="formatText" transparent="" textcenterhoriz="" size1024="227 708 247 724" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(wood)}</gadget>
+
+		<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$18419$$Wood Gatherers: {numGatherers(wood)}" anchortooltiptopright="" size1024="283 708 335 724" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+
+		<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="227 726 277 744" mouseovertext="$$18420$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("gold")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-gold" type="formatText" transparent="" textcenterhoriz="" size1024="227 728 247 743" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(gold)}</gadget>
+
+		<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$18420$$Gold Gatherers: {numGatherers(gold)}{currentUnitGatherRate(gold)}" anchortooltiptopright="" size1024="283 728 335 743" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+			
+		<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 747 332 763" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idleLabel" type="formatText" transparent="" size1024="227 747 247 763" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idle" type="stateButton" mouseovertext="$$41608$$Idle Villagers: {numIdle(AbstractVillager)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" size1024="227 743 277 761" textcolor="255 255 255" textfont="SmallButtonFont" textfontsize="10" z="12" background="">
+			<command>uiFindIdleType("ValidIdleVillager")</command>
+			<stateentry background=""/>
+		</gadget>
+
+	</gadget>
+	<gadget name="SettlerCountDialog-defaultPanelAsiMax" type="gadget" transparent="" size1024="222 631 345 768" donthighlight="" z="11" background="ui\ingame\ASI_UI_MAX" texturecoords="0.435 0.733 0.675 0.996">
+		<gadget name="minimapPanel-tributebutton1" type="button" z="13" size1024="281 676 333 745" foreground="" donthighlight="" activateondown="">
+			<command>uiShowPlayerSummaryDialog uiEnterGameMenuModeIfNotResigned</command>
+		</gadget><!--done-->
+		<gadget name="SettlerCountDialog-totalPopLeft" type="formatText" size1024="259 631 332 652" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$32714$$" anchortooltiptopright="" textfont="NumbersFont" textcenterhoriz="" textfontsize="12" background="">{totalPop} / {popcap}</gadget>
+		<gadget name="minimapPanel-trade" type="formatText" mouseovertext="$$61365$$Trade Gatherers: {numGatherers(trade)}" anchortooltiptopright="" size1024="283 671 335 687" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(trade)}</gadget>
+	
+	<gadget name="minimapPanel-fame" type="formatText" mouseovertext="Oil Gatherers: {numGatherers(fame)}" anchortooltiptopright="" size1024="283 652 335 667" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
+
+	<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="227 652 277 668" anchortooltiptopright="" mouseovertext="Oil Gatherers: {numGatherers(fame)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("fame")</command>
+			<stateentry background=""/>
+		</gadget>
+
+
+
+
+		<gadget name="SettlerCountDialog-foodLabel" type="stateButton" z="9" size1024="227 692 277 708" mouseovertext="$$18397$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("food")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$18397$$Food Gatherers: {numGatherers(food)}" anchortooltiptopright="" size1024="283 691 335 707" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+
+		<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="226 711 277 727" mouseovertext="$$18419$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("wood")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$18419$$Wood Gatherers: {numGatherers(wood)}" anchortooltiptopright="" size1024="283 711 335 727" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+
+		<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="227 730 277 747" mouseovertext="$$18420$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("gold")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$18420$$Gold Gatherers: {numGatherers(gold)}" anchortooltiptopright="" size1024="283 731 335 747" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+
+		<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 751 332 767" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idleLabel" type="formatText" transparent="" size1024="227 751 247 767" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idle" type="stateButton" mouseovertext="$$41608$$Idle Villagers: {numIdle(AbstractVillager)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" size1024="227 750 277 764" textcolor="255 255 255" textfont="SmallButtonFont" textfontsize="10" z="12" background="">
+			<command>uiFindIdleType("ValidIdleVillager")</command>
+			<stateentry background=""/>
+		</gadget>
+
+	</gadget>
+
+<gadget name="SettlerCountDialog-defaultPanelEurMin" type="gadget" transparent="" size1024="222 629 347 768" donthighlight="" z="11" background="ui\ingame\ingame_ui_small_01_ypack" texturecoords="0.675 0.73 0.913 1">
+<gadget name="minimapPanel-tributebutton2" type="button" z="13" size1024="259 670 335 757" foreground="" donthighlight="" activateondown="">
+			<command>uiShowPlayerSummaryDialog uiEnterGameMenuModeIfNotResigned</command>
+		</gadget>
+
+		<gadget name="minimapPanel-dptotalPopLeft" type="formatText" size1024="274 652 347 670" datarefreshrate=".5" textcolor="255 255 255" z="12" mouseovertext="$$32714$$" anchortooltiptopright="" textfont="NumbersFont" textcenterhoriz="" textfontsize="12" background="">{totalPop} / {popcap}</gadget>
+				<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="222 664 252 687" mouseovertext="Oil Gatherers: {numGatherers(fame)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("fame")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="minimapPanel-fame" type="formatText" mouseovertext="$$61365$$Oil Gatherers: {numGatherers(fame)}" anchortooltiptopright="" size1024="283 670 335 686" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
+
+		<gadget name="SettlerCountDialog-foodLabel" type="stateButton" z="9" size1024="222 688 252 706" mouseovertext="$$18397$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("food")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$18397$$Food Gatherers: {numGatherers(food)}" anchortooltiptopright="" size1024="283 690 335 706" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+
+		<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="224 708 252 726" mouseovertext="$$18419$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("wood")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$18419$$Wood Gatherers: {numGatherers(wood)}" anchortooltiptopright="" size1024="283 710 335 725" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+
+		<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="224 728 252 746" mouseovertext="$$18420$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("gold")</command>
+			<stateentry background=""/>
+		</gadget>
+
+
+		<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$18420$$Gold Gatherers: {numGatherers(gold)}" anchortooltiptopright="" size1024="283 729 335 745" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+
+		<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 749 332 765" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idle" type="stateButton" mouseovertext="$$41608$$Idle Villagers: {numIdle(AbstractVillager)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" size1024="227 746 277 766" textcolor="255 255 255" textfont="SmallButtonFont" textfontsize="10" z="12" background="">
+			<command>uiFindIdleType("ValidIdleVillager")</command>
+			<stateentry background=""/>
+		</gadget>
+
+	</gadget>
+	<gadget name="SettlerCountDialog-defaultPanelNatMax" type="gadget" transparent="" size1024="222 631 345 768" donthighlight="" z="11" background=	"ui\ingame\nat_ui_max" texturecoords="0.435 0.733 0.675 0.996">
+		<gadget name="minimapPanel-tributebutton1" type="button" z="13" size1024="281 676 333 745" foreground="" donthighlight="" activateondown="">
+			<command>uiShowPlayerSummaryDialog uiEnterGameMenuModeIfNotResigned</command>
+		</gadget><!--done-->
+		<gadget name="SettlerCountDialog-danceLabel" type="stateButton" z="9" size1024="227 672 277 689" mouseovertext="$$45791$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindDancers</command>
+			<stateentry background=""/>
+		</gadget>
+		<gadget name="SettlerCountDialog-totalPopLeft" type="formatText" size1024="259 631 332 652" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$32714$$" anchortooltiptopright="" textfont="NumbersFont" textcenterhoriz="" textfontsize="12" background="">{totalPop} / {popcap}</gadget>
+
+		<gadget name="minimapPanel-dance" type="formatText" mouseovertext="{danceDescription}" anchortooltiptopright="" size1024="283 671 335 687" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{danceQuickValue}</gadget>
+	
+	<gadget name="minimapPanel-fame" type="formatText" anchortooltiptopright="" size1024="283 652 335 667" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
+
+		<gadget name="minimapPanel-firepit" type="button" z="15" size1024="281 668 333 687" foreground="" donthighlight="" activateondown="" mouseovertext="{danceDescription}">
+			<command>uiSelectFirepit</command>
+		</gadget>
+	<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="283 640 344 670" anchortooltiptopright="" mouseovertext="Oil Gatherers: {numGatherers(fame)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("fame")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-foodLabel" type="stateButton" z="9" size1024="227 688 277 706" mouseovertext="$$18397$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("food")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-food" type="formatText" transparent="" textcenterhoriz="" size1024="227 691 247 707" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(food)}</gadget>
+
+		<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$18397$$Food Gatherers: {numGatherers(food)}" anchortooltiptopright="" size1024="283 691 335 707" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+
+		<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="227 707 277 725" mouseovertext="$$18419$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("wood")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-wood" type="formatText" transparent="" textcenterhoriz="" size1024="227 711 247 727" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(wood)}</gadget>
+
+		<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$18419$$Wood Gatherers: {numGatherers(wood)}" anchortooltiptopright="" size1024="283 711 335 727" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+
+		<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="227 726 277 744" mouseovertext="$$18420$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("gold")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-gold" type="formatText" transparent="" textcenterhoriz="" size1024="227 731 247 747" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(gold)}</gadget>
+
+		<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$18420$$Gold Gatherers: {numGatherers(gold)}" anchortooltiptopright="" size1024="283 731 335 747" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+
+		<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 751 332 767" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idleLabel" type="formatText" transparent="" size1024="227 751 247 767" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idle" type="stateButton" mouseovertext="$$41608$$Idle Villagers: {numIdle(AbstractVillager)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" size1024="227 743 277 761" textcolor="255 255 255" textfont="SmallButtonFont" textfontsize="10" z="12" background="">
+			<command>uiFindIdleType("ValidIdleVillager")</command>
+			<stateentry background=""/>
+		</gadget>
+	</gadget>
+
+	<gadget name="SettlerCountDialog-defaultPanelEurMax" type="gadget" transparent="" size1024="222 631 345 768" donthighlight="" z="11" background="ui\ingame\eur_max_ui" texturecoords="0.4296875 0.735 0.669921875 1">
+		<gadget name="minimapPanel-tributebutton1" type="button" z="13" size1024="281 676 333 745" foreground="" donthighlight="" activateondown="">
+			<command>uiShowPlayerSummaryDialog uiEnterGameMenuModeIfNotResigned</command>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-totalPopLeft" type="formatText" size1024="259 628 332 644" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$32714$$" anchortooltiptopright="" textfont="NumbersFont" textcenterhoriz="" textfontsize="12" background="">{totalPop} / {popcap}</gadget>
+
+		<gadget name="minimapPanel-fame" type="formatText" anchortooltiptopright="" size1024="283 651 335 672" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
+	<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="227 651 277 673" anchortooltiptopright="" mouseovertext="Oil Gatherers: {numGatherers(fame)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("fame")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-foodLabel" type="stateButton" z="9" size1024="227 676 277 694" mouseovertext="$$18397$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("food")</command>
+			<stateentry background=""/>
+		</gadget>
+
+
+		<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$18397$$Food Gatherers: {numGatherers(food)}" anchortooltiptopright="" size1024="283 676 335 695" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+
+		<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="227 699 277 717" mouseovertext="$$18419$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("wood")</command>
+			<stateentry background=""/>
+		</gadget>
+
+
+		<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$18419$$Wood Gatherers: {numGatherers(wood)}" anchortooltiptopright="" size1024="283 699 335 719" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+
+		<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="227 722 277 740" mouseovertext="$$18420$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("gold")</command>
+			<stateentry background=""/>
+		</gadget>
+
+
+		<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$18420$$Gold Gatherers: {numGatherers(gold)}" anchortooltiptopright="" size1024="283 723 335 742" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+
+		<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 746 332 765" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+
+
+		<gadget name="SettlerCountDialog-idle" type="stateButton" mouseovertext="$$41608$$Idle Villagers: {numIdle(AbstractVillager)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" size1024="227 743 247 761" textcolor="255 255 255" textfont="SmallButtonFont" textfontsize="10" z="12" background="">
+			<command>uiFindIdleType("ValidIdleVillager")</command>
+			<stateentry background=""/>
+		</gadget>
+
+	</gadget>
+
+	<gadget name="SettlerCountDialog-advancedPanelNatMax" type="gadget" transparent="" hidden="" size1024="220 634 343 768" donthighlight="" z="15" background="ui\ingame\nat_ui_max" texturecoords="0.4296875 0.732 0.669921875 1">
+		<gadget name="minimapPanel-tributebutton1" type="button" z="13" size1024="281 676 333 745" foreground="" donthighlight="" activateondown="">
+			<command>uiShowPlayerSummaryDialog uiEnterGameMenuModeIfNotResigned</command>
+		</gadget><!--done-->
+		<gadget name="SettlerCountDialog-danceLabel" type="stateButton" z="9" size1024="227 672 277 689" mouseovertext="$$45791$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindDancers</command>
+			<stateentry background=""/>
+		</gadget>
+		<gadget name="SettlerCountDialog-totalPopLeft" type="formatText" size1024="259 635 332 652" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$32714$$" anchortooltiptopright="" textfont="NumbersFont" textcenterhoriz="" textfontsize="12" background="">{totalPop} / {popcap}</gadget>
+		<gadget name="SettlerCountDialog-houses" type="formatText" transparent="" size1024="227 635 247 647" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractHouse)}</gadget>
+		<gadget name="SettlerCountDialog-HousesLabel" type="stateButton" z="9" size1024="227 635 247 647" anchortooltiptopright="" mouseovertext="Current houses built: {numIdle(AbstractHouse)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+		</gadget>
+		
+		<gadget name="SettlerCountDialog-dance" type="formatText" transparent="" textcenterhoriz="" size1024="227 673 247 688" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numDancers}</gadget>
+
+		<gadget name="minimapPanel-dance" type="formatText" mouseovertext="{danceDescription}" anchortooltiptopright="" size1024="283 673 335 688" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{danceQuickValue}</gadget>
+	
+	<gadget name="minimapPanel-fame" type="formatText" mouseovertext="Oil Gatherers: {numGatherers(fame)}" anchortooltiptopright="" size1024="283 655 335 669" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
+	
+	<gadget name="SettlerCountDialog-fame" type="formatText" transparent="" textcenterhoriz="" size1024="227 655 247 669" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(fame)}</gadget>
+	<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="227 652 300 668" anchortooltiptopright="" mouseovertext="Oil Gatherers: {numGatherers(fame)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("fame")</command>
+			<stateentry background=""/>
+		</gadget>
+			<gadget name="minimapPanel-firepit" type="button" z="15" size1024="227 652 300 668" foreground="" donthighlight="" activateondown="">
+			<command>uiSelectWOLTotemGatherer</command>
+		</gadget>
+		<gadget name="SettlerCountDialog-foodLabel" type="stateButton" z="9" size1024="227 692 277 708" mouseovertext="$$18397$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("food")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-food" type="formatText" transparent="" textcenterhoriz="" size1024="227 692 247 707" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(food)}</gadget>
+
+		<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$18397$$Food Gatherers: {numGatherers(food)}" anchortooltiptopright="" size1024="283 692 335 707" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+
+		<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="226 711 277 727" mouseovertext="$$18419$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("wood")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-wood" type="formatText" transparent="" textcenterhoriz="" size1024="227 711 247 726" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(wood)}</gadget>
+
+		<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$18419$$Wood Gatherers: {numGatherers(wood)}" anchortooltiptopright="" size1024="283 711 335 726" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+
+		<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="227 730 277 747" mouseovertext="$$18420$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("gold")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-gold" type="formatText" transparent="" textcenterhoriz="" size1024="227 730 247 746" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(gold)}</gadget>
+
+		<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$18420$$Gold Gatherers: {numGatherers(gold)}" anchortooltiptopright="" size1024="283 730 335 746" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+
+		<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 749 332 765" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idleLabel" type="formatText" transparent="" size1024="227 749 247 765" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idle" type="stateButton" mouseovertext="$$41608$$Idle Villagers: {numIdle(AbstractVillager)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" size1024="227 750 277 764" textcolor="255 255 255" textfont="SmallButtonFont" textfontsize="10" z="12" background="">
+			<command>uiFindIdleType("ValidIdleVillager")</command>
+			<stateentry background=""/>
+		</gadget>
+
+	</gadget>
+
+	<gadget name="SettlerCountDialog-advancedPanelNatMin" type="gadget" transparent="" hidden="" size1024="220 628 344 770" donthighlight="" z="11" background="ui\ingame\nat_ui_max" texturecoords="0.4296875 0.7217 0.669921875 1">
+		<gadget name="minimapPanel-tributebutton1" type="button" z="13" size1024="281 687 333 745" foreground="" donthighlight="" activateondown="">
+			<command>uiShowPlayerSummaryDialog uiEnterGameMenuModeIfNotResigned</command>
+		</gadget>
+		
+		<gadget name="SettlerCountDialog-totalPopLeft" type="formatText" size1024="283 634 335 647" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$32714$$" anchortooltiptopright="" textfont="NumbersFont" textcenterhoriz="" textfontsize="12" background="">{totalPop} / {popcap}</gadget>
+		<gadget name="SettlerCountDialog-houses" type="formatText" transparent="" size1024="227 634 247 647" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractHouse)}</gadget>
+		<gadget name="SettlerCountDialog-HousesLabel" type="stateButton" z="9" size1024="227 634 247 647" anchortooltiptopright="" mouseovertext="Current houses built: {numIdle(AbstractHouse)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+		</gadget>
+		
+		<gadget name="SettlerCountDialog-dance" type="formatText" transparent="" textcenterhoriz="" size1024="227 673 247 688" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numDancers}</gadget>
+		<gadget name="minimapPanel-dance" type="formatText" mouseovertext="{danceDescription}" anchortooltiptopright="" size1024="283 673 335 688" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{danceQuickValue}</gadget>
+		<gadget name="SettlerCountDialog-danceLabel" type="stateButton" z="9" size1024="227 669 347 687" mouseovertext="$$45791$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindDancers</command>
+			<stateentry background=""/>
+		</gadget>
+		
+	<gadget name="minimapPanel-fame" type="formatText" mouseovertext="Oil Gatherers: {numGatherers(fame)}" anchortooltiptopright="" size1024="283 654 335 669" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget> 
+	<gadget name="SettlerCountDialog-fame" type="formatText" transparent="" textcenterhoriz="" size1024="227 654 247 669" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(fame)}</gadget>
+	<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="227 655 277 664" anchortooltiptopright="" mouseovertext="Oil Gatherers: {numGatherers(fame)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("fame")</command>
+			<stateentry background=""/>
+		</gadget>
+
+
+		<gadget name="SettlerCountDialog-foodLabel" type="stateButton" z="9" size1024="227 688 277 706" mouseovertext="$$18397$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("food")</command>
+			<stateentry background=""/>
+		</gadget>
+		<gadget name="SettlerCountDialog-food" type="formatText" transparent="" textcenterhoriz="" size1024="227 692 247 708" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(food)}</gadget>
+		<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$18397$$Food Gatherers: {numGatherers(food)}" anchortooltiptopright="" size1024="283 692 335 708" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+		<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="227 707 277 725" mouseovertext="$$18419$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("wood")</command>
+			<stateentry background=""/>
+		</gadget>
+		<gadget name="SettlerCountDialog-wood" type="formatText" transparent="" textcenterhoriz="" size1024="227 712 247 728" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(wood)}</gadget>
+		<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$18419$$Wood Gatherers: {numGatherers(wood)}" anchortooltiptopright="" size1024="283 712 335 728" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+		<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="227 726 277 744" mouseovertext="$$18420$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("gold")</command>
+			<stateentry background=""/>
+		</gadget>
+		<gadget name="SettlerCountDialog-gold" type="formatText" transparent="" textcenterhoriz="" size1024="227 732 247 747" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(gold)}</gadget>
+		<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$18420$$Gold Gatherers: {numGatherers(gold)}" anchortooltiptopright="" size1024="283 732 335 747" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+
+		<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 751 332 767" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+		<gadget name="SettlerCountDialog-idleLabel" type="formatText" transparent="" size1024="227 751 247 767" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractVillager)}</gadget>
+		<gadget name="SettlerCountDialog-idle" type="stateButton" mouseovertext="$$41608$$Idle Villagers: {numIdle(AbstractVillager)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" size1024="227 750 277 761" textcolor="255 255 255" textfont="SmallButtonFont" textfontsize="10" z="12" background="">
+			<command>uiFindIdleType("ValidIdleVillager")</command>
+			<stateentry background=""/>
+		</gadget>
+	</gadget>
+
+
+	<gadget name="SettlerCountDialog-advancedPanelAsiMax" type="gadget" transparent="" hidden="" size1024="220 634 343 768" donthighlight="" z="20" background="ui\ingame\ASI_UI_MAX" texturecoords="0.4296875 0.735 0.669921875 1">
+		<gadget name="minimapPanel-tributebutton1" type="button" z="13" size1024="281 676 333 745" foreground="" donthighlight="" activateondown="">
+			<command>uiShowPlayerSummaryDialog uiEnterGameMenuModeIfNotResigned</command>
+		</gadget><!--done-->
+		<gadget name="SettlerCountDialog-totalPopLeft" type="formatText" size1024="272 635 332 652" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$32714$$" anchortooltiptopright="" textfont="NumbersFont" textcenterhoriz="" textfontsize="12" background="">{totalPop} / {popcap}</gadget>
+				<gadget name="SettlerCountDialog-houses" type="formatText" transparent="" size1024="227 633 247 647" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractHouse)}</gadget>
+		<gadget name="SettlerCountDialog-HousesLabel" type="stateButton" z="9" size1024="227 632 247 647" anchortooltiptopright="" mouseovertext="Current houses built: {numIdle(AbstractHouse)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+		</gadget>
+		
+		<gadget name="SettlerCountDialog-tradeLabel" type="stateButton" z="9" size1024="227 670 277 684" mouseovertext="Trade Gatherers: {numGatherers(trade)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<stateentry background=""/>
+		</gadget>
+		<gadget name="SettlerCountDialog-trade" type="formatText" transparent="" textcenterhoriz="" size1024="227 672 247 687" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(trade)}</gadget>
+		<gadget name="minimapPanel-trade" type="formatText" mouseovertext="Trade Gatherers: {numGatherers(trade)}" anchortooltiptopright="" size1024="283 672 335 687" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(trade)}</gadget>
+
+	<gadget name="minimapPanel-fame" type="formatText" mouseovertext="Oil Gatherers: {numGatherers(fame)}" anchortooltiptopright="" size1024="283 653 335 668" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
+	
+	<gadget name="SettlerCountDialog-fame" type="formatText" transparent="" textcenterhoriz="" size1024="227 653 247 668" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(fame)}</gadget>
+	<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="227 655 277 668" anchortooltiptopright="" mouseovertext="Oil Gatherers: {numGatherers(fame)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("fame")</command>
+			<stateentry background=""/>
+
+		</gadget>
+
+		<gadget name="SettlerCountDialog-foodLabel" type="stateButton" z="9" size1024="227 692 277 708" mouseovertext="$$18397$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("food")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-food" type="formatText" transparent="" textcenterhoriz="" size1024="227 691 247 707" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(food)}</gadget>
+
+		<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$18397$$Food Gatherers: {numGatherers(food)}" anchortooltiptopright="" size1024="283 691 335 707" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+
+		<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="226 711 277 727" mouseovertext="$$18419$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("wood")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-wood" type="formatText" transparent="" textcenterhoriz="" size1024="227 711 247 726" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(wood)}</gadget>
+
+		<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$18419$$Wood Gatherers: {numGatherers(wood)}" anchortooltiptopright="" size1024="283 711 335 726" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+
+		<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="227 730 277 747" mouseovertext="$$18420$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("gold")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-gold" type="formatText" transparent="" textcenterhoriz="" size1024="227 730 247 745" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(gold)}</gadget>
+
+		<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$18420$$Gold Gatherers: {numGatherers(gold)}" anchortooltiptopright="" size1024="283 730 335 745" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+
+		<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 749 332 765" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idleLabel" type="formatText" transparent="" size1024="227 749 247 765" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idle" type="stateButton" mouseovertext="$$41608$$Idle Villagers: {numIdle(AbstractVillager)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" size1024="227 750 277 764" textcolor="255 255 255" textfont="SmallButtonFont" textfontsize="10" z="12" background="">
+			<command>uiFindIdleType("ValidIdleVillager")</command>
+			<stateentry background=""/>
+		</gadget>
+
+	</gadget>
+
+
+	<gadget name="SettlerCountDialog-advancedPanelAsiMin" type="gadget" transparent="" hidden="" size1024="220 628 344 770" donthighlight="" z="11" background="ui\ingame\ASI_UI_MAX" texturecoords="0.4296875 0.72 0.669921875 1">
+		<gadget name="minimapPanel-tributebutton1" type="button" z="13" size1024="281 687 333 745" foreground="" donthighlight="" activateondown="">
+			<command>uiShowPlayerSummaryDialog uiEnterGameMenuModeIfNotResigned</command>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-totalPopLeft" type="formatText" size1024="271 635 344 662" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$32714$$" anchortooltiptopright="" textfont="NumbersFont" textcenterhoriz="" textfontsize="12" background="">{totalPop} / {popcap}</gadget>
+		<gadget name="SettlerCountDialog-houses" type="formatText" transparent="" size1024="227 635 247 647" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractHouse)}</gadget>
+		<gadget name="SettlerCountDialog-HousesLabel" type="stateButton" z="9" size1024="227 635 247 647" anchortooltiptopright="" mouseovertext="Current houses built: {numIdle(AbstractHouse)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+		</gadget>
+
+
+	<gadget name="SettlerCountDialog-fame" type="formatText" transparent="" textcenterhoriz="" size1024="227 655 247 670" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(fame)}</gadget>
+	
+	<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="270 649 344 671" anchortooltiptopright="" mouseovertext="Oil Gatherers: {numGatherers(fame)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("fame")</command>
+			<stateentry background=""/>
+	<gadget name="minimapPanel-fame" type="formatText" mouseovertext="Oil Gatherers: {numGatherers(fame)}" anchortooltiptopright="" size1024="283 655 344 670" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
+	
+		</gadget>
+
+		<gadget name="SettlerCountDialog-tradeLabel" type="stateButton" z="9" size1024="227 675 277 684" mouseovertext="Trade Gatherers: {numGatherers(trade)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<stateentry background=""/>
+		</gadget>
+		<gadget name="SettlerCountDialog-trade" type="formatText" transparent="" textcenterhoriz="" size1024="227 674 247 689" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(trade)}</gadget>
+		<gadget name="minimapPanel-trade" type="formatText" mouseovertext="Trade Gatherers: {numGatherers(trade)}" anchortooltiptopright="" size1024="283 674 335 689" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(trade)}</gadget>
+
+		<gadget name="SettlerCountDialog-foodLabel" type="stateButton" z="9" size1024="227 693 277 706" mouseovertext="$$18397$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("food")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-food" type="formatText" transparent="" textcenterhoriz="" size1024="227 693 247 709" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(food)}</gadget>
+
+		<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$18397$$Food Gatherers: {numGatherers(food)}" anchortooltiptopright="" size1024="283 693 335 709" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+
+		<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="227 712 277 725" mouseovertext="$$18419$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("wood")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-wood" type="formatText" transparent="" textcenterhoriz="" size1024="227 713 247 728" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(wood)}</gadget>
+
+		<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$18419$$Wood Gatherers: {numGatherers(wood)}" anchortooltiptopright="" size1024="283 713 335 728" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+
+		<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="227 731 277 744" mouseovertext="$$18420$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("gold")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-gold" type="formatText" transparent="" textcenterhoriz="" size1024="227 732 247 747" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(gold)}</gadget>
+
+		<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$18420$$Gold Gatherers: {numGatherers(gold)}" anchortooltiptopright="" size1024="283 732 335 747" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+
+		<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 751 332 767" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idleLabel" type="formatText" transparent="" size1024="227 751 247 767" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idle" type="stateButton" mouseovertext="$$41608$$Idle Villagers: {numIdle(AbstractVillager)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" size1024="227 753 277 761" textcolor="255 255 255" textfont="SmallButtonFont" textfontsize="10" z="12" background="">
+			<command>uiFindIdleType("ValidIdleVillager")</command>
+			<stateentry background=""/>
+		</gadget>
+
+	</gadget>
+
+	<gadget name="SettlerCountDialog-advancedPanelEurMax" type="gadget" transparent="" hidden="" size1024="222 628 343 768" donthighlight="" z="11" background="ui\ingame\eur_max_ui" texturecoords="0.4296875 0.735 0.669921875 1">
+		<gadget name="minimapPanel-tributebutton1" type="button" z="13" size1024="281 676 333 745" foreground="" donthighlight="" activateondown="">
+			<command>uiShowPlayerSummaryDialog uiEnterGameMenuModeIfNotResigned</command>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-totalPopLeft" type="formatText" size1024="259 628 332 644" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$32714$$" anchortooltiptopright="" textfont="NumbersFont" textcenterhoriz="" textfontsize="12" background="">{totalPop} / {popcap}</gadget>
+		<gadget name="SettlerCountDialog-houses" type="formatText" transparent="" size1024="227 630 247 647" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractHouse)}</gadget>
+		<gadget name="SettlerCountDialog-HousesLabel" type="stateButton" z="9" size1024="227 632 247 647" anchortooltiptopright="" mouseovertext="Current houses built: {numIdle(AbstractHouse)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+		</gadget>
+
+		<gadget name="minimapPanel-fame" type="formatText" anchortooltiptopright="" size1024="283 648 335 670" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
+	<gadget name="SettlerCountDialog-fame" type="formatText" transparent="" textcenterhoriz="" size1024="227 648 247 670" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(fame)}</gadget>
+	<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="227 648 277 670" anchortooltiptopright="" mouseovertext="Oil Gatherers: {numGatherers(fame)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("fame")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-foodLabel" type="stateButton" z="9" size1024="227 674 277 692" mouseovertext="$$18397$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("food")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-food" type="formatText" transparent="" textcenterhoriz="" size1024="227 674 247 694" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(food)}</gadget>
+
+		<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$18397$$Food Gatherers: {numGatherers(food)}" anchortooltiptopright="" size1024="283 674 335 694" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+
+		<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="227 699 277 717" mouseovertext="$$18419$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("wood")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-wood" type="formatText" transparent="" textcenterhoriz="" size1024="227 698 247 717" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(wood)}</gadget>
+
+		<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$18419$$Wood Gatherers: {numGatherers(wood)}" anchortooltiptopright="" size1024="283 698 335 717" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+
+		<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="227 722 277 740" mouseovertext="$$18420$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("gold")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-gold" type="formatText" transparent="" textcenterhoriz="" size1024="227 722 247 741" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(gold)}</gadget>
+
+		<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$18420$$Gold Gatherers: {numGatherers(gold)}" anchortooltiptopright="" size1024="283 722 335 741" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+
+		<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 745 332 765" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idleLabel" type="formatText" transparent="" size1024="227 745 247 765" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idle" type="stateButton" mouseovertext="$$41608$$Idle Villagers: {numIdle(AbstractVillager)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" size1024="227 743 247 761" textcolor="255 255 255" textfont="SmallButtonFont" textfontsize="10" z="12" background="">
+			<command>uiFindIdleType("ValidIdleVillager")</command>
+			<stateentry background=""/>
+		</gadget>
+
+	</gadget>
+
+<gadget name="SettlerCountDialog-advancedPanelEurMin" type="gadget" transparent="" hidden="" size1024="222 632 343 768" donthighlight="" z="11" background="ui\ingame\eur_max_ui" texturecoords="0.435 0.735 0.669921875 1">
+		<gadget name="minimapPanel-tributebutton1" type="button" z="13" size1024="281 676 333 745" foreground="" donthighlight="" activateondown="">
+			<command>uiShowPlayerSummaryDialog uiEnterGameMenuModeIfNotResigned</command>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-totalPopLeft" type="formatText" size1024="259 632 332 647" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$32714$$" anchortooltiptopright="" textfont="NumbersFont" textcenterhoriz="" textfontsize="12" background="">{totalPop} / {popcap}</gadget>
+		<gadget name="SettlerCountDialog-houses" type="formatText" transparent="" size1024="227 630 247 647" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractHouse)}</gadget>
+		<gadget name="SettlerCountDialog-HousesLabel" type="stateButton" z="9" size1024="227 632 247 647" anchortooltiptopright="" mouseovertext="Current houses built : {numIdle(AbstractHouse)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+		</gadget>
+		
+		<gadget name="minimapPanel-fame" type="formatText" anchortooltiptopright="" size1024="283 652 335 673" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(fame)}</gadget>
+	<gadget name="SettlerCountDialog-fame" type="formatText" transparent="" textcenterhoriz="" size1024="227 652 247 673" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(fame)}</gadget>
+	<gadget name="SettlerCountDialog-fameLabel" type="stateButton" z="9" size1024="227 653 277 668" anchortooltiptopright="" mouseovertext="Oil Gatherers: {numGatherers(fame)}" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("fame")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-foodLabel" type="stateButton" z="9" size1024="227 674 277 692" mouseovertext="$$18397$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("food")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-food" type="formatText" transparent="" textcenterhoriz="" size1024="227 677 247 696" anchortooltiptopright="" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(food)}</gadget>
+
+		<gadget name="minimapPanel-food" type="formatText" mouseovertext="$$18397$$Food Gatherers: {numGatherers(food)}" anchortooltiptopright="" size1024="283 677 335 696" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(food)}</gadget>
+
+		<gadget name="SettlerCountDialog-woodLabel" type="stateButton" z="9" size1024="227 699 277 717" mouseovertext="$$18419$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("wood")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-wood" type="formatText" transparent="" textcenterhoriz="" size1024="227 700 247 719" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(wood)}</gadget>
+
+		<gadget name="minimapPanel-wood" type="formatText" mouseovertext="$$18419$$Wood Gatherers: {numGatherers(wood)}" anchortooltiptopright="" size1024="283 700 335 719" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(wood)}</gadget>
+
+		<gadget name="SettlerCountDialog-goldLabel" type="stateButton" z="9" size1024="227 722 277 740" mouseovertext="$$18420$$" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" textfont="SmallButtonFont" textfontsize="10" textcolor="255 255 255">
+			<command>uiFindResourceGatherers("gold")</command>
+			<stateentry background=""/>
+		</gadget>
+
+		<gadget name="SettlerCountDialog-gold" type="formatText" transparent="" textcenterhoriz="" size1024="227 723 247 742" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{numGatherers(gold)}</gadget>
+
+		<gadget name="minimapPanel-gold" type="formatText" mouseovertext="$$18420$$Gold Gatherers: {numGatherers(gold)}" anchortooltiptopright="" size1024="283 723 335 742" donthighlight="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcentervert="" z="9" background="">{resource(gold)}</gadget>
+
+		<gadget name="SettlerCountDialog-pop" type="formatText" size1024="283 746 332 765" datarefreshrate=".5" textcolor="255 255 255" z="9" mouseovertext="$$29017$$" anchortooltiptopright="" textfont="NumbersFont" textcentervert="" textfontsize="12" background="">{numUnits(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idleLabel" type="formatText" transparent="" size1024="227 746 247 765" donthighlight="" anchortooltiptopright="" datarefreshrate="100" textcolor="255 255 255" textfont="NumbersFont" textfontsize="12" textcenterhoriz="" textcentervert="" z="12" background="">{numIdle(AbstractVillager)}</gadget>
+
+		<gadget name="SettlerCountDialog-idle" type="stateButton" mouseovertext="$$41608$$Idle Villagers: {numIdle(AbstractVillager)}" anchortooltiptopright="" statebuttonuseinternalstates="" activateondown="" size1024="227 743 247 761" textcolor="255 255 255" textfont="SmallButtonFont" textfontsize="10" z="12" background="">
+			<command>uiFindIdleType("ValidIdleVillager")</command>
+			<stateentry background=""/>
+		</gadget>
+
+
+	</gadget>

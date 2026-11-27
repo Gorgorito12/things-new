@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\SMALL\Asia and Oceania\vandiemansland" displayNameID = "603761" cannotReplace = "" loadBackground="RMs\BIG\Asia and Oceania\vandiemansland"
+details="6170246"
+loadDetails="6170247">
+<loadss>ui\random_map\VDL\VDL_ss_01</loadss>
+<loadss>ui\random_map\VDL\VDL_ss_02</loadss>
+<loadss>ui\random_map\VDL\VDL_ss_03</loadss>
+</mapinfo>

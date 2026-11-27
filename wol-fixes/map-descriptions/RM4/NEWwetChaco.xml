@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "Chaco Oriental"
+imagepath = "rms\small\NEW\wetchacosmall" 
+loadBackground="rms\big\other\southamerica"
+details="6170162"
+loadDetails="6170163">
+   <loadss>ui\random_map\everglades\everglades_ss_03</loadss>
+</mapinfo>

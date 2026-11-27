@@ -11,7 +11,7 @@ extern "C" {
 // Texture handles from 0x58E3EB; -1 until loaded, and when the art file is missing.
 std::int32_t g_uhcXpIcon = -1;
 std::int32_t g_uhcFameIcon = -1;
-// The mod supplies Art\ui\home_city\{xp,fame}_hc_icon.ddt (upstream's names).
+// The mod supplies Art\ui\home_city\{xp,fame}_hc_icon.ddt (the conventional names).
 extern const wchar_t g_uhcXpIconPath[] = L"ui\\home_city\\xp_hc_icon";
 extern const wchar_t g_uhcFameIconPath[] = L"ui\\home_city\\fame_hc_icon";
 

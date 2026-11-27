@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="43635" imagepath="RMs\SMALL\South America\andes" loadBackground="RMs\BIG\South America\andes"
+details="6170276"
+loadDetails="6170277">
+   <loadss>ui\random_map\andes\andes_ss_01</loadss>
+   <loadss>ui\random_map\andes\andes_ss_02</loadss>
+   <loadss>ui\random_map\andes\andes_ss_03</loadss>
+</mapinfo>

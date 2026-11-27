@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "Serra do Mar"
+imagepath = "rms\small\NEW\serradomarsmall" 
+loadBackground="rms\big\other\southamerica"
+details="6170150"
+loadDetails="6170151">
+   <loadss>ui\random_map\great_plains\great_plains_ss_01</loadss>
+</mapinfo>

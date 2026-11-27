@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "&#34;NEW&#34; Mes. Marshes"
+imagepath = "rms\small\Africa and Middle East\mesomarshes" 
+loadBackground="rms\big\other\middleeast"
+details="6170146"
+loadDetails="6170147">
+   <loadss>ui\random_map\NEW\mesomarshes\mesomarshes_ss</loadss>
+</mapinfo>

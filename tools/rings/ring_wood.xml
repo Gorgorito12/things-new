@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<animfile>
+	<definebone>bone_main</definebone>
+	<attachment>
+		chiefpower_a
+		<component>
+			chiefpower_a
+			<notshadowcaster/>
+			<logic type="UnitType">
+				<none>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\ring_wood_unit.particle</file>
+					</assetreference>
+				</none>
+				<abstractcavalry>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\ring_wood_cavalry.particle</file>
+					</assetreference>
+				</abstractcavalry>
+				<abstractartillery>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\ring_wood_cavalry.particle</file>
+					</assetreference>
+				</abstractartillery>
+				<abstracttowncenter>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\ring_wood_large.particle</file>
+					</assetreference>
+				</abstracttowncenter>
+				<abstracthouse>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\ring_wood_small.particle</file>
+					</assetreference>
+				</abstracthouse>
+				<building>
+					<assetreference type="ParticleSystem">
+						<file>effects\uhc_rings\ring_wood_medium.particle</file>
+					</assetreference>
+				</building>
+			</logic>
+		</component>
+		<anim>
+			Idle
+			<component>chiefpower_a</component>
+		</anim>
+	</attachment>
+	<component>
+		chiefpower_a
+		<assetreference type="GrannyModel">
+			<file>effects\Chiefpower\chiefpower</file>
+		</assetreference>
+		<decal>
+			<effecttype>default</effecttype>
+			<width>0.00</width>
+			<height>0.00</height>
+			<zoffset>0.00</zoffset>
+		</decal>
+	</component>
+	<anim>
+		Idle
+		<component>chiefpower_a</component>
+		<attach a="chiefpower_a" frombone="HITPOINTBAR" tobone="HITPOINTBAR" syncanims="0"/>
+	</anim>
+</animfile>

@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<animfile>
+	<definebone>Bip 01 master</definebone>
+	<definebone>Bip01 Prop1</definebone>
+	<attachment>
+		torch
+		<include>effects\projectiles\torch_cavalry.xml</include>
+	</attachment>
+	<attachment>
+		sword
+		<component>
+			hat
+			<assetreference type="GrannyModel">
+				<file>units\asians\chinese\steppe_rider\steppe_rider_sword</file>
+			</assetreference>
+		</component>
+		<anim>
+			<component>hat</component>
+		</anim>
+	</attachment>
+	<attachment>
+		hats
+		<component>
+			hats
+			<logic type="Tech">
+				<none>
+					<assetreference type="GrannyModel">
+						<file>units\infantry_ranged\grenadier\grenadier_age4_hat</file>
+							<replacetexture>
+								<from>units\infantry_ranged\grenadier\grenadier_age4</from>
+								<to>WoL\units\cavalry_ranged\zamburak\zamburak_rider_2_hat</to>
+							</replacetexture>
+							<replacetexture>
+								<from>units\infantry_ranged\grenadier\grenadier_age4_b</from>
+								<to>WoL\units\cavalry_ranged\zamburak\zamburak_rider_2_hat_b</to>
+							</replacetexture>
+					</assetreference>
+				</none>
+				<VeteranMEZamburak>
+					<assetreference type="GrannyModel">
+						<file>units\infantry_ranged\grenadier\grenadier_age4_hat</file>
+							<replacetexture>
+								<from>units\infantry_ranged\grenadier\grenadier_age4</from>
+								<to>WoL\units\cavalry_ranged\zamburak\zamburak_rider_2_hat</to>
+							</replacetexture>
+							<replacetexture>
+								<from>units\infantry_ranged\grenadier\grenadier_age4_b</from>
+								<to>WoL\units\cavalry_ranged\zamburak\zamburak_rider_2_hat_b</to>
+							</replacetexture>
+					</assetreference>
+				</VeteranMEZamburak>
+				<GuardMEZamburak>
+					<assetreference type="GrannyModel">
+						<file>units\infantry_ranged\grenadier\grenadier_age2_hat</file>
+							<replacetexture>
+								<from>units\infantry_ranged\grenadier\grenadier_age2</from>
+								<to>WoL\units\infantry_ranged\sarbaz\sarbaz_hat_1</to>
+							</replacetexture>
+					</assetreference>
+				</GuardMEZamburak>
+				<ImperialMEZamburak>
+					<assetreference type="GrannyModel">
+						<file>units\explorers\o_explorer_hat</file>
+							<replacetexture>
+								<from>units\explorers\o_explorer</from>
+								<to>WoL\units\infantry\cherik\cherik_4_hat</to>
+							</replacetexture>
+							<replacetexture>
+								<from>units\explorers\o_explorer_b</from>
+								<to>WoL\units\infantry\cherik\cherik_4_hat_b</to>
+							</replacetexture>
+					</assetreference>
+				</ImperialMEZamburak>
+			</logic>
+		</component>
+		<anim>
+			Idle
+			<component>hats</component>
+		</anim>
+	</attachment>
+	<component>
+		ModelComp
+		<logic type="Tech">
+			<none>
+				<assetreference type="GrannyModel">
+					<file>WoL\units\cavalry_ranged\zamburak\zamburak_rider_1</file>
+				</assetreference>
+			</none>
+			<VeteranMEZamburak>
+				<assetreference type="GrannyModel">
+					<file>WoL\units\cavalry_ranged\zamburak\zamburak_rider_2</file>
+				</assetreference>
+			</VeteranMEZamburak>
+			<GuardMEZamburak>
+				<assetreference type="GrannyModel">
+					<file>WoL\units\cavalry_ranged\ghulam\ghulam_rider_3</file>
+				</assetreference>
+			</GuardMEZamburak>
+			<ImperialMEZamburak>
+				<assetreference type="GrannyModel">
+					<file>WoL\units\cavalry_ranged\ghulam\ghulam_rider_4</file>
+				</assetreference>
+			</ImperialMEZamburak>
+		</logic>
+		<attach a="hats" frombone="bone_hat" tobone="HEAD" syncanims="0"/>
+	</component>
+	<anim>
+		Idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_idle</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Walk
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_walk</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Jog
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_jog</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Run
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_run</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bored
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_bored_a</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bored
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_bored_b</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bored
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_bored_c</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Cheer
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_cheer_a</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Cheer
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_cheer_b</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Cheer
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_cheer_c</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Cheer
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_cheer_d</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_unlimber
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_deploy</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_limber
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_undeploy</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_ranged_idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_deployed</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_bored
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_deployed</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_aim
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_deployed</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_ranged_attack
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_fire</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_reload
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_reload</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Bombard_death
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_rider_death</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Death_by_melee
+		<assetreference type="GrannyAnim">
+			<file>animation_library\cavalry\sword_deathA</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Death_by_melee
+		<assetreference type="GrannyAnim">
+			<file>animation_library\cavalry\sword_deathB</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Death_by_range
+		<assetreference type="GrannyAnim">
+			<file>animation_library\cavalry\sword_deathA</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Death_by_range
+		<assetreference type="GrannyAnim">
+			<file>animation_library\cavalry\sword_deathB</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>
+		Death_by_havoc
+		<assetreference type="GrannyAnim">
+			<file>animation_library\cavalry\rider_death_havoc_b</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+</animfile>

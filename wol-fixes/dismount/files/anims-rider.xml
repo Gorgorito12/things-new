@@ -1,0 +1,74 @@
+	<anim>Dismounted_Idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_idle</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Bored
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_bored</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Walk
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_walk</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Jog
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_jog</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Run
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_run</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Attack
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_attack</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Reload
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_reload</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Death
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_death</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Dismounted_Raze_idle
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_raze_idle</file>
+		</assetreference>
+		<component>ModelComp</component>
+		<attach a="torch" frombone="ATTACHPOINT" tobone="L HAND" syncanims="0"/>
+	</anim>
+	<anim>Dismounted_Raze_attack
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_raze_attack</file>
+		</assetreference>
+		<component>ModelComp</component>
+		<attach a="torch" frombone="ATTACHPOINT" tobone="L HAND" syncanims="0"/>
+	</anim>
+	<anim>Dismount
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_dismount</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Mount
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_mount</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>

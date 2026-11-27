@@ -1,0 +1,159 @@
+Reply to JTMaston and Punchline, round of 2026-11-23
+=====================================================
+
+Everything below was tested in single player in a copy of WoL, and filmed or pictured with a control where it
+shows on screen. The guide sections and docs/wol-requests.md have the details, the videos and the pictures.
+
+
+#78 "NEW" Levant crash: found and fixed
+---------------------------------------
+The crash is not in the map script. It is the game's 3D model cache: the exe has a fixed 30 MB budget for loaded
+models, and every frame it unloads the least recently used model while it is over that, even if units on the map
+still use it. WoL's art keeps the cache over 30 MB from the first minutes (584 to 1,751 unloads in one game), so
+sooner or later a unit draws a model that was freed under it and the game crashes inside Granny (Windows reports
+age3y.exe offset 0000c07c / 0000cc7b, or granny2.dll offset 0003a02a / 0002c8cd / 0002c9a4). Big games make it
+more likely. It also crashed with only your uhc.dll and none of ours, so it is the game, not a DLL.
+
+A second, smaller source is in the data: a damage template that names a "part" bone the anim file does not
+define, or that the model does not have. The first time the game meets such a bone in a game, it reloads that
+model while units still draw it. One game crashed this way (a cypress using the oak's damage template).
+
+The fix (we recommend all three):
+1. modelCacheLimit 0 (new key in our DLL): no model is ever unloaded for the budget. Without our DLL, patch
+   age3y.exe yourselves: file offset 0x6C043 and file offset 0x2E017A, 80 C3 C9 01 -> FF FF FF FF (check both
+   hold 80 C3 C9 01 first). Cost: about 100-150 MB more memory in a 13-minute game; your exe is
+   large-address-aware, so that is fine.
+2. dmgPartBoneFix (new key): when a damage part names a bone the model cannot use, the game no longer reloads
+   the model; that debris piece is just not drawn on that model. This covers every such case, yours, the
+   original game's and future art. Without our DLL it is one byte: file offset 0x258C1A, 74 -> EB (check that
+   0x258C18 holds 84 DB 74 1E first).
+3. The data pack wol-fixes/art-dmg-bones-20261123 (WoL-dmg-bones-fix.zip, laid out like the game folder, or
+   apply_fix.py with backup and restore): it adds 1533 missing <definebone> lines in 131 anim files, and fixes
+   the cypress (the oak's template removed from its death component) and the markets. Nothing else changes.
+   After it our checker finds 0 undefined part bones. 179 other model/template pairs use a template whose bones
+   the model does not have at all; a definebone line cannot fix those. They are listed by template in
+   missing-bones-by-template.txt (most common: house_generic_a.dmg and nat_corral_age2_damaged.dmg on 11
+   models each, tree_madrone_a.dmg on 9). With dmgPartBoneFix they cannot crash; fix them when you touch those
+   files.
+
+Tested: 6-player and 8-player games on "NEW" Levant, free for all and 4v4, Hard and Expert, European AIs, one
+player clicking every unit on the revealed map, 13.5-14 minutes each: 0 crashes with the fix and the cache
+never unloaded a model during play. Before the fix the same test crashed in about half the games. Full report:
+wol-fixes/maps/levant-fix-20261123.txt.
+
+
+#84 Dismount: no melee on foot
+------------------------------
+The dismounted Chasseur no longer fights in melee. On foot its stance has only two attacks: the same shot it
+has mounted (same damage, range, rate of fire, bonuses and tech upgrades) and the torch against buildings. The
+shot's minimum range is now 0, so it keeps firing at point blank when an enemy reaches it; before, inside 2 m
+it could not shoot and switched to a bayonet attack. Tested: five dismounted chasseurs against three charging
+Scythemen kept shooting in contact and won, with no melee animation; mounted, the same fight is sabres. Also
+against Hussars, the torch on a House, save/load on foot, both horse modes, and the AI compiles.
+Question: the torch stays because it only targets buildings; should we remove it too? If another unit should
+fight hand to hand on foot, the tool can still make that animation (recipe option "melee").
+
+
+#92 displayedRange: no white border, more contrast, and readable rings
+----------------------------------------------------------------------
+The white border is gone. Each range ring is one thin line (0.5 m) in the owner's full colour, flat like the
+game's own selection circles. The pale tint came from the ring's bump map, which asked for shine; it is flat
+now, so blue reads as a real blue.
+We also looked at how the Definitive Edition shows ranges (one faint ring per unit) and kept one ring per attack,
+because a single ring would hide, for example, the Outpost's 24 m attack behind its 40 m anti-ship one. How to
+read them now:
+- Colour = owner: yours, an ally's or an enemy's.
+- Fill = where that attack hits you: a soft fill in the owner's colour, clear near the unit and stronger toward
+  the ring. Where several attacks reach, the fills add up, so the zone covered by more attacks looks stronger.
+- Dashed ring with no fill = ships only (read from the attack's target types, not its name): for example the
+  Outpost's and the Fort's 40 m anti-ship attack.
+A building's placement ghost shows the lines only. Cost: about 0.5 ms a frame with 15 units' rings on screen
+(the cap), and no lag spikes. To update, copy the new tools/rings folder over art/effects/uhc_rings.
+Known limit: with the team-colour option the fill keeps each player's own colour.
+
+
+#97 Resendable cards (new key resendableCards)
+----------------------------------------------
+Put <resendeveryage>1</resendeveryage> in the <card> of homecity<Civ>.xml. Each time the player reaches a new
+age, the card gets its sends back. The count is reset, never added, so a card sent in Age II and not sent in
+Age III has one send in Age IV, not two.
+A note on infiniteinlastage: in the exe it does not make a card unlimited. It refills the card's sends once
+when the player reaches the Imperial Age. With both tags, the Imperial Age is just one more age-up.
+Tested with Dutch: cards sent in Ages I to IV came back at each age-up; a skipped age did not stack; untagged
+cards stayed used; saved games keep the state.
+Questions:
+1. We give back the card's full <maxcount> at each age-up (a card that can be sent twice gets both sends back).
+   Do you want that, or only one send per age?
+2. Should a tagged card's rollover say so, e.g. "This Card can be sent again in each new Age"? If yes, give us
+   the string ID.
+3. We could not see the AI resend a tagged card in our short test games. It reads the same data, but tell us if
+   your AI scripts need anything.
+
+
+#98 Retargeting inside an attack (new key retargetInAction)
+-----------------------------------------------------------
+Tag: <RetargetInAction>1</RetargetInAction> on an attack action. The Maxim's "bullets" are the six Attack tags
+of its Bombard_ranged_attack animation, each a full shot. When the target died, the game put the attack into
+its reload wait, so the remaining tags of that animation fired nothing until the 4 s ROF was over. With the
+tag, a unit whose target dies while it is still in its attack animation immediately takes the nearest enemy in
+range that it could attack on its own, and the remaining shots of the same animation hit it. Nothing restarts:
+same cycle, same ROF. If no enemy is in range, nothing changes. It also works with numberOfShots bursts.
+Lag: the search only runs when a tagged unit loses its target; with 30 Maxims and 10 burst riflemen against
+100 infantry the simulation time per frame was the same (0.36 against 0.35 ms). Put the tag on CannonAttack in
+organGun.tactics (it covers the Maxim and the 6 other guns that share it), and on gwMaxim if you want it there.
+Questions:
+1. If the player ordered the attack on a specific target and it dies, the gun also switches to the nearest
+   enemy. OK, or should only automatic targets switch?
+2. Balance: all six shots now land, so against groups the Maxim deals much more (2 Maxims beat 16 Regulars that
+   win without the tag). Do you want to lower its damage?
+3. Target choice is the nearest enemy in range. Would you prefer the one nearest the dead target or the weakest?
+4. With numberOfShots, a target that dies during the reload wait between bursts still makes the next burst
+   start on the unit's own next target. Is that fine?
+
+
+#99 Quick arrival card (new key quickArrivalCards)
+--------------------------------------------------
+<Flag>QuickArrival</Flag> on the card's tech. The card's rollover gets the bullet line "This is a quick-arrival
+card.", in the same style as the other lines: right after "This Card may be sent INFINITE times" for infinite
+cards, and after the "ONE time / N times" line for the others, which places it between the rollover text and
+the advanced info. It works in the shipment panel and in Build a Deck. quickArrivalCards stringid N takes the
+text from your string table so you can translate it. Nothing else about the card changes.
+Question: is it fine that the line comes after the "may be sent ONE time" line on non-infinite cards?
+
+
+Minimized UI: your new icons, and every icon square (version 9)
+----------------------------------------------------------------
+Your four icons are in the min UI pack, converted to the game's format and not redrawn: Line (blue, musket
+upright in front), Skirmisher (green, musket diagonal; new in the pack, it replaces your current one), Standing
+(purple, no weapon) and Maneuver (the winged Minié with the bullet tinted #C75A21, the colour of the "Maneuver
+Unit" name, its wings shortened so it is as tall as the soldiers). They go at the paths the panels already draw,
+so your attackTypeIcons line and your data do not change.
+The icons of the minimized panel no longer look squeezed, the game's and yours alike. In the game's markup
+<icon="(N)(texture)"> N is the icon's width and its height is the text line's; the game wrote (10), 11 px wide in a
+17 px line at 1920x1080. Our DLL now writes the width that matches the line (17x17 at 1080p, 14x14 at 1024x768 and
+1600x900), so every icon shows at its true aspect, and a long row still ends with "(+N)" instead of running off the
+panel. Our drawn icons are now round, and your house icon (population, Buildings) is enlarged to the others' height.
+The big interface does not change. Checked in game at 1024x768, 1600x900, 1280x960, 1920x1080 and 2560x1440: the
+Escopetero, the Falconet in Bombard, the Lancer and the Villero, rows and tooltips.
+Details: wol-fixes/min-ui/note-for-team-v9.txt (and note-for-team-v8.txt for the art).
+
+
+#100 Slinger animations on other models (for Punchline)
+-------------------------------------------------------
+We found why the Macehualtin's animations only play on that model, and fixed it in the art; no DLL change is
+needed. The game only starts an animation on a model if the animation file contains a track group with that
+model's exact name. The Macehualtin's model and all 35 of its animations are named "bone_master", while every
+standard infantry model is named "Bip01". So on any other body the animations do nothing and the unit stays
+frozen in its bind pose; that is also why both of WoL's current slingers reuse the Macehualtin model. The
+skeletons are otherwise the same biped, and the sling is a separate attachment that works on any body.
+We retargeted all 35 animations onto the standard Bip01 skeleton, each with its tag file, so the stone leaves
+from the same point. The pack wol-fixes/slinger-anims adds two sets (one made on WoL's Skirmisher body, one on
+the native Rifleman body; either works on any standard-proportion Bip01 body) and the ready-to-paste anim file
+blocks; it changes none of your files. For a model with other proportions or bone names, our tool can make a
+set for that model too. Tested in game with test slingers on both bodies: idle, walk, sling attack in step with
+your Polynesian slinger, melee, deaths, save/load; the AI still compiles.
+Questions:
+1. Which slinger units are you planning, and which models will they use?
+2. Should the new slingers keep the Macehualtin's shield? The blocks leave it out by default.
+3. Which projectile will they use? The Macehualtin and POLYMarauder use "Arrow"; a dedicated sling-stone
+   projectile is possible.

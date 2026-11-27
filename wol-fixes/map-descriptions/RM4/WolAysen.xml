@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\small\South America\WolAysen" 
+displayName = "Aysen"
+loadBackground="RMs\BIG\South America\tierradelfuego"
+details="6170256"
+loadDetails="6170257">
+   <loadss>ui\random_map\Aysen\Aysen_ss_01</loadss>
+   <loadss>ui\random_map\Aysen\Aysen_ss_02</loadss>
+   <loadss>ui\random_map\Aysen\Aysen_ss_03</loadss>
+
+</mapinfo>
+<!--
+displayName = "Aysen"
+-->

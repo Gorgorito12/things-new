@@ -1,0 +1,16 @@
+# UHC.log, retargetInAction log (WoLReal4, 2026-11-26)
+retargetInAction: an attack with <RetargetInAction>1 whose target is lost during its attack animation fires the rest of its shots at a new target in range; tags, shots and retargets logged (multiplayer unverified)
+retargetInAction: applied
+retargetInAction: Explorer/SharpshooterAttack (protoy): RetargetInAction 1
+retargetInAction: 98933 ms, unit 0: an attack cycle begins (action 40051460, target 2)
+retargetInAction: 99422 ms, unit 0 shot 1 of action 40051460 at 2 (OutlawPistol, alive, 270 HP), state 01h
+hook reached: retargetInAction (0x487838)
+retargetInAction: 99541 ms, unit 0 (Explorer) lost its target 2 in state 01h after 1 shots: no other target in range, the stock code (7 units around: 0 dead or inside, 1 not of the auto-attack type, 4 for another attack (4), 0 out of range 16.0, 0 unseen)
+retargetInAction: 17117 ms, unit 0: an attack cycle begins (action 3FF4F6E0, target 1)
+retargetInAction: 17606 ms, unit 0 shot 1 of action 3FF4F6E0 at 1 (DLClegendarybeast1, alive, 5000 HP), state 01h
+retargetInAction: 194139 ms, unit 0: an attack cycle begins (action 3FF4F6E0, target 1)
+retargetInAction: 194628 ms, unit 0 shot 1 of action 3FF4F6E0 at 1 (DLClegendarybeast1, alive, 4250 HP), state 01h
+retargetInAction: 374975 ms, unit 0: an attack cycle begins (action 3FF4F6E0, target 1)
+retargetInAction: 375464 ms, unit 0 shot 1 of action 3FF4F6E0 at 1 (DLClegendarybeast1, alive, 3500 HP), state 01h
+retargetInAction: 480213 ms, unit 0: an attack cycle begins (action 3FF4F6E0, target 1)
+retargetInAction: 480702 ms, unit 0 shot 1 of action 3FF4F6E0 at 1 (DLClegendarybeast1, alive, 2750 HP), state 01h

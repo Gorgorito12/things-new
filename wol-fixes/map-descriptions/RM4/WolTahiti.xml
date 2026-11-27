@@ -1,0 +1,11 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\small\Asia and Oceania\WolTahiti" 
+displayName = "Tahiti"
+loadBackground="RMs\BIG\Asia and Oceania\atoll"
+details="6170266"
+loadDetails="6170267">
+   <loadss>ui\random_map\Tahiti\Tahiti_ss_01</loadss>
+   <loadss>ui\random_map\Tahiti\Tahiti_ss_02</loadss>
+   <loadss>ui\random_map\Tahiti\Tahiti_ss_03</loadss>
+</mapinfo>

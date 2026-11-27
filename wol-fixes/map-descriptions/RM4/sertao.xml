@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="75115" imagepath="RMs\SMALL\South America\sertao" loadBackground="RMs\BIG\South America\sertao"
+details="6170376"
+loadDetails="6170377">
+    <loadss>ui\random_map\orinoco\orinoco_ss_01</loadss>
+    <loadss>ui\random_map\orinoco\orinoco_ss_02</loadss>
+    <loadss>ui\random_map\orinoco\orinoco_ss_03</loadss>
+</mapinfo>

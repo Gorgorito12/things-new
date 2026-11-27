@@ -1,0 +1,13 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "rms\small\NEW\vietsmall"
+displayName = "Viet"
+cannotReplace = ""
+loadBackground="ui\random_map\indochina\indochina_map"
+details="6170404"
+loadDetails="6170405">
+  <loadss>ui\random_map\Viet\Viet_ss_01</loadss>
+  <loadss>ui\random_map\Viet\Viet_ss_02</loadss>
+  <loadss>ui\random_map\Viet\Viet_ss_03</loadss>
+</mapinfo>

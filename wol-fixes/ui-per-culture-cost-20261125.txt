@@ -1,0 +1,95 @@
+A themed interface per culture: what it would cost (#103 follow-up)
+Measured 2026-11-25, single player, WoL 1.0.15c data in a test copy (C:\AoE3-UHC-WoLReal3), 1920x1080, our DLL.
+Nothing was changed in your files.
+
+SHORT ANSWER
+- Memory: an interface copy per culture costs almost nothing while it is hidden. The game loads a gadget's
+  textures the first time the gadget is shown, not when the layout is read. Eight hidden copies of the in-game
+  interface (808 gadgets, 63.5 MB of texture files) added about 10 MB to the process; showing all eight at once
+  added 34 MB more. A player only ever sees his own culture, so in a real game the cost is one culture's art.
+- Speed: no difference we could measure. techGadgets with one line per culture (8 lines) spends 0.4 to 4
+  microseconds per frame and about 1 microsecond per tech check (every 100 ms of game time).
+- Loading: no difference we could measure (the copies make uimainnew.xml 2.4 MB instead of 0.2 MB).
+- One thing to avoid: one techGadgets line per small gadget (hundreds of lines). See "a trap" below.
+- 32-bit headroom: the game used about 1.25-1.29 GB of its 4 GB address space in this test (your exe is
+  large-address-aware), so even the worst case (+0.05 GB) is far from the limit.
+So: themed interfaces per culture are affordable. Do it with one holder gadget per culture and one techGadgets line
+per culture, as below.
+
+1. HOW THE ORIGINAL GAME ALREADY CHOOSES ART PER CULTURE
+Read in the exe (REA, Ghidra; our notes in docs/engine-symbols.md, "The resource panel per culture"):
+- Only ONE part of the in-game interface changes with the culture: the resource panel. uimainnew.xml holds 12 copies
+  of it, SettlerCountDialog-{default,advanced}Panel{Eur,Asi,Nat}{Max,Min}; the names are written in the exe. When
+  the interface is built, the game hides all 12 and shows one: default or advanced and full or minimized by the
+  options; Nat if the player's civ counts as native, else Asi if it counts as Asian, else Eur. Each copy has its own
+  background (eur_max_ui, ASI_UI_MAX, nat_ui_max, ingame_ui_small_01_asian / _ypack).
+- The other in-game files (uiminimappanelnew, uicommandpanelnew, uiunitstatpanel3, ..., full or "min") are one file
+  for every civ.
+- "Native" and "Asian" here are the same tests your wol.cfg already extends with NativeCivs and asianCivs (that is
+  why the Ethiopians get the Asian panel).
+What it means for you: that path gives three looks (European, Asian, Native), for the resource panel only, and
+costs nothing extra. It cannot give a fourth culture (there is no slot for it) and it cannot change the other
+panels. For more cultures, or for the other panels, use techGadgets (below).
+
+2. THE techGadgets PATH, MEASURED
+What was built (a synthetic copy, deleted after the test): the whole in-game interface (every top-level gadget of
+uimainnew.xml and of the in-game panel files, full and minimized: 101 gadgets with their children) copied 8 times,
+one copy per culture, each copy pointing at its own copy of every texture it uses (111 files, 7.9 MB per culture,
+63.5 MB in all). Each copy sat in a hidden holder gadget uhcCulture1..8, and wol.cfg had one line per culture:
+    techGadgets <tech> uhcCulture<k>
+(The tech was one nobody had, so the copies stayed hidden; showing them was then forced by console to measure the
+worst case.)
+Each case was a new game (scenario on a test map, 30 units, no AI), measured 20 s after the start for 60 s.
+Other agents' games ran on the same PC during every run (2 to 5 of them), so the runs were back-to-back A/B
+pairs: today's interface (A), then the 8 copies (B), alternated.
+
+  Run   Case               Private memory   Address space used   fps (mean)   Render ms/frame
+  A1    today              952 MB           1,280 MB             771          1.1
+  A2    today              927 MB           1,251 MB             471          2.1
+  A4    today              926 MB           1,250 MB             325          3.2
+  B1    8 copies, hidden   963 MB           1,287 MB             510          1.8
+  B2    8 copies, hidden   933 MB           1,258 MB             191          5.2   (5 other games running)
+  B3    8 copies, hidden   939 MB           1,258 MB             472          2.3
+  B4    8 copies, hidden   937 MB           1,258 MB             886          1.0
+  B2-B4, then all 8 shown  +34 MB (967-973) +45-51 MB (1,303-1,309)
+  1 copy, then shown       +14 MB (926 -> 940), one culture's art
+  (A3 did not start: the copy's launch timed out while other games loaded; not counted.)
+
+What it means
+1. Memory while hidden: +6 to +12 MB for 8 cultures (B against A; the spread between runs of the same case is
+   larger, about 25 MB). That is the gadgets themselves and the bigger XML, not the textures.
+2. Textures load when shown: showing a culture's copy added 14 MB (one culture) and 34 MB (all eight). A copy
+   that is never shown costs nothing in textures. Whether hiding a copy again frees its textures was not tested; one culture per player never switches.
+3. fps: the spread comes from the other games on the PC (191 to 886 fps in the same case); the game's own update
+   time was 0.2 ms per frame in every run, with and without the copies. No difference that could be measured.
+4. techGadgets cost (timed inside the DLL, B runs): 0.44 to 3.8 microseconds per frame to keep 8 holders in their
+   state, 0.7 to 1 microsecond per tech check (one every 100 ms; the first check of a game, which looks the techs up
+   by name, about 110 microseconds once). At 500 fps that is under 2 ms per second, under 0.2 % of a frame.
+5. Loading: time to the main menu 12.7-13.9 s in both cases when the PC was quiet (one A and one B run took 82-89 s
+   while other games were loading; B1 took 22.8 s); the scenario load 31.6-33.6 s in both. No difference that the
+   noise lets us see.
+
+A TRAP: one techGadgets line per small gadget
+We also tried one line per top-level gadget of every copy (792 lines). The key finds gadgets by name with the same
+lookup as the console's gadgetReal; for gadgets nested inside a holder that lookup found 3 of 99 names, and every
+name it does not find is looked up again every 2 seconds. With 792 lines the frames went from microseconds to 25 ms,
+then to 2.7 s each (the game was unplayable and was closed). With one line per culture holder all 8 holders were
+found and the cost is the one above. So: put each culture's interface in ONE top-level holder gadget of
+uimainnew.xml and give techGadgets one line per holder.
+
+RECOMMENDATION
+- For a European / Asian / Native look of the resource panel only, use the game's own three variants (you already
+  have them); cost: nothing.
+- For more cultures or other panels: one top-level holder per culture in uimainnew.xml (hidden=""), and one line
+  per culture: techGadgets <CultureTech> <CultureHolder>. You need a tech per culture that its civs have from the
+  start; for example one tech per culture that each civ's Age0 tech activates.
+  The holder that today's interface lives in should stay the default (shown) so that a game without the key looks as
+  today.
+- Panels the engine builds from its own files (the command panel, unit stat panel, minimap panel) are refreshed by
+  the engine by name (the exe looks those names up), so keep their buttons and texts as the engine's own gadgets and
+  theme the art around them (an inference, not tested). Test each panel you theme.
+- Budget: about 5-15 MB per culture's art in memory, only for the culture shown. Keep each culture's textures to
+  what changes (frames and backgrounds); icons can stay shared.
+- Not measured: an 8-player game with this layout (the cost is per interface, the local player's, so the number of
+  players does not change it), the full interface option (the test used the minimized one; both files were copied),
+  and art bigger than WoL's current panel textures (memory grows with the texture sizes you choose).

@@ -1,0 +1,14 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "ui\esoc_map\cascade_range"
+displayName = "ESOC Cascade Range"
+cannotReplace = ""
+loadBackground="ui\esoc_map\cascaderange_map"
+details="6170054"
+loadDetails="6170055">
+ <loadss>ui\random_map\Cascade\Cascade_ss_01</loadss>
+ <loadss>ui\random_map\Cascade\Cascade_ss_02</loadss>
+ <loadss>ui\random_map\Cascade\Cascade_ss_03</loadss>
+  
+</mapinfo>

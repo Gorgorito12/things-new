@@ -1,0 +1,77 @@
+Reply to JTMaston, 2026-11-21 (feedback on the 2026-11-20 round)
+================================================================
+
+Everything below was tested in single player in copies of WoL with our UHC.dll; the min UI and showGatherRate were also
+checked beside your own uhc.dll (with our dinput8.dll). Not tested in multiplayer. Each folder has its README in English.
+
+Veterancy: rank-up text off, darker border (#74)
+-------------------------------------------------
+"The rank up text needs to be disabled."
+- New option: veterancyBonus notext. A unit reaching a rank shows no text over it; the mark over the HP bar and the
+  unit panel row stay. WoL's line becomes "veterancyBonus notext".
+- The marks have a darker black border (12 px wider inward on the traced sheet), so they read better in game. The
+  silhouettes and the loop holes did not move. Each mark is still centred on the HP bar (0 px measured on Hussars
+  and Crossbowmen, ranks 1-5).
+- Video (notext, the new marks): docs\media\veterancyBonus-icons-wol. Folder: wol-fixes\veterancy-marks\.
+
+Special transforms: the toast and the dance (#73)
+-------------------------------------------------
+"The not enough resources text should show up like the normal toast text."
+- Done. When the cost is the only reason, the button stays live (with the red "Not enough resources" line in its
+  rollover) and a click shows the game's own message and sound, as for Train: "55 food, 70 gold required to build
+  another Askari." Three youths selected give one message, not three. The fireship does the same ("150 wood
+  required to build another Pyrpoliko.") and keeps its button. A placement or build limit reason still greys the
+  button with that reason.
+"Did the dancing animation disappear?"
+- Yes, and it is back. The dance lived only in the construction stages of maturing2/3/4.xml; a transform creates the
+  maturing object already built, so only the "finished" stage showed (fire and decal, no youth). apply_fix.py now
+  gives the finished stage the last dancer stage (Askari keeps the rifle, Escort its heal anim). WOLAfricanUhlanMaturing
+  uses maturing4.xml too, so it dances as well.
+- But these four maturings produce their unit at once, so the youth now dances BESIDE the new unit for the maturing's
+  lifespan (20 s for the Askari, up to 50 s for the Mountain Gun). In the old placed route the youth danced only while
+  building (about 4 s) and then left an empty decal.
+Questions:
+1. Should the youth dance beside the new unit for the whole lifespan, for part of it, or should the unit wait until the
+   dance ends? Waiting needs a data change (a delay before the unit appears, or the Maintain action your own button
+   maturings use).
+2. Important, the AI: the pack replaces the youth's <Train> rows by command buttons, and the AI builds these four
+   maturings only through those rows. With the pack, a Zulu AI cannot build them. apply_fix.py --keep-train keeps the
+   rows (the AI works, but a human player sees two buttons per maturing). Which do you want? A third way would be a key
+   of ours that hides the placing buttons from human players only.
+
+Paraguayan works: smoke on and off (#69)
+-----------------------------------------
+"Is it possible to make the works' flues alternate at random intervals between puffing and not puffing smoke?"
+- Done in works_smoke.particle alone: each chimney puffs for 8-20 s, then pauses for 12-25 s, with a random first wait
+  of 0-16 s. The engine rolls new times for each chimney at every puff and pause, so no two chimneys are in step, not
+  even the two of one works. A pause is longer than the smoke lives, so the flue really clears.
+- Measured in game in the three ages: every chimney stopped and restarted 5-8 times in 4 minutes; each works went fully
+  quiet several times, while a row of works was never without smoke for more than a few seconds.
+- Each chimney now smokes about 43 % of the time (a two-chimney works about two thirds, an age-3 works about four
+  fifths). Tell us if you want it lighter or heavier.
+- Seen in the films with both the old and the new file, so not caused by this: two age-1 Food works gave no smoke for
+  their first 1-2 minutes of game time, then smoked normally. We did not find why.
+- Video: wol-fixes\paraguayan-works\media\paraguayanWorks-smoke-wol (the previous always-on smoke: -steady).
+
+Minimized UI, version 7: wol-fixes\min-ui\note-for-team-v7.txt
+---------------------------------------------------------------
+- "4s": seconds are stuck to the number everywhere we write them: "Rate of fire: 3.50s", "40s", "3 x 8s".
+- "Rate of fire" replaces "Attacks every".
+- Armor shows as a percent stuck to the value: "30%", "12.5%", then the damage icon. The big UI's own Resists row is
+  the game's and still reads 0.20: do you want it changed too? Beside your uhc.dll the min UI keeps 0.20, because your
+  DLL holds that panel code.
+- Speed and limber: yes, it updates. A Falconet shows 4 limbered and 1.60 in Bombard (4 x 0.4), in both UIs. Ordered
+  to move, a gun in Bombard limbers by itself and moves at 4, so 1.60 is only shown while it is deployed.
+- Icons: new Line (shako, blue coat), Standing (the same soldier, red coat) and Maneuver (a winged arrow) icons in the
+  pack; a winged bullet is in review\ as the alternative. Note: the game draws Standing from ui\ingame\stat_icon_infantry,
+  not from the staticons path in wol.cfg, so the pack replaces both files.
+- The pack now has an apply_fix.py with --restore and --check.
+
+showGatherRate with all the UI changes
+--------------------------------------
+- It works with every UI key on (minUIStats, multiplierDecimals, attackTypeIcons, resourceGatherAuras, resourceDebt):
+  the same rates in both UIs (berries 0.67/s, a mine 0.60/s, the Mill 0.50/s, trees 0.50/s), no overlapping rows.
+- Fixed on the way: no rate showed for a villager chopping wood (the game gives a villager on a tree a different
+  current action). It shows now. Also fixed in the optional "Holds:" row: the Mill read 999/100 (now no row, the game
+  already says Infinite) and a placed mine 1928/0 (now 1929, as the game rounds it).
+- Beside your uhc.dll: applied, same rates, wood included.

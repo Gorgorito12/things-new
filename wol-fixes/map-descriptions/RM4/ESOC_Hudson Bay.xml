@@ -1,0 +1,14 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "ui\esoc_map\hudson_bay"
+displayName = "ESOC Hudson Bay"
+cannotReplace = ""
+loadBackground="ui\esoc_map\hudsonbay_map"
+details="6170070"
+loadDetails="6170071">
+
+<loadss>ui\random_map\saguenay\saguenay_ss_03</loadss>
+<loadss>ui\random_map\great_lakes\great_lakes_ss_02</loadss>  
+  
+</mapinfo>

@@ -1,31 +1,64 @@
 # Tools
 
-Python 3 scripts, with no third-party packages except where noted. Run them with `python -I`
+Python 3 scripts, with no third-party packages except where noted (Pillow for `kothcheck.py`'s minimap crops,
+capstone for `re/pe64.py`'s listings). Run them with `python -I`
 (isolated mode) from the repository root.
 
 | Tool | What it does |
 |---|---|
 | [`gen_sites.py`](#gen_sitespy) | Writes `src/generated/sites.h` from the stock exe. |
 | [`package_release.py`](#package_releasepy) | Builds the release zip that modders download. |
+| [`make_release.py`](#make_releasepy) | The release in one command: a clean checkout of `origin/main` (or `--ref`), the Release build, `package_release.py`, the zip in `dist\`. |
+| `export_public.py` | `--check` builds the public export in memory and reports what it would refuse (a banned name, a link to a file or heading that is not exported, unbalanced markers); `--out <public clone>` empties the clone but for its `.git` and `KEEP_IN_CLONE` and writes the export there; commit and push the clone by hand, only when asked. |
 | [`bar.py`](#barpy) | Lists and extracts files from the game's `.bar` archives. |
 | [`xmbedit.py`](#xmbeditpy) | Checks, converts, compiles and edits compiled XML (`.xmb`). |
 | [`dot_testdata.py`](#dot_testdatapy) | Writes the `damageOverTime` test data into a test copy of the game. |
+| [`pop_testdata.py`](#pop_testdatapy) | Writes the `decimalPopulation` test data into a test copy of the game. |
 | [`protoy_testdata.py`](#protoy_testdatapy) | Edits protos in a test copy's `protoy.xml` and its XMB: marker unit types, flags, extra elements. |
+| `guide_dates.py` | Writes the day, date and time of every feature, and the "Latest changes" table, into `docs/modding-guide.md` and `docs/bug-fixes.md` from git; run it before the commit of a new key or test video. `--check` only reports what would change. | <!-- private -->
+| `porting_code.py` | Writes `docs/porting-code/*.md`, the code of the features in pages by theme, from `src/`. `--check` fails when a page differs. |
+| `make_gifs.py` | Makes every test GIF to one standard (800 px, 8 fps, 12 s, 4 MB) from the masters in `rea/media-masters`, with the cuts in `gifs.txt`. `--check` fails on one out of it. |
+| `rings/`, `bars/`, `pie/`, `playericons/` | Generated art, kept here because the release zip, the tests and the docs use it; the generators live in [aoe3-blender-tools](https://github.com/Gorgorito12/aoe3-blender-tools) (since 2026-11-13; new art tools go there too). From that repo's folder: `python -I tools/make_rings.py --out <this repo>\tools\rings --folder uhc_rings` (the coloured aura rings for `art/effects/uhc_rings/`, `aura_<resource>.xml` with a floating icon cut from `--icon-sheet <this repo>\tools\rings-source\gather-marker-icons.png`, `range_<metres>.xml` for `displayedRange`, `rank_<1-5>.xml` for `veterancyBonus`); `python -I tools/make_bar.py --out <this repo>\tools\bars\health_overheal.ddt` (the orange end of the portrait HP bar for `overhealHitpointBars segment`, for `art/ui/uhc/`; `--colour RRGGBB` for another colour, to name with `bar=`); `python -I tools/make_pie.py --out <this repo>\tools\pie` (the 32 frames of the small progress pie after `nurseryFactor`'s panel row, for `art/ui/uhc/pie/`); `python -I tools/make_icons.py --out <this repo>\tools\playericons --prefix uhc_ --table avatar_uhctest.xml` (three test icons `uhc_blue`, `uhc_red`, `uhc_green` and their avatar table, for `playerIcon`; `--install <bed>` copies them to `data\` and `art\ui\playericons\`). Add `--check` to compare: all four match the files here. |
+| `rings-source/` | The source art of the rings: `gather-marker-icons.png`, the drawn sheet of the gather marker icons that `make_rings.py --icon-sheet` cuts and scales ([modding guide, "The marker of a gathered resource"](../docs/modding-guide.md#the-marker-of-a-gathered-resource)). |
+| `make_avatar_table.py` | `make_avatar_table.py <WoL folder> [--out <file>]` writes the avatar table of `playerIcon` (default `<WoL>\data\avatar_wol.xml`) from pictures WoL already ships: its player avatars `art\spec\avatars\*.ddt` (ID: the file name in lower case) and the `cpai_avatar_*` portrait of each public civ in `civs.xml` (ID: `civ_<name>`). A missing texture (not loose, not in `art\*.bar`) is skipped; prints the IDs; copies no art and changes nothing else in the WoL folder; refuses to overwrite a table it did not write. Its output stays out of git. |
+| `sharedlimit_testdata.py` | `<bed> [--restore]`: a real `OutpostWagon` at the Town Center and a team's `ypGoat` limit in a WoL bed, for `sharedBuildLimit`. |
+| `monastery_testdata.py` | `<bed> [--model\|--ai\|--restore]`: `UhcMonastery` and `UhcSmallMine` in a WoL bed, for `linkedResource`; buildable with a monastery's model, and an AI rule that builds one. |
+| `torp_testdata.py` | `<bed> [--restore]`: the Torp's auras on `WOLSawmill` in a WoL bed, one `UnitResource` aura per resource, each with its marker (mine, bush, hunt, sheep, cow as fish, Mill, and the Trade, XP and Fame crates for export, xp and oil), a panel row and two test techs, for `unitResourceAuras`. |
+| `ring_testdata.py` | `<bed> [--restore]`: display-only auras (Damage x1.0) on the Explorer in a WoL bed, one aura ring per proto (gold, rof, work, damage, heal, speed and the damage and HP anti-rings) on Settlers, Skirmishers, Grenzers, Jaegers, Hussars, a Town Center, a Barracks and a House, to see every ring and size. |
+| `grant_testdata.py` | `<bed> [--restore]`: grant tags on the `Market` in a WoL bed (interval 20, cap 3, cost 0, scope `self`) and four test techs of 300 wood on its buttons, for `researchGrants`. |
 | [`testbed.py`](#testbedpy) | Plays a feature test in a test copy with no clicks: test map, timed trigger effects, console commands, units, log, screenshots, videos. |
 | [`re/trace_writes.py`](#retrace_writespy) | Logs the code that writes or reads a field in the running game. |
 | [`re/trace_exec.py`](#retrace_execpy) | Logs who runs a code address in the running game. |
+| `re/trace_frees.py` | `<out prefix> [--minutes N] [--parts]`: crash watch plus a log of what the game frees in Granny (model cache unloads and reloads, model instance frees; `--parts`: each part whose bone a model lacks instead of the instance frees), for a crash on a freed model or animation; `<prefix>.log`, `<prefix>.frees.tsv` and, on a crash, `<prefix>.crash.json`. See its docstring. |
 | [`re/trace_xs.py`](#retrace_xspy) | Logs the XS compiler's errors, which the game hides behind `Error 0003`. |
+| [`re/time_xs.py`](#retime_xspy) | Times the AI scripts in the running game: each XS compile (per file, per AI player, with the memory it adds) and each AI player's rule runs. |
+| [`xs_culture_split.py`](#xs_culture_splitpy) | Files the rules and functions of an AI script by culture and writes simulated splits (one culture kept, the others stubbed; or core plus culture files), for measuring what a split would change. |
+| [`mapsweep.py`](#mapsweeppy) | Plays every random map of a test copy for 30 s of game time and writes a CSV row per run: ok, crash (code, EIP, module), hang, XS error or timeout. Resumable; shards for parallel copies. |
+| [`clicksweep.py`](#clicksweeppy) | Plays a skirmish and clicks every kind of unit (select, double click, right click with own units), a Trading Post built first so trade units exist, with the crash watch on. |
+| [`mapstarts.py`](#mapstartspy) | Generates one random map many times in the editor (players × seeds, about 10 s a run) and lists the players the map left with no Town Center and no units. |
+| [`mapfacts.py`](#mapfactspy) | Reads every random map script of a copy (read only) and writes a table of its facts for the map descriptions: trade route, natives, hunt, herd, mines, berries, fish, whales, outlaws, region, King of the Hill; `--check` compares them with the units `mapsweep.py` saw. |
+| [`kothcheck.py`](#kothcheckpy) | Generates random maps in a test copy's editor in a real King of the Hill game (it writes the GameKOTH setting in memory) and writes a CSV row per map: the hill, its distance to every Town Center by team, a minimap crop with the hill marked; also the normal map unchanged and whether every player's units reach the hill. |
+| `campaigncheck.py` | `<game folder> [--campaign <xml>] [--scn <file>] [--all]`, read-only: checks a campaign definition and its scenarios against the folder's data (civ table, players' civs, placed protos, saved names, trigger parameters); `--inventory --scn <file>` (or `--units`) lists instead each player's civ, flag, culture, home city, placed units and trigger units (editor and in-game IDs), what the triggers give it, the objectives and the trigger texts; see its docstring and [docs/wol-campaign.md](../docs/wol-campaign.md). |
+| `scnfix.py` | `<in.age3Yscn> <out.age3Yscn> OLD=NEW … [proto:OLD=NEW …] [--data=<game folder> player:NAME=CIV …] [unit:ID=PROTO …] [units:PLAYER:OLD=NEW …] [trigger[PARAM]:OLD=NEW …] [tech:OLD=NEW …] [name:OLD=NEW …] [homecity:PLAYER=FILE …] [text:OLD=NEW …] [@FILE]`: writes a copy of a scenario with civ-table names, saved proto names, player civs, placed units' protos (one, or all of a proto for one player), trigger parameters, player names, home city files or texts (objectives, scenario description, chat, overlays, unit names; any length, the enclosing chunks follow) changed, and its CRC; `@FILE` reads edits one per line; never writes the input. |
+| `ai_personality.py` | Leaves one AI personality in a test copy, so a skirmish's AI has that civ. |
 | [`re/inspect_unittypes.py`](#reinspect_unittypespy) | Shows a unit type's ID and the protos that carry it. |
-| `re/debugger.py` | The shared debugger and game-memory helpers the `re/` scripts use. |
+| `re/resources.py` | Prints every player's stockpile (the eight resources, unxored) and its home city's level, XP and skill points, once or every N seconds: `--bed <copy> [--every N] [--count K]`. |
+| `re/debugger.py` | The shared debugger and game-memory helpers the `re/` scripts use. `crash` mode: see [re/debugger.py crash](#redebuggerpy-crash). |
 | `perfprobe.py`, `set_laa.py` | Part of the performance work in progress; see [docs/performance.md](../docs/performance.md) and each script's docstring. |
 | `re/pe64.py` | Static helper for a large 64-bit exe (AoE3 DE): strings, RIP-relative xrefs, functions from `.pdata`, callers, thread-creation sites. Listings need capstone. See its docstring and [docs/de-architecture.md](../docs/de-architecture.md). |
 | `threadprobe.py` | Per-thread CPU, thread names and start addresses of any running process. By default it does not suspend the process or read its memory; `--sample-hz` briefly suspends the busiest threads to read their instruction pointer. |
-| `legacybench.py` | Unattended late-game benchmark in a test copy (default `C:\AoE3-UHC-Perf`): loads a save through `perfExecFile`, records with `perfprobe.py` (and `threadprobe.py`), closes the game. It sends no input and never activates the window. The game allows only one running copy per machine, so it refuses to start while another `age3y.exe` runs, unless the copy's cfg has `multipleInstances background`. |
+| `legacybench.py` | Unattended late-game benchmark in a test copy (default `C:\AoE3-UHC-Perf`): loads a save through `perfExecFile`, records with `perfprobe.py` (and `threadprobe.py`), closes the game. It sends no input and never activates the window. The game allows only one running copy per machine, so it refuses to start while another `age3y.exe` runs, unless the copy's cfg (`uhc.cfg`, or `wol.cfg` in a WoL copy) has `multipleInstances background`; it takes `testbed.py`'s launch lock while the game starts. It prints the load time (to the end of the last frame over 50 ms after `loadGame`, from perfStats' slow-frame ring), and `--load-probe <s>` also profiles the load itself. |
 | `gameui.py` | Drives a game window for unattended tests: screenshots, clicks, keys. Select the window with `--process` (age3y.exe or AoE3DE_s.exe). It moves the real cursor, so use it only with the machine owner's permission. |
 
 Never point a tool that writes at the Steam install. The data tools write only the output file
-you name, `dot_testdata.py` writes only into the test copy you name, and `gen_sites.py` only
-reads the exe.
+you name, and `gen_sites.py` only reads the exe. These write into the test copy you name, keeping what they
+replace (`*-orig`, `AI4\_uhc-aside`) for their `--restore` / `reset` / `restore`: `dot_testdata.py`,
+`pop_testdata.py`, `protoy_testdata.py`, `sharedlimit_testdata.py`, `monastery_testdata.py`, `torp_testdata.py`,
+`ring_testdata.py`, `grant_testdata.py` and `ai_personality.py`; `testbed.py` writes there too (`deploy`, `map`, `lang` (it keeps `*.lang-orig`),
+`profile hc`/`isolate`/`video restore`). `dot_testdata.py`, `pop_testdata.py`, `protoy_testdata.py`, `grant_testdata.py`,
+`ai_personality.py` and `testbed.py` refuse a folder in a Steam library; the other test data tools do not check, so
+give them a test copy only. `make_avatar_table.py` writes one file into the WoL folder you name (a test copy, never
+Steam's).
 
 ## gen_sites.py
 
@@ -38,11 +71,35 @@ arrays, to `src/generated/sites.h` (or `out.h`). The DLL compares live memory wi
 patching. It refuses any exe whose SHA-256 is not the stock build's. To add a site, see
 [developer-guide.md, section 3](../docs/developer-guide.md#3-adding-a-feature-step-by-step).
 
+## make_release.py
+
+```
+python -I tools/make_release.py [--ref REF] [--out DIR] [--force] [--dinput8-only] [--dxvk DIR] [--cmake EXE] [--keep]
+```
+
+Makes the release zip in one command, the same way every time:
+1. `git fetch`, then a temporary detached worktree of `REF` (default `origin/main`), so that nothing
+   uncommitted in the working folder gets in;
+2. CMake (`Visual Studio 18 2026`, `-A Win32`) and the Release build of `UHC.dll` and `dinput8.dll` there;
+3. `package_release.py` in that worktree, with its checks;
+4. the zip copied to `dist\` (or `--out`), with the commit it was built from and its SHA-256;
+5. the worktree removed (`--keep` keeps it).
+
+The version is the one of `REF`'s `CMakeLists.txt`: commit the bump first, and pass its branch as `--ref` until it is
+merged. DXVK comes from `rea\vendor\dxvk-3.1.1\` (or `--dxvk`); cmake from `--cmake`, `UHC_CMAKE`, Visual Studio
+2026 (vswhere) or `PATH`. An existing zip is kept unless `--force`. Two builds of the same commit give the same files
+except the two DLLs: their time stamp and the order of their global data differ (MSVC builds are not bit-for-bit
+reproducible), not their code.
+
 ## package_release.py
 
 ```
-python -I tools/package_release.py [--force]
+python -I tools/package_release.py [--force] [--dxvk <folder>] [--dinput8-only]
 ```
+
+`--dinput8-only` writes `dist\dinput8-x.y.z.zip` instead. It is a package without `UHC.dll`: `dinput8.dll`,
+`engine-ext\engine-ext.cfg`, the same art, DXVK and license, and a README for that route. Only
+`build\Release\dinput8.dll` is checked.
 
 Checks `build\Release\UHC.dll` and stops if it fails any check:
 - it must be a 32-bit DLL that exports `_UHCMain@0`;
@@ -52,7 +109,18 @@ Checks `build\Release\UHC.dll` and stops if it fails any check:
 It then writes `dist\UHC-x.y.z.zip` with `UHC.dll`, `Startup\uhc.cfg` (the example with every key
 commented out), `README.txt` and `LICENSE.txt`, and prints the SHA-256 of the zip and of the DLL.
 An existing zip is kept unless `--force` is given. The procedure around it is in
-[developer-guide.md, section 6](../docs/developer-guide.md#6-making-a-release).
+[developer-guide.md, section 7](../docs/developer-guide.md#7-making-a-release).
+
+The zip also holds `beside-another-dll/`: `dinput8.dll` and `engine-ext/engine-ext.cfg`, for a game that keeps another
+`UHC.dll`. The script stops if `dinput8.dll` is missing, is not this version, or lacks `DirectInput8Create`, and
+prints its SHA-256 too. The aura rings of `tools/rings` go in `art/effects/uhc_rings/`, for a game's `art` folder, and
+`tools/bars/health_overheal.ddt` in `art/ui/uhc/` (the orange end of the portrait HP bar, `overhealHitpointBars`),
+and the 32 frames of `tools/pie/` in `art/ui/uhc/pie/` (the small progress pie after `nurseryFactor`'s panel row).
+
+`dxvk/d3d9.dll` and `dxvk/LICENSE.txt` are DXVK 3.1.1's x32 `d3d9.dll` and its zlib license, for `rendererOption`. They
+are not in git: the script reads them from `rea/vendor/dxvk-3.1.1/` (gitignored), or the folder given with `--dxvk`
+(`d3d9.dll` and `LICENSE`), and stops if either is missing, if the DLL's SHA-256 is not the 3.1.1 release's, or if the
+license is not DXVK's zlib license.
 
 ## bar.py
 
@@ -99,26 +167,68 @@ python -I tools/xmbedit.py add-unittype <in.xmb> <out.xmb> <Unit> <UnitType> [<U
 It handles compressed (`l33t` + zlib) and uncompressed (`X1`) files, version 8, the format of
 the TAD data.
 
+## pop_testdata.py
+
+```
+python -I tools/pop_testdata.py <test folder> [--restore]
+```
+
+Writes the data the `decimalPopulation` tests use into a **test copy** of the game. It refuses
+any folder inside a Steam library. The tables at the top of the script list the cases:
+- `data\protoy.xml`: `<PopulationCount>` 1.5 on `Settler`, `Crossbowman` and `Hussar`, 0.5 on
+  `Pikeman`, and `<PopulationCapAddition>` 7.5 on `Manor`;
+- `data\techtreey.xml`: four techs appended (UNOBTAINABLE; turn them on with a trigger, e.g.
+  `"at35=Set Tech Status;PlayerID=1;TechID=tech:UHCPopCountTest;Status=2"` in a `testbed.py`
+  map): `UHCPopCountTest` (Crossbowman +0.5 `Absolute`, Musketeer = 0.5 `Assign`, Town Center
+  `PopulationCapAddition` +2.5), `UHCPopCapTest` (the player's `PopulationCap` +2.5),
+  `UHCPopCapBig` (+300, to reach the limits) and `UHCPopPercentTest` (`BasePercent`: Hussar × 0.6,
+  Pikeman × 3);
+- `data\protoy.xml.XMB` and `data\techtreey.xml.XMB`: compiled from that XML with `xmbedit.py`.
+
+The first run keeps the four files as `*.pop-before`; every run starts again from the
+`.xml.pop-before` files, and `--restore` puts the four back. The tests of 2026-10-29 used it on
+`C:\AoE3-UHC-WoL` ([modding guide](../docs/modding-guide.md#decimalpopulation)).
+
 ## dot_testdata.py
 
 ```
-python -I tools/dot_testdata.py <test folder>
+python -I tools/dot_testdata.py <test folder> [--ai | --bad | --wol | --restore]
 ```
 
-Writes the data the `damageOverTime` test uses into a **test copy** of the game. It refuses any
-folder inside a Steam library.
-- `data\protoy.xml`: the Explorer's `HandAttack` and `VolleyRangedAttack` get
-  `<AttachProtoUnit>UHCPoisonTest</AttachProtoUnit>`, and a proto `UHCPoisonTest` is added:
-  Lifespan 10 s, and an `Attaching` action that deals 20 Ranged damage every second to Gaia and
-  enemies.
-- `data\protoy.xml.XMB`: compiled from that XML with `xmbedit.py`.
+`--wol` writes only the Iroquois Aenna's poison arrows (`UHCPoisonArrowWoL`, 4 Ranged a second for
+8 s, up to 3 stacks, green tick text) into a copy of a mod that reads its data loose: only
+`protoy.xml` (kept first as `protoy.xml.dot-orig`) and the tactics file, no XMB and no techs.
+`--restore` copies every `*.dot-orig` back and removes the tactics files.
+
+Writes the data the `damageOverTime` tests use into a **test copy** of the game. It refuses any
+folder inside a Steam library. The tables at the top of the script list the cases:
+- `data\protoy.xml`: one attachment proto per weapon, each attached to that weapon's attacks:
+  - the Explorer (`HandAttack`, `VolleyRangedAttack`): `UHCPoisonTest`, 20 Ranged every second
+    for 10 s, Gaia and enemies;
+  - the Grenadier (an area attack, a flying grenade): `UHCPoisonGrenade`, 10 Siege for 6 s,
+    enemies only (a unit converted to the attacker's side is excluded);
+  - the Crossbowman (a flying arrow): `UHCPoisonArrow`, 6 Hand for 8 s, triple against
+    `AbstractCavalry`;
+  - the Falconet (a cannon ball): `UHCPoisonCannon`, 15 Siege for 9 s;
+  - the Longbowman: `UHCPoisonStack`, 5 Siege for 6 s, with `<AttachMaxStacks>3`,
+    `<AttachSnare>0.5` and `<AttachTickText>40FF40` on its attacks;
+  - with `--ai`, also the Musketeer, Skirmisher, Pikeman and Hussar: `UHCPoisonLong`, 1 Siege for
+    120 s, so that two AI players poison each other's armies and the poisons outlive their
+    attackers;
+  - with `--bad`, invalid `<AttachMaxStacks>`, `<AttachSnare>` and `<AttachTickText>` values on the
+    Musketeer's three ranged attacks (and an empty `<AttachTickText>`), and `<AttachMaxStacks>`
+    without `<AttachProtoUnit>` on the Skirmisher, to check the load-time messages.
+- `data\techtreey.xml`: the tech `UHCPoisonArrowUpgrade` (UNOBTAINABLE; doubles
+  `UHCPoisonArrow`'s `Attaching` damage), for a trigger to turn on (`tech:UHCPoisonArrowUpgrade`
+  in a `testbed.py` map).
+- `data\protoy.xml.XMB` and `data\techtreey.xml.XMB`: compiled from that XML with `xmbedit.py`.
 - `data\tactics\uhcpoisontest.tactics` and its `.xmb`: the `Attaching` action. The XML keeps the
   tactic name and its first child on one line, so it also works without the `.xmb`
   ([modding guide, "Tactics files"](../docs/modding-guide.md#tactics-files)).
 
-The first run keeps the folder's protoy files as `*.dot-orig`. Every run starts again from
-`protoy.xml.dot-orig` and compiles the XMB from the result, so it can be repeated;
-`protoy.xml.XMB.dot-orig` is only a backup. Then enable `damageOverTime log` in the copy's cfg
+The first run keeps the folder's protoy and techtreey files as `*.dot-orig`. Every run starts
+again from the `.xml.dot-orig` files and compiles the XMB from the result, so it can be repeated;
+the `.XMB.dot-orig` files are only backups. Then enable `damageOverTime log` in the copy's cfg
 and let the Explorer hit something (for an unattended run, see the developer guide, "Driving
 the game unattended").
 
@@ -148,13 +258,91 @@ python -I tools/testbed.py [--bed <folder>] <command> ...
 ```
 
 Drives the game of a test copy (default `C:\AoE3-UHC-Test`, or the `UHC_TESTBED` variable) with
-no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `wait`, `state`,
-`units`, `shot`, `record`, `click`/`rclick`, `key`/`rkey`, `type`, `log`, `safety`; the
-docstring lists their arguments. `record` films the window to an MP4 with ffmpeg (`UHC_FFMPEG`,
-`PATH`, or `C:\Tools\ffmpeg\ffmpeg.exe`).
+no clicks. Commands: `deploy`, `launch`, `close`, `exec`, `map`, `scenario`, `skirmish`, `wait`, `state`,
+`units`, `explored`, `shot`, `record`, `click`/`rclick`, `hover`, `drag`, `wheel`, `front`, `key`/`rkey`, `type`, `chars`, `log`,
+`profile`, `lang`, `monitors`, `safety`; the docstring lists their arguments. `units --los` adds each unit's own line of
+sight and its proto's; `monitors` lists the monitors and the one tests use (`UHC_TEST_MONITOR`). `chars <text>` posts `WM_CHAR`s to the window, so the text field that has the
+game's focus (click it first) takes them with no keyboard and no focus, in a `background` copy too; `key back` erases.
+
+A command that waits on the game ends with exit code 3 when the game dies meanwhile (the message gives
+the process's exit code, `0xc0000005` for an access violation), and 4 when it hangs: the window does
+not respond when the wait times out, or, in `wait`, the world clock stands still for `--hang` seconds
+(`UHC_HANG_SECONDS`, 60 by default; a paused or ended game stops the clock too). A plain timeout
+keeps exit code 1.
+
+Paths come from the copy's own exe and data (`profile` prints them): the cfg the loader reads
+(VA 0xC65083: `Startup\uhc.cfg`, or `Startup\wol.cfg` in a Wars of Liberty copy), the AI and
+random-map folders (`AI3`/`RM3`, or `AI4`/`RM4`), and the `My Games` folder (string 42265 of the
+copy's `stringtabley.xml`). `deploy` writes the cfg there, `map` writes into that map folder and
+`scenario` saves into that `My Games` folder. `profile backup` copies the player profiles
+(`Users3\*.xml`, UTF-16) to `.bak-uhc-<date>` before a first run. `safety record|check wol`
+checks the Steam Wars of Liberty folder (exe, `uhc.dll`, top level, `Startup`, `data`, `AI4`,
+`RM4`) the same way `safety` checks Steam's `bin`. `profile video [restore]` checks the video settings
+of the shared profile (resolution, window mode, antialiasing, shadows: `VIDEO_SETTINGS`) and writes them
+back. `lang [status|en|restore]` shows each string table of the copy's `data` folder (its string 35898),
+puts the mod launcher's English originals (`translations\_originals`) there for captures, keeping the
+replaced files as `*.lang-orig`, and restores them; the game reads the tables only at startup, so both
+refuse while the copy's game runs (`docs/developer-guide.md`, "A WoL copy in English").
+`skirmish` checks each pre-game screen before it clicks (the gold of its buttons, read from the client area, with
+the points scaled to the client size), clicks again when the next screen does not show, and stops with
+`<bed>\skirmish-fail-<step>.png` on a screen it does not know ([wol-migration.md](../docs/wol-migration.md#skirmish-route-for-videos-2026-11-04)).
+`explored [--player N]` prints the share of the map a player has explored and sees now, read from the
+game's visibility grid (`docs/engine-symbols.md`, "Auto scout"): how `autoScout` was measured.
+
+`record <out.mp4> [seconds] [fps] [width]` films the window to an MP4 in real time, with ffmpeg
+(`UHC_FFMPEG`, `PATH`, or `C:\Tools\ffmpeg\ffmpeg.exe`). It first brings the game window to the
+front, since the game stops drawing while another window has the foreground. Options that draw
+live text on every frame:
+- `--watch <IDs or proto names>` (comma-separated): the game time and the live HP and line of
+  sight of those units, matched again every second, so new units appear and dead ones go (more
+  than 6 units are counted per proto and player instead);
+- `--log <regex>`: the latest `UHC.log` lines of the current game that match, e.g. a feature's own
+  `log` output;
+- `--frame <ID>`: centers the camera on that unit once, at the start, and leaves it still: the
+  default for a scene where the units stay in place;
+- `--follow <ID>`: follows a unit that travels: the camera re-centers (a `uiLookAtUnit` through
+  `perfExecFile`) only once the unit has walked 10 m from the last center, so the picture does
+  not jump every few seconds. If the unit dies it goes on with another `--select` unit, or stops.
+- `--select <IDs or proto names>`: keeps those units (player 1's) selected for the whole video,
+  so the game draws their HP bars and the selection panel; they are selected again when a new
+  matching unit appears (a dead one leaves the selection by itself). The game selects one unit
+  per `uiLookAtAndSelectUnit`, so the selection is collected in number group 9.
+- `--close <Z>`: brings the camera to height Z by console (`normalZoom`; the game's default is 65,
+  and 27 frames a small group). The camera eases there only while the window is active, so for a
+  copy in the background set it before the game loads:
+  `exec 'configSetFloat("minZoom", 15)' 'configSetFloat("normalZoom", 27)'`, then `scenario`.
+- `--crop <W>x<H>[@cx,cy]`: films that many window pixels around `cx,cy` (window fractions, default
+  `0.49,0.47`, where `uiLookAtUnit` puts a unit) one to one, never enlarged: the only way to keep the game's own sharpness. Give a
+  panel its own centre (`--crop 960x640@0.72,0.8`). The overlay is drawn after the crop.
+- `--master <out.mkv>`: also writes a lossless copy, the source for GIFs. Unchanged frames stay
+  identical in it, so a still camera costs little; an MP4 as source smears colour and text, and
+  its noise makes the GIF grow.
+- `--log-top`: draws the `--log` lines above the game's bottom panel, for a feature that shows in it.
+- `--gold 1,2`: a line with those players' gold, read from the game, for a test of resources where the second player's
+  stockpile shows nowhere on screen; `--gold-resource N` shows resource N instead (e.g. 4, the faith of the
+  `faithResource` pack).
+- `--background`: leaves the focus alone. For a copy with `multipleInstances background`: it needs
+  no window in front, so a test can run while somebody uses the PC.
+- `--hover <x>,<y>`: rests the cursor on a client point (a command panel button), so the button's
+  rollover stays on screen. It is the only `record` option that moves the cursor.
+- The cursor: `record` sets `cameraMovementLock`, so a cursor at a screen edge no longer scrolls
+  the camera (`uiLookAtUnit` still moves it). It never moves the mouse, except for `--hover`.
+- `--perf`: the performance numbers, once a second, at the top: fps, the longest frame of the
+  second, frames over 50 ms since the start, simulation speed (game seconds per real second), the
+  main thread's CPU, the game's own update and render times and the working set. They are read
+  from outside the game with `perfprobe.py`'s readers; fps and frame times need `perfStats` in the
+  cfg. It clears perfStats' per-second longest frame, so do not run `perfprobe.py` at the same
+  time. `--perf-csv <out.csv>` also saves one row per second (it implies `--perf`); a summary
+  line is printed at the end.
+
 It needs `perfExecFile <bed>\uhc-exec.txt` in the copy's cfg (`deploy` adds
 it). The method and its pitfalls are in
 [developer-guide.md, "Driving the game unattended"](../docs/developer-guide.md#driving-the-game-unattended).
+
+**Which game the tracers attach to.** The `re/` tracers and `inspect_unittypes.py` attach to the `age3y.exe` whose exe is in `UHC_GAME_DIR` (or `UHC_TESTBED`); with no folder set and more than one copy running they stop with an error instead of picking one, since other sessions may run games beside yours (2026-11-03: a tracer attached to another session's game this way). Example: `set UHC_GAME_DIR=C:\AoE3-UHC-WoLReal`.
+
+**A bed with an `engine-ext` folder** runs our `dinput8.dll` beside the bed's own `UHC.dll`: `deploy` copies `dinput8.dll` and
+`engine-ext\engine-ext.cfg` and leaves `UHC.dll` and the bed's cfg alone, and `log` reads `engine-ext\engine-ext.log`.
 
 ## re/trace_writes.py
 
@@ -182,7 +370,205 @@ python -I tools/re/trace_exec.py <log> SPEC [SPEC ...] [--minutes N] [--max-per-
 
 `SPEC` is `ADDRESS[=LABEL][@UNIT]`, for example `0x9E0B53=heal-tick@[ecx+0x10]`. `UNIT`, when
 given, names a register or a `[register+offset]` slot that holds a unit pointer; the log then
-shows that unit's proto, owner and hit points. Each hit logs the registers and the call chain.
+shows that unit's proto, owner and hit points. Each hit logs the registers, the first three
+stack dwords (`args=`, a function's arguments when the address is its entry) and the call chain.
+With several games running, set `UHC_GAME_DIR` to the copy's folder.
+
+## mapsweep.py
+
+```
+python -I tools/mapsweep.py --bed <copy> --csv <out.csv> [--maps A,B | --list FILE | --match RE]
+       [--players 2,4,8] [--seeds 1,2,3] [--seconds 30] [--route scenario|skirmish] [--ai wolOtto]
+       [--teams | --ffa | --team-list 1,1,2,2,3,3] [--koth] [--difficulty N] [--set name=value ...]
+       [--save-load] [--label TEXT] [--shard K/N] [--evidence DIR] [--no-debugger] [--dry-run]
+```
+
+`--team-list` gives each player's team (1-4) in slot order, set on the setup screen by posted clicks, with a
+single `--players` count: e.g. two players per team and two observers in a third team. `--save-load` detects
+the load by a new world object; a world loaded at the old one's address reads as `timeout` (seen once on a map
+whose save did load).
+
+Plays each map of the copy's map folder (every `.xs` with an `.xml`; the include libraries are
+skipped) through `testbed.py scenario` (the editor's `startRandomGame2`, saved and loaded as a
+scenario, players without AI) or, with `--route skirmish`, through the profile's skirmish with AIs,
+lets `--seconds` of game time pass, and appends one CSV row per run: `ok`, `crash` (exception code,
+EIP, module, call chain), `hang` (window not responding, or the world clock still for 60 s),
+`xs-error` (new `xsErrorLog` lines in the log), `timeout` or `launch-failed`, plus the units per
+player, the last log lines of the run and of `Age3Log.txt`. A row already in the CSV is skipped,
+so a stopped sweep starts again where it was. Per run it keeps the testbed output and both logs in
+`<evidence>/runs/`, the full unit list as the map starts (`testbed.py units`) in `<evidence>/units/`
+(the input of `mapfacts.py --check`), a quarter-size shot in `<evidence>/shots/`, and the crash reports of
+`re/debugger.py crash` (attached to every game it starts) in `<evidence>/crash-*.jsonl`. Without
+the crash watch (`--no-debugger`), a crash's code and offset come from the Windows Application log
+(event 1000, "Application Error"; EIP = offset + 0x400000 for age3y.exe).
+
+The copy needs `perfExecFile`, `multipleInstances background` and `xsErrorLog` in the cfg its exe
+reads (`engine-ext\engine-ext.cfg` beside another `UHC.dll`). It refuses to start while a game
+runs in the copy, kills only games it started (after a hang or a timeout), and waits for 6 GB of
+free memory before each run (`UHC_SWEEP_MIN_FREE_GB`). Several copies can sweep at once with
+`--shard 0/3`, `1/3`, `2/3` and one CSV; `testbed.py`'s start lock staggers their launches, and the
+scenario names (`uhc-<map>`) differ because each map belongs to one shard. The skirmish route
+edits the shared profile, so it runs alone: it backs up the profile, the home cities and the AI
+memory files and restores them byte for byte at the end, and leaves `--ai` personalities in the
+copy (`ai_personality.py`, restored at the end).
+
+Skirmish options (2026-11-21, the Levant crash hunt): the setup screen restores the human's team from
+the profile but shows every AI as "Team ?", so `--teams` picks the teams by posted clicks (players 1
+to N/2 against the rest), `--ffa` ticks Free for All and `--koth` picks King of the Hill in the Game
+Rules list; the setup shot in `<evidence>/shots/` shows what was set. The seed goes to
+`gamerandomseed` (whether the setup keeps it was not checked), and `--save-load` plays half the time, saves from the console
+(`saveGame`), loads that save (`loadGame`) and plays the other half. `--label` names the
+configuration in the route column (`skirmish:<label>`), so one CSV can hold the same map, players and
+seed with other AIs or modes. Isolated profiles (`testbed.py profile isolate`) make the skirmish
+route safe beside other copies.
+
+`--difficulty N` writes the AI difficulty (0 Sandbox to 4 Expert) and `--set name=value` any other
+setting of the profile's `RandomMapGameSettings` before the skirmish, e.g. `--set gamecampaignshownhcnote=true`:
+setting 37h, which WoL's `uhc.dll` reads as the lobby's Observer mode box (`rmIsObserverMode`), so an observer
+map can be played in a single-player skirmish (2026-11-22, #81).
+
+## clicksweep.py
+
+```
+python -I tools/clicksweep.py --bed <copy> --out <dir> --map <file> [--players 6] [--teams | --ffa]
+       [--ai wolOtto,...] [--difficulty 3] [--minutes 12] [--per-proto 3] [--label TEXT]
+       [--no-trading-post] [--no-debugger]
+```
+
+Clicks every kind of unit of a skirmish as a player would, with the crash watch attached (made for the "NEW"
+Levant crash hunt, #78, where players reported crashes "after or when clicking on trade units or guardians").
+It uses `mapsweep.py`'s skirmish route (profile, home cities and AI personalities backed up and restored), reveals
+the map (`fog()`, `blackmap()`), builds a Trading Post on the socket nearest player 1's Town Center (a villager in
+build mode, `tis("TradingPost")`, a posted click; its villagers gather wood first when it is short), puts player 1's
+villagers and explorer in number group 8, then clicks in passes until `--minutes` of game time: per unit the camera
+on it (`uiLookAtUnit`), a posted left click (select), a posted double click and `uiDoubleClickSelect(0)`, then group 8
+and a posted right click on it (gather, attack, garrison, trade, build); about 2 s a unit. A pass takes every unit
+whose proto looks special (trade, camel, caravan, nugget, guard, socket, native, wagon, Trading Post, village, merc)
+and up to `--per-proto` of each other proto and player (trees and props 2), specials and the others interleaved, the
+others round robin over player and proto. Writes `<tag>.clicks.csv`,
+`<tag>.summary.json` (result, clicks per proto and player, XS errors, the crash report) and shots. A copy with
+`multipleInstances background` and an isolated profile runs it beside other copies. Posted clicks reach the
+game's world in a background copy: a posted left click selected a Trading Post site, a posted right click sent
+villagers to gather (2026-11-22).
+
+`--no-console --map-size <metres>` runs the same clicks with no engine-ext DLL (the control with only the mod's own
+`UHC.dll`): the game starts with `+noIntroCinematics +DontPauseWhenLosingFocus`, the map is revealed by the setup
+(`gamemapvisibility` 1, Revealed; fog stays), and the camera moves by a posted click on the minimized UI's
+minimap (`PlainRun`: centre 213.9, 930.8 and radius 189.5 at 1920 x 1080 for a map of side S, the square turned by
+45 degrees; measured on six Town Centers). Player 1's explorer is clicked before each right click. Run to the end
+on 2026-11-23 (#78: two 6-player Levant games beside background copies, one ok, one crash).
+
+`re/trace_frees.py <prefix>` (set `UHC_GAME_DIR`): a crash watch that also logs every model unload of the game's
+model cache (with the file name), every reload of a loaded model and the model instances freed, and at a crash
+writes `<prefix>.crash.json` with the registers and stack words that match a freed pointer and the last unloads
+(#78). Run `clicksweep.py --no-debugger` beside it, since one process takes one debugger.
+
+## mapstarts.py
+
+```
+python -I tools/mapstarts.py --bed <copy> --map <file> [--players 2,4,6,8] [--seeds 1-25] [--teams 2]
+       [--csv out.csv]
+```
+
+Generates one random map many times in the scenario editor of a copy at the main menu
+(`startRandomGame2`, no save and load, about 10 s a run) and writes a CSV row per player count and
+seed: the Town Centers (or covered wagons) and units of every player, and the players left with no
+start (no Town Center and fewer than 3 units). Made for "NEW" Levant, whose Town Center placement can
+fail for one player (`wol-fixes/maps/levant-20261121.txt`).
+
+## mapfacts.py
+
+```
+python -I tools/mapfacts.py <copy> [--out DIR] [--maps A,B] [--check UNITS_DIR]
+```
+
+Reads each map script of the copy's map folder (`RM4` in WoL) without its comments and writes
+`DIR/mapfacts.csv` and `DIR/mapfacts.json`: one row per map with an `.xml`. It never writes into the
+copy. How it reads a script:
+
+- **Values.** Every assignment, every argument of a call to one of the script's functions and every
+  `xsArraySetString` gives a variable its possible values, whatever the branch; strings are evaluated
+  through `+` and `rmRandInt` (ranges up to 40). A value picked at random or in an if/else shows as
+  "(varies)"; one it cannot resolve goes to `unresolved`. Calls in functions that `main` never reaches
+  are left out. Include libraries are not read.
+- **Resources.** `rmAddObjectDefItem`'s proto, by its `UnitType`s in `protoy.xml`: `Huntable`,
+  `Herdable`, `AbstractMine`, `AbstractFruit` (berries), `AbstractFish`, `AbstractWhale`; English and
+  Spanish names from the string tables.
+- **Natives.** The sockets in the grouping files the map uses (`RM4\groupings`; `natives_source`
+  `groupings`), named by `civs.xml`; WoL's African trade sites (units `AUR<resource>`) count too.
+  Without such a grouping, the civs of `rmSetSubCiv` (`natives_source` says when the map's grouping
+  files are missing, so no village appears). `natives_varies` when the villages depend on a random
+  pick or an if/else (`natives_slots` lists the `rmSetSubCiv` slots). Resources and villages placed
+  inside an if/else count as "(varies)"; a definition never placed counts as nothing
+  (`defined_not_placed`), and grouping files that do not exist are listed (`missing_groupings`).
+- **Trade route.** `rmCreateTradeRoute` and `rmBuildTradeRoute`, with the conditions around the build;
+  "(water)" when the route type is a water one.
+- **Outlaws.** The `data\mapspecifictechs.xml` block the game uses: the first block, in file order, whose
+  name is one of the map's types (`rmSetMapType`, valid in `maptypes.xml`) or `default`; names compare
+  without case. A block named after a map file is never used (`dead_block_for_file`). Verified with
+  REA and in game: [wol-maps.md, "Outlaws"](../docs/wol-maps.md#outlaws-which-mapspecifictechs-block-a-map-gets).
+- **Region.** The six continent sets (`*random.set`), then the hand-checked `REGION_OVERRIDES` (115
+  maps; `region_note` says why), then the `imagepath` folder.
+- **King of the Hill.** `rmGetIsKOTH` with `ypKingsHillPlacer` or a `ypKingsHill` object.
+- **Current texts.** The map's display name and lobby and loading texts (English), where they come from
+  (ID or literal), and misspelt attribute names.
+
+`--check UNITS_DIR` reads the unit lists that `mapsweep.py` keeps (`<map>-p<N>-s<S>-*.txt`) and adds the
+`seen_*` columns, the `game_*` columns (the facts as the game placed them, which the map descriptions
+use: gaia resources seen plus the script's own that were seen, the villages seen, the trade posts
+seen) and `check`, the mismatches per map: a resource seen that the script does not place, a
+fixed one never seen, a trade route or natives seen against the script. A run per seed is a sample:
+a mismatch is a lead to read the script, not a verdict.
+
+## kothcheck.py
+
+```
+python -I tools/kothcheck.py --bed <copy> --csv <out.csv> --maps A,B [--src <dir>] [--players 2,4,8]
+       [--seeds 1,2] [--ffa 4] [--normal | --normal-only] [--reach [seconds]] [--shots <dir>] [--mapsize N]
+       [--survey]
+python -I tools/kothcheck.py --bed <copy> --uninstall
+```
+
+`--normal-only` runs only the normal-game comparison (King of the Hill off), at 3, 4 and 8 players, for a map
+edit that must not change the normal game; a row says `(exact)` when the two unit lists are identical, not
+only within the 6 m match.
+
+Needs the copy's game running (`testbed.py launch`) with `perfExecFile` and, beside other copies,
+`multipleInstances background`. `rmGetIsKOTH()` returns byte `[[[0xC66234]+92Ch]+1A98h]` of the random
+map generator (0x90B6CE), copied when a map is generated (0x709F85) from game setting 27h (`GameKOTH`)
+of the game settings object, whose values are 5-byte records `{type, value}` (getter 0x402CE9). The tool
+generates one map with a known seed, finds the records by setting 13h (`GameRandomSeed`) and writes
+GameKOTH; `startRandomGame2` keeps it, so every map generated after it is a real King of the Hill map
+(the editor route, `testbed.py scenario`'s). The byte 0xCF07BD is only a cache, rewritten at each start.
+
+Per map (`--src`: a folder of edited maps, copied into RM4 as `uhck_<name>` and removed at the end):
+players 2, 4 and 8 in two teams × the seeds, plus `--ffa` counts in free-for-all; each row has the hill's
+position, the straight-line distance from it to each player's Town Center, each team's mean and
+`team_ratio` (largest team mean / smallest; teams from the players' stances), and a minimap crop in
+`--shots` with the hill (magenta ring) and the Town Centers (numbered squares) marked. `--normal`
+generates the original map and the edited one with King of the Hill off, same seed, and compares every
+unit (player, proto, position within 6 m). `--reach` plays the edited map as a scenario with a trigger
+that sends all units of every player to the hill and reports each player's closest unit after that much
+game time; it needs `trigger3\uhckoth.xml`, which the game reads at startup, so the first `--reach` run
+writes it and stops (launch again). `--survey` only generates the maps as they are and marks the
+centre, to choose a spot. Used for [`wol-fixes/maps-koth/`](../wol-fixes/maps-koth/README.md) and
+[docs/wol-maps.md](../docs/wol-maps.md).
+
+## re/debugger.py crash
+
+```
+set UHC_GAME_DIR=C:\WoL-Test
+python -I tools/re/debugger.py crash [--out crash.jsonl] [--log crash.log] [--seconds N]
+```
+
+Attaches to the running game without setting a breakpoint and waits until it exits. An unhandled
+(second-chance) exception is written as one JSON line: code, EIP and the module plus offset, the
+access (read, write, execute) and its address, the registers, `call_chain` (the return addresses
+on the stack, innermost first) and the first stack words; then it is passed on, so the game ends as
+it would have. Attached, Windows skips its error dialog, so the process ends at once instead of
+waiting on the dialog. The first 20 first-chance exceptions that are not routine (C++ throws,
+thread names, debug prints) are logged too, in case the game's own handler ends it. Killing it is
+safe: it sets no breakpoint.
 
 ## re/trace_xs.py
 
@@ -205,6 +591,51 @@ message: "Error 0003: could not compile file '%S'." 'aiLoaderStandard.xs' (chain
 before the script, not from the script. The example is the tactics problem in the
 [modding guide, "Tactics files"](../docs/modding-guide.md#tactics-files).
 
+## re/time_xs.py
+
+```
+python -I tools/re/time_xs.py <log> [--minutes N] [--update-seconds S] [--target rules|update]
+                                    [--csv <calls.csv>] [--no-update]
+```
+
+Start it at the main menu (`UHC_GAME_DIR` names the copy when several run), then start the game.
+It logs every compile of an XS file (the compile of the loader and each include, with the compiler
+object, the caller, the CPU and wall time, and the private bytes before and after), then for `S`
+seconds (default 120) every call of the target, and a table per player: calls, calls per second,
+CPU per call (mean, 95th percentile, maximum), calls over 10 ms and CPU per real second. Target
+`rules` (default) is `interpretRules` called by `BAI::update` (an AI player's rules, the script's
+own cost); `update` is all of `BAI::update`. It needs four hardware breakpoints: the two compile
+functions, the target, and one slot that follows the return address of the innermost timed call.
+
+The CPU time is the thread's cycle count read while the thread is stopped at the entry and the
+return, so the debugger's own delay is not in it, except the exception dispatch of the two hits:
+the smallest call (about 15-30 us) is taken as that floor and the table also gives the totals
+without it. The game runs slower while calls are timed (two hits per call, one call per frame per
+AI player); measure frame times and the AI's share of the main thread afterwards with
+`perfprobe.py --sample-hz`. It detaches by itself when the time runs out (`debugger.py` now drains
+the debug events still queued at detach; one left pending made the game exit). Stop it early with
+Ctrl+C, never by killing it. Used for the per-culture split question in
+[docs/performance.md](../docs/performance.md#splitting-the-ai-script-per-culture-2026-11-24).
+
+## xs_culture_split.py
+
+```
+python -I tools/xs_culture_split.py <aiMain.xs> --report
+python -I tools/xs_culture_split.py <aiMain.xs> --keep European --out <copy.xs>
+python -I tools/xs_culture_split.py <aiMain.xs> --keep European|all --split <folder>
+```
+
+Reads the script's top-level items (rules, functions, globals; comments and strings skipped), files
+a rule under a culture by its name (table `CULTURE` in the script) and a function under a culture
+when every call of it lies in that culture's items; the rest is the core. `--report` prints the
+items, lines and bytes per culture. `--out` writes one file with the core, the kept culture's items,
+and a stub for every other culture's item (a rule keeps its header and only disables itself, a
+function returns a default), so it still compiles. `--split` writes the same code as
+`aiWoLCore.xs` plus `aiWoL<Culture>.xs` with each kept culture's rules, and prints the loader's
+include lines; `--keep all` gives the original program in 1 + 8 files. It writes only the files
+named; installing them in a test copy is up to the caller. A measurement aid, not a split for
+release: the inline branches per civ in the core stay where they are.
+
 ## re/inspect_unittypes.py
 
 ```
@@ -214,7 +645,7 @@ python -I tools/re/inspect_unittypes.py --list-abstract
 
 Reads the running game's unit type table without attaching a debugger. It prints a name's ID,
 whether it is a proto or an abstract type, and the protos that carry an abstract type. Use it to
-confirm that a `<UnitType>` you added to `protoy.xml`, or one that `UHC.dll` registers, really
+confirm that a `<UnitType>` you added to `protoy.xml`, or one that the DLL registers, really
 loaded.
 
 ```

@@ -1,0 +1,15 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+ 
+imagepath = "ui\esoc_map\jebel_musa"
+ displayName = "ESOC Jebel Musa"
+cannotReplace = ""
+ 
+loadBackground="ui\esoc_map\jebelmusa_map"
+details="6170076"
+loadDetails="6170077">
+   <loadss>ui\random_map\pampas\pampas_ss_01</loadss>
+   <loadss>ui\random_map\pampas\pampas_ss_02</loadss>
+   <loadss>ui\random_map\pampas\pampas_ss_03</loadss>
+ 
+</mapinfo>

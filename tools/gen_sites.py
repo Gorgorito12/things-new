@@ -3,7 +3,7 @@
 Usage: python -I tools/gen_sites.py <stock age3y.exe> [out.h]
 
 The DLL compares live memory against these bytes before patching, so a site is only written
-when the host really is the build documented in docs/uhc-address-map.md. Ranges cover the
+when the host really is the build this script was run on (the stock exe). Ranges cover the
 bytes a feature overwrites or skips, plus the instruction it continues at.
 """
 import hashlib
@@ -28,6 +28,119 @@ SITES = [
     ("PopLimit", 0x4581F3, 0x50),
     # noAILimit: the hard-coded personality table setup plus the xor eax,eax it continues at
     ("AiLimit", 0x603B0B, 0x146),
+    # noAILimitV2: test al,al / je 658900h (TAD table branch) / the 14-entry count and table
+    # stores, up to the shared continuation xor eax,eax at 0x603C4F
+    ("AiLimitV2", 0x603C34, 0x1B),
+    # customSyscalls: the first stock registration of each syscall module (ESI = the module):
+    # push 1 / push <fn> (7 B), then push <name> / mov ecx,esi / call 624F52h. The UI module's
+    # return-type push comes before its site, so only push <fn> (5 B) is replaced there.
+    ("SyscallAi", 0x7294F4, 7),
+    ("SyscallHc", 0x5B5E08, 7),
+    ("SyscallKb", 0x885D14, 7),
+    ("SyscallRm", 0x60B8BF, 7),
+    ("SyscallTr", 0x988E03, 7),
+    ("SyscallUi", 0x539542, 5),
+    ("SyscallUi2", 0x53575E, 7),
+    ("SyscallXs", 0x6257D9, 7),
+    # asianCivs: the last compare with the cached Asian civ ID [0C6FB88h] in isAsianCiv 0x454ED7
+    # (cmp eax,[0C6FB88h] / je 454F2Ah) and in FUN_008D6A7D (cmp eax,[0C6FB88h] / jne 8D6B0Ch)
+    ("AsianCivCheck", 0x454F1D, 8),
+    ("AsianCivBranch", 0x8D6AC4, 8),
+    # asianCivs: the wonder age-up list FUN_0081807A, call 49A2D8h (is Indian) / test al,al /
+    # je 8182EBh, after push 1 / mov ecx,ebp
+    ("WonderAgeUpCiv", 0x818284, 9),
+    # the civ ID by name, int thiscall(database, const char*), -1 if none (verify only)
+    ("CivIdByName", 0x58E71F, 0x10),
+    # twoScoutCivs: the hero UI's civ tests (mov eax,[esi+1DCh]; push eax / call 8D0318h after push
+    # ebx; mov ecx,[esi+1DCh]; mov edx,[0C66234h])
+    ("TwoScout1", 0x77EBB2, 6),
+    ("TwoScout2", 0x77EF29, 6),
+    ("TwoScout3", 0x77DDD2, 6),
+    ("TwoScout4", 0x77DFF4, 6),
+    # marketUnits: mov edx,[0C66234h] before the market trade test's Market count (0x4C846D)
+    ("MarketUnits", 0x7DEF70, 6),
+    # explorerUnits: the hero name (lea ecx,[eax+18h] / call 401F47h in FUN_004702DC) and the knockout
+    # message (mov edx,[esi+10h] / mov eax,[edx+5Ch])
+    ("ExplorerName", 0x6A012A, 8),
+    ("ExplorerKnockout", 0x50B01F, 6),
+    # nativeCivs: the civs.xml loader's end (lea ecx,[esp+100h], after it sets [civ+10h] for the
+    # native civs), four native civ tests and the council age-up list's first compare
+    ("NativeCivMark", 0x52B581, 7),
+    ("NativeCivTest2", 0x51271F, 8),
+    ("NativeCivTest4", 0x453D5E, 15),
+    ("NativeCivTest7", 0x67B0A5, 8),
+    ("NativeCivTest9", 0x8D52AF, 6),
+    ("NativeCouncil", 0x81ADEB, 8),
+    # bigButtonCivs / noBigButtonBlds: jne 695955h after isNativeCiv in the command panel FUN_0046188E
+    ("BigButton", 0x461BD8, 6),
+    # enableFarmAnim: the gather code's compares of a target's proto with the cached Mill and farm IDs
+    ("FarmAnim1", 0x4EDA85, 6),    # mov edx,[ebp+140h], before the chain
+    ("FarmAnim2", 0x50DE33, 6),    # jne 4EDD6Ch (then jmp 6A8E67h, the Mill branch)
+    ("FarmAnim3", 0x73D41A, 8),    # jne 73D427h / mov eax,[eax+5F4Ch]
+    ("FarmAnim4", 0x8CEC9F, 5),    # call 4E2C50h, before the proto compares
+    ("FarmAnim5", 0x9DDB79, 6),    # cmp ecx,[eax+5E58h] (the Mill flag)
+    ("FarmAnim6", 0x4EE07F, 6),    # je 586DFFh
+    ("FarmAnim7", 0x4EE2FE, 6),    # je 586E11h
+    ("FarmAnim8", 0x6A8FE1, 9),    # call 44CB0Ah / cmp eax,ebx / jne 6A900Ch
+    # enableRectFarmAnim: the same for the cached Rice Paddy ID [db+607Ch]
+    ("RectFarm1", 0x9DDD80, 0x18), # four loads and cmp ecx,[eax+607Ch]
+    ("RectFarm2", 0x4741F0, 6),    # je 4743DDh after test esi,esi
+    ("RectFarm3", 0x4EEDB4, 6),    # mov ecx,[0C66234h], before the Rice Paddy compare
+    ("RectFarm4", 0x4EEE9E, 6),    # mov ecx,[0C66234h], before the Rice Paddy compare
+    # farmingRadius: mov ecx,[0C0BBE0h], the 4.5 X of the gatherer spread
+    ("FarmRadius", 0x9DE04D, 6),
+    # wonderCivUnitType: call 44CAC4h (is type 16h) in the two wonder age-up placement tests
+    ("WonderAgeUnit1", 0x7E6919, 5),
+    ("WonderAgeUnit2", 0x7E8050, 5),
+    # trainSingleAbstractType: call 44CAC4h (is type 5Dh) in the two train-one-at-a-time tests
+    ("TrainSingle1", 0x9CE573, 5),
+    ("TrainSingle2", 0x9CE767, 5),
+    # modelCacheLimit: cmp dword [esi+306Ch],1C9C380h (the model cache budget, 30,000,000 bytes), the only two
+    # compares of it: FUN_0041CA8F's first test (then ja 0x6E014C) and the unload loop's test (then jbe 0x46C04D)
+    ("ModelCacheBudget1", 0x46C03D, 10),
+    ("ModelCacheBudget2", 0x6E0174, 10),
+    # dmgPartBoneFix: the part declaration FUN_004F0187 after "Invalid bone name ... in part declaration": test bl,bl /
+    # je 658C3Ah / the model loader's call 0x658C35 on the loaded entry (a reload while units draw it), up to the
+    # continuation 0x658C3A
+    ("PartBoneReload", 0x658C18, 0x22),
+    # faithResource: the skill point total 0x5011C6 (resource 4 plus the home city's skill points): je 501209h /
+    # add eax,[esi+1F4h], up to its pop esi at 0x501209
+    ("FaithTotal", 0x501201, 9),
+    # faithResource: the home city bank FUN_00852924: add [esi+1F4h],edx (resource 4 into the skill points) /
+    # fldcw [esp+1Ch], the continuation 0x852A41 (call 49A8C5h, which clears resource 5)
+    ("FaithBank", 0x852A3B, 0x0F),
+    # faithResource: the same function's clear of resource 4: mov ecx,[esi+8] / push 0 / push 0 / push 4 /
+    # call 49A8C5h, up to its pop edi at 0x852A58
+    ("FaithBankClear", 0x852A4A, 0x0F),
+    # faithResource: the Gather action's state change FUN_004ED254 picks the gather animation [action+74h] from the
+    # target's unit types, never from the tactics <anim>: mov ecx,[edi+5Ch] / cmp ecx,ebx / je 4ED36Bh (the first
+    # test, unit type 8 -> GatherMine), up to push 8 at 0x4ED35C; the shared continuation 0x4ED3FA
+    # (mov ecx,[edi+5Ch]) and the next test 0x4ED36B. The hook calls the model anim lookup 0x471D24
+    # (ShotsAnimVariant's site, verified with it)
+    ("FaithGatherAnim", 0x4ED355, 9),
+    ("FaithGatherAnimSet", 0x4ED3FA, 3),
+    ("FaithGatherAnimNext", 0x4ED36B, 3),
+    # selectionLimit: mov eax,32h (the 50-unit selection cap), the getter 0x4E0BEE and seven compares
+    ("SelectionCap1", 0x4E0BEE, 5),
+    ("SelectionCap2", 0x4E0F5F, 5),
+    ("SelectionCap3", 0x4E0F7E, 5),
+    ("SelectionCap4", 0x4E10A5, 5),
+    ("SelectionCap5", 0x4FC457, 5),
+    ("SelectionCap6", 0x4FE663, 5),
+    ("SelectionCap7", 0x4FEB94, 5),
+    ("SelectionCap8", 0x503DCE, 5),
+    # enableAllTeams: push 8D31h ("?"), the last entry of the single-player team list FUN_007A0628
+    ("TeamDropdownSp", 0x7A0709, 5),
+    # enableAllTeams: the Team 2 entry before it, whose frame offsets the hook repeats (verify only):
+    # temporary BString [esp+10h], BString array [esp+14h], int array [esp+20h]
+    ("TeamDropdownBlock", 0x7A06A8, 0x61),
+    # customCheats: the epilogue of the cheat table build FUN_005515F1 (pop edi / pop esi / pop ebx /
+    # add esp,10h), then its ret
+    ("CheatTableEnd", 0x551FE6, 6),
+    # customCheats: the last stock entry's store before it ({id, enabled, BString, fn}, 16 B) and the
+    # cheat text encryption, void cdecl(const char* text, char* out, int size) (verify only)
+    ("CheatTableEntry", 0x551FAF, 0x37),
+    ("CheatEncrypt", 0x513F73, 0x13),
     # customRevolutionBanners: jne 81A7F1h, the O'Higgins banner block, its dtor call and
     # the instruction at 0x81A7F1
     ("RevBanner", 0x81A7CC, 0x28),
@@ -41,31 +154,128 @@ SITES = [
     ("IconDefaultCase", 0x9A20A0, 4),      # lea ecx,[esp+18h]
     ("PoliticianCosts", 0x80E490, 7),      # mov eax,[edi] / lea ecx,[esp+14h] / push ecx
     ("PoliticianCosts2", 0x81943D, 7),     # mov edx,[esi] / lea eax,[esp+14h] / push eax
-    # hcShipmentPointFallback (FUN_004C6CAE, "get a valid HC gather unit")
+    # hcShipmentPointFallback (FUN_004C6B9E, "get a valid HC gather unit")
     ("GatherFallbackExit", 0x669E2E, 10),  # pop ebp/edi/esi, xor eax,eax, pop ebx/ecx, ret 4
+    # firstTC: the read of flag 136, StartingColonyBuilding, when a unit is created; a proto's bit is every civ's
+    ("StartColonyFlagRead", 0x6A2130, 6),
+    ("GatherSearchStart", 0x4C6BCF, 7),    # hc in ECX and EDX, before the stock ten types; `replace` starts there
     ("GatherFallbackStore", 0x4C6CB2, 12), # cmp byte [esp+18h],1 / je 669E38h: store-and-return
-    ("GatherFallbackBlock", 0x6698B4, 0xB0),  # the stock FortFrontier search block the hook mirrors
+    # the stock FortFrontier search block 0x6698B4..0x669963 the hook mirrors, less its proto ID load
+    # mov edx,[ecx+6034h] at 0x6698D4 (6 B): the hook loads its own IDs, and another DLL may
+    # rewrite that load, before or after the check
+    ("GatherFallbackBlock", 0x6698B4, 0x20),
+    ("GatherFallbackBlockTail", 0x6698DA, 0x8A),
+    # hcShipmentPointFallback FirstTC: the stored-point check 0x85302C, bool thiscall(hc, unit),
+    # null-safe, alive vtbl+A4h, then call 44DDB4h, then call 4802C6h != 1 (setne al), ret 4; the
+    # FirstTC helper calls it on the player's first town center
+    ("GatherPointValid", 0x85302C, 0x38),
     # healNonIdle (FUN_009E0B53, heal action applying a tick): the "target busy" check, from
     # mov ecx,[edi+58h] through the two busy tests to the heal path at 0x9E0C9F
     ("HealIdleCheck", 0x9E0C79, 0x2C),
     # healNonIdle (FUN_009CD865, a healer's automatic target search): mov ecx,[esi+58h] /
     # test / je, the "target is idle" call 0x44F1A7 / test al,al / je, and the next check
     ("HealAutoSearchIdle", 0x9CD9C0, 0x15),
-    # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the tail
-    # of its last loop and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret
-    ("AbstractTypesEnd", 0x51BA23, 0x15),
+    # healNonIdle busyRate (FUN_009E0B53, the heal path): mov edx,[eax+104h] / mov eax,[eax+318h] /
+    # mov ecx,[esi+4] / push edi / mov [esp+0Ch],edx / mov [esp+14h],eax (replaced, 8 bytes at
+    # 0x9E0CC7): the two world factors of this tick's heal, stored before the rate lookup 0x9E0CCF
+    ("HealTickFactors", 0x9E0CB7, 0x18),
+    # the target-busy predicates of the heal tick, both thiscall(target's action manager):
+    # 0x4802D4(-1) "moving" (ret 4) and 0x9CA5AC "fighting"
+    ("HealTargetMoving", 0x4802D4, 0x12),
+    ("HealTargetFighting", 0x9CA5AC, 0x17),
+    # smartHealTargets switch (FUN_009E0B53, state 8 = healing): mov ecx,[esi+24h] / push 8 /
+    # mov [esp+14h],ecx (replaced, 9 bytes at 0x9E0C3A) / push 5 / mov ecx,edi / call 9C2E40h /
+    # cmp eax,1 / jg 9E0D3Fh (more than one healer: the action ends) and the end path 0x9E0D3F
+    ("HealTickHealing", 0x9E0C32, 0x23),
+    ("HealTickEnd", 0x9E0D3F, 0x0F),
+    # smartHealTargets switch: the head of the automatic heal search FUN_009CD865, thiscall(owner =
+    # the healer's action manager): sub esp,10h / push ebp / mov ebp,ecx / mov ecx,[ebp+4] / ...
+    ("HealSearchHead", 0x9CD865, 0x1E),
+    # smartHealTargets (FUN_009CD865, the automatic heal search; EBP = owner, healer at [ebp+4],
+    # EDI = the query, ESI = candidate): the loop head, cmp [edi+4],esi (the result count) / ... /
+    # the entry's unit ID at [[edi]+[esp+10h]] / the unit table lookup / not the healer
+    ("SmartHealLoop", 0x9CD923, 0x5F),
+    # smartHealTargets: the range test, push esi / mov ecx,ebx / call 470F5Eh (the action's range)
+    # / ... / push esi / call 7FCF2Dh (replaced, 5 bytes at 0x9CDA36) / test al,al / jne 9CDA62h
+    ("SmartHealRange", 0x9CDA21, 0x1E),
+    # smartHealTargets: the loop step at 0x9CDA3F (38h-byte entries), the no-target exit
+    # pop esi / pop ebx / pop edi / xor al,al (replaced, 5 bytes at 0x9CDA58) / pop ebp / add esp,
+    # 10h / ret, and the accept path 0x9CDA62: healer vtbl+64h(1), 0x9CBDC4(owner, [esi+10h])
+    ("SmartHealLoopEnd", 0x9CDA3F, 0x40),
+    # overhealSources: the add-HP function FUN_004823A3 (ECX = unit, [esp+4] = amount, [esp+8] =
+    # flag): push ecx / push esi / mov esi,ecx / cmp dword ptr [esi+8],8 (replaced, 8 bytes) and
+    # the jbe 4823FEh that reads the cmp's flags
+    ("OverhealAddEntry", 0x4823A3, 0x0A),
+    # overhealSources (the heal tick FUN_009E0B53, EDI = target, ESI = the action, healer at
+    # [esi+10h]): fld [edi+64h] / fcomp 1e-6 / ... / mov ecx,edi / call 480408h (replaced, 5 bytes
+    # at 0x9E0BBB) / fcomp [edi+64h] / fnstsw / test ah,41h / jnp 9E0D3Fh (HP < max, else state 10)
+    ("HealTickMax", 0x9E0BA5, 0x29),
+    # overhealSources: the tick's heal, call 487C45h (rate) / fmul / push 1 / ... / push ecx /
+    # mov ecx,edi / call 4823A3h (replaced, 5 bytes at 0x9E0CE9) / fld [esp+10h] / fadd [esi+68h]
+    ("HealTickAdd", 0x9E0CCF, 0x26),
+    # overhealSources (the automatic heal search, ESI = candidate, healer at [ebp+4]): mov ecx,esi /
+    # call 45F295h (replaced, 5 bytes at 0x9CD984) / fcomp 1.0 / fnstsw / test ah,1 / je 9CDA3Fh
+    ("HealSearchRatio", 0x9CD982, 0x18),
+    # overhealDecay, verify only: the HP setter FUN_004820A1 it calls (thiscall(unit, value, flag),
+    # ret 8): sub esp,0Ch / push edi / mov edi,ecx / ... / mov [edi+64h],ecx (the store) / the
+    # override test
+    ("HpSetter", 0x4820A1, 0x22),
+    # overhealDecay: the adder's two regeneration calls, push 1 / push eax / mov ecx,esi /
+    # call 4823A3h (replaced) / the loop after it: the unit's own regeneration in FUN_004905E1
+    # (0x490881) and the Regeneration dance (0x67A03B)
+    ("RegenAddHp", 0x49087C, 0x12),
+    ("DanceRegenAddHp", 0x67A036, 0x15),
+    # extra abstract unit types (FUN_0051A5DC, registers the built-in abstract types): the last
+    # loop's jl and the epilogue pop edi / pop esi / mov al,1 / pop ebx / pop ecx / ret. It starts at
+    # the jl because the loop's bounds are not ours: a DLL that lengthens the list writes them
+    ("AbstractTypesEnd", 0x51BA2F, 9),
     # damageOverTime: TakeDamage FUN_0049B3D9's entry, sub esp,8Ch, and the cmp byte
     # [esp+0C0h],1 the trampoline continues at
     ("DotTakeDamageEntry", 0x49B3D9, 14),
     # damageOverTime: world update FUN_00481A57's entry, sub esp,0Ch / push ebx / push ebp, and
     # the push esi / mov esi,ecx the trampoline continues at
     ("DotWorldUpdateEntry", 0x481A57, 8),
-    # damageOverTime (FUN_005F98A0, parses the children of an action): the last tag compare
+    # the shared action tag hook (actiontags.cpp: damageOverTime, spreadAnyAccuracy) in
+    # FUN_005F98A0, which parses the children of an action: the last tag compare
     # ("ModifyExclusive"), its je to the handler, and the next-child code at 0x5FA126
     ("DotProtoActionTag", 0x5FA10F, 0x1B),
-    # damageOverTime: the ProtoAction handler's call 5F98A0h; the tag hook checks its return
-    # address 0x5FA213 to know the action comes from protoy.xml
+    # the action tag hook: the ProtoAction handler's call 5F98A0h; the hook checks its return
+    # address 0x5FA213 to know the action comes from a protoy.xml <ProtoAction>
     ("DotProtoActionCall", 0x5FA20E, 5),
+    # the action tag hook: FUN_005FA5B3 (a tactics file's <action>, called by the tactics loader
+    # FUN_005FAA4F with the proto that loads the file) and its call 5F98A0h; return address
+    # 0x5FA623 means the action comes from a .tactics file
+    ("TacticsActionCall", 0x5FA60A, 0x19),
+    # spreadAnyAccuracy (the projectile launch, after the precalculated roll and the target
+    # leading 0x4A5B02): cmp ebx,2 / je 4CEF7Bh (replaced, 9 bytes), then the continuation
+    # mov [esi+20h],ebx / mov ebx,[esp+18h] (the unit action) / mov edi,[esp+0ECh] (the target)
+    ("SpreadHitRoll", 0x499890, 0x17),
+    # test al,al / je 4998A7h: the cfg var ballisticPrecalcHits; and the store of the ground shot, then its jmp
+    ("SpreadPrecalcGate", 0x4997AE, 8),
+    ("SpreadGroundStore", 0x4C4DEC, 12),
+    # spreadAnyAccuracy: the miss stub every miss reaches (from 0x499893 and from the failed lead
+    # at 0x6A4BCA): lea eax,[esp+28h] / push eax / mov ecx,esi (replaced, 7 bytes) /
+    # call 4CEF8Ch / jmp 499899h
+    ("SpreadMissStub", 0x4CEF7B, 0x11),
+    # spreadAnyAccuracy (FUN_004CEF8C, the miss offset): fmul [0.25] / fst [esp+0Ch] /
+    # fcomp [5.0] / fnstsw ax / test ah,41h / je 4E2CE3h (replaced, 27 bytes), then the
+    # continuation fld [esp+0Ch] / fcomp [1e-6] / fnstsw ax / test ah,5 / jnp 4CF073h
+    ("SpreadRadius", 0x4CF00B, 0x2C),
+    # spreadAnyAccuracy, verify only: the two random draws uniform(-r, r) of FUN_004CEF8C
+    # (0x422648 on the sync RNG 0xC66588, stream 2) that the hook leaves to the stock code
+    ("SpreadDraws", 0x4CF037, 0x40),
+    # spreadAnyAccuracy, InstantBallistics: the launch's branch from the jne at 0x499801,
+    # mov [esi+20h],1 (replaced, 7 bytes) / jmp 4998A0h; and, verify only, the instant
+    # launch that copies the impact point [esp+28h] to [projectile+70h]: push -1.0 /
+    # lea edx,[esp+2Ch] / push edx / mov ecx,esi / call 4A95A5h / jmp 4999BEh
+    ("SpreadInstantMode", 0x4A9455, 12),
+    ("SpreadInstantLaunch", 0x4A958F, 0x16),
+    # spreadAnyAccuracy: the head of the attack applier FUN_0049BE95 (thiscall(projectile,
+    # targetId, point), ret 8): sub esp,1D8h (replaced, 6 bytes) / mov edx,[0C66234h]
+    ("SpreadApplierHead", 0x49BE95, 12),
+    # spreadAnyAccuracy, verify only: the instant arrival's call of the applier with the target
+    # [esi+8] (mov edx,[esi+8] / lea ecx,[esp+24h] / push ecx / push edx / mov ecx,esi ...)
+    ("SpreadInstantArrival", 0x49C151, 0x28),
     # dodgeAnyUnit (FUN_0049ACAA, "is this hit dodged?"): mov eax,[esi+5Ch] / mov eax,[eax+4],
     # the target's proto ID, and the first compare with the cached ypMonkJapanese ID
     ("DodgeProtoCheck", 0x49ACE5, 12),
@@ -73,6 +283,19 @@ SITES = [
     ("DodgeTechCheck", 0x6A249C, 10),
     # dodgeAnyUnit log: call 49ACAAh in the damage function and the test al,al after it
     ("DodgeCall", 0x49B023, 7),
+    # dodgeChance, verify only: the dodge test FUN_0049ACAA up to its "not dodged" exit (the frame:
+    # push esi / push ebx = [esi+44h] / push edi, the caller's EDI, then EDI = [world+7Ch]); the
+    # whole roll path 0x6A249C..0x6A2650 (tech, roll 0x407CE7(2, 100) against 15.0, then from
+    # 0x6A24FC the floating text and the sound, which read only ESI, EBX and locals); the caller from
+    # mov edi,[ebp+24h] (the damage info) to the call; the synced RNG, the tech test, the tech by
+    # name and the damage type loader FUN_0052D454 (the list at [db+44h], count [db+48h])
+    ("DodgeTest", 0x49ACAA, 0x6E),
+    ("DodgeRollPath", 0x6A249C, 0x1B5),
+    ("DodgeCaller", 0x49AF98, 0x92),
+    ("SyncRandom", 0x407CE7, 0x40),
+    ("TechActive", 0x94AF27, 0x33),
+    ("TechByName", 0x600BE1, 0x10),
+    ("DamageTypeLoad", 0x52D454, 0x51),
     # dodgeSoundSet: push "PowerEvade", the sound set a dodge plays, and the add esi,14h after it
     ("DodgeSound", 0x6A2628, 8),
     # criticalSoundSet: push "PowerCriticalStrike", played at the attacker, and lea eax,[ebx+14h]
@@ -90,6 +313,38 @@ SITES = [
     ("WorkRateResearchCall", 0x9E65F4, 0x0D),         # Research update FUN_009E648B
     ("WorkRateCommandResearchCall", 0x9D58D1, 0x0D),  # CommandResearch update FUN_009D5843
     ("WorkRateMaintainCall", 0x6AB23C, 0x14),         # Maintain update FUN_00492F3E (cold chunk)
+    # liveBuildingWorkRate, TrainPoints: the Train fraction function, void thiscall(action), whose
+    # only caller is the Train update (call at 0x9EA4B3): frac [ecx+6Ch] = progress [ecx+68h] /
+    # points [ecx+64h]. The hook replaces its head, fld [ecx+64h] / fcomp [0C3755Ch] (9 bytes),
+    # and re-executes it
+    ("TrainFrac", 0x9EA1FA, 0x45),
+    # liveBuildingWorkRate, TrainPoints: the rule the hook repeats, verify only. The Train enqueue
+    # FUN_009EAC35 looks up the trainer's player's proto (mov ebx,[[esi+10h]+44h] ... push eax /
+    # mov ecx,ebx / call 45311Bh / mov edi,eax) and, for the first entry of an empty action
+    # (cmp [esi+74h],0 / jg), stores [edi+6Ch] in [esi+64h], or with the trainer flag 9Eh
+    # (YPForceTrainAtBaseTrainPoints, call 44D063h) the base proto's (call 45316Eh) [eax+6Ch]
+    ("TrainPointsProto", 0x9EAC3D, 0x29),
+    # noCorpseDopples expire=: the manager update's call of the dopple's update; the store of the proto
+    ("DoppleUpdateCall", 0x49198B, 5),
+    ("DoppleInitProto", 0x4E4701, 6),
+    # buildingWorkRateAuras: the rate lookup 0x487C45 in the heal tick and in the build tick (traced in game), each
+    # with the action in ESI
+    ("BwrRateCallHeal", 0x9E0CCF, 5),
+    ("BwrRateCallBuild", 0x9D3D7B, 5),
+    # buildingWorkRateAuras: fmul [esi+64h] / fstp [esp+0Ch] in the AutoRepair update 0x9D0A4D, the HP added
+    ("BwrRepairRate", 0x9D0BF2, 7),
+    # noTrainNearEnemyTC refuse: sub esp,1Ch / push ebx / push ebp / push esi, the head of the enqueue
+    ("TrainEnqueueHead", 0x9EAC35, 6),
+    ("TrainPointsSet", 0x9EB19F, 0x43),
+    # liveBuildingWorkRate, TrainPoints: the same for Maintain. Its fraction function (only caller
+    # 0x6AB264, inside maintainWaitForPop's MaintainCycleDone, which the head hook leaves stock):
+    # [ecx+74h] = [ecx+70h] / [ecx+6Ch], head fld [ecx+6Ch] / fcomp [0C37468h]; the cycle start
+    # (FUN_009E2829) that stores the proto ID in [esi+64h], looks it up for the trainer's player
+    # and sets [esi+6Ch] = count [esi+68h] x [edi+6Ch], or with flag 9Eh the base proto's
+    # [eax+6Ch] (not multiplied)
+    ("MaintainFrac", 0x9E27E4, 0x45),
+    ("MaintainPointsProto", 0x9E28BD, 0x11),
+    ("MaintainPointsSet", 0x9E2A05, 0x3D),
     # techPrereqRecheck (FUN_004919CE, a player's tech tree update): cmp byte [edi+10h],0 /
     # jne 5096D4h, the dirty test the hook replaces and re-executes
     ("TechPrereqDirtyCheck", 0x491A18, 10),
@@ -108,6 +363,23 @@ SITES = [
     # and the loop over [list] / byte [list+4] through vtable slot +8
     ("TechPrereqListEval", 0x5094B4, 0x24),
     ("TechPrereqListLoop", 0x50946A, 0x4A),
+    # orPrereqsQty: the evaluator's head, push ebx / mov bl,[esp+0Ch] (replaced, 5 bytes), and the
+    # continuation push ebp / push esi / test bl,bl at 0x5094B9; written after techPrereqRecheck verified it
+    ("OrQtyEvalHead", 0x5094B4, 0x0A),
+    # orPrereqsQty: the OR-true exit of the evaluator's loop (pop edi/esi/ebp, mov al,1, pop ebx, ret 8) and
+    # the vtable thunk jmp eax the loop calls each prerequisite through
+    ("OrQtyEvalTrue", 0x67C412, 0x09),
+    ("OrQtyVtableThunk", 0x4C5F02, 0x02),
+    # orPrereqsQty: the tech <Flag> tag handler FUN_00620BF1, cdecl(node, record): its text [node+14h]
+    # through 0x402733, then the flag setter 0x620C2F(record, text), ret; and its registration in the tech
+    # tag table, mov dword ptr [esp+10h], 620BF1h (the immediate at +4 is redirected)
+    ("OrQtyFlagHandler", 0x620BF1, 0x3E),
+    ("OrQtyFlagRegister", 0x6237E4, 0x08),
+    # orPrereqsQty: the OrPrereqs case of the flag setter, or byte [esi+2],20h on [record+4] (bit 21)
+    ("OrQtyFlagBit", 0x62237E, 0x0A),
+    # orPrereqsQty: the per-tech setup FUN_006201E5: def = [[loader+4]] + id*34h, record = [[loader+4]+0Ch] +
+    # id*24h, mov [edx],eax stores the tech ID in [def+0] and mov [ecx],eax the def in [record+0]
+    ("OrQtyTechSetup", 0x620277, 0x3C),
     # techPrereqRecheck: the TypeCount ctor (push 0 = type 0, vtable 0BA533Ch) and the base
     # prerequisite ctor that stores the type in byte [+5]
     ("TypeCountCtor", 0x8EE860, 0x10),
@@ -157,6 +429,10 @@ SITES = [
     # transformUpdatesLOS: the entry through call 45311Bh / mov ebp,eax, the player's copy of the
     # new proto (EBP), and push ebp / mov ecx,esi, which make it setProto's argument at [esp]
     ("TransformProtoLookup", 0x9C754C, 22),
+    # transformSpan: BTransformUnitEffect's vtable (0xB96B60) slots setData (0x622822, thiscall(effect, node))
+    # and apply (0x7FBBAF, thiscall(effect, 4 arguments), ret 10h), and the apply's call of 0x9C754C
+    ("TransformEffectSetDataSlot", 0xB96B64, 0x04),
+    ("TransformEffectApplySlot", 0xB96B9C, 0x04),
     ("TransformPushProto", 0x9C763C, 3),
     # transformUpdatesLOS: push 1 / push 0 / mov ecx,esi / call 483262h (the unit leaves the
     # visibility map with its old LOS) and push 1 / push 1 / ... (it goes back with the new one)
@@ -190,6 +466,11 @@ SITES = [
     ("BroadsideSingleUseCap", 0x6A8236, 0x11),
     # broadsideMuzzleLimit: the two cold clamp blocks, count = limit, back to 0x503453 / 0x5034EE
     ("BroadsideClampCold", 0x6A8247, 0x16),
+    # broadsideMuzzleLimit, <NumberProjectiles>: BroadsideAttack's vtable slot 1 (vtable 0xB962E8), the set-up
+    # FUN_0050339A, its only reference (replaced by a wrapper); and the int array resize 0x401113,
+    # thiscall({data, count, capacity}*, count, byte), ret 8, which the set-up appends its slots with
+    ("BroadsideSetupSlot", 0xB962EC, 4),
+    ("ArrayResize", 0x401113, 0x18),
     # abilitySlots (FUN_0046188E, command panel refresh): the cold block that appends a page-11
     # (Abilities) command entry 5 more times, from mov ecx,[esp+40h] through mov edi,5 (the count,
     # 0x695BD2) and the do-while that ends in sub edi,1 / je 461C3Fh / jmp 695BD7h
@@ -201,7 +482,7 @@ SITES = [
     # test al,al / lea ecx,[esp+58h] / jne 696C70h; the log hook reads n and GetNth's out slots
     ("AbilityNthCall", 0x696C0B, 0x65),
     # abilitySlots log: call 45EE37h on GetNth's "true" path, and the fcomp it continues at
-    ("AbilityButtonRecharge", 0x696C70, 11),
+    ("AbilityButtonCost", 0x696C70, 11),
     # wonderPanelSkipAuras (cold chunk of FUN_004586B1, wonder power panel refresh): the eight
     # argument pushes, mov ecx,[esp+5Ch] (the ability manager) and push 0 (n) of the panel's
     # ability request; the hook re-pushes these arguments in this order
@@ -285,6 +566,17 @@ SITES = [
     # customHotkeyContexts: mov bl,1 / mov edi,esi, the path of a selected Building, which then
     # enters its own context through FUN_0079F851
     ("HotkeyTrainerQualified", 0x64A05A, 4),
+    # customHotkeyContexts, the letter in a button's tooltip (FUN_008F8F5E, a proto's hotkey text, cached
+    # per proto by FUN_007EF89E): the read of the manager after the last name of the context list, the
+    # jle of a building's lookup in BuildAccel, and the lookup 0xAB481D (thiscall manager, char* command,
+    # char* context, list* out, bool first, ret 10h), with the helpers that build a name for the list
+    ("HotkeyTipListDone", 0x8F9696, 6),
+    ("HotkeyTipBuildMiss", 0x8F90FC, 6),
+    ("HotkeyTipLookup", 0xAB481D, 6),
+    ("HotkeyTipListAdd", 0x467722, 6),
+    ("HotkeyTipStringNew", 0x401A12, 6),
+    ("HotkeyTipStringFree", 0x4010CA, 6),
+    ("HotkeyTipStringNarrow", 0x402733, 6),
     # snareOnlyHitUnit (FUN_004FD289, group recompute): the member's vtbl[34h] velocity, fcomp
     # with the group's pace [esi+7Ch], jnp 4FD53Ah, and the mov ecx,[edi+5Ch] it continues at
     ("SnareGroupPace", 0x4FD3FD, 0x1D),
@@ -305,12 +597,23 @@ SITES = [
     # snareOnlyHitUnit, code the helpers mirror: the TargetSpeedBoost call 0x4DD22D(target, 0,
     # 0.65f, -1f, -1f, 0, 2, 3000, -1, -1, 1), the snare signature
     ("SnareCreate", 0x4DD201, 0x2C),
+    # damageOverTime <AttachSnare>, verify only: the stock snare's target test before that call
+    # (unit vtable slot 90h, 0x45EE55: true for a unit that can move) and the creator it calls,
+    # int thiscall(unit, stat, value, -1f, -1f, 0, op, ms, -1, -1, exclusive), ret 28h, -1 without
+    # an action manager [unit+58h]; it allocates the modifier record [[unit+0B4h]+0C8h] if missing
+    ("SnareTargetCheck", 0x4DD1DE, 0x23),
+    # the part of SnareCreate after what cantBeSlowed writes: push 0BB8h, and the pushes up to the creator
+    ("SnareDurationPush", 0x4DD207, 5),
+    ("SnareCreateTail", 0x4DD20C, 0x21),
+    ("SnareApply", 0x4DD22D, 0x82),
     # snareOnlyHitUnit: the modifier init 0x4B3D44 ([+64h] stat, [+68h] value, [+78h] op, flag
     # 15h or 14h by duration, flag 16h exclusive)
     ("SnareModifierInit", 0x4B3D44, 0x5A),
     # snareOnlyHitUnit: the collector's per-action step 0x49F34B (type [+60h], children at
     # [+40h]) and its list loop 0x49F397 ({count +0, data +8})
     ("SnareCollector", 0x49F34B, 0x79),
+    # snareValues strongest: the only call of the velocity sum, in the unit's recompute
+    ("SnareStatsSumCall", 0x49F26A, 5),
     # snareOnlyHitUnit: the velocity modifier sum 0x4B3C48 / 0x4B3C7D and its two cold chunks
     ("SnareModifierSum", 0x4B3C48, 0xB7),
     ("SnareModifierSumEnd", 0x4E2A8E, 0x1B),
@@ -377,6 +680,1687 @@ SITES = [
     # [edi+80h],0 / je 4904BBh (no unit list: no regeneration)
     ("DanceRegenGate", 0x490486, 0x11),
     ("DanceRegenBranch", 0x679E66, 0xD),
+    # the head of getFirePit: mov eax,[0C66234h]; the lookup it calls, thiscall(player, type, startId, 0, -1)
+    ("FirePitHead", 0x4819EF, 5),
+    ("UnitOfTypeLookup", 0x48195C, 0xC),
+    # the dancer count 0x9C1577: mov eax,[eax+5Ch] / test eax,eax / je 9C161Fh
+    ("DancerProtoRead", 0x9C1604, 7),
+    # startingTC (FUN_0049874F, Player::addUnit, ESI = player, EDI = unit): cmp dword ptr
+    # [esi+4F0h],0 / jl 506B2Ah, FirstTC (the placementrules keyword) is only set while it is
+    # still -1, and the exit pop ebx / pop ebp / pop edi / mov al,1 / pop esi / ret 8 after it
+    ("FirstTcGate", 0x49880A, 0x16),
+    # startingTC: the cold chunk the jl enters, mov eax,[0C66234h] / mov ecx,[eax+140h]
+    # (database) / mov edx,[edi+5Ch] / mov eax,[edx+4] (the unit's exact proto ID)
+    ("FirstTcChunk", 0x506B2A, 0x11),
+    # startingTC: cmp eax,[ecx+5E08h] (TownCenter), replaced by the hook, and the jne 498817h /
+    # jmp 67ABD4h after it
+    ("FirstTcProtoCheck", 0x506B3B, 0x11),
+    # startingTC: the store both hooks leave through, mov ecx,[edi+10h] / mov [esi+4F0h],ecx /
+    # jmp 498817h
+    ("FirstTcSet", 0x67ABD4, 14),
+    # startingTC: the FirstTC rule FUN_008CE515 reads [player+4F0h] and looks the unit up in the
+    # world's table ([world+0Ch], count [+10h], [unit+10h] = the ID) with no alive test, then
+    # calls the distance vtbl+B8h; UnitById mirrors that lookup
+    ("FirstTcRuleLookup", 0x8CE597, 0x44),
+    # startingTC: setLifespan FUN_0048DCB9 stores the seconds and, when they are > 0, sets state
+    # bit 3 (or byte [[esi+4]],8): a FirstTC with that bit has a pending lifespan
+    ("SetLifespanArm", 0x48DCB9, 0x28),
+    # startingTC: the unit vtable's alive slot A4h (.rdata 0xB9355C = 0x44D019), called for the
+    # old FirstTC
+    ("UnitAliveSlot", 0xB9355C, 4),
+    # transformInventory (FUN_009C754C, a unit changes proto in place): mov eax,[esi+58h] /
+    # test eax,eax / je 9C763Ch, which the hook re-executes, and the action manager release
+    # push eax / call 4BA630h / add esp,4 / mov dword [esi+58h],0 it continues at (the other
+    # continuation, 0x9C763C, is TransformPushProto)
+    ("TransformInvHook", 0x9C7625, 0x17),
+    # transformInventory: push ebx / mov ebx,[esi+44h] through the other players' knowledge base
+    # loop (call 876D3Bh drops the unit, reading its old resource type) and the own player's
+    # call 472AFDh, which run before the hook; ESI and EBP are unchanged in it
+    ("TransformKbRemove", 0x9C75CF, 0x56),
+    # transformInventory: the other players' knowledge base loop after setProto, up to its
+    # call 483DA5h (takes the unit back, reading its amounts)
+    ("TransformKbReAdd", 0x9C766F, 0x23),
+    # transformInventory: unit creation's inventory seed (cold chunk of FUN_00498274), which the
+    # helper repeats: call 9BFE5Ah (a fresh inventory) / test / je, then push [ebp+0E0h] (the
+    # proto's resource object, InitialResource first) / lea ecx,[eax+4] / call 480A73h
+    ("InventorySeed", 0x67DE0D, 0x1E),
+    # transformInventory: FUN_009BFE5A, thiscall(unit) -> inventory: frees [[unit+0B4h]+94h]
+    # (cdecl 4BA757h), allocates a new one (86A865h: pool 0CAFCA8h, -1 at +0Ch/+10h), stores the
+    # unit ID at +0 and returns it; both exits through ret
+    ("InventoryRecreate", 0x9BFE5A, 0x6E),
+    # transformInventory all: FUN_004BA757, cdecl(inventory): clears the list, -1 at +0/+0Ch/+10h,
+    # and returns the object to the pool's free list; through its ret
+    ("InventoryFree", 0x4BA757, 0x50),
+    # transformInventory: ResList copy 0x480A73, thiscall(dst, src), ret 4: the [0C6DF38h] raw
+    # encoded entries and the total, when both arrays exist
+    ("ResListCopy", 0x480A73, 0x49),
+    # transformInventory scale: ResList scale 0x480B94, thiscall(list, float f), ret 4: each
+    # decoded entry times f, then the total recompute 58EF02h
+    ("ResListScale", 0x480B94, 0x7E),
+    # transformInventory: ResList total recompute 0x58EF02, the encoding the helper decodes:
+    # entry r = [list][r] XOR [0C6DF14h+4r] for r < [0C6DF38h], total [list+4] XOR [0C6DF10h]
+    ("ResListTotal", 0x58EF02, 0x81),
+    # noTrainNearEnemyTC hooks WorkRateTrainCall (mov ecx,[esi+10h] / call 9BFE33h in the Train
+    # update FUN_009EA28B, and mov ebx,[0C66234h] / mov eax,[ebx+13Ch] at the continuation
+    # 0x9EA418). Its head: mov eax,[esi+10h] / push edi / mov edi,[eax+44h] / test edi,edi / jne,
+    # ESI = the Train action, [esi+10h] = the trainer, [trainer+44h] = its player
+    ("TrainUpdateTrainer", 0x9EA2B2, 0x0B),
+    # noTrainNearEnemyTC: after the continuation, fmul [eax+310h] / push 16h / mov ecx,esi /
+    # fstp [esp+14h] / call 485D2Ch: ECX is written before it is read, EDX is not read (0x485D2C
+    # starts with mov edx,ecx)
+    ("TrainRateScale", 0x9EA424, 0x13),
+    # noTrainNearEnemyTC (FUN_008CE935, the placement rule distanceAtLeastFromType): its FirstTC
+    # loop, world [[0C66234h]+13Ch], players 1 .. [world+5Ch]-1 through call 44CB21h, FirstTC
+    # [player+4F0h] (-1: none), the unit table [world+0Ch] below [world+10h] with the ID check
+    # [unit+10h], and the distance call [vtbl+0B8h](point) on the TC
+    ("FirstTcRuleLoop", 0x8CE9BE, 0x68),
+    # noTrainNearEnemyTC: the same rule's player filter [ebp+18h]: 3 (enemy) calls 484D2Dh and
+    # 2 (ally) 4707ECh, both thiscall(the TC's owner [tc+44h], the builder's player ID); 1 (self)
+    # compares [[tc+44h]], the owner's player ID
+    ("FirstTcRuleFilter", 0x8CEB45, 0x37),
+    # noTrainNearEnemyTC: player by ID 0x44CB21, thiscall(world, id): [world+58h][id] for
+    # 0 <= id < [world+5Ch], ret 4; out of range its null exit xor eax,eax / ret 4
+    ("PlayerById", 0x44CB21, 0x1E),
+    ("PlayerByIdNull", 0x4649E1, 5),
+    # noTrainNearEnemyTC: unit by ID 0x44CC6D, thiscall(world, id): [[world+0Ch]+4*(id & 3FFFFh)]
+    # below [world+10h] whose [unit+10h] is id, ret 4; otherwise its null exit
+    ("UnitById", 0x44CC6D, 0x3A),
+    ("UnitByIdNull", 0x4E2A35, 5),
+    # noTrainNearEnemyTC: isEnemy 0x484D2D, bool thiscall(player, id): [player+1D4h+4*id] == 2 for
+    # 0 <= id < 10h, ret 4
+    ("PlayerIsEnemy", 0x484D2D, 0x20),
+    # noTrainNearEnemyTC near, verify only: the world's spatial query FUN_004A1C55, int
+    # thiscall(world, const float* point, float radius, char precise, list*), ret 10h (a box query
+    # through 0x462DBA into the obstruction manager's scratch, then with precise the entries whose
+    # vtable+0B8h(point) <= radius are copied to the list {data, count, capacity}), and the type
+    # branch of the placement rule FUN_008CE935 that calls it with precise 1
+    ("UnitsNearPoint", 0x4A1C55, 0xF8),
+    ("TypeRuleQuery", 0x8CEA69, 0x22),
+    # noTrainNearEnemyTC warning, verify only: the dodge's floating text 0x6A24FC..0x6A2608 (text
+    # manager [world+8A8h], visible-to test 0x4818F4(unit, [game+3C0h]), ret 4; the config reads,
+    # 0x46A144 for the two times, int thiscall(0C66500h, [[id ptr]], out*), ret 8; then
+    # 0x8023AE(text, time1, time2, unit ID, float[3] motion, colour ARGB, 1.0, 0, -1), ret 24h,
+    # whose head refuses an empty text or a negative unit ID and whose body reads the three floats
+    # and appends the text to the manager's list, returning its index)
+    ("DodgeFloatingText", 0x6A24FC, 0x10D),
+    ("FloatingTextAdd", 0x8023AE, 0xC4),
+    ("UnitVisibleTo", 0x4818F4, 0x45),
+    ("ConfigInt", 0x46A144, 0x3F),
+    # overhealHitpointBars, the floating HP bars (bar chunk 0x45FAA2 of the unit visual update):
+    # mov ecx,esi (the unit) / jne 6A1431h (under construction: the build fraction instead), the
+    # hooked call 45F295h (health ratio, the bar's fill) and the fstp [esp+10h] it continues at
+    ("OverhealBarRatio", 0x45FAA7, 0x11),
+    # overhealHitpointBars (FUN_004C4FB5, adds a unit to a selection group): mov ecx,ebp (the
+    # unit) / the hooked call 45F295h, and fadd [esi+1Ch] / pop edi / pop ebx / fidiv [esi+14h]
+    # (the group's average health, read by the group bar and 'Group Health') it continues at
+    ("OverhealGroupRatio", 0x4C5012, 0x0F),
+    # overhealHitpointBars, selection panel unitHitPointsValue: mov ecx,ebx (the unit) / ... /
+    # fistp [esp+88h] (the HP) / fldcw, the hooked call 480408h (max HP) and the fnstcw after it
+    ("OverhealPanelMax", 0x698B18, 0x26),
+    # overhealHitpointBars, selection panel stat row 'Hit Points': mov ecx,edi (the unit) / fld
+    # [edi+64h] / ... / fistp [esp+30h] (the HP), the max HP getter inlined at 0x4D7575..0x4D75AC
+    # (its first instruction hooked; its branches stay inside or rejoin, as do the cold
+    # 0x69FB66/0x69FB6E, at 0x4D75AD) and the fnstcw at 0x4D75AD it continues at
+    ("OverhealStatMax", 0x4D7560, 0x51),
+    # overhealHitpointBars, same row: EAX = the database proto ([[[game+140h]+54h]+[proto+8]*4],
+    # not null), the hooked fld [eax+98h] (the base of '%d/%d (%d+%d)') and the fnstcw after it
+    ("OverhealStatBase", 0x4D75DA, 0x45),
+    # overhealHitpointBars (FUN_009AF31A, ObjectInfo_singleUnitStats): call 45316Eh, the database
+    # proto of the unit, stored at [esp+2Ch] ([esp+30h] after the push ebp at 0x9AF354)
+    ("OverhealInfoProto", 0x9AF33B, 0x19),
+    # overhealHitpointBars, same panel: fld [esi+64h] / mov ecx,[esp+30h] (the database proto) /
+    # ... / fistp [esp+28h] (the HP), the hooked fld [ecx+98h] (the base) and the fnstcw after it;
+    # then mov ecx,esi (the unit) / ... / fistp [esp+20h], the hooked call 480408h (max HP) and
+    # the fnstcw after it
+    ("OverhealInfoBase", 0x9AFA07, 0x2D),
+    ("OverhealInfoMax", 0x9AFA34, 0x23),
+    # overhealHitpointBars segment, the floating bar's queueing: lea ecx,[esp+18h] (the bar's
+    # position, computed by 0x406BDB) / ... / push [unit+88h] (colour byte) / push [[unit+44h]]
+    # (player ID) / push [esp+10h] (fill) / push 1.0 (scale) / push ecx / mov ecx,[[0C66234h]+13Ch]
+    # (world) / call 45FB71h, and the replaced jmp 4516B3h after it
+    ("OverhealSegmentQueue", 0x45FB3F, 0x32),
+    # floating bars (floatingbars.cpp): the Alt state the queue hook passes on. In FUN_00451F9D, the modifier query
+    # mov edx,[0C66244h] / mov eax,[edx+74h] / mov ecx,[eax+2Ch] / mov edx,[ecx] / push 2 / mov eax,[edx+34h] /
+    # call 473E37h (jmp eax: vtable +34h(2), the Alt key; 0 shift and 1 ctrl at 0x436434) / cmp byte [esp+15h],0 /
+    # mov bl,al (0x452EBD) / jne 511D70h; BL is not written again before 0x45FB6C (the chunk 0x45FAA2.., its cold
+    # 0x6A1431 / 0x460633, and the callees keep EBX). With profile option 57h ([esp+28h]) and BL the unit's HP bar is
+    # queued (0x511D80: test bl,bl / je 452F23h / jmp 45FAA2h).
+    ("FloatingBarAlt", 0x452EA0, 0x25),
+    ("FloatingBarAltGate", 0x511D80, 0xD),
+    # inventoryBars: in FUN_00451F9D, mov eax,[esi] / mov ecx,esi / mov eax,[eax+0A4h] / call 502853h (the unit's
+    # vtable +A4h: false for a corpse) / test al,al / je 452F23h / push 5 / mov ecx,esi (replaced, 8 B at 0x452ED4; no
+    # branch lands in 0x452ED5..0x452EDC) / the inlined test of proto flag 5 ([[unit+5Ch]+50h], count +54h) / test
+    # al,al / jne 45F78Bh (replaced, 8 B at 0x452F1B; the only branch to it is the jmp at 0x452F14, to its start) /
+    # mov eax,[esi+0B4h] (0x452F23, the stock target without an HP bar); and FUN_004605C1, thiscall(unit, vec3* out),
+    # ret 4: the size of the unit's visual (the fallback's height)
+    ("InventoryNoHpBar", 0x452EC5, 0x64),
+    ("VisualSize", 0x4605C1, 0x10),
+    # steadyHitpointBars, the floating bar's position in the bar chunk: cmp [esi+60h],0 / jz (no
+    # visual) / v = [0C66550h..58h] at [esp+2Ch] / call 45F22Dh(ECX = unit; [[0C6DF88h]] the
+    # HITPOINTBAR tag, 0, &v, 0, 0), the hooked test al,al / jz 460633h (0x45FB24, 8 bytes: no tag in
+    # the animation), and the continuation lea ecx,[esp+18h] / push ecx / lea edx,[esp+30h] / push edx
+    # / lea ecx,[esp+7Ch] / call 406BDBh(&v, &out), v through the unit's matrix [esp+74h]
+    ("SteadyBarBone", 0x45FAE2, 0x5D),
+    # steadyHitpointBars: the fallback without the tag (cold, 0x460633..0x46067B): the unit's position
+    # [[esp+48h]], its y + ([0x4605C1(unit, &tmp)+4] + [[unit+0B4h]+24h]) x [unit+0A8h] + 1.0, then
+    # jmp 45FB3Fh, the queueing
+    ("SteadyBarFallback", 0x460633, 0x49),
+    # steadyHitpointBars: FUN_0045F22D, bool thiscall(unit, tag, byte, vec3* out, byte world, int):
+    # [unit+60h] the visual, 0x45F1DC its tag position in model space (0x45F072 interpolates the
+    # animation file's track at the visual's clock [visual+8]); with world = 0 copied to out as is
+    ("BoneLocalPosition", 0x45F22D, 0x5F),
+    # overhealHitpointBars segment: the queue function FUN_0045FB71, thiscall(world, pos*, scale,
+    # fill, player, colour byte), ret 14h: grows [world+8D0h] to count [world+8D4h] + 1 (0x408308)
+    # and fills a 28-byte record (+0 position, +0Ch scale, +10h fill, +14h player, +18h byte)
+    ("HpBarQueue", 0x45FB71, 0x6F),
+    # overhealHitpointBars segment, the bar renderer FUN_0045C4AF (ECX = EBP = world): the replaced
+    # mov ebx,[ebp+8D4h] (the record count), test / jle, then the vertex lock 0x40A6A2(count*6,
+    # 24h, &start) of the device [0C66044h]
+    ("HpBarRenderStart", 0x45C4AF, 0x3F),
+    # overhealHitpointBars segment, the renderer's per-record loop 0x45C60B..0x45CB91 (colour from
+    # the byte or [player+0C8h], then six 24h-byte vertices: +0 position, +0Ch the constant at
+    # 0C66544h, +18h colour, +1Ch u, +20h v; the left ones (v0, v2, v3) at P - scale/2 x B with
+    # u = 0.5 + fill/2, the right ones at P + scale/2 x B with u = fill/2, B = [[game+148h]+28h]),
+    # and its end, add eax,1 / add ecx,1Ch (replaced, 6 bytes at 0x45CB72) / add edi,24h / ...
+    ("HpBarRenderLoop", 0x45C60B, 0x587),
+    # overhealHitpointBars segment: the dynamic vertex buffer behind 0x40A6A2 ([device+660h]): a
+    # request larger than its size [vb+4] returns null (0x40A689), and the renderer then draws no
+    # bar that frame
+    ("DynamicVbLock", 0x40A6A2, 0x45),
+    ("DynamicVbFull", 0x40A689, 0x19),
+    # overhealHitpointBars segment, the stat row's HP text formats, a push of '%d/%d' (0BA2054h,
+    # 0x4D7651) or of '%d/%d (%d+%d)' (0C34A54h, cold 0x69A9C0) right after the HP and the max are
+    # pushed ([esp] = HP, [esp+4] = max), followed by a push of the buffer and the swprintf 0x444EFB
+    ("OverhealTextStat", 0x4D7647, 0x15),
+    ("OverhealTextStatSplit", 0x69A9B0, 0x1B),
+    # overhealHitpointBars segment, the portrait bar: the selection panel's group bar from mov edx,
+    # [esp+78h] (the group) to the tail lea ecx,[esp+70h] / call 4010CAh (0x4C83DF, the hook, after
+    # the chosen colour gadget was filled through 0x44B8B8 / 0x590772 and raised through 0x447F7B;
+    # [esp+50h] = the panel, the same stack level all along), and the cold yellow / red choices
+    ("OverhealPortraitTail", 0x4C82E6, 0x102),
+    ("OverhealPortraitColours", 0x69A614, 0x16),
+    # the panel's lookups of its three bar gadgets by name (0xAB7C2F(panel, &handle, &name, 1),
+    # stored at [panel+310h] / +314h / +318h) and the lookup itself: 0x402733 narrows the name,
+    # 0x433812 searches the panel's gadgets and writes [0C672C0h] (no gadget) when none matches
+    ("HealthBarGadgets", 0x9BAEE5, 0x87),
+    ("GadgetByName", 0xAB7C2F, 0x26),
+    # a progress bar gadget from its handle (cdecl, null if none), the handle release, the fill
+    # (thiscall(bar, float), clamped to [0, 1]), and the show and hide behind the UI commands
+    # gadgetReal (0x7E2244) and gadgetUnreal (0x442BE7): thiscall(manager, handle), ret 4, a call of
+    # the gadget's vtable +54h / +58h(0)
+    ("ProgressGadget", 0x44B8B8, 0x23),
+    ("GadgetRelease", 0x40431B, 0x2C),
+    ("ProgressFill", 0x590772, 0x49),
+    ("GadgetShow", 0x447F7B, 0x46),
+    ("GadgetHide", 0x448F13, 0x39),
+    # overhealHitpointBars stat: after the stat panel's HP row, mov edi,2 / mov [esp+2Ch],edi at
+    # 0x4D76DB (the row counter; EDI is the row the Group Health branch writes), and that Group
+    # Health row (0x69A9D3..0x69AB0F), whose calls the overheal row repeats: the row gadgets through
+    # 0x4C519C, the label style 0D6F5D0h and the value style 0C6657Ch (vtable +84h), the text
+    # (+80h), +54h, the help texts [gadget+68h] cleared, then add edi,1 / mov [esp+2Ch],edi
+    ("OverhealStatRow", 0x4D76DB, 0x09),
+    ("GroupHealthRow", 0x69A9D3, 0x13C),
+    ("GadgetRef", 0x4C519C, 0x1B),
+    ("BStringFromWide", 0x401A12, 0x28),
+    ("BStringSet", 0x40196F, 0x24),
+    # overhealHitpointBars, verify only: the max HP getter FUN_00480408 the hooks call (override
+    # [[[unit+0B4h]+0C8h]+4] if > -1e-6, else [proto+98h], 0 with no proto), the health ratio
+    # FUN_0045F295 the ratio helper mirrors (0 below 1e-6, 1.0 when HP >= max, else HP / max),
+    # and the stores of the <InitialHitpoints> and <MaxHitpoints> tag handlers, fstp [ecx+9Ch] /
+    # fstp [ecx+98h], the proto fields the hooks read
+    ("MaxHitpointsGetter", 0x480408, 0x26),
+    ("HealthRatio", 0x45F295, 0x48),
+    ("InitialHitpointsTag", 0x5F5CE3, 6),
+    ("MaxHitpointsTag", 0x5F5D39, 6),
+    # showGatherRate (FUN_004ECD87, the gather tick BUnitGatherAction::collectStuff_2, thiscall
+    # on the action, ret 4): sub esp,1Ch / push esi / push edi / ... / mov esi,ecx (ESI = the
+    # action), and the two later pushes, push ebp and push ebx, that put the elapsed-time
+    # argument at [esp+30h]; push ebx follows mov ecx,[esi+14h] (the target's ID)
+    ("GatherTickHead", 0x4ECD87, 0x14),
+    ("GatherTickPushEbp", 0x4ECDCC, 7),
+    ("GatherTickPushEbx", 0x4ECE16, 0x0A),
+    # showGatherRate: mov eax,[esi+10h] / test / je, cmp dword [eax+44h],0 / je: the gatherer
+    # and its player are not null past this point
+    ("GatherTickGatherer", 0x4ECE6D, 0x15),
+    # showGatherRate: call 4ECD39h (Gathering dance) / fmul [esp+14h], ST0 = the rate per second,
+    # the fcom / jnp 6A8AEAh that ends the action at <= 1e-6, the record hook's fmul [esp+30h]
+    # (elapsed) / fst [esp+14h], and the fcomp [esp+1Ch] it continues at
+    ("GatherTickRate", 0x4ED02A, 0x26),
+    # showGatherRate: the amount times [player+37Ch] (the record applies it to the rate), then
+    # the AbstractShrine test push 58h / call 44CAC4h on the target that zeroes the amount
+    ("GatherTickPlayerRate", 0x4ED130, 0x2A),
+    # showGatherRate: cmp dword [player+338h],0 / jne 6A8CBEh, which also zeroes the amount
+    ("GatherTickPlayerBlock", 0x4ED1A4, 0x14),
+    # showGatherRate: the add to the stockpile, push [esi+70h] (the resource) / call 49A98Ah
+    ("GatherTickAddResource", 0x4ED1E1, 0x12),
+    # showGatherRate (FUN_004D70ED, stat panel fill, EBP frame): the stock AutoGather row gate
+    # the panel hook mirrors, byte [[ebp+8]+21h], row [esp+2Ch] in 0..8, [[ebp+8]+14h] = 1
+    # selected unit, unit [esp+38h] built, [unit+58h], proto flag 9Bh, not Herdable, and the
+    # call 485CAC(mgr, 1Dh) / jne 69AF6Dh into the row writer (verify only)
+    ("StatPanelAutoGatherGate", 0x4D76FF, 0x135),
+    # showGatherRate: mov esi,[esp+38h] / mov ecx,[esi+5Ch], the join point after the
+    # AutoGather row (the panel hook), and the test ecx,ecx / je it continues at
+    ("StatPanelAfterAutoGather", 0x4D7834, 0x0B),
+    # showGatherRate: the row writer's head, the label and value gadgets of row EBX from
+    # [[esp+50h]+174h/198h]; a missing gadget jumps back to 0x4D7834
+    ("StatPanelRowWriter", 0x69AF7C, 0x64),
+    # showGatherRate: the AutoGather resource loop, mov ecx,[0C66234h] (the row hook) / mov edx,
+    # [ecx+140h] ..., whose only outputs to the formatter are EBX (resource) and [esp+1Ch] (rate)
+    ("StatPanelAgLoop", 0x69AFE0, 0x4A),
+    # showGatherRate: the row formatter, "%s (<icon=...>):" and "%.2f/s" or "%d/s", the row
+    # count add [esp+2Ch],1 and the jmp 4D7834h back
+    ("StatPanelRowFormat", 0x69B02A, 0x15D),
+    # showGatherRate, the minimized interface (the stat panel fill above returns at 0x4D7261 there):
+    # the unit panel's own AutoGather rate, gadgets [[esp+50h]+33Ch/340h] (unitResourceRateLabel
+    # and unitResourceRateValue), label "%s (<icon>):" through 0x706EFB and 0x444EFB (verify only)
+    ("UnitPanelRateRow", 0x69922D, 0x6C),
+    # ... and its join point, mov edi,[esp+54h] / mov ecx,edi, the hook
+    ("UnitPanelAfterRate", 0x699456, 0x06),
+    ("ResourceIconText", 0x706EFB, 0x10),
+    # ... the current selection, from the UI globals only (the stat panel fill's [ebp+8])
+    ("CurrentSelectionGroup", 0x453B28, 0x21),
+    # showGatherRate (FUN_005CFA7C, data-ref registration): mov dword ptr [esp+2Ch],5FDE49h, the
+    # provider of id 68h currentUnitGatherRateString (type 3); the imm32 at 0x5D2D3C is replaced
+    ("GatherRateStringRef", 0x5D2D38, 8),
+    # showGatherRate: the stub that provider was, xor al,al / ret 4
+    ("DataRefStub", 0x5FDE49, 5),
+    # showGatherRate: the formatText evaluator's type-3 case: value {type 3, BString 0}, the
+    # provider call through jmp eax with [0C6DF7Ch] = the argument, the BString copy and free
+    ("DataRefStringEval", 0x44A635, 0x64),
+    # showGatherRate: the data refs' current unit, [[[0C67310h]+920h]+13Ch] in world
+    # [[0C66234h]+13Ch], as currentUnitBuildingWorkRate FUN_006F49B1 looks it up
+    ("CurrentUnitRef", 0x6F49B1, 0x41),
+    # fld dword ptr [edx+0D0h] in it: the rate the panel shows
+    ("CurrentUnitRateRead", 0x6F49FC, 6),
+    # showGatherRate: the proto flag test 0x45EE02 (thiscall(proto, bit), ret 4), bitset
+    # [proto+50h] / count [proto+54h]
+    ("ProtoFlag", 0x45EE02, 0x35),
+    # showGatherRate: the abstract index test 0x44CAC4 (thiscall(proto, index), ret 4)
+    ("IsAbstractIndex", 0x44CAC4, 0x46),
+    # showGatherRate: the resource's name string ID 0x60782A (thiscall(database, resource),
+    # [db+180h] / count [db+184h], -1 out of range)
+    ("ResourceNameId", 0x60782A, 0x22),
+    # showGatherRate: BString from a string ID 0x58EA52 (thiscall(this, id), ret 4), the
+    # assign forwarder 0x443BB8 (thiscall(this, BString*, -1, -1)) and the free 0x4010CA
+    ("BStringFromId", 0x58EA52, 0x19),
+    ("BStringAssign", 0x443BB8, 0x0F),
+    ("BStringFree", 0x4010CA, 0x1F),
+    # buildingWorkRateAuras (FUN_005F5645, ModifyType name -> stat): the last compare, push -1 /
+    # push 0 / push "AutoGatherRate" / mov ecx,esi (ESI = the name) / call 443C10h, the hooked
+    # neg eax / sbb eax,eax / and al,0F1h, and the pop esi / add eax,0Eh / ret it continues at
+    ("ModifyTypeNameTail", 0x5FE6C7, 0x1B),
+    # buildingWorkRateAuras: the head of the name compare 0x443C10 the hook calls again, int
+    # thiscall(BString*, const wchar_t*, flag, n), ret 0Ch; 0 = equal, case ignored for flag 0
+    ("ModifyTypeNameCompare", 0x443C10, 0x10),
+    # tech subtypes: BDataEffect::setData's call of the subtype name lookup 0x61FF5D, and the two subtype
+    # switches of applyData and unapplyData: cmp eax,63h / ja, cmp eax,5Eh / ja. No branch lands inside.
+    ("DataSubtypeLookupHead", 0x61FF5D, 5),
+    ("DataSubtypeAttrCall", 0x6206B2, 5),
+    # teamKillBounty: FUN_0049BD52's mov ecx,[esp+14h] / mov edx,[esi], the amount and the killer's ID for
+    # the team's XP routine 0x49BDC0
+    ("TeamBountyPay", 0x49BDAB, 6),
+    # resourceBounty: the handler the tag table's builder registers for <Bounty> (mov [esp+10h],5F5D79h, its
+    # immediate), and the head of TakeDamage's kill branch, mov ecx,[esp+28h] / push ecx
+    ("BountyTagHandler", 0x51D669, 4),
+    ("BountyKillBranch", 0x4D4E0C, 5),
+    # hcTargetTechs: the head of the tech <Flag> reader FUN_00620C2F (push esi / mov esi,[esp+8]), the only call of applyEffects, and the
+    # heads of removeEffects (push ebx / push ebp / mov ebp,[esp+0Ch]) and of the pass after a load
+    # (push ebx / push ebp / push edi / mov edi,[esp+10h]); the check of who is an enemy, verify only
+    ("TechFlagHead", 0x620C2F, 5),
+    ("TechApplyCall", 0x94D0AE, 5),
+    ("TechRemoveHead", 0x94DCB2, 6),
+    ("TechLoadHead", 0x94DDEA, 7),
+    ("IsEnemyHead", 0x484D2D, 6),
+    # deadReplacementAtZeroInventory: the head of the death replacement FUN_004B4F2F (push ecx / push esi /
+    # mov esi,ecx / mov eax,[esi+68h], then test eax,eax / jne 4E6220h, the continuation at 0x4B4F36); its
+    # call at 0x4F1680 in the state check's body path (a DieAtZeroResources unit at 0 HP becomes a body)
+    # (verify only: the hook asks the caller's return address, 0x4F1685). The head of the removal notice
+    # FUN_00495D6B (mov eax,[0C66234h], then push esi / push edi at 0x495D70) and its only two calls, in the
+    # paths that remove a unit marked for removal (state bit 7) and then test DeadReplacementWhenDestroyed
+    ("DeadReplacementHead", 0x4B4F2F, 0x0F),
+    ("CorpseReplacementCall", 0x4F1680, 5),
+    ("RemovalNoticeHead", 0x495D6B, 7),
+    ("RemovalNoticeCall1", 0x495DEE, 5),
+    ("RemovalNoticeCall2", 0x6A3FF0, 5),
+    # detonationDeath: the only call of the kill handler, in the kill queue's drain 0x493D46; the head of
+    # the area damage, verify only
+    ("DetonationKillCall", 0x493D8F, 5),
+    ("DetonationAreaHead", 0x4C9D89, 10),
+    # detonationDeath, the delete command: in its executor FUN_007CCF7F (slot 21 of the type-7 command's
+    # vtable 0xB87E30) the call of the HP setter 0x4820A1 with (0, 1) for a proto without flag 0Dh, and the
+    # call of the kill queue 0x4B4DC2 with (1, 0, 0) for one with it; ESI = the unit at both
+    ("DeleteSetHpCall", 0x7CD0CF, 5),
+    ("DeleteKillCall", 0x7CD0DC, 5),
+    # detonationDeath, verify only: the executor's mov edi,ecx (EDI = the command at both calls); its read of the
+    # command's flag bits (cmp [edi+5Ch],10h / jbe / mov edx,[edi+58h] / mov al,[edx+2]); and the kill handler's
+    # KnockoutDeath test after its HP setter call (proto flag 123, [proto+50h] byte 0Fh bit 3, ja 50AAADh)
+    ("DeleteCommandRegister", 0x7CCF89, 3),
+    ("DeleteCommandFlags", 0x7CD002, 12),
+    ("KnockoutTest", 0x4B51CB, 0x20),
+    # detonationDeath, the blast on screen (verify only): the terrain impact FUN_004CB11C, thiscall(projectile,
+    # point), the visual of a shot landing on the ground (its action [+10h], the action's impact effect [+70h]);
+    # the impact effect by name FUN_0058F017, thiscall(manager [[0C66234h]+0BB8h], &name), as the tactics
+    # <impacteffect> handler 0x5FAFB2 calls it
+    ("TerrainImpact", 0x4CB11C, 0x15),
+    ("ImpactEffectByName", 0x58F017, 0x0C),
+    # displayedRange: the ID of a model path, thiscall(table [0xC66240], path, 1, 0, 0), called at 0x5FC94C; the ID
+    # of a bone name, thiscall(0xD6F478, name), called at 0x5FC8FC; both verify only
+    ("ModelPathLookup", 0x58F68F, 10),
+    # displayedRange: the Alt query of the HP bar chunk, mov edx,[0C66244h] .. call 473E37h (verify only: the key
+    # makes the same call); the range getter 0x4946D6, float thiscall(action, key), verify only; and the proto flag
+    # parser's last compare, push esi / push 0BCA0E0h / call 4028B4h / add esp,8 / test eax,eax / je, whose call
+    # (at +6) goes to the key, then pop esi / ret 8, the return for a name no flag matched
+    ("AltQuery", 0x452EA0, 0x18),
+    ("ActionRangeByKey", 0x4946D6, 10),
+    ("ProtoFlagLastCompare", 0x5F7269, 0x1A),
+    ("BoneNameLookup", 0x58E506, 10),
+    # auraStacking: the one call of the filter in the aura update, and the filter's head
+    ("AuraFilterCall", 0x9D0633, 5),
+    ("AuraFilter", 0x9D0238, 6),
+    # xsErrorLog: sub esp,804h at the head of each XS reporter, and the formatter they call
+    ("XsReportHead", 0x43A3A4, 6),
+    ("XsMessageHead", 0xA5667F, 6),
+    ("XsFormat", 0x435D99, 6),
+    # linkedResource: mov eax,[0xC66234], the head of the inventory add; the 9 bytes at the head of the inventory
+    # recreate, up to mov eax,[esi+0B4h]; mov edi,[esp+10h] / mov edx,[esi+10h] in the AutoGather pay, before the add
+    # 0x4C3798; the ResList set
+    ("InventoryAddHead", 0x49A5E6, 5),
+    ("InventoryRecreateHead", 0x9BFE5A, 9),
+    ("AutoGatherPayPoint", 0x4C378A, 7),
+    ("ResListSet", 0x58EF83, 10),
+    # dataLint: push 0EB4h at the <UnitType> handler's failure; test al,al / je / mov edx,[esp+14h] after the proto tag
+    # table's find; je at the <ProtoAction> handler's failure; the call of the tech parser 0x61FD02; je on setData's
+    # false in the effect parse; push 512h, the effect type's failure
+    ("LintUnitTypeMiss", 0x5FCB61, 5),
+    ("LintProtoTagMiss", 0x5F62A2, 8),
+    ("LintProtoActionMiss", 0x5FA202, 6),
+    ("LintTechLoadCall", 0x61FE4A, 5),
+    # tech tags (src/techtags.*, shared by dataLint and politicianEnablesTech): in the tech parser 0x61FD02,
+    # mov esi,eax / mov ecx,esi / mov edx,[ecx+18h] with the next node of the techtree's root
+    ("TechTagsNode", 0x61FDB8, 7),
+    ("LintEffectDrop", 0x6205E9, 6),
+    ("LintEffectType", 0x65BC56, 5),
+    # the kill queue's ask, thiscall(unit, a, b, c), ret 0Ch: it pushes [unit+10h] for 0x4B4D80; verify only
+    ("KillQueueAsk", 0x4B4DC2, 8),
+    # TakeDamage's subtraction through the add-HP entry 0x4823A3, verify only
+    ("DetonationTakeDamageHp", 0x49B822, 5),
+    # proto tags: the tail of the tag table's builder FUN_0051CE1D, pop edi / mov al,1 / pop esi / pop ecx
+    # / ret; the hook needs the ret at 0x51DB14
+    ("ProtoTagsTail", 0x51DB0F, 6),
+    # the killing blows (killobservers.*: veterancyBonus, killSpawn): mov ecx,[0xC66234], the head of TakeDamage's
+    # cold kill path; its only entry is the je at 0x49B746
+    ("VeterancyKillPath", 0x4D4F37, 6),
+    # garrison entries (garrisonobservers.*: garrisonConvert, nurseryFactor): the success tail of the load of a unit
+    # into another, FUN_009C24B5 bool thiscall(container, unitId, flag), ret 8, after [unit+6Ch] and the append to
+    # [container+70h]: mov edi,[edi+58h] / test edi,edi / je 9C26FFh ... through the pop ebx at 0x9C26FF; and the
+    # head of the function, verify only, so a detour of the head fails the key instead of skipping the hook
+    ("GarrisonEnterTail", 0x9C26E1, 0x1F),
+    ("GarrisonLoadHead", 0x9C24B5, 0x10),
+    # garrisonConvert, verify only: the unload of one unit from a container FUN_009C68C3, bool thiscall(container,
+    # unitId, pos*, usePos, keepOrders, force, a6, goTo*, a8, a9), ret 24h (the eject of the command handler
+    # FUN_009CBEA1 calls it with pos (-1,-1,-1) 0xC665E4, the death eject FUN_009C6C79 with force 1); the population
+    # getters 0x45805C (used) and 0x4581A1 (cap), int thiscall(player); and the train's pop-capped message, 0x9EB0D6:
+    # push 464Ch (string 17996 cStringNoPopcapRoom) / BString / the game's vtable +68h (game, 2000 ms, 0xC6657C, text,
+    # name), and its sound, 0x50547A thiscall(game, 4, 0) at 0x9EB137
+    ("GarrisonUnloadHead", 0x9C68C3, 0x1E),
+    ("PlayerPopHead", 0x45805C, 0x0D),
+    ("PlayerPopCapHead", 0x4581A1, 0x12),
+    ("PopCapToast", 0x9EB0D6, 0x33),
+    ("PopCapToastSound", 0x9EB137, 0x0F),
+    # nurseryFactor's commands: the network command uiTransformSelectedUnit sends (0x7E7193), verify only: the
+    # factory 0x5695FC (cdecl(player, type, 0, -1)), the players 0x5683B9 (thiscall(cmd, 1, &player)), the units
+    # 0x5696E1 (thiscall(cmd, count, ids)), the queue 0x568A1A (thiscall([world+8], cmd, 0, 0)); and the head of the
+    # type 17h command's per-unit execute FUN_007D64F7 (thiscall(cmd, unit), ret 4, al), through its
+    # cmp [esi+8Ch],-1: the jmp of nurseryFactor's command hook replaces its first 5 bytes
+    ("NurseryCmdExecute", 0x7D64F7, 0x16),
+    ("NetCommandCreate", 0x5695FC, 8),
+    ("NetCommandPlayers", 0x5683B9, 8),
+    ("NetCommandUnits", 0x5696E1, 8),
+    ("NetCommandQueue", 0x568A1A, 8),
+    # killSpawn: the head of the placement test PLACE FUN_0050703D (world vtable +14h, thiscall, 11 arguments,
+    # ret 2Ch), sub esp,1A8h / push ebx / push ebp / xor ebx,ebx / mov ebp,ecx; verify only
+    ("KillSpawnPlace", 0x50703D, 0x0C),
+    # veterancyBonus: the seven calls of the transform in place FUN_009C754C, thiscall(unit, proto), ret 4
+    ("TransformCall1", 0x7FBC79, 5),
+    ("TransformCall2", 0x7FBEF2, 5),
+    ("TransformCall3", 0x8C2D08, 5),
+    ("TransformCall4", 0x8EB78A, 5),
+    ("TransformCall5", 0x8F05F5, 5),
+    ("TransformCall6", 0x9BB6D5, 5),
+    ("TransformCall7", 0x9C7C16, 5),
+    # trainBatchSize: the call of the limit per Train action, and the routine's read of the proto ID
+    ("TrainBatchLimitCall", 0x9CE645, 5),
+    # sharedBuildLimit: the entry of the build limit, sub esp,10h / mov edx,ecx (no branch lands inside);
+    # the heads of the count it calls, thiscall(proto, player, bool, bool), and of the player's proto
+    ("BuildLimitEntry", 0x4C7B5F, 5),
+    ("BuildCountEntry", 0x4C7BC5, 8),
+    ("BuildCountTooltip1", 0x4C8B81, 5),
+    ("BuildCountTooltip2", 0x70F5EF, 5),
+    ("PlayerProtoEntry", 0x45311B, 8),
+    # nurseryFactor: the population getters a command's units are tested with, as the maintain spawn
+    # 0x9E2F79 tests one (thiscall(player), int): the population and the cap (basePop's PopLimit is inside it)
+    ("PlayerPopulation", 0x45805C, 6),
+    ("PlayerPopCap", 0x4581A1, 6),
+    ("TrainBatchProtoArg", 0x9CE6DE, 4),
+    # pillageGold: TakeDamage's call of 0x49BD52, on every hit with an attacking player, and the
+    # instructions that load its arguments: EBX the player [esp+20h], and the frame it relies on
+    ("PillageHitCall", 0x49B72B, 22),
+    # doNotQueue: the queue routine's call of the action add 0x494894
+    ("TrainQueueAddCall", 0x9CE81A, 5),
+    # and the send of a card's call of the add to the shipment queue 0x857204
+    ("ShipQueueAddCall", 0x85AD38, 5),
+    # nextResearchFree: the payment 0x8D946A and the copy of the cost 0x480A73 into the action, in the
+    # starts of the Research (EBP = the action) and CommandResearch (ESI = the action) actions
+    ("ResearchPayCall", 0x9E67E1, 5),
+    ("CommandResearchPayCall", 0x9D54CF, 5),
+    ("ResearchCostCopyCall", 0x9E68A0, 5),
+    ("CommandResearchCostCopyCall", 0x9D5548, 5),
+    # researchGrants: the add of a research's step to its progress, fadd / fstp dword [esi+6Ch] in the Research
+    # update FUN_009E648B (ST0 the step, EBX the tech's status entry, already pushed), [esi+70h] in the
+    # CommandResearch update FUN_009D5843 (EDI the entry); each is followed by the call of its fraction, where
+    # the hook continues. The two affordability checks of the payment 0x8D946A: 0x8D6BAE, and 0x8D6C1B when the
+    # world byte [world+6912h] is set
+    ("ResearchProgressAdd", 0x9E6622, 11),
+    ("CommandResearchProgressAdd", 0x9D58FF, 11),
+    # researchGrants, the price shown: in the command panel refresh FUN_0046188E, the tech button's call of the
+    # rollover builder 0x4C737C (push 1/1/0/1, EDI the unit, EBX the player, ESI the tech entry, lea ecx,[esp+30h]
+    # the rollover; cdecl, add esp,20h after), and the reset and read of the button's overlay text [esp+2C0h]
+    # (0x461DBC, 0x4625E2), which tie the frame to that buffer; the builder's head (its arguments at
+    # [esp+50h].. once it pushed EBX and EBP) and its copy of the tech's cost [ebp+10h] into its local list
+    # (lea edx,[ebp+10h] / push edx / call 480A73h; 0x4C78FA pushes a cost it was given and joins at the call);
+    # the BString append 0x443960 (thiscall(text, wchar*, len, start), ret 0Ch) and the ResList fill 0x4E2617
+    ("TechButtonRollover", 0x4622B5, 0x15),
+    ("ButtonOverlayReset", 0x461DBC, 8),
+    ("ButtonOverlayRead", 0x4625E2, 7),
+    # the shared tech rollover (techrollover.*, 2026-11-28): the builder's only exit, pop ebp / pop ebx /
+    # add esp,40h / ret at 0x4C78F3 (its early exits jump to 0x4C78F3 itself; nothing lands at 0x4C78F4..F8);
+    # the native command panel FUN_009ACAF4 and the trade route panel FUN_009B687E call it as the command panel
+    # does (the same 8 pushes, lea ecx,[esp+58h] / [esp+68h] the rollover), with their button overlay text
+    # [esp+248h] / [esp+230h] reset per button and read before the overlay gadget's text is set
+    ("TechRolloverExit", 0x4C78F3, 6),
+    ("NativeTechRollover", 0x9AD7E1, 0x15),
+    ("NativeOverlayReset", 0x9AD2D1, 8),
+    ("NativeOverlayRead", 0x9AE08C, 7),
+    ("TradeRouteTechRollover", 0x9B7627, 0x15),
+    ("TradeRouteOverlayReset", 0x9B719C, 8),
+    ("TradeRouteOverlayRead", 0x9B7ECE, 7),
+    ("TechRolloverHead", 0x4C737C, 0x10),
+    ("TechTipCostCopy", 0x4C73F9, 9),
+    ("BStringAppend", 0x443960, 0x10),
+    ("ResListFill", 0x4E2617, 0x0B),
+    ("PayAffordCheck", 0x8D6BAE, 0x1E),
+    ("PaySharedAffordCheck", 0x8D6C1B, 0x1A),
+    # trainBatchSize: the four calls of the queue routine FUN_009CE2BE, thiscall with 7 arguments, ret 1Ch:
+    # arg 3 the proto ID, arg 4 the count
+    ("TrainQueueCall1", 0x7560B5, 5),
+    ("TrainQueueCall2", 0x7CAF6E, 5),
+    ("TrainQueueCall3", 0x7D797A, 5),
+    ("TrainQueueCall4", 0x9EBF03, 5),
+    ("DataApplySwitch", 0x8F978D, 9),
+    ("DataUnapplySwitch", 0x8FB051, 9),
+    # tech subtypes on actions: setData's push "action"; and how protoUnitApply and Unapply turn the
+    # allactions bit 40h of [effect+9] into applyData's 8th argument
+    ("DataActionAttribute", 0x6216A3, 5),
+    ("DataAllActionsApply", 0x7F86CA, 0x0E),
+    ("DataAllActionsUnapply", 0x7F870F, 0x0E),
+    # tech subtypes on a Player target: the player Data apply FUN_008D842B, thiscall(player, a1, a2, subtype,
+    # [effect+10h], [effect+14h], amount, relativity), ret 1Ch: lea eax,[ebp-0Ah] / cmp eax,5Ah / push edi /
+    # mov esi,ecx / ja 8D878Fh (replaced, 6 bytes) / movzx eax,[eax+8D93D8h] / jmp [eax*4+8D9330h]; its caller
+    # 0x7F874A that pushes the effect's fields; the failure exit and a success exit (pop edi/esi/ebp/ebx,
+    # add esp,0Ch, ret 1Ch, AL as left)
+    ("PlayerDataSwitch", 0x8D8435, 0x1D),
+    ("PlayerDataCaller", 0x7F874A, 0x32),
+    ("PlayerDataFail", 0x8D878F, 0x0C),
+    ("PlayerDataDone", 0x8D8D23, 0x0A),
+    # shipmentCounts: the stock FreeHomeCityUnit case (subtype 37h) of the player Data apply: amount [esp+34h],
+    # proto [esp+2Ch], up to its call of the shipment spawn 0x857E77
+    ("FreeHomeCityUnitCase", 0x8D8C62, 0xC1),
+    # shipmentCounts: the shipment of a card, FUN_00858299: the activation of the card's tech,
+    # call 94CF27h (thiscall(entry = EDI, player = [esi+8], unit, 0, &ok, flags), ret 14h; redirected),
+    # with the pushes before it and the use of EDI after it
+    ("ShipActivateCall", 0x8584E7, 0x24),
+    ("ShipQueueCaller", 0x66AEA0, 5),
+    # shipmentCounts, the card's age: FUN_00858299's read of its argument, the queue entry being shipped, at
+    # [esp+24h] in the frame of the activation call (mov ecx,[esp+24h] / mov edx,[ecx] / lea eax,[esp+24h]);
+    # the card lookup FUN_0085FFCE (thiscall(list = hc+228h, index), ret 4: [list+1Ch] + index*28h, bounds 0 and
+    # [list+20h], else 0), called as is with the entry's card index (+0); the card's <age> is [card+18h]
+    ("ShipEntryArg", 0x85856A, 0x0A),
+    ("ShipCardLookup", 0x85FFCE, 0x1E),
+    # ageFiveShipments: the game's card list builder FUN_006301DE, one pass per age: cmp eax,4 (its immediate becomes
+    # 5) / mov [esp+14h],eax; the in-game shipment panel's fill FUN_009A5658: mov eax,[esi+18h] / cmp eax,edi
+    # (replaced, 5 bytes) / jl / cmp eax,3 / jg / mov edx,[esp+14h], the card's age and its row; the deck editor's
+    # fill FUN_009A7670: mov eax,[esi+18h] / cmp ebx,eax (replaced, 5 bytes) / jge ... / cmp ebx,4 / jge
+    ("CardListAgePasses", 0x63022E, 7),
+    ("CardPanelAgeRow", 0x9A5A22, 0x14),
+    ("DeckEditorAgeRow", 0x9A77BE, 0x27),
+    # and the deck builder's fill (the home city screen's "Build a Deck", buttons hcDeck-button<row><column>):
+    # mov eax,[esi+18h] / cmp edi,eax (replaced, 5 bytes) / jge ... / cmp edi,4 / jge
+    ("DeckBuilderAgeRow", 0x9A0489, 0x27),
+    # the column of a card, once its row is set (#83, Age V cards right-aligned): the panel's mov ecx,[esp+28h]
+    # (column) / mov edx,[esp+14h] (panel) (replaced, 8 bytes) / slot = row*11 + column / mov eax,[edx+edi*4+140h]
+    # (its button); the deck builder's mov edx,[esp+14h] (column) / mov eax,[esp+28h] (builder) (replaced, 8 bytes)
+    # / ... / mov ebx,[eax+ebp*4+178h]; the deck editor's mov ecx,[esp+30h] / lea eax,[ebx+ebx*2] (replaced,
+    # 7 bytes) / ... / add eax,[esp+1Ch] (column) / mov ebp,[ecx+eax*4+154h]
+    ("CardPanelColumn", 0x9A5A7C, 0x1B),
+    ("DeckBuilderColumn", 0x9A04B0, 0x1B),
+    ("DeckEditorColumn", 0x9A77E5, 0x18),
+    # kothTimer: FUN_009F02DD, the King of the Hill time in seconds on the victory settings (DefaultVP.xml, ECX):
+    # mov eax,[0C66234h] (replaced, 5 bytes) / mov edx,[eax+13Ch] / ... / KOTHVictoryTime +104h, PerPlayer +108h,
+    # [world+5Ch], [world+18Ch], AdjustKOTHTotalTimeByTeams +10Ch, its Factor +110h / ret; its only call, at
+    # 0x948F95 in the team's timer start FUN_00948F32, minus [team+84h]; and the end it sets, now + 1000 x seconds
+    ("KothTotalTime", 0x9F02DD, 0x48),
+    ("KothStartCall", 0x948F93, 0x12),
+    ("KothSetEnd", 0x948A4C, 0x1C),
+    # cratePriority: the only calls of the crate rank FUN_004DBF40 (thiscall(db, resource, civ), ret 8)
+    # and of the next crate FUN_00501786 (thiscall(player, proto, int* next, int* resource), ret 0Ch),
+    # and that one's read of the civ: mov ecx,[esi+4] / mov ecx,[ecx+44h]
+    ("CrateRankCall", 0x49A03C, 5),
+    ("CrateNextCall", 0x50170B, 5),
+    ("CrateNextCivRead", 0x50184A, 6),
+    # buildingWorkRateAuras: the Train update's mov ecx,[esi+10h] / call 9BFE33h. Checked alone, not
+    # in the VerifyAll: noTrainNearEnemyTC hooks these bytes and calls g_uhcBwrTrainGetter, and the
+    # call is redirected only while they are stock
+    ("BwrTrainCall", 0x9EA410, 8),
+    # buildingWorkRateAuras: after that call, mov ebx,[0C66234h] / mov eax,[ebx+13Ch], up to the first
+    # write of EAX (the wrapper returns another EAX)
+    ("BwrTrainCallNext", 0x9EA418, 0x0C),
+    # buildingWorkRateAuras: the getter after its first two instructions (liveBuildingWorkRate may
+    # replace those), je 9BFE3Eh / fld [eax+28h] / ret / mov eax,[ecx+5Ch] / fld [eax+0D0h] / ret:
+    # the wrapper calls it as a float thiscall(unit) that changes only EAX and the flags
+    ("BwrGetterTail", 0x9BFE38, 0x10),
+    # buildingWorkRateAuras, the GatherRate reader whose rule the factor mirrors: FUN_004ECD87's
+    # mov eax,[ecx+0B4h] / mov ecx,[eax+0C8h] (the modifier record) / test / jne 69FE53h, and that
+    # chunk's fld [ecx+24h] / fcomp [0B9FB64h] (1e-6) / fnstsw / test ah,5 / jnp (1.0) / fld [ecx+24h]
+    ("BwrGatherRateRecord", 0x4ECFE9, 0x14),
+    ("BwrGatherRateRule", 0x69FE53, 0x1C),
+    # civFirstTC (FUN_0052A590, the civs.xml parser, ESI = the child node, EBX = database,
+    # [esp+10h] = the civ): the last tag compare of the <civ> child loop, call 443C10h /
+    # test eax,eax / je 65A549h, then the unknown-tag path, xor edi,edi / cmp [ebx+80h],edi
+    # (replaced, 8 bytes at 0x52BB07) and the jle 52B43Dh / jmp 52C066h the hook resumes at
+    ("CivTagUnknown", 0x52BAFA, 0x20),
+    # civFirstTC: the next-child step every handled tag jumps to, mov eax,[esp+80h] /
+    # mov ebp,[esp+0B0h] / add eax,1 / cmp eax,[ebp+0Ch]
+    ("CivTagNextNode", 0x52B43D, 0x14),
+    # civFirstTC: the civ by ID 0x405C2E, thiscall(database, id) = [[db+24h]+4*id] (count
+    # [db+28h]), ret 4; a civ's ID is [civ+8] and its name [civ+4] (char*)
+    ("CivById", 0x405C2E, 0x18),
+    # veterancyBonus, verify only: the civ by name 0x52D6FF, thiscall(database, char* name), ret 4: a walk of
+    # [db+24h] (count [db+28h]) comparing names; null when none (the nativeCivs loader hook calls it too)
+    ("CivByName", 0x52D6FF, 0x1C),
+    # civFirstTC: a player's civ ID 0x4539D3, [[player+20h]] when [player+24h] > 0, else -1
+    ("CivOfPlayer", 0x4539D3, 0x10),
+    # scenarioCivs, verify only: the civs.xml loader FUN_0052A590 loads the file into its stack reader,
+    # mov ecx,[0D6F510h] / push 1 / push 0 / push 0BD1124h (L"civs.xml") / push ecx / lea ecx,[esp+110h] /
+    # call 599A7Dh / test al,al / je 65991Ah, then the root mov ecx,[esp+108h] / test ecx,ecx / mov esi,ecx /
+    # mov [esp+2Ch],esi / je 52C32Bh: 0x52A62B is where the hook runs the walk again on a second document
+    ("ScenarioCivsLoad", 0x52A607, 0x39),
+    # scenarioCivs: the end of the walk over the root's elements, jl 52A692h / mov ebx,2 / push 0BCEE80h
+    # (replaced, 5 bytes at 0x52B485, also the target of the jle at 0x52A68C) / lea ecx,[esp+30h] (continuation)
+    ("ScenarioCivsEnd", 0x52B47A, 0x14),
+    # scenarioCivs, verify only: the civ append FUN_0052A4DB's head, push ebx / push ebp / push edi / mov edi,ecx /
+    # mov ebx,[edi+28h] (the count) / push 0 / lea eax,[ebx+1] / lea ebp,[edi+24h] (the list) / push eax / mov ecx,ebp
+    ("ScenarioCivsAppend", 0x52A4DB, 0x13),
+    # scenarioCivs, verify only: the <Visible> and <VisibleInEditor> handlers of the civ tag loop set bit 0 and
+    # bit 1 of the civ's flag bitset [civ+128h] (push eax / push 0 or 1 / ... / mov eax,[eax+128h] ...)
+    ("CivFlagVisible", 0x52D302, 0x3E),
+    ("CivFlagEditor", 0x52BE78, 0x40),
+    # scenarioCivs, verify only: the XML reader's load FUN_00599A7D, thiscall(reader, directory, file, int, int),
+    # ret 10h; its head releases the document already loaded (cmp byte [esi+1864h],0 / je / call 598E2Bh)
+    ("XmlReaderLoad", 0x599A7D, 0x25),
+    # civFirstTC: proto by name 0x5A2346, thiscall(database, const char*), ret 4: a
+    # case-insensitive scan of [db+54h] (count [db+58h]) by [proto+10h], -1 if none
+    ("ProtoByName", 0x5A2346, 0x20),
+    # civFirstTC: proto by ID 0x45316E, thiscall(database, id) = [[db+54h]+4*id], ret 4
+    ("ProtoById", 0x45316E, 0x1E),
+    # civFirstTC (FUN_00925F11, the step every rmPlaceObjectDef* reaches): mov eax,[edi] /
+    # push ecx / mov ecx,[eax+esi*4] (the object def) / push edx / call 925936h / mov ebx,eax;
+    # the call at 0x925F4C is redirected
+    ("RmPlaceCall", 0x925F45, 0x0E),
+    # civFirstTC: objectDef::place FUN_00925936, thiscall(def, player, x, z, count), ret 10h, up to
+    # its Special_StartingUnits test cmp byte [esi+55h],0 at 0x925988 (those defs rebuild their
+    # items from the civ's <startingunit> inside place); the RM is [game+92Ch]
+    ("RmPlace", 0x925936, 0x6F),
+    # civFirstTC: objectDef::addItem's footprint, proto flag 2 (0x45EE02), then
+    # (int)([proto+88h] * [[world+88h]+1Ch] * 2 + 0.5) and the same with [proto+8Ch], stored at
+    # item +0Ch / +10h (items: [def+8], count [def+0Ch], 20 bytes, +0 the proto ID)
+    ("RmItemFootprint", 0x924B1D, 0x9E),
+    # civFirstTC: rmGetNomadStart, byte [[[0C66234h]+92Ch]+1A95h] (0 without an RM)
+    ("RmNomadStart", 0x90B683, 0x19),
+    # civFirstTC (FUN_0049039A, the town starting units, EDI = player): mov ecx,[eax+140h] /
+    # push ebx / mov ebx,[ecx+5E08h] (TownCenter, replaced, 6 bytes at 0x679AC8) / push ebp /
+    # push esi / mov esi,[edi+80h]; the query after it takes the first built unit of proto EBX
+    ("TownStartQuery", 0x679AC1, 0x15),
+    # civFirstTC: the spawn, FUN_007C238E([player+3E0h], unit ID), then [player+349h] &= 0BFh,
+    # which clears the pending bit whether or not anything spawned
+    ("TownStartSpawn", 0x679B50, 0x1A),
+    # civFirstTC: FUN_007C238E spawns only if bit 0 of [colonies] is clear and a colony has
+    # [colony+28h] == the unit (count [edi+18h], indices [edi+14h], colonies [edi+8]); the
+    # helper repeats this test
+    ("TownStartColonyLoop", 0x7C2407, 0x31),
+    # decimalPopulation: the int parse 0x59A71D(text, int* out) of <PopulationCount> (FUN_005FB8FA,
+    # then [proto+0D8h]) and <PopulationCapAddition> (FUN_005FD6E5, then [proto+0D4h]), up to the
+    # store; the two calls are redirected
+    ("PopCountParse", 0x5FB92E, 0x1E),
+    ("PopCapAddParse", 0x5FD719, 0x1E),
+    # decimalPopulation: the proto effects PopulationCount (case 0x8FA814) and
+    # PopulationCapAddition (case 0x8FA8AB) of the effect switch 0x8F978D call the int effect
+    # FUN_007F899B(rel, int* out, base, float amount, negate), cdecl; both calls are redirected,
+    # and PopulationCount's "result <= 0 -> 1" (mov eax,1 at 0x8FA849) becomes K
+    ("PopCountEffect", 0x8FA835, 0x1D),
+    ("PopCapAddEffect", 0x8FA8CF, 0x1A),
+    ("IntEffect", 0x7F899B, 0x23),
+    # decimalPopulation: the player effect PopulationCap (FUN_008D842B case 14h, and its removal
+    # at 0x8D20AB): fld [esp+X] (the amount) / fnstcw [esp+X], then a truncating fistp; the
+    # amount is scaled in between
+    ("PopCapEffectAdd", 0x8D87AB, 0x08),
+    ("PopCapEffectRemove", 0x8D20AB, 0x08),
+    # decimalPopulation: getCap's shared-team path (GameTeamSharePop): per ally
+    # min(raw, 200, [world+31Ch]), from cmp eax,0C8h to add ebx,eax
+    ("TeamPopCap", 0x679694, 0x26),
+    # decimalPopulation: game start: setCap(getCap() + [player+7Ch] + [world+320h]), from
+    # add eax,ebx / add eax,[esi+320h] to push eax
+    ("StartPopBonus", 0xA0D2D1, 0x09),
+    # decimalPopulation: XS registrations, push impl / push name (the impl is replaced)
+    ("XsAiGetAvailableEconomyPop", 0x72A333, 0x0A),
+    ("XsAiGetAvailableMilitaryPop", 0x72A49B, 0x0A),
+    ("XsAiGetCurrentEconomyPop", 0x72A382, 0x0A),
+    ("XsAiGetEconomyPop", 0x72A3D1, 0x0A),
+    ("XsAiGetMilitaryPop", 0x72A4EA, 0x0A),
+    ("XsAiGetPopNeeds", 0x7319AA, 0x0A),
+    ("XsAiSetEconomyPop", 0x72A420, 0x0A),
+    ("XsAiSetMilitaryPop", 0x72A539, 0x0A),
+    ("XsKbGetPop", 0x885EE5, 0x0A),
+    ("XsKbGetPopCap", 0x885F34, 0x0A),
+    ("XsKbGetPopCapAddition", 0x887BB1, 0x0A),
+    ("XsKbGetPopSlots", 0x887C58, 0x0A),
+    ("XsKbGetPopulationSlotsByQueryID", 0x887DA6, 0x0A),
+    ("XsKbGetPopulationSlotsByUnitTypeID", 0x887CFF, 0x0A),
+    ("XsKbUnitPickGetMaximumPop", 0x88F88A, 0x0A),
+    ("XsKbUnitPickGetMinimumPop", 0x88F768, 0x0A),
+    ("XsKbUnitPickSetMaximumPop", 0x88F7E3, 0x0A),
+    ("XsKbUnitPickSetMinimumPop", 0x88F6C1, 0x0A),
+    ("XsTrPlayerGetPopulation", 0x98C439, 0x0A),
+    # decimalPopulation: the formatText data refs pop (22h), popcap (23h), futurepop (24h) and
+    # totalpop (25h) (FUN_005CFA7C), entries {id, type, name, provider}: mov [esp+2Ch],provider /
+    # call 5ACE63h / test / je / mov edx,[esp+18h] (the id) / ... / mov [edi],edx /
+    # mov eax,[esp+1Ch] (the type: EBX = 2, int, here; 3 is text) / push ecx / lea ecx,[edi+8] /
+    # mov [edi+4],eax
+    ("RefPopReg", 0x5D0B47, 0x2B),
+    ("RefPopCapReg", 0x5D0BC3, 0x2B),
+    ("RefFuturePopReg", 0x5D0C3F, 0x2B),
+    ("RefTotalPopReg", 0x5D0CBB, 0x2B),
+    # decimalPopulation: their stock int providers, bool stdcall(Value*) (they write [value+4])
+    ("RefPopProvider", 0x6F2274, 0x0A),
+    ("RefPopCapProvider", 0x458244, 0x0A),
+    ("RefFuturePopProvider", 0x44CE3A, 0x0A),
+    ("RefTotalPopProvider", 0x45809D, 0x0A),
+    # decimalPopulation: colorizePop (6Ch, 0x6F5736): the argument parse call 6F2A1Dh
+    # (atoi of the text in parentheses, -1 on failure), then getPop + [player+78h] + N > getCap
+    # (red), then the "%s%d%s" format call
+    ("ColorizePopArg", 0x6F576F, 0x08),
+    ("ColorizePopFormat", 0x6F580C, 0x0C),
+    # decimalPopulation: BString sprintf 0x444EFB(dest, fmt, ...), cdecl, and the calls that print
+    # a population: unit help "Population: %d" (0x63F98D, 0x70FF3A, str 11725), the pop costs
+    # "{colorizePop(%d)}" (0x63FEC5, 0x70F58F, str 20395; 0x710651, str 37461 / 20395), the pop
+    # counter's help "%d %s = %d" (0x6F2DB5) and str 18963 with getCap (0x6F2E34)
+    ("BStringFormat", 0x444EFB, 0x14),
+    ("PopFormatHelp", 0x63F98D, 0x08),
+    ("PopFormatHelp2", 0x70FF3A, 0x08),
+    ("PopFormatCost", 0x63FEC5, 0x08),
+    ("PopFormatCost2", 0x70F58F, 0x08),
+    ("PopFormatCost3", 0x710651, 0x08),
+    ("PopFormatCapLine", 0x6F2DB5, 0x08),
+    ("PopFormatCap", 0x6F2E34, 0x08),
+    # kbUnitSyscalls: engine functions the added kb syscalls call (thiscall, verified heads).
+    # ResList get 0x44EFFF(list, r) -> float; unit isSeeable 0x48A9EF(unit, player) -> bool (the
+    # visibility bit [[unit+B4h]+ACh] & 1<<player, else the explored bit [+B0h] and the proto's
+    # under-fog flags, 0x55F5B2); unit getSquad 0x4E2A03(unit) -> [[world+148h]][[unit+B4h]+14h];
+    # inventory isFull 0x4DC520(inventory) -> bool; unit getCarryCapacity 0x494503(unit, r) ->
+    # float, through [unit+5Ch] (the proto)
+    ("ResListGet", 0x44EFFF, 0x3D),
+    ("UnitIsSeeable", 0x48A9EF, 0x3B),
+    ("UnitGetSquad", 0x4E2A03, 0x32),
+    ("InventoryIsFull", 0x4DC520, 0x3D),
+    ("UnitCarryCapacity", 0x494503, 0x10),
+    # customProtoUnitCommands: FUN_0052277E registers the command type names 0..128 in the
+    # database's name table ([db+2648h], count [db+264Ch]) with 0x537683(db, id, name), thiscall,
+    # ret 8, which accepts only id == count; the last call (RansomExplorerAsian, 80h) is at
+    # 0x5269FB. 0x5274AB(db, name), thiscall, ret 4: the name's ID, -1 if absent.
+    ("CmdTypeRegLast", 0x5269FB, 0x05),
+    ("CmdTypeRegister", 0x537683, 0x37),
+    ("CmdTypeLookup", 0x5274AB, 0x34),
+    # customProtoUnitCommands: the protounitcommands.xml loader (FUN_00527090) sizes the record
+    # array [db+2968h] (4Ch-byte records indexed by command type ID, readers bound by its count
+    # [+4]) with push 82h / mov ecx,ebx / call 5276EAh: 130 records for the 129 stock types
+    ("CmdRecordReserve", 0x52711D, 0x05),
+    # multiarmor: a proto keeps one armor, type byte [proto+1D3h] and value [proto+C4h].
+    # The <Armor> tag handler 0x5F5E62 (cdecl(ctx, node, proto); the type name through
+    # 0x5F562D on ctx) stores them at its end: mov [ecx+1D3h],al / mov [ecx+0C4h],edx
+    ("ArmorStore", 0x5F5EB7, 0x0C),
+    # multiarmor: the armor getter 0x49B323 (thiscall(unit, byte damageType, ...), ret 8), EAX =
+    # proto, BL = the damage type: cmp [eax+1D3h],bl / mov [esp+8],0 / jne / mov eax,[eax+0C4h]
+    # (22 B), then mov [esp+8],eax at 0x49B345
+    ("ArmorGetter", 0x49B32F, 0x16),
+    # multiarmor: BProtoUnit destructor 0x58633D (push esi / mov esi,ecx / mov [esi],0B9F404h) and
+    # the proto copy 0x67E011 (thiscall(dst, src, bool), ret 8: sub esp,0Ch / push ebp /
+    # mov ebp,[esp+14h]), which clones a proto for a player
+    ("ProtoDtorHead", 0x58633D, 0x09),
+    ("ProtoCopyHead", 0x67E011, 0x08),
+    # multiarmor: BDataEffect's vtable slots setData (0x6205F6), protoUnitApply (0x7F86C0) and
+    # protoUnitUnapply (0x7F8705); the data subtype Armor is 5Ch, applied through 0x7F892A
+    # (cdecl(byte relativity, float* target, float base, float amount, bool unapply)) on the
+    # effect's amount [+18h] and relativity [+1Ch]
+    ("DataEffectSetDataSlot", 0xB9E5AC, 0x04),
+    ("DataEffectApplySlot", 0xB9E5CC, 0x04),
+    ("DataEffectUnapplySlot", 0xB9E5D0, 0x04),
+    # multiarmor: BDataEffect playerApply (0x7F874A, through 0x8D842B to every target proto's
+    # applyData) and playerUnapply (0x7F877F) slots, and the Armor (5Ch) cases of applyData
+    # 0x8F973F (EDI = target proto, ESI = its base proto, [esp+28h] amount, [esp+2Ch] relativity,
+    # EBP = 0: mov edx,[esp+28h] / mov eax,[esi+0C4h]) and of unapplyData 0x8FB01C (ESI = target,
+    # EDI = base, [esp+24h] amount, [esp+28h] relativity: mov eax,[esp+24h] / mov ecx,[edi+0C4h])
+    ("DataEffectPlayerApplySlot", 0xB9E5C4, 0x04),
+    ("DataEffectPlayerUnapplySlot", 0xB9E5C8, 0x04),
+    ("DataApplyArmorCase", 0x8FAE52, 0x0A),
+    ("DataUnapplyArmorCase", 0x8FC144, 0x0A),
+    ("EffectValueApply", 0x7F892A, 0x10),
+    # workRateByAbstractType: the head of the WorkRate case (Data subtype 3) of applyData, mov edi,[edi+44h]
+    # / cmp edi,ebp, and the je it continues at; the same in unapplyData with ESI. No branch lands inside.
+    ("WorkRateApplyCase", 0x8F987C, 11),
+    ("WorkRateUnapplyCase", 0x8FB11A, 11),
+    # workRateByAbstractType, verify only: action by ID in a proto's action set, the rate list's getter
+    # (0.0 for no entry) and setter
+    ("ActionById", 0x48D22E, 0x10),
+    ("ActionRateGet", 0x49EBB3, 0x10),
+    ("ActionRateSet", 0x5FA2FC, 0x10),
+    # autoGatherScaleByContained: the entry of the AutoGather rate getter, push ecx / push ebx /
+    # mov ebx,[esp+0Ch], and the test ebx,ebx it continues at. No branch lands inside.
+    ("AutoGatherRateEntry", 0x49EBE4, 8),
+    # containedUnitsROF: the ScaleByContainedUnits handler of the action parser FUN_005F98A0 (lea eax,[esp+10h] /
+    # push eax / mov ecx,edi / mov [esp+14h],ebx / call 59B526h, the read of the text), then cmp dword ptr
+    # [esp+10h],1 / mov eax,[ebp+64h] (replaced, 8 B at 0x5FEE0C), the jne 5FE713h it continues at, and or byte
+    # [eax+2],4 / jmp 5FA126h. Reached only through je 5FEDFCh at 0x5F9AED. The parser's next child, mov
+    # eax,[esp+1Ch], the hook's other continuation.
+    ("RofScaleTag", 0x5FEDFC, 0x27),
+    ("RofNextChild", 0x5FA126, 4),
+    # containedUnitsROF: the reads of the tactics ROF [action+34h] that set an attack's wait, each replaced with
+    # its next instruction (5 B; no branch lands inside), up to the delay call 48FA69h: after an attack that did
+    # not fire, mov edi,[edi+34h] / test edi,edi / jbe / mov eax,[esi+10h] / mov ecx,[eax+58h] / push edi / call
+    # (0x48A821) and mov edi,[edi+34h] / test edi,edi / jbe / mov ecx,[esi+10h] / mov ecx,[ecx+58h] / push edi /
+    # call (0x48A99A); mov esi,[esi+34h] / test esi,esi / jbe / mov ecx,[ebp+10h] / mov ecx,[ecx+58h] / push esi /
+    # call (0x48EA0C); after a shot (ranged and melee join at 0x48F892) mov eax,[ebp+4] / cmp eax,ebx / je /
+    # mov eax,[eax+34h] / cmp eax,ebx (replaced at 0x48F8B5) / jbe / mov esi,eax / ... / push esi / call
+    # (0x48F8E9); where an attack begins, mov eax,[esi+4] / push ebx / mov ebx,[eax+34h] / mov eax,[esi+6Ch]
+    # (replaced, 6 B at 0x4A1189) / test eax,eax / jne 6A79C3h / test ebx,ebx / jbe. The delay function
+    # 0x48FA69(action manager, ms), verify only.
+    ("RofWaitA", 0x48A821, 0x17),
+    ("RofWaitB", 0x48A99A, 0x17),
+    ("RofWaitC", 0x48EA0C, 0x17),
+    ("RofShot", 0x48F8AE, 0x40),
+    ("RofAnim", 0x4A1185, 0x1A),
+    ("RofDelay", 0x48FA69, 0x2A),
+    # numberOfShots projectiles: the attack step's ranged shot, mov edx,[ebp+6Ch] / push edx (the launch's fifth
+    # argument) / the inlined test of tactics flag 18h / mov edx,[ebp+10h] / push eax / mov eax,[esp+2CCh] / mov
+    # ecx,[eax+28h] / push ecx / push edi / push edx / mov ecx,ebp / call 499422h (replaced, 5 B at 0x48F88D) / mov
+    # eax,[ebp+6Ch], the continuation; and the launch's head (sub esp,0D4h / push ebx / push edi / mov edi,[esp+0E0h]
+    # ...) and one of its returns, add esp,0D4h / ret 14h (five arguments)
+    ("ShotsLaunchCall", 0x48F838, 0x5D),
+    ("ShotsLaunch", 0x499422, 0x1D),
+    ("ShotsLaunchRet", 0x4999DA, 9),
+    # numberOfShots, no reload between a burst's shots: the head of the reload animation's start FUN_004976CB,
+    # sub esp,8 / push esi / mov esi,ecx (replaced, 6 B) / mov eax,[esi+10h], its continuation (no branch lands
+    # inside); and the model index lookup 0x471D24 (mov ecx,[ecx+60h] / test ecx,ecx / je), which the hook calls.
+    ("ShotsReloadAnim", 0x4976CB, 9),
+    ("ShotsAnimVariant", 0x471D24, 0xB),
+    # retargetInAction: the attack update's "no live target" branch 0x487838, reached from 0x48A3D3 (no unit),
+    # 0x48A3EA (vtable +A4h: not alive) and 0x48A409 (0x48A3F9: inside another unit): mov al,[esi+61h] / cmp al,19h
+    # (replaced, 5 B; no branch lands inside) / je 48A40Fh (the continuation) / cmp [esi+0Ch],ebx / jge / cmp al,1 /
+    # jne 49785Bh / setState(19h). The update's head from the target read, where the hook goes back with a new target:
+    # mov ecx,[esi+14h] / cmp ecx,ebx / mov edx,[0C66234h] / mov edx,[edx+13Ch] / push edi / jl / mov eax,ecx / and
+    # eax,3FFFFh.
+    ("RetargetNoTarget", 0x487838, 0x1B),
+    ("RetargetUpdateTarget", 0x48A359, 0x1F),
+    # retargetInAction, power-launched attacks: the alliance test 0x484E01 (bool thiscall(player, other player ID),
+    # ret 4), called by the key as 0x489ECC calls it (with the rate lookup 0x487C45, RateLookupHead).
+    ("PlayerIsAlly", 0x484E01, 0x13),
+    # powerShots: an Attack tag of a power-launched attack (the attack's power use [ebp+6Ch] not 0) asks the power
+    # manager whether the power is ready: push 2 / mov ecx,esi / call 48BB7Eh / cmp al,1 / jne 48F7F1h / cmp
+    # [esi+1Ch],ebx / jl / ... / call 6EDB7Eh (unit ID, the ability record [use+1Ch]) / jmp 4B7766h (0x48EA3D..
+    # 0x48EAA1). There: test al,al / jne 48F7F1h (replaced, 8 B; only 0x48EA9D jumps there, no branch lands inside)
+    # / jmp 48CF7Bh (no shot: pop edi / pop esi / pop ebp / pop ebx / add esp,2B0h / ret 4). 0x48F7F1, the shot's
+    # path (mov ecx,[ebp+4] / push 9 / sub esp,4), is where the hook goes on for a shot.
+    ("PowerShotsGate", 0x48EA3D, 0x65),
+    ("PowerShotsReady", 0x4B7766, 0x0D),
+    ("PowerShotsNoShot", 0x48CF7B, 0x0D),
+    ("PowerShotsFire", 0x48F7F1, 8),
+    # turretArc: the head of FUN_0048AA9F (the unit turns to face a point): sub esp,18h / push esi / mov esi,ecx (6 B,
+    # replaced; no branch lands inside) / mov eax,[esi] / mov eax,[eax+8Ch] (the continuation 0x48AAA5).
+    ("TurretFaceHead", 0x48AA9F, 0x0E),
+    # turretArc: in the projectile launch FUN_00499422, where every way of placing the shot's start meets (0x4995D5:
+    # from the launch data 0x4CEB32 -> 0x4AB5CC, the launch points 0x4AB5D4, none 0x4AB5B1): fld [esp+28h] / push
+    # 40A00000h (9 B, replaced) / fsub [esp+20h] (the continuation 0x4995DE).
+    ("TurretLaunchStart", 0x4995D5, 0x0D),
+    # turretArc: the attack update FUN_0048A330's state switch: movzx eax,byte [esi+61h] / cmp eax,16h (7 B, replaced;
+    # the one branch to it, 0x48A62B, lands on its head) / ja 48A728h (the continuation 0x48A661, on the cmp's flags).
+    # A turn shown beyond the arc holds the attack there, as the stock update holds a slow turner (0x4B3382 ->
+    # 0x48BFC7, the same frame: vtable+34h(0), pop edi / pop esi / pop ebx / add esp,8 / ret; verified, not written).
+    ("TurretAttackState", 0x48A65A, 0x0D),
+    ("TurretAttackWait", 0x48BFC7, 0x15),
+    # broadsideSoundSet: in FUN_004CEB37 (the broadside fire step's effect of one shot), push 0BA1D5Ch (replaced, 5 B)
+    # / add edx,14h (the continuation; no branch lands inside), and the name it pushes, "ShipCannonShoot" with its NUL
+    ("BroadsideSound", 0x4CECBD, 8),
+    ("BroadsideSoundName", 0xBA1D5C, 0x10),
+    # unitResourceAuras: the aura update's mov eax,[0C66234h] and the sub esp,10h it continues at
+    ("UnitResourceAuraEntry", 0x9D033E, 8),
+    # unitResourceAuras, verify only: the aura's scan (thiscall(action, IdList*)), inventory add
+    # (thiscall(inventory, resource, float)), unit state check, main resource of a unit, dead test,
+    # add resource to a player
+    ("AuraScan", 0x9CFF9A, 0x10),
+    # unitResourceAuras: the stock update's reading of <ModelAttachment> ([protoAction+A4h], the bone at
+    # +A8h) and the functions it calls: model by ID, has it (thiscall(unit, model), ret 4), hang it
+    # (thiscall(unit, object, bone, byte), ret 0Ch), take it off (thiscall(unit, model), ret 4)
+    ("AuraModelBlock", 0x9D053F, 9),
+    # resourceGatherAuras: the update's two decisions on the ring: has it, for a unit that stays in range,
+    # and hang it, for a new one
+    ("AuraHasModelCall", 0x9D0584, 5),
+    ("AuraHangModelCall", 0x9D06DC, 5),
+    ("ModelById", 0x405E83, 6),
+    ("UnitHasModel", 0x9C28DE, 8),
+    ("UnitAttachModel", 0x9C04F3, 8),
+    ("UnitRemoveModel", 0x9C2885, 8),
+    ("InventoryAdd", 0x49A5E6, 0x10),
+    ("CheckState", 0x482152, 0x10),
+    ("MainResource", 0x4DBEC1, 0x10),
+    ("UnitIsDead", 0x4802C6, 0x10),
+    ("PlayerAddResource", 0x49A98A, 0x10),
+    # resourceGatherAuras: call 4ECD39h in the gather tick. showGatherRate verifies the same bytes, so
+    # that key must be applied first.
+    ("GatherDanceCall", 0x4ED02A, 5),
+    # resourceDebt: the clamps of the add 0x49A98A and the set 0x49A8C5 in their cold parts, and the
+    # jmp back each continues at
+    ("DebtAddClamp", 0x679A0E, 13),
+    ("DebtSetClamp", 0x6798F4, 13),
+    # resourceDebt: the third clamp, in the add's shared-resources path, and the mov it continues at. A
+    # jp at 0x6799D2 jumps over it to that continuation.
+    ("DebtShareClamp", 0x6799D4, 12),
+    # resourceDebt: the three gates that stop negative rates before the add: jp 4C0F1Fh in the AutoGather
+    # update, jp 4C0A34h at the end of its rate getter, jnp 6A8AEAh in the gather tick. No branch lands
+    # inside; each holds its own target, so its bytes prove the continuation.
+    ("DebtAutoGate", 0x48D186, 6),
+    ("DebtAutoRate", 0x49EE07, 6),
+    ("DebtGatherGate", 0x4ED03E, 6),
+    # multiarmor: XML attribute 0x598F37 (thiscall(node, name, void** out), ret 8), its text
+    # 0x402733 (thiscall(out) -> const char*), and the damage type list lookup 0x5F55EA
+    # (thiscall(ctx, name) -> entry, its ID at +8; ctx [+44h] array, [+48h] count)
+    ("XmlAttribute", 0x598F37, 0x10),
+    ("XmlText", 0x402733, 0x09),
+    ("DamageTypeLookup", 0x5F55EA, 0x10),
+    # betterfreedynamicunit: a FreeHomeCityUnit amount below -1e-6 ([0B9FB60h]) is a "dynamic"
+    # count: -amount * min([world+134h], 15) (an integer). Two copies, after the jp that skips
+    # them for other amounts: 0x7FA6ED (four nops, then the computation into [esp+24h], up to
+    # 0x7FA72A) and 0x8D8C88 (into [esp+38h], up to 0x8D8CBD)
+    ("FreeDynamicUnit1", 0x7FA6ED, 0x3D),
+    ("FreeDynamicUnit2", 0x8D8C88, 0x35),
+    # nowalkfarm: in the gather action, once the game time passes [action+A0h], mov ecx,esi /
+    # call 9DDADEh picks the gatherer a new spot around the farm (the function farmingRadius
+    # hooks); the other four callers (0x4ED5E8, 0x4ED6F4, 0x50DF53, 0x6A8E7C) place it first
+    ("FarmWalkCall", 0x6A9067, 0x05),
+    # repairWallGlobal: BGame::commandAutoRepair 0x830AC4 (thiscall(game, int player, int unitId),
+    # ret 8; player < 0 means [game+3C0h], the local player), the call the one-wall repair at
+    # 0x7DEDC3 makes
+    ("CommandAutoRepair", 0x830AC4, 0x12),
+    # compatMode: FUN_0054D663 adds each adapter display mode (16 B, its D3D format at +0Ch) to the
+    # renderer's list with push eax / mov ecx,ebp / call 54D605h (thiscall(renderer, mode), ret 4)
+    ("DisplayModeAddCall", 0x54D6D1, 0x05),
+    ("DisplayModeAdd", 0x54D605, 0x12),
+    # gatherFix: BUnitGatherAction's update ends with [action+88h] += [world+104h] (the elapsed time)
+    # then pop ebx / pop edi / ... ret (0x4EC8DE, 32 B up to pop esi at 0x4EC8FE); and
+    # doAnimationLooped 0x4ECC88 collects on each animation loop: cmp byte [esi+61h],5 / jne ... up
+    # to 0x4ECCE7 (89 B), collectStuff 0x9DD7B4 or collectStuff_2 0x4ECD87 (thiscall(action, float))
+    ("GatherTimeAdd", 0x4EC8DE, 0x20),
+    ("GatherAnimLoopCollect", 0x4ECC8E, 0x59),
+    ("GatherCollect", 0x9DD7B4, 0x10),
+    ("GatherCollect2", 0x4ECD87, 0x10),
+    # rofFix: FUN_009CEB5C (an ability/command order on a unit) clears the unit AI's [+B8h] with
+    # mov dword [edi+0B8h],0 before issuing the order
+    ("RofTimerReset", 0x9CECB4, 0x0A),
+    # stunMovingTargetFix: BUnitStunAction's update, state 8: call [eax+0CCh] (the target check) /
+    # test al,al / jne 9E90F9h; on a failed check it ends the action (setState 0Ah)
+    ("StunTargetCheck", 0x9E909E, 0x02),
+    # noDamageOnUnbuiltFoundations: in the damage function FUN_0049B3D9 (thiscall(unit, int
+    # attackerPlayer, ...), ret 34h; ESI = unit, ECX = its proto, the attacker at [esp+94h]), the
+    # proto flag 9Ch (Invulnerable) test: cmp [ecx+54h],9Ch / jbe 49B40Fh / ... / ja 4CA52Bh
+    # (no damage) (22 B)
+    ("DamageInvulnerableTest", 0x49B3F3, 0x16),
+    # truckAttackResourceFix: the TruckAttack hit (BUnitTruckAttackAction, vtable 0xB98468, update slot 3Ch
+    # 0x9EC6D4 -> 0x9EC4E1; EBP = the action, EDI = the target in its loop over the units in range, EBX = 0):
+    # mov edx,[edi+0B4h] / mov eax,[edx+94h] / cmp eax,ebx / je 9EC64Dh / lea ecx,[eax+4] / call 58F070h, which sets
+    # every resource of the target's inventory to 0 (the obfuscated array of 0x58F070), then the damage at 0x9EC64D
+    ("TruckAttackInventoryReset", 0x9EC635, 0x18),
+    # fallenHeroTacticsFix: four places reset the unit AI's tactic ([ai+A8h]) to 0 through
+    # 0x4F7389 (thiscall(ai, int tactic), ret 4) when it is not 0 already: push ebx|0 / call 4F7389h
+    ("TacticReset1", 0x6AAE6D, 0x06),
+    ("TacticReset2", 0x7D8F07, 0x07),
+    ("TacticReset3", 0x9D6BE7, 0x07),
+    ("TacticReset4", 0x9EBB0B, 0x07),
+    # impactBoneFix: the two calls of the model's bone frame getter FUN_00407272 (thiscall(model, bone,
+    # vec3* pos, vec3* axisC, vec3* axisB, vec3* axisA, ...), ret 1Ch) in the visual's dummy attachment update,
+    # and the test al,al / je they continue at. Path 1 (FUN_004BE0xx): type in EDI, the axes at
+    # [esp+24h], [esp+30h], [esp+40h] after the call; path 2 (FUN_004BE7xx): type in EBX, the axes at
+    # [esp+20h], [esp+30h], [esp+40h].
+    ("ImpactBoneFrame1", 0x4BE21E, 0x0D),
+    ("ImpactBoneFrame2", 0x4BE88D, 0x0D),
+    # the bone frame getter's head (verify only)
+    ("BoneFrameGetter", 0x407272, 0x08),
+    # customImpactTypes: the impact type by name FUN_0059F436 (15 wchar[32] names from 0xBA4D70) ends its
+    # not-found path with pop edi / pop esi / or eax,-1 / pop ebx / ret (EBX = the name's string object)
+    ("ImpactTypeNotFound", 0x59F464, 0x07),
+    # in the .impacteffect loader FUN_005FEABF, the add of a parsed entry to its type's list (EBX = the type,
+    # [esp+20h] = the impact effect, [esp+14h] = the entry): mov edx,[esp+20h] / lea eax,[esp+14h] /
+    # lea ecx,[ebx+ebx*2] / push eax / lea ecx,[edx+ecx*4+4] / call 401F74h, and the add ebp,1 it continues at
+    ("ImpactEffectAdd", 0x5FEC74, 0x18),
+    # the same loader's mov ecx,ebx / call 5FE8CDh (the 15 lists' cumulative weights; also reached from
+    # 0x5FEBE1 with no child), and the lea ecx,[esp+24h] it continues at
+    ("ImpactEffectWeights", 0x5FEC99, 0x0B),
+    # the two calls of the impact effect spawn FUN_0049C1E5 (thiscall(effect, pos, dir, ?, type, ...), 8 args,
+    # ret 20h; it returns -1 for a type above 14): from the projectile hit (0x49D86E) and the terrain impact
+    # (0x4CB30D), and the instruction each continues at
+    ("ImpactSpawnUnit", 0x49D86E, 0x06),
+    ("ImpactSpawnTerrain", 0x4CB30D, 0x06),
+    # the string compare FUN_00443C10 (thiscall(string, const wchar_t*, 0, -1), 0 when equal) and the spawn's
+    # head (verify only)
+    ("StringCompareW", 0x443C10, 0x07),
+    ("ImpactSpawn", 0x49C1E5, 0x0C),
+    # annexFacing: in the build command's executor FUN_007D79D6 (EDI = the command, EBX = the player's proto,
+    # EBP = the player), lea eax,[edi+0A8h] / push eax before the right vector 0x423792 is computed from the
+    # forward at [edi+0A8h]; the continuation is the push
+    ("AnnexForwardSite", 0x7D7CF1, 7),
+    # annexFacing: the executor's call of the unit creation 0x498ACC(world, proto, player, position, forward,
+    # 0, -1, 0, -1), thiscall, ret 20h; and the head of the creation, verify only
+    ("AnnexCreateCall", 0x7D80CF, 5),
+    ("UnitCreate", 0x498ACC, 9),
+    # annexFacing: in the placement ghost's update FUN_0096E062 (ESI = the ghost's visual), mov eax,[0C66234h]
+    # / mov ecx,[eax+13Ch] before the placement test 0x96E531 with the visual's position, forward and right
+    ("AnnexGhostSite", 0x96E4E7, 11),
+    # nativePreview, in the bottom panel chooser FUN_00454270 (ESI / EBX = the first selected unit).
+    # A selected Socket (type 4Bh) gets the settlement panel here: mov ecx,[0C66234h] /
+    # mov edx,[ecx+140h] / mov eax,[esi+5Ch] (15 B); the end of the unit tests, where a unit none of
+    # them claims goes on (0x4BC5D7 jumps there for no unit): mov ebp,[esp+1Ch] (4 B)
+    ("NpSocketPanel", 0x645FE7, 0x0F),
+    ("NpSocketPanelSkip", 0x454354, 0x04),
+    # a socket with a <SubCiv> hides the command panel: mov ecx,ebx / call 4BC54Ah /
+    # cmp al,0FFh (9 B); not such a socket: cmp byte [esp+16h],0 (5 B)
+    ("NpSubCiv", 0x646124, 0x09),
+    ("NpSubCivSkip", 0x646163, 0x05),
+    # nativePreview, in the command panel refresh FUN_0046188E. The gate: mov edx,[eax+0Ch] (the
+    # selection's player) / mov ecx,[0C66234h] / cmp edx,[ecx+3C0h] (the local player) (15 B)
+    ("NpGate", 0x46193E, 0x0F),
+    # the entries: mov ebx,[esi+5Ch] / add ebx,0E8h / push 1 (11 B)
+    ("NpProto", 0x461BBD, 0x0B),
+    # the collection's kind test: mov cl,[esi+eax+2] / test cl,cl / je 6959D1h (12 B); its append
+    # mov edx,[ebx] / movzx eax,byte [edx+esi+4] (7 B) and its next entry mov eax,[esp+40h] (4 B)
+    ("NpCollect", 0x4C58AD, 0x0C),
+    ("NpCollectAppend", 0x4C59F5, 0x07),
+    ("NpCollectSkip", 0x461C3F, 0x04),
+    # the tech layout: mov edi,[esp+28h] / push edi / mov ecx,esi / call 4C6968h (12 B); the
+    # button build-up it reaches through 0x4C6918: mov ecx,[edi+58h] (3 B)
+    ("NpTechLayout", 0x4620B9, 0x0C),
+    ("NpTechBuild", 0x462172, 0x03),
+    # the layout's next entry: mov eax,[esp+68h] (4 B); the prerequisite tests the preview calls:
+    # 0x4C7330 (thiscall(techEntry, unit), ret 4) and 0x4C5DDA (thiscall(techEntry, player, unit),
+    # ret 8), their prologues
+    ("NpLayoutNext", 0x46268A, 0x04),
+    ("NpTechNoPrereq", 0x4C7330, 0x06),
+    ("NpTechPrereqAge", 0x4C5DDA, 0x08),
+    # every grid button: mov ebx,[esp+1Ch] / cmp ebx,6 / jge 69700Dh (13 B)
+    ("NpButton", 0x462317, 0x0D),
+    # the building on a socket, 0xA01A20, int thiscall(world, const float* pos, Proto* socketProto),
+    # ret 8 (trPlayerControlsSocket's lookup): its prologue (14 B)
+    ("SocketOccupant", 0xA01A20, 0x0E),
+    # annexFacing, the AI: in an AI build plan's placement test FUN_0073D62B (EBP = the plan's data, EAX = the
+    # player), lea ebx,[esp+38h] / push ebx (the forward's address) / lea edi,[ebp+50h], before PLACE at 0x73D7E3
+    ("AnnexAiPlaceSite", 0x73D7D2, 8),
+    # annexFacing, the AI's scan of candidate spots for a build plan: fchs / fstp [esp+60h] / call [esi+14h] (PLACE
+    # with the world's axes, its arguments pushed); the continuation is the call
+    ("AnnexAiScanSite", 0x87DB9F, 9),
+    # the trigger Destroy (trUnitDestroy 0x98282F): its single call of the unit removal 0x4726B2(world, id, 0, 1),
+    # thiscall, ret 0Ch; and the removal's head, verify only
+    ("DestroyRemoveCall", 0x9828E7, 5),
+    ("UnitRemoveHead", 0x4726B2, 6),
+    # fastVertexFill, the cloth flag draw 0x40D25B. Verify only: the lock of the shared dynamic vertex buffer
+    # (call 40A6A2h with stride 20h), the half count (cdq / sub / sar) and the height test, up to jle 40D659h.
+    ("ClothFillSetup", 0x40D4EB, 0x38),
+    # fastVertexFill: the fill loops, from mov ecx,[esp+18h] / mov edx,[esp+4Ch] (the 8 bytes replaced) to their exit
+    # mov ebp,[esp+34h] at 0x40D655 (the continuation). No branch from outside lands inside.
+    ("ClothFillLoop", 0x40D523, 0x136),
+    # fastVertexFill verify: mov ecx,[0C66044h] before the Unlock (6 bytes replaced), then mov eax,[ecx+660h] (the
+    # continuation), the buffer test and call [ecx+30h]
+    ("ClothFillUnlock", 0x40D659, 0x24),
+    # fastVertexFill: the float -1.0 the stock loop scales the back side's normals by (.rdata; read by the hook)
+    ("ClothFillBackScale", 0xB856B8, 4),
+    # fastLastInLine: the LastInLine recompute FUN_004918A8, thiscall(tree, Player*), ret 4, whole: the head (push ecx /
+    # cmp [esp+8],0 / push ebp / mov ebp,ecx, the 9 bytes replaced), the dirty test (jne 68FB0Ch at 0x4918B7, re-entered
+    # at 0x4918B3 by the fallback) and the exit pop ebp / pop ecx / ret 4 at 0x4918BD. Callers 0x491A39 and 0x852882.
+    ("LastInLineHead", 0x4918A8, 0x1A),
+    # fastLastInLine: its cold chunk 0x68FB0C..0x68FC51, the loop the key replaces (verify only); `verify` writes a jmp
+    # over mov eax,[0C66234h] at 0x68FC1B, the loop's exit (also the target of jle 68FC1Bh at 0x68FB16), and goes on at
+    # 0x68FC20.
+    ("LastInLineScan", 0x68FB0C, 0x146),
+    # fastLastInLine: the two tests the loop calls and the key calls too: "definition has TechStatus active <id>"
+    # 0x94BC1D (with the prerequisite getter 0x4C5DBD) and "player can obtain" 0x4C5725's head (verify only)
+    ("ProtoTechHasActivePrereq", 0x94BC1D, 0x4C),
+    ("PrereqListGet", 0x4C5DBD, 0x1D),
+    ("PlayerCanObtainTechHead", 0x4C5725, 0x16),
+    # rendererOption: the options screen's name lookup 0x932264 (thiscall on the "GameOptions" settings, called only
+    # from the four field builders 0x78BEC5, 0x78C0C0, 0x78C417, 0x78D722). Its not-found return at 0x9322A1
+    # (pop edi / or eax,-1 / pop esi, the 5 bytes replaced; branched to from 0x93227B and 0x932295 only) goes on at
+    # pop ecx / ret 4 (0x9322A6).
+    ("OptionNameLookup", 0x932264, 0x46),
+    # rendererOption: the settings' type getter 0x553028; its out-of-range return xor al,al / ret 4 at 0x6B794B is
+    # reached only from the jae at 0x55302F, and the hook replaces it.
+    ("OptionTypeGetter", 0x553028, 0x1C),
+    ("OptionTypeRange", 0x6B794B, 5),
+    # rendererOption: the int getter 0x402E6A; its out-of-range return xor al,al / ret 8 at 0x6B7676 is reached only
+    # from the jae at 0x402E73, and the hook replaces it.
+    ("OptionIntGetter", 0x402E6A, 0x3A),
+    ("OptionIntGetRange", 0x6B7676, 5),
+    # rendererOption: the int setter 0x518AE0; its failure return pop edi / xor al,al / pop esi / ret 8 at 0x518B26
+    # (out of range from 0x518AEB, wrong type from 0x518B15; nothing lands inside it) is replaced by the hook.
+    ("OptionIntSetter", 0x518AE0, 0x4D),
+    # menuOptions (live options): the entry flag test 0xA41707, thiscall(settings, id, mask) -> al, ret 8; the options
+    # screen asks it with mask 40h during a match (0x78BF24, 0x78C10E, 0x78C458, 0x78D7F2; 0x8003C9 loops below the
+    # count). Its out-of-range return xor al,al / ret 8 at 0xA41710 is reached only by falling through the jb at
+    # 0xA4170E, and the hook replaces it.
+    ("OptionFlagTest", 0xA41707, 0x24),
+    # menuOptions (CheckBox fields): the bool getter 0x402CE9, which the CheckBox builder calls (0x78BEED); its
+    # out-of-range return xor al,al / ret 8 at 0x6B77B6 is reached only from the jae at 0x402CF2. The bool setter
+    # 0x518C7C, which Apply calls for a type-5 option (0x78D15B); its failure return pop edi / xor al,al / pop esi /
+    # ret 8 at 0x518CC2 (from 0x518C87 and 0x518CB1 only) is replaced, as the int setter's.
+    ("OptionBoolGetter", 0x402CE9, 0x3A),
+    ("OptionBoolGetRange", 0x6B77B6, 5),
+    ("OptionBoolSetter", 0x518C7C, 0x4B),
+    # stealthTargeting: the head of 0x489ECC, int thiscall(tactic, attacker, target, ...), ret 1Ch, which picks
+    # the attack action a unit would use on a target (-1: none). push ecx / push ebx / push ebp /
+    # mov ebp,[esp+10h] (7 bytes, nothing branches inside) is replaced; the hook goes on at push esi (0x489ED3).
+    # Its failure return or eax,-1 ... ret 1Ch is at 0x4974C1 (verify only).
+    ("AttackActionForTarget", 0x489ECC, 0x0E),
+    ("AttackActionNone", 0x4974C1, 0x0B),
+    # stealthTargeting: the footprint branch of the per-player visibility 0x486B1A (thiscall(proto, ...14 args),
+    # ret 38h), taken by the jp at 0x486C0D / 0x486C24 when [proto+88h] or [proto+8Ch] (the obstruction radii) is
+    # over 1.0. fld [esp+4Ch] / movzx edx,byte [esi+0Dh] (8 bytes, nothing branches inside) is replaced; the next
+    # instruction, fnstcw [esp+68h], overwrites the stealth argument. The hook goes on at 0x493048. The player
+    # loop's test of the "only allies see it" byte [esp+38h] (0x493201) and its skip 0x4E0B1F (verify only).
+    ("FootprintVisibility", 0x493040, 0x10),
+    ("FootprintHiddenTest", 0x493201, 0x0B),
+    ("FootprintHiddenSkip", 0x4E0B1F, 0x0D),
+    # customWalls: the wall layout 0x9F66D9 (thiscall(store, player, points, count, -1)) takes its pieces from the
+    # player's civ ([civ+1E4h..1F8h], civs.xml <wall type=...>) or the stock names. mov edi,eax / cmp edi,ebp /
+    # je 9F67D5h (6 bytes, after the civ lookup; nothing branches inside) is replaced, and the next instruction,
+    # cmp dword [edi+1E4h],-1, is where the hook goes on. The merge xor esi,esi / cmp ebp,esi at 0x9F6815 and the
+    # stock-name branch push "WallConnector" at 0x9F67D5 (verify only). Its UI callers return to 0x665A01 (the
+    # drag preview) and 0x847E11 (the click that orders the wall).
+    ("WallLayoutCivPieces", 0x9F677A, 0x0D),
+    ("WallLayoutPiecesMerge", 0x9F6815, 4),
+    ("WallLayoutStockNames", 0x9F67D5, 5),
+    ("WallLayoutPreviewReturn", 0x6659FC, 0x0B),
+    ("WallLayoutOrderReturn", 0x847E0C, 0x0B),
+    # customWalls: the placement obstruction test lets a WallBuild proto stand on its owner's unit of the same proto
+    # only when that proto is "WallConnector" (a wall that starts on its own post). mov ecx,[0C66234h] (6 bytes, its
+    # first instruction; nothing branches inside) is replaced; the hook goes on at 0x508DDA, or at 0x508DF3 (add
+    # esi,14h), the accepted path, for a connector of a custom wall.
+    ("WallPostOverlap", 0x508DD4, 0x22),
+    # customWalls: BPlayer's proto by name, thiscall(player, const char*) (verify only, called).
+    ("PlayerProtoByName", 0x8D1998, 0x0A),
+    # directionalAttack: in the projectile launch FUN_004995C7, where every launch path meets (the jcc at 0x4997B0
+    # and 0x4997B8, the fall-through from 0x4998A0, the jmp at 0x4C4DF3; nothing lands inside): mov ecx,[esp+10h] /
+    # mov [esi+14h],ecx (replaced, 7 bytes), then mov ecx,[ebx+4]. Verify only: the ballistic launch call that
+    # reads the impact point (lea ecx,[esp+38h] after four pushes = [esp+28h], call 4A5725h); the terrain height
+    # query of the ground lead (the world's [+88h] object, vtable slot 18h, (point, &height, 0, 0)); and the
+    # attack applier's TakeDamage call, whose arguments the key copies.
+    ("DirectionalLaunch", 0x4998A7, 0x0A),
+    ("DirectionalLaunchCall", 0x49999E, 0x20),
+    ("DirectionalTerrainHeight", 0x4C4E62, 0x38),
+    ("DirectionalTakeDamage", 0x49C05A, 0x32),
+    # directionalAttack, <DirectionalFiringRange>: the MaxRange handler of the action parser FUN_005F98A0:
+    # mov edx,[esp+68h] (the value) / push edx / mov ecx,ebp (the action) / call 5FA709h (redirected, at +7)
+    ("DirectionalMaxRangeCall", 0x5F8A4A, 0x0C),
+    # ageUpBuildings: the TownCenter compare of the two age-up pickers, for a civ isAsianCiv(player, true) rejects
+    # (the Asian civs' type 16h test and its call 0x7E6919, which wonderCivUnitType redirects, are left alone).
+    # uiPoliticianUI 0x7E686E: mov eax,[edi+5E08h] / cmp eax,[esi+4] / je 7E6926h / jmp 7E6A2Eh (replaced); the
+    # accepted continuation mov ecx,[0C67310h]; the rejected one pop edi / pop esi / pop ebp / pop ebx.
+    ("AgeUpPickerTc", 0x7E6905, 0x10),
+    ("AgeUpPickerAccept", 0x7E6926, 6),
+    ("AgeUpPickerReject", 0x7E6A2E, 4),
+    # uiPoliticianUIInSelected 0x7E7EC1: mov edx,[ecx+5E08h] / cmp edx,[edi+4] / je 7E8059h / jmp 7E8092h (replaced,
+    # ECX the database); accepted: mov ecx,[esp+14h]; rejected: pop ebp / pop edi / pop esi / pop ebx.
+    ("AgeUpSelectedTc", 0x7E803F, 0x0D),
+    ("AgeUpSelectedAccept", 0x7E8059, 4),
+    ("AgeUpSelectedReject", 0x7E8092, 4),
+    # ageUpBuildings: the "can be researched" test of each politician list builder, call 4C6968h (thiscall(tech
+    # status, unit), ret 4), in FUN_0081A2B8 (the European dialog) and FUN_00818EE5.
+    ("AgeUpListA", 0x81A44D, 5),
+    ("AgeUpListB", 0x819052, 5),
+    # politicianPlacesFix: in the European list builder FUN_0081A2B8, an accepted politician about to take the next
+    # place: mov ecx,edi / call 58EA03h (replaced, 7 bytes), then cmp dword [esp+24h],0; and the builder's exit after
+    # the fifth, mov eax,[ebx+26Ch]. Verify only: the place binding's stores of PoliticianDlg-Politician%d
+    # (mov [ebx-14h],eax, [dlg+198h+4n]) and Poli%dName (mov [ebx+3Ch],eax, [dlg+1E8h+4n]); the builder's read of the
+    # name handle (mov edx,[ebx+ecx*4+1E8h] / push edx / lea ecx,[esp+7Ch] / call 4C519Ch), whose gadget 0x81A80C
+    # dereferences unchecked; the tech status's tech ID getter; the UI manager's gadget lookup thiscall(manager,
+    # handle, type), ret 8.
+    ("PoliticianPlaceTake", 0x81A45A, 0x0C),
+    ("PoliticianListEnd", 0x81A848, 6),
+    ("PoliticianPanelBind", 0x818C93, 3),
+    ("PoliticianNameBind", 0x818D51, 3),
+    ("PoliticianNameRead", 0x81A4FF, 0x11),
+    ("TechStatusTechId", 0x58EA03, 0x0D),
+    ("GadgetLookup", 0x40423C, 0x10),
+    # politicianEnablesTech, verify only: in the same builder, the portrait of the place (the politiciandata records
+    # [ebx+18Ch], 14h bytes each, +0 the tech ID and +4 the portrait path, matched with [ebx+26Ch]'s tech ID; the
+    # gadget [ebx+eax*4+1C0h] through 0x404432; its texture 0x638823(gadget, path*); its texture coordinates
+    # vtable+D8h(0, 0, 0.75, 0.7734375)); the read of the description handle [ebx+edx*4+210h] and its lookup, up to the
+    # null check (another DLL may replace the text after it); the gadget texture setter 0x638823 (thiscall(gadget, BString*),
+    # ret 4); the player's tech statuses 0x4C5394 (thiscall([world+7Ch], player ID), ret 4: [this+ID*4]) and the
+    # list's entry 0x4804B3 (thiscall(list, index), ret 4: [[list+4]+index*4], count [list+8])
+    ("PoliticianPortraitFill", 0x81A487, 0x72),
+    ("PoliticianDescriptionRead", 0x81A590, 0x39),
+    ("GadgetSetTexture", 0x638823, 0x10),
+    ("TechStatusList", 0x4C5394, 0x18),
+    ("TechStatusAt", 0x4804B3, 0x15),
+    # playerIcon: the two calls of the lobby slot's civ portrait FUN_00774D56 (ECX = the slot), after a civ change
+    # (case 4 of the slot's setting handler) and after an AI personality change (case 9); the hook runs it itself
+    ("PlayerIconCallCiv", 0x776FFC, 5),
+    ("PlayerIconCallPersonality", 0x7773DD, 5),
+    # playerIcon: the functions the helper calls. FUN_00774D56's head: sub esp,14h / push ebp / mov ebp,ecx /
+    # cmp dword [ebp+0Ch],0; the slot's setting handler 0x776BED(settings, id, flags), ret 0Ch: sub esp,68h /
+    # test byte [esp+74h],10h; its AvatarID case: cmp byte [esi+1Ch],0 / jne 777168h (an AI's slot keeps the civ
+    # portrait)
+    ("PlayerIconCivPortrait", 0x774D56, 10),
+    ("PlayerIconSlotHandler", 0x776BED, 8),
+    ("PlayerIconAvatarCase", 0x776DEA, 10),
+    # playerIcon: the lobby settings' string getter 0xA263C7(id, string*) (mov eax,[ecx+8] / test eax,eax / je /
+    # mov ecx,[ecx+20h] / jmp 518B57h) and setter 0xA26361(id, string*), ret 8; the game string's constructor from
+    # a wide C string 0x401A12 (ret 4) and its destructor 0x4010CA
+    ("PlayerIconSettingGet", 0xA263C7, 0x0F),
+    ("PlayerIconSettingSet", 0xA26361, 0x0B),
+    ("PlayerIconStringCtor", 0x401A12, 8),
+    ("PlayerIconStringDtor", 0x4010CA, 7),
+    # randomCost: in the cost getter 0x480B1E (bool thiscall(player, protoId, cost*, count), ret 0Ch), the copy of
+    # the player's proto's cost [edi+70h] into the result (lea ecx,[edi+70h] / push ecx / mov ecx,ebp /
+    # call 480A73h), before CostEscalation and the count scale it; EBX = the player, EDI = the player's proto. The
+    # hook redirects the call at +6
+    ("RandomCostGetterCopy", 0x480B55, 0x0B),
+    # randomCost: the Train enqueue FUN_009EAC35's two payments 0x8D946A (thiscall(player, cost), ret 4): the batch
+    # one (mov eax,[edi+8] / push ebp ... call 480B1Eh ... call 8D946Ah, EBP = the count) and the per-unit one
+    # (push 1 ... call 480B1Eh ... call 8D946Ah), EDI = the player's proto; the hooks redirect the calls at +20h
+    # and +1Dh
+    ("RandomCostPayBatch", 0x9EAF7A, 0x25),
+    ("RandomCostPayOne", 0x9EB036, 0x22),
+    # randomCost: the same function's getter call that fills each new entry's cost record (push 1 / push eax /
+    # push ecx / mov ecx,ebx / call 480B1Eh, then the copy into [entry+8]); the hook redirects the call at +11h
+    ("RandomCostRecord", 0x9EB280, 0x16),
+    # randomCost: the Train action's three refunds of an entry's cost record [entry+8] through 0x8D7004
+    # (thiscall(player, cost), ret 4): the cancel FUN_009EB363, the loop of a state change that empties the queue,
+    # and a failed spawn; the hooks redirect the calls at +9, +0Ah and +0Eh
+    ("RandomCostRefundCancel", 0x9EB435, 0x0E),
+    ("RandomCostRefundAll", 0x9EB603, 0x0F),
+    ("RandomCostRefundSpawn", 0x9EBA4F, 0x13),
+    # The unit panels (docs/engine-symbols.md, "Unit panels"). The shared tail of the selection panel fill
+    # FUN_004C7E52 (unitpanel.h, AddUnitPanelTail): cmp byte [esp+5Eh],1 / je 6987D7h (profile option 49h: the
+    # minimized block, which comes back here), then mov esi,[esp+50h] (the panel) / mov edi,[esi+308h], the 10
+    # bytes the hook replaces at 0x4C8281 ([esp+54h] the first selected unit, [esp+78h] the selection); and the
+    # minimized block's way back, jmp 4C8281h
+    ("UnitPanelTail", 0x4C8276, 0x15),
+    ("UnitPanelMinBlockBack", 0x69A60F, 5),
+    # minUIStats: the choice of that block, cmp byte [esp+5Eh],1 / je 6987D7h (11 bytes, replaced after the tail hook
+    # is in place; inside the UnitPanelTail range, which the tail verifies first)
+    ("MinBlockChoice", 0x4C8276, 0x0B),
+    # minUIStats: the stat panel fill FUN_004D70ED, thiscall(panel, selection), ret 4, EBP frame; it reads of its
+    # panel only the row handles [+174h+i*4] / [+198h+i*4]. Its head, and its profile option 49h read (push 49h /
+    # ... inlined option lookup ... / cmp byte [esp+63h],1 / je 4D81A1h, the 11 bytes the gate replaces at
+    # 0x4D725C)
+    ("StatFillHead", 0x4D70ED, 0x18),
+    ("StatFillMinGate", 0x4D721B, 0x4C),
+    # minUIStats: the minimized block's resists gate, mov ecx,[ebx+5Ch] / test / je, push 0 / call 44CAC4h (abstract
+    # type 0, Unit) / cmp al,1 / jne 698E7Ah (the 6 bytes NOPed at 0x698BF6), then the armor > 0 test
+    ("MinResistsUnitGate", 0x698BE2, 0x1A),
+    # minUIStats (verify only): the armor test after that gate, mov edx,[ebx+5Ch] / fld [edx+0C4h] / fcomp
+    # [0B84BE4h] / fnstsw / test ah,41h / jne 698E7Ah. Another DLL's armor (a multiarmor patching 0x698BFF)
+    # changes it; then the Unit gate stays, as that DLL's armor text is not made for buildings
+    ("MinResistsArmorTest", 0x698BFC, 0x1A),
+    # minUIStats (verify only): what the command panel's ability GetNth (FUN_006EE5CC) tests for one ability record,
+    # mirrored to tell an enabled ability attack: the player's proto (0x45311B) against the record's +4, the
+    # NeverShowInGrid flag, the record's tech (0x94AF27) and age ([player+50h] == +10h), the power (0x6076E9)
+    ("AbilityAvailableTest", 0x6EE68C, 0x76),
+    # minUIStats (verify only): the powers.xml <unitAction> handler: a 4-byte block, the action name's index in the
+    # database's action names (0x5E0C64, [db+1FD8h]), kept at [power+12Ch]
+    ("PowerUnitActionStore", 0x5F22CA, 0x36),
+    # minUIStats (verify only): that handler is the +24h (parse) slot of one power class only, the UnitAction powers,
+    # vtable 0xB855D0; [power+12Ch] means the action only for a power with that vtable
+    ("PowerUnitActionVtable", 0xB855F4, 0x04),
+    # Data refs (datarefs.h): the parser's constructor, mov ecx,esi / vtable, delimiters { ( } ) / call 5CFA7Ch (the
+    # registration, redirected at 0x5D3229) / mov eax,esi / pop esi / ret; the registration's head (mov esi,ecx:
+    # the table is {data, count, capacity} at [this+0Ch]); its grow FUN_005ACE63, thiscall(array, count, bool),
+    # ret 8, which constructs new 16-byte entries {id, type, BString name, provider}; the float evaluator, which
+    # takes entries[id] and calls [entry+0Ch] when the type is 1
+    ("DataRefParserCtor", 0x5D3209, 0x29),
+    ("DataRefRegister", 0x5CFA7C, 0x09),
+    ("DataRefArrayGrow", 0x5ACE63, 0x29),
+    ("DataRefFloatEval", 0xAB9400, 0x60),
+    # minUIStats items: the line of sight getter FUN_0048206D, thiscall(unit) -> ST0 ([world+5ACh] x the modifier x
+    # [[unit+0B4h]+90h]), and the garrison capacity FUN_0049EB5A, thiscall(proto) -> EAX, [[proto+10Ch]] or 0
+    ("LosGetterHead", 0x48206D, 0x34),
+    ("MaxContained", 0x49EB5A, 0x11),
+    # minUIStats batch 2, verify only: the attack list FUN_00487EEE, thiscall(tactic, unit, 0, -1, 1, list*), ret 14h,
+    # which the stat panel fill calls at 0x4D792F into its list 0xCF05B0 (guard 0xCF05BC bit 0); a unit's resource
+    # holding: has one 0x45EE8B(unit) and the amount 0x4E5979(unit, resource), both through [[unit+0B4h]+94h]
+    ("AttackListFill", 0x487EEE, 0x18),
+    ("HoldsResource", 0x45EE8B, 0x14),
+    ("HeldAmount", 0x4E5979, 0x14),
+    # minUIStats batch 3, verify only (no byte is written). The build tick of the Build action (vtable 0xB97330):
+    # mov eax,[esi+14h] / ... / mov ecx,[esi+4] / push edi, before the rate lookup's call at 0x9D3D7B (which
+    # buildingWorkRateAuras redirects; it is not in these two ranges); then fstp [esp+20h] (the rate) / the builder
+    # factor call 0x9C4C0C(target, [[esi+10h]+10h], [[esi+4]+8]) / fmul by the rate, [world+318h],
+    # [[[esi+10h]+44h]+37Ch] and [world+104h] / fstp [esp+1Ch]; and its add, mov ebp,[esp+1Ch] / push ebp /
+    # mov ecx,edi / call 9C4BE3h, which passes [proto+0CCh] as the cap of the BuildInfo add 0x7ADE95 ([data+4] +=)
+    ("BuildTickRateHead", 0x9D3D6B, 0x10),
+    ("BuildTickScale", 0x9D3D80, 0x47),
+    ("BuildTickAdd", 0x9D3DE9, 0x0C),
+    ("BuildPointsAddCall", 0x9C4BE3, 0x1E),
+    ("BuildPointsAdd", 0x7ADE95, 0x10),
+    ("BuilderFactor", 0x9C4C0C, 0x1A),
+    ("RateLookupHead", 0x487C45, 0x10),
+    # minUIStats batch 3, verify only: the player's regeneration FUN_004905E1 (from 0x490A52), its head, and the
+    # read of a record's rate, mov eax,[ebx] / ... / fld [eax+edi+8] / fmul [world+104h] / fstp [esp+14h]
+    ("RegenPlayerHead", 0x4905E1, 0x10),
+    ("RegenRateRead", 0x4907FF, 0x1F),
+    # minUIStats, verify only: the selection panel's stack portraits (docs/engine-symbols.md, "Stack portraits").
+    # The fill's head 0x4C940E: call 461059h (hides the 9 small buttons [panel+35Ch], count +360h, Big0 +368h and
+    # the big background +324h) / the list of placed buttons [panel+2CCh] (count +2D0h) emptied / [panel+36Ch] = -1;
+    # per stack i < min(9, [panel+284h]): Big0 for the current stack [panel+2BCh] (then [panel+36Ch] = i), the
+    # small button i otherwise; the button's handle [gadget+0Ch] appended to the list (0x4C8441); the layout call
+    # 0x4C8F49(panel, &list) that centres the list in buttonArea [panel+320h], 2 px apart, shows each one and puts
+    # the big background 2 px around the current one. Read at the panel tail, never written.
+    ("StackFillReset", 0x4C9458, 0x2A),
+    ("StackFillCurrent", 0x4C9587, 0x41),
+    ("StackFillAppend", 0x4C979A, 0x1B),
+    ("StackLayoutCall", 0x4C7DB3, 0x0E),
+    ("StackLayout", 0x4C8F49, 0x2A3),
+    # minUIStats: a gadget of any type from its handle, cdecl, the reference added (released by 0x40431B): the
+    # lookup 0x40423C with type mask 0 (the stack layout uses it for buttonArea and the big background)
+    ("GadgetLookupAny", 0x404296, 0x31),
+    # minUIStats, verify only: the stat panel fill's attack rows, which AttackRow mirrors for the attacks past the
+    # fill's 9th row. The row cap, cmp ebx,9 / jge 4D8099h (0x4D7957); the name, [action+4] into the string IDs
+    # [db+1FE4h] / "%s:" (0xBA2140) and the raw name 0x5F8FC3 when there is none (cold 0x69B617); the damage scale,
+    # flag 12h (the contained units [unit+74h], cold 0x69B630) capped by [action+48h] (cold 0x69B63C), the modifier
+    # record's +8 (cold 0x69FDDC), +14h and +10h (cold 0x69FE33, 0x69FE1F); the damage text "%d <icon>" (0xBA2100)
+    # for ranged here, hand (cold 0x69B648) and siege (0x4D8265); flag 0Ah and the range " %d <icon>" (0xBA20B8)
+    # of the range entry -1 (0x4946D6)
+    ("StatFillRowCap", 0x4D7944, 0x1C),
+    ("AttackRowName", 0x4D7A2E, 0x74),
+    ("AttackRowDamage", 0x4D7AC8, 0x111),
+    ("AttackRowTypeIcon", 0x4D7BD9, 0x7E),
+    ("AttackRowRange", 0x4D7D2A, 0x78),
+    ("AttackRowSiege", 0x4D8265, 0x4F),
+    ("AttackRowCold", 0x69B617, 0x80),
+    ("AttackRowModifier", 0x69FDDC, 0x1C),
+    ("AttackRowTyped", 0x69FE1F, 0x19),
+    ("ActionRawName", 0x5F8FC3, 0x18),
+    ("ActionRangeEntry", 0x4946D6, 0x37),
+    # multiplierDecimals: the wide format ", %.1fx %s" (.rdata, 11 characters with its terminator) of a bonus
+    # multiplier that is not whole, pushed by the stat panel fill (0x4D7F7D) and the minimized block's attack rows
+    # (0x699E1F); the key writes the digit at 0xBA2068. The rollover line of each multiplier, string 42229
+    # "%1.1fX Bonus Damage against %2s (%3s)": push 0A4F5h / call 447719h (BString from string ID, thiscall, one
+    # argument) in the fill (0x4D7FB6) and the minimized block (0x699E95); the key redirects the call. The loader's
+    # head, called by the key.
+    ("MultiplierFormat", 0xBA2060, 0x16),
+    ("MultiplierTipStat", 0x4D7FB6, 0x0A),
+    ("MultiplierTipMin", 0x699E95, 0x0A),
+    ("BStringLoadId", 0x447719, 0x13),
+    # attackTypeIcons: the bonus multiplier's type chain, after the stock types with icons and before the last two
+    # (+11h, +54h): lea edx,[eax+11h] / cmp esi,edx / jne 69B939h in the stat panel fill's cold part (ESI = the
+    # bonus's unittype, EAX = the proto count [db+19B0h]), and lea edx,[eax+11h] / cmp esi,edx / jne 699D65h in the
+    # minimized block's attack rows. The key's hook formats the icon into the row's icon BString and joins the
+    # stock path of a type with an icon: lea ecx,[esp+40h] / call 447719h (the type's name string) at 0x4D7F44, and
+    # lea ecx,[esp+44h] / call 447719h at 0x699DE6.
+    ("TypeIconStatChain", 0x69B909, 0x07),
+    ("TypeIconStatFound", 0x4D7F44, 0x09),
+    ("TypeIconMinChain", 0x699D31, 0x07),
+    ("TypeIconMinFound", 0x699DE6, 0x09),
+    # autoScout: the head of the command execute FUN_007C8E49 (thiscall(cmd)), the only call 0x64D31A in the world
+    # update's command processing 0x490015 (called at 0x481BC2). push ecx / push esi / mov esi,ecx /
+    # cmp dword [esi+5Ch],5 (8 bytes; nothing branches inside, cs) is replaced; the hook re-executes them and goes on
+    # at the jbe 0x7C8E51 with the flags of the cmp.
+    ("AutoScoutCmdExecute", 0x7C8E49, 0x0A),
+    # autoScout, verify only, the functions it calls: ActionManager doMove 0x50E36A (thiscall(mgr, Vec3*, float,
+    # char, char, int, char, char, int, int, float), ret 28h); setTactic 0x4F7ECD (thiscall(mgr, player, index, -1,
+    # 1, -1.0f, 1, 0), ret 1Ch); the tactic index by name ID 0x948161 (thiscall(actionSet, nameId), ret 4); the
+    # idle test 0x44F1A7 (bool thiscall(mgr)).
+    ("AutoScoutDoMove", 0x50E36A, 0x0A),
+    ("AutoScoutSetTactic", 0x4F7ECD, 0x0A),
+    ("AutoScoutTacticIndex", 0x948161, 0x08),
+    ("AutoScoutIdle", 0x44F1A7, 0x08),
+    # researchOnTheMove: "can take a move" FUN_00487DED (bool thiscall(mgr); callers 0x487EBB, the unit's vtable +8Ch
+    # 0x487E74 that the order code asks, and 0x7D59F8) calls "the queue holds the unit" 0x487D8B at 0x487E1B, then
+    # cmp al,1 / setne al / pop ecx / ret. The call is redirected; the other four callers of 0x487D8B (a unit filter
+    # 0x672427, 0x898A7B, the repair button 0x9AD19C, the train command 0x9CE3BC) keep the stock answer. The range
+    # covers the call and the cmp / setne after it.
+    ("QueueHoldsMoveCall", 0x487E1B, 0x0A),
+    # researchOnTheMove, verify only: the head of 0x487D8B, mov eax,[ecx+24h] / test eax,eax / je 487DA5h /
+    # mov al,[eax+60h] / cmp al,0Dh, which the wrapper calls.
+    ("QueueHoldsHead", 0x487D8B, 0x0C),
+    # shipTechLimit: the refunds of a cancelled research, 0x8D7004(player, cost) (lea of the action's
+    # copy of the cost / push / mov ecx,player / call): the Research action's state 13h at 0x9E6161 (EBP the action,
+    # [ebp+74h]) and the CommandResearch one at 0x9D56AF (ESI the action, [esi+7Ch]); the head of the can-research
+    # test 0x4C6968, bool thiscall(status, unit) (push ebp / mov ebp,[esp+8], then push esi / push ebp / mov esi,ecx,
+    # where the hook continues at 0x4C696D); the status lookup 0x94ADAA, thiscall(root [world+7Ch], player, tech)
+    ("ResearchRefundCall", 0x9E6161, 0x0B),
+    ("CommandResearchRefundCall", 0x9D56AF, 0x0B),
+    ("CanResearchHead", 0x4C6968, 0x0B),
+    ("TechEntryLookup", 0x94ADAA, 0x23),
+    # homeCityTechsInUnits: the research start's refusal of a HomeCity tech, push 12h / mov ecx,esi /
+    # call 44D863h / cmp al,1 / je 9E67C5h, and the lea ebx,[esi+10h] that follows it (the accepted path, before the
+    # payment call 0x9E67E1); the Research update's test of CheckLandHCGatherPoint, push 1Eh / mov ecx,ebx / call
+    # 44D863h, and its test al,al / je 9E6583h
+    ("HcTechResearchRefusal", 0x9E67CE, 0x10),
+    ("ResearchGatherFlagTest", 0x9E6553, 0x0D),
+    # transformChecks: the per-unit execute of the transform command (type 17h, uiTransformSelectedUnit),
+    # FUN_007D64F7 (thiscall(cmd, unit), ret 4). Verify only, its body from the player lookup to the placement
+    # check: [esp+30h] the player (0x7D6531), [esp+14h] the player's proto (0x7D654D), [esp+10h] the command's
+    # player ID (0x7D6595), the cost getter 0x480B1E, then PLACE through world vtable +14h with (proto, player ID,
+    # &pos, &forward, &right, 0, 2, 0, 0, 0, 0) and its test.
+    ("XformExecBody", 0x7D652D, 0xBE),
+    # transformChecks: test al,al / je 7D6762h (8 B) after PLACE, then cmp byte [esi+90h],0 (the payment flag,
+    # 7 B), where the hook goes on; nothing branches inside (cs). ESI = the command, EBP = the unit.
+    ("XformPlaceTest", 0x7D65E3, 0x0F),
+    # transformChecks: the refusal 0x7D6762, lea ecx,[esp+18h] / call 44C817h (the cost list's destructor), then
+    # the pops and ret 4 with AL = 0
+    ("XformRefuse", 0x7D6762, 0x09),
+    # transformChecks: the cost list's constructor 0x44717F and destructor 0x44C817 (thiscall(list))
+    ("CostListCtor", 0x44717F, 0x09),
+    ("CostListDtor", 0x44C817, 0x0B),
+    # lanAutoStart, verify only (nothing is written). The console command runner 0x433D0D
+    # (thiscall(console = [0xC672E4], const char* command, const char* source), ret 8). The LAN branch of the
+    # doMPSetup(false) helper FUN_006F0BEE: push 36h / call 44BEDDh (screen lookup) / test / je / mov
+    # [eax+3Ch],2Eh (the SkirmHomeCity screen's next screen) / mov ecx,[[0C66244h]+60h] / mov edx,[ecx] / push 0 /
+    # push 36h / call [edx+14h] (the screen manager's switch(id, 0))
+    ("LanConsoleExecute", 0x433D0D, 7),
+    ("LanDoMpSetupLan", 0x6F0C09, 0x24),
+    # lanAutoStart: the screen lookup FUN_0044BEDD (thiscall(manager, id), ret 4): count [ecx+8], array [ecx+4],
+    # each screen's ID at [screen+0Ch]
+    ("LanScreenLookup", 0x44BEDD, 0x21),
+    # lanAutoStart: those entries are descriptors; the screen itself is the handle at [descriptor+4]
+    # (screen 46's descriptor method 0x8BCE8F: mov eax,[edi+4] / cmp eax,[0C672E8h], the invalid screen handle),
+    # resolved by 0x40439A (screen* cdecl(handle): the table [[[0C66244h]+64h]+4], null when invalid)
+    ("LanLoginDescriptorHandle", 0x8BCEB5, 9),
+    ("LanScreenResolve", 0x40439A, 0x1C),
+    # lanAutoStart: MPLoginScreen's vtable 0xB95788 (seen on the live screen; slot 18 = its init 0x8BD408, which
+    # loads uiMPLoginScreen.xml) and the init's store of the MPLanBrowserDialog handle, mov [esi+54h],ebx
+    ("LanLoginScreenInit", 0xB957D0, 4),
+    ("LanLoginScreenBrowser", 0x8BD4DF, 3),
+    # lanAutoStart: the gadget lookup 0x40423C (gadget* thiscall(manager = [[0C66244h]+44h], handle, type),
+    # ret 8)
+    ("LanGadgetLookup", 0x40423C, 0x0A),
+    # lanAutoStart: MPLanBrowserDialog (uimplanip.xml). Its init FUN_008BB001 binds the gadgets: MPLanIP-HostButton
+    # to [esi+174h] (0x8BB0E7) and MPLanIP-DirectIPEditBox to [esi+17Ch] (0x8BB138); its activation FUN_008BBA72
+    # creates the LAN browser [esi+1ACh] (0x8BBAB3) and fills the game name box through the gadget's set-text
+    # slot, lea eax,[esi+144h] / push eax / mov ecx,edi / call [edx+80h] (0x8BBB06)
+    # lanAutoStart: a gadget's shown bit, bit 0 of [gadget+0A4h], as the base activation 0x447BBC tests it
+    # (mov al,[edi+0A4h] / test al,1)
+    ("LanGadgetShownFlag", 0x447BBF, 8),
+    ("LanBrowserHostGadget", 0x8BB0E7, 6),
+    ("LanBrowserIpGadget", 0x8BB138, 6),
+    ("LanBrowserSession", 0x8BBAB3, 6),
+    ("LanBrowserSetText", 0x8BBB06, 0x0F),
+    # lanAutoStart: the click switch of FUN_008BC4E4 (index of the gadget in [esi+160h..], minus 4): Host is
+    # call 8BBD88h with push 0 (0x8BC555), Join IP is call 8BB710h (0x8BC569); the host routine's head (sub
+    # esp,684h ... mov edi,[esi+164h], the game name box) and the join routine's head (mov edi,[esi+17Ch] /
+    # push edi / call 4420BAh: the Direct IP box)
+    # Host's case is split around the call's rel32: a mod's DLL can point that call at a wrapper of its own, so the
+    # key verifies push 0 / mov ecx,edi / the call opcode and the jmp after it, and calls whatever the click
+    # calls (lanautostart.cpp, HostRoutine).
+    ("LanBrowserClickHost", 0x8BC555, 5),
+    ("LanBrowserClickHostNext", 0x8BC55E, 2),
+    ("LanBrowserClickJoinIp", 0x8BC569, 7),
+    ("LanBrowserHost", 0x8BBD88, 0x16),
+    ("LanBrowserJoinIp", 0x8BB710, 0x11),
+    # lanAutoStart, game rules: the init binds MPLanIP-HostXtraRulesDropdown to [esi+190h] (0x8BB1A4), a dropdown
+    # (gadget type 0Dh). Its fill FUN_008BA62E adds entries 0..7 and selects the first through 0x5C36AE
+    # (thiscall(dropdown, index, 0), ret 8; 0x8BA863); the current index is 0xAC0D1B (thiscall, plain ret), which
+    # Host (0x8BBD88) reads as the rules.
+    ("LanBrowserRulesGadget", 0x8BB1A4, 6),
+    # lanAutoStart: the game name box [esi+164h] (0x8BB096) and the Game Type dropdown [esi+168h] (0x8BB0B1), which
+    # with the Direct IP box and the rules dropdown recognise the dialog when another DLL replaced its vtable.
+    ("LanBrowserNameGadget", 0x8BB096, 6),
+    ("LanBrowserModeGadget", 0x8BB0B1, 6),
+    ("LanDropdownSelect", 0x5C36AE, 0x0A),
+    ("LanBrowserRulesFill", 0x8BA863, 0x0B),
+    ("LanDropdownCurrent", 0xAC0D1B, 0x0D),
+    # lanAutoStart, a pending join: Join IP (0x8BB710) stores the browser's connect result in [esi+1B0h]
+    # (0x8BB749; 0 = refused at once, with a message box, and the buttons stay) and the game clock 0x402DFF
+    # (cdecl, no argument) in [esi+1B4h] (0x8BB762); the countdown 0x8BA872 shows [1B4h] + [1B0h] - clock.
+    ("LanGameClock", 0x402DFF, 0x0D),
+    ("LanBrowserJoinRequest", 0x8BB749, 0x0E),
+    ("LanBrowserJoinStart", 0x8BB762, 6),
+    ("LanBrowserCountdown", 0x8BA87A, 0x11),
+    # autoGatherFrom, verify only: the work order of the action manager FUN_004EFCB2, thiscall(mgr, targetId, 0, -1, 0),
+    # ret 10h (mov eax,1 / test [0D6F75Ch],al / push esi / mov esi,ecx), the call the stock idle-herdable search
+    # 0x4C31EE gives to a pen or magnet within 10 m, and the command execute's unit-order path (0x944D3F, 0x944E0D).
+    ("GatherWorkOrder", 0x4EFCB2, 0x0E),
+    # buildingGather: the Gather update 0x4EC4FA (vtable 0xB97880 +3Ch) returns through cmp al,0Ch / je 586D8Bh /
+    # pop ebx / pop edi / pop esi / pop ebp / add esp,0Ch / ret at 0x4EC76B (AL = the state byte [esi+61h], ESI = the
+    # action); the first 8 bytes jump to the hook, which continues at 0x586D8B or 0x4EC773. Verified only: the vtable
+    # slots +34h setState 0x4ED249, +38h, +3Ch the update; setState's head; and the end of the move-done event (9),
+    # whose in-range test (the gatherer's vtable +CCh with the target and [action+24h]) and setState(5) the hook repeats.
+    ("GatherUpdateExit", 0x4EC76B, 0x10),
+    ("GatherVtableSlots", 0xB978B4, 0x0C),
+    ("GatherSetState", 0x4ED249, 0x0B),
+    ("GatherArrivedState", 0x4EDB4F, 0x38),
+    # herdWalkAwayFix: the gather tick's walk-away of a full herdable from a pen, the paddy or an
+    # AbstractTypeHerdableMagnet target: push 0 / push 40C00000h (6.0f) / push edx (the target's ID) / call 4E3A37h
+    # (the flee move, thiscall(mgr, targetId, distance, flag), ret 0Ch). The call at +8 is redirected; the flee's head
+    # (mov eax,[0C66234h] / sub esp,54h / push ebx / mov ebx,[esp+5Ch]) is verified only.
+    ("HerdWalkAwayCall", 0x6A8C94, 0x0D),
+    ("HerdFleeHead", 0x4E3A37, 0x0D),
+    # uigadgets (shared): a gadget among a parent's descendants by name, 0x433812 (int* thiscall(parent, int* out,
+    # const char* name, int 1), ret 0Ch; out = [0C672C0h] when none). A textField (gadfield.cpp) makes an editBox
+    # child for its typed text and keeps its handle, mov [edi+160h],ebx (0x62BDD5, after the child's factory
+    # 0x62C0CF); 0x4420BA looks that child up with type mask 23h. The editBox's set-text slot (vtable 0xB91A38 +80h
+    # = 0x5C2C20) keeps the text at lea esi,[edi+170h] (0x5C2C54), where typing puts it too (seen in game).
+    ("UiFindChild", 0x433812, 0x0A),
+    ("UiFieldEditBox", 0x62BDD2, 0x09),
+    ("UiEditBoxText", 0x5C2C54, 0x06),
+    # uigadgets (shared): a gadget by name in any of the manager's panels, 0x433A2C (int* thiscall(manager, int* out,
+    # const char* name), ret 8: 0x433812 on each panel [manager+50h], count [manager+54h]; what the UI commands
+    # gadgetReal 0x7E2244 and gadgetUnreal 0x7E2278 use). The flags [gadget+0A4h] the base show 0x447BBC tests
+    # (bits 0 and 1 set and bit 7 clear: shown, nothing to do) and the base hide 0x447CEA tests (none of 0, 1, 7:
+    # hidden, nothing to do). techGadgets reads them to show or hide only a gadget in the wrong state.
+    ("UiFindAnywhere", 0x433A2C, 0x0E),
+    ("UiGadgetShowFlags", 0x447BBF, 0x14),
+    ("UiGadgetHideFlags", 0x447CFF, 0x0A),
+    # progresspie (shared, verify only): a gadget's pie chart filling, the overlay of a train button. Every gadget
+    # vtable has the fill at +6Ch = 0xAB6C63 (thiscall(gadget, float), ret 4): it makes the 20h-byte filling
+    # [gadget+130h] when there is none (fill +0, colour +4 = 88FFFFFFh, texture +8 = -1, +0Ch 1.0, rotation +1Ch = 1
+    # (cw), fill flag +1Dh = 0, on +1Eh = 1) and stores the fraction clamped to [0, 1]. 0x4C51FA (thiscall(gadget,
+    # bool), ret 4) turns it on or off (+1Eh; on makes it through +6Ch(0) first, the cold 0x6D206D). 0xAB5C34
+    # (thiscall(gadget, float r, g, b, a), ret 10h) sets the colour through 0x404DF6 (ARGB). 0xAB5BAA (thiscall,
+    # plain ret) makes the material [gadget+12Ch] (defaultcolored_alphablend, diffuse = the texture +8), which the
+    # unit stack buttons (0x9B8AD1) make when there is none. The command panel's train buttons: +6Ch(progress),
+    # 0x4C51FA(1), 0xAB5C34(0, 0, 1, 0.5) (0x69D9BC, blue). The panel bind stores unitselectionpanel-unitPortrait
+    # (0xC360F0) at [panel+2E4h] (0x9BAE5E..0x9BAE8A).
+    ("PieFillSlot", 0xAB6C63, 0x95),
+    ("PieEnable", 0x4C51FA, 0x22),
+    ("PieEnableCold", 0x6D206D, 0x19),
+    ("PieColour", 0xAB5C34, 0x52),
+    ("PieMaterial", 0xAB5BAA, 0x8A),
+    ("PiePortraitBind", 0x9BAE5E, 0x2D),
+    # incomeRates: the two income calls of the add 0x49A98A besides the gather tick's (GatherTickAddResource): the
+    # global trickle's push esi / call 49A98Ah (returns to 0x4E0CFE) and the AutoGather update's push edi /
+    # push ebx / call 49A98Ah (returns to 0x4C379D). The add's head push ecx / mov eax,[0C66234h] (6 bytes,
+    # PlayerAddResource) gets the jmp. {resource(name)} (0x453E2C..0x453EA0, 0x63C807): the name through 0x44709C
+    # (int thiscall(db, const char*), -1 if none); with shared resources [world+6912h] it shows the sum over the
+    # players the local player [game+3C0h] counts as itself or an ally, 0x4707EC (bool thiscall(player, int id):
+    # [player+1D4h+id*4] is 0 or 1).
+    ("IncomeTrickleCall", 0x4E0CF8, 0x06),
+    ("IncomeAutoGatherCall", 0x4C3796, 0x07),
+    ("ResourceByName", 0x44709C, 0x10),
+    ("PlayerIsAllyOrSelf", 0x4707EC, 0x19),
+    # selectFattened (verify only): the local selection 0x4051B6 (thiscall(game): [[game+91Ch]+4], 0 without the
+    # world UI), its clear 0x9301D3 (thiscall(selection, int from), ret 4; 0 empties it), and the loop of the UI
+    # command uiFindAllOfType 0x7E7AB9 that the key repeats: per unit of the local player, skip a state byte
+    # [unit+88h] below 8 (0x44DE2A), a unit whose vtable +0A4h says no, one inside another ([unit+6Ch] >= 0),
+    # then the add: a handle {0B9E444h, 0, unit ID} on the stack, passed to the selection's vtable +4. The selection
+    # (vtable 0xB9F8C4, seen in game) adds with FUN_0079F534 (thiscall(selection, handle*), ret 4), which ends in
+    # FUN_00930245(handle, 0): no more than the cap 0x4E0BEE, no unit twice.
+    ("SelectionOfGame", 0x4051B6, 0x0E),
+    ("SelectionClear", 0x9301D3, 0x0A),
+    ("FindAllOfTypeLoop", 0x7E7B63, 0x72),
+    ("SelectionAdd", 0x79F534, 0x0D),
+    ("SelectionAddCapped", 0x930245, 0x1D),
+    # editorSearch: the Objects palette fill FUN_007F501E (the fill callback [palette+17Ch] that 0x7F5C51 gives
+    # EditorProtoPalette) adds each proto with lea edx,[esp+58h] / push edx / lea eax,[esp+14h] / push eax /
+    # mov ecx,edi / call 0AD0056h (0x7F537D, ESI = the player's proto), the add thiscall(palette, entry*,
+    # categories*), ret 8. The palette class (ctor 0xACFBA0, mov [esi],0B92768h) refills through its vtable +0F0h,
+    # 0xACE8DF: mov eax,[ecx+17Ch] / test / je / push ecx / call eax.
+    ("EditorPaletteAddProto", 0x7F5371, 0x11),
+    ("EditorPaletteAdd", 0xAD0056, 0x0B),
+    ("EditorPaletteObjectsFill", 0x7F5C51, 0x0A),
+    ("EditorPaletteVtable", 0xACFBAA, 6),
+    ("EditorPaletteRefill", 0xACE8DF, 0x0F),
+    # editorSearch: the palette's refresh slot (vtable +20h = 0xAD01FD, what refreshonreal runs): the base refresh
+    # 0x4540D4, the entries emptied (call 0AD0189h), the refill (call [eax+0F0h]), the button list laid out, then the
+    # buttons of the current category [esi+168h] through FUN_00ACF80E (thiscall(palette, category, bool force),
+    # ret 8): mov edx,[esi+168h] / push 1 / push edx / mov ecx,esi / call 0ACF80Eh (0xAD0262).
+    ("EditorPaletteRefreshSlot", 0xB92788, 4),
+    ("EditorPaletteRefresh", 0xAD01FD, 0x1B),
+    ("EditorPaletteLayoutShow", 0xAD0262, 0x10),
+    # editorSearch: the Forbidden Units/Techs dialog (uiforbiddenunitstechs.xml; ctor 0x9990BE, mov [esi],0B8D690h)
+    # binds ForbiddenUnitsTechs_AllowedList to [esi+144h] (0x999B1F); its refresh 0x99960A switches on the display
+    # mode [ebx+160h] (0x9996C6: 0 units, 1 techs). The allowed units fill FUN_0099912F adds each proto's name with
+    # mov ecx,[esp+1Ch] / lea eax,[esp+10h] / push eax / call 0AC9228h (0x9991D0, ESI = the proto, EBX = the
+    # dialog), the techs fill FUN_00999493 with lea eax,[esp+14h] / push eax / mov ecx,ebp / call 0AC9228h
+    # (0x999547, ESI = the tech index, EDI = the dialog); 0xAC9228 is the list's add item thiscall(list, BString*),
+    # ret 4. Both fills are thiscall(dialog, list), ret 4, and empty the list first.
+    ("EditorForbidVtable", 0x9990CB, 6),
+    ("EditorForbidBind", 0x999B1F, 6),
+    ("EditorForbidMode", 0x9996C6, 0x0C),
+    ("EditorForbidUnitAdd", 0x9991C7, 0x0E),
+    ("EditorForbidTechAdd", 0x999540, 0x0C),
+    ("EditorListAdd", 0xAC9228, 9),
+    ("EditorFillAllowedUnits", 0x99912F, 0x0B),
+    ("EditorFillAllowedTechs", 0x999493, 0x0A),
+    # editorSearch: after the fills the refresh lays the allowed list out and selects its first item: mov eax,[edi] /
+    # mov ecx,edi / call [eax+100h] / push 0 / mov ecx,edi / call 0AC8A43h (0x9997C8; 0xAC8A43 thiscall(list, index),
+    # ret 4)
+    ("EditorForbidRelayout", 0x9997C8, 0x13),
+    # editorSearch: a proto's display name string ID [proto+144h], as FUN_008F7A89 reads it (mov eax,[ecx+144h] /
+    # cmp eax,-1)
+    ("EditorProtoDisplayName", 0x8F7A89, 9),
+    # editorSearch, trigger editor: the condition/effect panel's fill FUN_00825757 (thiscall(editor), plain ret; its
+    # head sub esp,28h / mov eax,[0C66234h] / push ebp / mov ebp,[eax+97Ch]), run by the Triggers / Conditions /
+    # Effects buttons after mov [esi+1C0h],ebp (0x8264F0). It sets the "Type:" textField's names and entry data
+    # (each type's index) with lea ecx,[esp+20h] / push ecx / mov ecx,ebx / call 5BECAAh / lea edx,[esp+2Ch] /
+    # push edx / mov ecx,ebx / call 0AC19D9h (0x8258A0, replaced up to the continuation mov ecx,edi at 0x8258B8).
+    ("EditorTypeListSet", 0x8258A0, 0x1A),
+    ("EditorTypeFillHead", 0x825757, 0x0F),
+    ("EditorTypeFillMode", 0x8264F0, 0x0B),
+    # editorSearch: the trigger parameter builder (gadtrigparam.cpp) gives a parameter's textField its list with
+    # mov ecx,edi / call 5BECAAh: techs [[game+97Ch]+6Ch] (0x8289D5), units +84h (0x828A27), unit types +90h
+    # (0x828A4E). 0x5BECAA thiscall(field, array*) copies the names ([array], count [array+4]); 0xAC19D9 the entry data.
+    ("EditorParamTechList", 0x8289C3, 0x17),
+    ("EditorParamProtoList", 0x828A13, 0x19),
+    ("EditorParamUnitTypeList", 0x828A3A, 0x19),
+    ("EditorSetList", 0x5BECAA, 0x11),
+    ("EditorSetData", 0xAC19D9, 0x0F),
+    # editorSearch: a parameter's change (event 10, 0x829E29): the field's current index 0xAC0D1B, its entry's text
+    # 0xAC0EEA, given to the parameter (0x82AC1C): the value is the text picked, not an index into the stock list.
+    ("EditorParamPickText", 0x829E65, 0x24),
+    # editorSearch, trigger list: FUN_0082481C (thiscall(editor), plain ret; sub esp,48h / ... / mov [esp+4],ecx,
+    # then push ebx/esi/edi/ebp, so the editor is [esp+18h] at the add's call) fills trEdit-Trigger-list
+    # ([editor+178h], 0x824347) from the current group (0x97B65E: [sys+0Ch][[sys+18h]]): for each position EDI of
+    # the group (count [group+10h]) the trigger [group+0Ch][pos] (0x97A3C7, 0x97B2E0, 0x405C2E) adds its name
+    # [trig+3Ch] with push eax / mov ecx,esi / call 0AC9228h (0x8248C3), and the row it got gets the position as its
+    # data: push eax / push edi / mov ecx,esi / call 0AC6CC0h (thiscall(list, data, row), a row < 0 does nothing).
+    ("EditorTriggerListFill", 0x82481C, 0x4A),
+    ("EditorTriggerListAdd", 0x8248A1, 0x39),
+    ("EditorListSetData", 0xAC6CC0, 0x0C),
+    # editorSearch: a click in the trigger list (the list handler 0x825933, event 0Fh) reads the clicked row's data
+    # (0xAC6CFE) and makes that position the group's current trigger (0x97B79B: [group+4] = pos, 0 <= pos <
+    # [group+10h]); the fill selects the row whose data is [group+4] (0x97B7C4, 0xAC7BB0). A row is never read
+    # as a position, so a list with fewer rows edits the trigger it shows.
+    ("EditorTriggerListClick", 0x825AE8, 0x10),
+    ("EditorTriggerSetCurrent", 0x97B79B, 0x1A),
+    ("EditorTriggerCurrent", 0x97B7C4, 0x1E),
+    # editorAutosave: the editor's gate [game+0B3Ah], as the saveScenario handler 0x7D9798 tests it (mov eax,[0C66234h] /
+    # test eax,eax / je / cmp byte [eax+0B3Ah],0); the undo handler 0x7DA8B9 (same gate, then mov ecx,[eax+928h]: the
+    # undo manager) and its undo 0x9BE4E2 (the undo count [um+4], the redo count [um+10h]).
+    ("EditorGate", 0x7D97AF, 0x14),
+    ("EditorUndoManager", 0x7DA8B9, 0x14),
+    ("EditorUndoCounts", 0x9BE4E2, 0x0F),
+    # editorAutosave: the handler saves through the game's vtable +0C0h: push 1 / push ecx (&name) / call 517BAAh
+    # (mov eax,[0D6FDB4h] / ret: the directory) / mov ecx,[0C66234h] / push eax / call [esi+0C0h]. The slot holds the
+    # thunk 0x703ED3 (jmp 834583h); FUN_00834583 thiscall(game, dir, BString* name, char flag), ret 0Ch, returns at
+    # once while [esi+0AB0h] (a save running) is set, and sets the open scenario's name: lea ecx,[esi+958h] /
+    # call 40196Fh (BStringSet), then mov [esi+95Ch],bl (the flag).
+    ("EditorSaveCall", 0x7D980E, 0x15),
+    ("EditorSaveSlot", 0xB886E8, 4),
+    ("EditorSaveThunk", 0x703ED3, 5),
+    ("EditorSaveHead", 0x834583, 0x0D),
+    ("EditorSaveSetsName", 0x8345D5, 0x2E),
+    ("EditorSaveDir", 0x517BAA, 6),
+    # editorAutosave's notice: the editor's message dialog, handle [editor+12Ch], hidden by 0x838CE8 (mov eax,
+    # [ecx+12Ch] / mov ecx,[0C66244h] / mov ecx,[ecx+44h] / push eax / call 448F13h / ret); 0x83A2B8 sets the text of
+    # its child "ingame-messagedialog3-prompt" (0xC11254) through the child's vtable +80h and shows it.
+    ("EditorMessageHide", 0x838CE8, 0x16),
+    ("EditorMessagePromptName", 0xC11254, 29),
+    # card tags (cardtags.*): the home city loader FUN_0062E6C9 reads each <card>'s children in a loop over the card
+    # node EBX (mov eax,[esp+1Ch] / push eax / mov ecx,ebx at 0x62FD1D; the loop's end add eax,1 / cmp eax,[ebx+0Ch]
+    # at 0x62FF42), then commits the card it built on the stack: lea edx,[esp+0A8h] / push edx / add ecx,204h /
+    # mov [esp+0D0h],al / call 62FBC7h (the append to the home city's card array hc+204h, thiscall, ret 4, the new
+    # index in EAX). The call at 0x630017 is redirected; EBX is still the card node there.
+    ("CardChildLoop", 0x62FD1D, 7),
+    ("CardChildLoopEnd", 0x62FF42, 0x14),
+    ("CardCommitPrep", 0x630002, 0x15),
+    ("CardCommitCall", 0x630017, 5),
+    # resendableCards: the age setter FUN_008D4E01 thiscall(player, age, announce, tech), at the join 0x8D502F after
+    # the age is written (mov eax,[0C66234h]), before the stock refill of the InfiniteInLastAge cards (world+870h,
+    # age > 3, hc [esi+84h], call 85650Ah). The advance flag [esp+13h] (1 when the old age >= the new one) is written
+    # at 0x8D4EE3..0x8D4EF2 in the same frame.
+    ("AgeUpJoin", 0x8D502F, 5),
+    ("AgeUpStockRefill", 0x8D5034, 0x24),
+    ("SetAgeAdvanceFlag", 0x8D4EE3, 0x0F),
+    # resendableCards: the card rollover builder FUN_007103CE shows the card's cost line after it was sent only for
+    # an InfiniteInLastAge card in age 4 with sends left: test bl,bl / je / cmp [ebp+24h],al / je / mov eax,[edi+8]
+    # / test / je / cmp dword ptr [eax+50h],4 / jne 710863h (0x710804, 6 bytes replaced; EBP = the card).
+    ("CardRolloverAgeCheck", 0x7107F4, 0x16),
+    # quickArrivalCards: the same builder's head (its frame: four pushes after sub esp,30h, so the output list is
+    # [esp+44h], the tech ID [esp+4Ch], the list-mode byte [esp+58h] in the body), and its join before the advanced
+    # info, mov ecx,[0D6F6F0h] at 0x710909 (6 bytes), reached after the send-limit line (9001h/9002h/9003h).
+    ("CardRolloverHead", 0x7103CE, 0x26),
+    ("CardRolloverAdvanced", 0x710909, 6),
+    # quickArrivalCards: the bullet line helper FUN_004C5076(list, BString*, 1, 0) the builder uses for its lines
+    # (it appends <ttf><ttb> then the line, through 0x443960 and 0x4439E3); verify only, the key appends the same.
+    ("CardBulletLine", 0x4C5076, 0x2A),
+    # quickArrivalCards: the second card rollover builder FUN_00710991(out, hc, tech, a4, a5, list), used only by the
+    # home city's card tree ("View All Cards", FUN_009A21A0 in uihcskilltree.cpp, list mode 1). Its head (sub esp,28h
+    # and four pushes, so out is [esp+3Ch], the tech [esp+44h], list [esp+50h] in the body; the hc slot [esp+40h] is
+    # overwritten with the card entry at 0x7109D6, the tech slot never), and its join before the advanced info,
+    # mov ecx,[0D6F6F0h] at 0x710F24 (6 bytes), reached after the send-limit line (0x710EDE, 0x710EF6, fall-through).
+    ("CardTreeRolloverHead", 0x710991, 0x49),
+    ("CardTreeRolloverAdvanced", 0x710F24, 6),
+    # cultureUI: the texture bind 0x407D27, bool thiscall(texMgr, stage, handle), ret 8, which every textured draw
+    # calls (the UI drawable's draw at 0x41E1D8 among its 56 callers). Head push ebp / mov ebp,[esp+8] / push esi /
+    # mov esi,ecx (8 bytes, nothing branches inside) is replaced; the hook goes on at cmp ebp,[esi+30E0h] (0x407D2F).
+    ("TextureBindHead", 0x407D27, 0x0E),
+    # cultureUI: the in-game HUD build FUN_0076166A (thiscall(screen), from 0x7637ED only), head mov eax,[0C672C0h]
+    # (5 bytes) then sub esp,60h at 0x76166F, where the hook goes on.
+    ("HudBuildHead", 0x76166A, 8),
+    # cultureUI (verify only): the texture handle by name 0x58E3EB, thiscall(texMgr, path, bool, int, int), ret 10h;
+    # the settings object by name 0x402C76, thiscall(0xC66688, name); the trigger by name 0x90DFB0, cdecl(name),
+    # -1 if none (it reads the trigger system [game+97Ch] without a test); a player's team 0x88396E, cdecl(player),
+    # -2 without a world or player.
+    ("TextureByName", 0x58E3EB, 0x0B),
+    ("SettingsByName", 0x402C76, 0x13),
+    ("TriggerByName", 0x90DFB0, 0x2B),
+    ("PlayerTeam", 0x88396E, 0x2B),
 ]
 
 

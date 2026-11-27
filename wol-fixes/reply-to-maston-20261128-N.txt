@@ -1,0 +1,2 @@
+Nursery: thanks, confirmed. The third version already works that way: a button whose units would go over the population cap is refused and greyed with "Population cap reached", and it works again as soon as there is room.
+So nothing changes in the Nursery for this answer.

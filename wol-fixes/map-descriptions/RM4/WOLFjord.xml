@@ -1,0 +1,10 @@
+<mapinfo cannotReplace="" 
+displayName="Fjord" 
+imagepath="RMs\small\Europe\WOLFjord" 
+loadBackground="RMs\BIG\Other\europe"
+details="6170180"
+loadDetails="6170181">
+<loadss>ui\random_map\fjord\fjord_ss_01</loadss>
+<loadss>ui\random_map\fjord\fjord_ss_02</loadss>
+<loadss>ui\random_map\fjord\fjord_ss_03</loadss>
+</mapinfo>

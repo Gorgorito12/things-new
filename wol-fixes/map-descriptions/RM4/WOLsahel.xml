@@ -1,0 +1,12 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\SMALL\Africa and Middle East\sahel" 
+displayNameID = "75127" 
+cannotReplace = "" 
+loadBackground="RMs\BIG\Africa and Middle East\sahel"
+details="6170236"
+loadDetails="6170237">
+   <loadss>ui\random_map\sahel\sahel_ss_01</loadss>
+   <loadss>ui\random_map\sahel\sahel_ss_02</loadss>
+   <loadss>ui\random_map\sahel\sahel_ss_03</loadss>
+</mapinfo>

@@ -1,0 +1,13 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "Lrg Finger Lake"
+imagepath = "RMs\small\North America\Finger Lake-V" 
+loadBackground="rms\big\north america\fingerlake"
+details="6170102"
+loadDetails="6170103">
+<loadss>ui\random_map\great_lakes\great_lakes_ss_01</loadss>
+<loadss>ui\random_map\great_lakes\great_lakes_ss_02</loadss>
+<loadss>ui\random_map\great_lakes\great_lakes_ss_03</loadss>
+<loadss>ui\random_map\new_england\new_england_ss_02</loadss>
+<loadss>ui\random_map\new_england\new_england_ss_03</loadss>
+</mapinfo>

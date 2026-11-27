@@ -1,0 +1,11 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo 
+imagepath = "RMs\SMALL\Asia and Oceania\Wakhan" 
+displayName = "Lrg Wakhan"
+loadBackground="RMs\BIG\Asia and Oceania\himalayas"
+details="6170112"
+loadDetails="6170113">
+   <loadss>ui\random_map\painteddesert\painteddesert_ss_01</loadss>
+   <loadss>ui\random_map\painteddesert\painteddesert_ss_02</loadss>
+   <loadss>ui\random_map\painteddesert\painteddesert_ss_03</loadss>
+</mapinfo>

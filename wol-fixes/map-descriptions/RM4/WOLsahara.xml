@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="1000553" imagepath="RMs\SMALL\Africa and Middle East\sahara" loadBackground="RMs\BIG\Africa and Middle East\sahara"
+details="6170234"
+loadDetails="6170235">
+   <loadss>ui\random_map\sahara\sahara_ss_01</loadss>
+   <loadss>ui\random_map\sahara\sahara_ss_02</loadss>
+   <loadss>ui\random_map\sahara\sahara_ss_03</loadss>
+</mapinfo>

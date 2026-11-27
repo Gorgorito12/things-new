@@ -1,0 +1,533 @@
+{
+ "game": "Wars of Liberty 1.0.15c",
+ "files": {
+  "art/buildings/asian_civs/bansho/bansho.xml.xmb": {
+   "original": null,
+   "fixed": "0d1e0a1db2db66d0aa3857312f62e29df1a9b77bbf58f808934863a483ab429a"
+  },
+  "art/buildings/asian_civs/caravanserai/caravanserai.xml.xmb": {
+   "original": null,
+   "fixed": "1f938b6a331778cabca1408ec2a0f4cfebc720ac0028dabebed5f7b668436dcb"
+  },
+  "art/buildings/asian_civs/castle/castle.xml.xmb": {
+   "original": null,
+   "fixed": "ddbc14f0ca8629bea1ee19e395b35f2f30d36e1c69c029af1a0d61854d3f1a4e"
+  },
+  "art/buildings/asian_civs/monastery/monastery.xml.xmb": {
+   "original": null,
+   "fixed": "9a529da3e2c23e1bf37933aa6195ed4f039f0397c3465a3f17f9fc52f9e0f195"
+  },
+  "art/buildings/asian_civs/stable/stable.xml.xmb": {
+   "original": null,
+   "fixed": "e8c81ddf53ac9e5651df4bcf67092ff8386e619b1d9450100876ef0cab0a8e05"
+  },
+  "art/buildings/asian_civs/war_academy/war_academy.xml.xmb": {
+   "original": null,
+   "fixed": "a1330dd0322ca80110ab8453867c5a81c6803bd30d98bdb692a85a107ee30ab5"
+  },
+  "art/buildings/Capitol/Capitol.xml.xmb": {
+   "original": null,
+   "fixed": "e1ec9c1194eb21fd5a27aefc8b5fb5ceb7e443cdccb2647520966ea062ca356d"
+  },
+  "art/buildings/church/church.xml.xmb": {
+   "original": null,
+   "fixed": "7206e0284c5689730ebbb1c46bf62cef5b771e52f332bbb9928788ff03a3459c"
+  },
+  "art/buildings/Great War/CommandPost/CommandPost.xml": {
+   "original": "b31e84107f1d715166379dea1915769b8d768113f311143ce4ed0b753143b17c",
+   "fixed": "18e942c946997b8ffd5f14f61351ba83001c4ed5a519c2c97c6407bfe8b25ff4"
+  },
+  "art/buildings/Great War/FieldBarracks/FieldBarracks.xml": {
+   "original": "201456f01e8dbe948dded56a7662bbc78450d04bfa9ece13949c806c19ad4caf",
+   "fixed": "a38f1f86770f4ae23aa21a05f9e43b24d9b2c3d99cdddebe0cde4a383a7e4959"
+  },
+  "art/buildings/Great War/Shipyard/Shipyard.xml": {
+   "original": "ea1be86cbecc79f6f5ed6ac1e67bb7274975c5e12fb4ef26ac7d8e474633c999",
+   "fixed": "677fef883881f5ed39afd359a14c6dcc05f4e43b9506607e41bab8eb472b81a7"
+  },
+  "art/buildings/house/house.xml.xmb": {
+   "original": null,
+   "fixed": "f00bf5948f827abfedd33985f77bc77883f1f8f8fa0c744235c76f0c73f3ea93"
+  },
+  "art/buildings/modern/HC_props_news/statue_of_liberty.xml": {
+   "original": "24c2b75b68c87ea01e4050db069ae4ae08ba7cf04666159e2b6fff30f178d831",
+   "fixed": "a804f8cd64bf46d320a5db579f2d82fab67ee8a24492cf2ad9fd46e236964acb"
+  },
+  "art/buildings/modern/props_ingame/zeppelin/zeppelin.xml": {
+   "original": "fb258e3290c4a2e37575b2ea04046748201b15aa05699d554d05fa71983f76b8",
+   "fixed": "d9c3d3589b6adfecddda8ff5be6def69a114cf6e2357481a914ddd02496a5138"
+  },
+  "art/buildings/native_civs/corral/corral.xml.xmb": {
+   "original": null,
+   "fixed": "bc28393099cb51af4bf555a7641e7ed6d67a9d7dd58629f70da83a8b79e4f8c0"
+  },
+  "art/buildings/native_civs/siegeworkshop/siege_workshop.xml.xmb": {
+   "original": null,
+   "fixed": "907c2eedd66e461988ec65be47313cb1da4011598686c69e5e6560ef1fd9020e"
+  },
+  "art/buildings/polynesia/kumara_field/kumara_field.xml": {
+   "original": "770d8867d4d1087378c691e057e42deb35d5e860411ea6c143c1568d6f87430f",
+   "fixed": "2bcbceffbec8be40c2dfe284399774ccc8dbd9b7f7cbb9ea05622ee7d825e7af"
+  },
+  "art/buildings/polynesia/pa/wharenui.xml": {
+   "original": "4c223f2a36a80cea6f395a4135293ddee3453c08b625ddbb39c566c13a153123",
+   "fixed": "c8e7c0e4cc044cd0f91bfca0304a629a5082e8ad8bf1a6e009fc6dcbbc9b6e36"
+  },
+  "art/buildings/spc_woodfort_wall/SPC_woodFort_Wall_Large.xml.xmb": {
+   "original": null,
+   "fixed": "92fa8b7520aaa1b7918adbdffaa283e83f99e7ace404cce4b6472cbc99ebac58"
+  },
+  "art/buildings/spc_woodfort_wall/SPC_woodFort_wall_tower.xml.xmb": {
+   "original": null,
+   "fixed": "01a3ede182578f286f6751de5e83cec5c8faffa5477a5fd2a05bce19a7e4c434"
+  },
+  "art/buildings/winter_quarters/quarters_generic.xml.xmb": {
+   "original": null,
+   "fixed": "bca8f46fe7045f8adc5ae7145295a5ede2841c871503c4287a7d9eafe345e042"
+  },
+  "art/buildings/wonders/tower_of_victory/tower_of_victory.xml.xmb": {
+   "original": null,
+   "fixed": "f882c1bc38c83531402b74647ab4e858692e92b3377fc5173dba5e93a3b3ce01"
+  },
+  "art/buildings/wonders/white_pagoda/white_pagoda.xml.xmb": {
+   "original": null,
+   "fixed": "2079fc57f5869a5be8f7b64cc44ffaa6145bbea91839bafdacf9a3e9271b9757"
+  },
+  "art/terrain/tree_andes.xml.xmb": {
+   "original": null,
+   "fixed": "5d2f8e0bac71c34cc26d3585ce131e1855ad451fb9ebfaf77681bd265c9d956f"
+  },
+  "art/terrain/tree_araucania.xml.xmb": {
+   "original": null,
+   "fixed": "7ed8be5887bfa69a69630ba6b3d3fd347994585be4e72f95204826f5f3a0a2b2"
+  },
+  "art/terrain/tree_grandcanyon.xml.xmb": {
+   "original": null,
+   "fixed": "101e5bdb5a9e5e06aa96234e7e8f2681bde369094e5b1ff51e1a9afe5d343fb5"
+  },
+  "art/terrain/tree_kapok.xml.xmb": {
+   "original": null,
+   "fixed": "29e794f1a539b5752dcb5468bcd856e05296185c12f5ac18508ab0471fc7b030"
+  },
+  "art/terrain/tree_ponderoasPine.xml.xmb": {
+   "original": null,
+   "fixed": "9f9dff814b7f609603b5e96205f95a144dab10196d81528fd0f1b6e3e9420046"
+  },
+  "art/terrain/tree_ponderosapine.xml.xmb": {
+   "original": null,
+   "fixed": "9f9dff814b7f609603b5e96205f95a144dab10196d81528fd0f1b6e3e9420046"
+  },
+  "art/units/asians/naval/TurtleShip/TurtleShip.xml": {
+   "original": "9e9c5c69982979d23e03cae29c9a1ffada04b165dc4b993cfcde99024d742b2a",
+   "fixed": "15fca8430aacb5addb453a6d7f18a19b8b2a651dad68d55dd7b60324dae98f1a"
+  },
+  "art/units/Great War/Dreadnought/Dreadnought.xml": {
+   "original": "24530d3b59db17cb7359533adc5b14a4e59e419d97c44cabdfdc5b61ed018c52",
+   "fixed": "a5d8a04a02ee02b243cdc76796fe0dcb841332cd39cd5a4d5ec23afae0c907f3"
+  },
+  "art/units/Great War/Dreadnought_Courbet/Dreadnought_Courbet.xml": {
+   "original": "9359c7f7e6387f82b3e6609e7ffd8764965ed043528fd7afd74ddb16c323ac95",
+   "fixed": "086e1d19b422c1d33afe445d794eab9ac390b843b47b568cb2bd1945d22d9b46"
+  },
+  "art/units/Great War/Dreadnought_Nassau/Dreadnought_Nassau.xml": {
+   "original": "e425bae47e140510f9089bf9c5b87e4c4eba75b046744640f2b592fbb4b60229",
+   "fixed": "5213c56c2b6dd891566a8897df1f055c355d547819db37b1435ece7c8cff899e"
+  },
+  "art/units/Great War/Minelayer/Minelayer.xml": {
+   "original": "bac7aafd493a4b8f4c1d4748fb38874bfd660e63756e5e1633dedfdc428603a3",
+   "fixed": "9bd2c0e4103ac522616148d1842d870ee0a28a42491ccea408a1b0132e37ae48"
+  },
+  "art/units/Great War/Zeppelin/Zeppelin.xml": {
+   "original": "9d3f4828f2229ab4a620e4a2554166e7363d914f3cb471d3b4aaf78982aa8241",
+   "fixed": "e2476b10b67ff9d1b7acb6048c390f290338cf8186bcb3880b6f1dcad2b88834"
+  },
+  "art/units/naval/Aviso/Aviso.xml": {
+   "original": "1bd8a489e9194dba494dbb896706ed53aa016458f63e7842c55a4a8b07711f0e",
+   "fixed": "365e05e85dba2fc2fa319c69960268d7b415d07877f56077da93756a51b8e8af"
+  },
+  "art/units/naval/Baghlah/Baghlah.xml": {
+   "original": "9aeb626fb0a941bb437979dc3b3ba8035422f44bc2aac634a5ced6373406caf7",
+   "fixed": "1e4b4d303d93752fc0c917ffb048b4131c21ecc234fd6a1cdc0ed229ba5ecd45"
+  },
+  "art/units/naval/Battleship/Battleship.xml": {
+   "original": "876fdf4fac595ad8190e6444ba10caf29102c32518777ab026256355284ce6b4",
+   "fixed": "fae568211c316fe225012db54b06d0b0013b5351c5a4fa45189032dfbf25a23f"
+  },
+  "art/units/naval/Bombarda/Bombarda.xml": {
+   "original": "cba619cb981342561aab335090f6e057903f109a24e7f8264053a62519f4e751",
+   "fixed": "767e6b87247fac24bb797edcdba5afe9e2e6d37116852f9d001847d2bada23b9"
+  },
+  "art/units/naval/Boum/Boum.xml": {
+   "original": "d6f31f50f334f19cdcd2dd1d3d675004c91509db2f11ba72e08965683232a16d",
+   "fixed": "c7e5b75522629a72b9b2a46085b2002a7d2a54dc2d73ce18ac2312c444e35151"
+  },
+  "art/units/naval/Corsair_Dhow/Corsair_Dhow.xml": {
+   "original": "1c5e101ec54128d618ee7ea9c552e638759d844012a749f97a0984aa83e0df30",
+   "fixed": "42c35f85c7b8ca98dc7c3ea9c6077003f9d5ddb24fa8bd1f07656b39cc0f1a45"
+  },
+  "art/units/naval/Corvette/Corvette.xml": {
+   "original": "5f818da92398f0b45635e7dc25112ecd5304ab4040145f5faf109142f7046916",
+   "fixed": "54132932cb8337645cd76263b5a303547816fe9636264f7b37154cdd2d4061e8"
+  },
+  "art/units/naval/Destroyer/Destroyer.xml": {
+   "original": "b7c91edb2df693406e1b8bde09a46e87895d91df5725ee4fffb40d85b35e1674",
+   "fixed": "f2aa22beb3dd383d6c6ad8b6c882ad0acf6fb85a3d7ab145b1aa630f3279c4e1"
+  },
+  "art/units/naval/Floating_Battery/Floating_Battery.xml": {
+   "original": "4ac0a419d2d24f36e8e07cc067f0707ac4f9468dd4ca82256e29863f7b930625",
+   "fixed": "38887920303fcf95b134d8e6b3fb1804173c5cefe210a48d3b508bc6197432a9"
+  },
+  "art/units/naval/Frigate_WOL/Frigate_WOL.xml": {
+   "original": "622185e2fb3208b5db728e25b3115c1bf6537e01cb4ae539941bbe71f670b35b",
+   "fixed": "9ac01b9283eddbead693607d0b6aac77b6d9324ae100dde3dc11def7e8c83245"
+  },
+  "art/units/naval/Huascar/Huascar.xml": {
+   "original": "0d84a250a621cda6ffc50c0b9a961757568ebd770b99d2a1bc83713c7e1f64c0",
+   "fixed": "de705f89739c57b5f00427559b7c2512a6e6478f8f43e8a7ac6034d497ecd56c"
+  },
+  "art/units/naval/Lorcha/Lorcha.xml": {
+   "original": "7eed4619d43707dc21785f829f59c367e2cb3aa65bf8a328016484fd34ba6509",
+   "fixed": "3101321a4dbb027cf91471492d3f3f8ed71df4e6009783c6d66463a08045fd4c"
+  },
+  "art/units/naval/River_Monitor/River_Monitor.xml": {
+   "original": "8ad467fa105eceb72943f1e36a551635759fda28700a7f328b1187101f6044ef",
+   "fixed": "c2daff6146fe1284bf9722c87c97c777a09b9474f6e5b70d1d2e848a319521fb"
+  },
+  "art/units/naval/Sambuk/Sambuk.xml": {
+   "original": "aacfddb6b01abc638c61e5e048f1d42005d31c45816cd76b26e3a67b6ca8bd9c",
+   "fixed": "f409ffaca369e706798667fb90edb89d8e8f4ec134a79cd388d95b0564a6c6bc"
+  },
+  "art/units/naval/Schooner/Schooner.xml": {
+   "original": "431a3905ba1733840600c2927b644703cd5caf7a4df637cbdf2a9464d7e1bce1",
+   "fixed": "be85db73bae46a3bcbae31b44c1b5448c67077a6b4ac32c51350d10b8db9a432"
+  },
+  "art/units/naval/Shuai/Shuai.xml": {
+   "original": "b3d8b410b42166667c1468c28ef0076c4027dfd2b13882b1dc4dd5bd64710b9f",
+   "fixed": "efb9b17c2ee709d8fb42748edf8f3fd464dc36b60770c289b3ac369f137b47ad"
+  },
+  "art/units/polynesia/sandalwood/sandalwood.xml": {
+   "original": "f7f80a58fa66ffbbcdfe05a8b9f789c6bb5c562d6cbdee2b713bb8c698fb37c6",
+   "fixed": "d12f50d7642e3d76e2220d61e4a387180501ef632683a39b943719f1b4213bb5"
+  },
+  "art/War of the Triple Alliance/Buildings/church/church.xml": {
+   "original": "3828a6a8b3234dacc57517c33ecff0eacfbc576cf89b31702dd428b5eb96d65e",
+   "fixed": "1d5362c7c7b8f56c1adece54adbd34fe564628f8fb3bcb4c6d55338b12930de1"
+  },
+  "art/War of the Triple Alliance/Buildings/corral/corral.xml": {
+   "original": "3c68b36eb628cde87d9baa927e89641976d4c9d38b4e2db47a65442f4d10ca6a",
+   "fixed": "8cf15f18637a962697fd5e8d57d0bcd6ae1f145c2f71022a50c45d625a8823d6"
+  },
+  "art/War of the Triple Alliance/Buildings/dock.xml": {
+   "original": "6f02adf1df1f7b2aefc278d5ab5af3ded3c5e51cf056f07272d7bd1e0a1f6ed6",
+   "fixed": "d3bd10bf74619b80c2fdc602d03ce83624cb9c24f388ce359e9eafca31000586"
+  },
+  "art/War of the Triple Alliance/Buildings/hall/hall.xml": {
+   "original": "355fb0d9614ec9b13750033bbfc682f438f30b8a96668411a9787e6d1de4eb4e",
+   "fixed": "b5e69eb821359c4cfeecfafd2bf310cdfdfcc8cb43e2f7cc0a8219821344a5cb"
+  },
+  "art/War of the Triple Alliance/Buildings/Hwaseong/castle.xml": {
+   "original": "d580a38904f43a542351c5c909a3bc4140491143cf23a457a45a41bcf69cc353",
+   "fixed": "d7464f6ad31478ec2fd15272168387a537a37c293d4521ad972e0d6be241c626"
+  },
+  "art/War of the Triple Alliance/Buildings/livestock/corral.xml": {
+   "original": "6c9ce6e187edcb8ace28ef27eef27eee866051c559131ff425e012ace89800e0",
+   "fixed": "e9c380c476af118a686b7c7328ff9e7917e792d3f7faa8497302dce8e8551d51"
+  },
+  "art/War of the Triple Alliance/Buildings/plantation market arsenal/fazenda.xml": {
+   "original": "b52f0c79a4ba3a25e131591bc6fab55d5729fb430185f5c224eaf7e682bd018a",
+   "fixed": "bf769276a1602c017a12708014c102def14961d6f7ee342dc07582f6ca74e842"
+  },
+  "art/War of the Triple Alliance/Buildings/plantation market arsenal/plantation.xml": {
+   "original": "803a407ad0c8ca0295d501689f6bd46441baf3939aa0e6cde881a198773e579b",
+   "fixed": "743f98c9d3a030d6517c85870b0ed4e60989fd8813ba09fab6338793fd5c6276"
+  },
+  "art/War of the Triple Alliance/Buildings/wall/wall_1x1.xml": {
+   "original": "c5d30863318c8435076a98ee945ef4d66b0750a154259e7720251ca83af56bba",
+   "fixed": "fdb16116e3e90b99fe864e900331bfe7abd3fe7be99f8146caabdd4dc053bc8b"
+  },
+  "art/War of the Triple Alliance/Buildings/wall/wall_1x2.xml": {
+   "original": "8384695182b24d2cabfba90e1ad107ffc725d7f4ed34d5d236b033d9dcc7f6c5",
+   "fixed": "9ecb68bd5b81a502c49355efa9cd6c64d1b6b7e5393484270243d77b5c657781"
+  },
+  "art/War of the Triple Alliance/Buildings/wall/wall_1x3.xml": {
+   "original": "eca0bcf9846ead5798c6ef2eeb5f1f994d75818a0891591ccecfc7932d859ccc",
+   "fixed": "e69f990872b9da9ef18ae6a03e6a1f25e1ad13a3bcc6b5b03bae01784a74583d"
+  },
+  "art/War of the Triple Alliance/Buildings/wall/wall_1x4.xml": {
+   "original": "e8ed0588e44ff7e4c309f04a8329cd8fd3f7861f752c8b94ac71f80daf8194f9",
+   "fixed": "c117efb95b87fa7b06f9de72c26f4c2da77e49c77b8017e8432024113d58a95d"
+  },
+  "art/War of the Triple Alliance/Buildings/wall/wall_1x5.xml": {
+   "original": "f1e9fa034ecd308db28af1042417bd6c77c8e74e0b7f9d0e447e4cffbe17d968",
+   "fixed": "be465d8cb7bdf2246ae6e354013d43884d8beec5a2458538fcef860887744fa2"
+  },
+  "art/War of the Triple Alliance/Buildings/wall/wall_gate.xml": {
+   "original": "bc3486ff56ea477e5daa50dec0b6cf01022b1d7204bd6122412684b774ceb403",
+   "fixed": "c06ce1c968a14a40088c509908a65c1a5f716833e931139e4fd0fab249b0c8e2"
+  },
+  "art/War of the Triple Alliance/Buildings/wall/wall_tower.xml": {
+   "original": "068456430dd8b39fc531bc3922ffef0eea12b0c57d2359b6fdbda8e48f1fada4",
+   "fixed": "f3de4728ff253fac8fbfefada501d899488946a0ab3cff1a468fc79b71295300"
+  },
+  "art/War of the Triple Alliance/Buildingsets/academia.xml": {
+   "original": "8b1158b7ffd2810f4d4c4ac1ec6edafea69295a1c9ef119e72f7bf507d6e6ac0",
+   "fixed": "4efc3ab0ded1fb926993ad68e2257362e879235d86b56a4d0829e55424450ef0"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Age3/Hospital/hospital.xml": {
+   "original": "b617eb55a00b9797f3d89ec5c1f581fb4d9dd5c16d30d42b44fb3e12f744d253",
+   "fixed": "048ceada96ec9485373c4e86df4153a6472ad96fdf2ee29c56f173079042bca2"
+  },
+  "art/War of the Triple Alliance/Buildingsets/artillery_depot.xml": {
+   "original": "198c0797ddfee23c8bc5fb7e44189270977a7e2ba65923121a86144b46e5135e",
+   "fixed": "22b8a799847b43d1f5b946026be711923225158770fe789edc089420fba18edc"
+  },
+  "art/War of the Triple Alliance/Buildingsets/BACKUP/academia.xml": {
+   "original": "cdcea92b4a1d7f468534845e5044b30f8b2900cba0873ded5fbce3e64d8c34f4",
+   "fixed": "c7b3fc324be0c725cc67bf2524fa829856a72e6706653f542d86b7486e089e4a"
+  },
+  "art/War of the Triple Alliance/Buildingsets/BACKUP/church.xml": {
+   "original": "a402b1932678fb8efdf22339b6eee737d81d2fd24ca2537efc0dd5c5df7ffdea",
+   "fixed": "98b4f80958ff726051c7ffffb640fb34b5f3c415ae884c54cecdfb3e53211103"
+  },
+  "art/War of the Triple Alliance/Buildingsets/BACKUP/hall.xml": {
+   "original": "f0c201c733dbb0826efaf23a926b01b62b67e03fa150ff617250071c5189abfd",
+   "fixed": "bd16aa01516ea017d2931398eac5524c301601e0b02cf3adeab2c315dece934f"
+  },
+  "art/War of the Triple Alliance/Buildingsets/BACKUP/plantation.xml": {
+   "original": "3a674faab5410b6a105164f69db59f41bc5a276be6635ae03f4bebb12ec0e9ff",
+   "fixed": "8c0fcce8bb8aaadf1f282df0e9b69b980ddded6eeb58b216c7ff25e3404621b8"
+  },
+  "art/War of the Triple Alliance/Buildingsets/BACKUP/saloon.xml": {
+   "original": "503e44de8b1e62eb81ca359fdb281d6e7f95a17c08d39854fee0a2285820d1bd",
+   "fixed": "03b77464e3c9385709a0ddc0b8372b4e90672c74ff593caf66dfcbe05c786123"
+  },
+  "art/War of the Triple Alliance/Buildingsets/capitol.xml": {
+   "original": "7690f3ea897b030ed80b691e7c9afb6df528a9f71803796949a245fb24b5e843",
+   "fixed": "ee6ef8c9c1c5b37b4f7da64537ea125bc1fb592604bcaf44f19d7547af0efb64"
+  },
+  "art/War of the Triple Alliance/Buildingsets/church.xml": {
+   "original": "2c5cd838faa8a4d58612242a14125d31a6947e5ac653378f2b33f3127eba30e4",
+   "fixed": "c9f96b1be04f0db4fa48d3361baca30359d8a301047c869a8bad71fc8dab179f"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Delta/Balkans/Crops/beet_crops.xml": {
+   "original": "217f144052c4e2a78bb82517e910ac556097da19b6f206c96ecf6750c8680f0c",
+   "fixed": "beabd994c2939d4bc5a77a0997b6ba57d92d783fea6633ea5af2833ed15dc6bf"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Delta/Balkans/Crops/cabbage_crops.xml": {
+   "original": "893af0ece0858a749767b563d2c874a7008c004ac040e41f75390514cf2ad854",
+   "fixed": "48cb3a583e02e8ac18c3e5fc29e53f320e8ffc27800da864357ee73f51b01981"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Delta/Balkans/Crops/Crops/emptycrops.xml": {
+   "original": "f4414b9685c79732a3b7b1375677390323c6624f0df67fac72492f63be781826",
+   "fixed": "50e64be53638b41be444b90842ba8fae7f62a1b5b18515afd5ce99fe9f9f9f87"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Delta/Balkans/Crops/Crops/strawberry_crops.xml": {
+   "original": "e6950d557a703cd9aaf64e9e14a060c9b701288a305effde2f039ec63b22c137",
+   "fixed": "ba476b95435e5a8f433975a63e573bfb0505f099840fe7a4ad0621b201629956"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Delta/Balkans/Crops/emptycrops.xml": {
+   "original": "f4414b9685c79732a3b7b1375677390323c6624f0df67fac72492f63be781826",
+   "fixed": "50e64be53638b41be444b90842ba8fae7f62a1b5b18515afd5ce99fe9f9f9f87"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Delta/Balkans/Crops/strawberry_crops.xml": {
+   "original": "e6950d557a703cd9aaf64e9e14a060c9b701288a305effde2f039ec63b22c137",
+   "fixed": "ba476b95435e5a8f433975a63e573bfb0505f099840fe7a4ad0621b201629956"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Delta/Balkans/Crops/wheat_crops.xml": {
+   "original": "d4f8f5357b3dbd8e8ab456f27ae7dbc3f767a820147b680c7a4703c3100f80c4",
+   "fixed": "867d87eca741b5fa451ea5004e2a41ad6bcb8e3d885fe94a4a8f759478061b9a"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Delta/Balkans/Crops/wheat_crops_dead.xml": {
+   "original": "c5dbb514d2b04c2f49ed2e073cb0de3fd8b9d34e666f893c66c94c159196f2f2",
+   "fixed": "62e1f29f68e9a4038216fee9b10611b2aa9fa097f9cb0528e09439002a615a6a"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Delta/Balkans/Crops/wheat_crops_fallow.xml": {
+   "original": "b9c8a58ac1a489fe20a64366cf983f65fb2fcc255d2cdc7704b1479bb42ae845",
+   "fixed": "11aa8beb3530166f1894344ccc95b6012b684359fcca4bf3fca39b6a9f16891e"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Delta/New Models/hospital.xml": {
+   "original": "3d17bc3466d60bb800f68af45e45db0cc07a6086fda8a14cdf49a7333f4b5523",
+   "fixed": "da43a054f2b60d53117f30c4627b9b85389267cc5fcf0f55cfd926eea2136c37"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Delta/New Models/university.xml": {
+   "original": "1712733dea023f84b9c05744a041cb863278201a2593f019ad386c65821f7fa7",
+   "fixed": "2fb4f34cd0a4b2eaea850c57fdd4cf612b139b0d9800da35b60833c924e7008a"
+  },
+  "art/War of the Triple Alliance/Buildingsets/Delta/New Models/vineyard.xml": {
+   "original": "c990b85dacf235c1214492d74426f7bba5e79f8c75d5c31b4c855ffc2c1fca2e",
+   "fixed": "edeb6e9169b307e00600dae45f94ac385992d6f781cc2ab21e9693472195ffb5"
+  },
+  "art/War of the Triple Alliance/Buildingsets/dock.xml": {
+   "original": "82df6e6b0cad3deda09c760645e3ab45d4efa50e210682b557764b96e07d00ea",
+   "fixed": "f53387e3c26d27eaf2489cab80356868ad516c429e1419dee11751f3768c7f34"
+  },
+  "art/War of the Triple Alliance/Buildingsets/hall.xml": {
+   "original": "5306881015a38c2afd48e3a566766115c296f3e067b9c19a2091ede090784f06",
+   "fixed": "6959b66551b368660f50b30ecbcac4327bba58a78ac97029777cbadfe0d69103"
+  },
+  "art/War of the Triple Alliance/Buildingsets/market.xml": {
+   "original": "acbde69c3bcce5d276e69f7c1f5538d0490aa6b53fdd309d749b4c9606108a1a",
+   "fixed": "33d1aa09adc81eaea23edb3dfc4137fdab71ad12c9bce197538267e2638a8c09"
+  },
+  "art/War of the Triple Alliance/Buildingsets/plantation.xml": {
+   "original": "c8b5d552ea977de7fcb04353143db7332e5c5bb3706f307f52cfe9cb4fb29db3",
+   "fixed": "1a315b7f335dc37101d0cdf016fed0e6a3187edb4fed7210fe61acd7a260a8eb"
+  },
+  "art/War of the Triple Alliance/Buildingsets/saloon.xml": {
+   "original": "2522fa84c2ef1683e1ec1a24ea886021a4a6b1ef41196579e7b493ae750d4cd0",
+   "fixed": "912daa730d5e6fcb8349240d94e077282f66179aab16349e8f08dc855dd543ab"
+  },
+  "art/War of the Triple Alliance/Buildingsets/stables.xml": {
+   "original": "e15be42fa2a83527488e3b87e7a03cac4b819426f491507490e8601204fe67e1",
+   "fixed": "5caef3d9421971713a23ecb9bf180de5aad834a7dff537c6ede122b2600a13c2"
+  },
+  "art/War of the Triple Alliance/Delta/EURO NS/east.xml": {
+   "original": "3006739ae3676e533df837471447b63c86f90b70c9622607f67e5ed67d117578",
+   "fixed": "09efd5b076907cba337672c714ea0f57205949360cc9f0a26a29aa6976e7a040"
+  },
+  "art/War of the Triple Alliance/Delta/EURO NS/med.xml": {
+   "original": "ee8f6dd19e0ad4ebe1095e4ef621ca95e68c874fc456815f947f5fd55b174bd1",
+   "fixed": "765630f9618c0194298be1a7445db88fc8f1b3f7ccbd8d7c06f71018e59e5c0d"
+  },
+  "art/War of the Triple Alliance/Delta/EURO NS/west.xml": {
+   "original": "5ddc83f1bc2243ff3010e18c0985fff7672b60bdc8c2b4caae0c2e85df37f4b0",
+   "fixed": "f1325db1796842541e6de9d2cd43a63c344548844b60937cabee42937904284d"
+  },
+  "art/War of the Triple Alliance/Delta/nature/drought.xml": {
+   "original": "f637cd0baf01d9a3f7ffbfa3e15a0f1ec6564af91c32aa226209c052f1cb4247",
+   "fixed": "0926283b0ae39789313023a40f09ee9b9c960dbbf717566efbe69dd98e703778"
+  },
+  "art/War of the Triple Alliance/Delta/nature/earthquake.xml": {
+   "original": "91dcc53775ce2cff74ac7201add14407410bd24ca065cc41a6e285d675f6591f",
+   "fixed": "1a9587935c182aa48fb13d8e57cc74f32199f6c03995bb89f52c873eea26fa16"
+  },
+  "art/War of the Triple Alliance/Delta/nature/TreeCerrado.xml": {
+   "original": "2817c4affb4a8706e6c6cc007326c6e9fed833579c9aa58a224cb81093a849d7",
+   "fixed": "0de397a95e7cc453ca75a3b40e603bac86a5e84b18500b2b9f7f024d7d4d6080"
+  },
+  "art/War of the Triple Alliance/DLC/Other/new trees/cypress.xml": {
+   "original": "db8bbd0cef276ba682ca4906925feebd4e8fb92b9e39fbbf99d8d0245d3e57de",
+   "fixed": "f010a3b56156d6f02700c76be1d6fae39531f253d855ac5ef5230d873c00de8b"
+  },
+  "art/War of the Triple Alliance/DLC/RMs/redforest.xml": {
+   "original": "48df696a21ba91d4193522c62ee1e4c0bd6819875c1b558476b0c468739c4006",
+   "fixed": "a24ca5b07895baba05f14d67cbcfeef75ef5b6c119c19afb0013cb677a11897f"
+  },
+  "art/War of the Triple Alliance/DLC/Zupay/Buildings/Dock/dock.xml": {
+   "original": "63099b3e808333cb58f7c0a005c48237e6d735fb7ba2dbe77aefc282a2fd059e",
+   "fixed": "c83d0830e2b76dc3b489052721af831f849e14f53dc8237704e447ead5c63e99"
+  },
+  "art/War of the Triple Alliance/DLC/Zupay/Buildings/plantation.xml": {
+   "original": "70fec6b2b2e29dafc30e72e4f3444f23ba5c3854d5a6718b79635d85b7be9e90",
+   "fixed": "059db4d5a169eb7db25b3d1212021564489f98976de9182eb7b354b70ee7fed0"
+  },
+  "art/War of the Triple Alliance/DLC/Zupay/Buildings/Ruka/ruka.xml": {
+   "original": "c4613f35cb4299e047bb5ae5532ca57d5233185aa57e1be4a1950c09a1d5bf4e",
+   "fixed": "44969544c5439b023dce508b4b98fa007dbf3181bf43a538bc6a14c97f8254bf"
+  },
+  "art/War of the Triple Alliance/DLC/Zupay/Buildings/Town Center/town_center.xml": {
+   "original": "d7399c606ed135e491aa9b2f7f2c4b92ee8cc4801167307dd2843f6ccd7da63e",
+   "fixed": "33f3d7ba001068d12e3dd19120803b608f0aad4168c53fd6b9c28006e8231fb4"
+  },
+  "art/War of the Triple Alliance/DLC/Zupay/Units/Bolivia/Campamento/Camp.xml": {
+   "original": "6527c7af16627c8360425707a40bbcf2c526505ef0e0542607aaa610fb248371",
+   "fixed": "1ee0c8f0e56859a74f2a4fc6684e0573014ab9ee45dfe3fe132967802919f284"
+  },
+  "art/War of the Triple Alliance/DLC/Zupay/Units/Bolivia/Campamento/Nueva carpeta/corral.xml": {
+   "original": "7621860b4aa18b153fcd462699d79d26e3362e66c25062ca2ae1191b25cd89be",
+   "fixed": "dee17a29c0c8662cb7e759e000f24136923f55e2eacc0d111c7d19ba23fddddd"
+  },
+  "art/War of the Triple Alliance/forest/chaco.xml": {
+   "original": "6a324a06227eff79b62dc81a0b1289c949b0fa366b83c792a3cd7f987bc3d83b",
+   "fixed": "e8d760a62dd7ff59e9c2f3e4c1a0e3b82bdeaed13de8da076e38df9b2353505b"
+  },
+  "art/War of the Triple Alliance/forest/white_gum.xml": {
+   "original": "fbd7d663d00ca70d5a6a8ea3156ed45801abce057a139375b7609ae799a28ea6",
+   "fixed": "4d52db75da28fe6ab70a9cb28a7c9fdf64a6d9ffe095e5ad32f61f5d96589ecf"
+  },
+  "art/War of the Triple Alliance/Immigrants/Buildings/Irish/Colony/irish.xml": {
+   "original": "e48a5a4f6b98f85430e7e0d2e2d9c730b8aba9eabf5d94f3780d0926cbf9b2c1",
+   "fixed": "df343dc6e78067c3b2b218f73214f7dee0acc759cc510fa49b1ea96e9724ad50"
+  },
+  "art/War of the Triple Alliance/Immigrants/Buildings/Lebanese/Colony/lebanese.xml": {
+   "original": "469188ac20e3e92f9b307693947e51cb9b08ea2f7d1525289cae1c2888198b29",
+   "fixed": "5c802f94a84235b3f3c1e8618879fdb31a0b471987468458ecd7572fcacabd6a"
+  },
+  "art/War of the Triple Alliance/Immigrants/Buildings/Ukrainian/Colony/ukraine.xml": {
+   "original": "e874495e6ce1ccc629bdbc8258cdb3ef5e1ef2a18184f53421ebf0fc263181ea",
+   "fixed": "93f783ebae12c590a6c8e357d44d824df0c23988345f6517bd20abd5c7635378"
+  },
+  "art/War of the Triple Alliance/Immigrants/Units/Scandinavian/scandinavian_boat/boat.xml": {
+   "original": "093965738fe774c16e51e03378938f49c90462af0ba787ac43fcc18f0d5dd69b",
+   "fixed": "440e0a9471d80de30d92a89d75ffa184ed35a17e5ebd9ccb894ebf15f92c8941"
+  },
+  "art/War of the Triple Alliance/Natives/aus_tree_props.xml": {
+   "original": "83c83a935f5782aae4fc190b6d68d125153394b52104ac54345d899db8ef9e7f",
+   "fixed": "251e0b2712e6d8ce8dccca4d14f89231e440dd6d6f5db063283f6bb4911cadc8"
+  },
+  "art/War of the Triple Alliance/Units/Inca/pucara.xml": {
+   "original": "b183bc176a776458cdc312199c0e3c5c93db9eec12b49ee1868e633a6eb5b142",
+   "fixed": "ad45c8a1efdc5a01bd2c56d4dd08b2385af420e642bc01c020ec0b0cf4bafbf9"
+  },
+  "art/War of the Triple Alliance/Units/Javanese/javanese.xml": {
+   "original": "aaa9e36f0a26e8e9567a77f676745e9f6c4ac2fee5eb468c9c08cabffe76be32",
+   "fixed": "54404bc34180f8a84f0fffc7bb866110143b639d9dc6c362f58179c5628b1600"
+  },
+  "art/War of the Triple Alliance/Units/peugeot407/scandinavian_boat/boat.xml": {
+   "original": "3a9e76cf859bd040ef9cbae7dcb444742e36a0bbf31876fa62fc3577b94acfb0",
+   "fixed": "455a86905ebe670b96d6b34d227588b43d502cef261328c762b4b4fa186236a9"
+  },
+  "art/WoL/buildings/asian/castle/castle.xml": {
+   "original": "48a2f0871df822fd593be87ad1394928d695bd13f70618c8f6281475a43cb8d0",
+   "fixed": "84ccb5399abda071954d043d186618826add0da986d74f82f41eb13f5360c20f"
+  },
+  "art/WoL/buildings/asian/consulate/consulate.xml": {
+   "original": "9545920a7ad2bd54d62db0f21400393e0ebcd66d2d8aabfc838a6965ea0a79b5",
+   "fixed": "ae755cd3b2afab96c37212ca3534b0aad268bfe326b3db28fad1b91c2d4a0621"
+  },
+  "art/WoL/buildings/asian/monastery/monastery.xml": {
+   "original": "f550905961b5c4d4c33516428eee0d96cd5aadb97a7fdca5aceefabf19da7276",
+   "fixed": "6db97151445b833546adbe45dca9d58e7bcbadf6a17dd0d86bcee8325b243f95"
+  },
+  "art/WoL/buildings/asian/stable/stable.xml": {
+   "original": "88df6a13d142fc7deeec60263908c614a3b14851bf816bd531a7353610049826",
+   "fixed": "5320e57480813802f44ae29fec1cd8af4a26d0d0bcc6aa48e3905836b7a78db4"
+  },
+  "art/WoL/buildings/Beneficio/beneficio.xml": {
+   "original": "c9a251c1d32b48d95c17fd166e1dcd514f303f8190583c76661c73f09be251e0",
+   "fixed": "341fefe51c81be8df8ce015e3b34e421436e7fd54a7660bc7158ea69e4407ba0"
+  },
+  "art/WoL/buildings/immigrants/Chinese/chinese.xml": {
+   "original": "8775524d7c6025f70b775a903d8b11bc760967b1dc0bd92690de9fdd0e2e59f8",
+   "fixed": "06256e481942c2cac658881d5567a1076af401bf1fb5631aff472168296809a0"
+  },
+  "art/WoL/buildings/immigrants/Irish/irish.xml": {
+   "original": "a342b003841cb744eb843ccc4914c47d127cf919f9e084e6d908a307f7d9eafc",
+   "fixed": "3b45f538228f48fbc733f621954d6c14cbdf4042f73346859ee61b574510163a"
+  },
+  "art/WoL/buildings/immigrants/Spanish/spanish.xml": {
+   "original": "6f140128c364dcd4fd76e613a86d6e350befe60f64a29235e584d76fca206150",
+   "fixed": "24f8c44877c022f285428f805c1c121c32ecf08b67e640b23f05362cef45d43e"
+  },
+  "art/WoL/buildings/livestockpen/livestockpen.xml": {
+   "original": "1a4f9b25ac02a3eaae141e4e23a197514f6cb04c7d38e5c05e294808d7332722",
+   "fixed": "56ac46f2d5aa2936b550707ab14c9590c9b5c6c97c6273f53d97a3478a17ad4f"
+  },
+  "art/WoL/buildings/ME/forge/forge.xml": {
+   "original": "c9be34667533872f7336d7df3645120653076dbaad17adefe56ddfdb4297df59",
+   "fixed": "d9624889dc1abc35c3a95e31ec64a1374916c0bad785dc3192b43ae0c9098e6c"
+  },
+  "art/WoL/buildings/ME/gunsmith/gunsmith.xml": {
+   "original": "ed03ec7749d11ccfa109a9af47a2a273e4f547cc04a63621b98fe5c46e6a3b8f",
+   "fixed": "12f96da7884af30928c24732e67cb314220de26f1e9e7ab2f7e93a959683fe38"
+  },
+  "art/WoL/buildings/Pa/pa.xml": {
+   "original": "733b82fc7f3f5037e93daa34ef5e6d0b585b75bebc7894d441136d94fb061390",
+   "fixed": "7febabd65a4b17b52b09496a71607bde7335a294749e9bf8dfaf89e6fb34f553"
+  },
+  "art/WoL/buildings/trading_post/trading_post.xml": {
+   "original": "7f9f17acc1b6d379ddbdf13d48d5311254ac448f2acfb3657795c7d259673c63",
+   "fixed": "93bbe5cc507bf75d98f7e0c210be01a4acb790df7891593eee0f1abc2421bd0b"
+  }
+ }
+}

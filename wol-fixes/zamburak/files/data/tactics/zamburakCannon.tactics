@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The zamburak cannon (MEZamburak, the zamburak-fixes pack): one unit with two modes, as the stock field guns. Limber: it moves and cannot fire; an attack order unlimbers it first (the camel lies down, the artillerist gets off and goes to his station behind the breech: 6.67 s). Bombard: it cannot move and fires (the artillerist touches the vent with his linstock; 2.0 s), then reloads by hand (the gun swung round to him through its back, charge and ball pushed in by hand, swung back: 3.0 s); a move order limbers it again (he gets back on, the camel rises: 5.5 s). The attack's <turret> (60: the arc each side of the gun's rest, which the unit's aim file puts at +90, square to the camel's spine, so it turns from +30 to +150; 100 degrees a second) is read by the turretArc key, which turns the gun on its swivel instead of the camel; the game ignores it. The ROF (5.0 s, its anim's 2.0 s and its reload's 3.0 s) is in protoy.xml: a proposal for Wars of Liberty's team. Everything else of the attack is zamburakME.tactics'. -->
+
+<tactics>
+	<action>
+		<name stringid="38119">CannonAttack</name>
+		<type>Attack</type>
+		<attackaction>1</attackaction>
+		<rangedlogic>1</rangedlogic>
+		<anim>Bombard_ranged_attack</anim>
+		<reloadanim>Bombard_reload</reloadanim>
+		<idleanim>Bombard_ranged_idle</idleanim>
+		<boredanim>Bombard_bored</boredanim>
+		<maxheight>1</maxheight>
+		<accuracy>1.0</accuracy>
+		<accuracyreductionfactor>1.5</accuracyreductionfactor>
+		<aimbonus>0</aimbonus>
+		<maxspread>5</maxspread>
+		<spreadfactor>0.25</spreadfactor>
+		<trackrating>12</trackrating>
+		<unintentionaldamagemultiplier>1.0</unintentionaldamagemultiplier>
+		<projectile>OneThirdCannonball</projectile>
+		<impacteffect>effects\impacts\gun</impacteffect>
+		<minrange>2</minrange>
+		<rate type="All">1.0 </rate>
+		<damage>13.000000</damage>
+		<maxrange>12.000000</maxrange>
+		<rof>5.000000</rof>
+		<throw>1</throw>
+		<impactforcemin>400.0f</impactforcemin>
+		<impactforcemax>600.0f</impactforcemax>
+		<outerdamageareadistance>.25</outerdamageareadistance>
+		<outerdamageareafactor>.20</outerdamageareafactor>
+		<impactlaunchangle>10.0</impactlaunchangle>
+		<areasortmode>Directional</areasortmode>
+		<numberbounces>1</numberbounces>
+		<basedamagecap>1</basedamagecap>
+		<perfectaccuracy>1</perfectaccuracy>
+		<targetground>0</targetground>
+		<turret tracking="always" maxTurnAnglePerSecond="100">60</turret>
+	</action>
+	<action>
+		<name stringid="43295">AutoGatherFood</name>
+		<type>AutoGather</type>
+		<active>0</active>
+		<persistent>1</persistent>
+	</action>
+	<tactic>
+		Limber
+		<speedmodifier>1.0</speedmodifier>
+		<attacktype>LogicalTypeRangedUnitsAttack</attacktype>
+		<attackresponsetype>LogicalTypeRangedUnitsAttack</attackresponsetype>
+		<transition>
+			<tactic>Bombard</tactic>
+			<action>Limber</action>
+			<anim>Bombard_unlimber</anim>
+			<length>6.67</length>
+			<exit>1</exit>
+			<commandautomatic>1</commandautomatic>
+			<automatic>1</automatic>
+		</transition>
+		<runaway>0</runaway>
+		<idleanim>Idle</idleanim>
+		<boredanim>Bored</boredanim>
+		<deathanim>Death_by_melee</deathanim>
+		<walkanim>Walk</walkanim>
+		<joganim>Jog</joganim>
+		<runanim>Run</runanim>
+	</tactic>
+	<tactic>
+		Bombard
+		<speedmodifier>0.0</speedmodifier>
+		<attacktype>LogicalTypeRangedUnitsAttack</attacktype>
+		<autoattacktype>LogicalTypeRangedUnitsAutoAttack</autoattacktype>
+		<attackresponsetype>LogicalTypeRangedUnitsAttack</attackresponsetype>
+		<exclusive>1</exclusive>
+		<action priority="99">CannonAttack</action>
+		<throw>1</throw>
+		<transition>
+			<tactic>Limber</tactic>
+			<action>Limber</action>
+			<anim>Bombard_limber</anim>
+			<length>5.5</length>
+			<exit>1</exit>
+		</transition>
+		<runaway>0</runaway>
+		<autoretarget>1</autoretarget>
+		<idleanim>Bombard_ranged_idle</idleanim>
+		<boredanim>Bombard_bored</boredanim>
+		<deathanim>Bombard_death</deathanim>
+	</tactic>
+</tactics>

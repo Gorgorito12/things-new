@@ -1,0 +1,109 @@
+Hi Dr.Maxy,
+
+The minimized UI (UiUnitselectionMIN) shows what the big UI shows, and more, with the DLL key minUIStats.
+This note is for your information only: nothing in it needs an answer. README.txt has the full map, the
+icon list and the test table with pictures.
+
+Version 4 (2026-11-18): your review
+-----------------------------------
+- Hit points: the heart is gone; the row reads "Hitpoints: 100/100", the word in the yellow of the panel's
+  own labels, the value in white, at the same place as your "Hitpoints:" label. The word comes from the
+  string table (68852), so the Spanish table shows "Puntos de Vida: 5000/5000" (tested; it fits).
+- Population: the game's house again (your ui\ingame\stat_icon_building), as JTMaston asked.
+- The icons are redrawn like yours: 32x32 uncompressed, solid shapes, hard edges and a black outline. The
+  first ones were 16x16 with 1-pixel strokes and soft edges, which the panel shrinks to about 10 x 14 pixels:
+  that, not the font, is why they looked thin. Before and after: final\minUIStats-v4-icons-x4.png.
+- Projectiles: an attack that fires more than one projectile before reloading shows the number after its
+  rate of fire, with a revolver cylinder ("11 (ranged) 3.50 (stopwatch) 4 (cylinder) ..."): numberprojectiles
+  of your tactics times NumberOfShots. See note-for-team-v4.txt for what feeds it.
+- Four costs (the Palace Caravan) take both lines over the portrait, two and two; three costs fit one line.
+- Pictures and the pass/fail table: final\README.txt. Every older picture is in media\.
+
+Layout: centred selection and symmetric rows
+--------------------------------------------
+You wrote that the selection was no longer centred. The cause: our first file took buttonArea from the
+original game file (369 632 607 666, centre x 488), where yours has 369 697 669 666 (centre x 519, the
+panel's centre is 521). The game centres the unit portraits in buttonArea, so ours moved them left. The
+file now keeps your buttonArea, and every other original gadget as your file has it, except where the
+icons below need a change (README.txt, "The original gadgets", lists each one and why).
+
+The new layout, following your point and JTMaston's:
+- The top band holds only the portraits of the selection, centred as in your file. Nothing of ours is in
+  it (JTMaston: "the upper section should be kept as originally intended for the group icons").
+- Mirrored around the panel's centre, two blocks of two lines on the same baselines: over the portrait,
+  the cost (resource icons and amounts, no "Cost" word) and the population (a house); right of the
+  player's name, line of sight (an eye) and speed (a winged boot), then the train time (an hourglass) and
+  the garrison (the game's garrison door). The unit's name and the player's name get the same width
+  either side of the centre. Under the unit's name, one centred row: what the unit is doing (Done in,
+  Builds, Regen, Overheal, Poison, Aura). Under the player's name nothing, on purpose: AI and player names
+  such as "Otto Von Bismarck (Germans)" take two lines there (seen in game).
+- The stats keep your panel's two columns (x 410 and x 583): hit points (version 4: the word "Hitpoints") and the value,
+  resists as a shield and the value, then the attack rows, the 4th on next to the first three. A row too
+  long for its column never runs under another: the right-column row on its line stays empty, or a long
+  right-column row shows its name and damage with the whole row in its tooltip (Spanish names, "Anti-
+  artillery Crackshot Attack").
+- Without the key the file shows your panel as it is (only the two names are narrower): our hit points and
+  resists rows are gadgets of their own over yours, and the key hides yours while ours show.
+- The health bar under the portrait, as in your file: it shows only inside the unit's name, so it stays
+  there, as you have it.
+- Pictures side by side, your current panel and this one: media\minUIStats-v3-vs-wol-units.jpg,
+  -groups.jpg and -more.jpg. The rectangles with the centre lines: media\minui-preview-proposed.png.
+
+What follows JTMaston's points
+------------------------------
+1. Rate of fire: in each attack row, right after the damage, with a stopwatch icon:
+   "Ranged ATK:  23 (ranged) 3 (stopwatch) 12 (range), 3x (cavalry)". The value comes before its icon, as
+   the damage and range already do in the row. The icon is our own drawing (DE's art cannot be used).
+2. Population: a house and the number: the game's ui\ingame\stat_icon_building (your copy). Version 3
+   had our own drawing for a day; JTMaston asked for the original back (version 4).
+3. No separate range row: the range stays where the attack row already shows it.
+4. Cost: over the portrait, before the name, icons and amounts only.
+5. and 6. The top band is only for the portraits.
+Also from JTMaston:
+- Only the attacks the unit can use. Crack Shot, Sharpshooter, Swashbuckler and the like are actions of
+  the tactics file that only an ability uses; the game's big UI lists them on every unit of that tactics
+  file, usable or not. With the key, the minimized UI shows such an attack only while one of the unit's
+  abilities (abilities.xml) gives it: its tech is active and its age is the player's. A Presidial shows
+  Sharpshooter (its own ability) and no Crack Shot; the Chief (WOLcartographer) shows Anti-artillery
+  Crackshot only after HCSteelCrown. The "+2" of the first version came from those attacks; it is gone in
+  the tests, and when rows still do not fit it now reads "+2 more" (the tooltip lists them).
+- Icons instead of words (version 4: hit points as the word again, the game's house for population, the
+  icons redrawn 32x32): hit points (a heart), resists (a shield), line of sight (an eye), speed (a
+  winged boot), train time (an hourglass), garrison (the game's garrison cursor, ui\cursors\
+  cursor_garrison). Each row keeps a tooltip with the word. The spy eye is ui\ingame\stat_icon_informers
+  in the game, but your copy of that file is a dove, so the eye is ours; so are the heart, the shield,
+  the hourglass, the stopwatch, the winged boot and the house (16x16, the size and format of the game's stat icons,
+  in art\ui\ingame). The boot follows the game's light infantry boot, with a small white wing ("a boot
+  with wings"); two other drawings (blue motion strokes, white speed lines) are in media\minui-icons.png:
+  the wing reads as speed at the panel's size, the strokes read as stripes. All icons are drawn at the
+  size of the panel's own damage type icons.
+- With 3 resistances (multiarmor), the resists value lists them all: "0.30 (hand)  0.20 (ranged)
+  0.10 (siege)".
+
+Earlier decisions (unchanged)
+-----------------------------
+1. The rows are top-level gadgets, never inside a gadget the game shows or hides, so a row never
+   disappears with another one (your Speed text was inside the resists value).
+2. Building armor: shown in the resists spot, like for units. With your own uhc.dll (its multiarmor
+   writes the resists text) the key leaves the resists row to it: the first version showed "Resists: 0
+   (null)" on a Factory there; now your original "Resists:" row shows your DLL's text, and buildings
+   none, as without the key.
+3. Speed is the live speed (with techs, snares and auras), as the big UI shows it.
+4. The attacks past the third, and the ones the big UI itself has no room for (it stops at 9 rows),
+   are shown, in the same format.
+
+Two things we noticed in your current files
+-------------------------------------------
+- In your uiunitselectionmin.xml, unitselectionpanel-unitTypeName (line 40) has no "/>" and no closing
+  tag, so nearly the whole panel ends up as its child, and the extra "</gadget>" at line 88 closes the
+  panel. The game copes with it. One part of it matters: the health bars show only because of it (they
+  show with the name). Our file puts the bars inside the name on purpose and nothing else.
+- Your uiunitstatpanel3.xml (the big UI's stat panel) holds the original minimized stat panel: 5 rows
+  instead of 9, so the big UI shows only one attack row. The original is in optional\.
+
+Everything is in the data file
+------------------------------
+Which gadget shows which item, with which icon, label, tooltip and for which unit types, which original
+labels become icons, whether the attack rows get the ROF and the ability filter: all in minuirows.xml
+(data\uhc\minuirows.xml). "[icon:path]" in a text puts any texture there at the panel's icon size. You
+can move, remove, rename or add rows, change labels, icons or widths, without a new DLL.

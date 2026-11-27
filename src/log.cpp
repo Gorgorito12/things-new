@@ -6,6 +6,8 @@
 #include <cstdio>
 #include <cwchar>
 
+#include "hostfiles.h"
+
 namespace uhc {
 
 void Log(const wchar_t* format, ...) {
@@ -18,7 +20,7 @@ void Log(const wchar_t* format, ...) {
   if (slash == nullptr) {
     return;
   }
-  wcscpy_s(slash + 1, MAX_PATH - (slash + 1 - path), L"UHC.log");
+  wcscpy_s(slash + 1, MAX_PATH - (slash + 1 - path), kLogFile);
 
   FILE* file = nullptr;
   if (_wfopen_s(&file, path, L"a, ccs=UTF-8") != 0 || file == nullptr) {

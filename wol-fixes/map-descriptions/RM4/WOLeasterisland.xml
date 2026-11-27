@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="75133" imagepath="RMs\small\Asia and Oceania\WOLeasterisland" loadBackground="RMs\BIG\South America\easterisland"
+details="6170212"
+loadDetails="6170213">
+   <loadss>ui\random_map\easter_island\easter_island_ss_01</loadss>
+   <loadss>ui\random_map\easter_island\easter_island_ss_02</loadss>
+   <loadss>ui\random_map\easter_island\easter_island_ss_03</loadss>
+</mapinfo>

@@ -1,0 +1,30 @@
+	<anim>Heal
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_hidden_heal</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>Build
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_hidden_build</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>BuildLifting
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_hidden_build</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>BuildSaw
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_hidden_build</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>
+	<anim>BuildStaking
+		<assetreference type="GrannyAnim">
+			<file>WoL\units\cavalry\chasseur_a_cheval\dismount\chasseur_hidden_build</file>
+		</assetreference>
+		<component>ModelComp</component>
+	</anim>

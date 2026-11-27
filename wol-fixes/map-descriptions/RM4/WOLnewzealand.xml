@@ -1,0 +1,14 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+
+<mapinfo 
+imagepath = "RMs\SMALL\Asia and Oceania\newzealand" 
+displayNameID = "1000305" 
+cannotReplace = "" 
+loadBackground="RMs\BIG\Asia and Oceania\newzealand"
+details="6170226"
+loadDetails="6170227">
+
+<loadss>ui\random_map\NZ\NZ_ss_01</loadss>
+<loadss>ui\random_map\NZ\NZ_ss_02</loadss>
+<loadss>ui\random_map\NZ\NZ_ss_03</loadss>
+</mapinfo>

@@ -1,0 +1,13 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+imagepath = "RMs\small\North America\Thanksgiving III"
+displayName = "Thanksgiving" 
+loadBackground="RMs\small\other\northamerica"
+details="6170172"
+loadDetails="6170173">
+<loadss>ui\random_map\new_england\new_england_ss_01</loadss>
+<loadss>ui\random_map\new_england\new_england_ss_02</loadss>
+<loadss>ui\random_map\new_england\new_england_ss_03</loadss>
+</mapinfo>
+
+ 

@@ -1,0 +1,46 @@
+Hi JTMaston,
+
+An update on the gatling camel (#102), after the user's review: the gun now turns on its post, the deployed
+unit no longer dismounts, and the reload uses a new magazine.
+
+1. The gun turns, not the camel
+- When the target is within 90 degrees of either side of the camel's front, the camel stays still and only the
+  Gatling turns on its post toward it; the gunner turns with it, his hands staying on the crank and the breech.
+  The shots and the muzzle flash leave from the turned muzzle.
+- When the target is beyond that (behind the camel), the camel turns to face it as it does today, and the gun
+  comes back to the middle.
+- This needs a new DLL key, turretArc, and one line in Startup\wol.cfg:
+    turretArc GatlingCamel art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_A55.aim GatlingCamelDeployed art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_B55.aim
+  It reads the game's own <Turret> tag on the attack, which the game parses but never uses:
+    <turret tracking="always" maxTurnAnglePerSecond="240">90</turret>
+  (90 = the arc each side, 240 = how fast the gun turns on screen, in degrees a second). Both gatling camel
+  tactics in the pack already carry it. Without the key, the units work as before, with the gun facing ahead.
+  The code for WoL's DLL is in the porting pages (turretArc).
+
+2. GatlingCamelDeployed no longer dismounts
+- The camel lies down with the gunner in the saddle, and he fires from there, the gun turning a full 90 degrees
+  each way. Deploying now takes 3.33 s and undeploying 2.17 s (the new animation lengths, set in
+  GatlingCamelDeployed.tactics).
+
+3. The new reload (both units)
+- He lifts the empty magazine off, throws it aside (it falls and sinks out of sight), pulls a full one from a
+  pocket at his left hip and seats it. The reload is still 3 s, so the rate of fire does not change.
+
+Everything is in wol-fixes/gatling-camel (apply_fix.py with --check and --restore; README updated).
+
+Tested (single player): targets on both sides and behind, a series of targets one after another, deploying and
+undeploying while aiming, a game saved and loaded while aiming, deaths while aiming (the corpse shows the gun at
+rest), 30 camels firing at once (no performance cost measured), and a skirmish against an AI with the pack (the
+AI plays normally).
+
+Videos: gatlingCamel-wol (the gun turning, from the saddle), gatlingCamelDeployed-wol (deployed, gunner in the
+saddle), gatlingCamel-move-wol (walking), turretArc-wol-control (the same scene with the key off: the whole camel
+turns).
+
+One more thing about the art already in the pack (rounds 2 and 3): it has two faults that the next
+version fixes in every animation. The gunner's forearm can turn over in a single frame (idle, walk, jog,
+run, fire, deploy, reload), and at the jog and the run the gun slides 13 to 24 cm off its post. The next
+version replaces every art file of the pack, so please don't ship the current art on its own.
+
+The questions from my last message (how players get GatlingCamelDeployed, its stats, whether the old model
+stays, the gun size) are still open.

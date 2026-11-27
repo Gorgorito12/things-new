@@ -16,8 +16,12 @@
 // a <Train> list. Other units (a soldier, a hero) never enter one, so their context, although
 // registered, stays off; give them EnterHotkeyContext. The selection code
 // switches it off with the stock ones. A stock context is never redirected, so with the stock
-// keymap nothing changes. UI only: a hotkey issues the same command as a click. The hooks are in
-// hooks/hotkey_hooks.asm.
+// keymap nothing changes. UI only: a hotkey issues the same command as a click.
+//
+// The letter in a button's tooltip comes from FUN_008F8F5E, which looks tis("Proto") up in a list of
+// names written in the exe (the 36 unit contexts and BuildAccel), and a building's trainInSelected or
+// tis in BuildAccel only. An added context is on neither, so its entries worked with no letter
+// showing. The two hooks there add them to the search. The hooks are in hooks/hotkey_hooks.asm.
 #include <windows.h>
 
 #include <cstdint>
@@ -62,9 +66,27 @@ const auto kRegisterContext = reinterpret_cast<RegisterContextFn>(0x00628FC0);
 const auto kDeactivateByName = reinterpret_cast<DeactivateByNameFn>(0x004421F3);
 const auto kDeactivateById = reinterpret_cast<DeactivateByIdFn>(0x00AB397F);
 
+// The hotkey text of a tooltip: the two commands of a building, kept as BStrings by FUN_008F8F5E.
+constexpr std::uint32_t kTipTrainCommand = 0x00D986C0;  // trainInSelected("Proto")
+constexpr std::uint32_t kTipTisCommand = 0x00D986BC;    // tis("Proto")
+constexpr std::uint32_t kTipKeys = 0x00D986C4;          // the list of keys found
+
+using TipLookupFn = std::int32_t(__fastcall*)(void* manager, void* unusedEdx, const char* command,
+                                              const char* context, void* keys, bool firstOnly);
+using ListAddFn = std::int32_t(__fastcall*)(void* list, void* unusedEdx, const void* text);
+using StringNewFn = void*(__fastcall*)(void* text, void* unusedEdx, const wchar_t* wide);
+using StringFreeFn = void(__fastcall*)(void* text);
+using StringNarrowFn = const char*(__fastcall*)(const void* text);
+const auto kTipLookup = reinterpret_cast<TipLookupFn>(0x00AB481D);
+const auto kListAdd = reinterpret_cast<ListAddFn>(0x00467722);
+const auto kStringNew = reinterpret_cast<StringNewFn>(0x00401A12);
+const auto kStringFree = reinterpret_cast<StringFreeFn>(0x004010CA);
+const auto kStringNarrow = reinterpret_cast<StringNarrowFn>(0x00402733);
+
 struct AddedContext {
   std::string proto;  // the context name without "Accel"
   std::string name;   // the context name as the keymap spells it
+  std::wstring wide;  // the same, for the game's strings
   std::int32_t id;
   bool trainerLogged;  // "log": the non-building line was written for this proto
 };
@@ -187,7 +209,8 @@ std::int32_t __fastcall UhcHotkeyFindContext(void* manager, void*, const void* n
              context.c_str(), next, record[0], again);
     return again;
   }
-  g_added.push_back({context.substr(0, context.size() - kSuffixLength), context, next, false});
+  g_added.push_back({context.substr(0, context.size() - kSuffixLength), context,
+                     std::wstring(Field<const wchar_t*>(name, 0)), next, false});
   uhc::Log(L"customHotkeyContexts: registered keymap context %hs as context %d", context.c_str(), next);
   return again;
 }
@@ -202,6 +225,39 @@ std::int32_t __fastcall UhcHotkeyDeactivateAll(void* manager, void*, const char*
     }
   }
   return result;
+}
+
+// From the hook at 0x8F9696: the added contexts join the names a proto's tooltip key is looked up in.
+void __stdcall UhcHotkeyTipAddContexts(void* list) {
+  if (ContextManager() != g_manager) {
+    return;
+  }
+  for (const AddedContext& added : g_added) {
+    void* text = nullptr;
+    kStringNew(&text, nullptr, added.wide.c_str());
+    kListAdd(list, nullptr, &text);
+    kStringFree(&text);
+  }
+}
+
+// From the hook at 0x8F90FC, a Building's key not found in BuildAccel: the same two commands in the
+// added contexts. Above 0 when one was found, with the key in the list the stock code reads.
+std::int32_t __stdcall UhcHotkeyTipFindBuild() {
+  void* manager = ContextManager();
+  if (manager == nullptr || manager != g_manager) {
+    return 0;
+  }
+  void* keys = reinterpret_cast<void*>(kTipKeys);
+  for (const AddedContext& added : g_added) {
+    for (const std::uint32_t command : {kTipTrainCommand, kTipTisCommand}) {
+      const char* text = kStringNarrow(reinterpret_cast<const void*>(command));
+      const std::int32_t found = kTipLookup(manager, nullptr, text, added.name.c_str(), keys, true);
+      if (found > 0) {
+        return found;
+      }
+    }
+  }
+  return 0;
 }
 
 void* g_uhcHotkeyFindContext = reinterpret_cast<void*>(&UhcHotkeyFindContext);
@@ -258,6 +314,8 @@ void UhcHotkeyFindContextHook();
 void UhcHotkeyContextHook();
 void UhcHotkeyDeactivateHook();
 void UhcHotkeyTrainerHook();
+void UhcHotkeyTipListHook();
+void UhcHotkeyTipBuildHook();
 }
 
 namespace uhc {
@@ -280,7 +338,9 @@ Outcome ApplyCustomHotkeyContexts(const Config& config) {
                  {&sites::kHotkeyFindCall, &sites::kHotkeyFindContext, &sites::kHotkeyRegisterContext,
                   &sites::kHotkeyUnitContext, &sites::kHotkeyUnitActivate, &sites::kHotkeyDeactivateLast,
                   &sites::kHotkeyDeactivateById, &sites::kHotkeyTrainerBuildFlag,
-                  &sites::kHotkeyTrainerQualified})) {
+                  &sites::kHotkeyTrainerQualified, &sites::kHotkeyTipListDone, &sites::kHotkeyTipBuildMiss,
+                  &sites::kHotkeyTipLookup, &sites::kHotkeyTipListAdd, &sites::kHotkeyTipStringNew,
+                  &sites::kHotkeyTipStringFree, &sites::kHotkeyTipStringNarrow})) {
     return Outcome::kFailed;
   }
   g_log = log;
@@ -290,7 +350,9 @@ Outcome ApplyCustomHotkeyContexts(const Config& config) {
   if (!WriteCall(sites::kHotkeyDeactivateLast.va, reinterpret_cast<const void*>(&UhcHotkeyDeactivateHook)) ||
       !WriteCall(sites::kHotkeyFindCall.va, reinterpret_cast<const void*>(&UhcHotkeyFindContextHook)) ||
       !WriteJmp(sites::kHotkeyUnitContext.va, reinterpret_cast<const void*>(&UhcHotkeyContextHook), 6) ||
-      !WriteJmp(sites::kHotkeyTrainerBuildFlag.va, reinterpret_cast<const void*>(&UhcHotkeyTrainerHook), 5)) {
+      !WriteJmp(sites::kHotkeyTrainerBuildFlag.va, reinterpret_cast<const void*>(&UhcHotkeyTrainerHook), 5) ||
+      !WriteJmp(sites::kHotkeyTipListDone.va, reinterpret_cast<const void*>(&UhcHotkeyTipListHook), 6) ||
+      !WriteJmp(sites::kHotkeyTipBuildMiss.va, reinterpret_cast<const void*>(&UhcHotkeyTipBuildHook), 6)) {
     return Outcome::kFailed;
   }
   Log(L"customHotkeyContexts: a keymap context named <ProtoName>Accel that the game does not know becomes "

@@ -1,0 +1,88 @@
+Reply to JTMaston, round of 2026-11-26 (2): "Nursery mechanic" (#107), the third version
+====================================================================================
+
+Thank you for the answers. The third version of nurseryFactor follows them. Everything below was tested in single
+player in a copy of WoL: a skirmish with the British against a German AI, with a Bank given test tags (0.5 gold per
+mink, exponential growth with base 2, one step every 8 s, the default max of 10, goats and Settlers as garrison rules,
+three buttons).
+GIFs: nurseryFactor-wol (growth, the new pie, goats, a shipment) and nurseryFactor-commands-wol (a sale, the
+Settlers button greyed by the population cap and back, the Settlers made).
+Pictures: pieB-1920x1080.png, pieB-1366x768.png, pieB-normal-British.png, pieB-frames.png,
+button-population-cap-grey-and-back.png.
+
+
+1. t now follows the factor
+---------------------------
+Write S(t) = b^0 + b^1 + ... + b^(t-1). This is how many minks a nursery has after t steps from 0 (S(0) = 0).
+For any factor, t is the largest t with S(t) <= factor, and the next step adds S(t+1) - S(t), which is b^t for a whole
+b. t is not stored any more: it is worked out from the current factor every time. Anything that changes the factor
+moves t with it: a sale, a shipment, a garrisoned goat, a button, a tech, a capture (and a tech that changes b).
+
+With b = 2, S = 0, 1, 3, 7, 15, 31...
+
+    minks      t    next step adds    then
+    0          0    1                 1
+    1 or 2     1    2                 3 or 4
+    3 to 6     2    4                 7 to 10
+    7 to 14    3    8                 15 to 22 (cut at the max)
+
+Example: a nursery at 10 sold down to 2 is back at t = 1. It grows 2 -> 4 -> 8 -> 10, no longer 2 -> 10 in one step.
+In the test the log showed it after a sale ("10 -> 6/10, t 3 -> 2", then +4) and after a shipment that took 2
+("10 -> 8, t 3 -> 3", then +8, cut at 10).
+
+A b that is not a whole number: minks are whole, so S is counted in whole minks. t is the largest t with
+floor(S(t)) <= factor, and a step adds floor(S(t+1)) - floor(S(t)). With b = 1.5, S = 0, 1, 2.5, 4.75, 8.125, 13.19...
+(whole: 0, 1, 2, 4, 8, 13). From 0 the steps add 1, 1, 2, 4, 5. A nursery at 3 is at t = 2 and adds 2 (to 5); a nursery
+at 5 is at t = 3 and adds 4 (to 9).
+b = 1: every step adds 1. b below 1: S never passes 1 / (1 - b), so growth stops there (b = 0.5 stops at 1 mink).
+The max plays no part in t: a step cut at the max leaves the nursery at the max, and a nursery above a lowered max
+keeps its minks and does not grow.
+
+
+2. The pie, option B
+--------------------
+The Nursery's pie is now a small square right after the row, "3/10 minks", in both the minimized and the normal
+interface. It is the same blue overlay of a training unit: blue at half transparency over grey, in a thin gold frame.
+The clear part opens clockwise from 12 o'clock toward the next step. It is placed as an icon in the row's text, so it
+sits on the row's line and is as tall as the line, at any resolution: 17 px in the minimized row and 22 px in the
+normal panel at 1920 x 1080, 14 and 17 px at 1366 x 768. It shows only while the nursery grows; at the max there is no
+pie.
+
+What you need to copy: one folder, art\ui\uhc\pie\ (32 small textures, pie_00.ddt to pie_31.ddt, in the release zip),
+into the game's art\ui\uhc\. Every player needs it. Without it, the pie goes back over the portrait, as before.
+
+GarrisonConvertTo keeps its pie over the portrait, as you said.
+
+
+3. Your question "What units are we talking about?"
+---------------------------------------------------
+We meant the units a <NurseryFactorCommand> button makes at the nursery, its unit="..." count="...". For example
+SellMinks -> 2 CrateofCoin. Crates use no population, but a mod could make a button that spends minks for Settlers or
+soldiers. Those used to appear even above the population cap.
+
+We now treat them like GarrisonConvertTo's new rule. A button whose units would not fit under the population cap
+does nothing, and it is greyed (its icon darkened) with "Population cap reached" in red in its rollover. It comes back
+to normal as soon as there is room. All the units of one click must fit: a button for 3 Settlers needs 3 free
+population. Units with no population, like crates, are never stopped.
+In the test, a "1 mink for 3 Settlers" button was greyed while the player had no house, came back when a House was
+built, and then made 3 Settlers beside the Bank.
+
+If you meant something else, or prefer that such buttons ignore the cap (or make as many as fit), tell us.
+
+
+4. As you answered (no change)
+------------------------------
+- A unit sent into a full nursery stays inside as a normal garrison; with room for only part of its amount it is
+  taken and the factor stops at the max.
+- The second rollover line stays when the nursery is full.
+- Any player's matching unit counts, an ally's too. In the test an ally's Settler that entered the Bank was taken
+  (1 -> 2/10). Note that a goat changes owner by itself to the player whose units are nearest. So an ally's goat that
+  reaches your nursery is usually already yours when it enters.
+
+
+Also checked
+------------
+- A saved game kept the minks and the time to the next step.
+- 16 growing Banks cost nothing measurable (update 0.2 ms per frame with the feature and without).
+- The German AI played normally on a real map (20 Settlers and 3 Manors at 6 min 44 s), with no script error.
+- Single player only; multiplayer is not tested.

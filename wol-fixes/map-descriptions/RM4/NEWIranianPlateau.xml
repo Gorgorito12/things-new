@@ -1,0 +1,9 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo  
+displayName = "&#34;NEW&#34; Iranian Plateau"
+imagepath = "rms\small\Africa and Middle East\iranianplateau" 
+loadBackground="rms\big\other\africa"
+details="6170134"
+loadDetails="6170135">
+   <loadss>ui\random_map\NEW\iranianplateau\iranianplateau_ss</loadss>
+</mapinfo>

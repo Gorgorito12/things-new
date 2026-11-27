@@ -1,0 +1,14 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "ui\esoc_map\arizona"
+displayName = "ESOC Arizona"
+cannotReplace = ""
+loadBackground="ui\esoc_map\arizona_map"
+details="6170046"
+loadDetails="6170047"> 
+		 
+   <loadss>ui\random_map\Arizona\Arizona_ss_01</loadss>
+   <loadss>ui\random_map\Arizona\Arizona_ss_02</loadss>
+   <loadss>ui\random_map\Arizona\Arizona_ss_03</loadss>
+</mapinfo>

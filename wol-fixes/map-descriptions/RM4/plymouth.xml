@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="130018" imagepath="RMs\SMALL\North America\plymouth" loadBackground="RMs\BIG\North America\plymouth"
+details="6170366"
+loadDetails="6170367">
+   <loadss>patch\plymouth\plymouth_ss_01</loadss>
+   <loadss>patch\plymouth\plymouth_ss_02</loadss>
+   <loadss>patch\plymouth\plymouth_ss_03</loadss>
+</mapinfo>

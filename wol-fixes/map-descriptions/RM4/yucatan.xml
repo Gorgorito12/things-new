@@ -1,0 +1,7 @@
+<mapinfo cannotReplace="" displayNameID="26956" imagepath="RMs\SMALL\North America\yucatan" loadBackground="RMs\BIG\North America\yucatan"
+details="6170412"
+loadDetails="6170413">
+   <loadss>ui\random_map\yucatan\yucatan_ss_01</loadss>
+   <loadss>ui\random_map\yucatan\yucatan_ss_02</loadss>
+   <loadss>ui\random_map\yucatan\yucatan_ss_03</loadss>
+</mapinfo>

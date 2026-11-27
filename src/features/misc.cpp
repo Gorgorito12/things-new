@@ -12,7 +12,7 @@ extern "C" {
 void UhcRevBannerHook();
 
 // Called from UhcRevBannerHook with a revolution tech name. Returns the banner texture path
-// for "XPRevolution<Name>" (ui\ingame\politicians\REV_banner_<Name>, the upstream convention),
+// for "XPRevolution<Name>" (ui\ingame\politicians\REV_banner_<Name>, the conventional name),
 // or null for any other tech. Only the UI thread calls this, so a static buffer is enough.
 const wchar_t* __stdcall UhcRevBannerPath(const char* techName) {
   static wchar_t path[MAX_PATH];
@@ -22,7 +22,7 @@ const wchar_t* __stdcall UhcRevBannerPath(const char* techName) {
       techName[kPrefixLen] == '\0') {
     return nullptr;
   }
-  // The precision bounds the copy; upstream overflows a MAX_PATH buffer on long names.
+  // The precision bounds the copy, so a long name cannot overflow the MAX_PATH buffer.
   if (swprintf_s(path, L"ui\\ingame\\politicians\\REV_banner_%.200hs", techName + kPrefixLen) < 0) {
     return nullptr;
   }

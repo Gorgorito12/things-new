@@ -1,0 +1,8 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo imagepath = "RMs\SMALL\Africa and Middle East\wetlands" displayNameID = "75208" cannotReplace = "" loadBackground="RMs\BIG\Africa and Middle East\wetlands"
+details="6170250"
+loadDetails="6170251">
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_01</loadss>
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_02</loadss>
+   <loadss>ui\random_map\great_lakes\great_lakes_ss_03</loadss>
+</mapinfo>

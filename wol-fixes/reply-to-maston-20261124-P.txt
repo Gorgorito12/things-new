@@ -1,0 +1,31 @@
+Oil display before the Great War (#103) and global gathering rates (#105): the panel part
+==========================================================================================
+
+Oil only after the Great War
+----------------------------
+Done. Every variant of the resource panel (default and detailed, European / Asian / Native, big and minimized: 12 in
+all) now holds two panels: one without the oil row, used before the Great War, where the other rows spread over the
+freed space, and today's, with oil, used after it. A new DLL option, techGadgets, swaps them when the player gets
+GreatWarizeALL (every Great War path gives it); it takes 12 cfg lines, one per variant, listed in the pack's README.
+Without the option the panel is exactly today's.
+
+It is an optional pack (wol-fixes\oil-panel): it adds five textures (the backgrounds without the oil row, beside
+yours) and replaces the SettlerCountDialog block of data\uimainnew.xml; --restore puts everything back. It does not
+need faith; if you take the faith row too, --faith puts it in both panels.
+
+Tested in a copy of 1.0.15c: all 12 variants before and after the Great War, with and without the faith row, the big
+and the minimized interface, and a game saved and loaded after the Great War. The swap shows within 0.2 s of the tech.
+Video: oilPanel-wol (and oilPanel-wol-control, the option off: oil is there all along).
+On the way, the after-GW panels keep two fixes of the earlier panel work: the Asian minimized panel shows the oil
+amount (the population sat on top of it), and the Native minimized panel shows its icons.
+
+The option is generic: it can tie any interface element to any tech, if you want more of these.
+
+Global gathering rates
+----------------------
+As you chose (B + C): under each resource amount, the player's income of that resource per second, smaller and in
+green ("+2.0"), and the row's tooltip gets a second line: "Income: +2.0 per second" (Spanish: "Ingresos: +2.0 por
+segundo"). It counts gathering, auto-gathering and trickles. In the 7-row Asian and Native panels with faith the rows
+are too low for two lines, so there the rate sits a little lower, in a column right of the amount. It is the --rates
+option of the same pack, and needs the DLL option incomeRates. The lag question is answered separately, with
+measurements in an 8-player game.

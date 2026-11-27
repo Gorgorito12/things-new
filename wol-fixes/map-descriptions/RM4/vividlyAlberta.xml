@@ -1,0 +1,16 @@
+<?xml version = "1.0" encoding = "UTF-8"?>
+<mapinfo
+
+imagepath  = "RMs\small\North America\vividlyAlberta"
+displayName = "Alberta"
+cannotReplace = ""
+
+loadBackground="ui\random_map\rockies\rockies_map"
+details="6170396"
+loadDetails="6170397">
+
+   <loadss>ui\random_map\Alberta\Alberta_ss_01</loadss>
+   <loadss>ui\random_map\Alberta\Alberta_ss_02</loadss>
+   <loadss>ui\random_map\Alberta\Alberta_ss_03</loadss>
+  
+</mapinfo>
