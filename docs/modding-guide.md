@@ -11383,7 +11383,8 @@ a short stick.*
 
 Request (JTMaston, 2026-11-26): a new model for the zamburak, the midfa's cannon on a swivel, limbered and
 unlimbered. The pack `wol-fixes/zamburak` (`apply_fix.py <WoL folder>`, `--check`, `--restore` byte for byte;
-README) delivers it for `MEZamburak` only:
+README) delivers it for `MEZamburak` only (how to script an animation like this one, with this camel's clips as the
+worked example: [`animation-script-guide.md`](animation-script-guide.md)):
 
 - **The model.** aoe3-blender-tools' `tools/make_zamburak.py` (branch `claude/r1126-Z`) builds it:
   - the zamburak's camel without its lateral swivel gun;
