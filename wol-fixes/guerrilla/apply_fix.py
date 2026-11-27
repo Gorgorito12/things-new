@@ -3,7 +3,7 @@ DLL key `partisans`.
 
     python apply_fix.py <WoL folder> [--unit Proto] [--nearby M]   apply (a backup of every file it changes goes to
                                                                   <WoL folder>\guerrilla-backup\ first)
-    python apply_fix.py <WoL folder> --restore                    put the backed-up files back
+    python apply_fix.py <WoL folder> --restore                    put the backed-up files back, then delete the backup
     python apply_fix.py <WoL folder> --check                      say what is applied, change nothing
     (a folder under steamapps is refused unless --force is given)
 
@@ -119,6 +119,8 @@ def main():
             if saved.exists():
                 shutil.copy2(saved, path)
                 print(f"restored {path}")
+        shutil.rmtree(backup)
+        print(f"removed {backup}")
         return
     unit = args[args.index("--unit") + 1] if "--unit" in args else "Rodelero"
     nearby = args[args.index("--nearby") + 1] if "--nearby" in args else None

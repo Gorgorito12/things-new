@@ -47,7 +47,7 @@ The Serbians and the Tupinamba keep what they have.
     python apply_fix.py "<WoL folder>"                 apply (backup in <WoL folder>\guerrilla-backup\)
     python apply_fix.py "<WoL folder>" --nearby 30     the same, from the nearby buildings
     python apply_fix.py "<WoL folder>" --check         what is applied
-    python apply_fix.py "<WoL folder>" --restore       put the backed-up files back
+    python apply_fix.py "<WoL folder>" --restore       put the backed-up files back, then delete the backup
 
 Tested in WoL (2026-11-27), skirmishes against the Serbian AI
 ---------------------------------------------------------------
