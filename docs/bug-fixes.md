@@ -1,7 +1,8 @@
 # Bug fixes and performance
 
 The keys here add nothing to WoL's data: each one fixes something the game does wrong, or makes it
-run faster. Most need only their line in `wol.cfg`. The keys that add new mechanics are in the
+run faster. Most need only their line in the cfg: `engine-ext\engine-ext.cfg` with our `dinput8.dll` beside WoL's
+`uhc.dll`, or `wol.cfg` where our `UHC.dll` replaces WoL's. The keys that add new mechanics are in the
 [modding guide](modding-guide.md#5-feature-reference), which also explains the `wol.cfg` file
 ([section 3](modding-guide.md#3-the-wolcfg-file)), the log ([section 4](modding-guide.md#4-reading-uhclog)),
 the columns of the tables ([section 5](modding-guide.md#5-feature-reference)) and multiplayer
@@ -1529,7 +1530,8 @@ bufferedFileReads [<KB>] [readahead] [verify]      default 64 KB
   - In the stock game, most of what remains is the animation library (granny) unpacking a model or an
     animation it meets for the first time: granny stores them compressed, and unpacking is processing
     work, not reading ([performance.md](performance.md), §9, "The remaining stutters").
-- **WoL needs:** nothing. To let players switch it in the options menu, see [`menuOptions`](#menuoptions).
+- **WoL needs:** only the line `bufferedFileReads` in `engine-ext\engine-ext.cfg` (our `dinput8.dll` beside WoL's `uhc.dll`), or in `wol.cfg` only where our `UHC.dll` replaces WoL's. To let players switch it in the options menu, see
+  [`menuOptions`](#menuoptions).
   - `<KB>` (4 to 1024) is the buffer size per open file.
   - `readahead` adds a worker thread: while the game uses one block of a file, the worker reads
     the next one. It reads through a second handle of its own, so the game's file handle is never
@@ -1624,7 +1626,8 @@ fastVertexFill [log] [verify]
     Center's flag was on screen at 2560×1600, and at 1280×720 the camera showed none;
   - it was measured on one PC. How slow that reading is depends on the video driver, so the gain can be smaller
     or larger on another card.
-- **WoL needs:** nothing. To let players switch it in the options menu, see [`menuOptions`](#menuoptions).
+- **WoL needs:** only the line `fastVertexFill` in `engine-ext\engine-ext.cfg` (our `dinput8.dll` beside WoL's `uhc.dll`), or in `wol.cfg` only where our `UHC.dll` replaces WoL's. To let players switch it in the options menu, see
+  [`menuOptions`](#menuoptions).
   - `verify` is a correctness test: the stock code fills the flags, and every fill is compared, byte for byte,
     with what the key would have written. It is slower than stock.
   - `log` writes the session's counts at exit.
@@ -1676,7 +1679,7 @@ fastLastInLine [log] [verify]
   only those, with the game's own tests. The result is the same bits; the work takes 0.4–1.6 ms.
 - **`verify`** lets the game's own code run as well and compares every bit with the DLL's; each recompute logs
   a line with the bits that differ (must be 0) and both times. `log` writes a line per recompute.
-- **WoL needs:** the line `fastLastInLine` in `wol.cfg`: then it is on for everyone. To let players turn it off in
+- **WoL needs:** the line `fastLastInLine` in `engine-ext\engine-ext.cfg` (our `dinput8.dll` beside WoL's `uhc.dll`), or in `wol.cfg` only where our `UHC.dll` replaces WoL's: then it is on for everyone. To let players turn it off in
   the options menu, also name it on the [`menuOptions`](#menuoptions) line and add its `OptionFastLastInLine` field;
   it still starts on, and stays on until a player switches it off. Checked in WoL (2026-11-12): with no choice
   stored the entry shows On and the key applies; Off chosen in Graphics Options is stored, the next start does not
@@ -1854,7 +1857,8 @@ menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill
 ```
 
 - **In WoL today:** `bufferedFileReads`, `fastVertexFill` and `fastLastInLine` are on or off for every player as
-  `wol.cfg` says; a player who wants the other setting has to edit the cfg.
+  the cfg says (`engine-ext\engine-ext.cfg` with our `dinput8.dll`, `wol.cfg` with our `UHC.dll`); a player who wants
+  the other setting has to edit the cfg.
 - **The range rings, at once** (2026-11-25): `displayedRange` is a *live* switch. Its key is applied whatever the
   choice (a `displayedRange` line with no arguments is added to the cfg when there is none), and the choice only turns
   the drawing on or off: on OK the rings of the selected units and of a building being placed come or go, in the main
@@ -1922,7 +1926,8 @@ menuOptions <key> [<key> ...]        the keys: bufferedFileReads, fastVertexFill
   (or an unticked check box that does nothing), as any `<name>` the game does not know. Without the fields, the menu
   is the stock one. "Restore Defaults" leaves these options as they are (it resets the game's own, the screen
   resolution included).
-- **Example** (`wol.cfg`): `bufferedFileReads` and `fastLastInLine` start on, `fastVertexFill` starts off, and players
+- **Example** (`engine-ext\engine-ext.cfg`, or `wol.cfg` with our `UHC.dll`): `bufferedFileReads` and
+  `fastLastInLine` start on, `fastVertexFill` starts off, and players
   can switch all three:
 
   ```

@@ -1633,7 +1633,8 @@ Code: [combat](porting-code/combat.md#killspawn). It needs `AddCivTagHandler` ([
 ### partisans
 
 Code: [combat](porting-code/combat.md#partisans). It needs `AddProtoTagHandler` ([proto tags](porting-code/helpers.md#proto-tags)),
-`AddTechProtoSubtype` and `AddTechSubtype` ([tech subtypes](porting-code/helpers.md#tech-subtypes)) and `OnDatabaseLoad`.
+`AddCivTagHandler` (civs.xml's `<PartisanNearby>`), `AddTechProtoSubtype` and `AddTechSubtype`
+([tech subtypes](porting-code/helpers.md#tech-subtypes)) and `OnDatabaseLoad`.
 
 - **Site:** `jmp` at `0x4B532F` over 16 bytes (`8B 4E 44 E8 86 FB FF FF 3C 01 0F 84 C5 EB 1E 00`: the kill handler's
   guerrilla test), continue at `0x4B533F` (`8B 4E 5C`). ESI the dying unit; the kill handler's first byte argument at
@@ -1642,11 +1643,17 @@ Code: [combat](porting-code/combat.md#partisans). It needs `AddProtoTagHandler` 
 - **Stock tests to keep:** the owner's civ test `0x4B4EBD(player)` (thiscall), the count of the dying unit's copy
   `[[unit+5Ch]+164h]` > 0, that argument 0, and the build test `0x44DDB4(unit)`; then the spawn `0x9C07D6(unit)`
   (thiscall, plain `ret`), which reads the type `+160h` and the count `+164h` of that copy.
-- **Calls (nearby mode):** units near a point `0x4A1C55(world, point, radius, 1, list)`, the unit by ID `0x44CC6D`, is-a
-  `0x44D7FA`, the placement test (world vtable `+14h`, flags 6) and `0x498ACC(world, proto, player, position, forward, 1,
-  -1, 1, -1)`.
+- **Calls (nearby mode, a civ with `<PartisanNearby>R`):** units near a point `0x4A1C55(world, point, radius, 1, list)`,
+  the unit by ID `0x44CC6D`, is-a `0x44D7FA` (`Building`, not `AbstractWall`), the placement test (world vtable `+14h`,
+  flags 6) and `0x498ACC(world, proto, player, position, forward, 1, -1, 1, -1)` for each nearby building with a
+  guerrilla, its own type and count; then the int array append `0x401F74(array, &id)` (thiscall, `ret 4`) for its units
+  and the trained unit's gather point order `0x9C9147(action, array, 0)` (thiscall, `ret 8`) with a stand-in action:
+  `[+0Ch]` = -1, `[+10h]` = the building (the only two fields it reads). Verify the heads `0x401F74`, `0x9C9147` and
+  `0x7AE4B2` (the gather records at `[building+68h]`: land `+10h`/`+14h`, water `+1Ch`/`+20h`, 28h B, `+4` player,
+  `+0Ch` point, `+18h` unit).
 - **Test:** a `<CivPartisan>` line for a civ without `<Partisans>` on a building, destroyed by damage (not a trigger's
-  `Kill`): with `log`, the guerrilla and its count.
+  `Kill`): with `log`, the guerrilla and its count. Nearby: `<PartisanNearby>30` on that civ, a House destroyed beside
+  a Barracks with a line and a gather point: the Barracks' units walk to its point.
 
 ### snareOnlyHitUnit
 

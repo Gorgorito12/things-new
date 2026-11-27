@@ -139,8 +139,8 @@ veterancyBonus-icons-wol 17 24 2
 veterancyBonus-icons-wol-control 18 24 2
 killSpawn-wol 2 20 2
 killSpawn-wol-control 2 20 2
-partisans-wol 6 24 2
-partisans-wol-control 6 24 2
+partisans-wol 23 12 1
+partisans-wol-control 0 16 2
 workRateByAbstractType-wol 2 36 3
 workRateByAbstractType-wol-control 2 36 3
 overhealHitpointBars-group-wol 0 16 2
