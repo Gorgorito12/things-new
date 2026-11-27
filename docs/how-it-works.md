@@ -5870,6 +5870,59 @@ which the subtype's own base (the cloned proto) cannot hold. A data load clears 
 
 - **Observed in game:** see the tests in the modding guide.
 
+### partisans
+
+The stock guerrilla (the `Partisans` tags, docs/engine-symbols.md, "Partisans") per civ, changed by techs, and spawned by
+the owner's nearby buildings.
+
+**[O] Stock.** `<Partisans>` in civs.xml is an on/off flag (bit 4 of `[[civ+128h]]`, 0x659A14; a text that is not a
+number reads as 1). A proto has one `PartisanType` (`+160h`, handler 0xA129D3; a second line overwrites the first) and
+one `PartisanCount` (`+164h`, 0xA114C1); the proto copy 0x67E011 copies both into each player's copy. The kill handler
+0x4B4F70 tests at 0x4B532F the owner's civs (FUN_004B4EBD), then in the cold block 0x6A3F04 the copy's count > 0, its first
+byte argument (`[esp+0A0h]`, set for a trigger's `Kill`, `trUnitDelete`) clear and the build (0x44DDB4: no build record, or
+its progress complete), and calls the spawn FUN_009C07D6 (one caller). The spawn takes the type from the owner's copies
+(0x45311B) and makes `count` units with 0x498ACC(world, ID, player, pos, forward, 1, -1, 1, -1), each at a random point of
+the dying unit's footprint (two draws of the synced random 0x422648 on 0xC66588, stream 2), with no placement test.
+
+**The hook.** One jmp over the 16 bytes at 0x4B532F (`mov ecx,[esi+44h] / call 4B4EBDh / cmp al,1 / je 6A3F04h`; no branch
+lands inside, the cold block's only entry is that `je`). `UhcPartisansOnDeath(unit, flag)` makes the stock tests with the
+key's data and returns to 0x4B533F, where the stock code goes on (the proto flag 44h test, the death replacement).
+
+**The type and the count.** The proto tags `<CivPartisan civ count>` and `<PartisanFromNearby>` go through
+`AddProtoTagHandler`, kept by proto ID (`[proto+8]`), the civ and unit names resolved against each database (civ by name
+0x58E71F, proto by name 0x5A2346, keyed by the proto array `[db+54h]`). At a death: the dying unit's copy `[unit+5Ch]`;
+the line of the owner's civ (`[[player+20h]]`) if there is one, which also turns the guerrilla on; else the copy's own
+`+160h` / `+164h`, on only when the stock civ test 0x4B4EBD says so. Then the effects of that copy: `PartisanType`
+(`AddTechProtoSubtype`; the effect's `unittype` resolved to a proto ID when the techs are read, in its field `+10h`)
+replaces the type, its removal gives back the type before it; `PartisanCount` (`AddTechSubtype`) replays relativity and
+amount through the stock value function 0x7F892A from the count above, so `Absolute` and `Percent` act on the civ's count.
+Effects are kept per copy pointer with the proto ID checked, as `killSpawn` does; a data load clears them and a saved
+game's load applies them again. The count is capped at 100.
+
+**The spawn.** With the stock type and count the stock spawn runs. With others, the copy's `+160h` and `+164h` hold them
+for the call to 0x9C07D6 and get their values back after it, so the units come out where and as the stock ones do (the
+same random draws). With `<PartisanFromNearby>R</PartisanFromNearby>`: the units near the dying one (0x4A1C55, radius R,
+to the unit's edge), kept if the owner's, not the dying unit, of the abstract type `Building` (is-a 0x44D7FA), alive (unit
+vtable `+A4h`) and built (0x44DDB4); sorted by distance (vtable `+B8h`), then by ID. Unit *i* goes beside building
+*i mod n*: the first of 48 points (4 rings, at the building's larger obstruction value `[proto+88h]` / `[proto+8Ch]` plus
+1, 2.5, 4 and 6 m, 12 points each, in a fixed order) that PLACE (world vtable `+14h`, flags 6, as `killSpawn`) accepts,
+then 0x498ACC(world, ID, player, point, the building's forward, 1, -1, 1, -1), the stock spawn's arguments, inside the
+kill handler as the stock spawn. No building in range: the stock spawn. **[O]** In game the units of one death, once made
+beside their buildings, walk over to the nearest group of the same unit and stand in a line; the same with 0, -1, 0, -1,
+and when a world tick made them one per update. **[O]** It is stock: with the key off, 3 Rodeleros walked 20 m to the 4 a
+Barracks' stock guerrilla had just made. **[U]** Which code orders that walk was not traced.
+
+**Why it is safe.**
+- The hook reads the kill handler's argument before any push, keeps EBX, ESI, EDI and EBP (stdcall), and clobbers EAX,
+  ECX and EDX: the continuation 0x4B533F loads ECX, and every path after it writes EAX before reading it (0x4B5348,
+  0x4B5362).
+- The tests are the stock ones in another order; none has a side effect. A copy's two fields are changed only during the
+  call to the stock spawn, which reads them and nothing else changes them meanwhile (the simulation runs on one thread).
+- The spawn runs where the stock one runs, inside the kill handler, as the death replacement creates its unit there too.
+- No new random draw, no real clock, no local player: the nearby order is by distance and unit ID.
+- Cost per death: a hash lookup by proto ID and, for a copy with effects, a second one; the stock civ test otherwise.
+  The nearby query runs only for a dying unit with `<PartisanFromNearby>` and a guerrilla.
+
 ### cantBeSlowed
 
 0x4DD1DE, the `TargetSpeedBoost` path, tests that the target can move, and 0x4DD201 pushes the arguments of the

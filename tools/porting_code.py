@@ -115,6 +115,7 @@ PAGES = {
         "auraStacking": ["src/features/aurastacking.cpp", "src/aurastacking.h", "src/hooks/aurastacking_hooks.asm"],
         "veterancyBonus": ["src/features/veterancy.cpp"],
         "killSpawn": ["src/features/killspawn.cpp"],
+        "partisans": ["src/features/partisans.cpp", "src/hooks/partisans_hooks.asm"],
         "detonationDeath": ["src/features/detonation.cpp", "src/hooks/detonation_hooks.asm"],
         "impactBoneFix": ["src/features/impactbones.cpp", "src/hooks/impactbone_hooks.asm"],
         "customImpactTypes": ["src/features/impacttypes.cpp", "src/hooks/impacttype_hooks.asm"],

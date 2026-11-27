@@ -2373,6 +2373,14 @@ SITES = [
     # receiving player (applyEffects 0x94DBE6, the pass after a load 0x94DF10, removeEffects 0x94DDC8).
     ("PerCivApplyHead", 0x7F7E97, 0x0C),
     ("PerCivRemoveHead", 0x7F8168, 0x0B),
+    # partisans: the kill handler's civ test of the guerrilla, mov ecx,[esi+44h] / call 4B4EBDh / cmp al,1 /
+    # je 6A3F04h (16 B, no branch lands inside), plus mov ecx,[esi+5Ch] it continues at 0x4B533F; the cold block
+    # it jumps to (count > 0, the kill's first flag, built, call 9C07D6h, jmp 4B533Fh) and the spawn's head and
+    # the civ test's head (verify only)
+    ("PartisanCivTest", 0x4B532F, 0x13),
+    ("PartisanColdBlock", 0x6A3F04, 0x37),
+    ("PartisanSpawn", 0x9C07D6, 0x1A),
+    ("PartisanCivFlag", 0x4B4EBD, 0x0F),
 ]
 
 

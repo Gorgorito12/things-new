@@ -1630,6 +1630,24 @@ Code: [combat](porting-code/combat.md#killspawn). It needs `AddCivTagHandler` ([
 - **Test:** the tags on a civ in `civs.xml`, then a fight: with `log`, each kill gives its rolls and each animal where it
   came.
 
+### partisans
+
+Code: [combat](porting-code/combat.md#partisans). It needs `AddProtoTagHandler` ([proto tags](porting-code/helpers.md#proto-tags)),
+`AddTechProtoSubtype` and `AddTechSubtype` ([tech subtypes](porting-code/helpers.md#tech-subtypes)) and `OnDatabaseLoad`.
+
+- **Site:** `jmp` at `0x4B532F` over 16 bytes (`8B 4E 44 E8 86 FB FF FF 3C 01 0F 84 C5 EB 1E 00`: the kill handler's
+  guerrilla test), continue at `0x4B533F` (`8B 4E 5C`). ESI the dying unit; the kill handler's first byte argument at
+  `[esp+0A0h]` on entry (set for a trigger's `Kill`); EAX, ECX and EDX free. Verify the cold block `0x6A3F04` (37h bytes),
+  the spawn's head `0x9C07D6` and the civ test's head `0x4B4EBD` too.
+- **Stock tests to keep:** the owner's civ test `0x4B4EBD(player)` (thiscall), the count of the dying unit's copy
+  `[[unit+5Ch]+164h]` > 0, that argument 0, and the build test `0x44DDB4(unit)`; then the spawn `0x9C07D6(unit)`
+  (thiscall, plain `ret`), which reads the type `+160h` and the count `+164h` of that copy.
+- **Calls (nearby mode):** units near a point `0x4A1C55(world, point, radius, 1, list)`, the unit by ID `0x44CC6D`, is-a
+  `0x44D7FA`, the placement test (world vtable `+14h`, flags 6) and `0x498ACC(world, proto, player, position, forward, 1,
+  -1, 1, -1)`.
+- **Test:** a `<CivPartisan>` line for a civ without `<Partisans>` on a building, destroyed by damage (not a trigger's
+  `Kill`): with `log`, the guerrilla and its count.
+
 ### snareOnlyHitUnit
 
 Code: [combat](porting-code/combat.md#snareonlyhitunit).

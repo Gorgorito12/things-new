@@ -32,6 +32,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
 | Friday 2026-11-27 07:50 | [`perCivEffects`](#perciveffects) | Added. `onlyciv="Spanish"` on any tech `<Effect>` makes that effect work only for a player of that civ: for shared cards, shared techs and each member of a team tech. | The attribute on the effects that want it. |
+| Friday 2026-11-27 07:46 | [`partisans`](#partisans) | Added. The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanFromNearby>` makes the owner's nearby buildings spawn them instead. | The tags on the building in `protoy.xml`; the techs in `techtreey.xml`. |
 | Thursday 2026-11-26 16:24 | [`cultureUI`](#cultureui) | Filmed in WoL, with a control. The minimised in-game interface takes its own textures per family of civs, and others again from the Great War: `X_as.ddt` beside `X.ddt` restyles texture X for the Asian family. | The art, one `.ddt` per texture and family (`<texture>_<family>[_gw].ddt`, from aoe3-blender-tools' templates), and `data\uhc\cultureui.xml` with the nine families: `wol-fixes/culture-ui/`. |
 | Thursday 2026-11-26 15:43 | [`powerShots`](#powershots) | Filmed in WoL, with a control. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
 | Thursday 2026-11-26 11:34 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
@@ -3133,6 +3134,7 @@ Attacks, armor, and what a hit does.
 | [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
 | [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | **new** | The rows on the protos that want them. | confirmed |
 | [`killSpawn`](#killspawn) | A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | **new** | The tags on the civ in `civs.xml`. | confirmed (single player) |
+| [`partisans`](#partisans) | The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanFromNearby>` makes the owner's nearby buildings spawn them instead. | **new** | The tags on the building in `protoy.xml`; the techs in `techtreey.xml`. | confirmed (single player) |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
 | [`customImpactTypes`](#customimpacttypes) | New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | **new** | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. | confirmed (single player, picture; sound not filmed) |
 
@@ -5220,6 +5222,111 @@ killSpawn [log]
     scenes were not identical (another copy of the game was running).
   - Not tested: multiplayer, a ship or a unit on water as the killer of a land unit by the shore, a kill by a unit that
     has died since (a shot in flight; the code takes its player and proto from TakeDamage's arguments).
+
+#### partisans
+
+*When a building is destroyed, the guerrilla that comes out of it can differ by civ, be changed by techs, or come out of the owner's nearby buildings instead.*
+
+**Added:** Friday 2026-11-27 07:46 · **Filmed in WoL:** Friday 2026-11-27 07:46
+
+![partisans in WoL](media/partisans-wol.gif)
+
+*In WoL, with the key (a skirmish on a test map, player 1 Spanish, player 2 the Serbian AI; `<CivPartisan civ="Spanish"
+count="3">Rodelero</CivPartisan>` on `Barracks`, and `<CivPartisan civ="Spanish" count="4">Rodelero</CivPartisan>` with
+`<PartisanFromNearby>30</PartisanFromNearby>` on `Stable`, in the test copy):* the Spanish Barracks (top left) falls and 3
+Rodeleros come out of it, though the Spanish have no `<Partisans>` in `civs.xml`. The Serbian Barracks falls next (off the
+top) and gives its 2 `SerbianInferno` as before (the log line at the bottom). Then the Spanish Stable falls (bottom right),
+and its 4 Rodeleros come out beside the owner's three buildings within 30 m: the House in the middle, the Outpost and the
+other House (both off the right edge). Afterwards they walk over to the other Rodeleros, as the game makes idle units of the same
+kind do (see "Seen in game"). The Rodeleros stay selected, so their bars show. [Full video (MP4)](media/partisans-wol.mp4).
+
+![partisans in WoL, key off](media/partisans-wol-control.gif)
+
+*In WoL, key off (the same scene, the tags still in `protoy.xml`):* the Spanish Barracks and the Stable fall and nothing
+comes out: without the key the Spanish have no guerrilla. The Serbian Barracks gives its 2 `SerbianInferno` as with the
+key. [Full video (MP4)](media/partisans-wol-control.mp4).
+
+```
+partisans [log]
+```
+
+```xml
+<!-- protoy.xml, inside a building's <Unit> -->
+<PartisanType>SerbianInferno</PartisanType>         <!-- stock: every civ with <Partisans> -->
+<PartisanCount>2</PartisanCount>
+<CivPartisan civ="Spanish" count="3">Rodelero</CivPartisan>   <!-- one per civ -->
+<PartisanFromNearby>30</PartisanFromNearby>         <!-- optional: from the owner's buildings within 30 m -->
+
+<!-- techtreey.xml: for the player who gets the tech -->
+<Effect type ='Data' amount ='0' subtype ='PartisanType' relativity ='Assign' unittype ='Pikeman'>
+    <Target type ='ProtoUnit'>Barracks</Target></Effect>
+<Effect type ='Data' amount ='5' subtype ='PartisanCount' relativity ='Assign'>
+    <Target type ='ProtoUnit'>Barracks</Target></Effect>
+```
+
+- **In WoL today:** the Serbians (`<partisans>1</partisans>`) and the Tupinamba use the stock tags; 15 buildings have
+  `<partisantype>` and `<partisancount>`. WoL #114.
+- **What the game does without the key** (REA, [engine-symbols.md](engine-symbols.md), "Partisans"): `<Partisans>` in
+  `civs.xml` is only on or off: `1` turns it on, any other number off, and a text that is not a number counts as `1`
+  (the Tupinamba's `<partisans>UybassyArcher</partisans>` means "on"; the unit name is not read). A building has one
+  `PartisanType` and one `PartisanCount`: a second `<PartisanType>` replaces the first. So WoL's `TownCenter`,
+  `ArtilleryDepot` and `Market`, which list `UybassyArcher` then `SerbianInferno`, give `SerbianInferno` to every civ with
+  `<Partisans>`, the Tupinamba too (seen in game: a Serbian Town Center gave `6 x SerbianInferno`). When a finished unit of
+  a player whose civ has `<Partisans>` dies, its count is above 0 and the kill is not a trigger's, `PartisanCount` units of
+  `PartisanType` appear, owned by that player, at random points inside its footprint. Any unit with a count does it, not
+  only buildings.
+- **`<CivPartisan civ="Civ" count="N">Unit</CivPartisan>`:** one line per civ, on the building. That civ gets this unit
+  and count from this building, even without `<Partisans>` in `civs.xml`. `count` is 0 to 100; left out, the building's
+  `PartisanCount` counts. A civ without a line works as before. A second line for the same civ replaces the first. An
+  unknown civ or unit is logged and the line is ignored.
+- **The techs:** `subtype='PartisanType'` with `unittype=` (a proto) sets the unit; removing the tech gives the one before
+  back. `subtype='PartisanCount'`: `Assign` sets it, `Absolute` adds to it, `Percent` multiplies it, from the civ's line
+  when there is one. Only the player who gets the tech is changed (each player has a copy of the building), and the techs
+  are applied again when a game is loaded. An effect without `unittype`, or with a name that is no proto (an abstract
+  type), is logged and dropped. A tech does not turn the guerrilla on for a civ that has neither `<Partisans>` nor a line.
+- **`<PartisanFromNearby>R</PartisanFromNearby>`:** the unit and the count are the destroyed building's, so the total stays
+  the same; they come out beside the owner's living, finished buildings (`Building`) within R metres, one at a time to
+  each, the closest first, at the first free spot around each building. A foundation does not count. With no building in
+  range, they come out of the destroyed one as before. R is 0 to 200. The tag is on the building, so it holds for every
+  civ that has a guerrilla there.
+- **Trigger kills:** a trigger's `Kill` (`trUnitDelete`) gives no guerrilla, as in stock (seen in game).
+- **No interface:** the key changes no text, panel or button; none of the screens of the UI coverage rules shows the
+  guerrilla.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and data. It draws no new random number
+  (the units out of the destroyed building take the stock spawn's places and rolls).
+- **Saved games:** nothing to keep: the tags come with the data and a load applies the techs again.
+- **Log:** `partisans: the proto tags CivPartisan and PartisanFromNearby and the Data subtypes PartisanType and
+  PartisanCount are on` and `hook reached: partisans (0x4B532F)`. With `log`: the tags read (`partisans: proto 306
+  (Barracks): civ Spanish gets Rodelero x 3`), the effects, and each guerrilla: `partisans: unit 0 (Barracks) of player 1
+  (civ 22) died: 3 x Rodelero`, or in the nearby mode `partisans: unit 1 (Stable) of player 1 died: 4 x Rodelero beside 3
+  building(s) within 30 m (0 unfinished left out)` and one line per unit with its building and place.
+- **Tested in WoL (2026-11-27), skirmishes on test maps, player 1 Spanish, player 2 the Serbian AI (`wolPetar`), test data
+  in the test copy (restored after):**
+  - Per civ: a Spanish `Barracks` with the Spanish line gave `3 x Rodelero` (3 Rodeleros counted in its footprint); a
+    Serbian `Barracks` without a Serbian line gave its stock `2 x SerbianInferno`; a Serbian `TownCenter` gave
+    `6 x SerbianInferno`, the second of its two types.
+  - A trigger's `Kill` on a Spanish `Barracks`: no guerrilla, no log line.
+  - Techs: a test tech at 40 s (`PartisanType` `Pikeman`, `PartisanCount` `Assign` 5 on `Barracks`, player 1): the next
+    Spanish Barracks gave `5 x Pikeman` (5 counted). Saved at 72 s and loaded in the same process: the data was read
+    again, both effects were applied again, and a Barracks destroyed after the load gave `5 x Pikeman` (5 counted).
+  - Nearby, a `Stable` with `<PartisanFromNearby>30</PartisanFromNearby>`, two Houses and an Outpost 6 to 15 m from its
+    edge: 4 Rodeleros, two beside the closest building and one beside each of the others (5 runs). A Stable with no
+    building of its owner within 30 m: `no finished building ... within 30 m`, and its 4 Rodeleros came out of it.
+  - A foundation was not tested: an Outpost given `PlaceAsFoundation` and placed by the test map was a finished
+    building (the log counted 0 unfinished), so the "left out" case is only read in the code.
+  - Bad data: `civ="NoSuchCiv"`, a unit `NoSuchUnit`, `count="abc"` and `count="500"`, a line without `civ`,
+    `<PartisanFromNearby>` `x` and `-5`, and `PartisanType` effects with `NoSuchUnit`, `AbstractInfantry` and no
+    `unittype`: each logged and ignored. The last Spanish line on the Town Center replaced the earlier ones; its
+    `count="500"` was refused, so the Town Center's `PartisanCount` counted: `6 x Rodelero`.
+  - Beside WoL's own DLL (our `dinput8.dll`, `engine-ext\engine-ext.cfg`): `3 applied, 0 failed`, the hook reached, the
+    same guerrillas.
+  - The AI: no XS error; the Serbian AI trained a Peasant, with the key and without it.
+  - Key off, the same data: nothing from the Spanish buildings, the Serbian ones as before (control video).
+- **Seen in game:** after they appear beside the buildings, the units of one death walk over to the nearest group of the
+  same unit (in the video, to the Barracks' Rodeleros) and stand in a line. That is the game's own behaviour, not the
+  key's: with the key off, a Serbian `Barracks` given `PartisanType` `Rodelero` and `PartisanCount` 4 in the test data
+  gave its 4 Rodeleros inside its footprint, and 3 Rodeleros of the same player standing 20 m away walked over to them
+  within 7 s and stayed there (2026-11-27).
 
 #### killBountyTechs, resourceBounty and teamKillBounty
 
