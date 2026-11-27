@@ -86,7 +86,8 @@ own uhc.dll, the usual WoL setup), or in Startup\wol.cfg only if our UHC.dll is 
 not edit the cfg)
     turretArc MEZamburak art\WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon.aim
 Version 2 of the aim file needs the DLL of 2026-11-26 or later. With the gatling camel pack too:
-    turretArc GatlingCamel ...A55.aim GatlingCamelDeployed ...B55.aim MEZamburak ...zamburak_cannon.aim
+    turretArc GatlingCamel art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_A55.aim GatlingCamelDeployed art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_B55.aim MEZamburak art\WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon.aim
+Only ONE turretArc line counts: a second turretArc line is ignored, so list every unit in this single line.
 
 Known limits
 - The camel's rank skins (Veteran, Guard, Imperial) are not carried over: every rank shows the basic camel. The
