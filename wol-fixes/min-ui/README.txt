@@ -183,11 +183,14 @@ Install
     restore by hand, if version 8 is installed)
 By hand:
 1. Copy proposed-uiunitselectionmin.xml to data\uiunitselectionmin.xml (keep a copy of yours).
-2. Copy minuirows.xml to data\uhc\minuirows.xml.
+2. Copy minuirows.xml to engine-ext\minuirows.xml (our dinput8.dll beside WoL's own uhc.dll, the usual WoL setup:
+   it reads its data files from engine-ext\, never data\uhc\), or to data\uhc\minuirows.xml if our UHC.dll is used
+   in place of WoL's. apply_fix.py picks engine-ext\ when the folder has an engine-ext folder.
 3. Copy the art folder's files to the same paths under art\ (keep a copy of the five unit type icon files they
    replace: stat_icon_heavy_infantry, stat_icon_skirmisher, stat_icon_infantry, staticons\stat_icon_standing_unit,
    staticons\stat_icon_ranged).
-4. Add the line   minUIStats   to Startup\wol.cfg.
+4. Add the line   minUIStats   to engine-ext\engine-ext.cfg (or Startup\wol.cfg with our UHC.dll in place of
+   WoL's).
 5. Keep optionminimizedui on (WoL's profile has it on).
 
 The original gadgets: WoL's current file against this one
@@ -324,3 +327,14 @@ In media\ (JPG pictures of the panel at native pixels, with the health bar; PNG 
 The videos of the first proposal (2026-11-17) were removed on 2026-11-21: they showed a layout that version 7 has
 replaced. Version 7's pictures are in final\ (minUIStats-v7-*.jpg), version 9's square icons in
 final\minUIStats-v9-*.jpg.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  minUIStats                 applied, without building armor: WoL's DLL changes the resists armor
+                             test (0x698BFC), so the panel shows no building armor and the unit armor
+                             as WoL's multiarmor writes it (the log says so); the rest as above
+                             (rows read from engine-ext\minuirows.xml)

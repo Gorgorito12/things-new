@@ -139,6 +139,8 @@ veterancyBonus-icons-wol 17 24 2
 veterancyBonus-icons-wol-control 18 24 2
 killSpawn-wol 2 20 2
 killSpawn-wol-control 2 20 2
+partisans-wol 6 24 2
+partisans-wol-control 6 24 2
 workRateByAbstractType-wol 2 36 3
 workRateByAbstractType-wol-control 2 36 3
 overhealHitpointBars-group-wol 0 16 2
@@ -408,3 +410,5 @@ cultureUI-wol 9 12 1
 cultureUI-wol-control 9 12 1
 zamburakFuse-wol 0 12 1 800:560:80:40
 gatlingCamelAlive-wol 1.5 12 1 800:560:80:40
+perCivEffects-wol 16 12 1
+perCivEffects-wol-control 9 12 1

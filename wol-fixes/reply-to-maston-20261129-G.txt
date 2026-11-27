@@ -1,0 +1,74 @@
+Reply to JTMaston, round of 2026-11-29: the guerrilla mechanic (request #114)
+============================================================================
+
+How the game's guerrilla works today (we read it in the game's code, then checked it in game)
+----------------------------------------------------------------------------------------------
+- <Partisans> in civs.xml is only on or off. 1 turns it on, any other number turns it off. A text that is not a
+  number counts as 1: the Tupinamba's <partisans>UybassyArcher</partisans> just means "on". The unit name there is
+  not read.
+- A building has one PartisanType and one PartisanCount, the same for every civ. A second <PartisanType> line
+  replaces the first. So today the Town Center, the Artillery Depot and the Market, which list UybassyArcher and then
+  SerbianInferno, give SerbianInferno to the Tupinamba too. In game, a Serbian Town Center gave 6 SerbianInferno.
+- The units appear when a finished building of a civ with <Partisans> dies, inside its footprint, owned by its
+  player. A trigger's Kill gives none.
+
+1. Can one building have several guerrillas, one per civ?
+   Not in the base game: one unit and one count per building, for every civ. So it is done now, as a new DLL key,
+   partisans (one line in wol.cfg: "partisans", or "partisans log" to see each guerrilla in the log). In the
+   building's proto:
+
+       <CivPartisan civ="Spanish" count="3">Rodelero</CivPartisan>
+
+   One line per civ. That civ gets this unit and count from this building, even without <Partisans> in civs.xml.
+   Without count, the building's PartisanCount is used. A civ with no line keeps PartisanType / PartisanCount, as
+   today, so the Serbians and the Tupinamba do not change.
+
+2. Change the unit and the amount by techs: done, as two Data subtypes on the building:
+
+       <Effect type ='Data' amount ='0' subtype ='PartisanType' relativity ='Assign' unittype ='Pikeman'>
+           <Target type ='ProtoUnit'>Barracks</Target></Effect>
+       <Effect type ='Data' amount ='5' subtype ='PartisanCount' relativity ='Assign'>
+           <Target type ='ProtoUnit'>Barracks</Target></Effect>
+
+   For the amount, Assign sets it, Absolute adds to it and Percent multiplies it. Only the player who gets the tech
+   changes, and a saved game keeps it. With the new per-civ effect attribute (onlyciv, sent in the same round), one
+   tech can change it for one civ only: tested with a tech both players had, PartisanCount for the Spanish only and
+   PartisanType for the Serbians only, and each change reached only its civ.
+
+3. Spawn from the nearby buildings: done, as a tag on the destroyed building:
+
+       <PartisanFromNearby>30</PartisanFromNearby>
+
+   The number is the radius in metres. The unit and the count are the destroyed building's, so the total stays the
+   same. The units come out beside the owner's finished buildings within 30 m, one at a time to each, the closest
+   first. A foundation does not count. With no building in range, they come out of the destroyed building, as today.
+
+Tested in game (skirmishes, the Spanish against the Serbian AI): a Spanish Barracks gave its 3 Rodeleros while a Serbian
+Barracks still gave its 2 SerbianInferno; a tech turned the Spanish Barracks' guerrilla into 5 Pikemen, also after a
+save and load; a Spanish Stable's 4 Rodeleros came out beside two Houses and an Outpost; it also works beside WoL's own
+DLL, and the AI still runs.
+
+Also checked in game: a building still under construction gives no guerrilla and does not count as a nearby
+building; when the owner deletes his own building there is no guerrilla (that is the base game's rule too); a building
+that changed owner (Convert) gives the guerrilla of the player who owns it when it dies, with that player's civ.
+
+GIFs: partisans-wol (the Spanish Barracks and Stable fall: Rodeleros from the Barracks, then beside the nearby
+buildings) and partisans-wol-control (the same without the key: nothing from the Spanish buildings).
+
+The pack wol-fixes/guerrilla/ gives the Spanish a guerrilla of their own as an example (Rodelero: Town Center 4,
+Barracks 2, Stable 2; --unit picks another unit, --nearby 30 turns on the nearby mode), with --check and --restore.
+
+Questions, so we can finish it the way you want (until you answer, the build does what is written after "Now:"):
+1. From nearby buildings: should the destroyed building's guerrilla be split among them (the same total), or should
+   each nearby building spawn its own guerrilla?
+   Now: split, the same total, closest building first.
+2. Which buildings count as "nearby": any of the owner's buildings, or only the ones that have a guerrilla themselves?
+   Now: any finished building of the owner.
+3. After they appear, the new units walk over to the nearest group of the same unit and stand in a line. That is the
+   game's own behaviour, not the key's: without the key, a building's normal guerrilla made 3 Rodeleros standing 20 m
+   away walk over to it. Should the key keep the units where they appear instead?
+   Now: they walk, as the game makes them.
+4. The Town Center, Artillery Depot and Market give SerbianInferno to the Tupinamba today (see above). Should the
+   Tupinamba get UybassyArcher there, as a <CivPartisan civ="Tupinamba"> line?
+   Now: unchanged.
+5. Which buildings, units and counts do you want for the Spanish? The pack only uses Rodelero as an example.

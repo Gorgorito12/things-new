@@ -1,0 +1,29 @@
+Hi JTMaston,
+
+You were right about turretArc. Your setup is your own uhc.dll with our dinput8.dll beside it, and our dinput8.dll
+reads its keys only from engine-ext\engine-ext.cfg and its data files only from engine-ext\. It never reads
+Startup\wol.cfg or data\uhc\. A line in wol.cfg did nothing.
+
+What changed:
+- Every pack README now says engine-ext\engine-ext.cfg (or engine-ext\<file>) first. Startup\wol.cfg and data\uhc\
+  are named only for the case where our UHC.dll replaces yours. Packs fixed: zamburak, gatling-camel,
+  age5-shipments, auto-scout, editor, faith, hammer-fanning, mapuche, me-herdables, min-ui (also minuirows.xml),
+  mustard-gas, oil-panel, options-menu, politician-ui, research-on-the-move, select-fattened, special-transforms
+  and veterancy-marks. The Spanish halves are fixed too.
+- The apply_fix.py scripts now choose the file for you: engine-ext\engine-ext.cfg (and engine-ext\ for data files)
+  when the game folder has an engine-ext folder, and Startup\wol.cfg / data\uhc\ otherwise. --check reads the
+  file they chose, and --restore undoes it. culture-ui's --engine-ext flag still works. Command names still go in
+  data\uhc\customprotounitcommands.xml, because your own DLL reads that file.
+- The zamburak and gatling camel packs still do not edit the cfg. Put this one line in engine-ext\engine-ext.cfg:
+    turretArc GatlingCamel art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_A55.aim GatlingCamelDeployed art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_B55.aim MEZamburak art\WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon.aim
+
+We also tested every pack's key beside your uhc.dll (c070d138, with WoL.dll loaded), in a WoL copy with all the
+packs applied by their scripts:
+- 24 keys applied, including turretArc. In a short scenario with gatling camels and a zamburak, the gun-turning code
+  ran.
+- One key FAILED: selectFattened (the "select fattened livestock" button and hotkey). Its command is a UI syscall,
+  and your DLL holds the syscall site our DLL needs. That pack works only with our UHC.dll in place of yours. If you
+  want it with your DLL, it has to be ported into your DLL.
+- minUIStats applies, but it shows no building armor beside your DLL, because your multiarmor changes the armor test
+  it uses. This was already known.
+Each pack README has its own results at the end.

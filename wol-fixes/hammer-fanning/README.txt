@@ -31,10 +31,12 @@ What it changes
 - data\protoy.xml: the Explorer's ProtoActions SharpshooterAttack and CrackshotAttack get
   <RetargetInAction>1</RetargetInAction> and <PowerShots>6</PowerShots>. They go in the ProtoActions, not in
   explorer.tactics, which ten other units share.
-- Startup\wol.cfg: the two DLL keys, unless the file has them already:
+- engine-ext\engine-ext.cfg (our dinput8.dll beside WoL's own uhc.dll, the usual WoL setup; picked when the folder
+  has an engine-ext folder), else Startup\wol.cfg (our UHC.dll in place of WoL's): the two DLL keys, unless the
+  file has them already:
       retargetInAction
       powerShots
-  Both need the UHC.dll that has them; without the keys the tags do nothing and each use fires one shot again.
+  Both need a build of our DLL that has them; without the keys the tags do nothing and each use fires one shot again.
 
 Made with aoe3-blender-tools' tools/make_fanning.py (the clips, their tag files, the anim blocks), and checked with
 its tools/check_anim.py (0 failures): the grip in the palm, the left palm on the hammer at each shot, the forearms
@@ -46,3 +48,12 @@ now deal six times that. See reply-to-maston-20261127-H.txt for the questions.
 
 Evidence of the tests: a0-findings.txt, a1-results.txt, a0-traces.txt, a0-uhc-log.txt and the videos in this folder;
 the guide's sections powerShots and retargetInAction.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  retargetInAction           applied; in a scenario, hook reached (0x487838)
+  powerShots                 applied

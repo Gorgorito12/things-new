@@ -577,8 +577,10 @@ The key keeps a table per proto pointer (damage type → value, up to 8):
 | vtable `0xB9E5C4`, `C8`, `CC`, `D0` | `playerApply` / `playerUnapply` / `protoUnitApply` / `protoUnitUnapply` wrappers: make the effect's damage type current during the stock call |
 | `0x8FAE52`, `0x8FC144` (10 B each) | the Armor cases: for a current type other than the target's stock type, apply `0x7F892A` to the table entry (base value from the base proto) and skip the stock change |
 
-Normal techs reach `applyData` through `playerApply` → `0x8D842B`, without the effect pointer, so
-the type travels in a global that the wrappers set and restore (effects apply on one thread).
+Techs reach `applyData` through `protoUnitApply` (`0x7F86C0`, a ProtoUnit target) or `playerApply` → `0x8D842B`
+(a Player target), without the effect pointer, so the type travels in a global that the wrappers set and restore
+(effects apply on one thread). (Corrected 2026-11-27: this said `playerApply` for every tech; a trace shows the
+ProtoUnit path, see [perCivEffects](#perciveffects).)
 
 ### customProtoUnitCommands
 
@@ -1759,6 +1761,74 @@ tech's definition, the routines' `this`, in a set. The set is only written durin
 The enemies come from 0x484D2D, the check the placement rules use, over the players of the world without Gaia.
 
 - **Observed in game:** see the tests in the modding guide. After a load the log shows one `load` line per tech.
+
+### perCivEffects
+
+`onlyciv="<Civ>"` on any tech `<Effect>` makes that effect work only for a receiving player of that civ.
+
+**Where an effect is made.** Every tech effect comes from one parse, 0x620572, called only by the `<Effect>` tag
+handler 0x620472(node, tech definition), which appends the effect to the tech's `[def+24h]`. The parse looks the type
+up, calls the factory 0x620535, then setData `[vtbl+4]`; on success it ends at 0x6205EF (`mov eax,esi / pop esi / pop
+edi / ret`) with the effect in ESI and its node in EDI, for every effect type (Data, Data2, TechStatus, SetName, ...).
+The key replaces those five bytes with a `jmp` to a hook that reads `onlyciv` (0x598F37, then 0x402733 for the narrow
+text, as `multiarmor` reads `damagetype`), keeps it in a table effect -> civ name, and re-executes the four
+instructions. The tech's ID, for the log, is `[def]`, with `def` at `[esp+18h]` there; the hook reads it only when the
+return address `[esp+8]` is 0x6204BB, the handler's. An effect parsed again at the same address without the attribute
+loses its entry; the data is parsed once per launch.
+
+**Where it is applied and removed.** A tech's effects reach a player through one dispatcher, 0x7F7E97(effect, player,
+unit, techId, a, b), and leave through one removal, 0x7F8168(effect, player, a, b). Their only callers are applyEffects
+0x94DAE1 (research, cards, triggers; a team tech calls it once per member), the pass after a load 0x94DDEA, and
+removeEffects 0x94DCB2. The player argument is the one that **receives** the effect, so a shared tech, a team tech and
+`hcTargetTechs`' targets are each checked on their own. The dispatcher sends the effect to its kind: protos
+(protoUnitApply, `[vtbl+24h]`), the player (`[vtbl+1Ch]`, the player Data switch 0x8D842B), the player's tech nodes, or
+the general apply. The two heads (`mov eax,fs:[0]`, 6 bytes each) get a `jmp` to a hook that, with an empty table, only
+compares a counter with 0 and re-executes the instruction. With entries it asks the table; for a listed effect whose
+civ is not the player's first civ (`[[player+20h]]`, `uhc::FirstCivOfPlayer`) it returns 1 without calling the effect,
+as the dispatcher does for an effect with nothing to do.
+
+**A civ can change.** The player Data subtype `SetCivilization` (and five other callers of 0x8D53EE) rewrites the first
+civ during a game, so the decision taken at an apply is kept per (effect, player ID) and the removal follows it: what
+was applied is removed, what was skipped stays skipped. A removal with no apply seen in this session (none in practice:
+the pass after a load re-applies first) decides by the civ at that moment. Seen in game: a Spanish player turned German by a test tech with
+`SetCivilization`; the game then removed that player's `HuntingDogs` effects, and the hook let through the three
+Spanish ones it had applied and held back the German one it had skipped.
+
+**Saved games.** Not saved: the table comes back with the data, and the pass after a load re-runs the ProtoUnit effects
+(Data effects carry flag 20h from their constructor) through the dispatcher, where the same filter applies. Player and
+tech-level effects are not re-run on a load (the dispatcher returns at `a` = 1), with or without the key.
+
+**Earlier text corrected.** `multiarmor` above says normal techs reach `applyData` through `playerApply` -> 0x8D842B;
+that is the path of a Player target. A ProtoUnit target goes through protoUnitApply 0x7F86C0 (trace of 2026-11-27, see
+`engine-symbols.md`, "Tech effects: parse, apply, removal and the load"), as `AddTechProtoSubtype` says.
+
+**Why it is safe.**
+- The parse hook runs where the stock code returns: it preserves ESI/EDI and sets EAX as stock does; ECX and EDX are
+  scratch at a `ret`. The heads are entered by `call` with the arguments on the stack and ECX = the effect; the hook
+  saves ECX around its C call and touches nothing else before the stock instruction.
+<!-- private:begin -->
+- No WoL DLL site is touched: its `uhc.dll` patches 0x6205C9 (the factory call) and the Data effect's vtable slots, and
+  its `WoL.dll` patches 0x7F8114, inside the dispatcher after these heads.
+<!-- private:end -->
+<!-- public:begin
+- Hooks above the effect classes: the Data effect's vtable slots, which `multiarmor` and other DLLs replace, are left
+  alone.
+public:end -->
+- `techRenameEffect` verifies 0x6205C7..0x6205F3, so it applies first; `dataLint` writes 0x6205E9 and jumps to
+  0x6205EF, which now holds this `jmp`.
+- Deterministic: the decision reads only the receiving player and the data; the tables are keyed by pointer but only
+  looked up, never walked.
+- Cost: one compare per effect applied or removed with no `onlyciv` in the data; a hash lookup under a lock with some.
+  Effects are applied when a tech activates, not per frame.
+
+| Site | What it does |
+|---|---|
+| `0x6205EF` (5 B) | parse success: reads `onlyciv` into the table, then `mov eax,esi / pop esi / pop edi / ret` |
+| `0x6204B1` (verify only) | the parse's call in the `<Effect>` handler: the frame the hook reads the tech from |
+| `0x7F7E97` (6 B) | apply dispatcher head: skip a listed effect for a player of another civ |
+| `0x7F8168` (6 B) | removal head: remove only what the last apply to that player applied |
+
+- **Observed in game:** see the tests in the modding guide.
 
 ### techPrereqRecheck
 
@@ -5799,6 +5869,59 @@ which the subtype's own base (the cloned proto) cannot hold. A data load clears 
   kill order. The world tick's position offsets are constants.
 
 - **Observed in game:** see the tests in the modding guide.
+
+### partisans
+
+The stock guerrilla (the `Partisans` tags, docs/engine-symbols.md, "Partisans") per civ, changed by techs, and spawned by
+the owner's nearby buildings.
+
+**[O] Stock.** `<Partisans>` in civs.xml is an on/off flag (bit 4 of `[[civ+128h]]`, 0x659A14; a text that is not a
+number reads as 1). A proto has one `PartisanType` (`+160h`, handler 0xA129D3; a second line overwrites the first) and
+one `PartisanCount` (`+164h`, 0xA114C1); the proto copy 0x67E011 copies both into each player's copy. The kill handler
+0x4B4F70 tests at 0x4B532F the owner's civs (FUN_004B4EBD), then in the cold block 0x6A3F04 the copy's count > 0, its first
+byte argument (`[esp+0A0h]`, set for a trigger's `Kill`, `trUnitDelete`, and for the owner's delete, seen in game) clear and the build (0x44DDB4: no build record, or
+its progress complete), and calls the spawn FUN_009C07D6 (one caller). The spawn takes the type from the owner's copies
+(0x45311B) and makes `count` units with 0x498ACC(world, ID, player, pos, forward, 1, -1, 1, -1), each at a random point of
+the dying unit's footprint (two draws of the synced random 0x422648 on 0xC66588, stream 2), with no placement test.
+
+**The hook.** One jmp over the 16 bytes at 0x4B532F (`mov ecx,[esi+44h] / call 4B4EBDh / cmp al,1 / je 6A3F04h`; no branch
+lands inside, the cold block's only entry is that `je`). `UhcPartisansOnDeath(unit, flag)` makes the stock tests with the
+key's data and returns to 0x4B533F, where the stock code goes on (the proto flag 44h test, the death replacement).
+
+**The type and the count.** The proto tags `<CivPartisan civ count>` and `<PartisanFromNearby>` go through
+`AddProtoTagHandler`, kept by proto ID (`[proto+8]`), the civ and unit names resolved against each database (civ by name
+0x58E71F, proto by name 0x5A2346, keyed by the proto array `[db+54h]`). At a death: the dying unit's copy `[unit+5Ch]`;
+the line of the owner's civ (`[[player+20h]]`) if there is one, which also turns the guerrilla on; else the copy's own
+`+160h` / `+164h`, on only when the stock civ test 0x4B4EBD says so. Then the effects of that copy: `PartisanType`
+(`AddTechProtoSubtype`; the effect's `unittype` resolved to a proto ID when the techs are read, in its field `+10h`)
+replaces the type, its removal gives back the type before it; `PartisanCount` (`AddTechSubtype`) replays relativity and
+amount through the stock value function 0x7F892A from the count above, so `Absolute` and `Percent` act on the civ's count.
+Effects are kept per copy pointer with the proto ID checked, as `killSpawn` does; a data load clears them and a saved
+game's load applies them again. The count is capped at 100.
+
+**The spawn.** With the stock type and count the stock spawn runs. With others, the copy's `+160h` and `+164h` hold them
+for the call to 0x9C07D6 and get their values back after it, so the units come out where and as the stock ones do (the
+same random draws). With `<PartisanFromNearby>R</PartisanFromNearby>`: the units near the dying one (0x4A1C55, radius R,
+to the unit's edge), kept if the owner's, not the dying unit, of the abstract type `Building` (is-a 0x44D7FA), alive (unit
+vtable `+A4h`) and built (0x44DDB4); sorted by distance (vtable `+B8h`), then by ID. Unit *i* goes beside building
+*i mod n*: the first of 48 points (4 rings, at the building's larger obstruction value `[proto+88h]` / `[proto+8Ch]` plus
+1, 2.5, 4 and 6 m, 12 points each, in a fixed order) that PLACE (world vtable `+14h`, flags 6, as `killSpawn`) accepts,
+then 0x498ACC(world, ID, player, point, the building's forward, 1, -1, 1, -1), the stock spawn's arguments, inside the
+kill handler as the stock spawn. No building in range: the stock spawn. **[O]** In game the units of one death, once made
+beside their buildings, walk over to the nearest group of the same unit and stand in a line; the same with 0, -1, 0, -1,
+and when a world tick made them one per update. **[O]** It is stock: with the key off, 3 Rodeleros walked 20 m to the 4 a
+Barracks' stock guerrilla had just made. **[U]** Which code orders that walk was not traced.
+
+**Why it is safe.**
+- The hook reads the kill handler's argument before any push, keeps EBX, ESI, EDI and EBP (stdcall), and clobbers EAX,
+  ECX and EDX: the continuation 0x4B533F loads ECX, and every path after it writes EAX before reading it (0x4B5348,
+  0x4B5362).
+- The tests are the stock ones in another order; none has a side effect. A copy's two fields are changed only during the
+  call to the stock spawn, which reads them and nothing else changes them meanwhile (the simulation runs on one thread).
+- The spawn runs where the stock one runs, inside the kill handler, as the death replacement creates its unit there too.
+- No new random draw, no real clock, no local player: the nearby order is by distance and unit ID.
+- Cost per death: a hash lookup by proto ID and, for a copy with effects, a second one; the stock civ test otherwise.
+  The nearby query runs only for a dying unit with `<PartisanFromNearby>` and a guerrilla.
 
 ### cantBeSlowed
 

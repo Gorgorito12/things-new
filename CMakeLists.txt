@@ -66,6 +66,7 @@ set(UHC_SOURCES
   src/features/detonation.cpp
   src/features/annexfacing.cpp
   src/features/hctargets.cpp
+  src/features/percivfx.cpp
   src/features/resendcards.cpp
   src/features/quickarrival.cpp
   src/features/cratepriority.cpp
@@ -137,6 +138,7 @@ set(UHC_SOURCES
   src/features/incomerates.cpp
   src/features/nurseryfactor.cpp
   src/features/garrisonconvert.cpp
+  src/features/partisans.cpp
   src/features/sharedlimit.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
@@ -228,6 +230,7 @@ set(UHC_SOURCES
   src/hooks/dodge_hooks.asm
   src/hooks/dopple_hooks.asm
   src/hooks/deadrepl_hooks.asm
+  src/hooks/partisans_hooks.asm
   src/hooks/dot_hooks.asm
   src/hooks/fame_hooks.asm
   src/hooks/gatherrate_hooks.asm
@@ -273,6 +276,7 @@ set(UHC_SOURCES
   src/hooks/gatherauras_hooks.asm
   src/hooks/resourcedebt_hooks.asm
   src/hooks/hctarget_hooks.asm
+  src/hooks/percivfx_hooks.asm
   src/hooks/resendcards_hooks.asm
   src/hooks/quickarrival_hooks.asm
   src/hooks/modifytype_hooks.asm

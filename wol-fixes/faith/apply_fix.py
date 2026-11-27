@@ -1,6 +1,7 @@
 """Faith as its own resource (request #101): villagers pray at their church or mosque and gather faith, the
 engine's resource 4 ("SkillPoints"), with a praying animation; oil stays on resource 3. It needs the DLL key
-`faithResource` (UHC.dll, in Startup\\wol.cfg), which cuts resource 4 from the home city's skill points: without
+`faithResource` (in engine-ext\\engine-ext.cfg with our dinput8.dll beside WoL's own uhc.dll, or in Startup\\wol.cfg
+with our UHC.dll in place of WoL's; the pack does not edit the cfg), which cuts resource 4 from the home city's skill points: without
 it the counter would start at the player's unspent home city points, and the faith gathered in a game would be
 banked as free home city skill points.
 

@@ -25,8 +25,9 @@ Installing
 
 Files it changes:
   data\protoy.xml          <UnitType>ResearchOnTheMove</UnitType> after the last <UnitType> of each unit
-  Startup\wol.cfg          the line `researchOnTheMove`; or engine-ext\engine-ext.cfg when the folder runs our
-                           dinput8.dll beside WoL's own DLL
+  engine-ext\engine-ext.cfg   the line `researchOnTheMove` (our dinput8.dll beside WoL's own uhc.dll, the usual
+                           WoL setup; picked when the folder has an engine-ext folder), else Startup\wol.cfg (our
+                           UHC.dll in place of WoL's)
 
 Adding it to any unit
 ---------------------
@@ -50,3 +51,11 @@ What stays as before
 - Saved games keep the queue and its progress.
 
 Every player needs the same key and data (it changes the simulation). Not tested in multiplayer.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  researchOnTheMove          applied

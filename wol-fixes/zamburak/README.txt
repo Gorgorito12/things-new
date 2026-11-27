@@ -81,7 +81,9 @@ Install
     python apply_fix.py "<Wars of Liberty folder>" --restore    (everything back as it was, byte for byte)
 A folder under steamapps is refused unless --force is given.
 
-The turning gun: the turretArc key of the DLL, one line in Startup\wol.cfg (the pack does not edit the cfg)
+The turning gun: the turretArc key of the DLL, one line in engine-ext\engine-ext.cfg (our dinput8.dll beside WoL's
+own uhc.dll, the usual WoL setup), or in Startup\wol.cfg only if our UHC.dll is used in place of WoL's (the pack does
+not edit the cfg)
     turretArc MEZamburak art\WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon.aim
 Version 2 of the aim file needs the DLL of 2026-11-26 or later. With the gatling camel pack too:
     turretArc GatlingCamel ...A55.aim GatlingCamelDeployed ...B55.aim MEZamburak ...zamburak_cannon.aim
@@ -126,3 +128,15 @@ TESTED (2026-11-26, a test copy of Wars of Liberty, single player, the DLL of 20
   LAUNCHPOINT); the ball seen over the muzzle; the camel's tail and head moving.
 - Not tested: an attack order (right click) unlimbering it. The bed could not aim a real click; the tactics are the
   stock pattern (GatlingCamel, falconet). Also not tested: multiplayer, and the AI with the pack.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  turretArc                  applied (the line of both packs: GatlingCamel, GatlingCamelDeployed,
+                             MEZamburak, each aim file read); in a scenario (2 GatlingCamel,
+                             1 GatlingCamelDeployed, 1 MEZamburak against 4 Skirmishers), hooks
+                             reached: turretArc facing (0x48AA9F), attack state (0x48A65A), launch
+                             (0x4995D5)

@@ -1,0 +1,23 @@
+testbed: game time 24324 -> 84505 ms
+wait exit 0
+step 1  p2 units 15  settlers 9  08:02:12
+testbed: game time 84979 -> 145556 ms
+wait exit 0
+step 2  p2 units 17  settlers 11  08:03:01
+testbed: game time 146052 -> 206318 ms
+wait exit 0
+step 3  p2 units 23  settlers 16  08:03:49
+testbed: game time 206854 -> 267485 ms
+wait exit 0
+step 4  p2 units 23  settlers 16  08:04:37
+testbed: game time 268073 -> 328538 ms
+wait exit 0
+step 5  p2 units 24  settlers 17  08:05:24
+testbed: game time 329098 -> 389585 ms
+wait exit 0
+step 6  p2 units 26  settlers 18  08:06:11
+testbed: game time 390077 -> 450615 ms
+wait exit 0
+step 7  p2 units 26  settlers 18  08:06:59
+pid 29940, window 1920x1080, world 0xfd98000, game time 451515 ms
+DONE

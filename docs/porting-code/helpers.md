@@ -3031,6 +3031,30 @@ inline constexpr Site kTriggerByName{"TriggerByName", 0x0090DFB0, kTriggerByName
 inline constexpr std::uint8_t kPlayerTeamBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x74, 0x16, 0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x7C, 0x0E, 0x50, 0xE8, 0x96, 0x91, 0xBC, 0xFF, 0x85, 0xC0, 0x74, 0x04, 0x8B, 0x40, 0x10, 0xC3, 0xB8, 0xFE, 0xFF, 0xFF, 0xFF, 0xC3};
 inline constexpr Site kPlayerTeam{"PlayerTeam", 0x0088396E, kPlayerTeamBytes, sizeof(kPlayerTeamBytes)};
 
+inline constexpr std::uint8_t kPerCivEffectParsedBytes[] = {0x8B, 0xC6, 0x5E, 0x5F, 0xC3};
+inline constexpr Site kPerCivEffectParsed{"PerCivEffectParsed", 0x006205EF, kPerCivEffectParsedBytes, sizeof(kPerCivEffectParsedBytes)};
+
+inline constexpr std::uint8_t kPerCivEffectCallerBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x50, 0xE8, 0xB7, 0x00, 0x00, 0x00, 0x83, 0xC4, 0x04, 0x85, 0xC0};
+inline constexpr Site kPerCivEffectCaller{"PerCivEffectCaller", 0x006204B1, kPerCivEffectCallerBytes, sizeof(kPerCivEffectCallerBytes)};
+
+inline constexpr std::uint8_t kPerCivApplyHeadBytes[] = {0x64, 0xA1, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x15, 0x34, 0x62, 0xC6, 0x00};
+inline constexpr Site kPerCivApplyHead{"PerCivApplyHead", 0x007F7E97, kPerCivApplyHeadBytes, sizeof(kPerCivApplyHeadBytes)};
+
+inline constexpr std::uint8_t kPerCivRemoveHeadBytes[] = {0x64, 0xA1, 0x00, 0x00, 0x00, 0x00, 0x6A, 0xFF, 0x68, 0xFE, 0x9D};
+inline constexpr Site kPerCivRemoveHead{"PerCivRemoveHead", 0x007F8168, kPerCivRemoveHeadBytes, sizeof(kPerCivRemoveHeadBytes)};
+
+inline constexpr std::uint8_t kPartisanCivTestBytes[] = {0x8B, 0x4E, 0x44, 0xE8, 0x86, 0xFB, 0xFF, 0xFF, 0x3C, 0x01, 0x0F, 0x84, 0xC5, 0xEB, 0x1E, 0x00, 0x8B, 0x4E, 0x5C};
+inline constexpr Site kPartisanCivTest{"PartisanCivTest", 0x004B532F, kPartisanCivTestBytes, sizeof(kPartisanCivTestBytes)};
+
+inline constexpr std::uint8_t kPartisanColdBlockBytes[] = {0x8B, 0x4E, 0x5C, 0x83, 0xB9, 0x64, 0x01, 0x00, 0x00, 0x00, 0x0F, 0x8E, 0x2B, 0x14, 0xE1, 0xFF, 0x80, 0xBC, 0x24, 0xA0, 0x00, 0x00, 0x00, 0x00, 0x0F, 0x85, 0x1D, 0x14, 0xE1, 0xFF, 0x8B, 0xCE, 0xE8, 0x8B, 0x9E, 0xDA, 0xFF, 0x3C, 0x01, 0x0F, 0x85, 0x0E, 0x14, 0xE1, 0xFF, 0xE8, 0xA0, 0xC8, 0x31, 0x00, 0xE9, 0x04, 0x14, 0xE1, 0xFF};
+inline constexpr Site kPartisanColdBlock{"PartisanColdBlock", 0x006A3F04, kPartisanColdBlockBytes, sizeof(kPartisanColdBlockBytes)};
+
+inline constexpr std::uint8_t kPartisanSpawnBytes[] = {0x83, 0xEC, 0x20, 0x56, 0x8B, 0xF1, 0x8B, 0x4E, 0x44, 0x85, 0xC9, 0x0F, 0x84, 0x5F, 0x01, 0x00, 0x00, 0x8B, 0x46, 0x5C, 0x8B, 0x80, 0x60, 0x01, 0x00, 0x00};
+inline constexpr Site kPartisanSpawn{"PartisanSpawn", 0x009C07D6, kPartisanSpawnBytes, sizeof(kPartisanSpawnBytes)};
+
+inline constexpr std::uint8_t kPartisanCivFlagBytes[] = {0x51, 0x56, 0x57, 0x8B, 0xF9, 0x33, 0xF6, 0x39, 0x77, 0x24, 0x7E, 0x60, 0x8D, 0x24, 0x24};
+inline constexpr Site kPartisanCivFlag{"PartisanCivFlag", 0x004B4EBD, kPartisanCivFlagBytes, sizeof(kPartisanCivFlagBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -3467,6 +3491,7 @@ Outcome ApplyPillageGold(const Config& config);
 Outcome ApplyVeterancyBonus(const Config& config);
 Outcome ApplyKillSpawn(const Config& config);
 Outcome ApplyHcTargetTechs(const Config& config);
+Outcome ApplyPerCivEffects(const Config& config);
 Outcome ApplyDetonationDeath(const Config& config);
 Outcome ApplyAnnexFacing(const Config& config);
 Outcome ApplyDeadReplacementAtZeroInventory(const Config& config);
@@ -3601,6 +3626,7 @@ Outcome ApplySelectFattened(const Config& config);
 Outcome ApplyProgressPieDemo(const Config& config);
 Outcome ApplyNurseryFactor(const Config& config);
 Outcome ApplyGarrisonConvert(const Config& config);
+Outcome ApplyPartisans(const Config& config);
 // garrisonConvert: the progress of a building's conversions, for the panels: false when nobody inside qualifies;
 // else the share of the delay the unit in progress has spent (1 with no delay) and how many units qualify.
 bool GarrisonConvertProgress(const char* building, float* fraction, std::int32_t* waiting);
@@ -3703,6 +3729,10 @@ inline constexpr Feature kFeatures[] = {
     {"customWalls", ApplyCustomWalls},
     {"directionalAttack", ApplyDirectionalAttack},
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
+    // After techRenameEffect, which verifies the effect parse 0x6205C7..0x6205F3 as stock bytes; this key writes its
+    // tail 0x6205EF. Its apply and removal heads (0x7F7E97, 0x7F8168) are called by hcTargetTechs' routines,
+    // which it only filters, so its order with that key does not matter.
+    {"perCivEffects", ApplyPerCivEffects},
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
     {"asianCivs", ApplyAsianCivs},
@@ -3762,6 +3792,9 @@ inline constexpr Feature kFeatures[] = {
     // Shares the death observer (deathobservers.h) with detonationDeath; its observer runs after that one.
     {"annexFacing", ApplyAnnexFacing},
     {"deadReplacementAtZeroInventory", ApplyDeadReplacementAtZeroInventory},
+    // No order constraint: the only key that writes 0x4B532F (the kill handler's guerrilla test); its tags and
+    // subtypes go through the shared proto tag and tech subtype hooks.
+    {"partisans", ApplyPartisans},
     {"steadyHitpointBars", ApplySteadyHitpointBars},
     // After overhealHitpointBars: both add bars through the shared floating bar hooks (floatingbars.h), the segment
     // first.
@@ -3831,7 +3864,7 @@ inline constexpr const char* kHandledKeys[] = {
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
     "retargetinaction", "powershots",
     "turretarc",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "partisans", "hctargettechs", "perciveffects", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "broadsidesoundset", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc", "scenariocivs",

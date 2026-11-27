@@ -31,6 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-27 07:50 | [`perCivEffects`](#perciveffects) | Added. `onlyciv="Spanish"` on any tech `<Effect>` makes that effect work only for a player of that civ: for shared cards, shared techs and each member of a team tech. | The attribute on the effects that want it. |
+| Friday 2026-11-27 07:46 | [`partisans`](#partisans) | Added. The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanFromNearby>` makes the owner's nearby buildings spawn them instead. | The tags on the building in `protoy.xml`; the techs in `techtreey.xml`. |
 | Thursday 2026-11-26 16:24 | [`cultureUI`](#cultureui) | Filmed in WoL, with a control. The minimised in-game interface takes its own textures per family of civs, and others again from the Great War: `X_as.ddt` beside `X.ddt` restyles texture X for the Asian family. | The art, one `.ddt` per texture and family (`<texture>_<family>[_gw].ddt`, from aoe3-blender-tools' templates), and `data\uhc\cultureui.xml` with the nine families: `wol-fixes/culture-ui/`. |
 | Thursday 2026-11-26 15:43 | [`powerShots`](#powershots) | Filmed in WoL, with a control. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
 | Thursday 2026-11-26 11:34 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
@@ -313,6 +315,11 @@ Wars of Liberty\
 
 `Startup\wol.cfg` selects the features. The syntax below is this DLL's, and it also reads every line
 of WoL's own file as it is.
+
+**Beside WoL's own `uhc.dll`** (way 3 above, the usual setup in WoL), this guide's lines go in
+`engine-ext\engine-ext.cfg`, not `Startup\wol.cfg`, and the files a key reads by default go in `engine-ext\`, not
+`data\uhc\`. The `apply_fix.py` scripts of `wol-fixes/` pick those by themselves when the folder has an `engine-ext`
+folder. A key whose site WoL's DLL holds logs `FAILED` there (the table in `wol-uhc-map.md`).
 
 - **Syntax:** one key per line, followed by its arguments, separated by spaces or tabs. The form
   `basePop=500` also works.
@@ -3132,6 +3139,7 @@ Attacks, armor, and what a hit does.
 | [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
 | [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | **new** | The rows on the protos that want them. | confirmed |
 | [`killSpawn`](#killspawn) | A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | **new** | The tags on the civ in `civs.xml`. | confirmed (single player) |
+| [`partisans`](#partisans) | The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanFromNearby>` makes the owner's nearby buildings spawn them instead. | **new** | The tags on the building in `protoy.xml`; the techs in `techtreey.xml`. | confirmed (single player) |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
 | [`customImpactTypes`](#customimpacttypes) | New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | **new** | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. | confirmed (single player, picture; sound not filmed) |
 
@@ -5220,6 +5228,133 @@ killSpawn [log]
   - Not tested: multiplayer, a ship or a unit on water as the killer of a land unit by the shore, a kill by a unit that
     has died since (a shot in flight; the code takes its player and proto from TakeDamage's arguments).
 
+#### partisans
+
+*When a building is destroyed, the guerrilla that comes out of it can differ by civ, be changed by techs, or come out of the owner's nearby buildings instead.*
+
+**Added:** Friday 2026-11-27 07:46 · **Filmed in WoL:** Friday 2026-11-27 07:46
+
+![partisans in WoL](media/partisans-wol.gif)
+
+*In WoL, with the key (a skirmish on a test map, player 1 Spanish, player 2 the Serbian AI; `<CivPartisan civ="Spanish"
+count="3">Rodelero</CivPartisan>` on `Barracks`, and `<CivPartisan civ="Spanish" count="4">Rodelero</CivPartisan>` with
+`<PartisanFromNearby>30</PartisanFromNearby>` on `Stable`, in the test copy):* the Spanish Barracks (top left) falls and 3
+Rodeleros come out of it, though the Spanish have no `<Partisans>` in `civs.xml`. The Serbian Barracks falls next (off the
+top) and gives its 2 `SerbianInferno` as before (the log line at the bottom). Then the Spanish Stable falls (bottom right),
+and its 4 Rodeleros come out beside the owner's three buildings within 30 m: the House in the middle, the Outpost and the
+other House (both off the right edge). Afterwards they walk over to the other Rodeleros, as the game makes idle units of the same
+kind do (see "Seen in game"). The Rodeleros stay selected, so their bars show. [Full video (MP4)](media/partisans-wol.mp4).
+
+![partisans in WoL, key off](media/partisans-wol-control.gif)
+
+*In WoL, key off (the same scene, the tags still in `protoy.xml`):* the Spanish Barracks and the Stable fall and nothing
+comes out: without the key the Spanish have no guerrilla. The Serbian Barracks gives its 2 `SerbianInferno` as with the
+key. [Full video (MP4)](media/partisans-wol-control.mp4).
+
+```
+partisans [log]
+```
+
+```xml
+<!-- protoy.xml, inside a building's <Unit> -->
+<PartisanType>SerbianInferno</PartisanType>         <!-- stock: every civ with <Partisans> -->
+<PartisanCount>2</PartisanCount>
+<CivPartisan civ="Spanish" count="3">Rodelero</CivPartisan>   <!-- one per civ -->
+<PartisanFromNearby>30</PartisanFromNearby>         <!-- optional: from the owner's buildings within 30 m -->
+
+<!-- techtreey.xml: for the player who gets the tech -->
+<Effect type ='Data' amount ='0' subtype ='PartisanType' relativity ='Assign' unittype ='Pikeman'>
+    <Target type ='ProtoUnit'>Barracks</Target></Effect>
+<Effect type ='Data' amount ='5' subtype ='PartisanCount' relativity ='Assign'>
+    <Target type ='ProtoUnit'>Barracks</Target></Effect>
+```
+
+- **In WoL today:** the Serbians (`<partisans>1</partisans>`) and the Tupinamba use the stock tags; 15 buildings have
+  `<partisantype>` and `<partisancount>`. WoL #114.
+- **What the game does without the key** (REA, [engine-symbols.md](engine-symbols.md), "Partisans"): `<Partisans>` in
+  `civs.xml` is only on or off: `1` turns it on, any other number off, and a text that is not a number counts as `1`
+  (the Tupinamba's `<partisans>UybassyArcher</partisans>` means "on"; the unit name is not read). A building has one
+  `PartisanType` and one `PartisanCount`: a second `<PartisanType>` replaces the first. So WoL's `TownCenter`,
+  `ArtilleryDepot` and `Market`, which list `UybassyArcher` then `SerbianInferno`, give `SerbianInferno` to every civ with
+  `<Partisans>`, the Tupinamba too (seen in game: a Serbian Town Center gave `6 x SerbianInferno`). When a finished unit of
+  a player whose civ has `<Partisans>` dies, its count is above 0 and the kill is not a trigger's, `PartisanCount` units of
+  `PartisanType` appear, owned by that player, at random points inside its footprint. Any unit with a count does it, not
+  only buildings.
+- **`<CivPartisan civ="Civ" count="N">Unit</CivPartisan>`:** one line per civ, on the building. That civ gets this unit
+  and count from this building, even without `<Partisans>` in `civs.xml`. `count` is 0 to 100; left out, the building's
+  `PartisanCount` counts. A civ without a line works as before. A second line for the same civ replaces the first. An
+  unknown civ or unit is logged and the line is ignored.
+- **The techs:** `subtype='PartisanType'` with `unittype=` (a proto) sets the unit; removing the tech gives the one before
+  back. `subtype='PartisanCount'`: `Assign` sets it, `Absolute` adds to it, `Percent` multiplies it, from the civ's line
+  when there is one. Only the player who gets the tech is changed (each player has a copy of the building), and the techs
+  are applied again when a game is loaded. An effect without `unittype`, or with a name that is no proto (an abstract
+  type), is logged and dropped. A tech does not turn the guerrilla on for a civ that has neither `<Partisans>` nor a line.
+- **`<PartisanFromNearby>R</PartisanFromNearby>`:** the unit and the count are the destroyed building's, so the total stays
+  the same; they come out beside the owner's living, finished buildings (`Building`) within R metres, one at a time to
+  each, the closest first, at the first free spot around each building. A foundation does not count. With no building in
+  range, they come out of the destroyed one as before. R is 0 to 200. The tag is on the building, so it holds for every
+  civ that has a guerrilla there.
+- **Trigger kills and deletes:** a trigger's `Kill` (`trUnitDelete`) and the owner's delete give no guerrilla, as in
+  stock (seen in game).
+- **Conversion:** the player who owns the building when it dies decides: their civ, their copy of the building, and the
+  units are theirs (seen in game, the same in stock).
+- **No interface:** the key changes no text, panel or button; none of the screens of the UI coverage rules shows the
+  guerrilla.
+- **Multiplayer:** it changes the simulation: every player needs the same setting and data. It draws no new random number
+  (the units out of the destroyed building take the stock spawn's places and rolls).
+- **Saved games:** nothing to keep: the tags come with the data and a load applies the techs again.
+- **Log:** `partisans: the proto tags CivPartisan and PartisanFromNearby and the Data subtypes PartisanType and
+  PartisanCount are on` and `hook reached: partisans (0x4B532F)`. With `log`: the tags read (`partisans: proto 306
+  (Barracks): civ Spanish gets Rodelero x 3`), the effects, and each guerrilla: `partisans: unit 0 (Barracks) of player 1
+  (civ 22) died: 3 x Rodelero`, or in the nearby mode `partisans: unit 1 (Stable) of player 1 died: 4 x Rodelero beside 3
+  building(s) within 30 m (0 unfinished left out)` and one line per unit with its building and place. A guerrilla held back says why: `partisans: unit 26 (HouseMed) of player 1 died: no guerrilla (not finished, build 4 %)`, or `(the kill's first flag is set, build 100 %)` for a trigger's `Kill` or the owner's delete.
+- **Tested in WoL (2026-11-27), skirmishes on test maps, player 1 Spanish, player 2 the Serbian AI (`wolPetar`), test data
+  in the test copy (restored after):**
+  - Per civ: a Spanish `Barracks` with the Spanish line gave `3 x Rodelero` (3 Rodeleros counted in its footprint); a
+    Serbian `Barracks` without a Serbian line gave its stock `2 x SerbianInferno`; a Serbian `TownCenter` gave
+    `6 x SerbianInferno`, the second of its two types.
+  - A trigger's `Kill` on a Spanish `Barracks`: no guerrilla, no log line.
+  - Techs: a test tech at 40 s (`PartisanType` `Pikeman`, `PartisanCount` `Assign` 5 on `Barracks`, player 1): the next
+    Spanish Barracks gave `5 x Pikeman` (5 counted). Saved at 72 s and loaded in the same process: the data was read
+    again, both effects were applied again, and a Barracks destroyed after the load gave `5 x Pikeman` (5 counted).
+  - Nearby, a `Stable` with `<PartisanFromNearby>30</PartisanFromNearby>`, two Houses and an Outpost 6 to 15 m from its
+    edge: 4 Rodeleros, two beside the closest building and one beside each of the others (5 runs). A Stable with no
+    building of its owner within 30 m: `no finished building ... within 30 m`, and its 4 Rodeleros came out of it.
+  - Foundations (2026-11-27, second pass): a Spanish `HouseMed` given a Spanish line (and 300 build points, so it stays
+    a foundation), placed by a Settler (console `tis("HouseMed")` and a posted click) and destroyed at 4 % by the
+    enemy's Grenadiers: `no guerrilla (not finished, build 4 %)`. A Spanish Stable with `<PartisanFromNearby>30` that
+    fell while a foundation stood 9 m away: `no finished building ... within 30 m (1 unfinished)`, and its 4 Rodeleros
+    came out of the Stable.
+  - The owner's delete (console `uiDeleteAllSelectedUnits()` on a Spanish Barracks with the Spanish line): `no
+    guerrilla (the kill's first flag is set)`. The same in stock: with the key off, a Serbian Barracks given
+    `PartisanType` `Rodelero` and `PartisanCount` 4 in the test data, deleted by its owner, left only rubble.
+  - Conversion (trigger `Convert`, then `Damage Unit`): the owner at the death decides, with its civ and its copy of the
+    building. A Spanish Barracks converted to the Serbians gave `2 x SerbianInferno` to the Serbian player; a Serbian
+    Barracks converted to the Spanish gave `3 x Rodelero` (the Spanish line) to the Spanish player. Stock, key off: a
+    Spanish AI's Barracks converted to the Serbians gave 4 Rodeleros (the test data's type) to the Serbian player, and
+    a Serbian Barracks converted to the Spanish gave nothing (no `<Partisans>` for the Spanish).
+  - With `perCivEffects` (agent E's branch merged in a scratch build, not committed): one tech, researched by both
+    players, with `PartisanCount` `Assign` 5 `onlyciv="Spanish"` and `PartisanType` `Pikeman` `onlyciv="Serbians"` on
+    `Barracks`: the Spanish Barracks gave `5 x Rodelero`, the Serbian one `2 x Pikeman`. Each effect reached only its
+    civ.
+  - Performance, `perfprobe` 60 s from 18 s game time, two runs each way, a skirmish where triggers kill 100 Settlers of
+    each player and 10 Houses (211 deaths through the hook, no guerrilla): key on fps 1019 / 993, update 0.22 / 0.22 ms,
+    main thread 85.1 / 85.1 %, frames over 50 ms 2 / 0; key off fps 981 / 987, update 0.24 / 0.23 ms, main thread
+    86.2 / 85.9 %, frames over 50 ms 2 / 0. No measurable cost.
+  - Bad data: `civ="NoSuchCiv"`, a unit `NoSuchUnit`, `count="abc"` and `count="500"`, a line without `civ`,
+    `<PartisanFromNearby>` `x` and `-5`, and `PartisanType` effects with `NoSuchUnit`, `AbstractInfantry` and no
+    `unittype`: each logged and ignored. The last Spanish line on the Town Center replaced the earlier ones; its
+    `count="500"` was refused, so the Town Center's `PartisanCount` counted: `6 x Rodelero`.
+  - Beside WoL's own DLL (our `dinput8.dll`, `engine-ext\engine-ext.cfg`): `3 applied, 0 failed`, the hook reached, the
+    same guerrillas.
+  - The AI: no XS error; the Serbian AI trained a Peasant, with the key and without it.
+  - Key off, the same data: nothing from the Spanish buildings, the Serbian ones as before (control video).
+- **Seen in game:** after they appear beside the buildings, the units of one death walk over to the nearest group of the
+  same unit (in the video, to the Barracks' Rodeleros) and stand in a line. That is the game's own behaviour, not the
+  key's: with the key off, a Serbian `Barracks` given `PartisanType` `Rodelero` and `PartisanCount` 4 in the test data
+  gave its 4 Rodeleros inside its footprint, and 3 Rodeleros of the same player standing 20 m away walked over to them
+  within 7 s and stayed there (2026-11-27).
+
 #### killBountyTechs, resourceBounty and teamKillBounty
 
 *Techs can change kill rewards, which can pay resources or reach the killer's whole team.*
@@ -6625,7 +6760,8 @@ nowalkfarm
 
 **Added:** Monday 2026-11-23 13:56 · **Filmed in WoL:** Monday 2026-11-23 13:56
 
-**Optional.** Off unless its line is in `wol.cfg`, and it does nothing visible without the data and animation pack
+**Optional.** Off unless its line is in the cfg (`engine-ext\engine-ext.cfg` with our `dinput8.dll` beside WoL's own
+`uhc.dll`, `Startup\wol.cfg` with our `UHC.dll` in its place), and it does nothing visible without the data and animation pack
 `wol-fixes/faith/` (an opt-in pack: `apply_fix.py` applies it, `--restore` takes it back byte for byte). Turn on both,
 or neither. The panel's faith row is another opt-in pack, `wol-fixes/faith-panel/`.
 
@@ -7674,7 +7810,8 @@ researchOnTheMove [log]
   for anything inside a building.
 - **The pack `wol-fixes/research-on-the-move`:** `apply_fix.py <WoL folder>` gives the type to the six council units
   (`MapucheWarchief`, `MapucheWiseWoman`, `MapucheShaman`, `MapucheWarrior`, `MapucheMessenger`, `MapucheToki`) and adds
-  the key to `Startup\wol.cfg` (or `engine-ext\engine-ext.cfg` beside WoL's DLL); `--units A,B` names other protos
+  the key to `engine-ext\engine-ext.cfg` when the folder has an `engine-ext` folder (our `dinput8.dll` beside WoL's own
+  `uhc.dll`), else to `Startup\wol.cfg`; `--units A,B` names other protos
   (the Ethiopian caravans, `Bedouin` and `Rangatira` work too: a caravan walked 13 m while it researched);
   `--restore` undoes it.
 - **Beside WoL's DLL** (`dinput8.dll`): works (2026-11-20).
@@ -8389,6 +8526,7 @@ What happens when a tech activates or a unit changes proto.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`hcTargetTechs`](#hctargettechs) | The tech flags `HCTargetEnemy` and `HCTargetAll` send a tech's effects to the owner's enemies, or to every player. | **new** | The flag on the techs that want it. | confirmed |
+| [`perCivEffects`](#perciveffects) | `onlyciv="Spanish"` on any tech `<Effect>` makes that effect work only for a player of that civ: for shared cards, shared techs and each member of a team tech. | **new** | The attribute on the effects that want it. | confirmed (single player) |
 | [`unitTypeTechs`](#unittypetechs) | Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | **new** | The effects in your techs. | confirmed |
 | [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
 | [`orPrereqsQty`](#orprereqsqty) | `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | **new** | The attribute on the techs that want it. | confirmed (single player) |
@@ -8448,6 +8586,101 @@ hcTargetTechs [log]
   - {CARD}
   - Not tested: 3 or more players (a test map starts with 2, and editing the shared profile needs no other game open),
     multiplayer.
+
+#### perCivEffects
+
+*One effect of a shared tech, card or team tech can work for one civ only.*
+
+**Added:** Friday 2026-11-27 07:50 · **Filmed in WoL:** Friday 2026-11-27 07:50
+
+![perCivEffects in WoL](media/perCivEffects-wol.gif)
+
+*In WoL, with the key (Spanish against a German AI, `HuntingDogs` with test effects: `onlyciv="Spanish"` Hitpoints
+×2, LOS +10 and 500 gold, `onlyciv="Germans"` a TechStatus that activates a LOS +5 tech, and a misspelt
+`onlyciv="Spansh"` LOS +1):* a trigger researches `HuntingDogs` for both players at the same moment. Only the Spanish
+Settlers double (150 → 300) and only player 1 gets the 500 gold; the German Settlers keep 150 and get only their LOS +5
+(14 → 19); the misspelt effect works for no one. The top lines show the Settlers of both players and the gold, the
+bottom lines the key's log. [Full video (MP4)](media/perCivEffects-wol.mp4).
+
+![perCivEffects in WoL, key off](media/perCivEffects-wol-control.gif)
+
+*In WoL, key off (the same data):* the game skips the attribute, so both players get every effect: 300 HP, LOS 30 and
+500 gold each. [Full video (MP4)](media/perCivEffects-wol-control.mp4).
+
+```
+perCivEffects [log]
+```
+
+```xml
+<Tech name ='HCTeamSomething' type ='Normal'>
+    <Flag>TeamTech</Flag>
+    <Effects>
+        <Effect type='Data' onlyciv='Spanish' amount='1.10' subtype='Hitpoints' relativity='BasePercent'>
+            <Target type='ProtoUnit'>AbstractInfantry</Target></Effect>
+        <Effect type='TechStatus' status='active' onlyciv='Germans'>SomeGermanTech</Effect>
+    </Effects>
+</Tech>
+```
+
+- **In WoL today:** a shared card or tech gives the same to everyone, and per-civ effects need gate techs
+  (`FreeHomeCityUnitIfTechObtainable`). JTMaston's #113.
+- **Effect:** an effect with `onlyciv` works only for a player whose civ is that one. It is checked for the player who
+  **receives** the effect: in a team tech each member is checked on its own (a Spanish player's team card with an
+  `onlyciv="Germans"` effect gives that effect to his German ally and not to him); with `hcTargetTechs`, each target.
+- **Any effect type:** `Data`, `Data2`, `TechStatus`, `SetName`, ... on a ProtoUnit, Player or tech target. An effect
+  without the attribute works as before.
+- **The civ name:** as in `civs.xml` (`<name>`), one civ per effect. A name that is not a civ: one line in the log with
+  the tech, and that effect works for no one.
+- **Why not `civ`:** WoL's data already uses `civ` on 44 `SetCivRelation` effects (and the stock `SetCivilization`
+  reads it), so the new attribute has its own name.
+- **A player whose civ changes in the game** (the `Data` subtype `SetCivilization`): the removal of an effect follows
+  what was applied to that player, not the civ at the removal.
+- **Saved games:** the effects that stock re-applies after a load (those on protos) go through the same check, and the
+  values stay as they were.
+- **Off:** the game skips an attribute it does not know, and every effect works for everyone.
+- **Multiplayer:** it changes the simulation: every player needs the same setting. The check reads only the player
+  that receives the effect, never the local player.
+- **Interface:** none of its own. A tech's rollover is its `RolloverTextID` string, not built from the effects, so a
+  text that names a civ is the modder's to write. The screens (game, minimised interface, home city, deck builder,
+  "View All Cards", tech tree, observer) show what the effects did, as without the key.
+- **Log:** `perCivEffects: the Effect attribute onlyciv is on (multiplayer unverified)`, `hook reached: perCivEffects effect parse
+  (0x6205EF)`, `... apply (0x7F7E97)`, `... remove (0x7F8168)`, and with `log`: `perCivEffects: tech 297: an effect for
+  Spanish only` at the data load, `perCivEffects: apply tech 297 (HuntingDogs), onlyciv Spanish, player 1 (civ 22)` and
+  `skip`, `remove` and `keep skipped` lines (first 300).
+- **Tested in WoL (2026-11-27, `C:\AoE3-UHC-WoLReal5`):**
+  - A scenario with three players (Spanish and German allies, a British enemy; the civs set by a test tech with
+    `SetCivilization`), `HuntingDogs` for all three: Settler LOS 14 → Spanish 24 (+10), German 19 (+5 through the
+    `TechStatus`), British 14; HP ×2 only for the Spanish. Key off: 30 for all, HP ×2 for all.
+  - The team card `HCImprovedWallsTeam` played by the Spanish player with `onlyciv="Germans"` LOS +20: the German ally
+    went 19 → 39, the Spanish player stayed 24, the British enemy (not in the team) 14. Key off: both allies +20.
+  - Saved and loaded in that scenario: the Spanish 24 and the British 14 stayed; the German ally's 39 went back to 19,
+    and so did the key-off control's (50 → 30 for both allies): a team card activated by a trigger is not re-applied
+    after a load in stock either.
+  - A skirmish, Spanish against a German AI (`wolOtto`), the same tech: the video above, then a saved game loaded:
+    HP 300 / 150, LOS 24 / 19, gold 500 / 0, as before the save.
+  - A civ change: the Spanish player turned German by `SetCivilization` after `HuntingDogs`; the game then removed the
+    tech's effects of that player, and exactly the three Spanish ones came off (LOS 24 → 14, HP 300 → 150), the
+    German one it never got was not taken off.
+  - A misspelt `onlyciv="Spansh"`: logged once with the tech, applied to no one.
+  - With `multiarmor` on (in the cfg of every run): both keys `applied`, `multiarmor` reached its setData hook.
+  - Performance (`perfprobe.py`, a skirmish against a German AI from 20 s of game time, 90 s each, the data with six
+    `onlyciv` effects, another copy's game running beside it; two runs each way):
+
+    | Run | fps (mean) | longest frame | frames over 50 / 100 ms | main thread | update | render |
+    |---|---|---|---|---|---|---|
+    | on, 1 | 423 | 54.5 ms | 2 / 0 | 92.1 % | 0.33 ms | 2.05 ms |
+    | on, 2 | 471 | 45.1 ms | 0 / 0 | 90.5 % | 0.32 ms | 1.81 ms |
+    | off, 1 | 458 | 45.9 ms | 0 / 0 | 90.7 % | 0.33 ms | 1.86 ms |
+    | off, 2 | 577 | 43.9 ms | 0 / 0 | 91.1 % | 0.31 ms | 1.43 ms |
+
+    Main thread 91.3 % on and 90.9 % off on average, the update the same: no measurable rise. The fps moved between
+    runs either way (423-577) with the render time, the other copy's load on the GPU. Launch to the main menu (`testbed.py
+    launch`, which polls): 10.717 and 10.719 s on, 10.713 and 10.713 s off.
+  - The AI: in the first A/B skirmish with the key, the German AI had 11 Settlers and a Manor at 110 s of game time.
+  - Beside WoL's own `uhc.dll` (its binary and `wol.cfg`, our `dinput8.dll` with `perCivEffects log` in
+    `engine-ext.cfg`): `applied`, the parse and apply hooks reached, and the same result (Spanish 300 HP and LOS 24,
+    German 150 and 19).
+  - Not tested: multiplayer.
 
 #### transformSpan
 
@@ -9283,7 +9516,8 @@ displayedRange [log] [noPlacement]
 - **In the options menu** (2026-11-25): with `menuOptions displayedRange` in the cfg, the player turns all the rings
   on or off with a check box. `python wol-fixes/options-menu/apply_fix.py "<WoL folder>"` puts it on the UI Options
   page, after "ALT key shows hitpoint bars" ("Show Range Rings", with a tooltip), and adds `menuOptions
-  displayedRange` and a `displayedRange` line to `wol.cfg` when they are missing, so the rings start on; `--restore`
+  displayedRange` and a `displayedRange` line to the cfg when they are missing (`engine-ext\engine-ext.cfg` when the
+  folder has an `engine-ext` folder, else `Startup\wol.cfg`), so the rings start on; `--restore`
   undoes it. The choice:
   - takes effect when the player clicks OK, in the main menu or during a match (in single player every row of the
     options screen can be changed in a match): the rings of the selected units and of a building being placed come or
@@ -9782,7 +10016,7 @@ tooltip line `2X Bonus Damage against (icon) Skirmisher`. The icon comes from Wo
 *The videos of the first layout (2026-11-17) were removed on 2026-11-21: the panel has changed since (version 7).*
 
 ```
-minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of wol-fixes/min-ui
+minUIStats [file]      default data\uhc\minuirows.xml (engine-ext\minuirows.xml for the dinput8.dll); without it, the rows of wol-fixes/min-ui
 ```
 
 - **In WoL today (WoL #67):** with `optionminimizedui` the exe never fills the stat panel. The selection panel writes a
@@ -10762,6 +10996,9 @@ in the first minute to 14,200 in the eighth (8 players, all their villagers, tri
 selectFattened [gadget <name>]... [log]
 ```
 
+- **Beside WoL's own `uhc.dll`: FAILED** (2026-11-27, our `dinput8.dll`): the command is a UI syscall, and `AddSyscall`
+  needs the site `SyscallAi` 0x7294F4, which WoL's DLL holds (as for `kbUnitSyscalls`). It works with our `UHC.dll` in
+  place of WoL's.
 - **The request (WoL #106):** a player asked for a button that selects only the livestock that has reached its maximum
   food: with the Middle East civs and the Spanish immigrants, livestock matters more.
 - **Effect:** the command `uhcSelectFattened` (a button's or a hotkey's `<command>`) selects every herdable (unit type
@@ -10874,6 +11111,11 @@ cultureUI [file.xml]
   The civ names are those of `civs.xml`; a civ takes the first style that names it. A stage's suffix is the whole
   suffix (`as_gw`, so the files are `X_as_gw.ddt`). Any tech can be a stage; with several, the last active one wins.
   WoL's Great War is not an engine age: every route to it activates `GreatWarizeALL`, so that is the stage's tech.
+- **WoL's families** (the pack's `cultureui.xml`): the civs that activate each of the nine Great War techs, but the
+  Egyptians are with the Middle East (`me`), as JTMaston chose on 2026-11-27 (their tech is `GreatWarAF`). A style
+  draws the resource panel each of its civs sees, so a family whose civs see different panels needs the art of each:
+  the Middle East needs the European panel (Afghans, Persians, Saudis, Uzbeks) and the Asian one (the Egyptians,
+  in `asianCivs`).
 - **No style:** for an observer (WoL's rule: the maps' observer mode makes a trigger named `StartInsertion`, and the
   observers are the players from where the team changes, slot 3, 5 or 7), with the normal (not minimised) interface,
   or for a civ in no style. Switching to the normal interface in a game drops the style at the next check.
@@ -10888,7 +11130,8 @@ cultureUI [file.xml]
   `cultureUI: style as (10 texture(s))`, `cultureUI: style as, stage as_gw (10 texture(s))`, or
   `cultureUI: no style (the normal interface | observer | a civ in no style | style af has no texture)`.
 - **The pack,** `wol-fixes/culture-ui/`: `apply_fix.py "<WoL folder>" [--styles <folder>] [--engine-ext]` writes the
-  nine families' `cultureui.xml`, adds `cultureUI` to `Startup\wol.cfg` and copies the textures of a styles folder
+  nine families' `cultureui.xml` and adds `cultureUI` to the cfg (`engine-ext\` and its `engine-ext.cfg` when the
+  folder has an `engine-ext` folder or with `--engine-ext`, else `data\uhc\` and `Startup\wol.cfg`), and copies the textures of a styles folder
   (`ui\ingame\<texture>_<family>[_gw].ddt`) to `art\ui\ingame`; `--check`, `--restore` (byte for byte).
   `make_test_styles.py` makes the provisional test styles (`as`, `as_gw`, `me`, `me_gw`).
 - **Status:** see the tests below.
@@ -10909,6 +11152,8 @@ Tests (2026-11-26, a copy of WoL, single player, posted input only, the test sty
 | The AI (a German AI, all the games above) | pass: no XS error; in the last game it went from 4 to 10 settlers in 120 s |
 | The resource icons | pass: the same colours as today in the four test styles (the test styles leave them out) |
 | Observer | not tested: an observer needs a second player in multiplayer (the host is slot 1) |
+| 2026-11-27, Egyptians moved to `me` (WoLReal4, test styles, skirmish on a test map, a German AI): Egyptians, then the Great War at 40 s | pass: `style me`, then `style me, stage me_gw` (log; picture `_share\maston-20261129\C\cultureUI-egyptians-middle-east.png`) |
+| The next game, Ethiopians (`af`, no textures) | pass: today's look (`no style (style af has no texture)`); no XS error |
 
 ![The screens of the tests](media/cultureUI-screens.jpg)
 

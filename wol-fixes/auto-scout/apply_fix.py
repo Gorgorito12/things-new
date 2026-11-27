@@ -26,7 +26,11 @@ What it changes (README.txt has the why and how to do the same for any unit):
 - data\\stringtabley.xml and translations\\_originals\\stringtabley.xml: the two tooltips, in English (IDs
   690901 and 690902);
 - art\\ui\\command\\uhc_autoscout_start.ddt and uhc_autoscout_stop.ddt (new): the button icons.
-The key itself goes in Startup\\wol.cfg: `autoScout` (the script adds it when the file has no such line).
+The key `autoScout` goes in engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll
+beside WoL's own uhc.dll), else in Startup\\wol.cfg (our UHC.dll in place of WoL's); the script picks the file and
+adds the line when it has none. The command names stay in data\\uhc\\customprotounitcommands.xml in both setups:
+beside WoL's uhc.dll it is WoL's own customProtoUnitCommands that reads that file (ours FAILS there: WoL holds its
+sites).
 """
 import json
 import pathlib
@@ -66,7 +70,6 @@ CHANGED = [
     "data/uhc/customprotounitcommands.xml",
     "data/stringtabley.xml",
     "translations/_originals/stringtabley.xml",
-    "Startup/wol.cfg",
 ]
 COMMANDS = f"""\t<protounitcommand>\r
 \t\t<name>{START}</name>\r
@@ -163,6 +166,12 @@ def edit_unit(text, name, tactics, columns, no_wander, stop=STOP):
     return text[:start] + block + text[end:], True
 
 
+def cfg_rel(root):
+    """The cfg the key goes in: engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll
+    beside WoL's own uhc.dll), else Startup\\wol.cfg (our UHC.dll in place of WoL's)."""
+    return "engine-ext/engine-ext.cfg" if (root / "engine-ext").is_dir() else "Startup/wol.cfg"
+
+
 def apply(root):
     backup = root / BACKUP
     if (backup / "manifest.json").exists():
@@ -175,7 +184,7 @@ def apply(root):
     explorer_text = explorer_tactics((root / "data/tactics" / EXPLORER_SOURCE).read_text(encoding="utf-8"))
     backup.mkdir()
     manifest = {"changed": [], "added": []}
-    for rel in CHANGED:
+    for rel in CHANGED + [cfg_rel(root)]:
         if (root / rel).exists():
             (backup / rel).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(root / rel, backup / rel)
@@ -242,12 +251,16 @@ def apply(root):
             write_text(path, text, enc)
 
     # The key
-    path = root / "Startup/wol.cfg"
+    path = root / cfg_rel(root)
     if path.exists():
         text, enc = read_text(path)
-        if not re.search(r"(?im)^\s*autoScout\b", text):
-            text = text.rstrip("\r\n") + "\r\nautoScout\r\n"
-            write_text(path, text, enc)
+    else:
+        text, enc = "", "utf-8"
+        manifest["added"].append(cfg_rel(root))
+    if not re.search(r"(?im)^\s*autoScout\b", text):
+        text = (text.rstrip("\r\n") + "\r\n" if text else "") + "autoScout\r\n"
+        write_text(path, text, enc)
+    print(f"autoScout in {cfg_rel(root)}")
 
     (backup / "manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
     print(f"applied; backup in {backup}")
@@ -274,6 +287,9 @@ def check(root):
         print(f"{name}: {'applied' if START in text[start:end] else 'not applied'}")
     for rel in NEW_FILES:
         print(f"{rel}: {'present' if (root / rel).exists() else 'missing'}")
+    cfg = root / cfg_rel(root)
+    on = cfg.exists() and re.search(r"(?im)^\s*autoScout\b", read_text(cfg)[0]) is not None
+    print(f"{cfg_rel(root)}: autoScout {'on' if on else 'missing'}")
 
 
 def main():

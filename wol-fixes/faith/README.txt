@@ -5,7 +5,8 @@ ENGLISH
 -------
 
 An OPTIONAL feature. Nothing changes unless you turn on both parts:
-1. the DLL key `faithResource` in Startup\wol.cfg (UHC.dll; it is off unless the line is there), and
+1. the DLL key `faithResource` in engine-ext\engine-ext.cfg (our dinput8.dll beside WoL's own uhc.dll, the usual
+   WoL setup), or in Startup\wol.cfg if our UHC.dll is used in place of WoL's (it is off unless the line is there), and
 2. this data and animation pack (apply_fix.py). The pack changes nothing until it is applied, and --restore takes
    every file back byte for byte.
 No other pack depends on it. The resource panel's faith row is a separate pack, wol-fixes/faith-panel/, made to go
@@ -36,7 +37,7 @@ The key removes those three and changes nothing else (an AI still starts with re
 skill points and the other gather animations stay as they are.
 
 Install
-    1. Startup\wol.cfg: add the line
+    1. engine-ext\engine-ext.cfg (or Startup\wol.cfg with our UHC.dll in place of WoL's): add the line
            faithResource
        (or "faithResource log" to log, at the end of each game, the faith that was not banked).
     2. python apply_fix.py "<Wars of Liberty folder>"              (backup in <folder>\faith-backup)
@@ -93,7 +94,9 @@ ESPAÑOL
 -------
 
 Una función OPCIONAL. Nada cambia si no se activan las dos partes:
-1. la clave del DLL `faithResource` en Startup\wol.cfg (UHC.dll; está apagada si la línea no está), y
+1. la clave del DLL `faithResource` en engine-ext\engine-ext.cfg (nuestro dinput8.dll junto al uhc.dll de WoL, lo
+   normal en WoL), o en Startup\wol.cfg si se usa nuestro UHC.dll en lugar del de WoL (está apagada si la línea no
+   está), y
 2. este paquete de datos y animaciones (apply_fix.py). El paquete no cambia nada hasta aplicarlo, y --restore
    devuelve cada archivo byte por byte.
 Ningún otro paquete depende de este. La fila de fe del panel de recursos es otro paquete, wol-fixes/faith-panel/,
@@ -120,10 +123,21 @@ La clave quita esas tres cosas y no cambia nada más (la IA sigue empezando con 
 presupuesto para las cartas de metrópoli; lo que no gasta queda como fe): el petróleo, la XP y su paso a la metrópoli, los puntos de la
 metrópoli y las demás animaciones de recolección siguen igual.
 
-Instalación: la línea `faithResource` en Startup\wol.cfg, y luego
+Instalación: la línea `faithResource` en engine-ext\engine-ext.cfg (o en Startup\wol.cfg con nuestro UHC.dll en
+lugar del de WoL), y luego
     python apply_fix.py "<carpeta de Wars of Liberty>"             (copia de seguridad en <carpeta>\faith-backup)
     python apply_fix.py "<carpeta de Wars of Liberty>" --no-ai     (sin el cambio del script de la IA)
     python apply_fix.py "<carpeta de Wars of Liberty>" --check     (qué está aplicado)
     python apply_fix.py "<carpeta de Wars of Liberty>" --restore   (todo como estaba)
 
 Qué civilizaciones rezan, y los límites: ver la parte en inglés.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  faithResource              applied
+
+Junto al uhc.dll de WoL (probado el 2026-11-27, nuestro dinput8.dll, la línea en engine-ext\engine-ext.cfg): faithResource se aplica (applied).

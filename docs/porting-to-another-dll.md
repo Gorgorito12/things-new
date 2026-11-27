@@ -18,7 +18,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots`, `retargetInAction`, `powerShots`, `turretArc` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `buildingGather`, `herdWalkAwayFix`, `faithResource` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
-| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs`, `resendableCards`, `quickArrivalCards` | [techs](porting-code/techs.md) |
+| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs`, `perCivEffects`, `resendableCards`, `quickArrivalCards` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon`, `autoScout` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
 
@@ -1102,6 +1102,19 @@ Code: [techs](porting-code/techs.md#hctargettechs).
   (`53 55 57 8B 7C 24 10`). Check them against your DLL first.
 - **Test:** a tech with the flag: the enemy's units change, the owner's do not.
 
+### perCivEffects
+
+Code: [techs](porting-code/techs.md#perciveffects).
+
+- **Sites:** a 5-byte `jmp` at `0x6205EF` (`8B C6 5E 5F C3`), the success tail of the effect parse, which the hook
+  re-executes (`mov eax,esi / pop esi / pop edi / ret`); 6-byte `jmp`s at the heads of the apply dispatcher `0x7F7E97`
+  and of the effect removal `0x7F8168` (both `64 A1 00 00 00 00`, `mov eax,fs:[0]`). Verify only: `0x6204B1` (the
+  parse's call in the `<Effect>` handler, which fixes the frame the hook reads the tech from).
+- **Beside your DLL:** your `uhc.dll` writes `0x6205C9` (the factory call) and the Data effect's vtable slots, not
+  these. A DLL that verifies `0x6205C7..0x6205F3` as stock (as our `techRenameEffect` does) must apply first.
+- **Test:** a shared tech with `onlyciv="Spanish"` on one effect, researched by a Spanish and a German player: only
+  the Spanish player gets that effect; a team tech: each member is checked on its own.
+
 ### techPrereqRecheck
 
 Code: [techs](porting-code/techs.md#techprereqrecheck).
@@ -1616,6 +1629,24 @@ Code: [combat](porting-code/combat.md#killspawn). It needs `AddCivTagHandler` ([
   then the creation `0x498ACC(world, proto, player, position, forward, 0, -1, 0, -1)`, `ret 20h`.
 - **Test:** the tags on a civ in `civs.xml`, then a fight: with `log`, each kill gives its rolls and each animal where it
   came.
+
+### partisans
+
+Code: [combat](porting-code/combat.md#partisans). It needs `AddProtoTagHandler` ([proto tags](porting-code/helpers.md#proto-tags)),
+`AddTechProtoSubtype` and `AddTechSubtype` ([tech subtypes](porting-code/helpers.md#tech-subtypes)) and `OnDatabaseLoad`.
+
+- **Site:** `jmp` at `0x4B532F` over 16 bytes (`8B 4E 44 E8 86 FB FF FF 3C 01 0F 84 C5 EB 1E 00`: the kill handler's
+  guerrilla test), continue at `0x4B533F` (`8B 4E 5C`). ESI the dying unit; the kill handler's first byte argument at
+  `[esp+0A0h]` on entry (set for a trigger's `Kill` and the owner's delete); EAX, ECX and EDX free. Verify the cold block `0x6A3F04` (37h bytes),
+  the spawn's head `0x9C07D6` and the civ test's head `0x4B4EBD` too.
+- **Stock tests to keep:** the owner's civ test `0x4B4EBD(player)` (thiscall), the count of the dying unit's copy
+  `[[unit+5Ch]+164h]` > 0, that argument 0, and the build test `0x44DDB4(unit)`; then the spawn `0x9C07D6(unit)`
+  (thiscall, plain `ret`), which reads the type `+160h` and the count `+164h` of that copy.
+- **Calls (nearby mode):** units near a point `0x4A1C55(world, point, radius, 1, list)`, the unit by ID `0x44CC6D`, is-a
+  `0x44D7FA`, the placement test (world vtable `+14h`, flags 6) and `0x498ACC(world, proto, player, position, forward, 1,
+  -1, 1, -1)`.
+- **Test:** a `<CivPartisan>` line for a civ without `<Partisans>` on a building, destroyed by damage (not a trigger's
+  `Kill`): with `log`, the guerrilla and its count.
 
 ### snareOnlyHitUnit
 

@@ -1,0 +1,25 @@
+Hi JTMaston,
+
+Culture UI: done, the Egyptians are now with the Middle East family (ME), as you said.
+
+- data\uhc\cultureui.xml: the Egyptians are in the ME style now, the Africans (AF) are the Ethiopians and the Zulu.
+- The Photoshop templates did not change. Only their README changed: the family list, and one note below.
+- Note for the artists: the Middle East family now needs BOTH resource panels. The Afghans, Persians, Saudis and
+  Uzbeks see the European resource panel, but the Egyptians see the Asian one (they are in asianCivs). So an ME
+  set needs eur_max_ui and piece 21 of ingame_ui_small_01_ypack (European), and asi_ui_max and
+  ingame_ui_small_01_asian (Asian). The README lists them.
+- Tested in a copy of WoL, single player: the Egyptians get the Middle East test look, then its Great War look when
+  the Great War is researched; the Ethiopians keep today's look (no AF art yet). No AI script error.
+
+Picture: cultureUI-egyptians-middle-east.png. The colours are the same loud test recolours as before, made by a
+script only to show the switch. They are not proposals.
+
+Still open from my last message:
+1. All nine families (EU, AN, LA, NS, AF, AS, ME, NA, PO), or fewer? Families without art keep today's look.
+2. The resource panel: each family restyles the panel(s) its civs see (today the Africans, the Maori and now the
+   Egyptians see the Asian one; the others the European one). Is that right?
+4. The Swedish: their starting tech activates none of the nine Great War techs. I put them with the Europeans. Is
+   that right?
+5. Can you open the Photoshop templates without problems?
+
+Thanks!

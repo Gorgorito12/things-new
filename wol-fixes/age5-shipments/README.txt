@@ -5,7 +5,8 @@ What it is
 ----------
 Home city cards that can only be sent in the Imperial Age (the fifth age, "age 4" inside the game).
 
-With the key `ageFiveShipments` in Startup\wol.cfg:
+With the key `ageFiveShipments`, one line in engine-ext\engine-ext.cfg (our dinput8.dll beside WoL's own uhc.dll,
+the usual WoL setup), or in Startup\wol.cfg only if our UHC.dll is used in place of WoL's:
 - a card with <age>4</age> in its home city file (data\homecityxxx.xml) is part of the game's deck;
 - it is shown in the Age IV row, at its RIGHT end: the Age IV cards stay packed at the left, the Age V cards are
   packed at the right (in the order of the deck), and the slots between the two groups stay empty. The same in
@@ -79,3 +80,11 @@ shipmentCounts; "Build a Deck" shows it.
 - the full row (9 + 3) and the key off, as in the pictures.
 Not tested: the AI with an Age V card in its deck, multiplayer, other resolutions than 1920 x 1080 (the panels'
 own buttons are used, so no difference is expected).
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  ageFiveShipments           applied

@@ -12,7 +12,8 @@ The marks over a unit with a veterancy rank are the five soutache knots of the s
     rank 5   gold     a pointed top loop and two tiers
     No stars. A rank above the fifth keeps rank 5's mark.
 
-Your cfg line is
+Your cfg line (in engine-ext\engine-ext.cfg with our dinput8.dll beside your own uhc.dll; in Startup\wol.cfg only
+if our UHC.dll is used in place of yours) is
 
     veterancyBonus notext
 
@@ -53,3 +54,12 @@ Overlap with your sheet (IoU, 1 = identical):
 How the files are made: python -I wol-fixes\veterancy-marks\trace_marks.py --border 12 (needs numpy and Pillow), then
 aoe3-blender-tools' tools\make_rings.py --out tools\rings --folder uhc_rings --rank-shapes wol-fixes\veterancy-marks\traced
 writes the textures and particles of art\effects\uhc_rings (in the DLL's release zip). Nothing else changes.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  veterancyBonus notext      applied (no veterancy.xml there: no default rows; put yours in
+                             engine-ext\veterancy.xml)

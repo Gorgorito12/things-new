@@ -115,6 +115,7 @@ PAGES = {
         "auraStacking": ["src/features/aurastacking.cpp", "src/aurastacking.h", "src/hooks/aurastacking_hooks.asm"],
         "veterancyBonus": ["src/features/veterancy.cpp"],
         "killSpawn": ["src/features/killspawn.cpp"],
+        "partisans": ["src/features/partisans.cpp", "src/hooks/partisans_hooks.asm"],
         "detonationDeath": ["src/features/detonation.cpp", "src/hooks/detonation_hooks.asm"],
         "impactBoneFix": ["src/features/impactbones.cpp", "src/hooks/impactbone_hooks.asm"],
         "customImpactTypes": ["src/features/impacttypes.cpp", "src/hooks/impacttype_hooks.asm"],
@@ -162,6 +163,7 @@ PAGES = {
     }),
     "techs": ("Techs and transforms", {
         "hcTargetTechs": ["src/features/hctargets.cpp", "src/hooks/hctarget_hooks.asm"],
+        "perCivEffects": ["src/features/percivfx.cpp", "src/hooks/percivfx_hooks.asm"],
         "techPrereqRecheck": ["src/features/techprereq.cpp", "src/hooks/techprereq_hooks.asm"],
         "orPrereqsQty": ["src/features/orprereqs.cpp", "src/hooks/orprereqs_hooks.asm"],
         "shipmentCounts": ["src/features/shipmentcounts.cpp", "src/hooks/shipmentcount_hooks.asm"],

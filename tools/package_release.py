@@ -408,10 +408,12 @@ veterancyBonus [notext] [log] [file]   <VeterancyBonus> rows give a proto bonuse
                               rank mark; tech="..." rows; data\\uhc\\veterancy.xml: rows by unit type and
                               <Civilization> blocks, rank names and colours; notext: no floating text at a new rank
 killSpawn [log]               civs.xml <killSpawn>: enemies a civ kills become animals, by weight
+partisans [log]               the guerrilla per civ (<CivPartisan>), by tech, or from nearby buildings
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners
 transformSpan [log]           transformspan on a TransformUnit effect turns the units back
 hcTargetTechs [log]           tech flags HCTargetEnemy and HCTargetAll
+perCivEffects [log]           onlyciv on a tech <Effect>: it works only for that civ
 detonationDeath [log]         <DetonationProtoAction> fires an action when a unit dies
 accuracyTechs [log]           a Data tech effect may change an action's Accuracy
 cratePriority <Civ|all> <Res> <Res> <Res>   a civ's order of gathering crates (repeatable;

@@ -8,7 +8,7 @@ stock field guns (data\\tactics\\zamburakCannon.tactics):
 - Bombard: the camel lies down, the artillerist gets off and stands at his station behind the breech,
   the gun resting at +90 (square to the camel's spine); he fires it by touching the vent with the hot
   tip of a short stick, then reloads by hand (the gun swung round to him through its back, charge and
-  ball pushed in, swung back). With the DLL key turretArc (one line in Startup\\wol.cfg, below) the gun
+  ball pushed in, swung back). With the DLL key turretArc (one line in engine-ext\\engine-ext.cfg, below) the gun
   turns on its swivel from +30 to +150 instead of the camel turning.
 
     python apply_fix.py <WoL folder>              apply (a backup of every file it changes goes to
@@ -24,7 +24,8 @@ data\\tactics\\zamburakCannon.tactics. File it changes: data\\protoy.xml
 (MEZamburak's <AnimFile>, <Tactics> and its CannonAttack's <ROF>, 4.0 -> 5.0: a proposal, see the README).
 The current files (art\\WoL\\units\\cavalry_ranged\\zamburak\\, zamburakME.tactics) are not touched.
 
-The turning gun (the pack does not edit the cfg):
+The turning gun (the pack does not edit the cfg): this line in engine-ext\\engine-ext.cfg (our dinput8.dll beside
+WoL's own uhc.dll), or in Startup\\wol.cfg if our UHC.dll is used in place of WoL's:
     turretArc MEZamburak art\\WoL\\units\\cavalry_ranged\\zamburak_cannon\\zamburak_cannon.aim
 """
 import json
