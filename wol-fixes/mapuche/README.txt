@@ -47,15 +47,15 @@ Installing
   python apply_fix.py "<WoL folder>" --check       says what is applied
   python apply_fix.py "<WoL folder>" --restore     puts everything back
 
-It adds the lines `shipTechLimit` and `homeCityTechsInUnits` to Startup\wol.cfg when the file has none. The keys
-come with our UHC.dll, or with our dinput8.dll beside WoL's own DLL (in that case the lines go in
-engine-ext\engine-ext.cfg instead, which the script picks when that folder exists).
+It adds the lines `shipTechLimit` and `homeCityTechsInUnits` when the file has none: to engine-ext\engine-ext.cfg
+(our dinput8.dll beside WoL's own uhc.dll, the usual WoL setup; the script picks it when the folder has an engine-ext
+folder), else to Startup\wol.cfg (our UHC.dll in place of WoL's).
 
 Files it changes:
   data\civs.xml          the WallMapu civ: <ShipTechLimit>
   data\protoy.xml        MapucheWiseWoman: HCNativeLore in place of MapucheNativeLore
   data\techtreey.xml     Age0Mapuche: HCNativeLore obtainable in place of MapucheNativeLore
-  Startup\wol.cfg        the two keys
+  engine-ext\engine-ext.cfg (or Startup\wol.cfg, above)   the two keys
 
 Options of the keys
 -------------------
@@ -70,3 +70,12 @@ Questions for you
   - Should a card on a council member be researchable when the card is not in the deck (then the key would make it
     obtainable for you), or only when it is in the deck?
   - What is the "black town center"? See the report.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  shipTechLimit              applied
+  homeCityTechsInUnits       applied

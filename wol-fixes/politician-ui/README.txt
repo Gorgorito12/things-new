@@ -44,7 +44,9 @@ Files it changes:
   data\uipoliticianEuropeandlg.xml   the new gadgets in each place, hidden until the DLL fills them (below).
                                      Also: PoliticianButton3 ends at 481 like the other three buttons (it ended
                                      at 381, so the lower part of the fourth place took no clicks).
-  Startup\wol.cfg                    the line `politicianEnablesTech` when the file has none.
+  engine-ext\engine-ext.cfg          the line `politicianEnablesTech` when the file has none (our dinput8.dll
+                                     beside WoL's own uhc.dll, the usual WoL setup; picked when the folder has an
+                                     engine-ext folder), else Startup\wol.cfg (our UHC.dll in place of WoL's).
   with --strings: data\stringtabley.xml and translations\*\stringtabley.xml
 
 The rollover texts (--strings)
@@ -88,3 +90,11 @@ Questions for the team
 1. Is the band under the flag where you want the techs, or would you rather have them next to the flag?
 2. Four techs at most per politician: enough?
 3. Shall --strings be part of the release (it touches every translation)?
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  politicianEnablesTech      applied

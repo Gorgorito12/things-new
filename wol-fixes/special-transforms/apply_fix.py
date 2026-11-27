@@ -31,8 +31,10 @@ What it changes (README.txt has the why):
   Death anim; the decal stays. CRLF line endings are kept (an anim file with LF made a building invisible);
 The near-kraal rule needs nothing new: the game checks the target's own PlacementFile (maturinggunpowder.xml,
 maturinghorse.xml) at the unit's position when the button is pressed, on every machine.
-The DLL key `transformChecks` (optional) greys a button out with the reason and enforces the target's BuildLimit; the script adds it to Startup\\wol.cfg with
---key.
+The DLL key `transformChecks` (optional) greys a button out with the reason and enforces the target's BuildLimit; with
+--key the script adds it to engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll beside
+WoL's own uhc.dll), else to Startup\\wol.cfg (our UHC.dll in place of WoL's). The command names stay in
+data\\uhc\\customprotounitcommands.xml in both setups: beside WoL's uhc.dll, WoL's own customProtoUnitCommands reads it.
 """
 import json
 import pathlib
@@ -67,8 +69,7 @@ CHANGED = [
     "data/uhc/customprotounitcommands.xml",
     "data/stringtabley.xml",
     "translations/_originals/stringtabley.xml",
-    "Startup/wol.cfg",
-] + ANIMS
+] + ANIMS  # and the cfg of cfg_rel()
 RESOURCE_ICONS = {
     "food": "ui/ingame/resource_food", "wood": "ui/ingame/resource_wood", "gold": "ui/ingame/resource_gold",
     "trade": "ui/ingame/resource_export", "fame": "ui/ingame/resource_fame", "xp": "ui/ingame/resource_xp",
@@ -219,6 +220,12 @@ def command_entries(text):
     return out
 
 
+def cfg_rel(root):
+    """The cfg the key goes in: engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll
+    beside WoL's own uhc.dll), else Startup\\wol.cfg (our UHC.dll in place of WoL's)."""
+    return "engine-ext/engine-ext.cfg" if (root / "engine-ext").is_dir() else "Startup/wol.cfg"
+
+
 def apply(root, key, keep_train=False):
     backup = root / BACKUP
     if (backup / "manifest.json").exists():
@@ -243,12 +250,14 @@ def apply(root, key, keep_train=False):
     strings = strings_by_id(root)
 
     backup.mkdir()
-    manifest = {"changed": []}
-    for rel in CHANGED:
+    manifest = {"changed": [], "added": []}
+    for rel in CHANGED + ([cfg_rel(root)] if key else []):
         if (root / rel).exists():
             (backup / rel).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(root / rel, backup / rel)
             manifest["changed"].append(rel)
+        elif key and rel == cfg_rel(root):
+            manifest["added"].append(rel)
     (backup / "manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
 
     write_text(root / "data/protoy.xml", new_protoy, protoy_enc)
@@ -292,12 +301,12 @@ def apply(root, key, keep_train=False):
             write_text(path, text, enc)
 
     if key:
-        path = root / "Startup/wol.cfg"
-        if path.exists():
-            text, enc = read_text(path)
-            if not re.search(r"(?im)^\s*transformChecks\b", text):
-                text = text.rstrip("\r\n") + "\r\ntransformChecks\r\n"
-                write_text(path, text, enc)
+        path = root / cfg_rel(root)
+        text, enc = read_text(path) if path.exists() else ("", "utf-8")
+        if not re.search(r"(?im)^\s*transformChecks\b", text):
+            text = (text.rstrip("\r\n") + "\r\n" if text else "") + "transformChecks\r\n"
+            write_text(path, text, enc)
+        print(f"transformChecks in {cfg_rel(root)}")
     print(f"applied; backup in {backup}")
 
 
@@ -307,6 +316,8 @@ def restore(root):
     if not manifest_path.exists():
         sys.exit(f"apply_fix: no backup at {backup}")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for rel in manifest.get("added", []):
+        (root / rel).unlink(missing_ok=True)
     for rel in manifest["changed"]:
         shutil.copy2(backup / rel, root / rel)
     shutil.rmtree(backup)
@@ -325,6 +336,9 @@ def check(root):
         if (root / rel).exists():
             text, _ = read_text(root / rel)
             print(f"{rel}: {'finished stage dances' if DANCE_MARK in text else 'not applied'}")
+    cfg = root / cfg_rel(root)
+    on = cfg.exists() and re.search(r"(?im)^\s*transformChecks\b", read_text(cfg)[0]) is not None
+    print(f"{cfg_rel(root)}: transformChecks {'on' if on else 'off (optional, --key)'}")
 
 
 def main():

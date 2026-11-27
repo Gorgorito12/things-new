@@ -10,7 +10,8 @@ the drawn stat icons and the four unit type icons from JTMaston's art (Line, Ski
 
 What it writes (README.txt has the why):
 - data\\uiunitselectionmin.xml: proposed-uiunitselectionmin.xml (WoL's own file is backed up);
-- data\\uhc\\minuirows.xml: minuirows.xml;
+- engine-ext\\minuirows.xml when the folder has an engine-ext folder (our dinput8.dll beside WoL's own uhc.dll), else
+  data\\uhc\\minuirows.xml (our UHC.dll in place of WoL's): minuirows.xml;
 - art\\ui\\ingame\\stat_icon_rof, _traintime, _armor, _los, _speed, _projectiles .ddt (new): the six drawn stat icons
   (version 9: drawn for square icons, round parts round in the texture);
 - art\\ui\\ingame\\stat_icon_building.ddt (version 9): WoL's own house (population, Buildings), its content enlarged
@@ -29,7 +30,8 @@ What it writes (README.txt has the why):
     art\\WoL\\ui\\ingame\\staticons\\stat_icon_ranged.ddt          Maneuver (AbstractRangedCavalry): a winged Minie
                                                                bullet, the bullet in copper (#C75A21), the wings
                                                                shortened so it fills the icon's height;
-- Startup\\wol.cfg: the line `minUIStats`, when the file has no such line.
+- engine-ext\\engine-ext.cfg (engine-ext folder) or else Startup\\wol.cfg: the line `minUIStats`, when the file has no
+  such line.
 """
 import json
 import pathlib
@@ -44,8 +46,25 @@ FILES = {  # target, relative to the WoL folder -> source, relative to this fold
 }
 for _p in sorted((HERE / "art").rglob("*.ddt")):
     FILES["art/" + _p.relative_to(HERE / "art").as_posix()] = _p.relative_to(HERE).as_posix()
-CFG = "Startup/wol.cfg"
+WOL_CFG = "Startup/wol.cfg"
 KEY = "minUIStats"
+
+
+def engine_ext(root):
+    """Our dinput8.dll beside WoL's own uhc.dll (an engine-ext folder): it reads engine-ext\\engine-ext.cfg and its data
+    files from engine-ext\\, never Startup\\wol.cfg or data\\uhc\\ (those are for our UHC.dll in place of WoL's)."""
+    return (root / "engine-ext").is_dir()
+
+
+def cfg_rel(root):
+    return "engine-ext/engine-ext.cfg" if engine_ext(root) else WOL_CFG
+
+
+def files(root):
+    """FILES with the rows file where the DLL of this folder reads it."""
+    if not engine_ext(root):
+        return dict(FILES)
+    return {("engine-ext/minuirows.xml" if rel == "data/uhc/minuirows.xml" else rel): src for rel, src in FILES.items()}
 
 
 def has_key(text):
@@ -58,7 +77,7 @@ def apply(root):
         print(f"already applied ({backup} exists); run --restore first")
         return 1
     manifest = {"changed": [], "added": []}
-    for rel, src in FILES.items():
+    for rel, src in files(root).items():
         target = root / rel
         if target.exists():
             (backup / rel).parent.mkdir(parents=True, exist_ok=True)
@@ -69,14 +88,17 @@ def apply(root):
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(HERE / src, target)
         print(f"wrote {rel}")
+    CFG = cfg_rel(root)
     cfg = root / CFG
-    raw = cfg.read_bytes()
-    text = raw.decode("latin-1")
+    text = cfg.read_bytes().decode("latin-1") if cfg.exists() else ""
     if not has_key(text):
-        (backup / CFG).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(cfg, backup / CFG)
-        manifest["changed"].append(CFG)
-        newline = "\r\n" if "\r\n" in text else "\n"
+        if cfg.exists():
+            (backup / CFG).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(cfg, backup / CFG)
+            manifest["changed"].append(CFG)
+        else:
+            manifest["added"].append(CFG)
+        newline = "\r\n" if "\r\n" in text or not text else "\n"
         cfg.write_bytes((text + ("" if text.endswith(("\n", "\r")) or not text else newline) + KEY + newline)
                         .encode("latin-1"))
         print(f"added {KEY} to {CFG}")
@@ -104,11 +126,12 @@ def restore(root):
 
 
 def check(root):
-    for rel, src in FILES.items():
+    for rel, src in files(root).items():
         target = root / rel
         state = "missing" if not target.exists() else (
             "applied" if target.read_bytes() == (HERE / src).read_bytes() else "differs")
         print(f"{state:8} {rel}")
+    CFG = cfg_rel(root)
     cfg = root / CFG
     print(f"{'applied' if cfg.exists() and has_key(cfg.read_bytes().decode('latin-1')) else 'missing':8} {CFG}: {KEY}")
     print(f"backup: {'yes' if (root / BACKUP / 'manifest.json').exists() else 'no'}")
@@ -124,8 +147,8 @@ def main():
     if "steamapps" in str(root).lower() and "--force" not in sys.argv:
         print("refused: a folder under steamapps (add --force if you mean it)")
         return 2
-    if not (root / CFG).exists():
-        print(f"not a WoL folder: {root / CFG} not found")
+    if not (root / WOL_CFG).exists():
+        print(f"not a WoL folder: {root / WOL_CFG} not found")
         return 2
     if "--restore" in sys.argv:
         return restore(root)

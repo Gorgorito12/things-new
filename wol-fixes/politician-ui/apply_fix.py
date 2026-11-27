@@ -19,7 +19,8 @@ What it changes (README.txt has the why):
 - data\\uipoliticianEuropeandlg.xml: in each place, the key's gadgets (hidden until the DLL fills them), sized from
   that place's own portrait and description; and PoliticianButton3 made as tall as the other three buttons (it
   stopped at 381, so the bottom of the fourth place took no clicks);
-- Startup\\wol.cfg: the line `politicianEnablesTech` when the file has none;
+- engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll beside WoL's own uhc.dll), else
+  Startup\\wol.cfg (our UHC.dll in place of WoL's): the line `politicianEnablesTech` when the file has none;
 - with --strings: data\\stringtabley.xml, translations\\*\\stringtabley.xml and data\\stringtabley.xml.* copies.
 The pictures (politiciandata.xml and the DDTs) stay as they are: the DLL shows the flag part of the same picture.
 """
@@ -31,8 +32,14 @@ import sys
 BACKUP = "politician-ui-backup"
 TECHTREE = "data/techtreey.xml"
 DIALOG = "data/uipoliticianEuropeandlg.xml"
-CFG = "Startup/wol.cfg"
 KEY = "politicianEnablesTech"
+ADDED = "added.txt"  # in the backup: the files apply made (a cfg that was not there), deleted by --restore
+
+
+def cfg_rel(root):
+    """The cfg the key goes in: engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll
+    beside WoL's own uhc.dll), else Startup\\wol.cfg (our UHC.dll in place of WoL's)."""
+    return "engine-ext/engine-ext.cfg" if (root / "engine-ext").is_dir() else "Startup/wol.cfg"
 TAG = "PoliticianEnablesTech"
 
 # The flag in WoL's 192 x 396 politician pictures: 145 x 231 pixels at the top left. The portrait shows 0.75 x
@@ -253,6 +260,7 @@ def apply(root, strings):
         write_text(dlg_path, new_dlg, enc)
     print(f"{DIALOG}: the key's gadgets in {places} places" if places else f"{DIALOG}: already has the gadgets")
 
+    CFG = cfg_rel(root)
     cfg_path = root / CFG
     if cfg_path.exists():
         cfg, enc = read_text(cfg_path)
@@ -261,6 +269,12 @@ def apply(root, strings):
             nl = "\r\n" if "\r\n" in cfg else "\n"
             write_text(cfg_path, cfg.rstrip("\r\n") + nl + KEY + nl, enc)
             print(f"{CFG}: added the line {KEY}")
+    else:
+        (root / BACKUP).mkdir(parents=True, exist_ok=True)
+        with open(root / BACKUP / ADDED, "a", encoding="utf-8") as f:
+            f.write(CFG + "\n")
+        write_text(cfg_path, KEY + "\r\n", "utf-8")
+        print(f"{CFG}: new, with the line {KEY}")
 
     if strings:
         ids = {rid for _, rid in tagged(new_tree).values() if rid is not None}
@@ -286,10 +300,10 @@ def check(root):
     dlg, _ = read_text(root / DIALOG)
     print(f"{TECHTREE}: {len(tags)} politicians with <{TAG}>")
     print(f"{DIALOG}: {'has' if 'EnablesTechPortrait' in dlg else 'does not have'} the key's gadgets")
+    CFG = cfg_rel(root)
     cfg = root / CFG
-    if cfg.exists():
-        text, _ = read_text(cfg)
-        print(f"{CFG}: {'has' if re.search(rf'^\s*{KEY}\b', text, re.I | re.M) else 'does not have'} {KEY}")
+    text = read_text(cfg)[0] if cfg.exists() else ""
+    print(f"{CFG}: {'has' if re.search(rf'^\s*{KEY}\b', text, re.I | re.M) else 'does not have'} {KEY}")
 
 
 def restore(root):
@@ -297,6 +311,12 @@ def restore(root):
     if not saved.exists():
         print("nothing to restore")
         return
+    added = saved / ADDED
+    if added.exists():
+        for rel in added.read_text(encoding="utf-8").split():
+            (root / rel).unlink(missing_ok=True)
+            print(f"deleted {rel}")
+        added.unlink()
     for path in sorted(saved.rglob("*")):
         if path.is_file():
             rel = path.relative_to(saved)

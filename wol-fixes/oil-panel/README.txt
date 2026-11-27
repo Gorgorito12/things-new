@@ -15,7 +15,9 @@ How: each variant, SettlerCountDialog-<variant> (its name, place and visibility 
 variant), holds two full panels, each with its own background and gadgets:
     SettlerCountDialog-<variant>-postGW   today's panel, with oil. Shown.
     SettlerCountDialog-<variant>-preGW    no oil row (backgrounds *_pregw.ddt). Hidden.
-The DLL key techGadgets swaps them, with these cfg lines (12, one per variant):
+The DLL key techGadgets swaps them, with these cfg lines (12, one per variant), in engine-ext\engine-ext.cfg (our
+dinput8.dll beside WoL's own uhc.dll, the usual WoL setup), or in Startup\wol.cfg only if our UHC.dll is used in place
+of WoL's; the incomeRates line of --rates goes in the same file:
 
     techGadgets GreatWarizeALL SettlerCountDialog-<variant>-postGW SettlerCountDialog-<variant>-preGW
 
@@ -105,7 +107,8 @@ PAQUETE OPCIONAL. Necesita la clave techGadgets de la DLL (y, para --rates, inco
 Antes de la Gran Guerra el panel de recursos no tiene la fila del petróleo y las demás filas ocupan su espacio;
 después (tecnología GreatWarizeALL) el panel es el de hoy. Cada una de las 12 variantes guarda dos paneles,
 <variante>-preGW (sin petróleo, oculto) y <variante>-postGW (el de hoy, visible); la clave techGadgets de la DLL
-los intercambia (12 líneas, arriba). Sin la clave el panel queda como hoy. No necesita la fe; --faith añade la fila
+los intercambia (12 líneas, arriba, en engine-ext\engine-ext.cfg con nuestro dinput8.dll junto al uhc.dll de WoL, o
+en Startup\wol.cfg solo si se usa nuestro UHC.dll en lugar del de WoL). Sin la clave el panel queda como hoy. No necesita la fe; --faith añade la fila
 de fe. --rates pone bajo cada cantidad el ingreso por segundo del jugador ("+2.0", en verde) y una segunda línea en
 el texto emergente de la fila ("Ingresos: +2.0 por segundo").
 
@@ -117,3 +120,14 @@ el texto emergente de la fila ("Ingresos: +2.0 por segundo").
 
 Probado en una copia de WoL 1.0.15c: las 12 variantes antes y después de la Gran Guerra, con y sin fe, la interfaz
 grande y la minimizada, guardar y cargar tras la Gran Guerra; el motor nunca volvió a mostrar un panel oculto.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  techGadgets                applied (one line of the twelve, the European big panel)
+  incomeRates                applied; in a scenario, hook reached: incomeRates add (0x49A98A)
+
+Junto al uhc.dll de WoL (probado el 2026-11-27, nuestro dinput8.dll, la línea en engine-ext\engine-ext.cfg): techGadgets e incomeRates se aplican (applied).

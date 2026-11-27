@@ -13,8 +13,9 @@ What it changes:
 - Startup\\wol.cfg: a line `cultureUI` (when the file has none);
 - with --styles <folder>: the textures of <folder>\\ui\\ingame\\*.ddt (named <texture>_<suffix>.ddt or
   <texture>_<suffix>_gw.ddt) are copied to art\\ui\\ingame\\. A family with no textures keeps today's interface.
-- with --engine-ext (our dinput8.dll beside WoL's own DLL): engine-ext\\cultureui.xml and engine-ext\\engine-ext.cfg
-  instead of data\\uhc\\cultureui.xml and Startup\\wol.cfg.
+- when the folder has an engine-ext folder (our dinput8.dll beside WoL's own uhc.dll), or with --engine-ext:
+  engine-ext\\cultureui.xml and engine-ext\\engine-ext.cfg instead of data\\uhc\\cultureui.xml and Startup\\wol.cfg
+  (those two are for our UHC.dll in place of WoL's). --check shows both; --restore undoes what apply wrote.
 """
 import hashlib
 import json
@@ -61,9 +62,10 @@ def apply(root, styles, engine_ext):
     backup = root / BACKUP
     if (backup / "manifest.json").exists():
         sys.exit(f"apply_fix: already applied ({backup} exists); run --restore first")
+    engine_ext = engine_ext or (root / "engine-ext").is_dir()
     data, cfg = targets(root, engine_ext)
-    if not (root / "art" / "ui" / "ingame").is_dir() or not cfg.exists():
-        sys.exit(f"apply_fix: {root} has no art\\ui\\ingame or no {cfg.name}: is this a Wars of Liberty folder?")
+    if not (root / "art" / "ui" / "ingame").is_dir() or not (root / "Startup" / "wol.cfg").exists():
+        sys.exit(f"apply_fix: {root} has no art\\ui\\ingame or no Startup\\wol.cfg: is this a Wars of Liberty folder?")
     style_files = []
     if styles is not None:
         folder = pathlib.Path(styles) / "ui" / "ingame"
@@ -74,7 +76,9 @@ def apply(root, styles, engine_ext):
             if (root / "art" / "ui" / "ingame" / p.name).exists():
                 sys.exit(f"apply_fix: art\\ui\\ingame\\{p.name} exists already; nothing changed")
     backup.mkdir()
-    manifest = {"changed": [], "added": []}
+    manifest = {"changed": [], "added": [], "folders": []}
+    if not data.parent.exists() and engine_ext:
+        manifest["folders"].append("engine-ext")  # made here for --engine-ext; removed by --restore when empty
 
     def keep(path):
         rel = path.relative_to(root).as_posix()
@@ -89,10 +93,10 @@ def apply(root, styles, engine_ext):
     data.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(DATA, data)
 
-    text, enc = read_text(cfg)
+    text, enc = read_text(cfg) if cfg.exists() else ("", "utf-8")
     if not re.search(r"(?im)^\s*cultureUI\b", text):
         keep(cfg)
-        write_text(cfg, text.rstrip("\r\n") + "\r\ncultureUI\r\n", enc)
+        write_text(cfg, (text.rstrip("\r\n") + "\r\n" if text else "") + "cultureUI\r\n", enc)
 
     for p in style_files:
         dst = root / "art" / "ui" / "ingame" / p.name
@@ -114,6 +118,9 @@ def restore(root):
         (root / rel).unlink(missing_ok=True)
     for rel in manifest["changed"]:
         shutil.copy2(backup / rel, root / rel)
+    for rel in manifest.get("folders", []):
+        if (root / rel).is_dir() and not any((root / rel).iterdir()):
+            (root / rel).rmdir()
     shutil.rmtree(backup)
     print(f"restored: {len(manifest['changed'])} file(s) put back, {len(manifest['added'])} removed")
 
