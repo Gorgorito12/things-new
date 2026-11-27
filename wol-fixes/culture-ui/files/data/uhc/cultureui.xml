@@ -3,7 +3,8 @@
      A texture art\ui\ingame\X.ddt is drawn as art\ui\ingame\X_<suffix>.ddt where that file exists (loose files only),
      and from the Great War on (the tech GreatWarizeALL, which every route activates) as X_<suffix>_gw.ddt, else as
      X_<suffix>.ddt, else as X.ddt. A family with no files keeps today's interface.
-     The families are those of the nine Great War techs (GreatWarEU ... GreatWarPO): the civs that activate each. -->
+     The families are those of the nine Great War techs (GreatWarEU ... GreatWarPO): the civs that activate each,
+     but the Egyptians (GreatWarAF) are with the Middle East (the mod's choice, 2026-11-27). -->
 <CultureUI>
   <Style suffix="eu" civs="Austrohungarians Belgians British Danish Dutch French Germans Italians Ottomans Portuguese Russians Spanish Swedish">
     <Stage tech="GreatWarizeALL" suffix="eu_gw"/>
@@ -17,13 +18,13 @@
   <Style suffix="ns" civs="Bulgarians Greeks Romanians Serbians">
     <Stage tech="GreatWarizeALL" suffix="ns_gw"/>
   </Style>
-  <Style suffix="af" civs="Ethiopians Egyptians Zulu">
+  <Style suffix="af" civs="Ethiopians Zulu">
     <Stage tech="GreatWarizeALL" suffix="af_gw"/>
   </Style>
   <Style suffix="as" civs="Chinese Indians Japanese Koreans">
     <Stage tech="GreatWarizeALL" suffix="as_gw"/>
   </Style>
-  <Style suffix="me" civs="Afghans Persians Saudis Uzbeks">
+  <Style suffix="me" civs="Afghans Egyptians Persians Saudis Uzbeks">
     <Stage tech="GreatWarizeALL" suffix="me_gw"/>
   </Style>
   <Style suffix="na" civs="XPIroquois XPSioux WallMapu Tawantinsuyu Tupinamba">

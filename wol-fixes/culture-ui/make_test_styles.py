@@ -19,7 +19,9 @@ import sys
 DEFAULT_TOOLS = pathlib.Path(__file__).resolve().parents[3] / "aoe3-blender-tools"
 
 # The loose atlases of the minimised interface (wol-fixes/culture-ui/inventory.md): the three resource panel skins and
-# the frames, buttons and panels around them.
+# the frames, buttons and panels around them. Every style recolours all three skins: the Middle East family (`me`)
+# needs the European one (Afghans, Persians, Saudis, Uzbeks) and the Asian one (the Egyptians, in asianCivs), and
+# the Asian family (`as`) the Asian one.
 ATLASES = [
     "asi_ui_max", "eur_max_ui", "nat_ui_max", "ingame_ui_small_01_asian", "ingame_ui_small_01_ypack",
     "ingame_ui_02x_ypack", "ingame_ui_small_02_ypack", "ingame_ui_small_03x_ypack", "ingame_ui_small_04x_ypack",

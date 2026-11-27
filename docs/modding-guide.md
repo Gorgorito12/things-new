@@ -10874,6 +10874,11 @@ cultureUI [file.xml]
   The civ names are those of `civs.xml`; a civ takes the first style that names it. A stage's suffix is the whole
   suffix (`as_gw`, so the files are `X_as_gw.ddt`). Any tech can be a stage; with several, the last active one wins.
   WoL's Great War is not an engine age: every route to it activates `GreatWarizeALL`, so that is the stage's tech.
+- **WoL's families** (the pack's `cultureui.xml`): the civs that activate each of the nine Great War techs, but the
+  Egyptians are with the Middle East (`me`), as JTMaston chose on 2026-11-27 (their tech is `GreatWarAF`). A style
+  draws the resource panel each of its civs sees, so a family whose civs see different panels needs the art of each:
+  the Middle East needs the European panel (Afghans, Persians, Saudis, Uzbeks) and the Asian one (the Egyptians,
+  in `asianCivs`).
 - **No style:** for an observer (WoL's rule: the maps' observer mode makes a trigger named `StartInsertion`, and the
   observers are the players from where the team changes, slot 3, 5 or 7), with the normal (not minimised) interface,
   or for a civ in no style. Switching to the normal interface in a game drops the style at the next check.
@@ -10909,6 +10914,8 @@ Tests (2026-11-26, a copy of WoL, single player, posted input only, the test sty
 | The AI (a German AI, all the games above) | pass: no XS error; in the last game it went from 4 to 10 settlers in 120 s |
 | The resource icons | pass: the same colours as today in the four test styles (the test styles leave them out) |
 | Observer | not tested: an observer needs a second player in multiplayer (the host is slot 1) |
+| 2026-11-27, Egyptians moved to `me` (WoLReal4, test styles, skirmish on a test map, a German AI): Egyptians, then the Great War at 40 s | pass: `style me`, then `style me, stage me_gw` (log; picture `_share\maston-20261129\C\cultureUI-egyptians-middle-east.png`) |
+| The next game, Ethiopians (`af`, no textures) | pass: today's look (`no style (style af has no texture)`); no XS error |
 
 ![The screens of the tests](media/cultureUI-screens.jpg)
 
