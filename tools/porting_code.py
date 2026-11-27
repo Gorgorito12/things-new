@@ -162,6 +162,7 @@ PAGES = {
     }),
     "techs": ("Techs and transforms", {
         "hcTargetTechs": ["src/features/hctargets.cpp", "src/hooks/hctarget_hooks.asm"],
+        "perCivEffects": ["src/features/percivfx.cpp", "src/hooks/percivfx_hooks.asm"],
         "techPrereqRecheck": ["src/features/techprereq.cpp", "src/hooks/techprereq_hooks.asm"],
         "orPrereqsQty": ["src/features/orprereqs.cpp", "src/hooks/orprereqs_hooks.asm"],
         "shipmentCounts": ["src/features/shipmentcounts.cpp", "src/hooks/shipmentcount_hooks.asm"],
