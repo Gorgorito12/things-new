@@ -82,6 +82,9 @@ The turning gun: the turretArc key of the DLL, one line in engine-ext\engine-ext
 own uhc.dll, the usual WoL setup), or in Startup\wol.cfg only if our UHC.dll is used in place of WoL's (the pack does
 not edit the cfg)
     turretArc GatlingCamel art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_A55.aim GatlingCamelDeployed art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_B55.aim
+Only ONE turretArc line counts: a second turretArc line is ignored. With both the gatling camel and the zamburak
+packs, put all three units in this single line:
+    turretArc GatlingCamel art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_A55.aim GatlingCamelDeployed art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_B55.aim MEZamburak art\WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon.aim
 The key takes the attack's <turret> from the tactics above; without the line the units work, the gun facing
 ahead.
 
@@ -202,7 +205,8 @@ Una carpeta bajo steamapps se rechaza salvo con --force.
 
 El arma que gira: la clave turretArc de la DLL, la línea de la parte en inglés en engine-ext\engine-ext.cfg (nuestro
 dinput8.dll junto al uhc.dll de WoL, lo normal en WoL), o en Startup\wol.cfg solo si se usa nuestro UHC.dll en lugar
-del de WoL (el paquete no edita el cfg). La clave toma el <turret> del ataque de las tácticas (el arco a cada lado del reposo del arma:
+del de WoL (el paquete no edita el cfg). Solo cuenta UNA línea turretArc: una segunda se ignora; con los
+paquetes del camello y del zamburak, las tres unidades van en la línea única de la parte en inglés. La clave toma el <turret> del ataque de las tácticas (el arco a cada lado del reposo del arma:
 90 desde la silla, 60 a pie) y el archivo de puntería de cada unidad (el de GatlingCamelDeployed es de la versión 2,
 con su reposo en +90: necesita la DLL del 2026-11-26 o posterior). Sin la línea GatlingCamel funciona con el arma
 mirando al frente; GatlingCamelDeployed la necesita.

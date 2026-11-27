@@ -4531,6 +4531,8 @@ turns its whole body to each House it fires at, the gun fixed ahead. [Full video
 turretArc <Proto> <aim file> [<Proto> <aim file> ...] [log]
 ```
 
+- **One line:** only the first `turretArc` line is read; a second one is ignored. Every unit goes in that one line.
+
 - **The tag:** the stock `<Turret>` of an attack action (in its tactics `<action>`), which the game parses and never
   reads:
 
