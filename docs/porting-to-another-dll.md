@@ -18,7 +18,7 @@ This page covers every key the modding guide marks **new**, 73 keys in all:
 | Combat | `dodgeAnyUnit`, `dodgeChance`, `dodgeSoundSet`, `criticalSoundSet`, `damageOverTime`, `spreadAnyAccuracy`, `containedUnitsROF`, `accuracyTechs`, `veterancyBonus`, `pillageGold`, `broadsideMuzzleLimit`, `snareOnlyHitUnit`, `cantBeSlowed`, `snareValues`, `stealthTargeting`, `directionalAttack`, `killBountyTechs`, `resourceBounty`, `teamKillBounty`, `auraStacking`, `detonationDeath`, `impactBoneFix`, `customImpactTypes`, `numberOfShots`, `retargetInAction`, `powerShots`, `turretArc` | [combat](porting-code/combat.md) |
 | Gathering | `showGatherRate`, `displayedRange`, `workRateByAbstractType`, `autoGatherScaleByContained`, `cratePriority`, `unitResourceAuras`, `linkedResource`, `resourceGatherAuras`, `resourceDebt`, `autoGatherFrom`, `buildingGather`, `herdWalkAwayFix`, `faithResource` | [gathering](porting-code/gathering.md) |
 | Buildings and training | `liveBuildingWorkRate`, `buildingWorkRateAuras`, `costEscalationTechs`, `randomCost`, `unitTypeTechs`, `trainBatchSize`, `maintainWaitForPop`, `noTrainNearEnemyTC`, `lifespanAfterConstruction`, `gaiaSocketsOnly`, `hcShipmentPointFallback`, `sharedBuildLimit`, `doNotQueue`, `researchOnTheMove`, `nextResearchFree`, `researchGrants`, `shipTechLimit`, `homeCityTechsInUnits`, `annexFacing`, `customWalls` | [buildings](porting-code/buildings.md) |
-| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs`, `resendableCards`, `quickArrivalCards` | [techs](porting-code/techs.md) |
+| Techs and transforms | `techPrereqRecheck`, `transformUpdatesLOS`, `transformInventory`, `transformSpan`, `hcTargetTechs`, `perCivEffects`, `resendableCards`, `quickArrivalCards` | [techs](porting-code/techs.md) |
 | Interface | `abilitySlots`, `wonderPanelSkipAuras`, `nativePreview`, `noCorpseDopples`, `steadyHitpointBars`, `inventoryBars`, `minUIStats`, `playerIcon`, `autoScout` | [interface](porting-code/interface.md) |
 | What they all use | the site table, patching, the log, shared hooks | [helpers](porting-code/helpers.md) |
 
@@ -1101,6 +1101,19 @@ Code: [techs](porting-code/techs.md#hctargettechs).
   `0x94DAE1`); a 6-byte `jmp` at `0x94DCB2` (`53 55 8B 6C 24 0C`) and a 7-byte one at `0x94DDEA`
   (`53 55 57 8B 7C 24 10`). Check them against your DLL first.
 - **Test:** a tech with the flag: the enemy's units change, the owner's do not.
+
+### perCivEffects
+
+Code: [techs](porting-code/techs.md#perciveffects).
+
+- **Sites:** a 5-byte `jmp` at `0x6205EF` (`8B C6 5E 5F C3`), the success tail of the effect parse, which the hook
+  re-executes (`mov eax,esi / pop esi / pop edi / ret`); 6-byte `jmp`s at the heads of the apply dispatcher `0x7F7E97`
+  and of the effect removal `0x7F8168` (both `64 A1 00 00 00 00`, `mov eax,fs:[0]`). Verify only: `0x6204B1` (the
+  parse's call in the `<Effect>` handler, which fixes the frame the hook reads the tech from).
+- **Beside your DLL:** your `uhc.dll` writes `0x6205C9` (the factory call) and the Data effect's vtable slots, not
+  these. A DLL that verifies `0x6205C7..0x6205F3` as stock (as our `techRenameEffect` does) must apply first.
+- **Test:** a shared tech with `onlyciv="Spanish"` on one effect, researched by a Spanish and a German player: only
+  the Spanish player gets that effect; a team tech: each member is checked on its own.
 
 ### techPrereqRecheck
 

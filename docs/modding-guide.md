@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-27 07:50 | [`perCivEffects`](#perciveffects) | Added. `onlyciv="Spanish"` on any tech `<Effect>` makes that effect work only for a player of that civ: for shared cards, shared techs and each member of a team tech. | The attribute on the effects that want it. |
 | Thursday 2026-11-26 16:24 | [`cultureUI`](#cultureui) | Filmed in WoL, with a control. The minimised in-game interface takes its own textures per family of civs, and others again from the Great War: `X_as.ddt` beside `X.ddt` restyles texture X for the Asian family. | The art, one `.ddt` per texture and family (`<texture>_<family>[_gw].ddt`, from aoe3-blender-tools' templates), and `data\uhc\cultureui.xml` with the nine families: `wol-fixes/culture-ui/`. |
 | Thursday 2026-11-26 15:43 | [`powerShots`](#powershots) | Filmed in WoL, with a control. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
 | Thursday 2026-11-26 11:34 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
@@ -8389,6 +8390,7 @@ What happens when a tech activates or a unit changes proto.
 | Key | What it does | WoL's DLL | WoL also needs | In-game status |
 |---|---|---|---|---|
 | [`hcTargetTechs`](#hctargettechs) | The tech flags `HCTargetEnemy` and `HCTargetAll` send a tech's effects to the owner's enemies, or to every player. | **new** | The flag on the techs that want it. | confirmed |
+| [`perCivEffects`](#perciveffects) | `onlyciv="Spanish"` on any tech `<Effect>` makes that effect work only for a player of that civ: for shared cards, shared techs and each member of a team tech. | **new** | The attribute on the effects that want it. | confirmed (single player) |
 | [`unitTypeTechs`](#unittypetechs) | Data tech effects `AddUnitType` and `RemoveUnitType`, for one player's copy of a proto. | **new** | The effects in your techs. | confirmed |
 | [`transformSpan`](#transformspan) | `transformspan='<seconds>'` on a `TransformUnit` effect turns the units back when the time ends. | **new** | The attribute on the effects that want it. | confirmed (single player) |
 | [`orPrereqsQty`](#orprereqsqty) | `<Flag qty="N">OrPrereqs</Flag>` makes a tech available when N of its prerequisites are met, not one. | **new** | The attribute on the techs that want it. | confirmed (single player) |
@@ -8448,6 +8450,101 @@ hcTargetTechs [log]
   - {CARD}
   - Not tested: 3 or more players (a test map starts with 2, and editing the shared profile needs no other game open),
     multiplayer.
+
+#### perCivEffects
+
+*One effect of a shared tech, card or team tech can work for one civ only.*
+
+**Added:** Friday 2026-11-27 07:50 · **Filmed in WoL:** Friday 2026-11-27 07:50
+
+![perCivEffects in WoL](media/perCivEffects-wol.gif)
+
+*In WoL, with the key (Spanish against a German AI, `HuntingDogs` with test effects: `onlyciv="Spanish"` Hitpoints
+×2, LOS +10 and 500 gold, `onlyciv="Germans"` a TechStatus that activates a LOS +5 tech, and a misspelt
+`onlyciv="Spansh"` LOS +1):* a trigger researches `HuntingDogs` for both players at the same moment. Only the Spanish
+Settlers double (150 → 300) and only player 1 gets the 500 gold; the German Settlers keep 150 and get only their LOS +5
+(14 → 19); the misspelt effect works for no one. The top lines show the Settlers of both players and the gold, the
+bottom lines the key's log. [Full video (MP4)](media/perCivEffects-wol.mp4).
+
+![perCivEffects in WoL, key off](media/perCivEffects-wol-control.gif)
+
+*In WoL, key off (the same data):* the game skips the attribute, so both players get every effect: 300 HP, LOS 30 and
+500 gold each. [Full video (MP4)](media/perCivEffects-wol-control.mp4).
+
+```
+perCivEffects [log]
+```
+
+```xml
+<Tech name ='HCTeamSomething' type ='Normal'>
+    <Flag>TeamTech</Flag>
+    <Effects>
+        <Effect type='Data' onlyciv='Spanish' amount='1.10' subtype='Hitpoints' relativity='BasePercent'>
+            <Target type='ProtoUnit'>AbstractInfantry</Target></Effect>
+        <Effect type='TechStatus' status='active' onlyciv='Germans'>SomeGermanTech</Effect>
+    </Effects>
+</Tech>
+```
+
+- **In WoL today:** a shared card or tech gives the same to everyone, and per-civ effects need gate techs
+  (`FreeHomeCityUnitIfTechObtainable`). JTMaston's #113.
+- **Effect:** an effect with `onlyciv` works only for a player whose civ is that one. It is checked for the player who
+  **receives** the effect: in a team tech each member is checked on its own (a Spanish player's team card with an
+  `onlyciv="Germans"` effect gives that effect to his German ally and not to him); with `hcTargetTechs`, each target.
+- **Any effect type:** `Data`, `Data2`, `TechStatus`, `SetName`, ... on a ProtoUnit, Player or tech target. An effect
+  without the attribute works as before.
+- **The civ name:** as in `civs.xml` (`<name>`), one civ per effect. A name that is not a civ: one line in the log with
+  the tech, and that effect works for no one.
+- **Why not `civ`:** WoL's data already uses `civ` on 44 `SetCivRelation` effects (and the stock `SetCivilization`
+  reads it), so the new attribute has its own name.
+- **A player whose civ changes in the game** (the `Data` subtype `SetCivilization`): the removal of an effect follows
+  what was applied to that player, not the civ at the removal.
+- **Saved games:** the effects that stock re-applies after a load (those on protos) go through the same check, and the
+  values stay as they were.
+- **Off:** the game skips an attribute it does not know, and every effect works for everyone.
+- **Multiplayer:** it changes the simulation: every player needs the same setting. The check reads only the player
+  that receives the effect, never the local player.
+- **Interface:** none of its own. A tech's rollover is its `RolloverTextID` string, not built from the effects, so a
+  text that names a civ is the modder's to write. The screens (game, minimised interface, home city, deck builder,
+  "View All Cards", tech tree, observer) show what the effects did, as without the key.
+- **Log:** `perCivEffects: the Effect attribute onlyciv is on (multiplayer unverified)`, `hook reached: perCivEffects effect parse
+  (0x6205EF)`, `... apply (0x7F7E97)`, `... remove (0x7F8168)`, and with `log`: `perCivEffects: tech 297: an effect for
+  Spanish only` at the data load, `perCivEffects: apply tech 297 (HuntingDogs), onlyciv Spanish, player 1 (civ 22)` and
+  `skip`, `remove` and `keep skipped` lines (first 300).
+- **Tested in WoL (2026-11-27, `C:\AoE3-UHC-WoLReal5`):**
+  - A scenario with three players (Spanish and German allies, a British enemy; the civs set by a test tech with
+    `SetCivilization`), `HuntingDogs` for all three: Settler LOS 14 → Spanish 24 (+10), German 19 (+5 through the
+    `TechStatus`), British 14; HP ×2 only for the Spanish. Key off: 30 for all, HP ×2 for all.
+  - The team card `HCImprovedWallsTeam` played by the Spanish player with `onlyciv="Germans"` LOS +20: the German ally
+    went 19 → 39, the Spanish player stayed 24, the British enemy (not in the team) 14. Key off: both allies +20.
+  - Saved and loaded in that scenario: the Spanish 24 and the British 14 stayed; the German ally's 39 went back to 19,
+    and so did the key-off control's (50 → 30 for both allies): a team card activated by a trigger is not re-applied
+    after a load in stock either.
+  - A skirmish, Spanish against a German AI (`wolOtto`), the same tech: the video above, then a saved game loaded:
+    HP 300 / 150, LOS 24 / 19, gold 500 / 0, as before the save.
+  - A civ change: the Spanish player turned German by `SetCivilization` after `HuntingDogs`; the game then removed the
+    tech's effects of that player, and exactly the three Spanish ones came off (LOS 24 → 14, HP 300 → 150), the
+    German one it never got was not taken off.
+  - A misspelt `onlyciv="Spansh"`: logged once with the tech, applied to no one.
+  - With `multiarmor` on (in the cfg of every run): both keys `applied`, `multiarmor` reached its setData hook.
+  - Performance (`perfprobe.py`, a skirmish against a German AI from 20 s of game time, 90 s each, the data with six
+    `onlyciv` effects, another copy's game running beside it; two runs each way):
+
+    | Run | fps (mean) | longest frame | frames over 50 / 100 ms | main thread | update | render |
+    |---|---|---|---|---|---|---|
+    | on, 1 | 423 | 54.5 ms | 2 / 0 | 92.1 % | 0.33 ms | 2.05 ms |
+    | on, 2 | 471 | 45.1 ms | 0 / 0 | 90.5 % | 0.32 ms | 1.81 ms |
+    | off, 1 | 458 | 45.9 ms | 0 / 0 | 90.7 % | 0.33 ms | 1.86 ms |
+    | off, 2 | 577 | 43.9 ms | 0 / 0 | 91.1 % | 0.31 ms | 1.43 ms |
+
+    Main thread 91.3 % on and 90.9 % off on average, the update the same: no measurable rise. The fps moved between
+    runs either way (423-577) with the render time, the other copy's load on the GPU. Launch to the main menu (`testbed.py
+    launch`, which polls): 10.717 and 10.719 s on, 10.713 and 10.713 s off.
+  - The AI: in the first A/B skirmish with the key, the German AI had 11 Settlers and a Manor at 110 s of game time.
+  - Beside WoL's own `uhc.dll` (its binary and `wol.cfg`, our `dinput8.dll` with `perCivEffects log` in
+    `engine-ext.cfg`): `applied`, the parse and apply hooks reached, and the same result (Spanish 300 HP and LOS 24,
+    German 150 and 19).
+  - Not tested: multiplayer.
 
 #### transformSpan
 

@@ -2361,6 +2361,18 @@ SITES = [
     ("SettingsByName", 0x402C76, 0x13),
     ("TriggerByName", 0x90DFB0, 0x2B),
     ("PlayerTeam", 0x88396E, 0x2B),
+    # perCivEffects: the success tail of the effect parse FUN_00620572 (cdecl(node), from 0x6204B6 only, in the
+    # <Effect> tag handler 0x620472(node, tech definition) that appends the effect to [def+24h]): mov eax,esi / pop esi
+    # / pop edi / ret (5 bytes, replaced), reached after setData returned true, ESI = the effect, EDI = its node, for
+    # every effect type. The handler's call site (verify only) fixes the frame the hook reads the definition from.
+    ("PerCivEffectParsed", 0x6205EF, 5),
+    ("PerCivEffectCaller", 0x6204B1, 0x0F),
+    # perCivEffects: the heads of the effect apply dispatcher 0x7F7E97, thiscall(effect, player, unit, techId, a, b),
+    # ret 14h, and of the effect removal 0x7F8168, thiscall(effect, player, a, b), ret 0Ch: mov eax,fs:[0] (6 bytes,
+    # replaced) then the instruction each goes on at. Every effect a tech applies or removes passes there, per
+    # receiving player (applyEffects 0x94DBE6, the pass after a load 0x94DF10, removeEffects 0x94DDC8).
+    ("PerCivApplyHead", 0x7F7E97, 0x0C),
+    ("PerCivRemoveHead", 0x7F8168, 0x0B),
 ]
 
 

@@ -66,6 +66,7 @@ set(UHC_SOURCES
   src/features/detonation.cpp
   src/features/annexfacing.cpp
   src/features/hctargets.cpp
+  src/features/percivfx.cpp
   src/features/resendcards.cpp
   src/features/quickarrival.cpp
   src/features/cratepriority.cpp
@@ -273,6 +274,7 @@ set(UHC_SOURCES
   src/hooks/gatherauras_hooks.asm
   src/hooks/resourcedebt_hooks.asm
   src/hooks/hctarget_hooks.asm
+  src/hooks/percivfx_hooks.asm
   src/hooks/resendcards_hooks.asm
   src/hooks/quickarrival_hooks.asm
   src/hooks/modifytype_hooks.asm

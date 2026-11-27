@@ -3031,6 +3031,18 @@ inline constexpr Site kTriggerByName{"TriggerByName", 0x0090DFB0, kTriggerByName
 inline constexpr std::uint8_t kPlayerTeamBytes[] = {0xA1, 0x34, 0x62, 0xC6, 0x00, 0x8B, 0x88, 0x3C, 0x01, 0x00, 0x00, 0x85, 0xC9, 0x74, 0x16, 0x8B, 0x44, 0x24, 0x04, 0x85, 0xC0, 0x7C, 0x0E, 0x50, 0xE8, 0x96, 0x91, 0xBC, 0xFF, 0x85, 0xC0, 0x74, 0x04, 0x8B, 0x40, 0x10, 0xC3, 0xB8, 0xFE, 0xFF, 0xFF, 0xFF, 0xC3};
 inline constexpr Site kPlayerTeam{"PlayerTeam", 0x0088396E, kPlayerTeamBytes, sizeof(kPlayerTeamBytes)};
 
+inline constexpr std::uint8_t kPerCivEffectParsedBytes[] = {0x8B, 0xC6, 0x5E, 0x5F, 0xC3};
+inline constexpr Site kPerCivEffectParsed{"PerCivEffectParsed", 0x006205EF, kPerCivEffectParsedBytes, sizeof(kPerCivEffectParsedBytes)};
+
+inline constexpr std::uint8_t kPerCivEffectCallerBytes[] = {0x8B, 0x44, 0x24, 0x04, 0x50, 0xE8, 0xB7, 0x00, 0x00, 0x00, 0x83, 0xC4, 0x04, 0x85, 0xC0};
+inline constexpr Site kPerCivEffectCaller{"PerCivEffectCaller", 0x006204B1, kPerCivEffectCallerBytes, sizeof(kPerCivEffectCallerBytes)};
+
+inline constexpr std::uint8_t kPerCivApplyHeadBytes[] = {0x64, 0xA1, 0x00, 0x00, 0x00, 0x00, 0x8B, 0x15, 0x34, 0x62, 0xC6, 0x00};
+inline constexpr Site kPerCivApplyHead{"PerCivApplyHead", 0x007F7E97, kPerCivApplyHeadBytes, sizeof(kPerCivApplyHeadBytes)};
+
+inline constexpr std::uint8_t kPerCivRemoveHeadBytes[] = {0x64, 0xA1, 0x00, 0x00, 0x00, 0x00, 0x6A, 0xFF, 0x68, 0xFE, 0x9D};
+inline constexpr Site kPerCivRemoveHead{"PerCivRemoveHead", 0x007F8168, kPerCivRemoveHeadBytes, sizeof(kPerCivRemoveHeadBytes)};
+
 }  // namespace uhc::sites
 ```
 
@@ -3467,6 +3479,7 @@ Outcome ApplyPillageGold(const Config& config);
 Outcome ApplyVeterancyBonus(const Config& config);
 Outcome ApplyKillSpawn(const Config& config);
 Outcome ApplyHcTargetTechs(const Config& config);
+Outcome ApplyPerCivEffects(const Config& config);
 Outcome ApplyDetonationDeath(const Config& config);
 Outcome ApplyAnnexFacing(const Config& config);
 Outcome ApplyDeadReplacementAtZeroInventory(const Config& config);
@@ -3703,6 +3716,10 @@ inline constexpr Feature kFeatures[] = {
     {"customWalls", ApplyCustomWalls},
     {"directionalAttack", ApplyDirectionalAttack},
     {"techRenameEffect/enableTechRenameEffect", ApplyTechRenameEffect},
+    // After techRenameEffect, which verifies the effect parse 0x6205C7..0x6205F3 as stock bytes; this key writes its
+    // tail 0x6205EF. Its apply and removal heads (0x7F7E97, 0x7F8168) are called by hcTargetTechs' routines,
+    // which it only filters, so its order with that key does not matter.
+    {"perCivEffects", ApplyPerCivEffects},
     {"noCorpseDopples", ApplyNoCorpseDopples},
     {"danceBonusCivs", ApplyDanceBonusCivs},
     {"asianCivs", ApplyAsianCivs},
@@ -3831,7 +3848,7 @@ inline constexpr const char* kHandledKeys[] = {
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
     "retargetinaction", "powershots",
     "turretarc",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "perciveffects", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "broadsidesoundset", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc", "scenariocivs",

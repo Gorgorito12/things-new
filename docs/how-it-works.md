@@ -577,8 +577,10 @@ The key keeps a table per proto pointer (damage type → value, up to 8):
 | vtable `0xB9E5C4`, `C8`, `CC`, `D0` | `playerApply` / `playerUnapply` / `protoUnitApply` / `protoUnitUnapply` wrappers: make the effect's damage type current during the stock call |
 | `0x8FAE52`, `0x8FC144` (10 B each) | the Armor cases: for a current type other than the target's stock type, apply `0x7F892A` to the table entry (base value from the base proto) and skip the stock change |
 
-Normal techs reach `applyData` through `playerApply` → `0x8D842B`, without the effect pointer, so
-the type travels in a global that the wrappers set and restore (effects apply on one thread).
+Techs reach `applyData` through `protoUnitApply` (`0x7F86C0`, a ProtoUnit target) or `playerApply` → `0x8D842B`
+(a Player target), without the effect pointer, so the type travels in a global that the wrappers set and restore
+(effects apply on one thread). (Corrected 2026-11-27: this said `playerApply` for every tech; a trace shows the
+ProtoUnit path, see [perCivEffects](#perciveffects).)
 
 ### customProtoUnitCommands
 
@@ -1759,6 +1761,74 @@ tech's definition, the routines' `this`, in a set. The set is only written durin
 The enemies come from 0x484D2D, the check the placement rules use, over the players of the world without Gaia.
 
 - **Observed in game:** see the tests in the modding guide. After a load the log shows one `load` line per tech.
+
+### perCivEffects
+
+`onlyciv="<Civ>"` on any tech `<Effect>` makes that effect work only for a receiving player of that civ.
+
+**Where an effect is made.** Every tech effect comes from one parse, 0x620572, called only by the `<Effect>` tag
+handler 0x620472(node, tech definition), which appends the effect to the tech's `[def+24h]`. The parse looks the type
+up, calls the factory 0x620535, then setData `[vtbl+4]`; on success it ends at 0x6205EF (`mov eax,esi / pop esi / pop
+edi / ret`) with the effect in ESI and its node in EDI, for every effect type (Data, Data2, TechStatus, SetName, ...).
+The key replaces those five bytes with a `jmp` to a hook that reads `onlyciv` (0x598F37, then 0x402733 for the narrow
+text, as `multiarmor` reads `damagetype`), keeps it in a table effect -> civ name, and re-executes the four
+instructions. The tech's ID, for the log, is `[def]`, with `def` at `[esp+18h]` there; the hook reads it only when the
+return address `[esp+8]` is 0x6204BB, the handler's. An effect parsed again at the same address without the attribute
+loses its entry; the data is parsed once per launch.
+
+**Where it is applied and removed.** A tech's effects reach a player through one dispatcher, 0x7F7E97(effect, player,
+unit, techId, a, b), and leave through one removal, 0x7F8168(effect, player, a, b). Their only callers are applyEffects
+0x94DAE1 (research, cards, triggers; a team tech calls it once per member), the pass after a load 0x94DDEA, and
+removeEffects 0x94DCB2. The player argument is the one that **receives** the effect, so a shared tech, a team tech and
+`hcTargetTechs`' targets are each checked on their own. The dispatcher sends the effect to its kind: protos
+(protoUnitApply, `[vtbl+24h]`), the player (`[vtbl+1Ch]`, the player Data switch 0x8D842B), the player's tech nodes, or
+the general apply. The two heads (`mov eax,fs:[0]`, 6 bytes each) get a `jmp` to a hook that, with an empty table, only
+compares a counter with 0 and re-executes the instruction. With entries it asks the table; for a listed effect whose
+civ is not the player's first civ (`[[player+20h]]`, `uhc::FirstCivOfPlayer`) it returns 1 without calling the effect,
+as the dispatcher does for an effect with nothing to do.
+
+**A civ can change.** The player Data subtype `SetCivilization` (and five other callers of 0x8D53EE) rewrites the first
+civ during a game, so the decision taken at an apply is kept per (effect, player ID) and the removal follows it: what
+was applied is removed, what was skipped stays skipped. A removal with no apply seen in this session (none in practice:
+the pass after a load re-applies first) decides by the civ at that moment. Seen in game: a Spanish player turned German by a test tech with
+`SetCivilization`; the game then removed that player's `HuntingDogs` effects, and the hook let through the three
+Spanish ones it had applied and held back the German one it had skipped.
+
+**Saved games.** Not saved: the table comes back with the data, and the pass after a load re-runs the ProtoUnit effects
+(Data effects carry flag 20h from their constructor) through the dispatcher, where the same filter applies. Player and
+tech-level effects are not re-run on a load (the dispatcher returns at `a` = 1), with or without the key.
+
+**Earlier text corrected.** `multiarmor` above says normal techs reach `applyData` through `playerApply` -> 0x8D842B;
+that is the path of a Player target. A ProtoUnit target goes through protoUnitApply 0x7F86C0 (trace of 2026-11-27, see
+`engine-symbols.md`, "Tech effects: parse, apply, removal and the load"), as `AddTechProtoSubtype` says.
+
+**Why it is safe.**
+- The parse hook runs where the stock code returns: it preserves ESI/EDI and sets EAX as stock does; ECX and EDX are
+  scratch at a `ret`. The heads are entered by `call` with the arguments on the stack and ECX = the effect; the hook
+  saves ECX around its C call and touches nothing else before the stock instruction.
+<!-- private:begin -->
+- No WoL DLL site is touched: its `uhc.dll` patches 0x6205C9 (the factory call) and the Data effect's vtable slots, and
+  its `WoL.dll` patches 0x7F8114, inside the dispatcher after these heads.
+<!-- private:end -->
+<!-- public:begin
+- Hooks above the effect classes: the Data effect's vtable slots, which `multiarmor` and other DLLs replace, are left
+  alone.
+public:end -->
+- `techRenameEffect` verifies 0x6205C7..0x6205F3, so it applies first; `dataLint` writes 0x6205E9 and jumps to
+  0x6205EF, which now holds this `jmp`.
+- Deterministic: the decision reads only the receiving player and the data; the tables are keyed by pointer but only
+  looked up, never walked.
+- Cost: one compare per effect applied or removed with no `onlyciv` in the data; a hash lookup under a lock with some.
+  Effects are applied when a tech activates, not per frame.
+
+| Site | What it does |
+|---|---|
+| `0x6205EF` (5 B) | parse success: reads `onlyciv` into the table, then `mov eax,esi / pop esi / pop edi / ret` |
+| `0x6204B1` (verify only) | the parse's call in the `<Effect>` handler: the frame the hook reads the tech from |
+| `0x7F7E97` (6 B) | apply dispatcher head: skip a listed effect for a player of another civ |
+| `0x7F8168` (6 B) | removal head: remove only what the last apply to that player applied |
+
+- **Observed in game:** see the tests in the modding guide.
 
 ### techPrereqRecheck
 

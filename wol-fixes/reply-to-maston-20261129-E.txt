@@ -1,0 +1,48 @@
+Hi JTMaston,
+
+Per civ effects: done, as a new key, perCivEffects (off unless it is in wol.cfg).
+
+How to use it: add onlyciv="<Civ>" to any <Effect> of a tech or card. That effect then works only for a player of
+that civ; the other effects of the tech work as before. The civ name is the <name> in civs.xml.
+
+  <Effect type='Data' onlyciv='Spanish' amount='1.10' subtype='Hitpoints' relativity='BasePercent'>
+      <Target type='ProtoUnit'>AbstractInfantry</Target></Effect>
+  <Effect type='TechStatus' status='active' onlyciv='Germans'>SomeGermanTech</Effect>
+
+- It works on every effect type (Data, Data2, TechStatus, SetName, ...) and every target (a ProtoUnit, the Player,
+  a tech).
+- Shared cards and shared techs: each player who gets the tech is checked on his own civ.
+- Team techs: each member of the team is checked on his own. A Spanish player's team card with an
+  onlyciv='Germans' effect gives that effect to his German ally and not to him.
+- A civ name that is not in civs.xml: one line in UHC.log with the tech, and that effect works for no one.
+- Saved games: the effects the game re-applies after a load go through the same check, so the values stay the same.
+- If a player's civ changes during a game (the Data subtype SetCivilization), taking an effect away follows what that
+  player really got.
+- Without the key, the game ignores the attribute and every effect works for everyone, as today.
+- It changes the game itself, so in multiplayer every player needs the same wol.cfg (as with the other keys).
+
+Why "onlyciv" and not "civ": your data already uses civ= on 44 SetCivRelation effects, and the game's own
+SetCivilization subtype reads civ= too, so the new attribute needs its own name.
+
+Tested in a copy of WoL (single player):
+- HuntingDogs with test effects (Spanish only: Settler HP x2, LOS +10, 500 gold; Germans only: a TechStatus that
+  activates a LOS +5 tech), researched by a Spanish player and a German AI at the same moment: only the Spanish
+  Settlers doubled (150 -> 300) and only the Spanish player got the gold; the German Settlers kept 150 HP and got
+  only their LOS +5. With the key off, both got everything.
+- HCImprovedWallsTeam with a Germans-only effect, played by a Spanish player with a German ally and a British enemy:
+  only the German ally got it.
+- A misspelt civ ("Spansh"): logged, applied to no one.
+- Saved and loaded: the same values after the load.
+- Beside your own uhc.dll (our dinput8.dll with the key in engine-ext.cfg): the same results.
+- No measurable performance cost: the check runs only when a tech applies its effects, never per frame.
+
+Videos: perCivEffects-wol.gif in the guide (key on) and perCivEffects-wol-control.gif (key off, the same data).
+
+One thing we noticed in stock, not caused by the key: a team card activated by a trigger loses its effects on the
+allies after a saved game is loaded (with or without the key). A card shipped normally may behave differently; we
+did not test that.
+
+Two questions:
+1. Is the name onlyciv fine for you?
+2. Do you want several civs in one effect (for example onlyciv='Spanish,Portuguese')? You asked for a single civ,
+   so that is what it does now; a list is easy to add if you want it.
