@@ -56,9 +56,9 @@ WHICH TEXTURES EACH FAMILY NEEDS
   an  Anglos (UnitedStates, Australians, Canadians): the shared ones + the European resource panel
   la  Latin Americans (Argentineans, Bolivians, Brazilians, Centralamericans, Chileans, Colombians, Haitians, Mexicans, Paraguayans, Peruvians, Uruguayans): the shared ones + the European resource panel
   ns  Nation states (Bulgarians, Greeks, Romanians, Serbians): the shared ones + the European resource panel
-  af  Africans (Ethiopians, Egyptians, Zulu): the shared ones + the Asian resource panel
+  af  Africans (Ethiopians, Zulu): the shared ones + the Asian resource panel
   as  Asians (Chinese, Indians, Japanese, Koreans): the shared ones + the Asian resource panel
-  me  Middle East (Afghans, Persians, Saudis, Uzbeks): the shared ones + the European resource panel
+  me  Middle East (Afghans, Egyptians, Persians, Saudis, Uzbeks): the shared ones + the European and Asian resource panel
   na  Native Americans (XPIroquois, XPSioux, WallMapu): the shared ones + the Native resource panel
   po  Polynesians (Maori): the shared ones + the Asian resource panel
 
