@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The gatling camel that fires deployed: GatlingCamel.tactics with the deploy and undeploy lasting as long as their animations (the camel lies down and the gunner gets off and walks to his station behind the gun: 5.33 s; he gets back on and it stands up: 4.17 s); the attack's <turret> (60: the arc each side of the gun's rest, which this unit's aim file puts at +90, square to the camel's spine, so it turns from +30 to +150; the gun turning 100 degrees a second so the gunner's steps keep pace) is read by the turretArc key, which turns the gun on its post instead of the camel, and turns the camel until a target beyond the arc sits at +90. -->
+<!-- The gatling camel that fires deployed: GatlingCamel.tactics with the deploy and undeploy lasting as long as their animations (the camel lies down and the gunner gets off and walks to his station behind the gun: 5.33 s; he gets back on and it stands up: 4.17 s); the attack's <turret> (60: the arc each side of the gun's rest, which this unit's aim file puts at +90, square to the camel's spine, so it turns from +30 to +150; the gun turning 100 degrees a second so the gunner's steps keep pace) is read by the turretArc key, which turns the gun on its post instead of the camel, and turns the camel until a target beyond the arc sits at +90. Deployed it moves slowly (speedmodifier 0.25: 1.25 a second; its walk plays the deployed idle, over which the turretArc key shows the camel rising and walking with the gunner pushing it, the aim file's WALK). The shots are WoL's other gatling guns' (Machinegun: their tracer). -->
 
 <tactics>
 	<action>
@@ -19,7 +19,7 @@
 		<spreadfactor>0.25</spreadfactor>
 		<trackrating>12</trackrating>
 		<unintentionaldamagemultiplier>0.7</unintentionaldamagemultiplier>
-		<projectile>OneThirdCannonball</projectile>
+		<projectile>Machinegun</projectile>
 		<numberprojectiles>1</numberprojectiles>
 		<impacteffect>effects\impacts\gun</impacteffect>
 		<rate type="All">1.0</rate>
@@ -45,7 +45,7 @@
 	</tactic>
 	<tactic>
 		Bombard
-		<speedmodifier>0.0</speedmodifier>
+		<speedmodifier>0.25</speedmodifier>
 		<attacktype>LogicalTypeRangedUnitsAttack</attacktype>
 		<autoattacktype>LogicalTypeRangedUnitsAutoAttack</autoattacktype>
 		<attackresponsetype>LogicalTypeRangedUnitsAttack</attackresponsetype>
@@ -59,6 +59,9 @@
 			<exit>1</exit>
 		</transition>
 		<idleanim>Bombard_ranged_idle</idleanim>
+		<walkanim>Bombard_ranged_idle</walkanim>
+		<joganim>Bombard_ranged_idle</joganim>
+		<runanim>Bombard_ranged_idle</runanim>
 		<boredanim>Bombard_bored</boredanim>
 		<throw>1</throw>
 		<deathanim>Bombard_death</deathanim>

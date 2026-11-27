@@ -144,6 +144,17 @@ Tested (2026-11-23, test copy of Wars of Liberty 1.0.15c, single player)
   lying camel clips and their tag files, B's fire clips of the gun and the gunner, and the aim file B55's fire table
   change; GatlingCamel's files and B55's TURN and RISE sections are unchanged. In game (test copy, single player): the tail
   flicking and swaying, the head turning in the reload, the bursts every 4 s and the muzzle flash at the barrels' end.
+- Round 9 (2026-11-27, JTMaston: "A slow moving animation is needed for deploy mode. Maybe the gunner pushing against
+  the camel and barely moving it", and the tracer of the other gatling guns; approved by the user as a preview;
+  check_anim.py 0 failures of 176 checks): deployed, GatlingCamelDeployed moves slowly (its Bombard tactic's
+  speedmodifier 0.25: 1.25 a second; its walk plays the deployed idle). Over it the turretArc key shows the aim file
+  B55's new WALK section: the camel rises rump-high, walks in big steps by diagonal pairs with the gunner at its left
+  flank pushing with both palms, his spare magazine at his hip, and kneels again when it stops; its steps follow the
+  way it has gone, so no hoof slides. Both tactics now fire Machinegun, the projectile of WoL's other gatling guns:
+  its streak is their tracer (instantballistics stays 1: the damage as before). Only the two tactics and B55 (the
+  WALK section appended; every byte before it as in round 8) change. In game (test copy, single player): the rise,
+  the walk, the turn to a new course and the settling; the tracers in each burst. The WALK section needs the DLL of
+  2026-11-27 or later; an older DLL ignores it (the camel then slides along kneeling).
 - Not seen in game: multiplayer.
 - Fixed on 2026-11-23 after the first films: the camel's left legs were drawn lifted (the stock clips' leg
   mirrors were copied in the clips' own axes); on death the gun stayed in the air, then turned on itself
@@ -265,6 +276,18 @@ Probado (2026-11-23, copia de prueba de Wars of Liberty 1.0.15c, un jugador)
   secciones TURN y RISE de B55 no cambian. En el juego (copia de prueba, un jugador): la cola
   que se sacude y se balancea, la cabeza que gira en la recarga, las ráfagas cada 4 s y el fogonazo en la punta de los
   cañones.
+- Ronda 9 (2026-11-27, JTMaston: una animación de movimiento lento desplegado, el artillero empujando al camello, y la
+  trazadora de las otras ametralladoras gatling; aprobada por el usuario como vista previa; check_anim.py 0 fallos en
+  176 comprobaciones): desplegado, GatlingCamelDeployed se mueve despacio (speedmodifier 0.25 de su táctica Bombard:
+  1,25 por segundo; su marcha usa el reposo desplegado). Encima, la clave turretArc muestra la nueva sección WALK del
+  archivo de puntería B55: el camello se incorpora con la grupa alta, camina a pasos grandes por pares diagonales con
+  el artillero en su flanco izquierdo empujando con las dos palmas, el cargador de repuesto en su cadera, y se
+  arrodilla al parar; los pasos siguen el camino recorrido, así que ninguna pezuña resbala. Las dos tácticas disparan
+  ahora Machinegun, el proyectil de las otras gatling de WoL: su estela es su trazadora (instantballistics sigue en 1:
+  el daño como antes). Solo cambian las dos tácticas y B55 (la sección WALK añadida; todos los bytes anteriores como
+  en la ronda 8). En el juego (copia de prueba, un jugador): la subida, la marcha, el giro a un rumbo nuevo y la
+  bajada; las trazadoras en cada ráfaga. La sección WALK necesita el DLL del 2026-11-27 o posterior; uno anterior la
+  ignora (el camello se desliza arrodillado).
 - No visto en el juego: multijugador.
 - Corregido el 2026-11-23 tras las primeras grabaciones: las patas izquierdas del camello se veían levantadas
   (las simetrías de las patas de los clips del juego se copiaban en los ejes del propio clip); al morir el arma

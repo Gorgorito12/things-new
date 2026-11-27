@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The gatling camel that fires from the saddle: the zamburak's tactics (it fires and moves without deploying) with the gatling camel's attack, whose <turret> (arc 90 each side) is read by the turretArc key, which turns the gun on its post instead of the camel. -->
+<!-- The gatling camel that fires from the saddle: the zamburak's tactics (it fires and moves without deploying) with the gatling camel's attack, whose <turret> (arc 90 each side) is read by the turretArc key, which turns the gun on its post instead of the camel. The shots are WoL's other gatling guns' (Machinegun: their tracer). -->
 
 <tactics>
 	<action>
@@ -18,7 +18,7 @@
 		<spreadfactor>0.25</spreadfactor>
 		<trackrating>12</trackrating>
 		<unintentionaldamagemultiplier>0.7</unintentionaldamagemultiplier>
-		<projectile>OneThirdCannonball</projectile>
+		<projectile>Machinegun</projectile>
 		<numberprojectiles>1</numberprojectiles>
 		<impacteffect>effects\impacts\gun</impacteffect>
 		<rate type="All">1.0</rate>

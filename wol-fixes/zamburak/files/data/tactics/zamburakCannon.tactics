@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The zamburak cannon (MEZamburak, the zamburak-fixes pack): one unit with two modes, as the stock field guns. Limber: it moves and cannot fire; an attack order unlimbers it first (the camel lies down, the artillerist gets off and goes to his station behind the breech: 6.67 s). Bombard: it cannot move and fires (the artillerist touches the vent with his linstock; 2.0 s), then reloads by hand (the gun swung round to him through its back, charge and ball pushed in by hand, swung back: 3.0 s); a move order limbers it again (he gets back on, the camel rises: 5.5 s). The attack's <turret> (60: the arc each side of the gun's rest, which the unit's aim file puts at +90, square to the camel's spine, so it turns from +30 to +150; 100 degrees a second) is read by the turretArc key, which turns the gun on its swivel instead of the camel; the game ignores it. The ROF (5.0 s, its anim's 2.0 s and its reload's 3.0 s) is in protoy.xml: a proposal for Wars of Liberty's team. Everything else of the attack is zamburakME.tactics'. -->
+<!-- The zamburak cannon (MEZamburak, the zamburak-fixes pack): one unit with two modes, as the stock field guns. Limber: it moves and cannot fire; an attack order unlimbers it first (the camel lies down, the artillerist gets off and goes to his station behind the breech: 6.67 s). Bombard: it fires (the artillerist touches the vent with his linstock; 2.0 s), then reloads by hand (the gun swung round to him through its back, charge and ball pushed in by hand, swung back: 3.0 s); it moves slowly (speedmodifier 0.25: 1.25 a second; its walk plays the deployed idle, over which the turretArc key shows the camel rising and walking with the artillerist pushing it, the aim file's WALK); the limber button limbers it again (he gets back on, the camel rises: 5.5 s). The attack's <turret> (60: the arc each side of the gun's rest, which the unit's aim file puts at +90, square to the camel's spine, so it turns from +30 to +150; 100 degrees a second) is read by the turretArc key, which turns the gun on its swivel instead of the camel; the game ignores it. The ROF (5.0 s, its anim's 2.0 s and its reload's 3.0 s) is in protoy.xml: a proposal for Wars of Liberty's team. Everything else of the attack is zamburakME.tactics'. -->
 
 <tactics>
 	<action>
@@ -69,7 +69,7 @@
 	</tactic>
 	<tactic>
 		Bombard
-		<speedmodifier>0.0</speedmodifier>
+		<speedmodifier>0.25</speedmodifier>
 		<attacktype>LogicalTypeRangedUnitsAttack</attacktype>
 		<autoattacktype>LogicalTypeRangedUnitsAutoAttack</autoattacktype>
 		<attackresponsetype>LogicalTypeRangedUnitsAttack</attackresponsetype>
@@ -86,6 +86,9 @@
 		<runaway>0</runaway>
 		<autoretarget>1</autoretarget>
 		<idleanim>Bombard_ranged_idle</idleanim>
+		<walkanim>Bombard_ranged_idle</walkanim>
+		<joganim>Bombard_ranged_idle</joganim>
+		<runanim>Bombard_ranged_idle</runanim>
 		<boredanim>Bombard_bored</boredanim>
 		<deathanim>Bombard_death</deathanim>
 	</tactic>

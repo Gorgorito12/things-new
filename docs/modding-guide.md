@@ -31,11 +31,11 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-27 11:56 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
 | Friday 2026-11-27 11:20 | [`partisans`](#partisans) | Filmed in WoL, with a control. The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanNearby>` on a civ makes each of its nearby buildings with a guerrilla give its own, which walks to that building's gather point. | `<CivPartisan>` on the building in `protoy.xml`; `<PartisanNearby>` on the civ in `civs.xml`; the techs in `techtreey.xml`. |
 | Friday 2026-11-27 07:50 | [`perCivEffects`](#perciveffects) | Added. `onlyciv="Spanish"` on any tech `<Effect>` makes that effect work only for a player of that civ: for shared cards, shared techs and each member of a team tech. | The attribute on the effects that want it. |
 | Thursday 2026-11-26 16:24 | [`cultureUI`](#cultureui) | Filmed in WoL, with a control. The minimised in-game interface takes its own textures per family of civs, and others again from the Great War: `X_as.ddt` beside `X.ddt` restyles texture X for the Asian family. | The art, one `.ddt` per texture and family (`<texture>_<family>[_gw].ddt`, from aoe3-blender-tools' templates), and `data\uhc\cultureui.xml` with the nine families: `wol-fixes/culture-ui/`. |
 | Thursday 2026-11-26 15:43 | [`powerShots`](#powershots) | Filmed in WoL, with a control. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
-| Thursday 2026-11-26 11:34 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
 | Thursday 2026-11-26 10:26 | [`garrisonConvert`](#garrisonconvert) | Filmed in WoL, with a control. `<GarrisonConvertTo delay="5" eject="true" from="Settler">Pikeman</GarrisonConvertTo>` in a building: the units that enter it become that unit, at once or one every 5 seconds, kept inside or put out, with the train button's pie over the building's portrait; several tags take turns, a conversion waits at the population cap, and techs change the tags. | The tag on the buildings that want it. |
 | Thursday 2026-11-26 10:14 | [`nurseryFactor`](#nurseryfactor) | Filmed in WoL, with a control. A building or unit keeps its own count, its "factor" (the minks of a mink nursery), that grows with time (linearly or as b^t) up to a cap, is changed by techs, takes in the units sent into it and is spent or bought with its own command buttons; it multiplies the unit's AutoGather and can multiply a home city shipment, and the panels show it as `3/10 minks` with a two-line rollover and a progress pie. | The `NurseryFactor*` tags on the proto, an AutoGather action, the techs that want the Data subtypes, and for the buttons their command types and `protounitcommands.xml` entries; `art\ui\uhc\pie\` for the pie after the row. |
 | Wednesday 2026-11-25 08:42 | [`selectFattened`](#selectfattened) | Filmed in WoL, with a control. A button and a hotkey select the player's livestock that has reached its maximum food, on the whole map; the button shows how many there are and hides at none. | The button and the hotkey: `wol-fixes/select-fattened`. |
@@ -4502,7 +4502,7 @@ powerShots [log]
 
 *A gun on a mount turns toward its target by itself, inside its arc, instead of the whole unit turning.*
 
-**Added:** Tuesday 2026-11-24 10:05 · **Filmed in WoL:** Thursday 2026-11-26 11:34
+**Added:** Tuesday 2026-11-24 10:05 · **Filmed in WoL:** Friday 2026-11-27 11:56
 
 ![turretArc in WoL](media/gatlingCamel-wol.gif)
 
@@ -4572,6 +4572,14 @@ turretArc <Proto> <aim file> [<Proto> <aim file> ...] [log]
     not fire until it has settled, and the gun rests meanwhile. An aim file with a `TURN` section gives its own pace
     and the poses that lift the body and step its feet and the gunner's; without one the model turns at that pace in
     its lying pose. `TurnRate` itself is not changed, so a limbered unit still steers as before.
+  - **A deployed walk** (an aim file with a `WALK` section, after `TURN` and `RISE`): a deployed unit whose tactic
+    lets it move (its Bombard tactic's `<speedmodifier>`, with its deployed idle as its walk anim) is shown walking.
+    While it moves, the body rises through the `RISE` poses in the section's time and steps by the way it has gone,
+    one cycle of the table each `stride`, so a planted hoof stays put on the ground whatever the speed; the gunner
+    walks beside it and the gun's parts he carries go with him. When it stops it settles back into its kneeling clip.
+    A new course is shown turning at the section's rate (the camels: 120 degrees a second) instead of in a tenth of a
+    second. Only while one of the section's clips plays (the deployed idle, the shot, the reload), so a limbered unit
+    walks as before. Display only: the unit moves and fires as the game moves it.
   - Each shot leaves from the turned muzzle, so the tracers and the projectiles start where the gun points.
   - The gun goes back to its rest half a second after the unit last aimed, and at once while the unit plays a
     clip whose name holds `reload`, `death` or `deploy` (the gunner's new magazine is drawn to where the hopper is at
@@ -4585,11 +4593,15 @@ turretArc <Proto> <aim file> [<Proto> <aim file> ...] [log]
 - **Saved games:** nothing to keep: after a load, the next aim turns the gun again. A turn under way when the game
   was saved is not resumed: the unit fires at once after the load.
 - **Log:** `turretArc: applied`, one line per aim file (its bones, pivot, clips, yaws and rest), `hook reached:
-  turretArc facing (0x48AA9F)`, `turretArc launch (0x4995D5)` and `turretArc attack state (0x48A65A)`. With `log`:
+  turretArc facing (0x48AA9F)`, `turretArc launch (0x4995D5)` and `turretArc attack state (0x48A65A)`; with a `WALK`
+  section, `MEZamburak: deployed, it walks: rises in 0.45 s, steps 1.00 a cycle (48 points; 26 body, 19 gunner, 1 gun
+  bones), its heading follows 120 degrees a second, settles in 0.45 s, on 9 clips`. With `log`:
   each new aim, at most 400 (`unit 0 aims at 131.8 degrees (arc +30..+150, rest +90): the gun turns`, `the unit turns
   until it sits at the rest yaw`, or `the unit turns`), each turn beyond the arc (`unit 1 turns its body -180.0
   degrees (from 180.0, 6 steps): shown in 2600 ms, its attack held until 22719 ms` and `its attack waits for its
-  turn`), the first 400 shots with their game time, and the models found for each unit.
+  turn`), the first 400 shots with their game time, the models found for each unit, each deployed walk's start
+  (`unit 0 walks deployed`) and 120 lines of its progress (`unit 0 walking: 0.001 this tick along 93.0, heading 91.6
+  (shown 91.6), lift 1.00, phase 0.52`).
 - **Tested in WoL (2026-11-27, single player, `C:\AoE3-UHC-WoLReal4`, both camel packs):** the shown turn and the held
   attack: Houses created and destroyed round a deployed `MEZamburak` and a `GatlingCamelDeployed` every 20 s, 12 turns
   of 90 and 180 degrees each way: no shot between a turn's start and its end (logged with game time), the first shot
@@ -4599,6 +4611,22 @@ turretArc <Proto> <aim file> [<Proto> <aim file> ...] [log]
   during any; the rise, the big steps, the gunner's walk and the settling checked frame by frame; both camels killed
   mid-turn (the deployed death plays, nothing left in the air). The AI played a 4-minute skirmish against the
   Germans with the new hook (22 units, a Manor, no XS message). Not tested: a game saved during a turn.
+
+- **Tested in WoL (2026-11-27, single player, `C:\AoE3-UHC-WoLReal8`, both camel packs with their `WALK` section):**
+  the deployed `MEZamburak` and `GatlingCamelDeployed` moved by trigger orders (straight legs of 3 to 20 m, turns of
+  90 and 135 degrees): each walk logged (`walks deployed`), the step's phase growing 1.25 cycles a second at the
+  game's 1.25 a second, the course logged along the unit's heading. Checked frame by frame: the camel rises, walks
+  facing its course with its diagonal pairs, the gunner at its left flank pushing (the zamburak's linstock in his
+  right hand, the gatling's spare magazine at his hip), and kneels again when it stops; then it fires as before. The
+  control has the key off: the kneeling camel slides along and snaps to each new course. The AI played a 2-minute
+  skirmish with both packs (no XS message). Not tested: a game saved during a walk (display only: none to resume).
+
+![turretArc: the deployed gatling camel walks](media/turretArc-walk-gatling-wol.gif)
+
+*In WoL (filmed on 2026-11-27, `GatlingCamelDeployed`, the pack's aim file with its `WALK` section): it fires at a
+House, is ordered 5 m and 4 m, rises and walks with the gunner pushing at its flank, kneels and fires at a second
+House.* [Full video (MP4)](media/turretArc-walk-gatling-wol.mp4). The control, the key off: the kneeling camel slides
+([zamburak cannon, round 4](#the-zamburak-cannon)).
 
 ![turretArc: the deployed gatling camel turns beyond its arc](media/turretArc-turn-gatling-wol.gif)
 
@@ -11574,6 +11602,26 @@ it fires bursts at a House and reloads. The kneeling camel breathes and sways it
 and flicks its tail, and in the reload it chews and turns its head toward the gunner.* [Full video
 (MP4)](media/gatlingCamelAlive-wol.mp4): Houses at 90, 45 and 143 degrees. The control is the round-7 video above.
 
+- **Round 9** (JTMaston, 2026-11-27: "A slow moving animation is needed for deploy mode. Maybe the gunner pushing
+  against the camel and barely moving it" and "The shooting animation seems to be missing the tracer effect of other
+  gatling gun units"):
+  - **the walk:** `GatlingCamelDeployed`'s Bombard tactic gets `<speedmodifier>0.25</speedmodifier>` (1.25 a second)
+    and its deployed idle as its walk anims, and the aim file a `WALK` section (`tools/camel_walk.py`): the camel rises
+    and walks as the zamburak's (round 4 of the zamburak cannon), the gunner at its left flank with both palms on its
+    side. The spare magazine of the gun, which hangs by his hip at the gun, rides on his hip as he walks (left where
+    it was, it floated beside the risen camel in the first preview). `check_anim.py` 0 failures of 176;
+  - **the tracers:** both tactics fire `Machinegun`, the projectile of WoL's other gatling guns (`organGun.tactics`),
+    instead of `OneThirdCannonball` (a ball and a musket trail): a thin bright streak at 150 a second. Their anim tags
+    were already complete (`organgunmuzzle01`, six Attack tags); `instantballistics` stays 1, so the damage lands as
+    before. Seen in game: the streaks between the gun and the House in each burst.
+
+![The gatling camel, round 9: deployed, it walks](media/turretArc-walk-gatling-wol.gif)
+
+*Round 9 (`C:\AoE3-UHC-WoLReal8`, the pack and the key, filmed on 2026-11-27), the `GatlingCamelDeployed` selected:
+bursts at a House, then ordered 5 m and 4 m: the camel rises and walks with the gunner pushing at its flank, kneels,
+and fires at a second House, its tracers streaking to it.* [Full video (MP4)](media/turretArc-walk-gatling-wol.mp4). The
+zamburak cannon's round-4 control shows the same walk with the key off.
+
 ![The new gatling camel, from the saddle](media/gatlingCamel-wol.gif)
 
 *One `GatlingCamel` (selected, with `turretArc`; filmed on 2026-11-26 with the round-7 art: the hump, the post centred)
@@ -11691,7 +11739,8 @@ worked example: [`animation-script-guide.md`](animation-script-guide.md)):
       muzzle: a sign error in the tool, fixed;
     - **the muzzle smoke:** the shot's smoke and flash (`smallcannonmuzzle`, on the bone `launchpoint`) burst at a
       fixed spot ahead of the camel, beside the artillerist's head when the gun was turned. The camel's tag file
-      for the shot lacked `LAUNCHPOINT`; with it they burst at the muzzle at every yaw;
+      for the shot lacked `LAUNCHPOINT`; with it they burst at the muzzle at every yaw (but still blown the way the
+      camel faces: fixed in round 4, below);
     - **the ball:** he loads it visibly. He holds the charge and the ball at his fingertips, not inside his palm,
       and shows the ball over the muzzle for a moment before he pushes it in. The ball is a little larger
       (radius 4.5 cm, in a bore of 5) and light grey: the midfa's iron is near black and did not show against
@@ -11703,7 +11752,26 @@ worked example: [`animation-script-guide.md`](animation-script-guide.md)):
       come round. The deployed idle keeps its own motion and gains the breath, two chews and an ear. Each clip
       starts and ends in the same pose, so they follow each other without a jump, and the turn beyond the arc
       (`TURN`, `RISE`) is unchanged.
-  - **Limber again (5.5 s):** the limber button, or a move order.
+  - **Deployed, it moves, round 4** (JTMaston, 2026-11-27: "A slow moving animation is needed for deploy mode. Maybe
+    the gunner pushing against the camel and barely moving it", and "the gun seems to be emitting the smoke rotated
+    by 90 degrees"):
+    - **the walk:** a move order no longer leaves it still. The Bombard tactic gets `<speedmodifier>0.25</speedmodifier>`
+      (1.25 a second, a quarter of its limbered 5.0; the deployed falconet's is 1.6) and its deployed idle as its walk,
+      jog and run anims. Over it the `turretArc` key shows the walk of the aim file's new `WALK` section
+      (aoe3-blender-tools' `tools/camel_walk.py`): the camel rises rump-high as in its turn (0.45 s) and walks in big
+      unhurried steps by diagonal pairs, a stride of 1.0 every 0.8 s, each hoof lifted 22 cm, its neck nodding; the
+      artillerist steps off his station to its left flank and walks beside it, leaning in, his left palm and shoulder
+      on its side and the linstock low in his right hand. When it stops the camel kneels again (0.45 s) and he is back
+      at his station. The steps follow the way the unit has gone, not the clock, so a planted hoof or foot stays put
+      at any speed. A new course is shown turning at 120 degrees a second. The script and the preview were approved
+      by the user (the speed: the user, 1.25);
+    - **the smoke:** placed at the muzzle, the shot's smoke still burst the way the unit faces, 90 degrees off the
+      barrel at rest: a `Particles` tag's set is placed on its bone but blown along the unit (seen in game with a probe
+      on 2026-11-27). The pack's gun anim file now attaches the six particles of the game's `smallCannonMuzzle` set on
+      the gun's `bone_launchpoint` in its shot, each delayed to the shot as the fuse's (`muzzle_*.particle`, the game's
+      files with only their `initialdormancy` moved by 1.40 s), and the camel's `Particles` tag is gone. Seen in game:
+      the flash and the smoke leave along the barrel, at rest and turned 40 degrees.
+  - **Limber again (5.5 s):** the limber button (a move order now moves it deployed).
   - **Deaths:** unlimbered, the camel slumps and he falls back. Limbered, three of today's camel deaths play; the
     other five drove the cannon into the ground.
 - **The turning gun** (`turretArc`): the line below turns it on its swivel from +30 to +150. A target outside the
@@ -11720,7 +11788,9 @@ worked example: [`animation-script-guide.md`](animation-script-guide.md)):
   barrel, crossed feet, the weapon not into the ground at death, prop sizes, and an animal lying in the kush
   (`lying`: belly 2.7 cm up, hump 57% of its standing height, knees 21 cm, legs inside its outline). In the shot
   (round 3) the rock lifts the near side for 0.3 s: its `lying` limits are raised to a belly 8 cm up and knees 30
-  cm, the reason kept in the job.
+  cm, the reason kept in the job. The walk (round 4): 0 failures of 176 checks (its loop, and a start, three cycles and
+  a stop baked as the DLL shows them; the start and stop's sink limit raised to 15 cm for two frames of the settle,
+  the reason in the job).
 
 ![The zamburak cannon in WoL](media/zamburakCannon-wol.gif)
 
@@ -11751,6 +11821,19 @@ it in, while the camel chews and turns its head to watch.* [Full video (MP4)](me
 at 90, 45 and 143 degrees.
 The video before round 3 above is the control: touch and shot 0.10 s apart, no sparks, the smoke beside the
 camel's head.
+
+![The zamburak cannon, round 4: deployed, it walks](media/turretArc-walk-zamburak-wol.gif)
+
+*Round 4 (`C:\AoE3-UHC-WoLReal8`, the pack and the key, filmed on 2026-11-27), the zamburak selected. Deployed, it is
+ordered 3 m one way and 3 m the other: the camel rises rump-high, turns to its course and walks in big steps with the
+artillerist pushing at its left flank, then kneels again. A House appears 40 degrees off the gun's rest: the gun turns
+and fires, its flash and smoke leaving along the barrel.* [Full video (MP4)](media/turretArc-walk-zamburak-wol.mp4): the first
+shots at a House ahead, the walk, the shots at the second House.
+
+![The zamburak cannon, round 4: the walk, key off](media/turretArc-walk-wol-control.gif)
+
+*The control, the same orders with the key off (filmed on 2026-11-27): the kneeling camel slides along at the new
+speed and snaps to each new course.* [Full video (MP4)](media/turretArc-walk-wol-control.mp4).
 
 - **Tested in WoL** (2026-11-26, single player, `C:\AoE3-UHC-WoLReal8`, the round branch's DLL), checked frame by
   frame in close films:
