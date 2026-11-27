@@ -17,7 +17,8 @@ What it is
     and turns its neck aside. The artillerist draws his linstock from its
     holster, swings the gun out over the camel's right side (+90, square to its spine), gets off on the left and
     stands at his station behind the breech.
-  - Bombard: it cannot move. To fire (2.0 s) he touches the vent with the hot red tip of his linstock, a short
+  - Bombard: it moves slowly (1.25 a second; see "Deployed, it walks" below). To fire (2.0 s) he touches the vent
+    with the hot red tip of his linstock, a short
     plain stick, at 0.70 s. The fuse burns on the vent with sparks and a thread of smoke while he takes the
     stick away and turns his head aside, and the gun fires at 1.40 s. The muzzle jumps 15 degrees and the
     kneeling camel rocks 4 degrees away from the shot; both settle before the reload.
@@ -26,8 +27,8 @@ What it is
     over the muzzle before he pushes it in. Then he pushes the gun back to its rest and takes the linstock up.
     The kneeling camel is alive meanwhile: it breathes and sways its tail, pins its ears back and flicks its
     tail at the shot, and in the reload chews its cud, flicks its ears and turns its head to watch the gun.
-  - Limber (5.5 s): he swings the gun back to its travel pose, puts the linstock in its holster, gets on, and the
-    camel rises.
+  - Limber (5.5 s, the limber button): he swings the gun back to its travel pose, puts the linstock in its holster,
+    gets on, and the camel rises.
   - Deaths: unlimbered, the camel slumps and he falls back. Limbered, three of today's camel deaths play on a model
     with the cannon built in. The other five drove the cannon into the ground and are not played.
 - With the turretArc key, the gun turns on its swivel from +30 to +150 to a target inside that arc; he stays at his
@@ -38,6 +39,18 @@ What it is
   never sliding) and kneels again; the artillerist turns to face his way, walks round beside it, hands on his hips,
   and takes his station again. 0.45 s up, 90 degrees a second, 0.45 s down: 1.9 s for 90 degrees, 2.9 s for 180.
   It does not fire until it has knelt again. An older DLL turns it at once, lying.
+- Deployed, it walks (2026-11-27, JTMaston: "A slow moving animation is needed for deploy mode. Maybe the gunner
+  pushing against the camel and barely moving it"; the DLL of 2026-11-27 or later): the Bombard tactic moves at
+  speedmodifier 0.25 and plays the deployed idle as its walk. Over it the turretArc key shows the aim file's WALK
+  section: the camel rises rump-high as in its turn, walks in big steps by diagonal pairs (a stride of 1.0 every
+  0.8 s, each hoof lifted 22 cm), the artillerist at its left flank leaning in, his left palm and shoulder on it and
+  the linstock low in his right hand, and it kneels again when it stops. The steps follow the way it has gone, so a
+  planted hoof stays put at any speed; a new course is shown turning at 120 degrees a second. Without the key (or with
+  an older DLL) the kneeling camel slides along.
+- The shot's smoke (2026-11-27, JTMaston: "the gun seems to be emitting the smoke rotated by 90 degrees"): the game's
+  small cannon smoke (its smallCannonMuzzle set) is attached on the gun's muzzle in the shot, delayed to it, and leaves
+  along the barrel whichever way the gun is turned. As the Particles tag it was, the game blew it the way the camel
+  faced.
 - Made with aoe3-blender-tools tools/make_zamburak.py (models, clips, every file checked by the game's
   granny2.dll). Every clip passed its check_anim.py:
   - the new clips: 0 failures of 1222 checks;
@@ -66,6 +79,8 @@ Files it adds
       zamburak_cannon.xml (+ _gun, _rider)   the anim files
       fuse_sparks.particle, fuse_smoke.particle   the burning fuse on the vent: the game's grenadier's fuse
                                        sparks and smoke (effects\spc\fusesparks, fusesmoke) timed to the shot
+      muzzle_*.particle                the shot's smoke, flash and sparks at the muzzle: the game's smallCannonMuzzle
+                                       particles (units\artillery\cannon\cannon_small_*) delayed to the shot
   data\tactics\zamburakCannon.tactics  the two modes; the attack carries
                                        <turret tracking="always" maxTurnAnglePerSecond="100">60</turret>, read by
                                        the turretArc key and ignored by the game
@@ -127,6 +142,11 @@ TESTED (2026-11-26, a test copy of Wars of Liberty, single player, the DLL of 20
   first shot 1.40 s after the gun is laid; ROF 5.0 measured (5.00 s between shots); the shot's smoke and flash
   at the muzzle at every yaw (before, they burst at a fixed spot ahead of the camel: the shot's tag file lacked
   LAUNCHPOINT); the ball seen over the muzzle; the camel's tail and head moving.
+- Deployed, it walks, and the smoke along the barrel (2026-11-27, approved by the user as a preview; check_anim.py
+  0 failures of 176 for the walk; in game, WoLReal8, the DLL of 2026-11-27, single player): orders of 3 to 20 m and
+  turns of 90 and 135 degrees, each walk logged; the rise, the steps, the artillerist pushing and the settling seen
+  frame by frame; then shots with the gun turned 40 degrees from its rest, the flash and smoke along the barrel. The
+  control (the key off): the kneeling camel slides and snaps to each course. A 2-minute skirmish: the AI played.
 - Not tested: an attack order (right click) unlimbering it. The bed could not aim a real click; the tactics are the
   stock pattern (GatlingCamel, falconet). Also not tested: multiplayer, and the AI with the pack.
 

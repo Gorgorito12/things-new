@@ -4617,6 +4617,21 @@ game; `docs/engine-symbols.md`, "Turrets, facing and the Granny pose", REA evide
   so on), each taking the lift's share of the step point's offset from the step's first, so folded legs unfold as
   the body rises instead of through the ground; without it they blend straight. A reader without them stops after the
   clips, and a DLL older than the `TURN` section stops there too, so it shows the turn as before.
+- **The deployed walk (`WALK`, after `TURN` and `RISE`).** Its header: version 1, the stride (model units the ground
+  runs back in one cycle), the rise and the settling (seconds), the rate a new course is shown turning (degrees a
+  second), the lift from which a rising unit's step shows, the points of a cycle, K, and the clips on which the walk
+  may show (64-byte names: the deployed idle, the shot and the reload of each part). Then three parts, the body's
+  model, the gunner's and the gun's (the parts the gunner carries), each its bone names, `[point][bone]` local poses
+  of one cycle and `[k][bone]` rise poses. Each world update (`TickWalks`), every unit of a type with the section is
+  found once a second by a scan of the unit table, and each one's position is compared with the last: while it moves
+  and its body plays one of those clips, its lift ramps up over the rise time and the way gone is added to its
+  distance once the lift reaches the threshold, else the lift ramps down over the settling and the distance clears at
+  0. After Granny samples a part (`AfterSample`), `PoseWalkPart` sets its bones: risen, the cycle's point at
+  `distance / stride`; rising or settling, the rise poses from the clip's and a share of the point's offset from
+  point 0 (rising: none until the threshold, all at 1, so the legs unfold before they step; settling: the lift's).
+  The body's root is turned back by the shown heading less the simulation's, which follows the unit's course at the
+  rate. A unit of a walking type keeps its display state while it lives, so its parts are mapped and sampled. All of
+  it is display: the simulation moves the unit at its tactic's speed. A reader without the section stops before it.
 <!-- private:begin -->
 - **A gun its own clips swing (the zamburak cannon, 2026-11-26).** Its reload turns the gun from
   +90 round through its back to 270 and back, inside the clip (the gun's `bone_yaw` and the camel's `bone_turret`

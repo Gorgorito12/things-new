@@ -90,8 +90,8 @@ def edit_protos(text):
     if m is None:
         sys.exit(f"apply_fix: unit {UNIT} has no CannonAttack with a <ROF>")
     new = new[:m.start(2)] + ROF + new[m.end(2):]
-    # unlimbered it cannot move (speed 0): it turns on the spot to a target outside the gun's arc, as the
-    # gatling camel and the falconet do
+    # unlimbered it moves slowly (its Bombard tactic's speedmodifier) and turns on the spot to a target outside the
+    # gun's arc, as the gatling camel and the falconet do
     if "<Flag>RotateInPlace</Flag>" not in new:
         f = re.search(r"([ \t]*)<Flag>ConstrainOrientation</Flag>", new)
         if f is None:

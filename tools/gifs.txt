@@ -412,3 +412,6 @@ zamburakFuse-wol 0 12 1 800:560:80:40
 gatlingCamelAlive-wol 1.5 12 1 800:560:80:40
 perCivEffects-wol 16 12 1
 perCivEffects-wol-control 9 12 1
+turretArc-walk-zamburak-wol 11 18 1 800:560:160:40
+turretArc-walk-wol-control 2 12 1 800:560:160:40
+turretArc-walk-gatling-wol 6.5 12 1 800:560:160:40

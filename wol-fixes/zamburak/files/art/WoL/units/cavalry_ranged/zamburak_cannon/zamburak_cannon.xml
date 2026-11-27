@@ -191,7 +191,6 @@
 			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_camel_fire</file>
 			<tag type="Attack">0.70</tag>
 			<tag type="SpecificSoundSet" checkvisible="1" set="FalconetShoot">0.70</tag>
-			<tag type="Particles" particlename="smallcannonmuzzle">0.70</tag>
 		</assetreference>
 		<component>ModelComp</component>
 	</anim>

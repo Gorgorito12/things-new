@@ -2,6 +2,7 @@
 <!-- Wars of Liberty's zamburak cannon (MEZamburak): the zamburak's camel without its swivel gun, a bronze cannon on a swivel on its withers, its rider, who limbers and unlimbers it. Made with aoe3-blender-tools tools/make_zamburak.py. -->
 <animfile>
 	<definebone>bone_fuse</definebone>
+	<definebone>bone_launchpoint</definebone>
 	<attachment>
 		fuse_sparks
 		<component>
@@ -26,6 +27,84 @@
 		<anim>
 			None
 			<component>fuse_smoke</component>
+		</anim>
+	</attachment>
+	<attachment>
+		muzzle_smoking_barrel
+		<component>
+			muzzle_smoking_barrel
+			<assetreference type="ParticleSystem">
+				<file>WoL\units\cavalry_ranged\zamburak_cannon\muzzle_smoking_barrel.particle</file>
+			</assetreference>
+		</component>
+		<anim>
+			None
+			<component>muzzle_smoking_barrel</component>
+		</anim>
+	</attachment>
+	<attachment>
+		muzzle_smoke_puff_ring
+		<component>
+			muzzle_smoke_puff_ring
+			<assetreference type="ParticleSystem">
+				<file>WoL\units\cavalry_ranged\zamburak_cannon\muzzle_smoke_puff_ring.particle</file>
+			</assetreference>
+		</component>
+		<anim>
+			None
+			<component>muzzle_smoke_puff_ring</component>
+		</anim>
+	</attachment>
+	<attachment>
+		muzzle_barrel_explosion
+		<component>
+			muzzle_barrel_explosion
+			<assetreference type="ParticleSystem">
+				<file>WoL\units\cavalry_ranged\zamburak_cannon\muzzle_barrel_explosion.particle</file>
+			</assetreference>
+		</component>
+		<anim>
+			None
+			<component>muzzle_barrel_explosion</component>
+		</anim>
+	</attachment>
+	<attachment>
+		muzzle_sparks
+		<component>
+			muzzle_sparks
+			<assetreference type="ParticleSystem">
+				<file>WoL\units\cavalry_ranged\zamburak_cannon\muzzle_sparks.particle</file>
+			</assetreference>
+		</component>
+		<anim>
+			None
+			<component>muzzle_sparks</component>
+		</anim>
+	</attachment>
+	<attachment>
+		muzzle_smoke_puff_a
+		<component>
+			muzzle_smoke_puff_a
+			<assetreference type="ParticleSystem">
+				<file>WoL\units\cavalry_ranged\zamburak_cannon\muzzle_smoke_puff_a.particle</file>
+			</assetreference>
+		</component>
+		<anim>
+			None
+			<component>muzzle_smoke_puff_a</component>
+		</anim>
+	</attachment>
+	<attachment>
+		muzzle_smoke_puff_b
+		<component>
+			muzzle_smoke_puff_b
+			<assetreference type="ParticleSystem">
+				<file>WoL\units\cavalry_ranged\zamburak_cannon\muzzle_smoke_puff_b.particle</file>
+			</assetreference>
+		</component>
+		<anim>
+			None
+			<component>muzzle_smoke_puff_b</component>
 		</anim>
 	</attachment>
 	<component>
@@ -154,6 +233,12 @@
 		<component>ModelComp</component>
 		<attach a="fuse_sparks" frombone="bone_fuse" tobone="bone_fuse" syncanims="0"/>
 		<attach a="fuse_smoke" frombone="bone_fuse" tobone="bone_fuse" syncanims="0"/>
+		<attach a="muzzle_smoking_barrel" frombone="bone_launchpoint" tobone="bone_launchpoint" syncanims="0"/>
+		<attach a="muzzle_smoke_puff_ring" frombone="bone_launchpoint" tobone="bone_launchpoint" syncanims="0"/>
+		<attach a="muzzle_barrel_explosion" frombone="bone_launchpoint" tobone="bone_launchpoint" syncanims="0"/>
+		<attach a="muzzle_sparks" frombone="bone_launchpoint" tobone="bone_launchpoint" syncanims="0"/>
+		<attach a="muzzle_smoke_puff_a" frombone="bone_launchpoint" tobone="bone_launchpoint" syncanims="0"/>
+		<attach a="muzzle_smoke_puff_b" frombone="bone_launchpoint" tobone="bone_launchpoint" syncanims="0"/>
 	</anim>
 	<anim>
 		Bombard_reload

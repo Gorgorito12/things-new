@@ -134,6 +134,25 @@ struct AimFile {
   float turnRate = 90.0f;     // degrees a second
   int turnPhases = 0;
   TurnPart turnBody, turnGunner;
+  // optional, "WALK" (after TURN and RISE): the deployed unit walking slowly (its tactic's speed). While the unit moves
+  // the body rises through the part's rise poses and steps by the way gone (a point every stride / points of it), the
+  // gunner walks beside it and the gun's parts (the zamburak's linstock in his hand) follow; when it stops they settle.
+  // Shown only while one of `walkClips` plays (the deployed idle, the shot, the reload).
+  struct WalkPart {
+    std::vector<std::string> bones;
+    std::vector<float> data;  // [point][bone][7]
+    std::vector<float> rise;  // [k][bone][7]: the pose at lift (k + 1) / walkK
+  };
+  bool hasWalk = false;
+  float walkStride = 1.4f;    // model units the ground runs back in one cycle
+  float walkRise = 0.45f;     // seconds
+  float walkSettle = 0.45f;   // seconds
+  float walkRate = 120.0f;    // degrees a second the shown heading follows a new course while deployed
+  float walkFrom = 0.6f;      // rising, the step shows from this lift on (the legs unfold first)
+  int walkPoints = 0;
+  int walkK = 0;
+  std::vector<std::string> walkClips;  // lower case
+  WalkPart walkBody, walkGunner, walkGun;
   // the yaws the aim file covers (degrees): the gun turns no farther than its table goes
   float lowest() const { return yaws.empty() ? 0.0f : yaws.front(); }
   float highest() const { return yaws.empty() ? 0.0f : yaws.back(); }
@@ -301,6 +320,56 @@ bool ReadAim(AimFile& aim) {
         at += floats * 4;
       }
       aim.riseSteps = static_cast<int>(k);
+      continue;
+    }
+    if (std::memcmp(&b[at], "WALK", 4) == 0) {
+      at += 4;
+      if (!need(36) || u32() != 1) {
+        return false;
+      }
+      aim.walkStride = f32();
+      aim.walkRise = f32();
+      aim.walkSettle = f32();
+      aim.walkRate = f32();
+      aim.walkFrom = f32();
+      const std::uint32_t points = u32(), k = u32(), nwalk = u32();
+      if (points < 2 || points > 256 || k < 1 || k > 256 || nwalk > 64 || !(aim.walkStride > 0.0f) ||
+          !(aim.walkRate > 0.0f) || aim.walkRise < 0.0f || aim.walkSettle < 0.0f || aim.walkRise > 5.0f ||
+          aim.walkSettle > 5.0f || !(aim.walkFrom >= 0.0f && aim.walkFrom < 1.0f) || !need(64 * nwalk)) {
+        return false;
+      }
+      for (std::uint32_t i = 0; i < nwalk; ++i) {
+        std::string c = str(64);
+        for (char& ch : c) {
+          ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+        }
+        aim.walkClips.push_back(std::move(c));
+      }
+      for (AimFile::WalkPart* part : {&aim.walkBody, &aim.walkGunner, &aim.walkGun}) {
+        if (!need(4)) {
+          return false;
+        }
+        const std::uint32_t nb = u32();
+        if (nb > 256 || !need(32 * nb)) {
+          return false;
+        }
+        for (std::uint32_t i = 0; i < nb; ++i) {
+          part->bones.push_back(str(32));
+        }
+        const std::size_t floats = static_cast<std::size_t>(points) * nb * 7u, rf = static_cast<std::size_t>(k) * nb * 7u;
+        if (!need((floats + rf) * 4)) {
+          return false;
+        }
+        part->data.resize(floats);
+        std::memcpy(part->data.data(), &b[at], floats * 4);
+        at += floats * 4;
+        part->rise.resize(rf);
+        std::memcpy(part->rise.data(), &b[at], rf * 4);
+        at += rf * 4;
+      }
+      aim.walkPoints = static_cast<int>(points);
+      aim.walkK = static_cast<int>(k);
+      aim.hasWalk = true;
       continue;
     }
     const bool band = std::memcmp(&b[at], "BAND", 4) == 0, setl = std::memcmp(&b[at], "SETL", 4) == 0;
@@ -573,6 +642,56 @@ float ShownHeading(const Turn& sh, std::int32_t now, float* lift, float* phase =
   return sh.from + sh.by * k;
 }
 
+// A deployed unit walking (the aim file's WALK): display state only, kept per unit in game time by the world tick from
+// the unit's position (the simulation moves it at its tactic's speed); the screen reads it.
+struct Walk {
+  int aim = -1;
+  bool placed = false;          // x, z hold a position
+  float x = 0.0f, z = 0.0f;     // the unit's position at the last tick
+  std::int32_t lastMs = -1;     // game time of the last tick
+  bool moving = false;          // it moved since the last tick
+  float ramp = 0.0f;            // 0 kneeling .. 1 risen, in time (the shown lift is its smoothstep)
+  float dist = 0.0f;            // the way gone since its step began (model units)
+  float shown = 0.0f;           // the heading the model shows while deployed (degrees)
+  bool shownSet = false;
+  bool deployed = false;        // the body last sampled one of the walk's clips
+  bool logged = false;          // for the log: this walk's start told
+};
+std::unordered_map<std::int32_t, Walk> g_walks;  // unit ID -> its walk (the units of a type with a WALK section)
+std::int32_t g_walkScanMs = -1000000;
+
+float WalkLift(const Walk& w) {
+  const float x = w.ramp <= 0.0f ? 0.0f : w.ramp >= 1.0f ? 1.0f : w.ramp;
+  return x * x * (3.0f - 2.0f * x);
+}
+
+const Walk* WalkOf(std::int32_t id) {
+  const auto it = g_walks.find(id);
+  return it == g_walks.end() ? nullptr : &it->second;
+}
+
+float WalkPhase(const Walk& w, const AimFile& aim) {
+  const float s = w.dist / aim.walkStride;
+  return s - std::floor(s);
+}
+
+// The walk may show on this clip (the deployed idle, the shot, the reload of the part).
+bool IsWalkClip(const AimFile& aim, const char* name) {
+  if (name == nullptr || !aim.hasWalk) {
+    return false;
+  }
+  std::string s(name);
+  for (char& ch : s) {
+    ch = static_cast<char>(std::tolower(static_cast<unsigned char>(ch)));
+  }
+  for (const std::string& c : aim.walkClips) {
+    if (c == s) {
+      return true;
+    }
+  }
+  return false;
+}
+
 std::unordered_map<std::int32_t, Shown> g_shown;  // unit ID -> its state
 
 enum class Role { kBody, kGun, kGunner };
@@ -662,6 +781,8 @@ struct BoneMap {
   std::vector<int> gunner;
   std::vector<int> turnBody, turnGunner;  // the aim file's TURN bones in this skeleton (-1 where it lacks one)
   bool anyTurnBody = false, anyTurnGunner = false;
+  std::vector<int> walkBody, walkGunner, walkGun;  // the WALK parts' bones in this skeleton (-1 where it lacks one)
+  bool anyWalkGunner = false;
 };
 std::map<std::pair<int, const void*>, BoneMap> g_boneMaps;
 
@@ -700,6 +821,16 @@ const BoneMap& BonesFor(int aim, const void* skeleton) {
   for (const std::string& b : a.turnGunner.bones) {
     m.turnGunner.push_back(BoneIndex(skeleton, b));
     m.anyTurnGunner = m.anyTurnGunner || m.turnGunner.back() >= 0;
+  }
+  for (const std::string& b : a.walkBody.bones) {
+    m.walkBody.push_back(BoneIndex(skeleton, b));
+  }
+  for (const std::string& b : a.walkGunner.bones) {
+    m.walkGunner.push_back(BoneIndex(skeleton, b));
+    m.anyWalkGunner = m.anyWalkGunner || m.walkGunner.back() >= 0;
+  }
+  for (const std::string& b : a.walkGun.bones) {
+    m.walkGun.push_back(BoneIndex(skeleton, b));
   }
   return g_boneMaps.emplace(key, std::move(m)).first->second;
 }
@@ -754,7 +885,7 @@ void MapNode(const char* node, std::int32_t id, int aim, int k) {
     }
     const BoneMap& m = BonesFor(aim, skeleton);
     const Role role = m.gun >= 0 ? Role::kGun : m.turret >= 0 ? Role::kBody : Role::kGunner;
-    if (m.gun < 0 && m.turret < 0 && m.gunner.empty() && !m.anyTurnGunner) {
+    if (m.gun < 0 && m.turret < 0 && m.gunner.empty() && !m.anyTurnGunner && !m.anyWalkGunner) {
       return;
     }
     if (g_log && g_mapLines < 24 && g_instances.find(instance) == g_instances.end()) {
@@ -1051,6 +1182,89 @@ void PoseTurnPart(void* pose, int first, int end, const AimFile& aim, const AimF
   }
 }
 
+// The aim file's WALK pose of one part at `phase` of a cycle and `lift`: risen, the point at the phase; rising or
+// settling, the part's rise poses (from the clip's) and a share of the point's offset from point 0 (rising: none until
+// walkFrom, all at 1, so the legs unfold before they step; settling: the lift's, so the stride folds over the settle).
+void PoseWalkPart(void* pose, int first, int end, const AimFile& aim, const AimFile::WalkPart& part,
+                  const std::vector<int>& bones, float phase, float lift, bool settling) {
+  const int np = aim.walkPoints, K = aim.walkK;
+  const std::size_t nb = part.bones.size();
+  if (np < 2 || K < 1 || nb == 0 || bones.size() != nb || lift <= 0.0f ||
+      part.data.size() != static_cast<std::size_t>(np) * nb * 7 || part.rise.size() != static_cast<std::size_t>(K) * nb * 7) {
+    return;
+  }
+  const float fp = phase * static_cast<float>(np);
+  int p0 = static_cast<int>(fp);
+  const float w = fp - static_cast<float>(p0);
+  p0 = ((p0 % np) + np) % np;
+  const int p1 = (p0 + 1) % np;
+  auto at = [&](int ph, std::size_t b) { return &part.data[(static_cast<std::size_t>(ph) * nb + b) * 7]; };
+  auto riseAt = [&](int kk, std::size_t b) { return &part.rise[(static_cast<std::size_t>(kk) * nb + b) * 7]; };
+  const bool risen = lift >= 1.0f;
+  const float x = lift * static_cast<float>(K);
+  int k = static_cast<int>(x);
+  if (k > K - 1) {
+    k = K - 1;
+  }
+  const float wk = x - static_cast<float>(k);
+  const float ow = risen ? 1.0f : settling ? lift : Smooth((lift - aim.walkFrom) / (1.0f - aim.walkFrom));
+  for (std::size_t b = 0; b < nb; ++b) {
+    const int bone = bones[b];
+    if (bone < first || bone >= end) {
+      continue;
+    }
+    GrannyTransform* tr = g_localTransform(pose, bone);
+    if (tr == nullptr) {
+      continue;
+    }
+    const float* a = at(p0, b);
+    const float* c = at(p1, b);
+    float sp[3], sq[4];
+    for (int i = 0; i < 3; ++i) {
+      sp[i] = a[i] + w * (c[i] - a[i]);
+    }
+    Nlerp(a + 3, c + 3, w, sq);
+    float op[3], oq[4];
+    if (risen) {
+      std::memcpy(op, sp, sizeof op);
+      std::memcpy(oq, sq, sizeof oq);
+    } else {
+      float cur[4] = {0.0f, 0.0f, 0.0f, 1.0f}, curp[3] = {0.0f, 0.0f, 0.0f};
+      if ((tr->flags & 2) != 0) {
+        std::memcpy(cur, tr->orientation, sizeof cur);
+      }
+      if ((tr->flags & 1) != 0) {
+        std::memcpy(curp, tr->position, sizeof curp);
+      }
+      const float* from = k == 0 ? nullptr : riseAt(k - 1, b);
+      const float* to = riseAt(k, b);
+      const float* fp3 = from == nullptr ? curp : from;
+      const float* fq = from == nullptr ? cur : from + 3;
+      float bp[3], bq[4];
+      for (int i = 0; i < 3; ++i) {
+        bp[i] = fp3[i] + wk * (to[i] - fp3[i]);
+      }
+      Nlerp(fq, to + 3, wk, bq);
+      const float* z = at(0, b);
+      for (int i = 0; i < 3; ++i) {
+        op[i] = bp[i] + ow * (sp[i] - z[i]);
+      }
+      const float zc[4] = {-z[3], -z[4], -z[5], z[6]};
+      float d[4], id[4] = {0.0f, 0.0f, 0.0f, 1.0f}, dl[4];
+      QuatMul(sq, zc, d);
+      Nlerp(id, d, ow, dl);
+      QuatMul(dl, bq, oq);
+      const float len = std::sqrt(oq[0] * oq[0] + oq[1] * oq[1] + oq[2] * oq[2] + oq[3] * oq[3]);
+      for (int i = 0; i < 4 && len > 1e-6f; ++i) {
+        oq[i] /= len;
+      }
+    }
+    std::memcpy(tr->position, op, sizeof op);
+    std::memcpy(tr->orientation, oq, sizeof oq);
+    tr->flags |= 3;
+  }
+}
+
 double Seconds(const LARGE_INTEGER& from, const LARGE_INTEGER& to) {
   static LARGE_INTEGER freq{};
   if (freq.QuadPart == 0) {
@@ -1130,11 +1344,18 @@ void AfterSample(void* instance, int first, int count, void* pose) {
   const BoneMap& m = BonesFor(sh.aim, skeleton);
   const int end = first + count;
   switch (found->second.role) {
-    case Role::kGun:
+    case Role::kGun: {
       if (m.gun >= first && m.gun < end && turn != 0.0f) {
         TurnBone(pose, m.gun, turn);
       }
+      const Walk* wk = WalkOf(sh.unitId);
+      float clock = 0.0f;
+      if (wk != nullptr && !turning && !m.walkGun.empty() && IsWalkClip(g_aims[sh.aim], PlayingClip(instance, &clock))) {
+        PoseWalkPart(pose, first, end, g_aims[sh.aim], g_aims[sh.aim].walkGun, m.walkGun,
+                     WalkPhase(*wk, g_aims[sh.aim]), WalkLift(*wk), !wk->moving);
+      }
       break;
+    }
     case Role::kBody: {
       // the turn beyond the arc: the model shows the heading of the shown turn, the simulation's being ahead of it
       const char* unit = turning ? UnitById(world, sh.unitId) : nullptr;
@@ -1155,6 +1376,28 @@ void AfterSample(void* instance, int first, int count, void* pose) {
           }
         }
       }
+      // the deployed walk: the body rises and steps by the way gone while the unit moves, and the model's heading
+      // follows a new course at the walk's rate
+      if (unit == nullptr) {
+        auto w = g_walks.find(sh.unitId);
+        float clock = 0.0f;
+        const bool on = w != g_walks.end() && IsWalkClip(g_aims[sh.aim], PlayingClip(instance, &clock));
+        if (w != g_walks.end()) {
+          w->second.deployed = on;
+        }
+        if (on) {
+          const Walk& wk = w->second;
+          PoseWalkPart(pose, first, end, g_aims[sh.aim], g_aims[sh.aim].walkBody, m.walkBody,
+                       WalkPhase(wk, g_aims[sh.aim]), WalkLift(wk), !wk.moving);
+          const char* u = UnitById(world, sh.unitId);
+          if (u != nullptr && wk.shownSet && m.root >= first && m.root < end) {
+            const float fix = Wrap(wk.shown - HeadingOf(reinterpret_cast<const float*>(u + 0x20)));
+            if (fix != 0.0f) {
+              TurnRoot(pose, m.root, kModelSense * fix);
+            }
+          }
+        }
+      }
       if (m.turret >= first && m.turret < end && turn != 0.0f) {
         TurnBone(pose, m.turret, turn);
       }
@@ -1169,6 +1412,11 @@ void AfterSample(void* instance, int first, int count, void* pose) {
           uhc::Log(L"turretArc: unit %d gunner clip %hs at %.2f s, yaw %.1f", sh.unitId, clip, clock, modelYaw);
         }
         PoseGunner(pose, end, g_aims[sh.aim], m, clip, clock, modelYaw, sh.dir, sh.settle);
+      }
+      const Walk* wk = WalkOf(sh.unitId);
+      if (wk != nullptr && !turning && IsWalkClip(g_aims[sh.aim], clip)) {  // he walks beside it, pushing
+        PoseWalkPart(pose, first, end, g_aims[sh.aim], g_aims[sh.aim].walkGunner, m.walkGunner,
+                     WalkPhase(*wk, g_aims[sh.aim]), WalkLift(*wk), !wk->moving);
       }
       if (turning && !IsDeathClip(clip)) {  // he steps round with the body
         float lift = 0.0f, phase = 0.0f;
@@ -1204,17 +1452,125 @@ void StartTurn(const char* unit, std::int32_t id, int aim, float by) {
   }
 }
 
+// The deployed walk's state of each unit of a type with a WALK section, from its position (display only).
+constexpr std::int32_t kWalkScanMs = 1000;  // new units of those types are found this often (game time)
+
+void TickWalks(char* world, std::int32_t now) {
+  bool any = false;
+  for (const AimFile& a : g_aims) {
+    any = any || a.hasWalk;
+  }
+  if (!any || world == nullptr) {
+    return;
+  }
+  if (now < g_walkScanMs || now - g_walkScanMs >= kWalkScanMs) {  // find them (a new game restarts the clock)
+    g_walkScanMs = now;
+    const std::int32_t count = Field<std::int32_t>(world, 0x10);
+    const char* const* units = Field<const char* const*>(world, 0x0C);
+    for (std::int32_t i = 0; units != nullptr && i < count && i < 0x40000; ++i) {
+      const char* unit = units[i];
+      if (unit == nullptr) {
+        continue;
+      }
+      const int aim = AimOf(unit);
+      if (aim >= 0 && g_aims[aim].hasWalk) {
+        Walk& w = g_walks[Field<std::int32_t>(unit, 0x10)];
+        if (w.aim != aim) {
+          w = Walk{};
+          w.aim = aim;
+        }
+      }
+    }
+  }
+  for (auto it = g_walks.begin(); it != g_walks.end();) {
+    const char* unit = UnitById(world, it->first);
+    Walk& w = it->second;
+    if (unit == nullptr || AimOf(unit) != w.aim || (w.lastMs >= 0 && now < w.lastMs)) {
+      it = g_walks.erase(it);
+      continue;
+    }
+    const AimFile& a = g_aims[w.aim];
+    const float* pos = reinterpret_cast<const float*>(unit + 0x14);
+    const float dt = w.lastMs < 0 ? 0.0f : static_cast<float>(now - w.lastMs) / 1000.0f;
+    const float d = w.placed ? std::hypot(pos[0] - w.x, pos[2] - w.z) : 0.0f;
+    const float course = w.placed && d > 1e-4f ? std::atan2(pos[0] - w.x, pos[2] - w.z) * 180.0f / kPi : 0.0f;
+    w.lastMs = now;
+    w.x = pos[0];
+    w.z = pos[2];
+    w.placed = true;
+    if (dt <= 0.0f) {
+      ++it;
+      continue;
+    }
+    w.moving = d > 1e-4f && d < 5.0f && w.deployed;  // a jump (a teleport) is not a walk
+    if (w.moving) {
+      w.ramp = a.walkRise > 0.0f ? std::fmin(1.0f, w.ramp + dt / a.walkRise) : 1.0f;
+      if (WalkLift(w) >= a.walkFrom) {
+        w.dist += d;   // the step counts the way gone once the legs have unfolded
+      }
+    } else {
+      w.ramp = a.walkSettle > 0.0f ? std::fmax(0.0f, w.ramp - dt / a.walkSettle) : 0.0f;
+      if (w.ramp <= 0.0f) {
+        w.dist = 0.0f;
+      }
+    }
+    // the shown heading: the turn's while it turns; deployed, it follows the simulation's at the walk's rate
+    const float sim = HeadingOf(reinterpret_cast<const float*>(unit + 0x20));
+    const Turn* turn = TurnOf(it->first);
+    if (turn != nullptr && Turning(*turn, now)) {
+      w.shown = ShownHeading(*turn, now, nullptr);
+      w.shownSet = true;
+    } else if (!w.shownSet || !w.deployed) {
+      w.shown = sim;
+      w.shownSet = true;
+    } else {
+      const float diff = Wrap(sim - w.shown), step = a.walkRate * dt;
+      w.shown = std::fabs(diff) <= step ? sim : Wrap(w.shown + (diff > 0.0f ? step : -step));
+    }
+    static unsigned walkLines = 0;
+    if (g_log && w.moving && walkLines < 120 && (now / 500) != ((now - static_cast<std::int32_t>(dt * 1000.0f)) / 500)) {
+      ++walkLines;
+      uhc::Log(L"turretArc: %d ms, unit %d walking: %.3f this tick along %.1f, heading %.1f (shown %.1f), lift %.2f, phase %.2f",
+               now, it->first, static_cast<double>(d), static_cast<double>(course), static_cast<double>(sim), static_cast<double>(w.shown),
+               static_cast<double>(WalkLift(w)), static_cast<double>(WalkPhase(w, a)));
+    }
+    const bool active = w.ramp > 0.0f || std::fabs(Wrap(w.shown - sim)) > 0.01f || w.moving;
+    // the unit's parts are posed only while it has a display state (as an aiming unit has); a deployed unit keeps one
+    // so its body's clip is seen (w.deployed)
+    Shown& sh = g_shown[it->first];
+    if (sh.unitId < 0 || sh.aim != w.aim) {
+      sh = Shown{};
+      sh.unitId = it->first;
+      sh.aim = w.aim;
+      sh.shownYaw = HomeOf(w.aim);
+    }
+    if (active) {
+      if (g_log && !w.logged && w.moving && g_logLines < kMaxLogLines) {
+        ++g_logLines;
+        w.logged = true;
+        uhc::Log(L"turretArc: %d ms, unit %d walks deployed: it rises in %.2f s and steps %.2f a cycle", now,
+                 it->first, static_cast<double>(a.walkRise), static_cast<double>(a.walkStride));
+      }
+    } else {
+      w.logged = false;
+    }
+    ++it;
+  }
+}
+
 // Each world update: the units the key serves keep their instances mapped (a death or a transform changes them);
 // a unit gone, or back home and not aiming for a while, leaves.
 void Tick(char* world, std::int32_t) {
   g_instances.clear();
   const std::int32_t now = Now(world);
+  TickWalks(world, now);
   for (auto it = g_shown.begin(); it != g_shown.end();) {
     const char* unit = UnitById(world, it->first);
     const bool idle = it->second.aimedAt < 0 || now - it->second.aimedAt > 4 * kAimHoldMs;
     const Turn* turn = TurnOf(it->first);
-    if (unit == nullptr || (idle && it->second.shownYaw == HomeOf(it->second.aim) && (turn == nullptr ||
-                                                                                     !Turning(*turn, now)))) {
+    const bool walker = WalkOf(it->first) != nullptr;  // a unit of a walking type keeps its state (its walk shows)
+    if (unit == nullptr || (idle && !walker && it->second.shownYaw == HomeOf(it->second.aim) &&
+                            (turn == nullptr || !Turning(*turn, now)))) {
       it = g_shown.erase(it);
       continue;
     }
@@ -1442,6 +1798,14 @@ Outcome ApplyTurretArc(const Config& config) {
       if (aim.riseSteps > 0) {
         Log(L"turretArc: %hs: it rises and settles through %d poses", aim.proto.c_str(), aim.riseSteps);
       }
+    }
+    if (aim.hasWalk) {
+      Log(L"turretArc: %hs: deployed, it walks: rises in %.2f s, steps %.2f a cycle (%d points; %u body, %u gunner, %u "
+          L"gun bones), its heading follows %.0f degrees a second, settles in %.2f s, on %u clips",
+          aim.proto.c_str(), static_cast<double>(aim.walkRise), static_cast<double>(aim.walkStride), aim.walkPoints,
+          static_cast<unsigned>(aim.walkBody.bones.size()), static_cast<unsigned>(aim.walkGunner.bones.size()),
+          static_cast<unsigned>(aim.walkGun.bones.size()), static_cast<double>(aim.walkRate),
+          static_cast<double>(aim.walkSettle), static_cast<unsigned>(aim.walkClips.size()));
     }
     g_aims.push_back(std::move(aim));
   }
