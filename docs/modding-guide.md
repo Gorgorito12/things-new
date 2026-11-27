@@ -31,6 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-27 07:46 | [`partisans`](#partisans) | Added. The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanFromNearby>` makes the owner's nearby buildings spawn them instead. | The tags on the building in `protoy.xml`; the techs in `techtreey.xml`. |
 | Thursday 2026-11-26 16:24 | [`cultureUI`](#cultureui) | Filmed in WoL, with a control. The minimised in-game interface takes its own textures per family of civs, and others again from the Great War: `X_as.ddt` beside `X.ddt` restyles texture X for the Asian family. | The art, one `.ddt` per texture and family (`<texture>_<family>[_gw].ddt`, from aoe3-blender-tools' templates), and `data\uhc\cultureui.xml` with the nine families: `wol-fixes/culture-ui/`. |
 | Thursday 2026-11-26 15:43 | [`powerShots`](#powershots) | Filmed in WoL, with a control. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
 | Thursday 2026-11-26 11:34 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
@@ -5224,6 +5225,8 @@ killSpawn [log]
 #### partisans
 
 *When a building is destroyed, the guerrilla that comes out of it can differ by civ, be changed by techs, or come out of the owner's nearby buildings instead.*
+
+**Added:** Friday 2026-11-27 07:46 · **Filmed in WoL:** Friday 2026-11-27 07:46
 
 ![partisans in WoL](media/partisans-wol.gif)
 
