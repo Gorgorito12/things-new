@@ -31,8 +31,8 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
+| Friday 2026-11-27 11:20 | [`partisans`](#partisans) | Filmed in WoL, with a control. The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanNearby>` on a civ makes each of its nearby buildings with a guerrilla give its own, which walks to that building's gather point. | `<CivPartisan>` on the building in `protoy.xml`; `<PartisanNearby>` on the civ in `civs.xml`; the techs in `techtreey.xml`. |
 | Friday 2026-11-27 07:50 | [`perCivEffects`](#perciveffects) | Added. `onlyciv="Spanish"` on any tech `<Effect>` makes that effect work only for a player of that civ: for shared cards, shared techs and each member of a team tech. | The attribute on the effects that want it. |
-| Friday 2026-11-27 07:46 | [`partisans`](#partisans) | Added. The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanFromNearby>` makes the owner's nearby buildings spawn them instead. | The tags on the building in `protoy.xml`; the techs in `techtreey.xml`. |
 | Thursday 2026-11-26 16:24 | [`cultureUI`](#cultureui) | Filmed in WoL, with a control. The minimised in-game interface takes its own textures per family of civs, and others again from the Great War: `X_as.ddt` beside `X.ddt` restyles texture X for the Asian family. | The art, one `.ddt` per texture and family (`<texture>_<family>[_gw].ddt`, from aoe3-blender-tools' templates), and `data\uhc\cultureui.xml` with the nine families: `wol-fixes/culture-ui/`. |
 | Thursday 2026-11-26 15:43 | [`powerShots`](#powershots) | Filmed in WoL, with a control. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
 | Thursday 2026-11-26 11:34 | [`turretArc`](#turretarc) | Filmed in WoL, with a control. An attack with `<Turret>` turns its gun on the mount toward a target inside the turret's arc, the unit's body still; beyond the arc the unit turns until the target sits at the gun's rest. | `<Turret>` on the attack in its tactics, a model with a turning gun bone and its aim file (aoe3-blender-tools' `make_gun_camel.py`: the gatling camel pack). |
@@ -3139,7 +3139,7 @@ Attacks, armor, and what a hit does.
 | [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
 | [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | **new** | The rows on the protos that want them. | confirmed |
 | [`killSpawn`](#killspawn) | A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | **new** | The tags on the civ in `civs.xml`. | confirmed (single player) |
-| [`partisans`](#partisans) | The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanFromNearby>` makes the owner's nearby buildings spawn them instead. | **new** | The tags on the building in `protoy.xml`; the techs in `techtreey.xml`. | confirmed (single player) |
+| [`partisans`](#partisans) | The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanNearby>` on a civ makes each of its nearby buildings with a guerrilla give its own, which walks to that building's gather point. | **new** | `<CivPartisan>` on the building in `protoy.xml`; `<PartisanNearby>` on the civ in `civs.xml`; the techs in `techtreey.xml`. | confirmed (single player) |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
 | [`customImpactTypes`](#customimpacttypes) | New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | **new** | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. | confirmed (single player, picture; sound not filmed) |
 
@@ -5232,26 +5232,31 @@ killSpawn [log]
 
 #### partisans
 
-*When a building is destroyed, the guerrilla that comes out of it can differ by civ, be changed by techs, or come out of the owner's nearby buildings instead.*
+*When a building is destroyed, the guerrilla that comes out of it can differ by civ, be changed by techs, or, for a civ that asks for it, come out of each of the owner's nearby buildings that has one and walk to that building's gather point.*
 
-**Added:** Friday 2026-11-27 07:46 · **Filmed in WoL:** Friday 2026-11-27 07:46
+**Added:** Friday 2026-11-27 07:46 · **Filmed in WoL:** Friday 2026-11-27 11:20
+
+**Changed on 2026-11-27 (JTMaston's answers of 2026-11-27):** the nearby mode is set on the civ, in `civs.xml`
+(`<PartisanNearby>30</PartisanNearby>`), for every building of that civ except walls; each nearby building that has a
+guerrilla gives **its own** unit and count, and those units walk to its gather point. The building tag
+`<PartisanFromNearby>` of 0.7.0 is gone: the DLL no longer reads it, and the log says so when the data still has it.
 
 ![partisans in WoL](media/partisans-wol.gif)
 
-*In WoL, with the key (a skirmish on a test map, player 1 Spanish, player 2 the Serbian AI; `<CivPartisan civ="Spanish"
-count="3">Rodelero</CivPartisan>` on `Barracks`, and `<CivPartisan civ="Spanish" count="4">Rodelero</CivPartisan>` with
-`<PartisanFromNearby>30</PartisanFromNearby>` on `Stable`, in the test copy):* the Spanish Barracks (top left) falls and 3
-Rodeleros come out of it, though the Spanish have no `<Partisans>` in `civs.xml`. The Serbian Barracks falls next (off the
-top) and gives its 2 `SerbianInferno` as before (the log line at the bottom). Then the Spanish Stable falls (bottom right),
-and its 4 Rodeleros come out beside the owner's three buildings within 30 m: the House in the middle, the Outpost and the
-other House (both off the right edge). Afterwards they walk over to the other Rodeleros, as the game makes idle units of the same
-kind do (see "Seen in game"). The Rodeleros stay selected, so their bars show. [Full video (MP4)](media/partisans-wol.mp4).
+*In WoL, with the key (a skirmish on a test map, player 1 Spanish, player 2 the Serbian AI; the pack
+`wol-fixes/guerrilla/` with `--nearby 30`, so the Spanish have `<PartisanNearby>30</PartisanNearby>` in `civs.xml`, a
+guerrilla of 2 Rodeleros on `Barracks` and `Stable`, and, in the test copy, 3 Rodeleros on `Market`):* the Barracks (right)
+and the Stable (white, left) have a gather point each (the blue banners, set by a posted right click before the video).
+A House between them, with no guerrilla, falls. Each nearby building with a guerrilla gives its own: 2 Rodeleros come out
+beside the Barracks and walk to its banner, 2 beside the Stable walk to its banner, and 3 beside the Market (bottom), which
+cannot have a gather point, stay there. Two more Houses, a wall and an Outpost foundation in range give nothing. The
+Barracks, the Stable and the Rodeleros stay selected, so the banners and the bars show; the log lines at the bottom say
+which building gave what. [Full video (MP4)](media/partisans-wol.mp4).
 
 ![partisans in WoL, key off](media/partisans-wol-control.gif)
 
-*In WoL, key off (the same scene, the tags still in `protoy.xml`):* the Spanish Barracks and the Stable fall and nothing
-comes out: without the key the Spanish have no guerrilla. The Serbian Barracks gives its 2 `SerbianInferno` as with the
-key. [Full video (MP4)](media/partisans-wol-control.mp4).
+*In WoL, key off (the same scene, the same data):* the House falls and nothing comes out of anything: without the key
+the Spanish have no guerrilla. [Full video (MP4)](media/partisans-wol-control.mp4).
 
 ```
 partisans [log]
@@ -5262,7 +5267,9 @@ partisans [log]
 <PartisanType>SerbianInferno</PartisanType>         <!-- stock: every civ with <Partisans> -->
 <PartisanCount>2</PartisanCount>
 <CivPartisan civ="Spanish" count="3">Rodelero</CivPartisan>   <!-- one per civ -->
-<PartisanFromNearby>30</PartisanFromNearby>         <!-- optional: from the owner's buildings within 30 m -->
+
+<!-- civs.xml, inside a <civ> -->
+<PartisanNearby>30</PartisanNearby>                 <!-- optional: the nearby mode for this civ, 30 m -->
 
 <!-- techtreey.xml: for the player who gets the tech -->
 <Effect type ='Data' amount ='0' subtype ='PartisanType' relativity ='Assign' unittype ='Pikeman'>
@@ -5291,71 +5298,83 @@ partisans [log]
   when there is one. Only the player who gets the tech is changed (each player has a copy of the building), and the techs
   are applied again when a game is loaded. An effect without `unittype`, or with a name that is no proto (an abstract
   type), is logged and dropped. A tech does not turn the guerrilla on for a civ that has neither `<Partisans>` nor a line.
-- **`<PartisanFromNearby>R</PartisanFromNearby>`:** the unit and the count are the destroyed building's, so the total stays
-  the same; they come out beside the owner's living, finished buildings (`Building`) within R metres, one at a time to
-  each, the closest first, at the first free spot around each building. A foundation does not count. With no building in
-  range, they come out of the destroyed one as before. R is 0 to 200. The tag is on the building, so it holds for every
-  civ that has a guerrilla there.
-- **Trigger kills and deletes:** a trigger's `Kill` (`trUnitDelete`) and the owner's delete give no guerrilla, as in
-  stock (seen in game).
+- **`<PartisanNearby>R</PartisanNearby>` in a civ of `civs.xml` (the nearby mode):** R is the radius in metres, above 0
+  and up to 200 (0 turns it off; anything else is logged and ignored). For a player of that civ:
+  - **What sets it off:** the destruction of any finished building (`Building`) of that player, with a guerrilla or not,
+    except a wall (`AbstractWall`). The game's own rules stay: a trigger's `Kill` and the owner's delete set off nothing.
+  - **Who gives units:** each of the owner's living, finished buildings within R metres of the destroyed one that has a
+    guerrilla for that civ (its `<CivPartisan>` line, or `PartisanType` and `PartisanCount` with `<Partisans>` on), with
+    the techs that player has. Each gives **its own** unit and count, beside itself, at the first free spot around it.
+    A building without a guerrilla, a foundation and a wall give nothing.
+  - **Where they go:** each building's units get the order its trained units get: to its gather point (as a group; on a
+    unit, the order on that unit; on the building itself, inside it). A building with no gather point (one that cannot
+    have one, such as WoL's Market, or that was never given one): they stay beside it. A gather point on the destroyed
+    building: they stay.
+  - **The destroyed building** gives nothing in this mode. When no building with a guerrilla is in range, it gives its
+    own as without the tag (if it has one).
+  - **Not in this mode:** a wall's death and a unit's death are as without the tag; a civ without the tag is as before.
+  - Every destruction sets off every building in range again: there is no limit or wait (asked to JTMaston).
+- **`<PartisanFromNearby>` (0.7.0, on the building):** no longer read. With the key on, the log says
+  `partisans: proto 303 (House): <PartisanFromNearby> is no longer used, see <PartisanNearby> in civs.xml; ignored`.
+- **Trigger kills and deletes:** a trigger's `Kill` (`trUnitDelete`) and the owner's delete give no guerrilla and set off
+  no nearby building, as in stock (seen in game).
 - **Conversion:** the player who owns the building when it dies decides: their civ, their copy of the building, and the
   units are theirs (seen in game, the same in stock).
 - **No interface:** the key changes no text, panel or button; none of the screens of the UI coverage rules shows the
   guerrilla.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data. It draws no new random number
-  (the units out of the destroyed building take the stock spawn's places and rolls).
+  (the units out of the destroyed building take the stock spawn's places and rolls; the nearby ones a fixed ring of
+  points), and the order to the gather point is the game's own, given in the simulation.
 - **Saved games:** nothing to keep: the tags come with the data and a load applies the techs again.
-- **Log:** `partisans: the proto tags CivPartisan and PartisanFromNearby and the Data subtypes PartisanType and
-  PartisanCount are on` and `hook reached: partisans (0x4B532F)`. With `log`: the tags read (`partisans: proto 306
-  (Barracks): civ Spanish gets Rodelero x 3`), the effects, and each guerrilla: `partisans: unit 0 (Barracks) of player 1
-  (civ 22) died: 3 x Rodelero`, or in the nearby mode `partisans: unit 1 (Stable) of player 1 died: 4 x Rodelero beside 3
-  building(s) within 30 m (0 unfinished left out)` and one line per unit with its building and place. A guerrilla held back says why: `partisans: unit 26 (HouseMed) of player 1 died: no guerrilla (not finished, build 4 %)`, or `(the kill's first flag is set, build 100 %)` for a trigger's `Kill` or the owner's delete.
-- **Tested in WoL (2026-11-27), skirmishes on test maps, player 1 Spanish, player 2 the Serbian AI (`wolPetar`), test data
-  in the test copy (restored after):**
-  - Per civ: a Spanish `Barracks` with the Spanish line gave `3 x Rodelero` (3 Rodeleros counted in its footprint); a
-    Serbian `Barracks` without a Serbian line gave its stock `2 x SerbianInferno`; a Serbian `TownCenter` gave
-    `6 x SerbianInferno`, the second of its two types.
-  - A trigger's `Kill` on a Spanish `Barracks`: no guerrilla, no log line.
-  - Techs: a test tech at 40 s (`PartisanType` `Pikeman`, `PartisanCount` `Assign` 5 on `Barracks`, player 1): the next
-    Spanish Barracks gave `5 x Pikeman` (5 counted). Saved at 72 s and loaded in the same process: the data was read
-    again, both effects were applied again, and a Barracks destroyed after the load gave `5 x Pikeman` (5 counted).
-  - Nearby, a `Stable` with `<PartisanFromNearby>30</PartisanFromNearby>`, two Houses and an Outpost 6 to 15 m from its
-    edge: 4 Rodeleros, two beside the closest building and one beside each of the others (5 runs). A Stable with no
-    building of its owner within 30 m: `no finished building ... within 30 m`, and its 4 Rodeleros came out of it.
-  - Foundations (2026-11-27, second pass): a Spanish `HouseMed` given a Spanish line (and 300 build points, so it stays
-    a foundation), placed by a Settler (console `tis("HouseMed")` and a posted click) and destroyed at 4 % by the
-    enemy's Grenadiers: `no guerrilla (not finished, build 4 %)`. A Spanish Stable with `<PartisanFromNearby>30` that
-    fell while a foundation stood 9 m away: `no finished building ... within 30 m (1 unfinished)`, and its 4 Rodeleros
-    came out of the Stable.
-  - The owner's delete (console `uiDeleteAllSelectedUnits()` on a Spanish Barracks with the Spanish line): `no
-    guerrilla (the kill's first flag is set)`. The same in stock: with the key off, a Serbian Barracks given
-    `PartisanType` `Rodelero` and `PartisanCount` 4 in the test data, deleted by its owner, left only rubble.
-  - Conversion (trigger `Convert`, then `Damage Unit`): the owner at the death decides, with its civ and its copy of the
-    building. A Spanish Barracks converted to the Serbians gave `2 x SerbianInferno` to the Serbian player; a Serbian
-    Barracks converted to the Spanish gave `3 x Rodelero` (the Spanish line) to the Spanish player. Stock, key off: a
-    Spanish AI's Barracks converted to the Serbians gave 4 Rodeleros (the test data's type) to the Serbian player, and
-    a Serbian Barracks converted to the Spanish gave nothing (no `<Partisans>` for the Spanish).
-  - With `perCivEffects` (agent E's branch merged in a scratch build, not committed): one tech, researched by both
-    players, with `PartisanCount` `Assign` 5 `onlyciv="Spanish"` and `PartisanType` `Pikeman` `onlyciv="Serbians"` on
-    `Barracks`: the Spanish Barracks gave `5 x Rodelero`, the Serbian one `2 x Pikeman`. Each effect reached only its
-    civ.
-  - Performance, `perfprobe` 60 s from 18 s game time, two runs each way, a skirmish where triggers kill 100 Settlers of
-    each player and 10 Houses (211 deaths through the hook, no guerrilla): key on fps 1019 / 993, update 0.22 / 0.22 ms,
-    main thread 85.1 / 85.1 %, frames over 50 ms 2 / 0; key off fps 981 / 987, update 0.24 / 0.23 ms, main thread
-    86.2 / 85.9 %, frames over 50 ms 2 / 0. No measurable cost.
-  - Bad data: `civ="NoSuchCiv"`, a unit `NoSuchUnit`, `count="abc"` and `count="500"`, a line without `civ`,
-    `<PartisanFromNearby>` `x` and `-5`, and `PartisanType` effects with `NoSuchUnit`, `AbstractInfantry` and no
-    `unittype`: each logged and ignored. The last Spanish line on the Town Center replaced the earlier ones; its
-    `count="500"` was refused, so the Town Center's `PartisanCount` counted: `6 x Rodelero`.
+- **Log:** `partisans: the proto tag CivPartisan, the civ tag PartisanNearby and the Data subtypes PartisanType and
+  PartisanCount are on`, `partisans: civ 22 (Spanish): nearby mode, radius 30 m` and `hook reached: partisans (0x4B532F)`.
+  With `log`: the tags read (`partisans: proto 306 (Barracks): civ Spanish gets Rodelero x 2`), the effects, and each
+  guerrilla: `partisans: unit 0 (Barracks) of player 1 (civ 22) died: 3 x Rodelero`; in the nearby mode `partisans: unit
+  0 (House) of player 1 died: 3 building(s) with a guerrilla within 30 m (1 without, 1 unfinished, 1 walls left out)`, then
+  per building `partisans:   unit 1 (Barracks, 12.0 m): 2 of 2 x Rodelero` and `partisans:   to the gather point (82.3,
+  49.4)` or `no gather point: they stay beside it`. A guerrilla held back says why: `partisans: unit 26 (HouseMed) of
+  player 1 died: no guerrilla (not finished, build 4 %)`, or `(the kill's first flag is set, build 100 %)`.
+- **Tested in WoL (2026-11-27), the nearby mode v2, skirmishes on test maps, player 1 Spanish, player 2 the Serbian AI
+  (`wolPetar`), the pack applied with `--nearby 30` and test data in the test copy (restored after), posted input and
+  triggers only:**
+  - Each nearby building gives its own and walks to its gather point (9 runs, one of them beside WoL's DLL): a House (no guerrilla) destroyed with a
+    Barracks, a Stable and a Market within 30 m: `3 building(s) with a guerrilla`, 2 Rodeleros beside the Barracks, 2
+    beside the Stable, 3 beside the Market; the Barracks' and the Stable's pairs walked to their banners (for example the
+    Barracks' point (82.3, 49.4), its two Rodeleros counted at (81.3, 49.1) and (81.9, 50.8)), the Market's three stayed
+    (`no gather point`). 7 Rodeleros in all, the House gave none.
+  - Left out, in the same scene: two more Houses (`2 without`), an Outpost foundation with a Spanish line, placed by a
+    Settler and kept at a low build (`1 unfinished`), a `WallStraight2` with a Spanish line (`1 walls left out`), and a
+    Barracks 50 m away: none of them gave a unit.
+  - A wall destroyed (`WallConnector`) 14 m from a Barracks: nothing, no log line.
+  - A Stable with no building with a guerrilla in range: `no building with a guerrilla within 30 m`, and its own 2
+    Rodeleros came out of it.
+  - A test tech (`PartisanType` `Pikeman`, `PartisanCount` `Assign` 5 on `Barracks`, player 1) at 52 s, the game saved at
+    78 s and loaded: a House destroyed after the load beside a Barracks: `5 of 5 x Pikeman` (5 counted). `civs.xml` is
+    not read again at a load; the mode held.
+  - A trigger's `Kill` on a House beside a Barracks: nothing, no log line.
+  - The Serbians (no tag): their Barracks gave its 2 `SerbianInferno` inside its footprint, and the Stable 14 m away gave
+    nothing.
+  - `<PartisanFromNearby>30` left on `House` in the data: the warning above, once per data load (the start, and again
+    after loading the saved game), and nothing else.
   - Beside WoL's own DLL (our `dinput8.dll`, `engine-ext\engine-ext.cfg`): `3 applied, 0 failed`, the hook reached, the
-    same guerrillas.
-  - The AI: no XS error; the Serbian AI trained a Peasant, with the key and without it.
-  - Key off, the same data: nothing from the Spanish buildings, the Serbian ones as before (control video).
-- **Seen in game:** after they appear beside the buildings, the units of one death walk over to the nearest group of the
-  same unit (in the video, to the Barracks' Rodeleros) and stand in a line. That is the game's own behaviour, not the
-  key's: with the key off, a Serbian `Barracks` given `PartisanType` `Rodelero` and `PartisanCount` 4 in the test data
-  gave its 4 Rodeleros inside its footprint, and 3 Rodeleros of the same player standing 20 m away walked over to them
-  within 7 s and stayed there (2026-11-27).
+    same three buildings, gather points and counts.
+  - The AI: the Serbian AI trained 6 Peasants within 70 s, with the key and without it; no XS error.
+  - Key off, the same scene: nothing from any building (control video).
+  - Performance: `perfprobe` 60 s from 18 s game time, two runs each way, a skirmish where triggers kill 100 Settlers of each
+    player and 10 Spanish Houses (each House runs the nearby search; none has a building with a guerrilla in range):
+    key on fps 1084 / 1309, update 0.23 / 0.21 ms, main thread 84.6 / 83.6 %, frames over 50 ms 2 / 2; key off fps
+    1218 / 1002, update 0.22 / 0.23 ms, main thread 83.3 / 84.9 %, frames over 50 ms 2 / 4. No measurable cost.
+- **Seen in game:** after the move, idle units of the same type near each other may come together, as the game makes them
+  do with the key off: in 3 of 9 runs the Stable's pair, at its gather point about 20 m from the Market's three, joined
+  them a few seconds after arriving (once the three joined it). Once the Barracks' point landed on the owner's wall: its
+  Rodeleros got the game's order on that unit, which they cannot carry out, and ended with the Market's three. In
+  0.7.0, with the key off, 3 Rodeleros walked 20 m to the 4 a stock guerrilla had just made.
+- **Tested in WoL (2026-11-27, 0.7.0), what did not change:** per civ, a Spanish `Barracks` with the Spanish line gave
+  `3 x Rodelero` and a Serbian one its stock `2 x SerbianInferno`; a Serbian `TownCenter` gave `6 x SerbianInferno`; a
+  trigger's `Kill`, the owner's delete and a foundation destroyed at 4 % gave none; a converted building gave its owner's
+  guerrilla (the same in stock); with `perCivEffects`, `onlyciv` effects reached only their civ; bad data (`civ=
+  "NoSuchCiv"`, unit `NoSuchUnit`, `count="abc"`, `count="500"`, a line without `civ`, `PartisanType` with `NoSuchUnit`,
+  `AbstractInfantry` or no `unittype`) was logged and ignored; perfprobe, 211 deaths, no measurable cost.
 
 #### killBountyTechs, resourceBounty and teamKillBounty
 

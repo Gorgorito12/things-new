@@ -5872,8 +5872,8 @@ which the subtype's own base (the cloned proto) cannot hold. A data load clears 
 
 ### partisans
 
-The stock guerrilla (the `Partisans` tags, docs/engine-symbols.md, "Partisans") per civ, changed by techs, and spawned by
-the owner's nearby buildings.
+The stock guerrilla (the `Partisans` tags, docs/engine-symbols.md, "Partisans") per civ, changed by techs, and, for a civ
+with `<PartisanNearby>`, given by the owner's nearby buildings, each its own, sent to its gather point.
 
 **[O] Stock.** `<Partisans>` in civs.xml is an on/off flag (bit 4 of `[[civ+128h]]`, 0x659A14; a text that is not a
 number reads as 1). A proto has one `PartisanType` (`+160h`, handler 0xA129D3; a second line overwrites the first) and
@@ -5888,8 +5888,7 @@ the dying unit's footprint (two draws of the synced random 0x422648 on 0xC66588,
 lands inside, the cold block's only entry is that `je`). `UhcPartisansOnDeath(unit, flag)` makes the stock tests with the
 key's data and returns to 0x4B533F, where the stock code goes on (the proto flag 44h test, the death replacement).
 
-**The type and the count.** The proto tags `<CivPartisan civ count>` and `<PartisanFromNearby>` go through
-`AddProtoTagHandler`, kept by proto ID (`[proto+8]`), the civ and unit names resolved against each database (civ by name
+**The type and the count.** The proto tag `<CivPartisan civ count>` goes through `AddProtoTagHandler`, kept by proto ID (`[proto+8]`), the civ and unit names resolved against each database (civ by name
 0x58E71F, proto by name 0x5A2346, keyed by the proto array `[db+54h]`). At a death: the dying unit's copy `[unit+5Ch]`;
 the line of the owner's civ (`[[player+20h]]`) if there is one, which also turns the guerrilla on; else the copy's own
 `+160h` / `+164h`, on only when the stock civ test 0x4B4EBD says so. Then the effects of that copy: `PartisanType`
@@ -5901,16 +5900,31 @@ game's load applies them again. The count is capped at 100.
 
 **The spawn.** With the stock type and count the stock spawn runs. With others, the copy's `+160h` and `+164h` hold them
 for the call to 0x9C07D6 and get their values back after it, so the units come out where and as the stock ones do (the
-same random draws). With `<PartisanFromNearby>R</PartisanFromNearby>`: the units near the dying one (0x4A1C55, radius R,
-to the unit's edge), kept if the owner's, not the dying unit, of the abstract type `Building` (is-a 0x44D7FA), alive (unit
-vtable `+A4h`) and built (0x44DDB4); sorted by distance (vtable `+B8h`), then by ID. Unit *i* goes beside building
-*i mod n*: the first of 48 points (4 rings, at the building's larger obstruction value `[proto+88h]` / `[proto+8Ch]` plus
-1, 2.5, 4 and 6 m, 12 points each, in a fixed order) that PLACE (world vtable `+14h`, flags 6, as `killSpawn`) accepts,
-then 0x498ACC(world, ID, player, point, the building's forward, 1, -1, 1, -1), the stock spawn's arguments, inside the
-kill handler as the stock spawn. No building in range: the stock spawn. **[O]** In game the units of one death, once made
-beside their buildings, walk over to the nearest group of the same unit and stand in a line; the same with 0, -1, 0, -1,
-and when a world tick made them one per update. **[O]** It is stock: with the key off, 3 Rodeleros walked 20 m to the 4 a
-Barracks' stock guerrilla had just made. **[U]** Which code orders that walk was not traced.
+same random draws).
+
+**The nearby mode (v2, 2026-11-27).** The civ tag `<PartisanNearby>R</PartisanNearby>` goes through `AddCivTagHandler`
+(the civs.xml unknown-tag path 0x52BB07), kept by civ ID with the civ object it was read for, and asked again at each
+death (civ by ID 0x405C2E must give the same object). It applies when the dying unit's owner has that civ, the kill's
+first byte argument is clear (no trigger `Kill`, no owner's delete), and the dying unit is a built (0x44DDB4) `Building`
+that is not an `AbstractWall` (is-a 0x44D7FA, both types looked up by name per data load). Then the units near the dying
+one (0x4A1C55, radius R, precise) are kept if they are the owner's, not the dying unit, `Building`, alive (unit vtable
+`+A4h`), not `AbstractWall`, built, and have a guerrilla of their own: the type and count above for **their** copy
+`[unit+5Ch]` (the civ line or the stock tags with the civ test, then that copy's effects), count above 0 and the type a
+proto of the player (0x45311B). Sorted by distance (vtable `+B8h`), then by ID. Each one makes its own count of its own
+type: the first of 48 points (4 rings, at the building's larger obstruction value `[proto+88h]` / `[proto+8Ch]` plus 1,
+2.5, 4 and 6 m, 12 points each, in a fixed order) that PLACE (world vtable `+14h`, flags 6, as `killSpawn`) accepts,
+then 0x498ACC(world, ID, player, point, the building's forward, 1, -1, 1, -1), the stock spawn's arguments. Each new unit's
+ID goes into an engine int array (append 0x401F74), and the array gets the order a trained unit gets from its building,
+the Train action's FUN_009C9147 (engine-symbols.md, "A building's gather point and the order of a trained unit"), called
+with a 32-byte stand-in action whose `+0Ch` is -1 and `+10h` the building, `together` 0: to the building's gather point
+(a move as a group, a work order when the point is on a unit, garrison when it is on the building itself, gathering when
+it is on a resource); with no gather point (no record of that player in `[building+68h]`) no order, the units stay. A
+point on the dying building gets no call. The dying building makes nothing then. With no building that has a guerrilla
+in range, the dying one goes on as without the tag (its own stock-style guerrilla, if it has one). A wall's death, and a
+unit's, are as without the tag. **[O]** In game, idle units of the same type near each other may still come together
+after the move, as the game makes them do with the key off (3 Rodeleros walked 20 m to the 4 a stock guerrilla had just
+made, 2026-11-27). **[U]** Which code orders that walk was not traced. The proto tag `<PartisanFromNearby>` of 0.7.0 is
+still registered, only to log that it is no longer used.
 
 **Why it is safe.**
 - The hook reads the kill handler's argument before any push, keeps EBX, ESI, EDI and EBP (stdcall), and clobbers EAX,
@@ -5921,7 +5935,11 @@ Barracks' stock guerrilla had just made. **[U]** Which code orders that walk was
 - The spawn runs where the stock one runs, inside the kill handler, as the death replacement creates its unit there too.
 - No new random draw, no real clock, no local player: the nearby order is by distance and unit ID.
 - Cost per death: a hash lookup by proto ID and, for a copy with effects, a second one; the stock civ test otherwise.
-  The nearby query runs only for a dying unit with `<PartisanFromNearby>` and a guerrilla.
+  For a civ with `<PartisanNearby>`: a hash lookup by civ ID and two is-a tests; the nearby query runs only for a built
+  building of that civ killed by damage.
+- The gather point order is the engine's own call, made where the stock train action makes it (in the simulation, on
+  every machine); it reads only the stand-in action's two fields, and its array is the engine's own type, grown by the
+  engine's append, so its removals free nothing of ours.
 
 ### cantBeSlowed
 

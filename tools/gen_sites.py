@@ -2381,6 +2381,14 @@ SITES = [
     ("PartisanColdBlock", 0x6A3F04, 0x37),
     ("PartisanSpawn", 0x9C07D6, 0x1A),
     ("PartisanCivFlag", 0x4B4EBD, 0x0F),
+    # partisans, nearby mode (verify only): the int array append 0x401F74, thiscall(array, const int*), ret 4; the
+    # Train action's gather point order 0x9C9147, thiscall(action, array of unit IDs, bool together), ret 8, up to
+    # the [trainer+68h] test (it reads only [action+0Ch] and [action+10h]); the gather unit getter 0x7AE4B2,
+    # thiscall(building data, player ID, bool water), ret 8, through its record read [+18h] (records of 28h B,
+    # land at +10h/+14h, water at +1Ch/+20h, player at +4)
+    ("IdListAppend", 0x401F74, 0x12),
+    ("GatherPointOrder", 0x9C9147, 0x23),
+    ("GatherPointUnit", 0x7AE4B2, 0x38),
 ]
 
 

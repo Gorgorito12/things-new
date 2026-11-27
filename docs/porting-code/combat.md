@@ -11562,9 +11562,9 @@ Outcome ApplyKillSpawn(const Config& config) {
 
 Contract: [partisans](../porting-to-another-dll.md#partisans).
 
-Besides the core helpers, it needs: [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
+Besides the core helpers, it needs: [`civtags.h`](helpers.md#civ-tags), [`prototags.h`](helpers.md#proto-tags), [`techsubtypes.h`](helpers.md#tech-subtypes), [`unittypes.h`](helpers.md#extra-abstract-unit-types).
 
-Sites: `CivById` `0x405C2E` (24 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `PlayerProtoEntry` `0x45311B` (8 B), `UnitCreate` `0x498ACC` (9 B), `UnitsNearPoint` `0x4A1C55` (248 B), `PartisanCivFlag` `0x4B4EBD` (15 B), `PartisanCivTest` `0x4B532F` (19 B), `KillSpawnPlace` `0x50703D` (12 B), `CivIdByName` `0x58E71F` (16 B), `ProtoByName` `0x5A2346` (32 B), `PartisanColdBlock` `0x6A3F04` (55 B), `EffectValueApply` `0x7F892A` (16 B), `PartisanSpawn` `0x9C07D6` (26 B).
+Sites: `ArrayResize` `0x401113` (24 B), `IdListAppend` `0x401F74` (18 B), `CivById` `0x405C2E` (24 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7FA` (105 B), `IsBuilt` `0x44DDB4` (31 B), `PlayerProtoEntry` `0x45311B` (8 B), `UnitCreate` `0x498ACC` (9 B), `UnitsNearPoint` `0x4A1C55` (248 B), `PartisanCivFlag` `0x4B4EBD` (15 B), `PartisanCivTest` `0x4B532F` (19 B), `KillSpawnPlace` `0x50703D` (12 B), `CivIdByName` `0x58E71F` (16 B), `ProtoByName` `0x5A2346` (32 B), `PartisanColdBlock` `0x6A3F04` (55 B), `GatherPointUnit` `0x7AE4B2` (56 B), `EffectValueApply` `0x7F892A` (16 B), `PartisanSpawn` `0x9C07D6` (26 B), `GatherPointOrder` `0x9C9147` (35 B).
 
 ### src/features/partisans.cpp
 
@@ -11581,21 +11581,29 @@ Sites: `CivById` `0x405C2E` (24 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7F
 //   <CivPartisan civ="Spanish" count="3">Rodelero</CivPartisan>   one per civ: that civ's guerrilla on this proto, on
 //                                                                 even without <Partisans>; count left out: the
 //                                                                 proto's PartisanCount
-//   <PartisanFromNearby>30</PartisanFromNearby>                   the units come out of the owner's finished
-//                                                                 buildings within 30 m, not out of this one
+//
+// in civs.xml, in a <civ>:
+//
+//   <PartisanNearby>30</PartisanNearby>                           the nearby mode for that civ, radius 30 m
 //
 // and two Data subtypes on a ProtoUnit target, for the player who gets the tech:
 //
 //   <Effect type="Data" subtype="PartisanType" amount="0" relativity="Assign" unittype="Rodelero">
 //   <Effect type="Data" subtype="PartisanCount" amount="2" relativity="Assign">   (Absolute adds, Percent multiplies)
 //
-// The type and the count of a death: the civ's line if it has one, else the copy's PartisanType and PartisanCount; then
+// The type and the count of a unit: the civ's line if it has one, else the copy's PartisanType and PartisanCount; then
 // each effect on that copy, in the order they came (a removed PartisanType goes back to the value before it). The stock
 // conditions stay: the owner's civ has <Partisans> (or a line), the count is above 0, the kill is not a trigger's (its
 // first flag), the unit is built. With the stock type and count the stock spawn runs as it is; with others, the copy's
-// two fields hold them for the call and get their values back after it. Nearby: the same type and count, one unit at
-// a time to each of the owner's living, finished Buildings within the radius of the dying one, closest first, placed
-// beside it with the placement test PLACE; with none in range, the stock spawn at the dying building.
+// two fields hold them for the call and get their values back after it.
+//
+// Nearby: when a finished Building (not an AbstractWall) of a player whose civ has <PartisanNearby> dies, with the
+// same stock conditions (flag, build), every living, finished Building of that player within the radius that has a
+// guerrilla of its own (not a wall) spawns its own type and count beside itself, closest first, placed with the
+// placement test PLACE; then that building's new units get the order a freshly trained unit gets, the Train action's
+// gather point order 0x9C9147 (to the building's gather point; none: they stay). The dying building gives nothing
+// then. With no such building in range, the stock spawn at the dying one, as without the tag. <PartisanFromNearby>,
+// the per-building radius of 0.7.0, is no longer read: it logs that once per proto.
 //
 // Nothing is saved: the lines come from the data, the effects run again when a game loads, and the spawn picks no
 // random number of its own (the stock spawn draws the game's synced random as before).
@@ -11609,6 +11617,7 @@ Sites: `CivById` `0x405C2E` (24 B), `UnitById` `0x44CC6D` (58 B), `IsA` `0x44D7F
 #include <unordered_map>
 #include <vector>
 
+#include "../civtags.h"
 #include "../features.h"
 #include "../generated/sites.h"
 #include "../log.h"
@@ -11630,6 +11639,7 @@ constexpr std::uint32_t kPartisanCount = 0x164;
 constexpr std::uint32_t kAliveSlot = 0xA4;     // unit vtable: bool thiscall(unit)
 constexpr std::uint32_t kDistanceSlot = 0xB8;  // unit vtable: float thiscall(unit, const float* point)
 constexpr std::uint32_t kPlaceSlot = 0x14;     // world vtable: PLACE, FUN_0050703D
+constexpr std::uint32_t kBuildingData = 0x68;  // unit: its building data (the gather points, 0x7AE43E / 0x7AE4B2)
 constexpr std::int32_t kPlaceFlags = 2 | 4;    // as killSpawn: terrain and buildings tested, living units not
 constexpr std::int32_t kMaxCount = 100;
 constexpr float kMaxRadius = 200.0f;
@@ -11639,10 +11649,19 @@ constexpr int kMaxLogLines = 2000;
 constexpr float kRingGaps[] = {1.0f, 2.5f, 4.0f, 6.0f};
 constexpr int kRingPoints = 12;
 
-struct IdList {  // the engine's dynamic array FUN_004A1C55 fills
+struct IdList {  // the engine's dynamic array FUN_004A1C55 fills (resize 0x401113, append 0x401F74)
   std::int32_t* data;
   std::int32_t count;
   std::int32_t capacity;
+};
+
+// The two fields of an action the gather point order 0x9C9147 reads: +0Ch a counted handle in [world+8] (-1: none,
+// as 0x48DBEE leaves it), +10h the trainer. It reads nothing else of the action.
+struct OrderAction {
+  std::uint8_t head[0x0C];
+  std::int32_t handle;
+  char* trainer;
+  std::uint8_t tail[0x10];
 };
 
 using CivTestFn = bool(__thiscall*)(const char* player);
@@ -11667,6 +11686,8 @@ using PlaceFn = bool(__thiscall*)(char* world, std::int32_t proto, std::int32_t 
                                   std::int32_t c, std::int32_t d, std::int32_t e, std::int32_t f);
 using CreateFn = char*(__thiscall*)(char* world, std::int32_t proto, std::int32_t player, const float* position,
                                     const float* forward, std::int32_t a, std::int32_t b, std::int32_t c, std::int32_t d);
+using IdAppendFn = std::int32_t(__thiscall*)(IdList* list, const std::int32_t* id);
+using GatherOrderFn = void(__thiscall*)(OrderAction* action, IdList* units, char together);
 
 const auto kCivTest = reinterpret_cast<CivTestFn>(0x004B4EBD);
 const auto kSpawn = reinterpret_cast<SpawnFn>(0x009C07D6);
@@ -11684,6 +11705,8 @@ const auto kXmlText = reinterpret_cast<XmlTextFn>(0x00402733);
 const auto kUnitsNear = reinterpret_cast<UnitsNearFn>(0x004A1C55);
 const auto kUnitById = reinterpret_cast<UnitByIdFn>(0x0044CC6D);
 const auto kCreate = reinterpret_cast<CreateFn>(0x00498ACC);
+const auto kIdAppend = reinterpret_cast<IdAppendFn>(0x00401F74);
+const auto kGatherOrder = reinterpret_cast<GatherOrderFn>(0x009C9147);
 
 template <typename T>
 T Field(const char* base, std::uint32_t offset) {
@@ -11704,6 +11727,11 @@ std::int32_t ProtoId(const char* proto) { return proto == nullptr ? -1 : Field<s
 
 const char* ProtoName(const char* proto) {
   const char* name = proto == nullptr ? nullptr : Field<const char*>(proto, 0x10);
+  return name == nullptr ? "?" : name;
+}
+
+const char* CivName(const char* civ) {
+  const char* name = civ == nullptr ? nullptr : Field<const char*>(civ, 0x04);
   return name == nullptr ? "?" : name;
 }
 
@@ -11771,13 +11799,22 @@ struct CivLine {
 
 struct ProtoData {
   std::vector<CivLine> lines;
-  float nearby = 0.0f;  // the radius of <PartisanFromNearby>; 0: off
   const char* table = nullptr;
 };
 
 std::unordered_map<std::int32_t, ProtoData> g_protos;  // by base proto ID
-std::int32_t g_building = -1;                          // the abstract type Building, per data load
-const char* g_buildingTable = nullptr;
+
+// <PartisanNearby> per civ ID, with the civ object it was read for (a reload of civs.xml gives new ones).
+struct CivNearby {
+  const char* civ = nullptr;
+  float radius = 0.0f;
+};
+std::unordered_map<std::int32_t, CivNearby> g_civNearby;
+
+// The abstract types Building and AbstractWall, per data load.
+std::int32_t g_building = -1;
+std::int32_t g_wall = -1;
+const char* g_typesTable = nullptr;
 
 // The effects on a player's copy of a proto, in the order they came.
 struct TechEffect {
@@ -11793,8 +11830,9 @@ struct TechSlot {
 };
 std::unordered_map<const char*, TechSlot> g_tech;
 
-IdList g_found = {nullptr, 0, 0};
-
+IdList g_found = {nullptr, 0, 0};    // the units near the dying building
+IdList g_spawned = {nullptr, 0, 0};  // one building's new units, for the gather point order
+OrderAction g_order = {};
 
 const char* Database() { return GameField(0x140); }
 
@@ -11840,25 +11878,53 @@ bool __cdecl ReadCivPartisan(void*, const char* node, char* proto) {
   return true;
 }
 
-bool __cdecl ReadFromNearby(void*, const char* node, char* proto) {
-  const std::int32_t id = ProtoId(proto);
-  const std::string text = NarrowWide(*reinterpret_cast<const wchar_t* const*>(node + 0x14));
-  char* end = nullptr;
-  const double radius = std::strtod(text.c_str(), &end);
-  if (text.empty() || *end != '\0' || !(radius >= 0.0) || !(radius <= kMaxRadius)) {
-    uhc::Log(L"partisans: proto %d (%hs): <PartisanFromNearby> \"%hs\" is not a radius from 0 to %g m; ignored", id,
-             ProtoName(proto), text.c_str(), static_cast<double>(kMaxRadius));
-    return true;
-  }
-  g_protos[id].nearby = static_cast<float>(radius);
-  LogLine(L"partisans: proto %d (%hs): from the buildings within %g m", id, ProtoName(proto), radius);
+// The tag of 0.7.0: read only to say it is no longer used.
+bool __cdecl ReadFromNearby(void*, const char*, char* proto) {
+  uhc::Log(L"partisans: proto %d (%hs): <PartisanFromNearby> is no longer used, see <PartisanNearby> in civs.xml; "
+           L"ignored",
+           ProtoId(proto), ProtoName(proto));
   return true;
+}
+
+void ReadPartisanNearby(const char* civ, std::int32_t civId, const wchar_t* text) {
+  if (civId < 0) {
+    return;
+  }
+  const std::string number = NarrowWide(text);
+  char* end = nullptr;
+  const double radius = std::strtod(number.c_str(), &end);
+  if (number.empty() || *end != '\0' || !(radius >= 0.0) || !(radius <= kMaxRadius)) {
+    uhc::Log(L"partisans: civ %d (%hs): <PartisanNearby> \"%hs\" is not a radius from 0 to %g m; ignored", civId,
+             CivName(civ), number.c_str(), static_cast<double>(kMaxRadius));
+    return;
+  }
+  g_civNearby[civId] = {civ, static_cast<float>(radius)};
+  uhc::Log(L"partisans: civ %d (%hs): nearby mode, radius %g m%ls", civId, CivName(civ), radius,
+           radius > 0.0 ? L"" : L" (0: off)");
+}
+
+float NearbyRadius(const char* database, const char* player) {
+  const std::int32_t civId = CivIdOf(player);
+  const auto found = g_civNearby.find(civId);
+  if (found == g_civNearby.end() || found->second.radius <= 0.0f || kCivById(database, civId) != found->second.civ) {
+    return 0.0f;
+  }
+  return found->second.radius;
 }
 
 std::int32_t TypeByName(const char* database, const char* name) {
   const char* table = database + kTypeNames;
   std::int32_t id = -1;
   return kNameFind(table, name, kNameBucket(table, name), &id) ? id : -1;
+}
+
+void ResolveTypes(const char* database) {
+  const char* table = Field<const char*>(database, kProtoTable);
+  if (g_typesTable != table) {
+    g_typesTable = table;
+    g_building = TypeByName(database, "Building");
+    g_wall = TypeByName(database, "AbstractWall");
+  }
 }
 
 void Resolve(const char* database, std::int32_t protoId, ProtoData& data) {
@@ -11885,8 +11951,9 @@ void Resolve(const char* database, std::int32_t protoId, ProtoData& data) {
 void ForgetOnDataLoad(char*) {
   g_protos.clear();
   g_tech.clear();
-  g_buildingTable = nullptr;
+  g_typesTable = nullptr;
   g_building = -1;
+  g_wall = -1;
 }
 
 // --- Tech subtypes ----------------------------------------------------------------------------------------------
@@ -11935,7 +12002,6 @@ struct Guerrilla {
   bool on = false;
   std::int32_t type = -1;
   std::int32_t count = 0;
-  float nearby = 0.0f;
 };
 
 Guerrilla GuerrillaOf(const char* database, const char* player, const char* copy) {
@@ -11946,7 +12012,6 @@ Guerrilla GuerrillaOf(const char* database, const char* player, const char* copy
   const auto found = g_protos.find(ProtoId(copy));
   if (found != g_protos.end()) {
     Resolve(database, found->first, found->second);
-    g.nearby = found->second.nearby;
     const std::int32_t civId = CivIdOf(player);
     for (const CivLine& candidate : found->second.lines) {
       if (candidate.civId >= 0 && candidate.civId == civId && candidate.unitId >= 0) {
@@ -11989,23 +12054,26 @@ Guerrilla GuerrillaOf(const char* database, const char* player, const char* copy
   return g;
 }
 
+bool IsType(const char* proto, std::int32_t type) { return proto != nullptr && type >= 0 && kProtoIsType(proto, type); }
+
 struct Near {
   char* unit;
   std::int32_t id;
   float distance;
+  Guerrilla g;
+  const char* partisan;  // the player's copy of g.type
 };
 
-// The owner's living, finished Buildings within the radius of the dying unit's edge, closest first (then by ID).
-std::vector<Near> NearbyBuildings(char* world, const char* database, char* dying, float radius, int* unfinished) {
+struct NearCounts {
+  int without = 0;     // finished buildings with no guerrilla
+  int unfinished = 0;  // foundations
+  int walls = 0;
+};
+
+// The owner's living, finished Buildings (not walls) within the radius of the dying unit that have a guerrilla, closest
+// first (then by ID).
+std::vector<Near> NearbyBuildings(char* world, const char* database, char* dying, float radius, NearCounts* counts) {
   std::vector<Near> out;
-  const char* types = Field<const char*>(database, kProtoTable);
-  if (g_buildingTable != types) {
-    g_buildingTable = types;
-    g_building = TypeByName(database, "Building");
-  }
-  if (g_building < 0) {
-    return out;
-  }
   const char* owner = Field<const char*>(dying, 0x44);
   const auto* position = reinterpret_cast<const float*>(dying + 0x14);
   const std::int32_t dyingId = Field<std::int32_t>(dying, 0x10);
@@ -12016,14 +12084,25 @@ std::vector<Near> NearbyBuildings(char* world, const char* database, char* dying
       continue;
     }
     const char* proto = Field<const char*>(unit, 0x5C);
-    if (proto == nullptr || !kProtoIsType(proto, g_building) || !Virtual<UnitIsAliveFn>(unit, kAliveSlot)(unit)) {
+    if (!IsType(proto, g_building) || !Virtual<UnitIsAliveFn>(unit, kAliveSlot)(unit)) {
+      continue;
+    }
+    if (IsType(proto, g_wall)) {
+      ++counts->walls;
       continue;
     }
     if (!kIsBuilt(unit)) {
-      ++*unfinished;
+      ++counts->unfinished;
       continue;
     }
-    out.push_back({unit, Field<std::int32_t>(unit, 0x10), Virtual<UnitDistanceFn>(unit, kDistanceSlot)(unit, position)});
+    const Guerrilla g = GuerrillaOf(database, owner, proto);
+    const char* partisan = g.on && g.count > 0 && g.type >= 0 ? kPlayerProto(owner, g.type) : nullptr;
+    if (partisan == nullptr) {
+      ++counts->without;
+      continue;
+    }
+    out.push_back({unit, Field<std::int32_t>(unit, 0x10), Virtual<UnitDistanceFn>(unit, kDistanceSlot)(unit, position),
+                   g, partisan});
   }
   std::sort(out.begin(), out.end(), [](const Near& a, const Near& b) {
     return a.distance != b.distance ? a.distance < b.distance : a.id < b.id;
@@ -12053,6 +12132,64 @@ char* SpawnBeside(char* world, std::int32_t proto, std::int32_t player, const ch
   return nullptr;
 }
 
+// The building's gather point for `playerId`, as 0x7AE43E / 0x7AE4B2 read it: the records of its building data,
+// 28h B each ({+4 player, +0Ch point, +18h unit}), land at +10h/+14h, water at +1Ch/+20h. False with none.
+struct GatherPoint {
+  float x = -1.0f;
+  float z = -1.0f;
+  std::int32_t unit = -1;
+};
+
+bool GatherOf(const char* building, std::int32_t playerId, bool water, GatherPoint* out) {
+  const char* data = Field<const char*>(building, kBuildingData);
+  if (data == nullptr) {
+    return false;
+  }
+  const char* records = Field<const char*>(data, water ? 0x1C : 0x10);
+  const std::int32_t count = Field<std::int32_t>(data, water ? 0x20 : 0x14);
+  for (std::int32_t i = 0; i < count && records != nullptr; ++i) {
+    const char* record = records + 0x28 * i;
+    if (Field<std::int32_t>(record, 4) == playerId) {
+      out->x = Field<float>(record, 0x0C);
+      out->z = Field<float>(record, 0x14);
+      out->unit = Field<std::int32_t>(record, 0x18);
+      return true;
+    }
+  }
+  return false;
+}
+
+// The building's new units get the order a freshly trained unit gets (the Train action's 0x9C9147, with an action
+// that names the building as the trainer). Not when the gather point is on the dying building.
+void SendToGatherPoint(char* building, std::int32_t playerId, std::int32_t dyingId) {
+  GatherPoint land;
+  GatherPoint water;
+  const bool hasLand = GatherOf(building, playerId, false, &land);
+  const bool hasWater = GatherOf(building, playerId, true, &water);
+  if ((hasLand && land.unit == dyingId) || (hasWater && water.unit == dyingId)) {
+    LogLine(L"partisans:   gather point on the dying building: no order, they stay");
+    return;
+  }
+  if (g_spawned.count <= 0 || Field<const char*>(building, kBuildingData) == nullptr) {
+    return;
+  }
+  if (!hasLand && !hasWater) {
+    LogLine(L"partisans:   no gather point: they stay beside it");
+    return;
+  }
+  if (hasLand) {
+    LogLine(L"partisans:   to the gather point (%.1f, %.1f)%ls", static_cast<double>(land.x),
+            static_cast<double>(land.z), land.unit >= 0 ? L" on a unit" : L"");
+  } else {
+    LogLine(L"partisans:   to the water gather point (%.1f, %.1f)", static_cast<double>(water.x),
+            static_cast<double>(water.z));
+  }
+  g_order.handle = -1;
+  g_order.trainer = building;
+  kGatherOrder(&g_order, &g_spawned, 0);
+  g_order.trainer = nullptr;
+}
+
 // The stock spawn with this type and count: the copy holds them for the call.
 void StockSpawn(char* unit, char* copy, const Guerrilla& g) {
   auto* type = reinterpret_cast<std::int32_t*>(copy + kPartisanType);
@@ -12064,6 +12201,46 @@ void StockSpawn(char* unit, char* copy, const Guerrilla& g) {
   kSpawn(unit);
   *type = oldType;
   *count = oldCount;
+}
+
+// The nearby mode: true if the buildings in range gave their guerrilla (then the dying one gives nothing).
+bool NearbySpawn(char* world, const char* database, char* unit, float radius) {
+  const std::int32_t unitId = Field<std::int32_t>(unit, 0x10);
+  const char* player = Field<const char*>(unit, 0x44);
+  const std::int32_t playerId = Field<std::int32_t>(player, 0);
+  NearCounts counts;
+  const std::vector<Near> near = NearbyBuildings(world, database, unit, radius, &counts);
+  if (near.empty()) {
+    LogLine(L"partisans: unit %d (%hs) of player %d died: no building with a guerrilla within %g m (%d without, %d "
+            L"unfinished, %d walls); its own guerrilla, as stock",
+            unitId, ProtoName(Field<const char*>(unit, 0x5C)), playerId, static_cast<double>(radius), counts.without,
+            counts.unfinished, counts.walls);
+    return false;
+  }
+  LogLine(L"partisans: unit %d (%hs) of player %d died: %u building(s) with a guerrilla within %g m (%d without, %d "
+          L"unfinished, %d walls left out)",
+          unitId, ProtoName(Field<const char*>(unit, 0x5C)), playerId, static_cast<unsigned>(near.size()),
+          static_cast<double>(radius), counts.without, counts.unfinished, counts.walls);
+  for (const Near& at : near) {
+    g_spawned.count = 0;
+    int made = 0;
+    for (std::int32_t i = 0; i < at.g.count; ++i) {
+      const char* spawned = SpawnBeside(world, ProtoId(at.partisan), playerId, at.unit);
+      if (spawned == nullptr) {
+        continue;
+      }
+      const std::int32_t id = Field<std::int32_t>(spawned, 0x10);
+      kIdAppend(&g_spawned, &id);
+      ++made;
+    }
+    LogLine(L"partisans:   unit %d (%hs, %.1f m): %d of %d x %hs", at.id, ProtoName(Field<const char*>(at.unit, 0x5C)),
+            static_cast<double>(at.distance), made, at.g.count, ProtoName(at.partisan));
+    if (made > 0) {
+      SendToGatherPoint(at.unit, playerId, unitId);
+    }
+  }
+  g_spawned.count = 0;
+  return true;
 }
 
 }  // namespace
@@ -12079,6 +12256,15 @@ void __stdcall UhcPartisansOnDeath(char* unit, std::int32_t flag) {
   char* world = const_cast<char*>(GameField(0x13C));
   if (player == nullptr || copy == nullptr || database == nullptr || world == nullptr) {
     return;
+  }
+  // The nearby mode: a finished building (not a wall) of a civ with <PartisanNearby>, with the stock exclusions.
+  const float radius = NearbyRadius(database, player);
+  if (radius > 0.0f && flag == 0) {
+    ResolveTypes(database);
+    if (IsType(copy, g_building) && !IsType(copy, g_wall) && kIsBuilt(unit) &&
+        NearbySpawn(world, database, unit, radius)) {
+      return;
+    }
   }
   const Guerrilla g = GuerrillaOf(database, player, copy);
   if (!g.on || g.count <= 0) {
@@ -12098,33 +12284,6 @@ void __stdcall UhcPartisansOnDeath(char* unit, std::int32_t flag) {
     LogLine(L"partisans: unit %d (%hs) of player %d died: type %d is no proto; nothing", Field<std::int32_t>(unit, 0x10),
             ProtoName(copy), playerId, g.type);
     return;
-  }
-  if (g.nearby > 0.0f) {
-    int unfinished = 0;
-    const std::vector<Near> near = NearbyBuildings(world, database, unit, g.nearby, &unfinished);
-    if (!near.empty()) {
-      LogLine(L"partisans: unit %d (%hs) of player %d died: %d x %hs beside %u building(s) within %g m (%d unfinished "
-              L"left out)",
-              Field<std::int32_t>(unit, 0x10), ProtoName(copy), playerId, g.count, ProtoName(partisan),
-              static_cast<unsigned>(near.size()), static_cast<double>(g.nearby), unfinished);
-      for (std::int32_t i = 0; i < g.count; ++i) {
-        const Near& at = near[static_cast<std::size_t>(i) % near.size()];
-        const char* spawned = SpawnBeside(world, ProtoId(partisan), playerId, at.unit);
-        if (spawned == nullptr) {
-          LogLine(L"partisans: %hs %d of %d: no room beside unit %d (%hs)", ProtoName(partisan), i + 1, g.count, at.id,
-                  ProtoName(Field<const char*>(at.unit, 0x5C)));
-          continue;
-        }
-        LogLine(L"partisans: %hs %d of %d (unit %d) beside unit %d (%hs, %.1f m from the dead one) at (%.1f, %.1f)",
-                ProtoName(partisan), i + 1, g.count, Field<std::int32_t>(spawned, 0x10), at.id,
-                ProtoName(Field<const char*>(at.unit, 0x5C)), static_cast<double>(at.distance),
-                static_cast<double>(Field<float>(spawned, 0x14)), static_cast<double>(Field<float>(spawned, 0x1C)));
-      }
-      return;
-    }
-    LogLine(L"partisans: unit %d (%hs) of player %d died: no finished building of its owner within %g m (%d unfinished); "
-            L"from the unit itself",
-            Field<std::int32_t>(unit, 0x10), ProtoName(copy), playerId, static_cast<double>(g.nearby), unfinished);
   }
   LogLine(L"partisans: unit %d (%hs) of player %d (civ %d) died: %d x %hs", Field<std::int32_t>(unit, 0x10),
           ProtoName(copy), playerId, CivIdOf(player), g.count, ProtoName(partisan));
@@ -12151,15 +12310,18 @@ Outcome ApplyPartisans(const Config& config) {
                  {&sites::kPartisanCivTest, &sites::kPartisanColdBlock, &sites::kPartisanSpawn,
                   &sites::kPartisanCivFlag, &sites::kIsBuilt, &sites::kCivIdByName, &sites::kCivById,
                   &sites::kProtoByName, &sites::kIsA, &sites::kPlayerProtoEntry, &sites::kEffectValueApply,
-                  &sites::kUnitsNearPoint, &sites::kUnitById, &sites::kUnitCreate, &sites::kKillSpawnPlace}) ||
+                  &sites::kUnitsNearPoint, &sites::kUnitById, &sites::kUnitCreate, &sites::kKillSpawnPlace,
+                  &sites::kArrayResize, &sites::kIdListAppend, &sites::kGatherPointOrder,
+                  &sites::kGatherPointUnit}) ||
       !AddProtoTagHandler("CivPartisan", &ReadCivPartisan) ||
       !AddProtoTagHandler("PartisanFromNearby", &ReadFromNearby) ||
+      !AddCivTagHandler("PartisanNearby", &ReadPartisanNearby) ||
       !AddTechProtoSubtype("PartisanType", &ParseType, &ChangeType) ||
       !AddTechSubtype("PartisanCount", &ChangeCount) || !OnDatabaseLoad(&ForgetOnDataLoad) ||
       !WriteJmp(kCivTestSite, reinterpret_cast<const void*>(&UhcPartisansHook), kCivTestLength)) {
     return Outcome::kFailed;
   }
-  Log(L"partisans: the proto tags CivPartisan and PartisanFromNearby and the Data subtypes PartisanType and "
+  Log(L"partisans: the proto tag CivPartisan, the civ tag PartisanNearby and the Data subtypes PartisanType and "
       L"PartisanCount are on%ls",
       g_log ? L", every guerrilla logged" : L"");
   return Outcome::kApplied;

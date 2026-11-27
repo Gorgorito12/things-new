@@ -1,0 +1,72 @@
+Reply to JTMaston, round of 2026-11-30: the guerrilla, nearby mode v2 (request #114)
+==================================================================================
+
+Thanks for the answers of 2026-11-27. This is what changed, one point per answer:
+
+1. "Each nearby building spawns its own; the radius is global for all the player's buildings (except walls), set and
+   enabled on the civ in civs.xml."
+   Done. The radius is now a civ tag in civs.xml, inside the <civ>:
+
+       <PartisanNearby>30</PartisanNearby>
+
+   The number is the radius in metres (above 0, up to 200). With it, the destruction of ANY finished building of that
+   civ's player (with a guerrilla or not; walls excluded) makes every building of that player within 30 m that has a
+   guerrilla spawn its own unit and count beside itself. The base game's rules stay: a trigger's Kill and the owner's
+   delete set off nothing. Walls never spawn and never set it off.
+   The building tag <PartisanFromNearby> of the last version is gone: the DLL no longer reads it. If it is still in
+   the data, the log says "<PartisanFromNearby> is no longer used, see <PartisanNearby> in civs.xml" and nothing else
+   happens.
+
+2. "Only those with guerrilla, because the amounts spawned have to correspond to the partisan assigned."
+   Done. A nearby building counts only if it has a guerrilla for that civ: its <CivPartisan civ="..."> line, or
+   PartisanType/PartisanCount when the civ has <Partisans>1</Partisans>. Each one gives its own unit and its own
+   count, with the player's techs applied (a tech that changes a Barracks' unit and count changes what that Barracks
+   gives as a nearby building too). Buildings without a guerrilla, foundations and walls give nothing.
+
+3. "They should walk to the building's gather point if spawned from a nearby destruction, otherwise normal spawn."
+   Done. The units of each nearby building get the same order the game gives to the units that building trains (we
+   call the game's own function for it): they walk to its gather point, as a group. If the gather point is on a unit,
+   they get the order on that unit; on the building itself, they go inside. A building with no gather point (one that
+   cannot have one, such as the Market, or one that was never given one): they stay beside it.
+   When the destroyed building itself spawns (see question 1 below), it is the normal spawn, with no order.
+
+4. "Yes, SerbianInferno is deprecated at the moment" (UybassyArcher back for the Tupinamba).
+   Done in the pack: <CivPartisan civ="Tupinamba">UybassyArcher</CivPartisan> on TownCenter, ArtilleryDepot and
+   Market, with each building's own PartisanCount (6, 3 and 1). We checked it with the pack's --check, not in a
+   game, because we do not test with the Tupinamba; the mechanism is the one we tested with the Spanish.
+
+5. "That's on me" (Spanish buildings, units and counts).
+   Understood: the pack stays an example (Rodelero: Town Center 4, Barracks 2, Stable 2).
+
+The pack wol-fixes/guerrilla/:
+    python apply_fix.py "<WoL folder>" --nearby 30     the Spanish lines, <PartisanNearby>30</PartisanNearby> for the
+                                                       Spanish in civs.xml, the Tupinamba lines, `partisans` in the cfg
+    python apply_fix.py "<WoL folder>" --check         what is applied
+    python apply_fix.py "<WoL folder>" --restore       everything back as it was (protoy.xml, civs.xml, the cfg)
+
+Tested in game (Spanish against the Serbian AI):
+- A House (no guerrilla) destroyed next to a Barracks, a Stable and a Market (test data: 3 Rodeleros on the Market):
+  2 Rodeleros came out beside the Barracks and 2 beside the Stable and walked to their gather points; the Market's 3
+  stayed beside it (a Market has no gather point). Two more Houses, a foundation, a wall and a Barracks 50 m away gave
+  nothing; the House gave nothing.
+- A wall destroyed: nothing. A Stable with no building with a guerrilla in range: its own 2 Rodeleros, as today.
+- A tech that sets the Barracks' guerrilla to 5 Pikemen, then a save and a load: a House destroyed next to the
+  Barracks gave 5 Pikemen.
+- The Serbians (no tag): as before, their Barracks gave 2 SerbianInferno, and the Stable next to it nothing.
+- Also beside WoL's own uhc.dll; the AI kept playing; no measurable cost.
+
+One thing you may see: after the move, idle units of the same type that stand close to each other may come together
+(in 3 of 9 runs the Stable's pair, about 20 m from the Market's three, joined them a few seconds after arriving). That
+is the game's own behaviour, the same with the key off.
+
+GIFs: partisans-wol (a House falls; the Barracks' and the Stable's Rodeleros walk to their gather points, the blue
+banners; the Market's stay) and partisans-wol-control (the same scene without the key: nothing).
+
+Open questions (until you answer, the build does what is written after "Now:"):
+1. When no building with a guerrilla is in range, should the destroyed building spawn its own guerrilla, or nothing?
+   Now: it spawns its own, as in the normal game (only if it has one).
+2. Every destruction sets off all the buildings with a guerrilla in range again, with no limit: losing five houses
+   next to a Barracks gives that Barracks' guerrilla five times. Do you want a cap, or a cooldown per building?
+   Now: no limit.
+3. The Serbians keep SerbianInferno (<partisans>1</partisans> and the last PartisanType of those buildings) until you
+   remove it from the data; the pack does not touch them. Is that what you want for now?
