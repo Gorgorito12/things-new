@@ -141,6 +141,8 @@ killSpawn-wol 2 20 2
 killSpawn-wol-control 2 20 2
 partisans-wol 23 12 1
 partisans-wol-control 0 16 2
+partisans-cooldown-wol 1 18 1.5
+partisans-cooldown-wol-control 1 18 1.5
 workRateByAbstractType-wol 2 36 3
 workRateByAbstractType-wol-control 2 36 3
 overhealHitpointBars-group-wol 0 16 2

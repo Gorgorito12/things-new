@@ -29,8 +29,16 @@ In the civ (civs.xml), since 2026-11-27:
       buildings within 30 m that has a guerrilla for the civ (its <CivPartisan> line, or PartisanType/PartisanCount with
       <Partisans>) gives ITS OWN unit and count beside itself, with the techs applied, and those units walk to that
       building's gather point (no gather point: they stay beside it). Walls, foundations and buildings without a
-      guerrilla give nothing. The destroyed building gives nothing then; when no building with a guerrilla is in range,
-      it gives its own, as today.
+      guerrilla give nothing. The destroyed building never gives its own in this mode (since 2026-12-01): when no
+      building with a guerrilla is in range, nothing comes out. So with the mode on, a lone Barracks gives nothing
+      when it falls. Walls, units that are not buildings, and civs without the tag work as in the normal game.
+
+  <PartisanCooldown>60</PartisanCooldown>      (since 2026-12-01, with <PartisanNearby> in the same civ)
+      A building that gave its guerrilla as a nearby building gives nothing for the next 60 seconds of game time (0 to
+      3600; 0 or left out: no limit). Each building has its own wait; it starts when the building gives at least one
+      unit, and a building still waiting is not restarted when another building falls. A saved game keeps the wait. A
+      building that transforms into another loses it (ready again). Without <PartisanNearby> the tag does nothing: the
+      log says so. A value that is not a number from 0 to 3600 is logged and ignored.
 
   <PartisanFromNearby> on a building (0.7.0) is no longer read: the log says so if the data still has it.
 
@@ -50,7 +58,8 @@ apply_fix.py gives the Spanish a guerrilla of their own on three buildings, as a
   TownCenter 4, Barracks 2, Stable 2, unit Rodelero (--unit names another), and adds `partisans` to Startup\wol.cfg
   (or engine-ext\engine-ext.cfg). --nearby 30 also writes <PartisanNearby>30</PartisanNearby> in the Spanish civ in
   civs.xml (without --nearby a <PartisanNearby> line there is taken out, and so is an old <PartisanFromNearby> line on
-  the three buildings).
+  the three buildings). --cooldown 60, with --nearby, writes <PartisanCooldown>60</PartisanCooldown> under it (without
+  --cooldown a <PartisanCooldown> line there is taken out). 60 is an example: the number is yours.
 The Tupinamba get UybassyArcher back: <CivPartisan civ="Tupinamba">UybassyArcher</CivPartisan> on TownCenter,
   ArtilleryDepot and Market, with each building's own PartisanCount (6, 3 and 1). Checked with --check only, not in a
   game: the Tupinamba are not a civ we test with. The mechanism is the one tested with the Spanish.
@@ -59,6 +68,8 @@ The Serbians keep what they have: <partisans>1</partisans>, and the last Partisa
 
     python apply_fix.py "<WoL folder>"                 apply (backup in <WoL folder>\guerrilla-backup\)
     python apply_fix.py "<WoL folder>" --nearby 30     the same, with the nearby mode for the Spanish
+    python apply_fix.py "<WoL folder>" --nearby 30 --cooldown 60
+                                                       the same, with a 60 s cooldown per building
     python apply_fix.py "<WoL folder>" --check         what is applied
     python apply_fix.py "<WoL folder>" --restore       put the backed-up files back (protoy.xml, civs.xml, the cfg),
                                                        then delete the backup
@@ -87,4 +98,18 @@ Tested in WoL (2026-11-27), the nearby mode v2, skirmishes against the Serbian A
 - A trigger's Kill: nothing. The Serbians: their Barracks gave its 2 SerbianInferno, the Stable beside it nothing.
 - After the move, idle units of the same type near each other may come together (the game's own behaviour, also with
   the key off).
+- --check and --restore gave protoy.xml, civs.xml and the cfg back byte for byte.
+
+Tested in WoL (2026-11-27), the nearby mode v3, skirmishes against the Serbian AI, --nearby 30 --cooldown 60
+--------------------------------------------------------------------------------------------------------------
+- A House beside a Barracks and a Stable: 2 + 2 Rodeleros. Another House beside them 20 s later: nothing, the log says
+  "on cooldown, 40.0 s left" for each. After a save and a load, a third House 50 s after they gave: nothing, "10.0 s
+  left". A fourth House 70 s after: 2 + 2 again.
+- A House between a Barracks that was waiting and a Market (test data: 3 Rodeleros): the Market gave its 3, the
+  Barracks nothing ("50.0 s left"). Each building has its own wait.
+- A lone Stable with no building with a guerrilla in range: nothing (before: its own 2 Rodeleros).
+- A trigger's Kill: nothing. The Serbians: their Barracks gave its 2 SerbianInferno.
+- Without --cooldown: two Houses 10 s apart, 4 Rodeleros each time.
+- "abc", "-5", "99999", and a cooldown on a civ without <PartisanNearby>: one log line each, nothing else.
+- Key off: nothing. Beside WoL's own uhc.dll: the same. The AI kept playing.
 - --check and --restore gave protoy.xml, civs.xml and the cfg back byte for byte.

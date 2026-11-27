@@ -1,6 +1,7 @@
 // Tags of a <civ> in civs.xml that stock does not know: one hook on the parser's unknown-tag path,
 // shared by every key that reads one (civFirstTC's <firstTC>, sharedBuildLimit's <SettlerProtoName>,
-// killSpawn's <killSpawn...> tags, shipTechLimit's <ShipTechLimit>, partisans' <PartisanNearby>).
+// killSpawn's <killSpawn...> tags, shipTechLimit's <ShipTechLimit>, partisans' <PartisanNearby> and
+// <PartisanCooldown>).
 #pragma once
 
 #include <cstdint>

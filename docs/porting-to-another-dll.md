@@ -1633,7 +1633,7 @@ Code: [combat](porting-code/combat.md#killspawn). It needs `AddCivTagHandler` ([
 ### partisans
 
 Code: [combat](porting-code/combat.md#partisans). It needs `AddProtoTagHandler` ([proto tags](porting-code/helpers.md#proto-tags)),
-`AddCivTagHandler` (civs.xml's `<PartisanNearby>`), `AddTechProtoSubtype` and `AddTechSubtype`
+`AddCivTagHandler` (civs.xml's `<PartisanNearby>` and `<PartisanCooldown>`), `AddTechProtoSubtype` and `AddTechSubtype`
 ([tech subtypes](porting-code/helpers.md#tech-subtypes)) and `OnDatabaseLoad`.
 
 - **Site:** `jmp` at `0x4B532F` over 16 bytes (`8B 4E 44 E8 86 FB FF FF 3C 01 0F 84 C5 EB 1E 00`: the kill handler's
@@ -1650,10 +1650,17 @@ Code: [combat](porting-code/combat.md#partisans). It needs `AddProtoTagHandler` 
   and the trained unit's gather point order `0x9C9147(action, array, 0)` (thiscall, `ret 8`) with a stand-in action:
   `[+0Ch]` = -1, `[+10h]` = the building (the only two fields it reads). Verify the heads `0x401F74`, `0x9C9147` and
   `0x7AE4B2` (the gather records at `[building+68h]`: land `+10h`/`+14h`, water `+1Ch`/`+20h`, 28h B, `+4` player,
-  `+0Ch` point, `+18h` unit).
+  `+0Ch` point, `+18h` unit). In this mode the dying building never spawns its own: no building with a guerrilla in
+  range (or all on cooldown), nothing.
+- **Cooldown (`<PartisanCooldown>S` on the same civ, also through `AddCivTagHandler`):** the game time `[world+108h]`
+  (ms) a building last gave, kept on it as a saved marker (`savedmarkers.h`: the modifier creator `0x4DD22D`, stat 6Dh,
+  word 0 `'PCDN'`, word 1 the time), so it survives a save; skip a building while `now - time` (unsigned) is below
+  S x 1000, and write `now` only when it made at least one unit. Any other per-unit store that the save keeps works too;
+  a map in the DLL would be lost at a load.
 - **Test:** a `<CivPartisan>` line for a civ without `<Partisans>` on a building, destroyed by damage (not a trigger's
   `Kill`): with `log`, the guerrilla and its count. Nearby: `<PartisanNearby>30` on that civ, a House destroyed beside
-  a Barracks with a line and a gather point: the Barracks' units walk to its point.
+  a Barracks with a line and a gather point: the Barracks' units walk to its point. With `<PartisanCooldown>60`, a
+  second House 10 s later: the Barracks gives nothing (`on cooldown, 50.0 s left`).
 
 ### snareOnlyHitUnit
 

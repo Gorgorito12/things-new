@@ -31,7 +31,7 @@ A new test video counts as a change: a feature filmed again in WoL moves back to
 
 | Date and time | Key | What changed | Status |
 |---|---|---|---|
-| Friday 2026-11-27 11:20 | [`partisans`](#partisans) | Filmed in WoL, with a control. The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanNearby>` on a civ makes each of its nearby buildings with a guerrilla give its own, which walks to that building's gather point. | `<CivPartisan>` on the building in `protoy.xml`; `<PartisanNearby>` on the civ in `civs.xml`; the techs in `techtreey.xml`. |
+| Friday 2026-11-27 15:03 | [`partisans`](#partisans) | Filmed in WoL, with a control. The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanNearby>` on a civ makes each of its nearby buildings with a guerrilla give its own, which walks to that building's gather point, the destroyed one giving none, and `<PartisanCooldown>` makes each of them wait that many seconds before it gives again. | `<CivPartisan>` on the building in `protoy.xml`; `<PartisanNearby>` and `<PartisanCooldown>` on the civ in `civs.xml`; the techs in `techtreey.xml`. |
 | Friday 2026-11-27 07:50 | [`perCivEffects`](#perciveffects) | Added. `onlyciv="Spanish"` on any tech `<Effect>` makes that effect work only for a player of that civ: for shared cards, shared techs and each member of a team tech. | The attribute on the effects that want it. |
 | Thursday 2026-11-26 16:24 | [`cultureUI`](#cultureui) | Filmed in WoL, with a control. The minimised in-game interface takes its own textures per family of civs, and others again from the Great War: `X_as.ddt` beside `X.ddt` restyles texture X for the Asian family. | The art, one `.ddt` per texture and family (`<texture>_<family>[_gw].ddt`, from aoe3-blender-tools' templates), and `data\uhc\cultureui.xml` with the nine families: `wol-fixes/culture-ui/`. |
 | Thursday 2026-11-26 15:43 | [`powerShots`](#powershots) | Filmed in WoL, with a control. An ability's attack (an explorer's "Hammer Fanning") with `<PowerShots>N</PowerShots>` fires a shot at each Attack tag of its animation, up to N a use, instead of only the first. | The tag on the abilities' attacks (the Explorer's `SharpshooterAttack` and `CrackshotAttack`): the `wol-fixes/hammer-fanning` pack. |
@@ -3139,7 +3139,7 @@ Attacks, armor, and what a hit does.
 | [`pillageGold`](#pillagegold) | A unit of the type `AbstractCanPillage` steals `<PillageAmount>` gold from the owner of the building it hits with its `BuildingAttack`. | **new** | The type and the tag on the protos. | confirmed |
 | [`veterancyBonus`](#veterancybonus) | `<VeterancyBonus>` rows make a proto stronger with its kills, a row with `tech=` only while the player has that tech; defaults by unit type, by civilization, added rows and rank names in `veterancy.xml`. | **new** | The rows on the protos that want them. | confirmed |
 | [`killSpawn`](#killspawn) | A civ turns the enemies it kills into livestock: `<killSpawn>` in civs.xml lists the animals and their weights, with a chance and the victims' types; a `Data` tech can change the chance. | **new** | The tags on the civ in `civs.xml`. | confirmed (single player) |
-| [`partisans`](#partisans) | The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanNearby>` on a civ makes each of its nearby buildings with a guerrilla give its own, which walks to that building's gather point. | **new** | `<CivPartisan>` on the building in `protoy.xml`; `<PartisanNearby>` on the civ in `civs.xml`; the techs in `techtreey.xml`. | confirmed (single player) |
+| [`partisans`](#partisans) | The guerrilla of a destroyed building per civ: `<CivPartisan civ>` on the building gives each civ its own unit and count, `Data` techs change them, and `<PartisanNearby>` on a civ makes each of its nearby buildings with a guerrilla give its own, which walks to that building's gather point, the destroyed one giving none, and `<PartisanCooldown>` makes each of them wait that many seconds before it gives again. | **new** | `<CivPartisan>` on the building in `protoy.xml`; `<PartisanNearby>` and `<PartisanCooldown>` on the civ in `civs.xml`; the techs in `techtreey.xml`. | confirmed (single player) |
 | [`removeConversionRestriction`](#removeconversionrestriction) | Lets `ConvertGuardian` convert any unit, not only treasure guardians. | **in `wol.cfg`** | Nothing. | not confirmed |
 | [`customImpactTypes`](#customimpacttypes) | New impact type names, after the game's 15, for `impacttype` in a `.dmg`, `<ImpactType>` and the elements of an `.impacteffect`. | **new** | The names in the cfg, their elements in the `.impacteffect` files (compiled to `.xmb`), and `impacttype` in the `.dmg`. | confirmed (single player, picture; sound not filmed) |
 
@@ -5232,14 +5232,36 @@ killSpawn [log]
 
 #### partisans
 
-*When a building is destroyed, the guerrilla that comes out of it can differ by civ, be changed by techs, or, for a civ that asks for it, come out of each of the owner's nearby buildings that has one and walk to that building's gather point.*
+*When a building is destroyed, the guerrilla that comes out of it can differ by civ, be changed by techs, or, for a civ that asks for it, come out of each of the owner's nearby buildings that has one, at most once in a set number of seconds per building, and walk to that building's gather point.*
 
-**Added:** Friday 2026-11-27 07:46 · **Filmed in WoL:** Friday 2026-11-27 11:20
+**Added:** Friday 2026-11-27 07:46 · **Filmed in WoL:** Friday 2026-11-27 15:03
 
 **Changed on 2026-11-27 (JTMaston's answers of 2026-11-27):** the nearby mode is set on the civ, in `civs.xml`
 (`<PartisanNearby>30</PartisanNearby>`), for every building of that civ except walls; each nearby building that has a
 guerrilla gives **its own** unit and count, and those units walk to its gather point. The building tag
 `<PartisanFromNearby>` of 0.7.0 is gone: the DLL no longer reads it, and the log says so when the data still has it.
+
+**Changed on 2026-12-01 (JTMaston's answers of 2026-11-27, 13:19):** in the nearby mode the destroyed building **never**
+gives its own guerrilla: with no building with a guerrilla in range, nothing comes out (with the mode on, a lone Barracks
+gives nothing when it falls). And `<PartisanCooldown>60</PartisanCooldown>` on the civ makes each building that gave wait
+60 seconds of game time before it gives again; without it, no limit, as before.
+
+![partisans in WoL: the cooldown](media/partisans-cooldown-wol.gif)
+
+*In WoL, with the key (a skirmish on a test map, player 1 Spanish, player 2 the Serbian AI; the pack
+`wol-fixes/guerrilla/` with `--nearby 30 --cooldown 60`, so the Spanish have `<PartisanNearby>30</PartisanNearby>` and
+`<PartisanCooldown>60</PartisanCooldown>` in `civs.xml` and a guerrilla of 2 Rodeleros on `Barracks` and `Stable`):* a
+Barracks (centre) and a Stable (white, top) with two Houses beside them, no gather points. The first House (front left)
+falls at 45 s: each building gives its own 2 Rodeleros. The second House (right) falls at 55 s, 10 s later: both
+buildings are on cooldown (`on cooldown, 50.0 s left`, `nothing: all 2 on cooldown`) and nothing comes out; the House
+gives none of its own either. The Barracks, the Stable and the Rodeleros stay selected, so the bars show; the log lines at
+the bottom say what each building did. [Full video (MP4)](media/partisans-cooldown-wol.mp4).
+
+![partisans in WoL: the cooldown, control](media/partisans-cooldown-wol-control.gif)
+
+*In WoL, the same scene without `<PartisanCooldown>` (the key on, the pack with `--nearby 30` only):* there is no
+limit, as in 0.8.0: the first House gives 2 + 2 Rodeleros, and the second, 10 s later, sets both buildings off again, 2 + 2
+more, 8 in all. [Full video (MP4)](media/partisans-cooldown-wol-control.mp4).
 
 ![partisans in WoL](media/partisans-wol.gif)
 
@@ -5270,6 +5292,7 @@ partisans [log]
 
 <!-- civs.xml, inside a <civ> -->
 <PartisanNearby>30</PartisanNearby>                 <!-- optional: the nearby mode for this civ, 30 m -->
+<PartisanCooldown>60</PartisanCooldown>             <!-- optional, with it: each building waits 60 s -->
 
 <!-- techtreey.xml: for the player who gets the tech -->
 <Effect type ='Data' amount ='0' subtype ='PartisanType' relativity ='Assign' unittype ='Pikeman'>
@@ -5310,10 +5333,19 @@ partisans [log]
     unit, the order on that unit; on the building itself, inside it). A building with no gather point (one that cannot
     have one, such as WoL's Market, or that was never given one): they stay beside it. A gather point on the destroyed
     building: they stay.
-  - **The destroyed building** gives nothing in this mode. When no building with a guerrilla is in range, it gives its
-    own as without the tag (if it has one).
+  - **The destroyed building** never gives its own in this mode (since 2026-12-01). When no building with a guerrilla is
+    in range, or all of them are on cooldown, nothing comes out: with the mode on, a lone Barracks gives nothing when it
+    falls.
   - **Not in this mode:** a wall's death and a unit's death are as without the tag; a civ without the tag is as before.
-  - Every destruction sets off every building in range again: there is no limit or wait (asked to JTMaston).
+- **`<PartisanCooldown>S</PartisanCooldown>` in the same civ (since 2026-12-01):** S is seconds of game time, from 0 to
+  3600. A building that gave its guerrilla in the nearby mode (at least one unit) gives nothing for the next S seconds;
+  the wait starts when it gives, and a building still waiting is not restarted by the next destruction. Each building has
+  its own wait: in one destruction, a building that waits gives nothing while one beside it that is ready gives its own.
+  Left out, or 0: no limit (every destruction sets off every building in range again). It only counts with
+  `<PartisanNearby>` above 0 in the same civ: without it, the log says `partisans: civ 17 (Germans): <PartisanCooldown> 60
+  s does nothing without <PartisanNearby> (above 0) in the same civ; ignored`. A value that is not a number from 0 to
+  3600 (`abc`, `-5`, `99999`) is logged and ignored. The wait is kept in saved games (on the building itself); a building
+  that transforms into another (`Change Unit Type`, a transform effect) loses it and is ready again.
 - **`<PartisanFromNearby>` (0.7.0, on the building):** no longer read. With the key on, the log says
   `partisans: proto 303 (House): <PartisanFromNearby> is no longer used, see <PartisanNearby> in civs.xml; ignored`.
 - **Trigger kills and deletes:** a trigger's `Kill` (`trUnitDelete`) and the owner's delete give no guerrilla and set off
@@ -5325,14 +5357,18 @@ partisans [log]
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data. It draws no new random number
   (the units out of the destroyed building take the stock spawn's places and rolls; the nearby ones a fixed ring of
   points), and the order to the gather point is the game's own, given in the simulation.
-- **Saved games:** nothing to keep: the tags come with the data and a load applies the techs again.
-- **Log:** `partisans: the proto tag CivPartisan, the civ tag PartisanNearby and the Data subtypes PartisanType and
-  PartisanCount are on`, `partisans: civ 22 (Spanish): nearby mode, radius 30 m` and `hook reached: partisans (0x4B532F)`.
+- **Saved games:** the tags come with the data and a load applies the techs again; each building's cooldown is kept on
+  the building (a saved marker), so a load keeps the wait where it was.
+- **Log:** `partisans: the proto tag CivPartisan, the civ tags PartisanNearby and PartisanCooldown and the Data subtypes
+  PartisanType and PartisanCount are on`, `partisans: civ 22 (Spanish): nearby mode, radius 30 m`, `partisans: civ 22
+  (Spanish): cooldown 60 s per building` and `hook reached: partisans (0x4B532F)`.
   With `log`: the tags read (`partisans: proto 306 (Barracks): civ Spanish gets Rodelero x 2`), the effects, and each
   guerrilla: `partisans: unit 0 (Barracks) of player 1 (civ 22) died: 3 x Rodelero`; in the nearby mode `partisans: unit
   0 (House) of player 1 died: 3 building(s) with a guerrilla within 30 m (1 without, 1 unfinished, 1 walls left out)`, then
   per building `partisans:   unit 1 (Barracks, 12.0 m): 2 of 2 x Rodelero` and `partisans:   to the gather point (82.3,
-  49.4)` or `no gather point: they stay beside it`. A guerrilla held back says why: `partisans: unit 26 (HouseMed) of
+  49.4)` or `no gather point: they stay beside it`; a building waiting `partisans:   unit 1 (Barracks, 4.0 m): on
+  cooldown, 40.0 s left`; when nothing comes out, why: `...; nothing (none in range)` or `partisans:   nothing: all 2 on
+  cooldown`. A guerrilla held back says why: `partisans: unit 26 (HouseMed) of
   player 1 died: no guerrilla (not finished, build 4 %)`, or `(the kill's first flag is set, build 100 %)`.
 - **Tested in WoL (2026-11-27), the nearby mode v2, skirmishes on test maps, player 1 Spanish, player 2 the Serbian AI
   (`wolPetar`), the pack applied with `--nearby 30` and test data in the test copy (restored after), posted input and
@@ -5347,7 +5383,7 @@ partisans [log]
     Barracks 50 m away: none of them gave a unit.
   - A wall destroyed (`WallConnector`) 14 m from a Barracks: nothing, no log line.
   - A Stable with no building with a guerrilla in range: `no building with a guerrilla within 30 m`, and its own 2
-    Rodeleros came out of it.
+    Rodeleros came out of it (v2; since 2026-12-01 nothing comes out, see below).
   - A test tech (`PartisanType` `Pikeman`, `PartisanCount` `Assign` 5 on `Barracks`, player 1) at 52 s, the game saved at
     78 s and loaded: a House destroyed after the load beside a Barracks: `5 of 5 x Pikeman` (5 counted). `civs.xml` is
     not read again at a load; the mode held.
@@ -5364,6 +5400,39 @@ partisans [log]
     player and 10 Spanish Houses (each House runs the nearby search; none has a building with a guerrilla in range):
     key on fps 1084 / 1309, update 0.23 / 0.21 ms, main thread 84.6 / 83.6 %, frames over 50 ms 2 / 2; key off fps
     1218 / 1002, update 0.22 / 0.23 ms, main thread 83.3 / 84.9 %, frames over 50 ms 2 / 4. No measurable cost.
+- **Tested in WoL (2026-11-27, the nearby mode v3, round of 2026-12-01), a skirmish on a test map, player 1 Spanish,
+  player 2 the Serbian AI (`wolPetar`), the pack with `--nearby 30 --cooldown 60` and test data in the test copy (3
+  Rodeleros on `Market`; `<PartisanCooldown>` `abc`, `-5`, `99999` and `60` on four civs without `<PartisanNearby>`;
+  restored after), triggers and console only. The Rodeleros counted with `testbed.py units` after each event, the times
+  read from the log:**
+  - 30 s, a House beside a Barracks and a Stable: 2 + 2 Rodeleros (4 counted).
+  - 35 s, a House beside a second Barracks only: its 2 (6).
+  - 40 s, a lone Stable with no building with a guerrilla in range: `nothing (none in range)`, no Rodelero (6; in 0.8.0 its
+    own 2). 42 s, a trigger's `Kill` on a House beside a third Barracks: nothing, no log line.
+  - 45 s, a House between the second Barracks (on cooldown since 35 s) and a `Market`: the Market gave its 3 (9), the
+    Barracks `on cooldown, 50.0 s left`: each building has its own wait.
+  - 50 s, a House beside the first Barracks and Stable: `on cooldown, 40.0 s left` each, `nothing: all 2 on cooldown` (9).
+  - Saved at 56 s and loaded: at 80 s a House beside them: `on cooldown, 10.0 s left` each, nothing (9). The wait came back
+    with the load.
+  - 100 s (70 s after they gave): they gave again, 2 + 2 (13 counted).
+  - 110 s, the Serbian Barracks: its own `2 x SerbianInferno` (2 counted), as before.
+  - The log at the start: `<PartisanCooldown> "abc"`, `"-5"` and `"99999"` `is not a number of seconds from 0 to 3600;
+    ignored`, and `civ 17 (Germans): <PartisanCooldown> 60 s does nothing without <PartisanNearby> (above 0) in the same
+    civ; ignored`, once each (also in the runs after).
+  - Without `<PartisanCooldown>` (the control video): two Houses 10 s apart, 4 Rodeleros each time, 8 in all.
+  - Key off, the same map to 58 s: no Rodelero (`35 applied, 0 failed`).
+  - Beside WoL's own DLL (our `dinput8.dll`, `engine-ext\engine-ext.cfg`): `3 applied, 0 failed`, the hook reached, and the
+    same counts to 58 s (4, 6, 6, 9, 9) and log lines.
+  - The AI: the Serbian AI trained 6 Peasants by 58 s with the key on, off and beside WoL's DLL; no XS error.
+  - Performance: `perfprobe` 60 s from 18 s game time, two runs each way, `partisans` without `log`, a skirmish where triggers
+    kill 100 Settlers of each player and, at once, 10 Spanish Houses in a row beside a Barracks and a Stable (the first
+    gives 2 + 2 Rodeleros, the next ones find them on cooldown, 18 to 34 cooldown checks in one frame): key on fps 864 /
+    633, update 0.24 / 0.25 ms, main thread 88.7 / 90.9 %, frames over 50 ms 2 / 2; key off fps 948 / 709, update 0.25 /
+    0.23 ms, main thread 85.6 / 91.7 %, frames over 50 ms 2 / 2. The longest frame, when the Houses fall: 192 / 195 ms on,
+    85 / 87 ms off (with the key off nothing is made). A timed build (not committed) put the cooldown checks of a death at
+    0.001 to 0.017 ms, and the first spawn of the game (2 Rodeleros, their log lines) at about 115 ms: the extra frame is
+    the units being made, as in 0.8.0, not the cooldown. With `log` each log line costs about 6 ms, so 10 deaths in one
+    frame with `log` made a frame of 350 to 400 ms: leave `log` off outside tests.
 - **Seen in game:** after the move, idle units of the same type near each other may come together, as the game makes them
   do with the key off: in 3 of 9 runs the Stable's pair, at its gather point about 20 m from the Market's three, joined
   them a few seconds after arriving (once the three joined it). Once the Barracks' point landed on the owner's wall: its
