@@ -2,7 +2,8 @@ SELECT THE FATTENED LIVESTOCK (request #106)
 =============================================
 
 AN OPTIONAL PACK. Nothing changes until apply_fix.py is run. It needs the DLL key selectFattened (apply_fix.py adds
-the line to Startup\wol.cfg).
+the line to engine-ext\engine-ext.cfg, for our dinput8.dll beside WoL's own uhc.dll, the usual WoL setup, when the
+folder has an engine-ext folder; else to Startup\wol.cfg, for our UHC.dll in place of WoL's).
 
 What it does
 ------------
@@ -41,7 +42,7 @@ Only the hotkey, without the button:
     python apply_fix.py "<WoL folder>" --hotkey-only    the keymap entry, its name and the cfg line only
 
 This leaves data\uimainnew.xml alone, adds no icon and no tooltip string (690911): it changes data\DefaultKeyMapY.xml,
-string 690912 (the hotkey's name in the hotkey menu) in the three string tables, and Startup\wol.cfg. --check and
+string 690912 (the hotkey's name in the hotkey menu) in the three string tables, and the cfg (above). --check and
 --restore work the same way: they read which mode was applied from the backup (select-fattened-backup\manifest.json).
 The DLL key needs no other setting: with no button in the layout it only looks for one every 2 seconds (with
 "selectFattened log" it says so once in the log). To change modes, --restore first, then apply the other way.
@@ -49,7 +50,8 @@ The DLL key needs no other setting: with no button in the layout it only looks f
 Files: adds art\ui\ingame\uhc_select_fattened.ddt (64 x 64, drawn by aoe3-blender-tools' make_command_icon.py
 --glyph fattened); changes data\uimainnew.xml (one gadget before </layout>), data\DefaultKeyMapY.xml (one entry after
 "Find Idle Military"; refused if shift-control-f is already bound), strings 690911 and 690912 in data\stringtabley.xml,
-translations\_originals (English) and translations\ES-LA (Spanish), and Startup\wol.cfg (the line selectFattened).
+translations\_originals (English) and translations\ES-LA (Spanish), and engine-ext\engine-ext.cfg or Startup\wol.cfg
+(the line selectFattened).
 
 Limits
 ------

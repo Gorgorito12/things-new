@@ -31,10 +31,12 @@ What it changes
 - data\protoy.xml: the Explorer's ProtoActions SharpshooterAttack and CrackshotAttack get
   <RetargetInAction>1</RetargetInAction> and <PowerShots>6</PowerShots>. They go in the ProtoActions, not in
   explorer.tactics, which ten other units share.
-- Startup\wol.cfg: the two DLL keys, unless the file has them already:
+- engine-ext\engine-ext.cfg (our dinput8.dll beside WoL's own uhc.dll, the usual WoL setup; picked when the folder
+  has an engine-ext folder), else Startup\wol.cfg (our UHC.dll in place of WoL's): the two DLL keys, unless the
+  file has them already:
       retargetInAction
       powerShots
-  Both need the UHC.dll that has them; without the keys the tags do nothing and each use fires one shot again.
+  Both need a build of our DLL that has them; without the keys the tags do nothing and each use fires one shot again.
 
 Made with aoe3-blender-tools' tools/make_fanning.py (the clips, their tag files, the anim blocks), and checked with
 its tools/check_anim.py (0 failures): the grip in the palm, the left palm on the hammer at each shot, the forearms

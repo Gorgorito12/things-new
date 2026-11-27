@@ -47,15 +47,15 @@ Installing
   python apply_fix.py "<WoL folder>" --check       says what is applied
   python apply_fix.py "<WoL folder>" --restore     puts everything back
 
-It adds the lines `shipTechLimit` and `homeCityTechsInUnits` to Startup\wol.cfg when the file has none. The keys
-come with our UHC.dll, or with our dinput8.dll beside WoL's own DLL (in that case the lines go in
-engine-ext\engine-ext.cfg instead, which the script picks when that folder exists).
+It adds the lines `shipTechLimit` and `homeCityTechsInUnits` when the file has none: to engine-ext\engine-ext.cfg
+(our dinput8.dll beside WoL's own uhc.dll, the usual WoL setup; the script picks it when the folder has an engine-ext
+folder), else to Startup\wol.cfg (our UHC.dll in place of WoL's).
 
 Files it changes:
   data\civs.xml          the WallMapu civ: <ShipTechLimit>
   data\protoy.xml        MapucheWiseWoman: HCNativeLore in place of MapucheNativeLore
   data\techtreey.xml     Age0Mapuche: HCNativeLore obtainable in place of MapucheNativeLore
-  Startup\wol.cfg        the two keys
+  engine-ext\engine-ext.cfg (or Startup\wol.cfg, above)   the two keys
 
 Options of the keys
 -------------------

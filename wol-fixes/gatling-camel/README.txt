@@ -78,7 +78,9 @@ Install
     python apply_fix.py "<Wars of Liberty folder>" --restore    (everything back as it was, byte for byte)
 A folder under steamapps is refused unless --force is given.
 
-The turning gun: the turretArc key of the DLL, one line in Startup\wol.cfg (the pack does not edit the cfg)
+The turning gun: the turretArc key of the DLL, one line in engine-ext\engine-ext.cfg (our dinput8.dll beside WoL's
+own uhc.dll, the usual WoL setup), or in Startup\wol.cfg only if our UHC.dll is used in place of WoL's (the pack does
+not edit the cfg)
     turretArc GatlingCamel art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_A55.aim GatlingCamelDeployed art\WoL\units\cavalry_ranged\gatling_camel\gatling_camel_B55.aim
 The key takes the attack's <turret> from the tactics above; without the line the units work, the gun facing
 ahead.
@@ -198,8 +200,9 @@ Instalar
     python apply_fix.py "<carpeta de Wars of Liberty>" --restore    (todo como estaba, byte a byte)
 Una carpeta bajo steamapps se rechaza salvo con --force.
 
-El arma que gira: la clave turretArc de la DLL, la línea de la parte en inglés en Startup\wol.cfg (el paquete
-no edita el cfg). La clave toma el <turret> del ataque de las tácticas (el arco a cada lado del reposo del arma:
+El arma que gira: la clave turretArc de la DLL, la línea de la parte en inglés en engine-ext\engine-ext.cfg (nuestro
+dinput8.dll junto al uhc.dll de WoL, lo normal en WoL), o en Startup\wol.cfg solo si se usa nuestro UHC.dll en lugar
+del de WoL (el paquete no edita el cfg). La clave toma el <turret> del ataque de las tácticas (el arco a cada lado del reposo del arma:
 90 desde la silla, 60 a pie) y el archivo de puntería de cada unidad (el de GatlingCamelDeployed es de la versión 2,
 con su reposo en +90: necesita la DLL del 2026-11-26 o posterior). Sin la línea GatlingCamel funciona con el arma
 mirando al frente; GatlingCamelDeployed la necesita.

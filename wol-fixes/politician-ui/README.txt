@@ -44,7 +44,9 @@ Files it changes:
   data\uipoliticianEuropeandlg.xml   the new gadgets in each place, hidden until the DLL fills them (below).
                                      Also: PoliticianButton3 ends at 481 like the other three buttons (it ended
                                      at 381, so the lower part of the fourth place took no clicks).
-  Startup\wol.cfg                    the line `politicianEnablesTech` when the file has none.
+  engine-ext\engine-ext.cfg          the line `politicianEnablesTech` when the file has none (our dinput8.dll
+                                     beside WoL's own uhc.dll, the usual WoL setup; picked when the folder has an
+                                     engine-ext folder), else Startup\wol.cfg (our UHC.dll in place of WoL's).
   with --strings: data\stringtabley.xml and translations\*\stringtabley.xml
 
 The rollover texts (--strings)

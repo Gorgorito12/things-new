@@ -20,7 +20,9 @@ What it changes (README.txt has the why):
 - art\\WoL\\units\\explorers\\europeans\\fanning\\ (new): the two clips and their tag files (.gr2.precomp);
 - data\\protoy.xml: the Explorer's ProtoActions SharpshooterAttack and CrackshotAttack get
   <RetargetInAction>1</RetargetInAction> and <PowerShots>6</PowerShots>;
-- Startup\\wol.cfg: the lines `retargetInAction` and `powerShots` when the file has none.
+- engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll beside WoL's own uhc.dll), else
+  Startup\\wol.cfg (our UHC.dll in place of WoL's): the lines `retargetInAction` and `powerShots` when the file has
+  none.
 """
 import json
 import pathlib
@@ -38,7 +40,7 @@ CLIPS = ["explorer_fanning_attack.gr2", "explorer_fanning_attack.gr2.precomp",
 NEW_FILES = [f"{CLIP_DIR}/{name}" for name in CLIPS]
 PARTICLES = "art/effects/particlesets_wol.xml"
 PARTICLE_SET = "fanningshot"
-CHANGED = [ANIM_FILE, PARTICLES, "data/protoy.xml", "Startup/wol.cfg"]
+CHANGED = [ANIM_FILE, PARTICLES, "data/protoy.xml"]  # and the cfg of cfg_rel()
 UNIT = "Explorer"
 ACTIONS = ["SharpshooterAttack", "CrackshotAttack"]
 TAGS = ["<RetargetInAction>1</RetargetInAction>", "<PowerShots>6</PowerShots>"]
@@ -131,6 +133,12 @@ def edit_protoy(text):
     return text[:start] + block + text[end:]
 
 
+def cfg_rel(root):
+    """The cfg the keys go in: engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll
+    beside WoL's own uhc.dll), else Startup\\wol.cfg (our UHC.dll in place of WoL's)."""
+    return "engine-ext/engine-ext.cfg" if (root / "engine-ext").is_dir() else "Startup/wol.cfg"
+
+
 def apply(root):
     backup = root / BACKUP
     if (backup / "manifest.json").exists():
@@ -149,7 +157,7 @@ def apply(root):
             sys.exit(f"apply_fix: {root / rel} exists already")
     backup.mkdir()
     manifest = {"changed": [], "added": []}
-    for rel in CHANGED:
+    for rel in CHANGED + [cfg_rel(root)]:
         if (root / rel).exists():
             (backup / rel).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(root / rel, backup / rel)
@@ -162,13 +170,17 @@ def apply(root):
     write_text(root / ANIM_FILE, anim_text, anim_enc)
     write_text(root / PARTICLES, part_text, part_enc)
     write_text(root / "data/protoy.xml", proto_text, proto_enc)
-    path = root / "Startup/wol.cfg"
+    path = root / cfg_rel(root)
     if path.exists():
         text, enc = read_text(path)
-        for key in KEYS:
-            if not re.search(r"(?im)^\s*%s\b" % key, text):
-                text = text.rstrip("\r\n") + f"\r\n{key}\r\n"
-        write_text(path, text, enc)
+    else:
+        text, enc = "", "utf-8"
+        manifest["added"].append(cfg_rel(root))
+    for key in KEYS:
+        if not re.search(r"(?im)^\s*%s\b" % key, text):
+            text = (text.rstrip("\r\n") + "\r\n" if text else "") + f"{key}\r\n"
+    write_text(path, text, enc)
+    print(f"{', '.join(KEYS)} in {cfg_rel(root)}")
     (backup / "manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
     print(f"applied; backup in {backup}")
 
@@ -209,12 +221,11 @@ def check(root):
         print(f"{UNIT}/{action}:", ", ".join(t for t in TAGS if t in body) or "no tags")
     for rel in NEW_FILES:
         print(f"{rel}: {'present' if (root / rel).exists() else 'missing'}")
-    cfg = root / "Startup/wol.cfg"
-    if cfg.exists():
-        text, _ = read_text(cfg)
-        for key in KEYS:
-            on = re.search(r"(?im)^\s*%s\b" % key, text) is not None
-            print(f"wol.cfg {key}: {'on' if on else 'off'}")
+    cfg = root / cfg_rel(root)
+    text = read_text(cfg)[0] if cfg.exists() else ""
+    for key in KEYS:
+        on = re.search(r"(?im)^\s*%s\b" % key, text) is not None
+        print(f"{cfg_rel(root)} {key}: {'on' if on else 'off'}")
 
 
 def main():

@@ -316,6 +316,11 @@ Wars of Liberty\
 `Startup\wol.cfg` selects the features. The syntax below is this DLL's, and it also reads every line
 of WoL's own file as it is.
 
+**Beside WoL's own `uhc.dll`** (way 3 above, the usual setup in WoL), this guide's lines go in
+`engine-ext\engine-ext.cfg`, not `Startup\wol.cfg`, and the files a key reads by default go in `engine-ext\`, not
+`data\uhc\`. The `apply_fix.py` scripts of `wol-fixes/` pick those by themselves when the folder has an `engine-ext`
+folder. A key whose site WoL's DLL holds logs `FAILED` there (the table in `wol-uhc-map.md`).
+
 - **Syntax:** one key per line, followed by its arguments, separated by spaces or tabs. The form
   `basePop=500` also works.
 - **Case:** keys are case-insensitive (`NativeCivs` = `nativeCivs`). Arguments keep their case.
@@ -6733,7 +6738,8 @@ nowalkfarm
 
 **Added:** Monday 2026-11-23 13:56 · **Filmed in WoL:** Monday 2026-11-23 13:56
 
-**Optional.** Off unless its line is in `wol.cfg`, and it does nothing visible without the data and animation pack
+**Optional.** Off unless its line is in the cfg (`engine-ext\engine-ext.cfg` with our `dinput8.dll` beside WoL's own
+`uhc.dll`, `Startup\wol.cfg` with our `UHC.dll` in its place), and it does nothing visible without the data and animation pack
 `wol-fixes/faith/` (an opt-in pack: `apply_fix.py` applies it, `--restore` takes it back byte for byte). Turn on both,
 or neither. The panel's faith row is another opt-in pack, `wol-fixes/faith-panel/`.
 
@@ -7782,7 +7788,8 @@ researchOnTheMove [log]
   for anything inside a building.
 - **The pack `wol-fixes/research-on-the-move`:** `apply_fix.py <WoL folder>` gives the type to the six council units
   (`MapucheWarchief`, `MapucheWiseWoman`, `MapucheShaman`, `MapucheWarrior`, `MapucheMessenger`, `MapucheToki`) and adds
-  the key to `Startup\wol.cfg` (or `engine-ext\engine-ext.cfg` beside WoL's DLL); `--units A,B` names other protos
+  the key to `engine-ext\engine-ext.cfg` when the folder has an `engine-ext` folder (our `dinput8.dll` beside WoL's own
+  `uhc.dll`), else to `Startup\wol.cfg`; `--units A,B` names other protos
   (the Ethiopian caravans, `Bedouin` and `Rangatira` work too: a caravan walked 13 m while it researched);
   `--restore` undoes it.
 - **Beside WoL's DLL** (`dinput8.dll`): works (2026-11-20).
@@ -9487,7 +9494,8 @@ displayedRange [log] [noPlacement]
 - **In the options menu** (2026-11-25): with `menuOptions displayedRange` in the cfg, the player turns all the rings
   on or off with a check box. `python wol-fixes/options-menu/apply_fix.py "<WoL folder>"` puts it on the UI Options
   page, after "ALT key shows hitpoint bars" ("Show Range Rings", with a tooltip), and adds `menuOptions
-  displayedRange` and a `displayedRange` line to `wol.cfg` when they are missing, so the rings start on; `--restore`
+  displayedRange` and a `displayedRange` line to the cfg when they are missing (`engine-ext\engine-ext.cfg` when the
+  folder has an `engine-ext` folder, else `Startup\wol.cfg`), so the rings start on; `--restore`
   undoes it. The choice:
   - takes effect when the player clicks OK, in the main menu or during a match (in single player every row of the
     options screen can be changed in a match): the rings of the selected units and of a building being placed come or
@@ -9986,7 +9994,7 @@ tooltip line `2X Bonus Damage against (icon) Skirmisher`. The icon comes from Wo
 *The videos of the first layout (2026-11-17) were removed on 2026-11-21: the panel has changed since (version 7).*
 
 ```
-minUIStats [file]      default data\uhc\minuirows.xml; without it, the rows of wol-fixes/min-ui
+minUIStats [file]      default data\uhc\minuirows.xml (engine-ext\minuirows.xml for the dinput8.dll); without it, the rows of wol-fixes/min-ui
 ```
 
 - **In WoL today (WoL #67):** with `optionminimizedui` the exe never fills the stat panel. The selection panel writes a
@@ -11097,7 +11105,8 @@ cultureUI [file.xml]
   `cultureUI: style as (10 texture(s))`, `cultureUI: style as, stage as_gw (10 texture(s))`, or
   `cultureUI: no style (the normal interface | observer | a civ in no style | style af has no texture)`.
 - **The pack,** `wol-fixes/culture-ui/`: `apply_fix.py "<WoL folder>" [--styles <folder>] [--engine-ext]` writes the
-  nine families' `cultureui.xml`, adds `cultureUI` to `Startup\wol.cfg` and copies the textures of a styles folder
+  nine families' `cultureui.xml` and adds `cultureUI` to the cfg (`engine-ext\` and its `engine-ext.cfg` when the
+  folder has an `engine-ext` folder or with `--engine-ext`, else `data\uhc\` and `Startup\wol.cfg`), and copies the textures of a styles folder
   (`ui\ingame\<texture>_<family>[_gw].ddt`) to `art\ui\ingame`; `--check`, `--restore` (byte for byte).
   `make_test_styles.py` makes the provisional test styles (`as`, `as_gw`, `me`, `me_gw`).
 - **Status:** see the tests below.

@@ -81,7 +81,9 @@ Install
     python apply_fix.py "<Wars of Liberty folder>" --restore    (everything back as it was, byte for byte)
 A folder under steamapps is refused unless --force is given.
 
-The turning gun: the turretArc key of the DLL, one line in Startup\wol.cfg (the pack does not edit the cfg)
+The turning gun: the turretArc key of the DLL, one line in engine-ext\engine-ext.cfg (our dinput8.dll beside WoL's
+own uhc.dll, the usual WoL setup), or in Startup\wol.cfg only if our UHC.dll is used in place of WoL's (the pack does
+not edit the cfg)
     turretArc MEZamburak art\WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon.aim
 Version 2 of the aim file needs the DLL of 2026-11-26 or later. With the gatling camel pack too:
     turretArc GatlingCamel ...A55.aim GatlingCamelDeployed ...B55.aim MEZamburak ...zamburak_cannon.aim

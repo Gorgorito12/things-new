@@ -11,7 +11,8 @@ once, also during a match.
 What it changes (README.txt has the why):
 - data\\options.xml: a CheckBox field OptionDisplayedRange, right after "(Alt) Shows hitpoint bars"
   (OptionShowHPOnAlt), or at the end of the first section of the first group when the mod has no such field;
-- Startup\\wol.cfg (and engine-ext\\engine-ext.cfg when the folder has one): a line `menuOptions displayedRange`
+- engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll beside WoL's own uhc.dll), else
+  Startup\\wol.cfg (our UHC.dll in place of WoL's): a line `menuOptions displayedRange`
   when no menuOptions line names it yet, and a line `displayedRange` when the file has none, so the rings start on
   for a player who never chose. A `displayedRange` line already there, with its arguments, is left as it is.
 The file keeps its encoding and its line ends (WoL's options.xml has Windows line ends; a field written with Unix line
@@ -30,7 +31,12 @@ AFTER = "OptionShowHPOnAlt"
 LABEL = "Show Range Rings"
 TOOLTIP = ("Shows how far the selected units and buildings shoot, as rings on the ground, and the range of a building "
            "while you place it. Takes effect at once.")
-CFGS = ["Startup/wol.cfg", "engine-ext/engine-ext.cfg"]
+
+
+def cfg_rel(root):
+    """The cfg the keys go in: engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll
+    beside WoL's own uhc.dll), else Startup\\wol.cfg (our UHC.dll in place of WoL's)."""
+    return "engine-ext/engine-ext.cfg" if (root / "engine-ext").is_dir() else "Startup/wol.cfg"
 
 
 def read_text(path):
@@ -118,31 +124,33 @@ def apply(root):
     out, where = insert_field(text)  # made and checked before anything is written
 
     backup.mkdir()
-    manifest = {"changed": []}
-    for rel in ["data/options.xml"] + CFGS:
-        if (root / rel).exists():
-            (backup / rel).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(root / rel, backup / rel)
-            manifest["changed"].append(rel)
+    manifest = {"changed": [], "added": []}
+    rel = cfg_rel(root)
+    for name in ["data/options.xml", rel]:
+        if (root / name).exists():
+            (backup / name).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(root / name, backup / name)
+            manifest["changed"].append(name)
 
     write_text(options, out, enc)
     print(f"data\\options.xml: the {LABEL!r} check box, {where}")
 
-    for rel in CFGS:
-        path = root / rel
-        if not path.exists():
-            continue
+    path = root / rel
+    if path.exists():
         cfg, cfg_enc = read_text(path)
-        newline = "\r\n" if "\r\n" in cfg or not cfg else "\n"
-        added = []
-        if not names_key(cfg):
-            added.append("menuOptions displayedRange")
-        if not has_key(cfg):
-            added.append("displayedRange")  # the rings start on until the player chooses
-        if not added:
-            print(f"{rel}: has both lines already")
-            continue
-        cfg = cfg.rstrip("\r\n") + newline + newline.join(added) + newline
+    else:
+        cfg, cfg_enc = "", "utf-8"
+        manifest["added"].append(rel)
+    newline = "\r\n" if "\r\n" in cfg or not cfg else "\n"
+    added = []
+    if not names_key(cfg):
+        added.append("menuOptions displayedRange")
+    if not has_key(cfg):
+        added.append("displayedRange")  # the rings start on until the player chooses
+    if not added:
+        print(f"{rel}: has both lines already")
+    else:
+        cfg = (cfg.rstrip("\r\n") + newline if cfg else "") + newline.join(added) + newline
         write_text(path, cfg, cfg_enc)
         print(f"{rel}: added " + ", ".join(f"`{line}`" for line in added))
 
@@ -156,6 +164,8 @@ def restore(root):
     if not manifest_path.exists():
         sys.exit(f"apply_fix: no backup at {backup}")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for rel in manifest.get("added", []):
+        (root / rel).unlink(missing_ok=True)
     for rel in manifest["changed"]:
         shutil.copy2(backup / rel, root / rel)
     shutil.rmtree(backup)
@@ -165,12 +175,11 @@ def restore(root):
 def check(root):
     text, _ = read_text(root / "data/options.xml")
     print(f"data\\options.xml: {FIELD_NAME} {'present' if has_field(text) else 'missing'}")
-    for rel in CFGS:
-        path = root / rel
-        if path.exists():
-            cfg, _ = read_text(path)
-            print(f"{rel}: menuOptions {'names' if names_key(cfg) else 'does not name'} displayedRange; "
-                  f"{'a' if has_key(cfg) else 'no'} displayedRange line")
+    rel = cfg_rel(root)
+    path = root / rel
+    cfg = read_text(path)[0] if path.exists() else ""
+    print(f"{rel}: menuOptions {'names' if names_key(cfg) else 'does not name'} displayedRange; "
+          f"{'a' if has_key(cfg) else 'no'} displayedRange line")
 
 
 def main():

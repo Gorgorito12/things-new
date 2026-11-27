@@ -16,7 +16,8 @@ What it changes (README.txt has the why):
 - data\\tactics\\herd.tactics and herdcoin.tactics, the Gather action: a <rate> for each nomad, and a
   <typedmaxrange> of 6 m for each (pens keep the action's 0.5 m), so the herd gathers from a few metres away and
   follows the nomad;
-- Startup\\wol.cfg: the line `herdWalkAwayFix` (added when the file has no such line).
+- engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll beside WoL's own uhc.dll), else
+  Startup\\wol.cfg (our UHC.dll in place of WoL's): the line `herdWalkAwayFix` (added when the file has no such line).
 The nomads' CattleFatteningAura is left as it is.
 """
 import json
@@ -29,7 +30,7 @@ BACKUP = "me-herdables-backup"
 NOMADS = ["Nomad", "NomadKarakalpak", "NomadTurkman", "NomadKyrgyz", "Bedouin", "BedouinFree"]
 DISTANCE = "6"
 TACTICS = ["data/tactics/herd.tactics", "data/tactics/herdcoin.tactics"]
-CHANGED = ["data/protoy.xml"] + TACTICS + ["Startup/wol.cfg"]
+CHANGED = ["data/protoy.xml"] + TACTICS  # and the cfg of cfg_rel()
 MARK = "AbstractTypeHerdableMagnet"
 
 
@@ -105,6 +106,12 @@ def edit_tactics(text):
     return text[:m.start()] + action + text[m.end():]
 
 
+def cfg_rel(root):
+    """The cfg the key goes in: engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll
+    beside WoL's own uhc.dll), else Startup\\wol.cfg (our UHC.dll in place of WoL's)."""
+    return "engine-ext/engine-ext.cfg" if (root / "engine-ext").is_dir() else "Startup/wol.cfg"
+
+
 def apply(root):
     backup = root / BACKUP
     if (backup / "manifest.json").exists():
@@ -122,8 +129,8 @@ def apply(root):
         tactics[rel] = (edit_tactics(text), enc)
 
     backup.mkdir()
-    manifest = {"changed": []}
-    for rel in CHANGED:
+    manifest = {"changed": [], "added": []}
+    for rel in CHANGED + [cfg_rel(root)]:
         if (root / rel).exists():
             (backup / rel).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(root / rel, backup / rel)
@@ -131,11 +138,15 @@ def apply(root):
     write_text(root / "data/protoy.xml", protoy, protoy_enc)
     for rel, (text, enc) in tactics.items():
         write_text(root / rel, text, enc)
-    cfg = root / "Startup/wol.cfg"
+    cfg = root / cfg_rel(root)
     if cfg.exists():
         text, enc = read_text(cfg)
-        if not re.search(r"(?im)^\s*herdWalkAwayFix\b", text):
-            write_text(cfg, text.rstrip("\r\n") + "\r\nherdWalkAwayFix\r\n", enc)
+    else:
+        text, enc = "", "utf-8"
+        manifest["added"].append(cfg_rel(root))
+    if not re.search(r"(?im)^\s*herdWalkAwayFix\b", text):
+        write_text(cfg, (text.rstrip("\r\n") + "\r\n" if text else "") + "herdWalkAwayFix\r\n", enc)
+    print(f"herdWalkAwayFix in {cfg_rel(root)}")
     (backup / "manifest.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8")
     print(f"applied; backup in {backup}")
 
@@ -146,6 +157,8 @@ def restore(root):
     if not manifest_path.exists():
         sys.exit(f"apply_fix: no backup at {backup}")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for rel in manifest.get("added", []):
+        (root / rel).unlink(missing_ok=True)
     for rel in manifest["changed"]:
         shutil.copy2(backup / rel, root / rel)
     shutil.rmtree(backup)
@@ -167,10 +180,9 @@ def check(root):
         ranges = sorted(set(re.findall(r"<typedmaxrange type\s*=\s*['\"](?:%s)['\"]>\s*([0-9.]+)" % names, body)))
         note = "" if ranges == [DISTANCE] else f" (this version uses {DISTANCE} m: run --restore, then apply again)"
         print(f"{rel}: applied, distance {', '.join(ranges) or '?'} m{note}")
-    cfg = root / "Startup/wol.cfg"
-    if cfg.exists():
-        on = re.search(r"(?im)^\s*herdWalkAwayFix\b", read_text(cfg)[0])
-        print(f"Startup/wol.cfg: herdWalkAwayFix {'on' if on else 'off'}")
+    cfg = root / cfg_rel(root)
+    on = cfg.exists() and re.search(r"(?im)^\s*herdWalkAwayFix\b", read_text(cfg)[0])
+    print(f"{cfg_rel(root)}: herdWalkAwayFix {'on' if on else 'off'}")
 
 
 def main():

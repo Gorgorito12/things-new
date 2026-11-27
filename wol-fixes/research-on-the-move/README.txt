@@ -25,8 +25,9 @@ Installing
 
 Files it changes:
   data\protoy.xml          <UnitType>ResearchOnTheMove</UnitType> after the last <UnitType> of each unit
-  Startup\wol.cfg          the line `researchOnTheMove`; or engine-ext\engine-ext.cfg when the folder runs our
-                           dinput8.dll beside WoL's own DLL
+  engine-ext\engine-ext.cfg   the line `researchOnTheMove` (our dinput8.dll beside WoL's own uhc.dll, the usual
+                           WoL setup; picked when the folder has an engine-ext folder), else Startup\wol.cfg (our
+                           UHC.dll in place of WoL's)
 
 Adding it to any unit
 ---------------------

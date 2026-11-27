@@ -20,7 +20,8 @@ What it changes (README.txt has the why):
 - the string tables (data, translations\\_originals in English, translations\\ES-LA in Spanish): the tooltip 690911
   and the hotkey's name 690912;
 - art\\ui\\ingame\\uhc_select_fattened.ddt (new): the button's picture;
-- Startup\\wol.cfg: the line `selectFattened` (when the file has no such line).
+- engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll beside WoL's own uhc.dll), else
+  Startup\\wol.cfg (our UHC.dll in place of WoL's): the line `selectFattened` (when the file has no such line).
 """
 import json
 import pathlib
@@ -36,9 +37,14 @@ ICON = "art/ui/ingame/uhc_select_fattened.ddt"
 LAYOUT = "data/uimainnew.xml"
 KEYMAP = "data/DefaultKeyMapY.xml"
 TABLES = ["data/stringtabley.xml", "translations/_originals/stringtabley.xml", "translations/ES-LA/stringtabley.xml"]
-CFG = "Startup/wol.cfg"
-CHANGED = [LAYOUT, KEYMAP, CFG] + TABLES
-HOTKEY_ONLY_CHANGED = [KEYMAP, CFG] + TABLES
+CHANGED = [LAYOUT, KEYMAP] + TABLES  # and the cfg of cfg_rel()
+HOTKEY_ONLY_CHANGED = [KEYMAP] + TABLES
+
+
+def cfg_rel(root):
+    """The cfg the key goes in: engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll
+    beside WoL's own uhc.dll), else Startup\\wol.cfg (our UHC.dll in place of WoL's)."""
+    return "engine-ext/engine-ext.cfg" if (root / "engine-ext").is_dir() else "Startup/wol.cfg"
 
 TOOLTIP, HOTKEY_NAME = 690911, 690912
 STRINGS = {
@@ -143,7 +149,7 @@ def new_cfg(text):
 def edited(root, hotkey_only=False):
     """{relative path: new bytes} for every file this pack changes that exists in the folder."""
     out = {}
-    files = ((KEYMAP, new_keymap), (CFG, new_cfg))
+    files = ((KEYMAP, new_keymap), (cfg_rel(root), new_cfg))
     if not hotkey_only:
         files = ((LAYOUT, new_layout),) + files
     for rel, change in files:
@@ -151,6 +157,8 @@ def edited(root, hotkey_only=False):
         if path.exists():
             text, kind = decode(path.read_bytes())
             out[rel] = encode(change(text), kind)
+        elif rel == cfg_rel(root):  # a cfg the folder does not have yet: made with the line alone
+            out[rel] = "selectFattened\r\n".encode("utf-8")
     for rel in TABLES:
         path = root / rel
         if not path.exists():
@@ -178,11 +186,13 @@ def apply(root, hotkey_only=False):
     changes = edited(root, hotkey_only)  # made and checked before anything is written
     backup.mkdir()
     manifest = {"mode": "hotkey-only" if hotkey_only else "full", "changed": [], "added": []}
-    for rel in HOTKEY_ONLY_CHANGED if hotkey_only else CHANGED:
+    for rel in (HOTKEY_ONLY_CHANGED if hotkey_only else CHANGED) + [cfg_rel(root)]:
         if (root / rel).exists():
             (backup / rel).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(root / rel, backup / rel)
             manifest["changed"].append(rel)
+        elif rel == cfg_rel(root):
+            manifest["added"].append(rel)
     if not hotkey_only:
         (root / ICON).parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(FILES / ICON, root / ICON)
@@ -223,7 +233,7 @@ def check(root, hotkey_only=False):
           f"{'' if mode is not None else ' (no backup: not applied by this script)'}")
     ok = True
     for rel, data in edited(root, hotkey_only).items():
-        same = (root / rel).read_bytes() == data
+        same = (root / rel).exists() and (root / rel).read_bytes() == data
         ok &= same
         print(f"{rel}: {'applied' if same else 'not applied'}")
     if hotkey_only:

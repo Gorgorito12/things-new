@@ -45,8 +45,10 @@ Installing
   python apply_fix.py "<WoL folder>" --check     says what is applied
   python apply_fix.py "<WoL folder>" --restore   puts everything back
 
-It adds the line `autoScout` to Startup\wol.cfg when the file has none. The key comes with our UHC.dll, or with
-our dinput8.dll beside WoL's own DLL (in that case the line goes in engine-ext\engine-ext.cfg instead).
+It adds the line `autoScout` when the file has none: to engine-ext\engine-ext.cfg (our dinput8.dll beside WoL's own
+uhc.dll, the usual WoL setup; the script picks it when the folder has an engine-ext folder), else to Startup\wol.cfg
+(our UHC.dll in place of WoL's). The three command names go in data\uhc\customprotounitcommands.xml in both setups:
+beside WoL's uhc.dll that file is read by WoL's own customProtoUnitCommands.
 
 Files it changes or adds:
   data\tactics\wolautoscoutflyer.tactics          new: the raven's tactics, "AutoScout" first, "Normal" second

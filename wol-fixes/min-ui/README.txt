@@ -183,11 +183,14 @@ Install
     restore by hand, if version 8 is installed)
 By hand:
 1. Copy proposed-uiunitselectionmin.xml to data\uiunitselectionmin.xml (keep a copy of yours).
-2. Copy minuirows.xml to data\uhc\minuirows.xml.
+2. Copy minuirows.xml to engine-ext\minuirows.xml (our dinput8.dll beside WoL's own uhc.dll, the usual WoL setup:
+   it reads its data files from engine-ext\, never data\uhc\), or to data\uhc\minuirows.xml if our UHC.dll is used
+   in place of WoL's. apply_fix.py picks engine-ext\ when the folder has an engine-ext folder.
 3. Copy the art folder's files to the same paths under art\ (keep a copy of the five unit type icon files they
    replace: stat_icon_heavy_infantry, stat_icon_skirmisher, stat_icon_infantry, staticons\stat_icon_standing_unit,
    staticons\stat_icon_ranged).
-4. Add the line   minUIStats   to Startup\wol.cfg.
+4. Add the line   minUIStats   to engine-ext\engine-ext.cfg (or Startup\wol.cfg with our UHC.dll in place of
+   WoL's).
 5. Keep optionminimizedui on (WoL's profile has it on).
 
 The original gadgets: WoL's current file against this one

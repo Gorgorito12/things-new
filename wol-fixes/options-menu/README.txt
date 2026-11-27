@@ -26,9 +26,12 @@ Installing
 Files it changes:
   data\options.xml            the field OptionDisplayedRange, after the OptionShowHPOnAlt field (or at the end of
                               the first section if the file has no such field)
-  Startup\wol.cfg             `menuOptions displayedRange` and `displayedRange`, each only when missing; a
-                              `displayedRange` line already there keeps its arguments (noPlacement, log)
-  engine-ext\engine-ext.cfg   the same, when the folder has one (our dinput8.dll beside WoL's own DLL)
+  engine-ext\engine-ext.cfg   `menuOptions displayedRange` and `displayedRange`, each only when missing; a
+                              `displayedRange` line already there keeps its arguments (noPlacement, log). This
+                              file when the folder has an engine-ext folder (our dinput8.dll beside WoL's own
+                              uhc.dll, the usual WoL setup)
+  Startup\wol.cfg             the same, in its place, when there is no engine-ext folder (our UHC.dll in place
+                              of WoL's)
 
 The field, if you prefer to add it by hand:
 

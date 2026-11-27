@@ -42,14 +42,15 @@ Installing
   python apply_fix.py "<WoL folder>" --check     says what is applied
   python apply_fix.py "<WoL folder>" --restore   puts everything back
 
-It adds the line `herdWalkAwayFix` to Startup\wol.cfg when the file has none. The key comes with our UHC.dll, or with
-our dinput8.dll beside WoL's own DLL (in that case the line goes in engine-ext\engine-ext.cfg instead).
+It adds the line `herdWalkAwayFix` when the file has none: to engine-ext\engine-ext.cfg (our dinput8.dll beside WoL's
+own uhc.dll, the usual WoL setup; the script picks it when the folder has an engine-ext folder), else to
+Startup\wol.cfg (our UHC.dll in place of WoL's).
 
 Files it changes:
   data\protoy.xml                     the six nomads: two unit types, a flag, GathererLimit, InitialResource Food
   data\tactics\herd.tactics           the Gather action: a rate and a typed range of 6 m per nomad
   data\tactics\herdcoin.tactics       the same
-  Startup\wol.cfg                     the line herdWalkAwayFix
+  engine-ext\engine-ext.cfg           the line herdWalkAwayFix (Startup\wol.cfg with our UHC.dll in place of WoL's)
 
 To change the distance, change the 6 in the <typedmaxrange> lines (or DISTANCE at the top of apply_fix.py before
 applying). --check prints the distance a folder has; a folder that has the first version's 3 m gets 6 m with
@@ -121,14 +122,15 @@ Instalación
   python apply_fix.py "<carpeta de WoL>" --check     dice qué está aplicado
   python apply_fix.py "<carpeta de WoL>" --restore   lo deja todo como estaba
 
-Añade la línea `herdWalkAwayFix` a Startup\wol.cfg si no la tiene. La clave viene con nuestro UHC.dll, o con nuestro
-dinput8.dll junto al DLL de WoL (en ese caso la línea va en engine-ext\engine-ext.cfg).
+Añade la línea `herdWalkAwayFix` si no la tiene: a engine-ext\engine-ext.cfg (nuestro dinput8.dll junto al uhc.dll de
+WoL, lo normal en WoL; el script lo elige cuando la carpeta tiene una carpeta engine-ext), si no a Startup\wol.cfg
+(nuestro UHC.dll en lugar del de WoL).
 
 Archivos que cambia:
   data\protoy.xml                     los seis nómadas: dos tipos, un flag, GathererLimit, InitialResource Food
   data\tactics\herd.tactics           la acción Gather: un rate y un alcance por tipo de 6 m por nómada
   data\tactics\herdcoin.tactics       lo mismo
-  Startup\wol.cfg                     la línea herdWalkAwayFix
+  engine-ext\engine-ext.cfg           la línea herdWalkAwayFix (Startup\wol.cfg con nuestro UHC.dll en lugar del de WoL)
 
 Para cambiar la distancia, cambiad el 6 de las líneas <typedmaxrange> (o DISTANCE al principio de apply_fix.py antes de
 aplicarlo). --check dice la distancia que tiene una carpeta; una carpeta con los 3 m de la primera versión pasa a 6 m

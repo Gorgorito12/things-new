@@ -1,5 +1,6 @@
 """Installs the scenario editor search fields of the DLL key `editorSearch` in a Wars of Liberty folder: the three
-editor layouts of files\\data, and the key in Startup\\wol.cfg.
+editor layouts of files\\data, and the key in engine-ext\\engine-ext.cfg (our dinput8.dll beside WoL's own uhc.dll,
+picked when the folder has an engine-ext folder) or else Startup\\wol.cfg (our UHC.dll in place of WoL's).
 
     python apply_fix.py <WoL folder>              apply (a backup of every file it replaces goes to
                                                   <WoL folder>\\editor-backup\\ first)
@@ -11,7 +12,7 @@ editor layouts of files\\data, and the key in Startup\\wol.cfg.
 What it writes (README.txt has the why):
 - data\\uieditorpalettes.xml, data\\uiforbiddenunitstechs.xml, data\\uitriggereditor.xml: the game's own layouts with
   the search fields (WoL ships none of them today, so they are new files; one that is there is backed up);
-- Startup\\wol.cfg: the line `editorSearch`, when the file has no such line.
+- engine-ext\\engine-ext.cfg or Startup\\wol.cfg (above): the line `editorSearch`, when the file has no such line.
 """
 import json
 import pathlib
@@ -24,8 +25,14 @@ FILES = {  # target, relative to the WoL folder -> source, relative to this fold
     f"data/{name}": f"files/data/{name}"
     for name in ("uieditorpalettes.xml", "uiforbiddenunitstechs.xml", "uitriggereditor.xml")
 }
-CFG = "Startup/wol.cfg"
+WOL_CFG = "Startup/wol.cfg"
 KEY = "editorSearch"
+
+
+def cfg_rel(root):
+    """The cfg the key goes in: engine-ext\\engine-ext.cfg when the folder has an engine-ext folder (our dinput8.dll
+    beside WoL's own uhc.dll), else Startup\\wol.cfg (our UHC.dll in place of WoL's)."""
+    return "engine-ext/engine-ext.cfg" if (root / "engine-ext").is_dir() else WOL_CFG
 
 
 def has_key(text):
@@ -49,13 +56,17 @@ def apply(root):
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(HERE / src, target)
         print(f"wrote {rel}")
+    CFG = cfg_rel(root)
     cfg = root / CFG
-    text = cfg.read_bytes().decode("latin-1")
+    text = cfg.read_bytes().decode("latin-1") if cfg.exists() else ""
     if not has_key(text):
-        (backup / CFG).parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(cfg, backup / CFG)
-        manifest["changed"].append(CFG)
-        newline = "\r\n" if "\r\n" in text else "\n"
+        if cfg.exists():
+            (backup / CFG).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(cfg, backup / CFG)
+            manifest["changed"].append(CFG)
+        else:
+            manifest["added"].append(CFG)
+        newline = "\r\n" if "\r\n" in text or not text else "\n"
         cfg.write_bytes((text + ("" if text.endswith(("\n", "\r")) or not text else newline) + KEY + newline)
                         .encode("latin-1"))
         print(f"added {KEY} to {CFG}")
@@ -88,6 +99,7 @@ def check(root):
         state = "missing" if not target.exists() else (
             "applied" if target.read_bytes() == (HERE / src).read_bytes() else "differs")
         print(f"{state:8} {rel}")
+    CFG = cfg_rel(root)
     cfg = root / CFG
     print(f"{'applied' if cfg.exists() and has_key(cfg.read_bytes().decode('latin-1')) else 'missing':8} {CFG}: {KEY}")
     print(f"backup: {'yes' if (root / BACKUP / 'manifest.json').exists() else 'no'}")
@@ -103,8 +115,8 @@ def main():
     if "steamapps" in str(root).lower() and "--force" not in sys.argv:
         print("refused: a folder under steamapps (add --force if you mean it)")
         return 2
-    if not (root / CFG).exists():
-        print(f"not a WoL folder: {root / CFG} not found")
+    if not (root / WOL_CFG).exists():
+        print(f"not a WoL folder: {root / WOL_CFG} not found")
         return 2
     if "--restore" in sys.argv:
         return restore(root)

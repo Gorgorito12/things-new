@@ -89,13 +89,15 @@ def apply(root, units):
         sys.exit("apply_fix: data\\protoy.xml.XMB exists; compile it from the edited XML yourself, or remove it")
     cfg = cfg_path(root)
     backup.mkdir()
-    manifest = {"changed": []}
+    manifest = {"changed": [], "added": []}
     for path in (protoy, cfg):
+        rel = path.relative_to(root)
         if path.exists():
-            rel = path.relative_to(root)
             (backup / rel).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, backup / rel)
             manifest["changed"].append(str(rel))
+        else:
+            manifest["added"].append(str(rel))
 
     text, enc = read_text(protoy)
     for name in units:
@@ -123,6 +125,8 @@ def restore(root):
     if not manifest_path.exists():
         sys.exit(f"apply_fix: no backup at {backup}")
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    for rel in manifest.get("added", []):
+        (root / rel).unlink(missing_ok=True)
     for rel in manifest["changed"]:
         shutil.copy2(backup / rel, root / rel)
     shutil.rmtree(backup)

@@ -61,7 +61,9 @@ the backup like the other files (--restore puts them back).
 Apply
 -----
     python apply_fix.py "<WoL folder>"            (backup in <WoL folder>\special-transforms-backup\)
-    python apply_fix.py "<WoL folder>" --key      also adds the DLL key transformChecks to Startup\wol.cfg
+    python apply_fix.py "<WoL folder>" --key      also adds the DLL key transformChecks to engine-ext\engine-ext.cfg
+                                                  (our dinput8.dll beside WoL's own uhc.dll, when the folder has an
+                                                  engine-ext folder), else to Startup\wol.cfg (our UHC.dll instead)
     python apply_fix.py "<WoL folder>" --keep-train   keeps the youth's four <Train> rows too (see "The AI")
     python apply_fix.py "<WoL folder>" --restore
     python apply_fix.py "<WoL folder>" --check

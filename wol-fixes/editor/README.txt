@@ -66,18 +66,20 @@ To install
 ----------
 With Python 3:
 
-    python apply_fix.py <WoL folder>             copies the three files and adds the line below to Startup\wol.cfg
+    python apply_fix.py <WoL folder>             copies the three files and adds the line below to the cfg (2.)
     python apply_fix.py <WoL folder> --check     says what is applied
     python apply_fix.py <WoL folder> --restore   puts everything back as it was (from <WoL folder>\editor-backup)
 
 By hand:
 1. Copy the three files of files\data into WoL's data folder (they are new loose files: nothing of WoL's is
    overwritten; WoL's own uieditormenu.xml is not touched).
-2. Add a line to Startup\wol.cfg:
+2. Add a line to engine-ext\engine-ext.cfg (our dinput8.dll beside WoL's own uhc.dll, the usual WoL setup; the
+   script picks it when the folder has an engine-ext folder), or to Startup\wol.cfg if our UHC.dll is used in place
+   of WoL's:
 
        editorSearch
 
-   (`editorSearch log` also writes each search to UHC.log: "editorSearch: Objects palette "musk": 9 shown,
+   (`editorSearch log` also writes each search to the log, engine-ext\engine-ext.log or UHC.log: "editorSearch: Objects palette "musk": 9 shown,
    3202 hidden (181.5 ms)", "editorSearch: trigger parameter list "cavalry": 13 of 3634", "editorSearch: trigger list
    "captain": 4 shown, 23 hidden (0.1 ms)").
 

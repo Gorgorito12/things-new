@@ -29,8 +29,8 @@ So there is no data fix that keeps the gas's damage.
 
 The fix
 -------
-A new line for Startup\wol.cfg, with our UHC.dll (or in engine-ext\engine-ext.cfg with our dinput8.dll beside
-your DLL):
+A new line for engine-ext\engine-ext.cfg (our dinput8.dll beside your own uhc.dll, the usual WoL setup), or for
+Startup\wol.cfg only if our UHC.dll is used in place of yours:
 
   truckAttackResourceFix
 

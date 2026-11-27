@@ -5,7 +5,8 @@ What it is
 ----------
 Home city cards that can only be sent in the Imperial Age (the fifth age, "age 4" inside the game).
 
-With the key `ageFiveShipments` in Startup\wol.cfg:
+With the key `ageFiveShipments`, one line in engine-ext\engine-ext.cfg (our dinput8.dll beside WoL's own uhc.dll,
+the usual WoL setup), or in Startup\wol.cfg only if our UHC.dll is used in place of WoL's:
 - a card with <age>4</age> in its home city file (data\homecityxxx.xml) is part of the game's deck;
 - it is shown in the Age IV row, at its RIGHT end: the Age IV cards stay packed at the left, the Age V cards are
   packed at the right (in the order of the deck), and the slots between the two groups stay empty. The same in
