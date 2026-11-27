@@ -31,8 +31,9 @@ How the game's guerrilla works today (we read it in the game's code, then checke
            <Target type ='ProtoUnit'>Barracks</Target></Effect>
 
    For the amount, Assign sets it, Absolute adds to it and Percent multiplies it. Only the player who gets the tech
-   changes, and a saved game keeps it. The new per-civ effect attribute (onlyciv, sent in the same round) should work
-   on them too; that pair is not tested yet.
+   changes, and a saved game keeps it. With the new per-civ effect attribute (onlyciv, sent in the same round), one
+   tech can change it for one civ only: tested with a tech both players had, PartisanCount for the Spanish only and
+   PartisanType for the Serbians only, and each change reached only its civ.
 
 3. Spawn from the nearby buildings: done, as a tag on the destroyed building:
 
@@ -46,6 +47,10 @@ Tested in game (skirmishes, the Spanish against the Serbian AI): a Spanish Barra
 Barracks still gave its 2 SerbianInferno; a tech turned the Spanish Barracks' guerrilla into 5 Pikemen, also after a
 save and load; a Spanish Stable's 4 Rodeleros came out beside two Houses and an Outpost; it also works beside WoL's own
 DLL, and the AI still runs.
+
+Also checked in game: a building still under construction gives no guerrilla and does not count as a nearby
+building; when the owner deletes his own building there is no guerrilla (that is the base game's rule too); a building
+that changed owner (Convert) gives the guerrilla of the player who owns it when it dies, with that player's civ.
 
 GIFs: partisans-wol (the Spanish Barracks and Stable fall: Rodeleros from the Barracks, then beside the nearby
 buildings) and partisans-wol-control (the same without the key: nothing from the Spanish buildings).

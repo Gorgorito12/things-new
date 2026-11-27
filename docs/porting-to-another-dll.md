@@ -1637,7 +1637,7 @@ Code: [combat](porting-code/combat.md#partisans). It needs `AddProtoTagHandler` 
 
 - **Site:** `jmp` at `0x4B532F` over 16 bytes (`8B 4E 44 E8 86 FB FF FF 3C 01 0F 84 C5 EB 1E 00`: the kill handler's
   guerrilla test), continue at `0x4B533F` (`8B 4E 5C`). ESI the dying unit; the kill handler's first byte argument at
-  `[esp+0A0h]` on entry (set for a trigger's `Kill`); EAX, ECX and EDX free. Verify the cold block `0x6A3F04` (37h bytes),
+  `[esp+0A0h]` on entry (set for a trigger's `Kill` and the owner's delete); EAX, ECX and EDX free. Verify the cold block `0x6A3F04` (37h bytes),
   the spawn's head `0x9C07D6` and the civ test's head `0x4B4EBD` too.
 - **Stock tests to keep:** the owner's civ test `0x4B4EBD(player)` (thiscall), the count of the dying unit's copy
   `[[unit+5Ch]+164h]` > 0, that argument 0, and the build test `0x44DDB4(unit)`; then the spawn `0x9C07D6(unit)`

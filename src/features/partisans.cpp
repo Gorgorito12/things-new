@@ -510,8 +510,16 @@ void __stdcall UhcPartisansOnDeath(char* unit, std::int32_t flag) {
     return;
   }
   const Guerrilla g = GuerrillaOf(database, player, copy);
-  if (!g.on || g.count <= 0 || flag != 0 || !kIsBuilt(unit)) {
+  if (!g.on || g.count <= 0) {
     return;  // the stock order of the tests does not matter: none has an effect
+  }
+  if (flag != 0 || !kIsBuilt(unit)) {
+    const char* build = Field<const char*>(unit, 0x68);
+    LogLine(L"partisans: unit %d (%hs) of player %d died: no guerrilla (%ls, build %.0f %%)",
+            Field<std::int32_t>(unit, 0x10), ProtoName(copy), Field<std::int32_t>(player, 0),
+            flag != 0 ? L"the kill's first flag is set" : L"not finished",
+            build == nullptr ? 100.0 : 100.0 * static_cast<double>(Field<float>(build, 8)));
+    return;
   }
   const std::int32_t playerId = Field<std::int32_t>(player, 0);
   const char* partisan = g.type >= 0 ? kPlayerProto(player, g.type) : nullptr;

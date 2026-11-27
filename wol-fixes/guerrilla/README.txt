@@ -59,4 +59,6 @@ Tested in WoL (2026-11-27), skirmishes against the Serbian AI
 - Afterwards the new units walk over to the nearest group of the same unit and stand in a line. The game does that
   without the key too: a building's stock guerrilla drew 3 Rodeleros standing 20 m away.
 - Key off: nothing from the Spanish buildings.
-Not tested: a foundation in range (it should not count; the test map's foundations came finished).
+- A foundation destroyed at 4 % gives no guerrilla, and does not count as a nearby building.
+- The owner's delete gives no guerrilla (the game's own rule). A building that changed owner gives the guerrilla of its
+  owner when it dies.

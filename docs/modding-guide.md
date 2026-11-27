@@ -5289,7 +5289,10 @@ partisans [log]
   each, the closest first, at the first free spot around each building. A foundation does not count. With no building in
   range, they come out of the destroyed one as before. R is 0 to 200. The tag is on the building, so it holds for every
   civ that has a guerrilla there.
-- **Trigger kills:** a trigger's `Kill` (`trUnitDelete`) gives no guerrilla, as in stock (seen in game).
+- **Trigger kills and deletes:** a trigger's `Kill` (`trUnitDelete`) and the owner's delete give no guerrilla, as in
+  stock (seen in game).
+- **Conversion:** the player who owns the building when it dies decides: their civ, their copy of the building, and the
+  units are theirs (seen in game, the same in stock).
 - **No interface:** the key changes no text, panel or button; none of the screens of the UI coverage rules shows the
   guerrilla.
 - **Multiplayer:** it changes the simulation: every player needs the same setting and data. It draws no new random number
@@ -5299,7 +5302,7 @@ partisans [log]
   PartisanCount are on` and `hook reached: partisans (0x4B532F)`. With `log`: the tags read (`partisans: proto 306
   (Barracks): civ Spanish gets Rodelero x 3`), the effects, and each guerrilla: `partisans: unit 0 (Barracks) of player 1
   (civ 22) died: 3 x Rodelero`, or in the nearby mode `partisans: unit 1 (Stable) of player 1 died: 4 x Rodelero beside 3
-  building(s) within 30 m (0 unfinished left out)` and one line per unit with its building and place.
+  building(s) within 30 m (0 unfinished left out)` and one line per unit with its building and place. A guerrilla held back says why: `partisans: unit 26 (HouseMed) of player 1 died: no guerrilla (not finished, build 4 %)`, or `(the kill's first flag is set, build 100 %)` for a trigger's `Kill` or the owner's delete.
 - **Tested in WoL (2026-11-27), skirmishes on test maps, player 1 Spanish, player 2 the Serbian AI (`wolPetar`), test data
   in the test copy (restored after):**
   - Per civ: a Spanish `Barracks` with the Spanish line gave `3 x Rodelero` (3 Rodeleros counted in its footprint); a
@@ -5312,8 +5315,27 @@ partisans [log]
   - Nearby, a `Stable` with `<PartisanFromNearby>30</PartisanFromNearby>`, two Houses and an Outpost 6 to 15 m from its
     edge: 4 Rodeleros, two beside the closest building and one beside each of the others (5 runs). A Stable with no
     building of its owner within 30 m: `no finished building ... within 30 m`, and its 4 Rodeleros came out of it.
-  - A foundation was not tested: an Outpost given `PlaceAsFoundation` and placed by the test map was a finished
-    building (the log counted 0 unfinished), so the "left out" case is only read in the code.
+  - Foundations (2026-11-27, second pass): a Spanish `HouseMed` given a Spanish line (and 300 build points, so it stays
+    a foundation), placed by a Settler (console `tis("HouseMed")` and a posted click) and destroyed at 4 % by the
+    enemy's Grenadiers: `no guerrilla (not finished, build 4 %)`. A Spanish Stable with `<PartisanFromNearby>30` that
+    fell while a foundation stood 9 m away: `no finished building ... within 30 m (1 unfinished)`, and its 4 Rodeleros
+    came out of the Stable.
+  - The owner's delete (console `uiDeleteAllSelectedUnits()` on a Spanish Barracks with the Spanish line): `no
+    guerrilla (the kill's first flag is set)`. The same in stock: with the key off, a Serbian Barracks given
+    `PartisanType` `Rodelero` and `PartisanCount` 4 in the test data, deleted by its owner, left only rubble.
+  - Conversion (trigger `Convert`, then `Damage Unit`): the owner at the death decides, with its civ and its copy of the
+    building. A Spanish Barracks converted to the Serbians gave `2 x SerbianInferno` to the Serbian player; a Serbian
+    Barracks converted to the Spanish gave `3 x Rodelero` (the Spanish line) to the Spanish player. Stock, key off: a
+    Spanish AI's Barracks converted to the Serbians gave 4 Rodeleros (the test data's type) to the Serbian player, and
+    a Serbian Barracks converted to the Spanish gave nothing (no `<Partisans>` for the Spanish).
+  - With `perCivEffects` (agent E's branch merged in a scratch build, not committed): one tech, researched by both
+    players, with `PartisanCount` `Assign` 5 `onlyciv="Spanish"` and `PartisanType` `Pikeman` `onlyciv="Serbians"` on
+    `Barracks`: the Spanish Barracks gave `5 x Rodelero`, the Serbian one `2 x Pikeman`. Each effect reached only its
+    civ.
+  - Performance, `perfprobe` 60 s from 18 s game time, two runs each way, a skirmish where triggers kill 100 Settlers of
+    each player and 10 Houses (211 deaths through the hook, no guerrilla): key on fps 1019 / 993, update 0.22 / 0.22 ms,
+    main thread 85.1 / 85.1 %, frames over 50 ms 2 / 0; key off fps 981 / 987, update 0.24 / 0.23 ms, main thread
+    86.2 / 85.9 %, frames over 50 ms 2 / 0. No measurable cost.
   - Bad data: `civ="NoSuchCiv"`, a unit `NoSuchUnit`, `count="abc"` and `count="500"`, a line without `civ`,
     `<PartisanFromNearby>` `x` and `-5`, and `PartisanType` effects with `NoSuchUnit`, `AbstractInfantry` and no
     `unittype`: each logged and ignored. The last Spanish line on the Town Center replaced the earlier ones; its

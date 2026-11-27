@@ -5879,7 +5879,7 @@ the owner's nearby buildings.
 number reads as 1). A proto has one `PartisanType` (`+160h`, handler 0xA129D3; a second line overwrites the first) and
 one `PartisanCount` (`+164h`, 0xA114C1); the proto copy 0x67E011 copies both into each player's copy. The kill handler
 0x4B4F70 tests at 0x4B532F the owner's civs (FUN_004B4EBD), then in the cold block 0x6A3F04 the copy's count > 0, its first
-byte argument (`[esp+0A0h]`, set for a trigger's `Kill`, `trUnitDelete`) clear and the build (0x44DDB4: no build record, or
+byte argument (`[esp+0A0h]`, set for a trigger's `Kill`, `trUnitDelete`, and for the owner's delete, seen in game) clear and the build (0x44DDB4: no build record, or
 its progress complete), and calls the spawn FUN_009C07D6 (one caller). The spawn takes the type from the owner's copies
 (0x45311B) and makes `count` units with 0x498ACC(world, ID, player, pos, forward, 1, -1, 1, -1), each at a random point of
 the dying unit's footprint (two draws of the synced random 0x422648 on 0xC66588, stream 2), with no placement test.
