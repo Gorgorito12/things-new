@@ -406,3 +406,5 @@ zamburakCannon-wol-control 6 40 4
 zamburakCannon-wol-limbered 36 24 2
 cultureUI-wol 9 12 1
 cultureUI-wol-control 9 12 1
+zamburakFuse-wol 0 12 1 800:560:80:40
+gatlingCamelAlive-wol 1.5 12 1 800:560:80:40

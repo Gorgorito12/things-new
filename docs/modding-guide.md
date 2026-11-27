@@ -11289,6 +11289,24 @@ English and Spanish) delivers it:
     (the same vertices, triangles, bones and texture; written in the plain skinned layout, as the game did not draw the
     packed stream edited in place); the rider sits 0.19 higher, on it, and the post's top rises with him;
   - every clip passed `check_anim.py` again (A 368 checks, B 595, B's death 37).
+- **Round 8** (the user, 2026-11-26, after the zamburak cannon's round 3: "so the camel doesn't feel like an inert
+  mass"): `GatlingCamelDeployed`'s kneeling camel is alive in its idle, its burst and its reload. It uses the same
+  layer as the zamburak (`make_gun_camel.alive`). It breathes and sways its tail. During the 1.0 s burst it pins its
+  ears back, flicks its tail at the first shot and shudders 0.6 degrees at each of the six shots, the gun and the
+  gunner's hands going with it. In the reload it chews its cud, flicks its ears and turns its head toward the gunner.
+  Each clip starts and ends in the same pose; the chest, which carries the gun, moves only in the shudder. Only B's
+  three lying clips (the camel's, with their tag files), its fire clips of the gun and the gunner, and the aim file's
+  fire table change; `GatlingCamel` (A), the turn's `TURN` and `RISE` sections and every other file are unchanged,
+  byte for byte. `check_anim.py`: B 0 failures of 595 checks, its death 0 of 37. In game (`C:\AoE3-UHC-WoLReal8`,
+  single player, filmed on 2026-11-26 and checked frame by frame): the tail swings up at each burst and sways, the head
+  turns toward the gunner in the reload, the bursts every 4 s as before, and the muzzle flash at the barrels' end.
+
+![The gatling camel lying down, alive](media/gatlingCamelAlive-wol.gif)
+
+*Round 8 (`C:\AoE3-UHC-WoLReal8`, the pack and the key, filmed on 2026-11-26), the `GatlingCamelDeployed` selected:
+it fires bursts at a House and reloads. The kneeling camel breathes and sways its tail; at each burst it pins its ears
+and flicks its tail, and in the reload it chews and turns its head toward the gunner.* [Full video
+(MP4)](media/gatlingCamelAlive-wol.mp4): Houses at 90, 45 and 143 degrees. The control is the round-7 video above.
 
 ![The new gatling camel, from the saddle](media/gatlingCamel-wol.gif)
 
@@ -11371,7 +11389,8 @@ README) delivers it for `MEZamburak` only:
   - the zamburak's camel without its lateral swivel gun;
   - the midfa's barrel cut to 2/3 of its length, at 0.6 of its size, on a fork and socket on the withers;
   - the rider is today's, with his model and hat by rank;
-  - the linstock is a plain wooden stick, 0.85 long, with a red hot tip (`bone_match`; no fire on it);
+  - the linstock is a plain wooden stick, 0.85 long, with a red hot tip (`bone_match`; no fire on it). The fuse he
+    lights burns on the gun's vent (`bone_fuse`) with the game's own fuse sparks and smoke (round 3, below);
   - the camel has a dromedary hump (2026-11-26, the user: the stock camel's back was flat): its back lifted 0.28 into one
     hump under the saddle cloth, the same vertices, triangles, bones and texture (the mesh is written in the plain
     skinned layout: the game did not draw the packed one edited in place). The rider sits 0.19 higher, on it;
@@ -11384,6 +11403,39 @@ README) delivers it for `MEZamburak` only:
     gun out to +90 and stands at his station behind the breech.
   - **Bombard:** the shot takes 2.0 s; he touches the vent. The reload takes 3.0 s: he pushes the gun round
     through its back to 270, loads the charge and the ball by hand, and pushes it back.
+  - **The shot, round 3** (JTMaston, 2026-11-26: "can the cannon have a slower period between the red hot tip
+    setting the fuse and it shooting? can the cannon and the camel have a bit more of recoil? can fuse sparks be
+    attached to the vent when the gunner sets the fuse?"):
+    - **the fuse:** the tip touches the vent at 0.70 s and the gun fires at 1.40 s, so the fuse burns 0.70 s (it was
+      0.10 s: touch at 0.80 s, shot at 0.90 s). He takes the stick away and turns his head aside while it burns.
+      The shot and its tags move to 0.70 of the clip; the clip stays 2.0 s and the ROF 5.0. The first shot after
+      the gun is laid comes 1.40 s later instead of 0.90 s; the damage per second does not change. A faster touch
+      left his arm behind the stick (`check_anim`'s grip check);
+    - **the sparks:** the game's grenadier's fuse sparks and smoke (`effects\spc\fusesparks`, `fusesmoke`, in
+      Art1.bar) burn on the vent from the touch to the shot. The gun's anim file attaches them in its
+      `Bombard_ranged_attack` as the grenadier's does. Two particle files of the pack, `fuse_sparks.particle` and
+      `fuse_smoke.particle`, are the game's files with only their timing and size changed: a particle attached
+      in one anim starts with it, and its `initialdormancy` places it in the clip. Seen in game at 30 to 150
+      degrees: the sparks follow the turned gun. Almost no stock cannon shows its fuse: the heavy cannon, the
+      great bombard and others define such an attachment and never attach it;
+    - **the recoil:** the muzzle jumps 15 degrees up in 0.08 s and settles back past rest by 0.60 s. The kneeling
+      camel rocks 4 degrees away from the shot onto its far knees, which carries the gun 9 cm, and its neck nods
+      5 degrees. Everything is back at rest by the clip's end. The old kick of 6 degrees had in fact lowered the
+      muzzle: a sign error in the tool, fixed;
+    - **the muzzle smoke:** the shot's smoke and flash (`smallcannonmuzzle`, on the bone `launchpoint`) burst at a
+      fixed spot ahead of the camel, beside the artillerist's head when the gun was turned. The camel's tag file
+      for the shot lacked `LAUNCHPOINT`; with it they burst at the muzzle at every yaw;
+    - **the ball:** he loads it visibly. He holds the charge and the ball at his fingertips, not inside his palm,
+      and shows the ball over the muzzle for a moment before he pushes it in. The ball is a little larger
+      (radius 4.5 cm, in a bore of 5) and light grey: the midfa's iron is near black and did not show against
+      the bore or his coat. The reload's length and beats are otherwise unchanged;
+    - **the camel alive** (the user: "so it doesn't feel like an inert mass"): the shot and the reload had the
+      kneeling camel frozen in one pose. Now it breathes once a clip (the belly; the chest, which carries the
+      gun, stays still) and sways its tail. At the shot it pins its ears back and flicks its tail up. In the
+      reload it chews its cud three times, flicks each ear once and turns its head 15 degrees to watch the gun
+      come round. The deployed idle keeps its own motion and gains the breath, two chews and an ear. Each clip
+      starts and ends in the same pose, so they follow each other without a jump, and the turn beyond the arc
+      (`TURN`, `RISE`) is unchanged.
   - **Limber again (5.5 s):** the limber button, or a move order.
   - **Deaths:** unlimbered, the camel slumps and he falls back. Limbered, three of today's camel deaths play; the
     other five drove the cannon into the ground.
@@ -11399,7 +11451,9 @@ README) delivers it for `MEZamburak` only:
 - **Checks:** every clip passed `check_anim.py`: 1222 checks, plus 80 for the unlimbered death and 179 for the
   limbered deaths. They include the new checks: palms not behind the shoulders, the camel's head clear of the
   barrel, crossed feet, the weapon not into the ground at death, prop sizes, and an animal lying in the kush
-  (`lying`: belly 2.7 cm up, hump 57% of its standing height, knees 21 cm, legs inside its outline).
+  (`lying`: belly 2.7 cm up, hump 57% of its standing height, knees 21 cm, legs inside its outline). In the shot
+  (round 3) the rock lifts the near side for 0.3 s: its `lying` limits are raised to a belly 8 cm up and knees 30
+  cm, the reason kept in the job.
 
 ![The zamburak cannon in WoL](media/zamburakCannon-wol.gif)
 
@@ -11419,6 +11473,17 @@ stays at +90.* [Full video (MP4)](media/zamburakCannon-wol-control.mp4).
 *Two zamburaks (filmed on 2026-11-26 with the hump): the limber button pressed, the camels rise from the kush with the
 cannon angled down beside the neck, and the limbered death on the dead model, the cannon on the fallen camel's back.*
 [Full video (MP4)](media/zamburakCannon-wol-limbered.mp4).
+
+![The zamburak cannon, round 3: the fuse, the recoil, the ball](media/zamburakFuse-wol.gif)
+
+*Round 3 (`C:\AoE3-UHC-WoLReal8`, the pack and the key, filmed on 2026-11-26), the zamburak selected. At each
+shot he touches the vent and the fuse sparks on it until the gun fires 0.70 s later. The muzzle kicks up, the
+camel rocks onto its far knees, pins its ears back and flicks its tail. The smoke bursts at the muzzle, whichever
+way the gun is turned. He swings the gun round, loads it and holds the grey ball over the muzzle before he pushes
+it in, while the camel chews and turns its head to watch.* [Full video (MP4)](media/zamburakFuse-wol.mp4): Houses
+at 90, 45 and 143 degrees.
+The video before round 3 above is the control: touch and shot 0.10 s apart, no sparks, the smoke beside the
+camel's head.
 
 - **Tested in WoL** (2026-11-26, single player, `C:\AoE3-UHC-WoLReal8`, the round branch's DLL), checked frame by
   frame in close films:

@@ -18,10 +18,14 @@ What it is
     holster, swings the gun out over the camel's right side (+90, square to its spine), gets off on the left and
     stands at his station behind the breech.
   - Bombard: it cannot move. To fire (2.0 s) he touches the vent with the hot red tip of his linstock, a short
-    plain stick.
+    plain stick, at 0.70 s. The fuse burns on the vent with sparks and a thread of smoke while he takes the
+    stick away and turns his head aside, and the gun fires at 1.40 s. The muzzle jumps 15 degrees and the
+    kneeling camel rocks 4 degrees away from the shot; both settle before the reload.
     To reload (3.0 s) he sticks the linstock in the ground and pushes the gun round through its back until the
-    muzzle points at him. He loads the charge and the ball by hand from the pouch at his hip, pushes the gun back
-    to its rest, and takes the linstock up.
+    muzzle points at him. He loads the charge and the ball by hand from the pouch at his hip, showing the ball
+    over the muzzle before he pushes it in. Then he pushes the gun back to its rest and takes the linstock up.
+    The kneeling camel is alive meanwhile: it breathes and sways its tail, pins its ears back and flicks its
+    tail at the shot, and in the reload chews its cud, flicks its ears and turns its head to watch the gun.
   - Limber (5.5 s): he swings the gun back to its travel pose, puts the linstock in its holster, gets on, and the
     camel rises.
   - Deaths: unlimbered, the camel slumps and he falls back. Limbered, three of today's camel deaths play on a model
@@ -60,6 +64,8 @@ Files it adds
                                        degrees; the artillerist's arm and head for the idle and the shot; the
                                        turn beyond the arc, TURN and RISE)
       zamburak_cannon.xml (+ _gun, _rider)   the anim files
+      fuse_sparks.particle, fuse_smoke.particle   the burning fuse on the vent: the game's grenadier's fuse
+                                       sparks and smoke (effects\spc\fusesparks, fusesmoke) timed to the shot
   data\tactics\zamburakCannon.tactics  the two modes; the attack carries
                                        <turret tracking="always" maxTurnAnglePerSecond="100">60</turret>, read by
                                        the turretArc key and ignored by the game
@@ -112,5 +118,11 @@ TESTED (2026-11-26, a test copy of Wars of Liberty, single player, the DLL of 20
   player): Houses created and destroyed round it every 20 s, 12 turns of 90 and 180 degrees: the rise, the steps, his
   walk and the settling seen frame by frame, no shot during a turn (logged), and killed mid-turn. Only the aim file
   changed (TURN and RISE appended; every byte before them as before).
+- The shot, round 3 (2026-11-26, JTMaston: a slower fuse, more recoil, fuse sparks on the vent; approved by the
+  user as a preview; check_anim.py 0 failures; in game, WoLReal8, the DLL of 2026-11-26, single player): the
+  sparks seen on the vent from the touch to the shot with the gun at 35 to 150 degrees, off in the reload; the
+  first shot 1.40 s after the gun is laid; ROF 5.0 measured (5.00 s between shots); the shot's smoke and flash
+  at the muzzle at every yaw (before, they burst at a fixed spot ahead of the camel: the shot's tag file lacked
+  LAUNCHPOINT); the ball seen over the muzzle; the camel's tail and head moving.
 - Not tested: an attack order (right click) unlimbering it. The bed could not aim a real click; the tactics are the
   stock pattern (GatlingCamel, falconet). Also not tested: multiplayer, and the AI with the pack.

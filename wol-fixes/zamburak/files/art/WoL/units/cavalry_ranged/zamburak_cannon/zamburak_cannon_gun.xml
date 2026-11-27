@@ -1,6 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Wars of Liberty's zamburak cannon (MEZamburak): the zamburak's camel without its swivel gun, a bronze cannon on a swivel on its withers, its rider, who limbers and unlimbers it. Made with aoe3-blender-tools tools/make_zamburak.py. -->
 <animfile>
+	<definebone>bone_fuse</definebone>
+	<attachment>
+		fuse_sparks
+		<component>
+			fuse_sparks
+			<assetreference type="ParticleSystem">
+				<file>WoL\units\cavalry_ranged\zamburak_cannon\fuse_sparks.particle</file>
+			</assetreference>
+		</component>
+		<anim>
+			None
+			<component>fuse_sparks</component>
+		</anim>
+	</attachment>
+	<attachment>
+		fuse_smoke
+		<component>
+			fuse_smoke
+			<assetreference type="ParticleSystem">
+				<file>WoL\units\cavalry_ranged\zamburak_cannon\fuse_smoke.particle</file>
+			</assetreference>
+		</component>
+		<anim>
+			None
+			<component>fuse_smoke</component>
+		</anim>
+	</attachment>
 	<component>
 		ModelComp
 		<assetreference type="GrannyModel">
@@ -125,6 +152,8 @@
 			<file>WoL\units\cavalry_ranged\zamburak_cannon\zamburak_cannon_gun_fire</file>
 		</assetreference>
 		<component>ModelComp</component>
+		<attach a="fuse_sparks" frombone="bone_fuse" tobone="bone_fuse" syncanims="0"/>
+		<attach a="fuse_smoke" frombone="bone_fuse" tobone="bone_fuse" syncanims="0"/>
 	</anim>
 	<anim>
 		Bombard_reload

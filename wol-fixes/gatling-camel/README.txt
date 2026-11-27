@@ -132,6 +132,13 @@ Tested (2026-11-23, test copy of Wars of Liberty 1.0.15c, single player)
   walk and the settling seen frame by frame, no shot during a turn (logged), and killed mid-turn (the deployed death
   plays, nothing left in the air). Only the aim file B55 changed (the TURN and RISE sections appended; every byte
   before them as in round 7).
+- Round 8 (2026-11-26, the user: the kneeling camel should not look like an inert mass; approved as a list and a
+  preview; check_anim.py B 0 failures of 595 checks, its death 0 of 37): GatlingCamelDeployed's lying camel breathes
+  and sways its tail; in the burst it pins its ears back, flicks its tail at the first shot and shudders a little at
+  each shot; in the reload it chews its cud, flicks its ears and turns its head toward the gunner. Only B's three
+  lying camel clips and their tag files, B's fire clips of the gun and the gunner, and the aim file B55's fire table
+  change; GatlingCamel's files and B55's TURN and RISE sections are unchanged. In game (test copy, single player): the tail
+  flicking and swaying, the head turning in the reload, the bursts every 4 s and the muzzle flash at the barrels' end.
 - Not seen in game: multiplayer.
 - Fixed on 2026-11-23 after the first films: the camel's left legs were drawn lifted (the stock clips' leg
   mirrors were copied in the clips' own axes); on death the gun stayed in the air, then turned on itself
@@ -242,6 +249,15 @@ Probado (2026-11-23, copia de prueba de Wars of Liberty 1.0.15c, un jugador)
   su caminar y el asentarse revisados fotograma a fotograma, ningún disparo durante un giro (registrado), y muerto a
   mitad de giro (su muerte desplegado se ve, nada queda en el aire). Solo cambia el archivo de puntería B55 (las
   secciones TURN y RISE añadidas; todos los bytes anteriores como en la ronda 7).
+- Ronda 8 (2026-11-26, el usuario: que el camello echado no parezca una masa inerte; aprobada como lista y como
+  vista previa; check_anim.py B 0 fallos en 595 comprobaciones, su muerte 0 en 37): el camello echado de
+  GatlingCamelDeployed respira y mueve la cola; en la ráfaga pega las orejas atrás, sacude la cola con el primer
+  disparo y tiembla un poco con cada disparo; en la recarga rumia, mueve las orejas y gira la cabeza hacia el
+  artillero. Solo cambian los tres clips del camello echado de B y sus archivos de etiquetas, los clips de disparo
+  del arma y del artillero de B, y la tabla de disparo del archivo de puntería B55; los archivos de GatlingCamel y las
+  secciones TURN y RISE de B55 no cambian. En el juego (copia de prueba, un jugador): la cola
+  que se sacude y se balancea, la cabeza que gira en la recarga, las ráfagas cada 4 s y el fogonazo en la punta de los
+  cañones.
 - No visto en el juego: multijugador.
 - Corregido el 2026-11-23 tras las primeras grabaciones: las patas izquierdas del camello se veían levantadas
   (las simetrías de las patas de los clips del juego se copiaban en los ejes del propio clip); al morir el arma
