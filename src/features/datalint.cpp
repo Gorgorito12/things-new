@@ -170,6 +170,8 @@ constexpr KnownTag kKnownTags[] = {
     {L"NurseryFactorRolloverCount", "nurseryFactor"},
     {L"NurseryFactorRolloverRate", "nurseryFactor"},
     {L"GarrisonConvertTo", "garrisonConvert"},
+    {L"CivPartisan", "partisans"},
+    {L"PartisanFromNearby", "partisans"},
 };
 
 std::map<std::wstring, Seen> g_seen[kKinds];

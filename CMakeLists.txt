@@ -137,6 +137,7 @@ set(UHC_SOURCES
   src/features/incomerates.cpp
   src/features/nurseryfactor.cpp
   src/features/garrisonconvert.cpp
+  src/features/partisans.cpp
   src/features/sharedlimit.cpp
   src/features/shipments.cpp
   src/features/smartheal.cpp
@@ -228,6 +229,7 @@ set(UHC_SOURCES
   src/hooks/dodge_hooks.asm
   src/hooks/dopple_hooks.asm
   src/hooks/deadrepl_hooks.asm
+  src/hooks/partisans_hooks.asm
   src/hooks/dot_hooks.asm
   src/hooks/fame_hooks.asm
   src/hooks/gatherrate_hooks.asm

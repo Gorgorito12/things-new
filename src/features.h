@@ -182,6 +182,7 @@ Outcome ApplySelectFattened(const Config& config);
 Outcome ApplyProgressPieDemo(const Config& config);
 Outcome ApplyNurseryFactor(const Config& config);
 Outcome ApplyGarrisonConvert(const Config& config);
+Outcome ApplyPartisans(const Config& config);
 // garrisonConvert: the progress of a building's conversions, for the panels: false when nobody inside qualifies;
 // else the share of the delay the unit in progress has spent (1 with no delay) and how many units qualify.
 bool GarrisonConvertProgress(const char* building, float* fraction, std::int32_t* waiting);
@@ -343,6 +344,9 @@ inline constexpr Feature kFeatures[] = {
     // Shares the death observer (deathobservers.h) with detonationDeath; its observer runs after that one.
     {"annexFacing", ApplyAnnexFacing},
     {"deadReplacementAtZeroInventory", ApplyDeadReplacementAtZeroInventory},
+    // No order constraint: the only key that writes 0x4B532F (the kill handler's guerrilla test); its tags and
+    // subtypes go through the shared proto tag and tech subtype hooks.
+    {"partisans", ApplyPartisans},
     {"steadyHitpointBars", ApplySteadyHitpointBars},
     // After overhealHitpointBars: both add bars through the shared floating bar hooks (floatingbars.h), the segment
     // first.
@@ -412,7 +416,7 @@ inline constexpr const char* kHandledKeys[] = {
     "dodgesoundset", "criticalsoundset", "spreadanyaccuracy",
     "retargetinaction", "powershots",
     "turretarc",
-    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
+    "livebuildingworkrate", "workratebyabstracttype", "autogatherscalebycontained", "containedunitsrof", "numberofshots", "unitresourceauras", "resourcegatherauras", "resourcedebt", "costescalationtechs", "randomcost", "trainbatchsize", "pillagegold", "accuracytechs", "cratepriority", "techprereqrecheck", "orprereqsqty", "shipmentcounts", "kothtimer", "maintainwaitforpop", "transformupdateslos", "sharedbuildlimit", "donotqueue", "nextresearchfree", "researchgrants", "shiptechlimit", "homecitytechsinunits", "killbountytechs", "teamkillbounty", "resourcebounty", "cantbeslowed", "snarevalues", "stealthtargeting", "autoscout", "autogatherfrom", "buildinggather", "herdwalkawayfix", "researchonthemove", "transformchecks", "customwalls", "directionalattack", "transformspan", "veterancybonus", "killspawn", "partisans", "hctargettechs", "detonationdeath", "annexfacing", "unittypetechs",
     "broadsidemuzzlelimit", "broadsidesoundset", "abilityslots", "wonderpanelskipauras", "nativepreview", "lifespanafterconstruction",
     "gaiasocketsonly", "customhotkeycontexts", "snareonlyhitunit", "techrenameeffect",
     "displayedrange", "linkedresource", "aurastacking", "enabletechrenameeffect", "nocorpsedopples", "dancebonuscivs", "startingtc", "civfirsttc", "firsttc", "scenariocivs",

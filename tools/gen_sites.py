@@ -2361,6 +2361,14 @@ SITES = [
     ("SettingsByName", 0x402C76, 0x13),
     ("TriggerByName", 0x90DFB0, 0x2B),
     ("PlayerTeam", 0x88396E, 0x2B),
+    # partisans: the kill handler's civ test of the guerrilla, mov ecx,[esi+44h] / call 4B4EBDh / cmp al,1 /
+    # je 6A3F04h (16 B, no branch lands inside), plus mov ecx,[esi+5Ch] it continues at 0x4B533F; the cold block
+    # it jumps to (count > 0, the kill's first flag, built, call 9C07D6h, jmp 4B533Fh) and the spawn's head and
+    # the civ test's head (verify only)
+    ("PartisanCivTest", 0x4B532F, 0x13),
+    ("PartisanColdBlock", 0x6A3F04, 0x37),
+    ("PartisanSpawn", 0x9C07D6, 0x1A),
+    ("PartisanCivFlag", 0x4B4EBD, 0x0F),
 ]
 
 
