@@ -151,3 +151,13 @@ Probado (2026-11-21, un jugador, una copia de WoL con nuestro UHC.dll)
     cuatro minutos, con la clave y sin ella. Una escaramuza con los persas contra una IA alemana con el paquete: la IA
     jugó, sin error de XS.
 Sin probar: el uso que hace la IA de los rebaños de los nómadas en una partida entera, y el multijugador.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  herdWalkAwayFix            applied
+
+Junto al uhc.dll de WoL (probado el 2026-11-27, nuestro dinput8.dll, la línea en engine-ext\engine-ext.cfg): herdWalkAwayFix se aplica (applied).

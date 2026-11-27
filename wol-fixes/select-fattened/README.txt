@@ -4,6 +4,8 @@ SELECT THE FATTENED LIVESTOCK (request #106)
 AN OPTIONAL PACK. Nothing changes until apply_fix.py is run. It needs the DLL key selectFattened (apply_fix.py adds
 the line to engine-ext\engine-ext.cfg, for our dinput8.dll beside WoL's own uhc.dll, the usual WoL setup, when the
 folder has an engine-ext folder; else to Startup\wol.cfg, for our UHC.dll in place of WoL's).
+BESIDE WoL's OWN uhc.dll THE KEY FAILS (tested 2026-11-27, last section): WoL's DLL holds the syscall site it needs.
+Today the pack works only with our UHC.dll in place of WoL's.
 
 What it does
 ------------
@@ -65,3 +67,18 @@ Un botón encima del panel de recursos, a su izquierda, muestra cuántos animale
 de comida y los selecciona al pulsarlo, en todo el mapa; si pasan del límite de selección, los más cercanos al centro
 de la pantalla. Se oculta cuando no hay ninguno. Mayús+Ctrl+F hace lo mismo. Solo cambia tu selección.
 Con --hotkey-only se instala solo la tecla (Mayús+Ctrl+F), sin el botón ni su icono.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  selectFattened             FAILED: its command uhcSelectFattened is a UI syscall, and our
+                             syscalls need the syscall table site SyscallAi (0x7294F4), which
+                             WoL's DLL holds (the same reason kbUnitSyscalls fails there). Beside
+                             WoL's uhc.dll this pack does nothing: the button and the hotkey
+                             need our UHC.dll in place of WoL's (Startup\wol.cfg), or the
+                             feature ported into WoL's own DLL.
+
+Junto al uhc.dll de WoL (probado el 2026-11-27, nuestro dinput8.dll, la línea en engine-ext\engine-ext.cfg): selectFattened FALLA (FAILED): su comando es un syscall de la interfaz, y nuestros syscalls necesitan el sitio SyscallAi (0x7294F4), que ocupa el DLL de WoL. Junto al uhc.dll de WoL este paquete no hace nada: el botón y la tecla necesitan nuestro UHC.dll en lugar del de WoL.

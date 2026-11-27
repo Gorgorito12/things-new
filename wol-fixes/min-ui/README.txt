@@ -327,3 +327,14 @@ In media\ (JPG pictures of the panel at native pixels, with the health bar; PNG 
 The videos of the first proposal (2026-11-17) were removed on 2026-11-21: they showed a layout that version 7 has
 replaced. Version 7's pictures are in final\ (minUIStats-v7-*.jpg), version 9's square icons in
 final\minUIStats-v9-*.jpg.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  minUIStats                 applied, without building armor: WoL's DLL changes the resists armor
+                             test (0x698BFC), so the panel shows no building armor and the unit armor
+                             as WoL's multiarmor writes it (the log says so); the rest as above
+                             (rows read from engine-ext\minuirows.xml)

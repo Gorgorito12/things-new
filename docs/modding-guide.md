@@ -10974,6 +10974,9 @@ in the first minute to 14,200 in the eighth (8 players, all their villagers, tri
 selectFattened [gadget <name>]... [log]
 ```
 
+- **Beside WoL's own `uhc.dll`: FAILED** (2026-11-27, our `dinput8.dll`): the command is a UI syscall, and `AddSyscall`
+  needs the site `SyscallAi` 0x7294F4, which WoL's DLL holds (as for `kbUnitSyscalls`). It works with our `UHC.dll` in
+  place of WoL's.
 - **The request (WoL #106):** a player asked for a button that selects only the livestock that has reached its maximum
   food: with the Middle East civs and the Spanish immigrants, livestock matters more.
 - **Effect:** the command `uhcSelectFattened` (a button's or a hotkey's `<command>`) selects every herdable (unit type

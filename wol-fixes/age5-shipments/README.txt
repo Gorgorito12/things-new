@@ -80,3 +80,11 @@ shipmentCounts; "Build a Deck" shows it.
 - the full row (9 + 3) and the key off, as in the pictures.
 Not tested: the AI with an Age V card in its deck, multiplayer, other resolutions than 1920 x 1080 (the panels'
 own buttons are used, so no difference is expected).
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  ageFiveShipments           applied

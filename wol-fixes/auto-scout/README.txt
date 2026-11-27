@@ -118,3 +118,11 @@ Good to know
 - A scout can still be shot before it sees the building that shoots it: an outpost's range can be longer than a
   scout's line of sight. The back-off then takes it away, and the building is avoided from then on.
 - A scout that is AI-controlled scouts too; the AI's own orders switch it off.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  autoScout                  applied; in a scenario, hook reached: autoScout command (0x7C8E49)

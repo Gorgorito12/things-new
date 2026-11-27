@@ -193,3 +193,13 @@ tools/panel_rows.py de aoe3-blender-tools (orden de arriba, en la sección en in
 
 Probado con británicos, chinos y mapuches; interfaz grande y minimizada; 1024x768, 1600x900, 1920x1080 y
 2560x1440. Las imágenes están en media\.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  faithResource              applied
+
+Junto al uhc.dll de WoL (probado el 2026-11-27, nuestro dinput8.dll, la línea en engine-ext\engine-ext.cfg): faithResource se aplica (applied).

@@ -48,3 +48,12 @@ now deal six times that. See reply-to-maston-20261127-H.txt for the questions.
 
 Evidence of the tests: a0-findings.txt, a1-results.txt, a0-traces.txt, a0-uhc-log.txt and the videos in this folder;
 the guide's sections powerShots and retargetInAction.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  retargetInAction           applied; in a scenario, hook reached (0x487838)
+  powerShots                 applied

@@ -134,3 +134,11 @@ Questions for the WoL team
 4. The AI (see above): keep the four <Train> rows (--keep-train: the AI builds, the player sees two buttons), or remove
    them (the default: one button, but a Zulu AI cannot build these four)? A third way would be a key of ours that
    hides those placing buttons from the human player only; tell us if you want it.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  transformChecks            applied

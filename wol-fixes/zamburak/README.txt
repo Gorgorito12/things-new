@@ -128,3 +128,15 @@ TESTED (2026-11-26, a test copy of Wars of Liberty, single player, the DLL of 20
   LAUNCHPOINT); the ball seen over the muzzle; the camel's tail and head moving.
 - Not tested: an attack order (right click) unlimbering it. The bed could not aim a real click; the tactics are the
   stock pattern (GatlingCamel, falconet). Also not tested: multiplayer, and the AI with the pack.
+
+Beside WoL's own uhc.dll (tested 2026-11-27)
+--------------------------------------------
+WoL's uhc.dll (c070d138, WoL.dll loaded by preloadDll), our dinput8.dll 0.6.0, the packs applied with their
+apply_fix.py (the scripts that write a key put it in engine-ext\engine-ext.cfg by themselves; the other lines were
+added there by hand), at the main menu, engine-ext\engine-ext.log (24 keys applied, 1 FAILED of all the packs'
+keys):
+  turretArc                  applied (the line of both packs: GatlingCamel, GatlingCamelDeployed,
+                             MEZamburak, each aim file read); in a scenario (2 GatlingCamel,
+                             1 GatlingCamelDeployed, 1 MEZamburak against 4 Skirmishers), hooks
+                             reached: turretArc facing (0x48AA9F), attack state (0x48A65A), launch
+                             (0x4995D5)
