@@ -10,7 +10,8 @@
 // randomCost (the game seed and the purchase counts, on one carrier unit), 69h shipTechLimit (a player's count, on
 // one of his units), 6Ah veterancyBonus (the rows a unit was given, when its rows name techs), 6Bh nurseryFactor (a
 // unit's factor and its growth timer), 6Ch garrisonConvert (on a building: its progress, word 0 'GCNV', and its round
-// robin cursor and population pause, word 0 'GCRR').
+// robin cursor and population pause, word 0 'GCRR'), 6Dh partisans (on a building: the game time it last gave a
+// guerrilla in the nearby mode, word 0 'PCDN').
 #pragma once
 
 #include <cstdint>

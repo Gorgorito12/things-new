@@ -1,0 +1,60 @@
+Reply to JTMaston, round of 2026-12-01: the guerrilla, nearby mode v3 (request #114)
+==================================================================================
+
+Thanks for the answers of 2026-11-27 (13:19). Two changes, one per answer:
+
+1. "Nothing" (no building with a guerrilla in range).
+   Done. For a civ with <PartisanNearby> in civs.xml, a destroyed building (not a wall) NEVER gives its own guerrilla
+   any more. Only the nearby buildings that have a guerrilla give theirs. With none in range (or all of them waiting,
+   see 2), nothing comes out.
+   What this means in a game: with the mode on, a lone Barracks (no other building with a guerrilla within the
+   radius) gives nothing when it falls. Before, it gave its own 2 Rodeleros.
+   Not changed: walls, units that are not buildings, and civs without the tag (they work as in the normal game). The
+   base game's rules stay: a foundation, a trigger's Kill and the owner's delete set off nothing.
+
+2. "A cooldown" (per building).
+   Done, as a second civ tag next to the first:
+
+       <PartisanNearby>30</PartisanNearby>
+       <PartisanCooldown>60</PartisanCooldown>
+
+   The number is seconds of game time, 0 to 3600. When a building gives its guerrilla, it gives nothing again until
+   that many seconds have passed. Each building has its own wait: a Market that has not given yet still gives while
+   the Barracks next to it is waiting. The wait starts when the building gives at least one unit; a building that is
+   still waiting gives nothing, and its wait is NOT restarted by the next destruction.
+   Without the tag (or with 0): no limit, as in the last version. The tag counts only with <PartisanNearby>; without
+   it, the log says it does nothing. A wrong value ("abc", "-5", "99999") is logged and ignored.
+   The wait is kept in saved games (it is stored on the building itself). A building that transforms into another
+   building loses its wait (it is ready again).
+   You pick the seconds: 60 in the pack is only an example.
+
+The pack wol-fixes/guerrilla/:
+    python apply_fix.py "<WoL folder>" --nearby 30 --cooldown 60
+                                                       the Spanish lines, both civ tags for the Spanish, the
+                                                       Tupinamba lines, `partisans` in the cfg
+    python apply_fix.py "<WoL folder>" --check         what is applied
+    python apply_fix.py "<WoL folder>" --restore       everything back as it was (protoy.xml, civs.xml, the cfg)
+
+Tested in game (Spanish against the Serbian AI, --nearby 30 --cooldown 60, units counted after each event):
+- A House next to a Barracks and a Stable: 2 + 2 Rodeleros. Another House next to them 20 s later: nothing (the log:
+  "on cooldown, 40.0 s left" for each). A fourth House 70 s after they gave: 2 + 2 again.
+- The game saved during the wait and loaded: a House 50 s after they gave still gave nothing ("10.0 s left").
+- A House between a Barracks that was waiting and a Market (test data: 3 Rodeleros on the Market): the Market gave its
+  3 and the Barracks nothing ("50.0 s left").
+- A lone Stable with no building with a guerrilla in range: nothing (before this change: its own 2 Rodeleros).
+- Without <PartisanCooldown>: two Houses 10 s apart, 4 Rodeleros each time (no limit, as before).
+- A trigger's Kill: nothing. The Serbians: their Barracks gave its 2 SerbianInferno, as before.
+- Also beside WoL's own uhc.dll; the AI kept playing; the wait costs nothing measurable (a few microseconds per
+  destruction).
+
+GIFs: partisans-cooldown-wol (two Houses fall 10 s apart next to a Barracks and a Stable: the first one sets them off,
+the second one gives nothing) and partisans-cooldown-wol-control (the same scene without <PartisanCooldown>: the
+second House sets them off again).
+
+One question:
+- Do you want a tech to be able to change the cooldown (for example a card that shortens it), or is one number per
+  civ enough? Now: one number per civ, in civs.xml.
+
+A reminder: the Serbians still have SerbianInferno (<partisans>1</partisans> and the last PartisanType of those
+buildings). The pack does not touch them, and they are not in the nearby mode, so their buildings still give their
+own guerrilla when they fall.

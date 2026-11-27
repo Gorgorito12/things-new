@@ -5873,7 +5873,8 @@ which the subtype's own base (the cloned proto) cannot hold. A data load clears 
 ### partisans
 
 The stock guerrilla (the `Partisans` tags, docs/engine-symbols.md, "Partisans") per civ, changed by techs, and, for a civ
-with `<PartisanNearby>`, given by the owner's nearby buildings, each its own, sent to its gather point.
+with `<PartisanNearby>`, given by the owner's nearby buildings, each its own, sent to its gather point, and with
+`<PartisanCooldown>` at most once per building in that many seconds.
 
 **[O] Stock.** `<Partisans>` in civs.xml is an on/off flag (bit 4 of `[[civ+128h]]`, 0x659A14; a text that is not a
 number reads as 1). A proto has one `PartisanType` (`+160h`, handler 0xA129D3; a second line overwrites the first) and
@@ -5919,9 +5920,22 @@ the Train action's FUN_009C9147 (engine-symbols.md, "A building's gather point a
 with a 32-byte stand-in action whose `+0Ch` is -1 and `+10h` the building, `together` 0: to the building's gather point
 (a move as a group, a work order when the point is on a unit, garrison when it is on the building itself, gathering when
 it is on a resource); with no gather point (no record of that player in `[building+68h]`) no order, the units stay. A
-point on the dying building gets no call. The dying building makes nothing then. With no building that has a guerrilla
-in range, the dying one goes on as without the tag (its own stock-style guerrilla, if it has one). A wall's death, and a
-unit's, are as without the tag. **[O]** In game, idle units of the same type near each other may still come together
+point on the dying building gets no call. The dying building never makes its own in this mode (v3, 2026-12-01): with no
+building that has a guerrilla in range, or all of them on cooldown, nothing comes out, and the log says which. A wall's
+death, and a unit's, are as without the tag; so is a foundation's, and a trigger's `Kill` or the owner's delete (the
+stock path, which gives nothing for them).
+
+**The cooldown (v3, 2026-12-01).** The civ tag `<PartisanCooldown>S</PartisanCooldown>` (0 to 3600 s; 0 or absent: no
+limit) goes through `AddCivTagHandler` too, kept the same way. A building in range that is about to give first looks for
+its cooldown marker (`savedmarkers.h`, stat 6Dh, word 0 `'PCDN'`, word 1 the game time `[world+108h]` in ms when it last
+gave): `now - time`, an unsigned difference so a wraparound of the clock does not matter, below S x 1000 means it gives
+nothing and its marker is left as it is (`on cooldown, N s left`). A building that made at least one unit writes `now`
+into its marker, made the first time with `markers::Take` (the stat modifier creator 0x4DD22D, with no time limit). The
+modifier's save and load copy those words, so a saved game keeps the wait; a transform in place ends the unit's
+modifiers, so a transformed building is ready again. The tag only counts with `<PartisanNearby>` above 0 in the same civ:
+`ReadPartisanNearby` pairs the two whichever comes first, and the next `OnDatabaseLoad` callback (civs.xml is read before
+it: the civ tags hook is reached first) logs a cooldown that stayed unpaired, once per civ object; a death of a building
+of such a civ logs it too when the load did not. A value that is not a number from 0 to 3600 is logged and ignored. **[O]** In game, idle units of the same type near each other may still come together
 after the move, as the game makes them do with the key off (3 Rodeleros walked 20 m to the 4 a stock guerrilla had just
 made, 2026-11-27). **[U]** Which code orders that walk was not traced. The proto tag `<PartisanFromNearby>` of 0.7.0 is
 still registered, only to log that it is no longer used.
@@ -5936,7 +5950,10 @@ still registered, only to log that it is no longer used.
 - No new random draw, no real clock, no local player: the nearby order is by distance and unit ID.
 - Cost per death: a hash lookup by proto ID and, for a copy with effects, a second one; the stock civ test otherwise.
   For a civ with `<PartisanNearby>`: a hash lookup by civ ID and two is-a tests; the nearby query runs only for a built
-  building of that civ killed by damage.
+  building of that civ killed by damage. With a cooldown, a walk over each building's modifiers for its marker.
+- The cooldown is simulation state: the game time, kept on the building in a saved marker. Nothing stays in the DLL
+  between games, nothing depends on the local player, and the marker's stat (6Dh) is read by no stock code and no other
+  key.
 - The gather point order is the engine's own call, made where the stock train action makes it (in the simulation, on
   every machine); it reads only the stand-in action's two fields, and its array is the engine's own type, grown by the
   engine's append, so its removals free nothing of ours.
