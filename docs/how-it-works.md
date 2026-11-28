@@ -5874,7 +5874,7 @@ which the subtype's own base (the cloned proto) cannot hold. A data load clears 
 
 The stock guerrilla (the `Partisans` tags, docs/engine-symbols.md, "Partisans") per civ, changed by techs, and, for a civ
 with `<PartisanNearby>`, given by the owner's nearby buildings, each its own, sent to its gather point, and with
-`<PartisanCooldown>` at most once per building in that many seconds.
+its `cooldown` attribute at most once per building in that many seconds, which a tech can change per player and building.
 
 **[O] Stock.** `<Partisans>` in civs.xml is an on/off flag (bit 4 of `[[civ+128h]]`, 0x659A14; a text that is not a
 number reads as 1). A proto has one `PartisanType` (`+160h`, handler 0xA129D3; a second line overwrites the first) and
@@ -5925,17 +5925,35 @@ building that has a guerrilla in range, or all of them on cooldown, nothing come
 death, and a unit's, are as without the tag; so is a foundation's, and a trigger's `Kill` or the owner's delete (the
 stock path, which gives nothing for them).
 
-**The cooldown (v3, 2026-12-01).** The civ tag `<PartisanCooldown>S</PartisanCooldown>` (0 to 3600 s; 0 or absent: no
-limit) goes through `AddCivTagHandler` too, kept the same way. A building in range that is about to give first looks for
+**The cooldown (v3, 2026-12-01; an attribute since 2026-12-02).** The attribute `cooldown="S"` of `<PartisanNearby>`
+(0 to 3600 s; 0 or absent: no limit) is read with the tag: `AddCivTagNodeHandler` passes the handler the element's XML node
+as well as its text, and the attribute is read with the game's XML reader, 0x598F37 (an attribute by name) and 0x402733
+(its text), the two calls the proto tag `<CivPartisan>` uses for `civ` and `count`. The civs.xml node is the same class as
+a proto tag's (the dispatcher reads its name at `[[node+4]+18h][[node+18h]]` and its text at `+14h`, as for a proto tag);
+**[O]** in game the attribute was read (`cooldown 60 s per building`) and gave the timings of v3. A value that is not a
+number from 0 to 3600 is logged and ignored, and the radius still holds. The civ tag `<PartisanCooldown>` of v3 (never
+released) is no longer read: a handler on it only logs, once per civ, that it is now the attribute.
+
+**The tech subtype (2026-12-02).** `PartisanCooldown` is a third Data subtype on a ProtoUnit target (`AddTechSubtype`, as
+`PartisanCount`): each apply or removal is kept, in order, with the other two subtypes' effects of that player's copy of
+the proto. A building's S is the civ's attribute, then each `PartisanCooldown` effect of its copy `[unit+5Ch]`, replayed
+through 0x7F892A (`Assign` sets the seconds, `Absolute` adds, `Percent` multiplies) from the civ's value, then clamped to 0
+to 3600; it is worked out for each building at each death, so the effects of one player's Barracks do not reach another
+player or another building. A saved game's load runs every ProtoUnit Data effect again (the data load clears the kept ones
+first), so the tech holds after a load (**[O]** seen in game).
+
+**The wait.** A building in range that is about to give first looks for
 its cooldown marker (`savedmarkers.h`, stat 6Dh, word 0 `'PCDN'`, word 1 the game time `[world+108h]` in ms when it last
 gave): `now - time`, an unsigned difference so a wraparound of the clock does not matter, below S x 1000 means it gives
 nothing and its marker is left as it is (`on cooldown, N s left`). A building that made at least one unit writes `now`
 into its marker, made the first time with `markers::Take` (the stat modifier creator 0x4DD22D, with no time limit). The
 modifier's save and load copy those words, so a saved game keeps the wait; a transform in place ends the unit's
-modifiers, so a transformed building is ready again. The tag only counts with `<PartisanNearby>` above 0 in the same civ:
-`ReadPartisanNearby` pairs the two whichever comes first, and the next `OnDatabaseLoad` callback (civs.xml is read before
-it: the civ tags hook is reached first) logs a cooldown that stayed unpaired, once per civ object; a death of a building
-of such a civ logs it too when the load did not. A value that is not a number from 0 to 3600 is logged and ignored. **[O]** In game, idle units of the same type near each other may still come together
+modifiers, so a transformed building is ready again. The marker keeps when the building gave, not how long it has left,
+and S is asked again at each death: a tech that shortens S frees a building that was already waiting as soon as the new S
+has passed since it gave (**[O]** in game: a Barracks that gave at 110 s, with the tech halving its 60 s at 120 s, gave
+again at 142 s, while the Stable beside it, which gave at 110 s too, was `on cooldown, 28.0 s left`). A building whose S is
+0 when it gives still writes `now` into a marker it already has, so a later tech that gives it a wait counts from its last
+gift. **[O]** In game, idle units of the same type near each other may still come together
 after the move, as the game makes them do with the key off (3 Rodeleros walked 20 m to the 4 a stock guerrilla had just
 made, 2026-11-27). **[U]** Which code orders that walk was not traced. The proto tag `<PartisanFromNearby>` of 0.7.0 is
 still registered, only to log that it is no longer used.

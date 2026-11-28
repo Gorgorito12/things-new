@@ -33,12 +33,13 @@ In the civ (civs.xml), since 2026-11-27:
       building with a guerrilla is in range, nothing comes out. So with the mode on, a lone Barracks gives nothing
       when it falls. Walls, units that are not buildings, and civs without the tag work as in the normal game.
 
-  <PartisanCooldown>60</PartisanCooldown>      (since 2026-12-01, with <PartisanNearby> in the same civ)
+  <PartisanNearby cooldown="60">30</PartisanNearby>      (the cooldown attribute since 2026-12-02)
       A building that gave its guerrilla as a nearby building gives nothing for the next 60 seconds of game time (0 to
       3600; 0 or left out: no limit). Each building has its own wait; it starts when the building gives at least one
       unit, and a building still waiting is not restarted when another building falls. A saved game keeps the wait. A
-      building that transforms into another loses it (ready again). Without <PartisanNearby> the tag does nothing: the
-      log says so. A value that is not a number from 0 to 3600 is logged and ignored.
+      building that transforms into another loses it (ready again). A value that is not a number from 0 to 3600 is
+      logged and ignored, and the radius still holds.
+      The tag <PartisanCooldown> of 2026-12-01 is no longer read: the log says it is now this attribute.
 
   <PartisanFromNearby> on a building (0.7.0) is no longer read: the log says so if the data still has it.
 
@@ -48,9 +49,13 @@ In techtreey.xml, for the player who gets the tech:
       <Target type ='ProtoUnit'>Barracks</Target></Effect>
   <Effect type ='Data' amount ='5' subtype ='PartisanCount' relativity ='Assign'>
       <Target type ='ProtoUnit'>Barracks</Target></Effect>
+  <Effect type ='Data' amount ='0.50' subtype ='PartisanCooldown' relativity ='Percent'>
+      <Target type ='ProtoUnit'>Barracks</Target></Effect>
 
-  PartisanCount: Assign sets it, Absolute adds to it, Percent multiplies it. Each player has their own copy of the
-  building, so a tech changes only its player. A saved game applies the techs again when it loads.
+  PartisanCount and PartisanCooldown (seconds): Assign sets it, Absolute adds to it, Percent multiplies it; the cooldown
+  starts from the civ's cooldown attribute and stays between 0 and 3600. Each player has their own copy of the
+  building, so a tech changes only its player and that building. A saved game applies the techs again when it loads.
+  A building keeps when it last gave, so a tech that shortens the wait also frees a building that is already waiting.
 
 This pack
 ---------
@@ -58,8 +63,8 @@ apply_fix.py gives the Spanish a guerrilla of their own on three buildings, as a
   TownCenter 4, Barracks 2, Stable 2, unit Rodelero (--unit names another), and adds `partisans` to Startup\wol.cfg
   (or engine-ext\engine-ext.cfg). --nearby 30 also writes <PartisanNearby>30</PartisanNearby> in the Spanish civ in
   civs.xml (without --nearby a <PartisanNearby> line there is taken out, and so is an old <PartisanFromNearby> line on
-  the three buildings). --cooldown 60, with --nearby, writes <PartisanCooldown>60</PartisanCooldown> under it (without
-  --cooldown a <PartisanCooldown> line there is taken out). 60 is an example: the number is yours.
+  the three buildings). --cooldown 60, with --nearby, writes the attribute: <PartisanNearby cooldown="60">30</PartisanNearby>.
+  A <PartisanCooldown> line there (the pack of 2026-12-01) is taken out. 60 is an example: the number is yours.
 The Tupinamba get UybassyArcher back: <CivPartisan civ="Tupinamba">UybassyArcher</CivPartisan> on TownCenter,
   ArtilleryDepot and Market, with each building's own PartisanCount (6, 3 and 1). Checked with --check only, not in a
   game: the Tupinamba are not a civ we test with. The mechanism is the one tested with the Spanish.
@@ -70,7 +75,7 @@ The Serbians keep what they have: <partisans>1</partisans>, and the last Partisa
     python apply_fix.py "<WoL folder>" --nearby 30     the same, with the nearby mode for the Spanish
     python apply_fix.py "<WoL folder>" --nearby 30 --cooldown 60
                                                        the same, with a 60 s cooldown per building
-    python apply_fix.py "<WoL folder>" --check         what is applied
+    python apply_fix.py "<WoL folder>" --check         what is applied (the cooldown too)
     python apply_fix.py "<WoL folder>" --restore       put the backed-up files back (protoy.xml, civs.xml, the cfg),
                                                        then delete the backup
 
@@ -113,3 +118,15 @@ Tested in WoL (2026-11-27), the nearby mode v3, skirmishes against the Serbian A
 - "abc", "-5", "99999", and a cooldown on a civ without <PartisanNearby>: one log line each, nothing else.
 - Key off: nothing. Beside WoL's own uhc.dll: the same. The AI kept playing.
 - --check and --restore gave protoy.xml, civs.xml and the cfg back byte for byte.
+
+Tested in WoL (2026-11-28, round of 2026-12-02), the cooldown as an attribute and the tech, --nearby 30 --cooldown 60
+--------------------------------------------------------------------------------------------------------------------
+- The same events as the v3 test, with our UHC.dll and with our dinput8.dll beside WoL's own uhc.dll: the same counts
+  (4, 6, 9, 9, 9, 13 Rodeleros) and the same "50.0 s left", "40.0 s left" and, after a save and a load, "10.0 s left".
+- A test tech (PartisanCooldown Percent 0.5 on Barracks, player 1) at 120 s, while a Barracks and a Stable that gave at
+  110 s were waiting: at 142 s the Barracks gave its 2, the Stable "on cooldown, 28.0 s left".
+- Saved at 150 s and loaded: the tech applied again; at 165 s "7.0 s left" for the Barracks (30 s), "5.0 s left" for
+  the Stable (60 s); at 175 s both gave.
+- cooldown="abc", "-5", "99999" and "": one log line each, the radius kept. The old <PartisanCooldown> tag: one line.
+- Key off: nothing. The Serbian AI trained Peasants; no XS error.
+- --check showed the attribute, and --restore gave protoy.xml, civs.xml and the cfg back byte for byte.

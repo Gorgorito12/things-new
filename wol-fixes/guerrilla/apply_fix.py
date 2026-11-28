@@ -16,8 +16,9 @@ What it changes (README.txt has the why):
 - data\civs.xml: with --nearby M, <PartisanNearby>M</PartisanNearby> in the Spanish civ (the nearby mode: when a
   Spanish building dies, each Spanish building with a guerrilla within M metres gives its own, and they walk to its
   gather point; the destroyed building gives none). Without --nearby, a <PartisanNearby> line there is taken out.
-  With --cooldown S too, <PartisanCooldown>S</PartisanCooldown> under it (a building that gave waits S seconds of game
-  time before it gives again); without --cooldown, a <PartisanCooldown> line there is taken out.
+  With --cooldown S too, the tag carries the attribute cooldown="S" (<PartisanNearby cooldown="S">M</PartisanNearby>: a
+  building that gave waits S seconds of game time before it gives again). A <PartisanCooldown> line there (the tag of
+  the 2026-12-01 pack, no longer read by the DLL) is taken out.
 - Startup\wol.cfg (or engine-ext\engine-ext.cfg when that folder exists): the line `partisans`, when the file has none.
 The Serbians keep what they have: a civ with no <CivPartisan> line uses PartisanType and PartisanCount as before (on
 those three buildings the last <PartisanType>, SerbianInferno).
@@ -103,14 +104,13 @@ def civ_block(text, civ):
 
 def set_nearby(text, nearby, cooldown):
     m = civ_block(text, CIV)
-    block = re.sub(r"[ \t]*<PartisanNearby>[^<]*</PartisanNearby>\r?\n", "", m.group(0), flags=re.I)
+    block = re.sub(r"[ \t]*<PartisanNearby\b[^>]*>[^<]*</PartisanNearby>\r?\n", "", m.group(0), flags=re.I)
     block = re.sub(r"[ \t]*<PartisanCooldown>[^<]*</PartisanCooldown>\r?\n", "", block, flags=re.I)
     if nearby is not None:
         name = re.search(r"<name>" + CIV + r"</name>(\r?\n)", block)
         nl = name.group(1)
-        add = f"\t\t<PartisanNearby>{nearby}</PartisanNearby>{nl}"
-        if cooldown is not None:
-            add += f"\t\t<PartisanCooldown>{cooldown}</PartisanCooldown>{nl}"
+        attribute = f" cooldown=\"{cooldown}\"" if cooldown is not None else ""
+        add = f"\t\t<PartisanNearby{attribute}>{nearby}</PartisanNearby>{nl}"
         block = block[:name.end()] + add + block[name.end():]
     return text[:m.start()] + block + text[m.end():]
 
@@ -133,11 +133,11 @@ def status(root):
         out[name] = (lines, old.group(1) if old else None)
     civs, _ = read(root / "data" / "civs.xml")
     block = civ_block(civs, CIV).group(0)
-    near = re.search(r"<PartisanNearby>([^<]*)</PartisanNearby>", block, re.I)
+    near = re.search(r"<PartisanNearby\b[^>]*>[^<]*</PartisanNearby>", block, re.I)
     wait = re.search(r"<PartisanCooldown>([^<]*)</PartisanCooldown>", block, re.I)
     cfg = cfg_path(root)
     keys = {line.split()[0].lower() for line in read(cfg)[0].splitlines() if line.split()} if cfg.exists() else set()
-    return out, near.group(1) if near else None, wait.group(1) if wait else None, KEY.lower() in keys
+    return out, near.group(0) if near else None, wait.group(1) if wait else None, KEY.lower() in keys
 
 
 def main():
@@ -156,8 +156,11 @@ def main():
         for name, (lines, old) in protos.items():
             print(f"{name}: {'; '.join(lines) if lines else 'no Spanish or Tupinamba line'}"
                   + (f" (old <PartisanFromNearby>{old}</PartisanFromNearby>: no longer read)" if old else ""))
-        print(f"civs.xml, {CIV}: " + (f"<PartisanNearby>{near}</PartisanNearby>" if near else "no <PartisanNearby>")
-              + ", " + (f"<PartisanCooldown>{wait}</PartisanCooldown>" if wait else "no <PartisanCooldown>"))
+        cooldown = re.search(r"cooldown\s*=\s*[\"']([^\"']*)[\"']", near, re.I) if near else None
+        print(f"civs.xml, {CIV}: " + (near if near else "no <PartisanNearby>")
+              + (f" (a cooldown of {cooldown.group(1)} s per building)" if cooldown else
+                 (" (no cooldown)" if near else ""))
+              + (f"; an old <PartisanCooldown>{wait}</PartisanCooldown> line, no longer read" if wait else ""))
         print(f"`{KEY}` in {cfg_path(root)}: {'yes' if key else 'no'}")
         return
     if "--restore" in args:

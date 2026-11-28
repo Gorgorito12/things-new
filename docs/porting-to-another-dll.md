@@ -1633,8 +1633,10 @@ Code: [combat](porting-code/combat.md#killspawn). It needs `AddCivTagHandler` ([
 ### partisans
 
 Code: [combat](porting-code/combat.md#partisans). It needs `AddProtoTagHandler` ([proto tags](porting-code/helpers.md#proto-tags)),
-`AddCivTagHandler` (civs.xml's `<PartisanNearby>` and `<PartisanCooldown>`), `AddTechProtoSubtype` and `AddTechSubtype`
-([tech subtypes](porting-code/helpers.md#tech-subtypes)) and `OnDatabaseLoad`.
+`AddCivTagNodeHandler` (civs.xml's `<PartisanNearby>` with its `cooldown` attribute: the handler gets the XML node, read
+with the game's `0x598F37` / `0x402733` as a proto tag's) and `AddCivTagHandler` (the old `<PartisanCooldown>`, read only to
+log that it moved), `AddTechProtoSubtype` and `AddTechSubtype` ([tech subtypes](porting-code/helpers.md#tech-subtypes)) and
+`OnDatabaseLoad`.
 
 - **Site:** `jmp` at `0x4B532F` over 16 bytes (`8B 4E 44 E8 86 FB FF FF 3C 01 0F 84 C5 EB 1E 00`: the kill handler's
   guerrilla test), continue at `0x4B533F` (`8B 4E 5C`). ESI the dying unit; the kill handler's first byte argument at
@@ -1652,15 +1654,18 @@ Code: [combat](porting-code/combat.md#partisans). It needs `AddProtoTagHandler` 
   `0x7AE4B2` (the gather records at `[building+68h]`: land `+10h`/`+14h`, water `+1Ch`/`+20h`, 28h B, `+4` player,
   `+0Ch` point, `+18h` unit). In this mode the dying building never spawns its own: no building with a guerrilla in
   range (or all on cooldown), nothing.
-- **Cooldown (`<PartisanCooldown>S` on the same civ, also through `AddCivTagHandler`):** the game time `[world+108h]`
+- **Cooldown (`<PartisanNearby cooldown="S">R</PartisanNearby>`, and the Data subtype `PartisanCooldown` on a building's
+  copy: the civ's S, then that copy's effects through `0x7F892A`, clamped to 0..3600, worked out per building at each
+  death):** the game time `[world+108h]`
   (ms) a building last gave, kept on it as a saved marker (`savedmarkers.h`: the modifier creator `0x4DD22D`, stat 6Dh,
   word 0 `'PCDN'`, word 1 the time), so it survives a save; skip a building while `now - time` (unsigned) is below
   S x 1000, and write `now` only when it made at least one unit. Any other per-unit store that the save keeps works too;
   a map in the DLL would be lost at a load.
 - **Test:** a `<CivPartisan>` line for a civ without `<Partisans>` on a building, destroyed by damage (not a trigger's
   `Kill`): with `log`, the guerrilla and its count. Nearby: `<PartisanNearby>30` on that civ, a House destroyed beside
-  a Barracks with a line and a gather point: the Barracks' units walk to its point. With `<PartisanCooldown>60`, a
-  second House 10 s later: the Barracks gives nothing (`on cooldown, 50.0 s left`).
+  a Barracks with a line and a gather point: the Barracks' units walk to its point. With `cooldown="60"`, a
+  second House 10 s later: the Barracks gives nothing (`on cooldown, 50.0 s left`). A tech with `PartisanCooldown`
+  `Percent` 0.5 on `Barracks` while it waits: it gives again 30 s after it gave.
 
 ### snareOnlyHitUnit
 

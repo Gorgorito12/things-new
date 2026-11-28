@@ -16,7 +16,8 @@ constexpr std::uint32_t kUnknownTag = 0x0052BB07;  // xor edi,edi / cmp dword pt
 
 struct Tag {
   const char* name;
-  uhc::CivTagHandler handler;
+  uhc::CivTagHandler handler;          // one of the two
+  uhc::CivTagNodeHandler nodeHandler;
 };
 
 Tag g_tags[kMaxTags] = {};
@@ -62,16 +63,22 @@ extern "C" bool __stdcall UhcCivTagDispatch(const char* node, const char* civ) {
     }
     const std::int32_t civId = civ == nullptr ? -1 : Field<std::int32_t>(civ, 0x08);
     if (civId >= 0 && civId < 0x10000) {
-      g_tags[i].handler(civ, civId, Field<const wchar_t*>(node, 0x14));
+      const wchar_t* text = Field<const wchar_t*>(node, 0x14);
+      if (g_tags[i].nodeHandler != nullptr) {
+        g_tags[i].nodeHandler(civ, civId, node, text);
+      } else {
+        g_tags[i].handler(civ, civId, text);
+      }
     }
     return true;
   }
   return false;
 }
 
-namespace uhc {
+namespace {
 
-bool AddCivTagHandler(const char* name, CivTagHandler handler) {
+bool Add(const char* name, uhc::CivTagHandler handler, uhc::CivTagNodeHandler nodeHandler) {
+  using namespace uhc;
   if (g_count == kMaxTags) {
     Log(L"civ tags: no room for %hs", name);
     return false;
@@ -83,8 +90,16 @@ bool AddCivTagHandler(const char* name, CivTagHandler handler) {
     }
     g_installed = true;
   }
-  g_tags[g_count++] = {name, handler};
+  g_tags[g_count++] = {name, handler, nodeHandler};
   return true;
 }
+
+}  // namespace
+
+namespace uhc {
+
+bool AddCivTagHandler(const char* name, CivTagHandler handler) { return Add(name, handler, nullptr); }
+
+bool AddCivTagNodeHandler(const char* name, CivTagNodeHandler handler) { return Add(name, nullptr, handler); }
 
 }  // namespace uhc

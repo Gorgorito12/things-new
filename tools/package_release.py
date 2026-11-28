@@ -409,7 +409,7 @@ veterancyBonus [notext] [log] [file]   <VeterancyBonus> rows give a proto bonuse
                               <Civilization> blocks, rank names and colours; notext: no floating text at a new rank
 killSpawn [log]               civs.xml <killSpawn>: enemies a civ kills become animals, by weight
 partisans [log]               the guerrilla per civ (<CivPartisan>), by tech, and from the nearby buildings of a civ with <PartisanNearby>,
-                              each at most once per <PartisanCooldown> seconds
+                              each at most once per cooldown="S" seconds (a tech can change it)
 trainBatchSize [log]          <TrainBatchSize> limits a proto's units per Train action
 pillageGold [log]             AbstractCanPillage units steal <PillageAmount> gold from buildings' owners
 transformSpan [log]           transformspan on a TransformUnit effect turns the units back

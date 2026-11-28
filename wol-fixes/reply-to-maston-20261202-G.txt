@@ -1,0 +1,65 @@
+Reply to JTMaston, round of 2026-12-02: the guerrilla cooldown as an attribute, and a tech for it (request #114)
+===============================================================================================================
+
+Thanks for the message of 2026-11-28. Two changes:
+
+1. The cooldown is an attribute of <PartisanNearby>, not a new tag.
+
+       <PartisanNearby cooldown="60">30</PartisanNearby>
+
+   30 is the radius in metres, as before. cooldown is seconds of game time, 0 to 3600; left out, or 0: no limit.
+   It works as the tag of the last version did: when a building gives its guerrilla, it gives nothing again until
+   that many seconds have passed; each building has its own wait; a building that is still waiting is not restarted
+   by the next destruction; the wait is kept in saved games.
+   A wrong value ("abc", "-5", "99999", empty) is written to the log and ignored, and the radius still works.
+   The <PartisanCooldown> tag of the last version is no longer read (it was never in a release). If your data still
+   has it, the log says once that it is now the cooldown attribute.
+
+2. A tech can change the cooldown (your teammate Punchline's suggestion).
+   A new Data subtype, PartisanCooldown, on a building, the same way as PartisanCount:
+
+       <Effect type ='Data' amount ='0.50' subtype ='PartisanCooldown' relativity ='Percent'>
+           <Target type ='ProtoUnit'>Barracks</Target></Effect>
+
+   - Assign sets the seconds, Absolute adds seconds (a negative amount takes them away), Percent multiplies.
+   - It starts from the civ's cooldown attribute, and the result stays between 0 and 3600 seconds.
+   - It changes only the player who gets the tech, and only that building. An abstract type such as Building as the
+     target changes all of that player's buildings.
+   - A saved game applies the tech again when it loads.
+   - A building remembers WHEN it last gave its guerrilla, not how long it has left. So a tech that shortens the wait
+     also frees the buildings that are already waiting.
+     Example: a Barracks gives at 1:50 with a 60 s cooldown. The tech above (x 0.5, so 30 s) comes at 2:00. At 2:22,
+     32 s after it gave, the Barracks gives again.
+
+Example, for the Spanish:
+
+    civs.xml, in the Spanish <civ>:
+        <PartisanNearby cooldown="60">30</PartisanNearby>
+    techtreey.xml, a card or tech that halves the wait of the Barracks:
+        <Effect type ='Data' amount ='0.50' subtype ='PartisanCooldown' relativity ='Percent'>
+            <Target type ='ProtoUnit'>Barracks</Target></Effect>
+
+The pack wol-fixes/guerrilla/:
+    python apply_fix.py "<WoL folder>" --nearby 30 --cooldown 60
+                                                       writes <PartisanNearby cooldown="60">30</PartisanNearby> for
+                                                       the Spanish (and takes out an old <PartisanCooldown> line)
+    python apply_fix.py "<WoL folder>" --check         what is applied, the cooldown too
+    python apply_fix.py "<WoL folder>" --restore       everything back as it was (protoy.xml, civs.xml, the cfg)
+
+Tested in game (Spanish against the Serbian AI, units counted after each event):
+- The attribute gives the same times as the tag of the last version: a House next to a Barracks and a Stable, 2 + 2
+  Rodeleros; 20 s later another House, nothing ("on cooldown, 40.0 s left" for each); after a save and a load,
+  "10.0 s left"; 70 s after they gave, 2 + 2 again. A Market gave its 3 while the Barracks beside it was waiting.
+- The tech (x 0.5 on Barracks) while a Barracks and a Stable were both waiting (they gave at 1:50, the tech came at
+  2:00): at 2:22 the Barracks gave its 2, the Stable gave nothing ("28.0 s left").
+- The same game saved and loaded after the tech: the tech still counted ("7.0 s left" for the Barracks, 30 s since it
+  gave; "5.0 s left" for the Stable, 60 s), and 10 s later both gave.
+- The same with our DLL next to WoL's own uhc.dll.
+- Wrong values and the old tag: one line each in the log. Key off: nothing. The Serbian AI kept training units.
+
+The GIFs of the last version (partisans-cooldown-wol and its control) still show what happens: only where the number
+is written has changed.
+
+A reminder: the Serbians still have SerbianInferno (<partisans>1</partisans> and the last PartisanType of those
+buildings). The pack does not touch them, and they are not in the nearby mode, so their buildings still give their
+own guerrilla when they fall.
