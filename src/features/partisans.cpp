@@ -13,14 +13,15 @@
 //
 // in civs.xml, in a <civ>:
 //
-//   <PartisanNearby>30</PartisanNearby>                           the nearby mode for that civ, radius 30 m
-//   <PartisanCooldown>60</PartisanCooldown>                       with it: a building that gave waits 60 s of game
+//   <PartisanNearby cooldown="60">30</PartisanNearby>             the nearby mode for that civ, radius 30 m; with
+//                                                                 cooldown: a building that gave waits 60 s of game
 //                                                                 time before it gives again
 //
-// and two Data subtypes on a ProtoUnit target, for the player who gets the tech:
+// and three Data subtypes on a ProtoUnit target, for the player who gets the tech:
 //
 //   <Effect type="Data" subtype="PartisanType" amount="0" relativity="Assign" unittype="Rodelero">
 //   <Effect type="Data" subtype="PartisanCount" amount="2" relativity="Assign">   (Absolute adds, Percent multiplies)
+//   <Effect type="Data" subtype="PartisanCooldown" amount="0.5" relativity="Percent">   (the same; seconds)
 //
 // The type and the count of a unit: the civ's line if it has one, else the copy's PartisanType and PartisanCount; then
 // each effect on that copy, in the order they came (a removed PartisanType goes back to the value before it). The stock
@@ -36,10 +37,13 @@
 // own in this mode: with no such building in range, nothing comes out. <PartisanFromNearby>, the per-building radius
 // of 0.7.0, is no longer read: it logs that once per proto.
 //
-// The cooldown, <PartisanCooldown>S</PartisanCooldown> in the same civ (0 to 3600 s; 0 or absent: no limit): a
-// building in range that gave at least one unit gives nothing for the next S seconds of game time ([world+108h], in
-// ms, compared as an unsigned difference so a wraparound does not matter), and asking it does not restart its wait.
-// Each building has its own. Without <PartisanNearby> (or with 0) the tag does nothing, and the log says so.
+// The cooldown, the attribute cooldown="S" of <PartisanNearby> (0 to 3600 s; 0 or absent: no limit; a bad value is
+// logged and ignored, the radius still holds): a building in range that gave at least one unit gives nothing for the
+// next S seconds of game time ([world+108h], in ms, compared as an unsigned difference so a wraparound does not
+// matter), and asking it does not restart its wait. Each building has its own. A building's S is the civ's, then each
+// PartisanCooldown effect on its player's copy of its proto, in the order they came, clamped to 0..3600; it is asked
+// at each death, against the time the building last gave, so a tech that shortens it frees a building already
+// waiting. The civ tag <PartisanCooldown> of v3 (never released) is no longer read: the log says so, once per civ.
 //
 // Saved games: the time a building last gave is a saved marker on it (savedmarkers.h, stat 6Dh, word 0 'PCDN', word
 // 1 the game time), so a save keeps the wait and nothing stays in the DLL between games; a building that transforms
@@ -247,22 +251,16 @@ struct ProtoData {
 
 std::unordered_map<std::int32_t, ProtoData> g_protos;  // by base proto ID
 
-// <PartisanNearby> per civ ID, with the civ object it was read for (a reload of civs.xml gives new ones).
+// <PartisanNearby> per civ ID, with the civ object it was read for (a reload of civs.xml gives new ones), and its
+// cooldown in seconds (0: none).
 struct CivNearby {
   const char* civ = nullptr;
   float radius = 0.0f;
+  float cooldown = 0.0f;
 };
 std::unordered_map<std::int32_t, CivNearby> g_civNearby;
 
-// <PartisanCooldown> per civ ID, the same way. `paired`: a <PartisanNearby> above 0 was read for the same civ object,
-// or the warning that it is missing was logged.
-struct CivCooldown {
-  const char* civ = nullptr;
-  std::uint32_t ms = 0;
-  double seconds = 0.0;
-  bool paired = false;
-};
-std::unordered_map<std::int32_t, CivCooldown> g_civCooldown;
+std::unordered_map<std::int32_t, bool> g_oldCooldownLogged;  // the old <PartisanCooldown> tag, per civ ID
 
 // The abstract types Building and AbstractWall, per data load.
 std::int32_t g_building = -1;
@@ -270,8 +268,9 @@ std::int32_t g_wall = -1;
 const char* g_typesTable = nullptr;
 
 // The effects on a player's copy of a proto, in the order they came.
+enum class Subtype : std::uint8_t { kType, kCount, kCooldown };
 struct TechEffect {
-  bool type;  // PartisanType; else PartisanCount
+  Subtype subtype;
   std::int32_t unit;
   std::uint8_t relativity;
   float amount;
@@ -339,7 +338,7 @@ bool __cdecl ReadFromNearby(void*, const char*, char* proto) {
   return true;
 }
 
-void ReadPartisanNearby(const char* civ, std::int32_t civId, const wchar_t* text) {
+void ReadPartisanNearby(const char* civ, std::int32_t civId, const char* node, const wchar_t* text) {
   if (civId < 0) {
     return;
   }
@@ -351,72 +350,49 @@ void ReadPartisanNearby(const char* civ, std::int32_t civId, const wchar_t* text
              CivName(civ), number.c_str(), static_cast<double>(kMaxRadius));
     return;
   }
-  g_civNearby[civId] = {civ, static_cast<float>(radius)};
-  uhc::Log(L"partisans: civ %d (%hs): nearby mode, radius %g m%ls", civId, CivName(civ), radius,
-           radius > 0.0 ? L"" : L" (0: off)");
-  const auto cooldown = g_civCooldown.find(civId);
-  if (radius > 0.0 && cooldown != g_civCooldown.end() && cooldown->second.civ == civ) {
-    cooldown->second.paired = true;
-    uhc::Log(L"partisans: civ %d (%hs): cooldown %g s per building", civId, CivName(civ), cooldown->second.seconds);
+  double cooldown = 0.0;
+  std::string attribute;
+  if (Attribute(node, "cooldown", &attribute)) {
+    end = nullptr;
+    const double seconds = std::strtod(attribute.c_str(), &end);
+    if (attribute.empty() || *end != '\0' || !(seconds >= 0.0) || !(seconds <= kMaxCooldown)) {
+      uhc::Log(L"partisans: civ %d (%hs): <PartisanNearby> cooldown=\"%hs\" is not a number of seconds from 0 to %g; "
+               L"no cooldown (the radius holds)",
+               civId, CivName(civ), attribute.c_str(), kMaxCooldown);
+    } else {
+      cooldown = seconds;
+    }
+  }
+  g_civNearby[civId] = {civ, static_cast<float>(radius), static_cast<float>(cooldown)};
+  if (radius <= 0.0) {
+    uhc::Log(L"partisans: civ %d (%hs): nearby mode, radius 0 m (0: off)", civId, CivName(civ));
+  } else if (cooldown > 0.0) {
+    uhc::Log(L"partisans: civ %d (%hs): nearby mode, radius %g m, cooldown %g s per building", civId, CivName(civ),
+             radius, cooldown);
+  } else {
+    uhc::Log(L"partisans: civ %d (%hs): nearby mode, radius %g m, no cooldown", civId, CivName(civ), radius);
   }
 }
 
-bool NearbyOn(const char* civ, std::int32_t civId) {
-  const auto found = g_civNearby.find(civId);
-  return found != g_civNearby.end() && found->second.civ == civ && found->second.radius > 0.0f;
+// The tag of v3 (never released): read only to say where the cooldown went, once per civ.
+void ReadOldCooldown(const char* civ, std::int32_t civId, const wchar_t*) {
+  bool& logged = g_oldCooldownLogged[civId];
+  if (!logged) {
+    logged = true;
+    uhc::Log(L"partisans: civ %d (%hs): <PartisanCooldown> is no longer read: the cooldown is now the attribute "
+             L"cooldown=\"S\" of <PartisanNearby>, as in <PartisanNearby cooldown=\"60\">30</PartisanNearby>; ignored",
+             civId, CivName(civ));
+  }
 }
 
-// Once per civ object: a cooldown with no nearby mode does nothing.
-void WarnUnpaired(std::int32_t civId, CivCooldown& cooldown) {
-  if (cooldown.paired || cooldown.ms == 0) {
-    return;
-  }
-  cooldown.paired = true;
-  uhc::Log(L"partisans: civ %d (%hs): <PartisanCooldown> %g s does nothing without <PartisanNearby> (above 0) in the "
-           L"same civ; ignored",
-           civId, CivName(cooldown.civ), cooldown.seconds);
-}
-
-void ReadPartisanCooldown(const char* civ, std::int32_t civId, const wchar_t* text) {
-  if (civId < 0) {
-    return;
-  }
-  const std::string number = NarrowWide(text);
-  char* end = nullptr;
-  const double seconds = std::strtod(number.c_str(), &end);
-  if (number.empty() || *end != '\0' || !(seconds >= 0.0) || !(seconds <= kMaxCooldown)) {
-    uhc::Log(L"partisans: civ %d (%hs): <PartisanCooldown> \"%hs\" is not a number of seconds from 0 to %g; ignored",
-             civId, CivName(civ), number.c_str(), kMaxCooldown);
-    return;
-  }
-  CivCooldown& cooldown = g_civCooldown[civId];
-  cooldown = {civ, static_cast<std::uint32_t>(std::lround(seconds * 1000.0)), seconds, false};
-  if (cooldown.ms == 0) {
-    uhc::Log(L"partisans: civ %d (%hs): cooldown 0 s (no limit)", civId, CivName(civ));
-  } else if (NearbyOn(civ, civId)) {
-    cooldown.paired = true;
-    uhc::Log(L"partisans: civ %d (%hs): cooldown %g s per building", civId, CivName(civ), seconds);
-  }
-  // Read before <PartisanNearby>, or with none: ReadPartisanNearby pairs it, or the next data load warns.
-}
-
-// The civ's cooldown in ms for this player's civ, 0 for none.
-std::uint32_t CooldownMs(const char* database, const char* player) {
-  const std::int32_t civId = CivIdOf(player);
-  const auto found = g_civCooldown.find(civId);
-  if (found == g_civCooldown.end() || kCivById(database, civId) != found->second.civ) {
-    return 0;
-  }
-  return found->second.ms;
-}
-
-float NearbyRadius(const char* database, const char* player) {
+// The civ's <PartisanNearby> for this player's civ, or nullptr (none, or radius 0).
+const CivNearby* NearbyOf(const char* database, const char* player) {
   const std::int32_t civId = CivIdOf(player);
   const auto found = g_civNearby.find(civId);
   if (found == g_civNearby.end() || found->second.radius <= 0.0f || kCivById(database, civId) != found->second.civ) {
-    return 0.0f;
+    return nullptr;
   }
-  return found->second.radius;
+  return &found->second;
 }
 
 std::int32_t TypeByName(const char* database, const char* name) {
@@ -456,11 +432,6 @@ void Resolve(const char* database, std::int32_t protoId, ProtoData& data) {
 }
 
 void ForgetOnDataLoad(char*) {
-  // civs.xml is read before this callback (the civ tags hook first, then the abstract types): a cooldown still
-  // unpaired has no nearby mode.
-  for (auto& [civId, cooldown] : g_civCooldown) {
-    WarnUnpaired(civId, cooldown);
-  }
   g_protos.clear();
   g_tech.clear();
   g_typesTable = nullptr;
@@ -497,14 +468,20 @@ TechSlot& SlotOf(char* proto) {
 }
 
 void ChangeType(char* proto, const char*, std::int32_t unit, float, std::uint8_t, bool unapply) {
-  SlotOf(proto).effects.push_back({true, unit, 0, 0.0f, unapply});
+  SlotOf(proto).effects.push_back({Subtype::kType, unit, 0, 0.0f, unapply});
   LogLine(L"partisans: proto %d (%hs), tech subtype PartisanType, unit %d%ls", ProtoId(proto), ProtoName(proto), unit,
           unapply ? L" (removed)" : L"");
 }
 
 void ChangeCount(char* proto, const char*, float amount, std::uint8_t relativity, bool unapply) {
-  SlotOf(proto).effects.push_back({false, -1, relativity, amount, unapply});
+  SlotOf(proto).effects.push_back({Subtype::kCount, -1, relativity, amount, unapply});
   LogLine(L"partisans: proto %d (%hs), tech subtype PartisanCount, relativity %u, amount %g%ls", ProtoId(proto),
+          ProtoName(proto), relativity, static_cast<double>(amount), unapply ? L" (removed)" : L"");
+}
+
+void ChangeCooldown(char* proto, const char*, float amount, std::uint8_t relativity, bool unapply) {
+  SlotOf(proto).effects.push_back({Subtype::kCooldown, -1, relativity, amount, unapply});
+  LogLine(L"partisans: proto %d (%hs), tech subtype PartisanCooldown, relativity %u, amount %g%ls", ProtoId(proto),
           ProtoName(proto), relativity, static_cast<double>(amount), unapply ? L" (removed)" : L"");
 }
 
@@ -548,7 +525,10 @@ Guerrilla GuerrillaOf(const char* database, const char* player, const char* copy
     const float baseCount = static_cast<float>(g.count);
     float count = baseCount;
     for (const TechEffect& effect : tech->second.effects) {
-      if (!effect.type) {
+      if (effect.subtype == Subtype::kCooldown) {
+        continue;
+      }
+      if (effect.subtype == Subtype::kCount) {
         kEffectValue(effect.relativity, &count, baseCount, effect.amount, effect.unapply);
       } else if (!effect.unapply) {
         types.push_back(g.type);
@@ -564,6 +544,24 @@ Guerrilla GuerrillaOf(const char* database, const char* player, const char* copy
     g.count = rounded < 0 ? 0 : (rounded > kMaxCount ? kMaxCount : static_cast<std::int32_t>(rounded));
   }
   return g;
+}
+
+// A building's cooldown in ms: the civ's seconds, then each PartisanCooldown effect on its player's copy of its proto,
+// in the order they came, clamped to 0..3600 s. 0: no limit.
+std::uint32_t CooldownMs(float civSeconds, const char* copy) {
+  float seconds = civSeconds;
+  const auto tech = g_tech.find(copy);
+  if (tech != g_tech.end() && tech->second.id == ProtoId(copy)) {
+    for (const TechEffect& effect : tech->second.effects) {
+      if (effect.subtype == Subtype::kCooldown) {
+        kEffectValue(effect.relativity, &seconds, civSeconds, effect.amount, effect.unapply);
+      }
+    }
+  }
+  if (!(seconds > 0.0f)) {
+    return 0;  // NaN too
+  }
+  return static_cast<std::uint32_t>(std::lround(std::min(static_cast<double>(seconds), kMaxCooldown) * 1000.0));
 }
 
 bool IsType(const char* proto, std::int32_t type) { return proto != nullptr && type >= 0 && kProtoIsType(proto, type); }
@@ -736,7 +734,8 @@ void NoteGiven(char* building, std::uint32_t now) {
 
 // The nearby mode: each building with a guerrilla in range gives its own, unless it is on cooldown; the dying one
 // never gives its own.
-void NearbySpawn(char* world, const char* database, char* unit, float radius, std::uint32_t cooldownMs) {
+void NearbySpawn(char* world, const char* database, char* unit, const CivNearby& nearby) {
+  const float radius = nearby.radius;
   const std::int32_t unitId = Field<std::int32_t>(unit, 0x10);
   const char* player = Field<const char*>(unit, 0x44);
   const std::int32_t playerId = Field<std::int32_t>(player, 0);
@@ -757,6 +756,7 @@ void NearbySpawn(char* world, const char* database, char* unit, float radius, st
   int waiting = 0;
   int gave = 0;
   for (const Near& at : near) {
+    const std::uint32_t cooldownMs = CooldownMs(nearby.cooldown, Field<const char*>(at.unit, 0x5C));
     if (cooldownMs > 0) {
       char* marker = CooldownMarker(at.unit);
       const std::uint32_t since = marker == nullptr ? cooldownMs : now - uhc::markers::Word(marker, 1);
@@ -786,6 +786,8 @@ void NearbySpawn(char* world, const char* database, char* unit, float radius, st
       SendToGatherPoint(at.unit, playerId, unitId);
       if (cooldownMs > 0) {
         NoteGiven(at.unit, now);
+      } else if (char* marker = CooldownMarker(at.unit)) {
+        uhc::markers::Word(marker, 1) = now;  // no wait now, but a tech may give one later: keep when it gave
       }
     }
   }
@@ -816,18 +818,12 @@ void __stdcall UhcPartisansOnDeath(char* unit, std::int32_t flag) {
   }
   // The nearby mode: a finished building (not a wall) of a civ with <PartisanNearby>, with the stock exclusions. The
   // dying building never gives its own then.
-  const float radius = NearbyRadius(database, player);
-  if (radius > 0.0f && flag == 0) {
+  const CivNearby* nearby = NearbyOf(database, player);
+  if (nearby != nullptr && flag == 0) {
     ResolveTypes(database);
     if (IsType(copy, g_building) && !IsType(copy, g_wall) && kIsBuilt(unit)) {
-      NearbySpawn(world, database, unit, radius, CooldownMs(database, player));
+      NearbySpawn(world, database, unit, *nearby);
       return;
-    }
-  } else if (radius <= 0.0f) {
-    const std::int32_t civId = CivIdOf(player);
-    const auto cooldown = g_civCooldown.find(civId);
-    if (cooldown != g_civCooldown.end() && kCivById(database, civId) == cooldown->second.civ) {
-      WarnUnpaired(civId, cooldown->second);
     }
   }
   const Guerrilla g = GuerrillaOf(database, player, copy);
@@ -879,15 +875,15 @@ Outcome ApplyPartisans(const Config& config) {
                   &sites::kGatherPointUnit}) ||
       !AddProtoTagHandler("CivPartisan", &ReadCivPartisan) ||
       !AddProtoTagHandler("PartisanFromNearby", &ReadFromNearby) ||
-      !AddCivTagHandler("PartisanNearby", &ReadPartisanNearby) ||
-      !AddCivTagHandler("PartisanCooldown", &ReadPartisanCooldown) ||
-      !AddTechProtoSubtype("PartisanType", &ParseType, &ChangeType) ||
-      !AddTechSubtype("PartisanCount", &ChangeCount) || !OnDatabaseLoad(&ForgetOnDataLoad) ||
+      !AddCivTagNodeHandler("PartisanNearby", &ReadPartisanNearby) ||
+      !AddCivTagHandler("PartisanCooldown", &ReadOldCooldown) ||
+      !AddTechProtoSubtype("PartisanType", &ParseType, &ChangeType) || !AddTechSubtype("PartisanCount", &ChangeCount) ||
+      !AddTechSubtype("PartisanCooldown", &ChangeCooldown) || !OnDatabaseLoad(&ForgetOnDataLoad) ||
       !WriteJmp(kCivTestSite, reinterpret_cast<const void*>(&UhcPartisansHook), kCivTestLength)) {
     return Outcome::kFailed;
   }
-  Log(L"partisans: the proto tag CivPartisan, the civ tags PartisanNearby and PartisanCooldown and the Data subtypes "
-      L"PartisanType and PartisanCount are on%ls",
+  Log(L"partisans: the proto tag CivPartisan, the civ tag PartisanNearby (with cooldown=\"S\") and the Data subtypes "
+      L"PartisanType, PartisanCount and PartisanCooldown are on%ls",
       g_log ? L", every guerrilla logged" : L"");
   return Outcome::kApplied;
 }
